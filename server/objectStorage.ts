@@ -1,6 +1,7 @@
 import { Storage, File } from '@google-cloud/storage';
 import { Response } from 'express';
 import { randomUUID } from 'crypto';
+import { logger } from './utils/production-safe-logger';
 
 const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106';
 
@@ -34,6 +35,15 @@ export class ObjectNotFoundError extends Error {
 // The object storage service is used to interact with the object storage service.
 export class ObjectStorageService {
   constructor() {}
+
+  private static instance: ObjectStorageService;
+
+  static getInstance(): ObjectStorageService {
+    if (!ObjectStorageService.instance) {
+      ObjectStorageService.instance = new ObjectStorageService();
+    }
+    return ObjectStorageService.instance;
+  }
 
   // Gets the public object search paths.
   getPublicObjectSearchPaths(): Array<string> {
@@ -104,7 +114,7 @@ export class ObjectStorageService {
       const stream = file.createReadStream();
 
       stream.on('error', (err) => {
-        console.error('Stream error:', err);
+        logger.error('Stream error:', err);
         if (!res.headersSent) {
           res.status(500).json({ error: 'Error streaming file' });
         }
@@ -112,7 +122,7 @@ export class ObjectStorageService {
 
       stream.pipe(res);
     } catch (error) {
-      console.error('Error downloading file:', error);
+      logger.error('Error downloading file:', error);
       if (!res.headersSent) {
         res.status(500).json({ error: 'Error downloading file' });
       }
@@ -142,7 +152,39 @@ export class ObjectStorageService {
       ttlSec: 900,
     });
   }
+
+  // Upload a local file to object storage and return the public URL
+  async uploadLocalFile(localFilePath: string, destKey: string): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${destKey}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    try {
+      // Upload the file
+      await bucket.upload(localFilePath, {
+        destination: objectName,
+        metadata: {
+          cacheControl: 'public, max-age=31536000',
+        },
+      });
+
+      logger.info('File uploaded successfully', { destKey, objectName });
+
+      // Return a Google Cloud Storage URL that can be proxied
+      // The /api/objects/proxy endpoint will handle serving this file
+      return `https://storage.googleapis.com/${bucketName}/${objectName}`;
+    } catch (error) {
+      logger.error('Error uploading file to object storage', { error, destKey });
+      throw new Error('Failed to upload file to object storage');
+    }
+  }
 }
+
+// Export a singleton instance for convenience
+export const objectStorageService = ObjectStorageService.getInstance();
 
 function parseObjectPath(path: string): {
   bucketName: string;

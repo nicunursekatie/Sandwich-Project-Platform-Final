@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   Select,
   SelectContent,
@@ -106,6 +107,7 @@ export default function WeeklyMonitoringDashboard() {
   );
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const { trackReportGeneration, trackCommunication, trackButtonClick } = useAnalytics();
 
   // Get monitoring status for selected week
   const {
@@ -163,6 +165,9 @@ export default function WeeklyMonitoringDashboard() {
   const sendSMSRemindersMutation = useMutation({
     mutationFn: (data: { missingLocations: string[]; appUrl?: string }) =>
       apiRequest('POST', '/api/monitoring/send-sms-reminders', data),
+    onSuccess: (data, variables) => {
+      trackCommunication('sms', `bulk - ${variables.missingLocations.length} locations`);
+    },
   });
 
   const sendSingleSMSMutation = useMutation({
@@ -176,6 +181,9 @@ export default function WeeklyMonitoringDashboard() {
       ),
     onMutate: (data) => {
       setSmsingLocation(data.location);
+    },
+    onSuccess: (data, variables) => {
+      trackCommunication('sms', variables.location);
     },
     onSettled: () => {
       setSmsingLocation(null);
@@ -201,6 +209,9 @@ export default function WeeklyMonitoringDashboard() {
     const currentDate = new Date();
     const weekLabel = getWeekLabel(selectedWeek);
 
+    // Track report generation
+    trackReportGeneration('weekly_monitoring_report', 'html');
+
     // Create HTML content for the export
     const htmlContent = `
       <!DOCTYPE html>
@@ -208,6 +219,9 @@ export default function WeeklyMonitoringDashboard() {
       <head>
         <title>Weekly Monitoring Report - ${weekLabel}</title>
         <style>
+          :root {
+            --report-header-background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
+          }
           body {
             font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
@@ -220,7 +234,10 @@ export default function WeeklyMonitoringDashboard() {
             text-align: center;
             margin-bottom: 40px;
             padding: 30px;
-            background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
+            background: var(
+              --report-header-background,
+              linear-gradient(135deg, #236383 0%, #007E8C 100%)
+            );
             color: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -353,8 +370,13 @@ export default function WeeklyMonitoringDashboard() {
             margin-bottom: 15px;
           }
           @media print {
-            body { background-color: white; padding: 20px; }
-            .header { background: #236383 !important; }
+            body {
+              background-color: white;
+              padding: 20px;
+            }
+            :root {
+              --report-header-background: #236383;
+            }
           }
         </style>
       </head>
@@ -502,6 +524,9 @@ export default function WeeklyMonitoringDashboard() {
       ),
     onMutate: (data) => {
       setEmailingSingleLocation(data.location);
+    },
+    onSuccess: (data, variables) => {
+      trackCommunication('email', variables.location);
     },
     onSettled: () => {
       setEmailingSingleLocation(null);

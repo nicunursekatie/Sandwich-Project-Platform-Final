@@ -29,10 +29,16 @@ import {
   ChevronRight,
   HelpCircle,
   Heart,
+  CheckCircle,
+  AlertCircle,
+  MessageCircle,
+  Info,
 } from 'lucide-react';
 import SendKudosButton from '@/components/send-kudos-button';
+import { MessageComposer } from '@/components/message-composer';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Dialog,
   DialogContent,
@@ -50,23 +56,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import BulkDataManager from '@/components/bulk-data-manager';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
-  hasPermission,
   PERMISSIONS,
   canEditCollection,
   canDeleteCollection,
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { HelpBubble, helpContent } from '@/components/help-system';
-import { 
-  calculateTotalSandwiches, 
-  calculateGroupSandwiches 
+import {
+  calculateTotalSandwiches,
+  calculateGroupSandwiches,
 } from '@/lib/analytics-utils';
+import { logger } from '@/lib/logger';
+import { getCollectionDefaults, getRoleViewDescription } from '@shared/role-view-defaults';
 
 interface ImportResult {
   totalRecords: number;
@@ -84,8 +95,28 @@ interface DuplicateAnalysis {
   duplicates: Array<{
     entries: SandwichCollection[];
     count: number;
-    keepNewest: SandwichCollection;
-    toDelete: SandwichCollection[];
+    duplicateInfo: {
+      collectionDate: string;
+      groupNames: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+    };
+    keepNewest: {
+      id: number;
+      submittedAt: string;
+      createdBy: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+      groupNames: string;
+    };
+    toDelete: Array<{
+      id: number;
+      submittedAt: string;
+      createdBy: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+      groupNames: string;
+    }>;
   }>;
   suspiciousEntries: SandwichCollection[];
   ogDuplicateEntries: Array<{
@@ -100,26 +131,47 @@ export default function SandwichCollectionLog() {
   const { toast } = useToast();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { trackDataEntry, trackButtonClick, trackDownload } = useAnalytics();
+
+  // Get role-based defaults for collections
+  const collectionDefaults = useMemo(() => {
+    if (!user?.role) {
+      return getCollectionDefaults('viewer');
+    }
+    return getCollectionDefaults(user.role);
+  }, [user?.role]);
+
+  // Activity Tracking Integration
+  const {
+    trackActivity,
+    trackClick,
+    trackFormSubmit,
+    trackView,
+    trackCreate,
+    trackUpdate,
+    trackDelete,
+  } = useActivityTracker();
+
+  // Check user permissions using the unified hook
+  const {
+    COLLECTIONS_ADD,
+    COLLECTIONS_EDIT_OWN,
+    COLLECTIONS_EDIT_ALL,
+    COLLECTIONS_DELETE_ALL,
+  } = usePermissions([
+    'COLLECTIONS_ADD',
+    'COLLECTIONS_EDIT_OWN',
+    'COLLECTIONS_EDIT_ALL',
+    'COLLECTIONS_DELETE_ALL',
+  ]);
 
   // Check user permissions for creating collections (automatically grants edit/delete of own)
-  const canCreateCollections =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT);
-  const canEditAllCollections = hasPermission(
-    user,
-    PERMISSIONS.COLLECTIONS_EDIT_ALL
-  );
-  const canDeleteAllCollections = hasPermission(
-    user,
-    PERMISSIONS.COLLECTIONS_DELETE_ALL
-  );
+  const canCreateCollections = COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN;
+  const canEditAllCollections = COLLECTIONS_EDIT_ALL;
+  const canDeleteAllCollections = COLLECTIONS_DELETE_ALL;
   // Simplified approach: CREATE_COLLECTIONS automatically includes edit/delete own permissions
-  const canEditData =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL);
-  const canDeleteData =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_DELETE_ALL);
+  const canEditData = COLLECTIONS_ADD || COLLECTIONS_EDIT_ALL;
+  const canDeleteData = COLLECTIONS_ADD || COLLECTIONS_DELETE_ALL;
   const [editingCollection, setEditingCollection] =
     useState<SandwichCollection | null>(null);
   const [showDuplicateAnalysis, setShowDuplicateAnalysis] = useState(false);
@@ -131,8 +183,18 @@ export default function SandwichCollectionLog() {
   const [selectedSuspiciousIds, setSelectedSuspiciousIds] = useState<
     Set<number>
   >(new Set());
+  const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [selectedKeepIds, setSelectedKeepIds] = useState<Map<number, number>>(
+    new Map()
+  );
+  const [skippedGroups, setSkippedGroups] = useState<Set<number>>(new Set());
+  const [duplicatePage, setDuplicatePage] = useState(0);
+  const DUPLICATES_PER_PAGE = 10;
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [messageCollection, setMessageCollection] = useState<any>(null);
   const [batchEditData, setBatchEditData] = useState({
     hostName: '',
     collectionDate: '',
@@ -158,22 +220,39 @@ export default function SandwichCollectionLog() {
     createdAtTo: '',
   });
 
-  const [sortConfig, setSortConfig] = useState({
-    field: 'collectionDate' as keyof SandwichCollection,
-    direction: 'desc' as 'asc' | 'desc',
-  });
+  // Convert role-based sort default to component format
+  const getInitialSortConfig = useCallback(() => {
+    const sortMap: Record<string, { field: keyof SandwichCollection; direction: 'asc' | 'desc' }> = {
+      'date_desc': { field: 'collectionDate', direction: 'desc' },
+      'date_asc': { field: 'collectionDate', direction: 'asc' },
+      'host_asc': { field: 'hostName', direction: 'asc' },
+      'host_desc': { field: 'hostName', direction: 'desc' },
+      'sandwiches_desc': { field: 'individualSandwiches', direction: 'desc' },
+      'sandwiches_asc': { field: 'individualSandwiches', direction: 'asc' },
+    };
+    return sortMap[collectionDefaults.defaultSort] || { field: 'collectionDate', direction: 'desc' };
+  }, [collectionDefaults.defaultSort]);
+
+  const [sortConfig, setSortConfig] = useState(getInitialSortConfig());
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(collectionDefaults.itemsPerPage);
   const [editFormData, setEditFormData] = useState({
     collectionDate: '',
     hostName: '',
     individualSandwiches: '',
     groupCollections: '',
+    individualDeli: '',
+    individualPbj: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; sandwichCount: number }>
+    Array<{ id: string; groupName: string; count?: number; sandwichCount?: number; deli?: number; pbj?: number; hasTypeBreakdown?: boolean }>
   >([]);
+  const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
+  
+  // Validation state for Edit Collection Dialog
+  const [editIndividualBreakdownError, setEditIndividualBreakdownError] = useState<string>('');
+  const [editGroupBreakdownErrors, setEditGroupBreakdownErrors] = useState<Map<string, string>>(new Map());
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [newCollectionData, setNewCollectionData] = useState({
@@ -187,6 +266,12 @@ export default function SandwichCollectionLog() {
   >([{ id: Math.random().toString(36), groupName: '', sandwichCount: 0 }]);
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] =
     useState(false);
+
+  // Sync state with role defaults when user loads (handles async user fetch)
+  useEffect(() => {
+    setSortConfig(getInitialSortConfig());
+    setItemsPerPage(collectionDefaults.itemsPerPage);
+  }, [collectionDefaults.defaultSort, collectionDefaults.itemsPerPage, getInitialSortConfig]);
 
   // Use standardized calculation functions from analytics-utils.ts for data consistency
   const calculateGroupTotal = calculateGroupSandwiches;
@@ -203,15 +288,99 @@ export default function SandwichCollectionLog() {
       window.removeEventListener('openCollectionForm', handleOpenForm);
   }, []);
 
+  // Track form views when form visibility changes
+  useEffect(() => {
+    if (showSubmitForm) {
+      trackView(
+        'collection_form',
+        'Collections',
+        'Collection Log',
+        'User opened collection form to add new collection data'
+      );
+    }
+  }, [showSubmitForm, trackView]);
+
+  // Track edit form views
+  useEffect(() => {
+    if (editingCollection) {
+      trackView(
+        'edit_collection_form',
+        'Collections',
+        'Collection Log',
+        `Editing collection ID: ${editingCollection.id}`
+      );
+    }
+  }, [editingCollection, trackView]);
+
   // Debounce search filters to prevent excessive queries
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      console.log('Setting debounced filters:', searchFilters);
+      logger.log('Setting debounced filters:', searchFilters);
       setDebouncedSearchFilters(searchFilters);
     }, 500); // Wait 500ms after user stops typing
 
     return () => clearTimeout(timeoutId);
   }, [searchFilters]);
+
+  // Validation for individual sandwich breakdown in Edit dialog
+  useEffect(() => {
+    if (!showEditIndividualBreakdown) {
+      setEditIndividualBreakdownError('');
+      return;
+    }
+
+    const individualDeli = parseInt(editFormData.individualDeli) || 0;
+    const individualPbj = parseInt(editFormData.individualPbj) || 0;
+    const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
+
+    const breakdownSum = individualDeli + individualPbj;
+    const hasAnyValue = individualDeli > 0 || individualPbj > 0;
+
+    if (!hasAnyValue) {
+      // Allow empty breakdown (optional)
+      setEditIndividualBreakdownError('');
+      return;
+    }
+
+    // If any value is entered, enforce sum validation
+    if (breakdownSum !== individualSandwiches) {
+      setEditIndividualBreakdownError(`Type breakdown (${breakdownSum}) must equal total individual sandwiches (${individualSandwiches})`);
+    } else {
+      setEditIndividualBreakdownError('');
+    }
+  }, [showEditIndividualBreakdown, editFormData.individualDeli, editFormData.individualPbj, editFormData.individualSandwiches]);
+
+  // Validation for group breakdown in Edit dialog
+  useEffect(() => {
+    const errors = new Map<string, string>();
+    
+    editGroupCollections.forEach((group) => {
+      // Only validate groups that have type breakdown enabled
+      if (!group.hasTypeBreakdown) {
+        return;
+      }
+
+      const deli = group.deli || 0;
+      const pbj = group.pbj || 0;
+      const breakdownSum = deli + pbj;
+      const hasAnyValue = deli > 0 || pbj > 0;
+      
+      if (!hasAnyValue) {
+        // Allow empty breakdown (optional)
+        return;
+      }
+
+      // Support both 'count' and 'sandwichCount' field names for compatibility
+      const groupCount = group.count || group.sandwichCount || 0;
+
+      // If any value is entered, enforce sum validation
+      if (breakdownSum !== groupCount) {
+        errors.set(group.id, `Group type breakdown (${breakdownSum}) must equal group total (${groupCount})`);
+      }
+    });
+    
+    setEditGroupBreakdownErrors(errors);
+  }, [editGroupCollections]);
 
   // Memoize expensive computations using debounced filters
   // Only fetch all data when we need client-side filtering/sorting, not for basic pagination
@@ -224,8 +393,8 @@ export default function SandwichCollectionLog() {
     () => [
       '/api/sandwich-collections',
       needsAllData ? 'all' : currentPage,
-      needsAllData ? 'all' : itemsPerPage,
       currentPage, // Always include current page for proper cache keying
+      itemsPerPage, // Always include to trigger refetch when items per page changes
       debouncedSearchFilters,
       sortConfig,
     ],
@@ -242,16 +411,16 @@ export default function SandwichCollectionLog() {
     queryKey,
     queryFn: useCallback(async () => {
       if (needsAllData) {
-        console.log(
+        logger.log(
           'Fetching all data for filtering with filters:',
           debouncedSearchFilters
         );
-        const response = await fetch('/api/sandwich-collections?limit=10000');
+        const response = await fetch('/api/sandwich-collections?limit=5000');
         if (!response.ok) throw new Error('Failed to fetch collections');
         const data = await response.json();
 
         let filteredCollections = data.collections || [];
-        console.log('Initial collections count:', filteredCollections.length);
+        logger.log('Initial collections count:', filteredCollections.length);
 
         // Apply filters using debounced values
         if (debouncedSearchFilters.hostName) {
@@ -260,7 +429,7 @@ export default function SandwichCollectionLog() {
             (c: SandwichCollection) =>
               c.hostName?.toLowerCase().includes(searchTerm)
           );
-          console.log(
+          logger.log(
             `Host name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -270,7 +439,7 @@ export default function SandwichCollectionLog() {
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) => new Date(c.collectionDate) >= fromDate
           );
-          console.log(
+          logger.log(
             `Date from filter '${debouncedSearchFilters.collectionDateFrom}' applied: ${filteredCollections.length} results`
           );
         }
@@ -325,7 +494,7 @@ export default function SandwichCollectionLog() {
               return hostNameMatch || groupNameMatch || dateMatch;
             }
           );
-          console.log(
+          logger.log(
             `Global search filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -341,13 +510,23 @@ export default function SandwichCollectionLog() {
               );
             }
           );
-          console.log(
+          logger.log(
             `Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
 
-        // Apply sorting
+        // Apply role-based sorting - show user's own collections first if role specifies
         filteredCollections.sort((a: any, b: any) => {
+          // First, if role specifies showing own first, prioritize user's collections
+          if (collectionDefaults.showOwnFirst && user?.id) {
+            const aIsOwn = a.createdBy === user.id;
+            const bIsOwn = b.createdBy === user.id;
+
+            if (aIsOwn && !bIsOwn) return -1;
+            if (!aIsOwn && bIsOwn) return 1;
+          }
+
+          // Then apply normal sorting
           const aVal = a[sortConfig.field];
           const bVal = b[sortConfig.field];
 
@@ -367,7 +546,7 @@ export default function SandwichCollectionLog() {
           endIndex
         );
 
-        console.log('Pagination debug:', {
+        logger.log('Pagination debug:', {
           currentPage,
           itemsPerPage,
           startIndex,
@@ -375,6 +554,57 @@ export default function SandwichCollectionLog() {
           totalFiltered: filteredCollections.length,
           resultCount: paginatedResults.length,
         });
+
+        // Calculate stats from ALL filtered collections for accurate totals
+        let individualTotal = 0;
+        let groupTotal = 0;
+        const dates: string[] = [];
+        const hostNames = new Set<string>();
+
+        filteredCollections.forEach((collection: any) => {
+          individualTotal += collection.individualSandwiches || 0;
+          // Calculate group total
+          if (collection.groupCollections) {
+            collection.groupCollections.forEach((group: any) => {
+              const count = group.count || group.sandwichCount || 0;
+              groupTotal += count;
+            });
+          }
+          if (collection.collectionDate) {
+            dates.push(collection.collectionDate);
+          }
+          if (collection.hostName) {
+            hostNames.add(collection.hostName);
+          }
+        });
+
+        let dateRange = null;
+        if (dates.length > 0) {
+          dates.sort();
+          const earliestDate = new Date(dates[0]);
+          const latestDate = new Date(dates[dates.length - 1]);
+          dateRange = {
+            earliest: earliestDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+            latest: latestDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+          };
+        }
+
+        const filteredStats = {
+          totalEntries: filteredCollections.length,
+          individualSandwiches: individualTotal,
+          groupSandwiches: groupTotal,
+          completeTotalSandwiches: individualTotal + groupTotal,
+          hostName: hostNames.size === 1 ? Array.from(hostNames)[0] : null,
+          dateRange,
+        };
 
         return {
           collections: paginatedResults,
@@ -384,14 +614,23 @@ export default function SandwichCollectionLog() {
             totalItems: filteredCollections.length,
             itemsPerPage,
           },
+          filteredStats, // Include stats calculated from all filtered data
         };
       } else {
         const sortParam = `&sort=${sortConfig.field}&order=${sortConfig.direction}`;
-        const response = await fetch(
-          `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`
-        );
-        if (!response.ok) throw new Error('Failed to fetch collections');
-        return response.json();
+        const url = `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`;
+        logger.log('Fetching paginated collections:', url);
+        const response = await fetch(url);
+        if (!response.ok) {
+          logger.error('Failed to fetch collections:', response.status, response.statusText);
+          throw new Error('Failed to fetch collections');
+        }
+        const data = await response.json();
+        logger.log('Paginated collections response:', {
+          collectionsCount: data.collections?.length || 0,
+          pagination: data.pagination
+        });
+        return data;
       }
     }, [
       needsAllData,
@@ -399,11 +638,14 @@ export default function SandwichCollectionLog() {
       itemsPerPage,
       debouncedSearchFilters,
       sortConfig,
+      collectionDefaults.showOwnFirst,
+      user?.id,
     ]),
   });
 
   const collections = collectionsResponse?.collections || [];
   const pagination = collectionsResponse?.pagination;
+  const filteredStatsFromResponse = collectionsResponse?.filteredStats;
 
   // Extract pagination info - handle both client-side and server-side pagination responses
   const totalItems = pagination?.totalItems || pagination?.total || 0;
@@ -492,104 +734,14 @@ export default function SandwichCollectionLog() {
     (v) => v && v.trim() !== ''
   );
 
-  // Get all filtered collections when filters are active for statistics calculation
-  const { data: allFilteredData } = useQuery({
-    queryKey: [
-      '/api/sandwich-collections',
-      'all-for-stats',
-      debouncedSearchFilters,
-    ],
-    queryFn: async () => {
-      if (!hasActiveFilters) return { collections: [] };
-
-      const response = await fetch('/api/sandwich-collections?limit=10000');
-      if (!response.ok) throw new Error('Failed to fetch collections');
-      const data = await response.json();
-
-      let filteredCollections = data.collections || [];
-
-      // Apply the same filters as in the main query
-      if (debouncedSearchFilters.hostName) {
-        const searchTerm = debouncedSearchFilters.hostName.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) =>
-            c.hostName?.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      if (debouncedSearchFilters.collectionDateFrom) {
-        const fromDate = new Date(debouncedSearchFilters.collectionDateFrom);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.collectionDate) >= fromDate
-        );
-      }
-
-      if (debouncedSearchFilters.collectionDateTo) {
-        const toDate = new Date(debouncedSearchFilters.collectionDateTo);
-        toDate.setHours(23, 59, 59, 999);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.collectionDate) <= toDate
-        );
-      }
-
-      if (debouncedSearchFilters.createdAtFrom) {
-        const fromDate = new Date(debouncedSearchFilters.createdAtFrom);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.submittedAt) >= fromDate
-        );
-      }
-
-      if (debouncedSearchFilters.createdAtTo) {
-        const toDate = new Date(debouncedSearchFilters.createdAtTo);
-        toDate.setHours(23, 59, 59, 999);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.submittedAt) <= toDate
-        );
-      }
-
-      if (debouncedSearchFilters.globalSearch) {
-        const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => {
-            const hostNameMatch = c.hostName
-              ?.toLowerCase()
-              .includes(searchTerm);
-            const groupData = getGroupCollections(c);
-            const groupNameMatch = groupData.some((group) =>
-              group.groupName?.toLowerCase().includes(searchTerm)
-            );
-            const formattedDate = formatDate(c.collectionDate);
-            const dateMatch = formattedDate.toLowerCase().includes(searchTerm);
-            return hostNameMatch || groupNameMatch || dateMatch;
-          }
-        );
-      }
-
-      if (debouncedSearchFilters.groupName) {
-        const searchTerm = debouncedSearchFilters.groupName.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => {
-            const groupData = getGroupCollections(c);
-            return groupData.some((group) =>
-              group.groupName?.toLowerCase().includes(searchTerm)
-            );
-          }
-        );
-      }
-
-      return { collections: filteredCollections };
-    },
-    enabled: hasActiveFilters,
-  });
-
   // Calculate current statistics to display
-  // When filters are active, always calculate from filtered data (never use global stats)
-  // Priority: allFilteredData > current collections > global stats (only when no filters)
+  // Priority: filtered collections from main query > global stats (only when no filters)
   const currentStats = (() => {
-    // When filters are active, always prioritize filtered data calculations
+    // When filters are active, use pre-calculated stats from response (for all filtered data)
+    // or calculate from current page if pre-calculated stats aren't available
     if (hasActiveFilters) {
-      if (allFilteredData?.collections) {
-        return calculateFilteredStats(allFilteredData.collections);
+      if (filteredStatsFromResponse) {
+        return filteredStatsFromResponse;
       } else if (collections.length > 0) {
         return calculateFilteredStats(collections);
       } else {
@@ -604,12 +756,12 @@ export default function SandwichCollectionLog() {
         };
       }
     }
-    
+
     // No filters active - prefer current collections over global stats for consistency
     if (needsAllData && collections.length > 0) {
       return calculateFilteredStats(collections);
     }
-    
+
     // Fallback to global stats only when no filters are active and no current data
     return {
       totalEntries: totalStats?.totalEntries || 0,
@@ -686,7 +838,7 @@ export default function SandwichCollectionLog() {
     return (
       <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-white border-t border-slate-200 gap-4">
         {/* Left side - Per page selector only */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-base">
           <span className="text-slate-600">Per page:</span>
           <Select
             value={itemsPerPage.toString()}
@@ -795,7 +947,6 @@ export default function SandwichCollectionLog() {
     const [year, month, day] = dateString.split('-').map(Number);
     const localDate = new Date(year, month - 1, day);
     return localDate.toLocaleDateString('en-US', {
-      weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -829,6 +980,8 @@ export default function SandwichCollectionLog() {
         .map((group: any) => ({
           groupName: group.name,
           sandwichCount: group.count,
+          deli: group.deli || 0,
+          pbj: group.pbj || 0,
         }));
     }
 
@@ -851,6 +1004,7 @@ export default function SandwichCollectionLog() {
   // Mutations for update and delete
   const updateMutation = useMutation({
     mutationFn: async (data: { id: number; updates: any }) => {
+      trackDataEntry('sandwich_collection_edit', 'collections_log');
       return await apiRequest(
         'PATCH',
         `/api/sandwich-collections/${data.id}`,
@@ -865,6 +1019,11 @@ export default function SandwichCollectionLog() {
         queryKey: ['/api/sandwich-collections/stats'],
       });
       setEditingCollection(null);
+
+      // Track successful update
+      trackFormSubmit('edit_collection_form', 'Collections', 'Collection Log', true);
+      trackUpdate('sandwich_collection', 'Collections', 'Collection Log', variables.id.toString());
+
       toast({
         title: 'Collection Updated Successfully! ✏️',
         description:
@@ -872,7 +1031,21 @@ export default function SandwichCollectionLog() {
         duration: 4000,
       });
     },
-    onError: () => {
+    onError: (error, variables) => {
+      // Track failed update
+      trackFormSubmit('edit_collection_form', 'Collections', 'Collection Log', false);
+      trackActivity({
+        action: 'Update Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to update collection ID: ${variables.id}`,
+        metadata: {
+          collectionId: variables.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        },
+      });
+
       toast({
         title: 'Error',
         description: 'Failed to update collection. Please try again.',
@@ -883,28 +1056,70 @@ export default function SandwichCollectionLog() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
+      trackButtonClick('delete_collection', 'collections_log');
       const result = await apiRequest(
         'DELETE',
         `/api/sandwich-collections/${id}`
       );
-      return result;
+      return { result, id };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections'],
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections/stats'],
       });
-      toast({
-        title: 'Collection Deleted Successfully 🗑️',
-        description:
-          'The sandwich collection record has been permanently removed from the system.',
-        duration: 4000,
+
+      // Track successful deletion
+      trackDelete('sandwich_collection', 'Collections', 'Collection Log', data.id.toString());
+
+      const { dismiss } = toast({
+        title: 'Collection Deleted 🗑️',
+        description: 'Click Undo to restore',
+        duration: 5000,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                await apiRequest('POST', `/api/sandwich-collections/${data.id}/restore`);
+                queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections/stats'] });
+                dismiss();
+                toast({
+                  title: 'Collection Restored ✅',
+                  description: 'The collection has been successfully restored.',
+                });
+              } catch (error) {
+                toast({
+                  title: 'Error',
+                  description: 'Failed to restore collection.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Undo
+          </button>
+        ),
       });
     },
-    onError: (error: any) => {
-      console.error('Delete collection error:', error);
+    onError: (error: any, id: number) => {
+      logger.error('Delete collection error:', error);
+
+      // Track failed deletion
+      trackActivity({
+        action: 'Delete Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to delete collection ID: ${id}`,
+        metadata: {
+          collectionId: id,
+          error: error?.message || 'Unknown error occurred',
+          timestamp: new Date().toISOString()
+        },
+      });
 
       // Check if it's just an auth error but the deletion might have worked
       // We'll refresh the data to see if it actually got deleted
@@ -937,18 +1152,19 @@ export default function SandwichCollectionLog() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log('=== CLIENT MUTATION DEBUG ===');
-      console.log('Submitting data:', JSON.stringify(data, null, 2));
+      logger.log('=== CLIENT MUTATION DEBUG ===');
+      logger.log('Submitting data:', JSON.stringify(data, null, 2));
+      trackDataEntry('sandwich_collection', 'collections_log');
       try {
         const result = await apiRequest(
           'POST',
           '/api/sandwich-collections',
           data
         );
-        console.log('API call successful, result:', result);
+        logger.log('API call successful, result:', result);
         return result;
       } catch (error) {
-        console.error('API call failed:', error);
+        logger.error('API call failed:', error);
         throw error;
       }
     },
@@ -974,13 +1190,31 @@ export default function SandwichCollectionLog() {
         { id: Math.random().toString(36), groupName: '', sandwichCount: 0 },
       ]);
       setNewCollectionGroupOnlyMode(false);
+
+      // Track successful form submission
+      trackFormSubmit('collection_form', 'Collections', 'Collection Log', true);
+      trackCreate('sandwich_collection', 'Collections', 'Collection Log', response?.id?.toString());
+
       toast({
         title: 'Collection Successfully Added! 🥪',
         description: `Recorded ${totalSandwiches} sandwiches from ${variables.hostName} on ${new Date(variables.collectionDate).toLocaleDateString()}. Thank you for your contribution!`,
         duration: 5000,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      // Track failed form submission
+      trackFormSubmit('collection_form', 'Collections', 'Collection Log', false);
+      trackActivity({
+        action: 'Submit Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to create collection: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        metadata: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        },
+      });
+
       toast({
         title: 'Submission Failed',
         description:
@@ -1016,7 +1250,7 @@ export default function SandwichCollectionLog() {
         description: `Successfully imported ${result.successCount} of ${result.totalRecords} records.`,
       });
       if (result.errorCount > 0) {
-        console.log('Import errors:', result.errors);
+        logger.log('Import errors:', result.errors);
       }
       // Reset file input
       if (fileInputRef.current) {
@@ -1043,6 +1277,13 @@ export default function SandwichCollectionLog() {
     onSuccess: (result: DuplicateAnalysis) => {
       setDuplicateAnalysis(result);
       setShowDuplicateAnalysis(true);
+
+      const initialKeepIds = new Map<number, number>();
+      result.duplicates.forEach((group, index) => {
+        initialKeepIds.set(index, group.keepNewest.id);
+      });
+      setSelectedKeepIds(initialKeepIds);
+
       toast({
         title: 'Analysis complete',
         description: `Found ${result.totalDuplicateEntries} duplicate entries and ${result.suspiciousPatterns} suspicious patterns.`,
@@ -1072,6 +1313,9 @@ export default function SandwichCollectionLog() {
       setShowDuplicateAnalysis(false);
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
+      setSelectedKeepIds(new Map());
+      setSkippedGroups(new Set());
+      setDuplicatePage(0);
       toast({
         title: 'Cleanup completed',
         description: `Successfully cleaned ${result.deletedCount} duplicate entries.`,
@@ -1099,6 +1343,9 @@ export default function SandwichCollectionLog() {
       setShowDuplicateAnalysis(false);
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
+      setSelectedKeepIds(new Map());
+      setSkippedGroups(new Set());
+      setDuplicatePage(0);
       toast({
         title: 'Selected entries deleted',
         description: `Successfully deleted ${result.deletedCount} selected entries.`,
@@ -1118,7 +1365,7 @@ export default function SandwichCollectionLog() {
       ids: number[];
       updates: Partial<SandwichCollection>;
     }) => {
-      console.log('Batch edit request:', data);
+      logger.log('Batch edit request:', data);
       const response = await fetch('/api/sandwich-collections/batch-edit', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1127,12 +1374,12 @@ export default function SandwichCollectionLog() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Batch edit error response:', errorData);
+        logger.error('Batch edit error response:', errorData);
         throw new Error(errorData.message || 'Failed to update collections');
       }
 
       const result = await response.json();
-      console.log('Batch edit success response:', result);
+      logger.log('Batch edit success response:', result);
       return result;
     },
     onSuccess: (result: any) => {
@@ -1148,7 +1395,7 @@ export default function SandwichCollectionLog() {
       });
     },
     onError: (error: any) => {
-      console.error('Batch edit mutation error:', error);
+      logger.error('Batch edit mutation error:', error);
       toast({
         title: 'Batch edit failed',
         description:
@@ -1241,7 +1488,7 @@ export default function SandwichCollectionLog() {
         description: `All ${allCollections.length} collections exported to CSV with complete data including group totals.`,
       });
     } catch (error) {
-      console.error('CSV Export Error:', error);
+      logger.error('CSV Export Error:', error);
       toast({
         title: 'Export failed',
         description: 'Failed to export collections data. Please try again.',
@@ -1320,22 +1567,37 @@ export default function SandwichCollectionLog() {
       });
       return;
     }
+
+    // Track batch edit button click
+    trackClick('batch_edit_button', 'Collections', 'Collection Log', `Opening batch edit for ${selectedCollections.size} collections`);
+    trackActivity({
+      action: 'Click',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Opened batch edit dialog',
+      metadata: {
+        selectedCount: selectedCollections.size,
+        selectedIds: Array.from(selectedCollections),
+        timestamp: new Date().toISOString()
+      },
+    });
+
     setShowBatchEdit(true);
   };
 
   const submitBatchEdit = () => {
-    console.log('submitBatchEdit called with batchEditData:', batchEditData);
-    console.log('selectedCollections:', Array.from(selectedCollections));
+    logger.log('submitBatchEdit called with batchEditData:', batchEditData);
+    logger.log('selectedCollections:', Array.from(selectedCollections));
 
     const updates: Partial<SandwichCollection> = {};
     if (batchEditData.hostName) updates.hostName = batchEditData.hostName;
     if (batchEditData.collectionDate)
       updates.collectionDate = batchEditData.collectionDate;
 
-    console.log('Prepared updates:', updates);
+    logger.log('Prepared updates:', updates);
 
     if (Object.keys(updates).length === 0) {
-      console.log('No updates to apply');
+      logger.log('No updates to apply');
       toast({
         title: 'No changes specified',
         description: 'Please specify at least one field to update.',
@@ -1344,7 +1606,7 @@ export default function SandwichCollectionLog() {
       return;
     }
 
-    console.log('Submitting batch edit with:', {
+    logger.log('Submitting batch edit with:', {
       ids: Array.from(selectedCollections),
       updates,
     });
@@ -1365,22 +1627,48 @@ export default function SandwichCollectionLog() {
       return;
     }
 
+    // Track batch delete button click
+    trackClick('batch_delete_button', 'Collections', 'Collection Log', `Attempting to delete ${selectedCollections.size} collections`);
+
     if (
       confirm(
         `Are you sure you want to delete ${selectedCollections.size} selected collections? This action cannot be undone.`
       )
     ) {
+      // Track confirmed batch delete
+      trackActivity({
+        action: 'Batch Delete',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Confirmed batch deletion of ${selectedCollections.size} collections`,
+        metadata: {
+          selectedCount: selectedCollections.size,
+          selectedIds: Array.from(selectedCollections),
+          timestamp: new Date().toISOString()
+        },
+      });
+
       batchDeleteMutation.mutate(Array.from(selectedCollections));
     }
   };
 
   const handleEdit = (collection: SandwichCollection) => {
     setEditingCollection(collection);
+
+    // Track edit button click
+    trackClick('edit_collection_button', 'Collections', 'Collection Log', `Editing collection ID: ${collection.id}`);
+
+    // Check if individual type breakdown exists
+    const hasIndividualBreakdown = !!(collection.individualDeli || collection.individualPbj);
+    setShowEditIndividualBreakdown(hasIndividualBreakdown);
+    
     setEditFormData({
       collectionDate: collection.collectionDate,
       hostName: collection.hostName,
       individualSandwiches: collection.individualSandwiches.toString(),
       groupCollections: '', // Not used with new schema
+      individualDeli: collection.individualDeli?.toString() || '',
+      individualPbj: collection.individualPbj?.toString() || '',
     });
 
     // Parse existing group collections from new schema fields
@@ -1394,11 +1682,21 @@ export default function SandwichCollectionLog() {
     ) {
       collection.groupCollections.forEach((group: any, index: number) => {
         if (group.name && group.count > 0) {
-          groupList.push({
+          const hasTypeData = !!(group.deli || group.pbj);
+          const groupData: any = {
             id: `edit-${index + 1}`,
             groupName: group.name,
             sandwichCount: group.count,
-          });
+            hasTypeBreakdown: hasTypeData, // Track if this group has type breakdown
+          };
+          
+          // Include type breakdown if available
+          if (hasTypeData) {
+            groupData.deli = group.deli || 0;
+            groupData.pbj = group.pbj || 0;
+          }
+          
+          groupList.push(groupData);
         }
       });
     } else {
@@ -1408,6 +1706,7 @@ export default function SandwichCollectionLog() {
           id: 'edit-1',
           groupName: collection.group1Name,
           sandwichCount: collection.group1Count,
+          hasTypeBreakdown: false,
         });
       }
       if (collection.group2Name && collection.group2Count) {
@@ -1415,6 +1714,7 @@ export default function SandwichCollectionLog() {
           id: 'edit-2',
           groupName: collection.group2Name,
           sandwichCount: collection.group2Count,
+          hasTypeBreakdown: false,
         });
       }
     }
@@ -1431,21 +1731,55 @@ export default function SandwichCollectionLog() {
   const handleUpdate = () => {
     if (!editingCollection) return;
 
+    // Check for individual breakdown validation errors
+    if (editIndividualBreakdownError) {
+      toast({ 
+        title: 'Invalid individual breakdown', 
+        description: editIndividualBreakdownError,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    // Check for group breakdown validation errors
+    if (editGroupBreakdownErrors.size > 0) {
+      const firstError = Array.from(editGroupBreakdownErrors.values())[0];
+      toast({ 
+        title: 'Invalid group breakdown', 
+        description: firstError,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     // Convert editGroupCollections to new schema format
     const validGroups = editGroupCollections.filter(
-      (g) => g.groupName.trim() && g.sandwichCount > 0
+      (g) => g.groupName.trim() && (g.sandwichCount ?? 0) > 0
     );
 
-    // Prepare groupCollections array for unlimited groups
-    const groupCollections = validGroups.map((group) => ({
-      name: group.groupName,
-      count: group.sandwichCount,
-    }));
+    // Prepare groupCollections array for unlimited groups with type breakdown
+    const groupCollections = validGroups.map((group) => {
+      const groupData: any = {
+        name: group.groupName,
+        count: group.sandwichCount,
+      };
+      
+      // Only include type breakdown if this group has it enabled
+      if (group.hasTypeBreakdown && (group.deli || group.pbj)) {
+        groupData.deli = group.deli || 0;
+        groupData.pbj = group.pbj || 0;
+      }
+      
+      return groupData;
+    });
 
     const updates: any = {
       collectionDate: editFormData.collectionDate,
       hostName: editFormData.hostName,
       individualSandwiches: parseInt(editFormData.individualSandwiches) || 0,
+      // Include individual type breakdown
+      individualDeli: parseInt(editFormData.individualDeli) || 0,
+      individualPbj: parseInt(editFormData.individualPbj) || 0,
       // Include the new unlimited groups array
       groupCollections: groupCollections,
       // Keep legacy fields for backward compatibility (first 2 groups only)
@@ -1466,8 +1800,22 @@ export default function SandwichCollectionLog() {
     const newId = `edit-${Date.now()}`;
     setEditGroupCollections([
       ...editGroupCollections,
-      { id: newId, groupName: '', sandwichCount: 0 },
+      { id: newId, groupName: '', sandwichCount: 0, hasTypeBreakdown: false },
     ]);
+
+    // Track group addition
+    trackClick('add_group_button', 'Collections', 'Collection Log', 'Added group row in edit form');
+    trackActivity({
+      action: 'Add Group',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Added new group row in edit collection form',
+      metadata: {
+        formType: 'edit',
+        totalGroups: editGroupCollections.length + 1,
+        timestamp: new Date().toISOString()
+      },
+    });
   };
 
   const removeEditGroupRow = (id: string) => {
@@ -1475,6 +1823,9 @@ export default function SandwichCollectionLog() {
       setEditGroupCollections(
         editGroupCollections.filter((group) => group.id !== id)
       );
+
+      // Track group removal
+      trackClick('remove_group_button', 'Collections', 'Collection Log', 'Removed group row in edit form');
     }
   };
 
@@ -1491,13 +1842,8 @@ export default function SandwichCollectionLog() {
   };
 
   const handleDelete = (id: number) => {
-    if (
-      confirm(
-        'Are you sure you want to delete this collection? This action cannot be undone.'
-      )
-    ) {
-      deleteMutation.mutate(id);
-    }
+    // Delete is now triggered by ConfirmationDialog's onConfirm
+    deleteMutation.mutate(id);
   };
 
   const handleNewCollectionSubmit = (e: React.FormEvent) => {
@@ -1553,10 +1899,10 @@ export default function SandwichCollectionLog() {
         ? 0
         : parseInt(newCollectionData.individualSandwiches) || 0,
       // New schema: separate group columns (snake_case to match database)
-      group1_name: validGroupCollections[0]?.groupName.trim() || null,
-      group1_count: validGroupCollections[0]?.sandwichCount || null,
-      group2_name: validGroupCollections[1]?.groupName.trim() || null,
-      group2_count: validGroupCollections[1]?.sandwichCount || null,
+      group1_name: validGroupCollections[0]?.groupName.trim() ?? null,
+      group1_count: validGroupCollections[0]?.sandwichCount ?? null,
+      group2_name: validGroupCollections[1]?.groupName.trim() ?? null,
+      group2_count: validGroupCollections[1]?.sandwichCount ?? null,
     };
 
     createMutation.mutate(submissionData);
@@ -1571,6 +1917,20 @@ export default function SandwichCollectionLog() {
         sandwichCount: 0,
       },
     ]);
+
+    // Track group addition
+    trackClick('add_group_button', 'Collections', 'Collection Log', 'Added group row in new collection form');
+    trackActivity({
+      action: 'Add Group',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Added new group row in new collection form',
+      metadata: {
+        formType: 'new',
+        totalGroups: newGroupCollections.length + 1,
+        timestamp: new Date().toISOString()
+      },
+    });
   };
 
   const removeNewGroupRow = (id: string) => {
@@ -1578,6 +1938,9 @@ export default function SandwichCollectionLog() {
       setNewGroupCollections(
         newGroupCollections.filter((group) => group.id !== id)
       );
+
+      // Track group removal
+      trackClick('remove_group_button', 'Collections', 'Collection Log', 'Removed group row in new collection form');
     }
   };
 
@@ -1608,18 +1971,23 @@ export default function SandwichCollectionLog() {
   };
 
   const handleFilterChange = (filterUpdates: Partial<typeof searchFilters>) => {
-    console.log('Filter change:', filterUpdates);
+    logger.log('Filter change:', filterUpdates);
     setSearchFilters((prev) => {
       const newFilters = { ...prev, ...filterUpdates };
-      console.log('New search filters:', newFilters);
+      logger.log('New search filters:', newFilters);
       return newFilters;
     });
     setCurrentPage(1);
   };
 
   const handleClearFilters = () => {
+    // Track clear filters button click
+    trackClick('clear_filters_button', 'Collections', 'Collection Log', 'Cleared all filters');
+
     const emptyFilters = {
+      globalSearch: '',
       hostName: '',
+      groupName: '',
       collectionDateFrom: '',
       collectionDateTo: '',
       createdAtFrom: '',
@@ -1667,7 +2035,7 @@ export default function SandwichCollectionLog() {
               />
               <span className="truncate">Collections</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-sm sm:text-base text-slate-500 mt-1">
               Manage collection data and bulk operations
             </p>
           </div>
@@ -1676,7 +2044,7 @@ export default function SandwichCollectionLog() {
               onClick={() => setShowDataManagement(true)}
               variant="outline"
               size="sm"
-              className="flex items-center space-x-2 w-full sm:w-auto btn-outline-tsp h-10 text-sm"
+              className="flex items-center space-x-2 w-full sm:w-auto btn-outline-tsp h-10 text-base"
               style={{
                 borderColor: 'var(--color-brand-teal)',
                 color: 'var(--color-brand-teal)',
@@ -1691,6 +2059,21 @@ export default function SandwichCollectionLog() {
       </div>
 
       <div className="px-3 sm:px-6 py-4">
+        {/* Role-customized view indicator */}
+        {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (
+          <div className="mb-4 p-3 rounded border-l-4" style={{
+            backgroundColor: 'rgba(0, 126, 140, 0.08)',
+            borderLeftColor: '#007E8C'
+          }}>
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#007E8C' }} />
+              <p className="text-sm" style={{ color: '#236383' }}>
+                {getRoleViewDescription(user.role, 'collections')}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Global Search Field - Prominent placement at top */}
         <div className="mb-6">
           <div className="relative max-w-md mx-auto">
@@ -1708,7 +2091,7 @@ export default function SandwichCollectionLog() {
                   globalSearch: e.target.value,
                 }))
               }
-              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-base"
+              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
             />
             {searchFilters.globalSearch && (
               <button
@@ -1723,7 +2106,7 @@ export default function SandwichCollectionLog() {
             )}
           </div>
           {searchFilters.globalSearch && (
-            <p className="text-center text-sm text-slate-600 mt-2">
+            <p className="text-center text-base text-slate-600 mt-2">
               Searching across host names, group names, and dates
             </p>
           )}
@@ -1734,8 +2117,8 @@ export default function SandwichCollectionLog() {
           <div className="space-y-4">
             {/* Filter Status and Context */}
             {hasActiveFilters && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                <div className="flex items-center text-blue-800">
+              <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-3 text-base">
+                <div className="flex items-center text-brand-primary-dark">
                   <Filter className="w-4 h-4 mr-2" />
                   <span className="font-medium">
                     {currentStats.hostName
@@ -1744,7 +2127,7 @@ export default function SandwichCollectionLog() {
                   </span>
                 </div>
                 {currentStats.dateRange && (
-                  <div className="text-brand-primary mt-1 text-xs">
+                  <div className="text-brand-primary mt-1 text-sm">
                     Date range: {currentStats.dateRange.earliest} -{' '}
                     {currentStats.dateRange.latest}
                   </div>
@@ -1754,23 +2137,23 @@ export default function SandwichCollectionLog() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <p className="text-sm text-slate-500 font-medium">
+                <p className="text-base text-slate-500 font-medium">
                   {hasActiveFilters
                     ? `${currentStats.totalEntries}`
                     : `${totalItems}`}
                   {hasActiveFilters ? ' filtered' : ''} entries
                 </p>
                 {hasActiveFilters && !currentStats.hostName && (
-                  <span className="text-xs text-brand-primary bg-blue-100 px-2 py-1 rounded-full">
+                  <span className="text-sm text-brand-primary bg-brand-primary-light px-2 py-1 rounded-full">
                     Multiple Hosts
                   </span>
                 )}
               </div>
               <div className="text-right">
-                <div className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text drop-shadow-sm">
+                <div className="text-xl sm:text-2xl font-black text-[#FBAD3F] drop-shadow-sm">
                   {currentStats.completeTotalSandwiches.toLocaleString()}
                 </div>
-                <div className="text-sm font-semibold text-amber-700 uppercase tracking-wide">
+                <div className="text-base font-semibold text-[#FBAD3F] uppercase tracking-wide">
                   {hasActiveFilters ? 'Filtered' : 'Total'} Sandwiches
                 </div>
               </div>
@@ -1780,20 +2163,20 @@ export default function SandwichCollectionLog() {
             <div
               className={`flex justify-center gap-8 rounded-xl py-4 px-6 border shadow-sm ${
                 hasActiveFilters
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
-                  : 'bg-gradient-to-r from-teal-50 to-amber-50 border-amber-200'
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-brand-primary-border'
+                  : 'bg-gradient-to-r from-teal-50 to-yellow-50 border-yellow-200'
               }`}
             >
               <div className="text-center">
                 <div
                   className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
-                    hasActiveFilters ? 'text-blue-700' : 'text-teal-700'
+                    hasActiveFilters ? 'text-brand-primary' : 'text-teal-700'
                   }`}
                 >
                   {currentStats.individualSandwiches.toLocaleString()}
                 </div>
                 <div
-                  className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
+                  className={`text-base font-semibold uppercase tracking-wide mt-1 ${
                     hasActiveFilters ? 'text-brand-primary' : 'text-teal-600'
                   }`}
                 >
@@ -1804,20 +2187,20 @@ export default function SandwichCollectionLog() {
                 className={`w-px bg-gradient-to-b ${
                   hasActiveFilters
                     ? 'from-blue-300 to-indigo-300'
-                    : 'from-teal-300 to-amber-300'
+                    : 'from-teal-300 to-yellow-300'
                 }`}
               ></div>
               <div className="text-center">
                 <div
                   className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
-                    hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                    hasActiveFilters ? 'text-indigo-600' : 'text-[#FBAD3F]'
                   }`}
                 >
                   {currentStats.groupSandwiches.toLocaleString()}
                 </div>
                 <div
-                  className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
-                    hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                  className={`text-base font-semibold uppercase tracking-wide mt-1 ${
+                    hasActiveFilters ? 'text-indigo-600' : 'text-[#FBAD3F]'
                   }`}
                 >
                   Groups
@@ -1827,7 +2210,7 @@ export default function SandwichCollectionLog() {
 
             {/* Global Stats Reference when filtering */}
             {hasActiveFilters && totalStats && (
-              <div className="text-center text-xs text-slate-500 border-t pt-3">
+              <div className="text-center text-sm text-slate-500 border-t pt-3">
                 <span>
                   Global totals:{' '}
                   {totalStats.completeTotalSandwiches.toLocaleString()}{' '}
@@ -1851,7 +2234,7 @@ export default function SandwichCollectionLog() {
                   onClick={() => setShowSubmitForm(!showSubmitForm)}
                   variant="default"
                   size="sm"
-                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
+                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
                 >
                   <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span className="font-medium">
@@ -1939,7 +2322,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="hostFilter"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Host/Location Name
               </Label>
@@ -1958,13 +2341,13 @@ export default function SandwichCollectionLog() {
                   onClick={() =>
                     handleFilterChange({ hostName: 'OG Sandwich Project' })
                   }
-                  className="px-3 py-1 text-xs bg-amber-100 text-amber-800 border border-amber-300 rounded-full hover:bg-amber-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-amber-100 text-amber-800 border border-amber-300 rounded-full hover:bg-amber-200 transition-colors"
                 >
                   👑 Historical OG Project
                 </button>
                 <button
                   onClick={() => handleFilterChange({ hostName: '' })}
-                  className="px-3 py-1 text-xs bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
                 >
                   All Locations
                 </button>
@@ -1973,7 +2356,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="groupFilter"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Group Name
               </Label>
@@ -1990,7 +2373,7 @@ export default function SandwichCollectionLog() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   onClick={() => handleFilterChange({ groupName: '' })}
-                  className="px-3 py-1 text-xs bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
                 >
                   All Groups
                 </button>
@@ -1999,7 +2382,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="collectionFromDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Collection Date From
               </Label>
@@ -2017,7 +2400,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="collectionToDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Collection Date To
               </Label>
@@ -2035,7 +2418,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="createdFromDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Created Date From
               </Label>
@@ -2053,7 +2436,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="createdToDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Created Date To
               </Label>
@@ -2071,13 +2454,13 @@ export default function SandwichCollectionLog() {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="text-sm text-slate-600">
+              <div className="text-base text-slate-600">
                 Showing {(currentPage - 1) * itemsPerPage + 1}-
                 {Math.min(currentPage * itemsPerPage, totalItems)} of{' '}
                 {totalItems} entries
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                <Label className="text-sm font-medium text-slate-700">
+                <Label className="text-base font-medium text-slate-700">
                   Sort by:
                 </Label>
                 <div className="flex items-center space-x-2">
@@ -2141,7 +2524,7 @@ export default function SandwichCollectionLog() {
                     selectedCollections.size < filteredCollections.length
                 )
               }
-              className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900"
+              className="flex items-center space-x-2 text-base text-slate-600 hover:text-slate-900"
             >
               {selectedCollections.size === filteredCollections.length ? (
                 <CheckSquare className="w-4 h-4" />
@@ -2151,7 +2534,7 @@ export default function SandwichCollectionLog() {
               <span>Select All</span>
             </button>
             {selectedCollections.size > 0 && (
-              <span className="text-sm text-slate-500">
+              <span className="text-base text-slate-500">
                 {selectedCollections.size} of {filteredCollections.length}{' '}
                 selected
               </span>
@@ -2173,100 +2556,141 @@ export default function SandwichCollectionLog() {
             return (
               <div
                 key={collection.id}
-                className={`border rounded-lg p-3 sm:p-4 ${
+                className={`border-b py-4 px-3 hover:bg-slate-50 transition-colors ${
                   isSelected
-                    ? 'bg-blue-50 border-blue-200'
+                    ? 'bg-brand-primary-lighter'
                     : isInactiveHost
-                      ? 'bg-gray-100 border-gray-400 opacity-70'
-                      : 'border-slate-200'
+                      ? 'bg-gray-50 opacity-70'
+                      : ''
                 }`}
               >
-                {/* Mobile-first Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    {/* Date and Host on mobile */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      {(canEditAllCollections ||
-                        canEditCollection(user, collection)) && (
-                        <button
-                          onClick={() =>
-                            handleSelectCollection(collection.id, !isSelected)
-                          }
-                          className="flex items-center w-4 h-4 shrink-0"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-brand-primary" />
-                          ) : (
-                            <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                          )}
-                        </button>
-                      )}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-1">
-                        <div
-                          className={`flex items-center ${isInactiveHost ? 'text-gray-600' : 'text-slate-700'}`}
-                        >
-                          <Calendar
-                            className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-500' : ''}`}
-                          />
-                          <span className="font-medium text-sm sm:text-base">
-                            {formatDate(collection.collectionDate)}
-                          </span>
-                        </div>
-                        <div
-                          className={`flex items-center ${isInactiveHost ? 'text-gray-500' : 'text-slate-600'}`}
-                        >
-                          <User
-                            className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-400' : ''}`}
-                          />
-                          <span className="text-sm sm:text-base truncate max-w-[200px] sm:max-w-none">
-                            {collection.hostName}
-                          </span>
-                          {collection.hostName === 'OG Sandwich Project' && (
-                            <span className="ml-2 text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300 hidden sm:inline">
-                              👑 HISTORICAL
-                            </span>
-                          )}
-                          {isInactiveHost && (
-                            <span className="ml-2 text-xs bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium hidden sm:inline">
-                              INACTIVE HOST
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                {/* Responsive layout: vertical stack for all rows */}
+                <div className="flex flex-col gap-3">
+                  {/* First Row: Checkbox, Date, Host */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {/* Checkbox */}
+                    {(canEditAllCollections ||
+                      canEditCollection(user, collection)) && (
+                      <button
+                        onClick={() =>
+                          handleSelectCollection(collection.id, !isSelected)
+                        }
+                        className="flex items-center shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-brand-primary" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                        )}
+                      </button>
+                    )}
+
+                    {/* Date - American format (Oct 1, 2025) */}
+                    <div className="shrink-0">
+                      <span className="text-sm lg:text-base font-semibold text-slate-700 whitespace-nowrap">
+                        {formatDate(collection.collectionDate)}
+                      </span>
                     </div>
-                    {/* Mobile badges */}
-                    <div className="flex gap-1 mt-1 sm:hidden">
-                      {collection.hostName === 'OG Sandwich Project' && (
-                        <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300">
-                          👑 HISTORICAL
+
+                    {/* Location/Host */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm lg:text-base font-medium text-slate-900 break-words">
+                          {collection.hostName}
                         </span>
-                      )}
-                      {isInactiveHost && (
-                        <span className="text-xs bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium">
-                          INACTIVE HOST
-                        </span>
-                      )}
+                        {collection.hostName === 'OG Sandwich Project' && (
+                          <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-1 rounded-full font-medium border border-amber-300 shrink-0">
+                            👑
+                          </span>
+                        )}
+                        {isInactiveHost && (
+                          <span className="text-xs bg-gray-300 text-gray-800 px-2 py-1 rounded-full font-medium shrink-0">
+                            INACTIVE
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {/* Total count and actions - mobile responsive */}
-                  <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                    <div className="text-right">
-                      <div
-                        className={`text-xl sm:text-2xl font-bold ${isInactiveHost ? 'text-gray-700' : 'text-slate-900'}`}
-                      >
-                        {totalSandwiches}
-                      </div>
-                      <div
-                        className={`text-xs ${isInactiveHost ? 'text-gray-500' : 'text-slate-500'}`}
-                      >
-                        total
+
+                  {/* Second Row: Individual & Groups (locked columns for alignment) */}
+                  <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] sm:min-h-[88px] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                    {/* Individual - show placeholder to keep column alignment when empty */}
+                    <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
+                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Individual</div>
+                      {collection.individualSandwiches > 0 ? (
+                        <div className="text-base lg:text-lg font-bold">
+                          {(() => {
+                            const hasTypes = collection.individualDeli || collection.individualPbj;
+                            if (hasTypes) {
+                              return (
+                                <div className="space-y-0.5">
+                                  {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
+                                  {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
+                                </div>
+                              );
+                            }
+                            return collection.individualSandwiches;
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />
+                      )}
+                    </div>
+
+                    {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
+                    <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
+                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Groups</div>
+                      <div className="text-base lg:text-lg font-bold">
+                        {(() => {
+                          if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
+                            return <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />;
+                          }
+
+                          return (
+                            <div className="space-y-2">
+                              {groupData.map((group: any, index: number) => {
+                                const hasTypes = group.deli || group.pbj;
+                                const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
+                                const colorIndex = index % colors.length;
+                                const borderColor = colors[colorIndex];
+                                const bgColor = `${borderColor}10`;
+                                return (
+                                  <div
+                                    key={index}
+                                    className="p-2 rounded"
+                                    style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
+                                  >
+                                    <div className="mb-1 font-semibold text-sm">{group.groupName}</div>
+                                    {hasTypes ? (
+                                      <div className="space-y-0.5 text-base">
+                                        {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
+                                        {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
+                                      </div>
+                                    ) : (
+                                      <div className="text-base">{group.sandwichCount}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {/* Send Kudos Button - only show if collection has a submitter and user can send kudos */}
+                  </div>
+
+                  {/* Third Row: Total & Actions */}
+                  <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4 ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                    {/* Total */}
+                    <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0 justify-self-end">
+                      <div className="text-xs text-slate-500 font-semibold">Total:</div>
+                      <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
                       {collection.createdBy &&
-                        collection.createdByName &&
-                        hasPermission(user, PERMISSIONS.SEND_KUDOS) && (
+                        collection.createdByName && (
                           <SendKudosButton
                             recipientId={collection.createdBy}
                             recipientName={collection.createdByName}
@@ -2276,99 +2700,57 @@ export default function SandwichCollectionLog() {
                             size="sm"
                             variant="outline"
                             iconOnly={true}
-                            className="h-7 w-7 p-0 sm:h-8 sm:w-8 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           />
                         )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMessageCollection(collection)}
+                        title="Message about this collection"
+                        className="h-8 w-8 p-0"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
                       {canEditCollection(user, collection) && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(collection)}
-                          className="h-7 w-7 p-0 sm:h-8 sm:w-8 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                          className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
                         >
-                          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Edit className="w-4 h-4" />
                         </Button>
                       )}
                       {canDeleteCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(collection.id)}
-                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 sm:h-8 sm:w-8 bg-white border-gray-300"
-                        >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          }
+                          title="Delete Collection Entry"
+                          description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
+                          confirmText="Delete"
+                          variant="destructive"
+                          onConfirm={() => handleDelete(collection.id)}
+                        />
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Details - Mobile optimized */}
-                <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-                  {/* Individual Collections */}
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">
-                          Individual
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900">
-                        {collection.individualSandwiches}
+                  {/* Submission info - small footer detail */}
+                  <div className="mt-2 ml-4 sm:ml-20 md:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
+                    Submitted {formatSubmittedAt(collection.submittedAt)}
+                    {collection.createdByName && (
+                      <span className="ml-1 font-medium">
+                        by {collection.createdByName}
                       </span>
-                    </div>
-                  </div>
-
-                  {/* Group Collections */}
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">
-                          Groups
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900">
-                        {calculateGroupTotal(collection)}
-                      </span>
-                    </div>
-                    {Array.isArray(groupData) && groupData.length > 0 && (
-                      <div className="space-y-1">
-                        {groupData.map((group: any, index: number) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between text-xs bg-white rounded px-2 py-1"
-                          >
-                            <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
-                              {group.groupName}
-                            </span>
-                            <span className="text-slate-700 font-medium ml-2">
-                              {group.sandwichCount}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
                     )}
-                    {(!Array.isArray(groupData) || groupData.length === 0) && (
-                      <div className="text-xs text-slate-500 italic">
-                        No group collections
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="text-xs text-slate-500 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                    <span>
-                      Submitted {formatSubmittedAt(collection.submittedAt)}
-                      {collection.createdByName && (
-                        <span className="text-slate-600 font-medium ml-1">
-                          by {collection.createdByName}
-                        </span>
-                      )}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -2389,10 +2771,10 @@ export default function SandwichCollectionLog() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Bottom Pagination Controls */}
-      {totalItems > 0 && <PaginationControls position="bottom" />}
+        {/* Bottom Pagination Controls */}
+        {totalItems > 0 && <PaginationControls position="bottom" />}
+      </div>
 
       {/* Duplicate Analysis Modal */}
       <Dialog
@@ -2413,7 +2795,7 @@ export default function SandwichCollectionLog() {
                   <div className="text-2xl font-bold text-slate-900">
                     {duplicateAnalysis.totalCollections}
                   </div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-base text-slate-600">
                     Total Collections
                   </div>
                 </div>
@@ -2421,7 +2803,7 @@ export default function SandwichCollectionLog() {
                   <div className="text-2xl font-bold text-red-600">
                     {duplicateAnalysis.totalDuplicateEntries}
                   </div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-base text-slate-600">
                     Duplicate Entries
                   </div>
                 </div>
@@ -2429,29 +2811,295 @@ export default function SandwichCollectionLog() {
 
               {duplicateAnalysis.totalDuplicateEntries > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-medium text-slate-900">
-                    Exact Duplicates
-                  </h3>
-                  {duplicateAnalysis.duplicates.map((group, index) => (
-                    <div
-                      key={index}
-                      className="border border-slate-200 rounded-lg p-3"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">
-                          {group.entries[0].hostName} -{' '}
-                          {group.entries[0].collectionDate}
-                        </span>
-                        <span className="text-sm text-slate-600">
-                          {group.count} entries
-                        </span>
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        Will keep newest entry (ID: {group.keepNewest.id}) and
-                        remove {group.toDelete.length} duplicates
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-slate-900">
+                      Exact Duplicates (
+                      {duplicateAnalysis.totalDuplicateEntries})
+                    </h3>
+                  </div>
+                  <div className="text-base text-slate-600 mb-2">
+                    Use radio buttons to select which entry to keep in each
+                    duplicate group, or click "Skip" to leave duplicates as-is. Only selected groups will be processed.
+                  </div>
+                  <div className="mb-3 flex items-center justify-between bg-slate-100 p-3 rounded-lg">
+                    <div className="text-sm text-slate-600">
+                      Showing duplicates {duplicatePage * DUPLICATES_PER_PAGE + 1} - {Math.min((duplicatePage + 1) * DUPLICATES_PER_PAGE, duplicateAnalysis.duplicates.length)} of {duplicateAnalysis.duplicates.length}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDuplicatePage(Math.max(0, duplicatePage - 1))}
+                        disabled={duplicatePage === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDuplicatePage(duplicatePage + 1)}
+                        disabled={(duplicatePage + 1) * DUPLICATES_PER_PAGE >= duplicateAnalysis.duplicates.length}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
+                    <div className="space-y-3 p-3">
+                      {duplicateAnalysis.duplicates
+                        .slice(duplicatePage * DUPLICATES_PER_PAGE, (duplicatePage + 1) * DUPLICATES_PER_PAGE)
+                        .map((group, sliceIndex) => {
+                          const groupIndex = duplicatePage * DUPLICATES_PER_PAGE + sliceIndex;
+                          const isSkipped = skippedGroups.has(groupIndex);
+                          return (
+                        <div
+                          key={groupIndex}
+                          className={`border rounded-lg p-3 ${
+                            isSkipped
+                              ? 'bg-slate-100 border-slate-300 opacity-60'
+                              : 'border-slate-100 bg-slate-50'
+                          }`}
+                        >
+                          {/* Duplicate Info Header */}
+                          <div className={`mb-3 p-3 border rounded-lg ${
+                            isSkipped
+                              ? 'bg-slate-200 border-slate-400'
+                              : 'bg-blue-50 border-blue-200'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-4 h-4 text-blue-600" />
+                                <span className="font-semibold text-blue-900">
+                                  {new Date(
+                                    group.duplicateInfo.collectionDate
+                                  ).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                              <span className="text-base font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                                {group.count} duplicate
+                                {group.count !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-base">
+                              <div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">
+                                  Group Names
+                                </div>
+                                <div className="text-blue-900 font-medium">
+                                  {group.duplicateInfo.groupNames ||
+                                    'No groups'}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">
+                                  Sandwich Counts
+                                </div>
+                                <div className="text-blue-900 font-medium">
+                                  {group.duplicateInfo.individualSandwiches}{' '}
+                                  individual,{' '}
+                                  {group.duplicateInfo.totalSandwiches} total
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Show ALL entries with radio buttons to select which to keep */}
+                          <div className="space-y-2">
+                            <div className="text-sm font-bold text-slate-700 mb-2 uppercase">
+                              Select which entry to keep:
+                            </div>
+                            <RadioGroup
+                              value={
+                                selectedKeepIds.get(groupIndex)?.toString() ||
+                                group.keepNewest.id.toString()
+                              }
+                              onValueChange={(value) => {
+                                const newMap = new Map(selectedKeepIds);
+                                newMap.set(groupIndex, parseInt(value));
+                                setSelectedKeepIds(newMap);
+                              }}
+                            >
+                              {/* Combine all entries (keepNewest + toDelete) into one list */}
+                              {[group.keepNewest, ...group.toDelete].map(
+                                (entry) => {
+                                  const isSelected =
+                                    selectedKeepIds.get(groupIndex) ===
+                                    entry.id;
+                                  return (
+                                    <div
+                                      key={entry.id}
+                                      className={`flex items-start space-x-3 p-3 border-2 rounded-lg transition-colors ${
+                                        isSelected
+                                          ? 'bg-green-50 border-green-400 shadow-sm'
+                                          : 'bg-white border-slate-200 hover:border-slate-300'
+                                      }`}
+                                      data-testid={`entry-${entry.id}`}
+                                    >
+                                      <div className="flex items-start pt-1">
+                                        <RadioGroupItem
+                                          value={entry.id.toString()}
+                                          id={`entry-${groupIndex}-${entry.id}`}
+                                          className="mt-0.5"
+                                        />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center space-x-2">
+                                            {isSelected && (
+                                              <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
+                                                ✓ Keeping
+                                              </span>
+                                            )}
+                                            <span
+                                              className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                            >
+                                              ID: {entry.id}
+                                            </span>
+                                          </div>
+                                          <div
+                                            className={`text-base font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}
+                                          >
+                                            <User className="w-4 h-4 inline mr-1" />
+                                            {entry.createdBy}
+                                          </div>
+                                        </div>
+
+                                        {/* Group Names Display */}
+                                        {entry.groupNames && (
+                                          <div
+                                            className={`mb-2 p-2 border rounded ${
+                                              isSelected
+                                                ? 'bg-green-100 border-green-300'
+                                                : 'bg-slate-50 border-slate-200'
+                                            }`}
+                                          >
+                                            <div className="flex items-center space-x-2">
+                                              <Users
+                                                className={`w-4 h-4 ${isSelected ? 'text-green-700' : 'text-slate-600'}`}
+                                              />
+                                              <div>
+                                                <div
+                                                  className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                                >
+                                                  Groups
+                                                </div>
+                                                <div
+                                                  className={`text-base font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}
+                                                >
+                                                  {entry.groupNames}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between text-base mb-2">
+                                          <div className="flex items-center space-x-3">
+                                            <span
+                                              className={
+                                                isSelected
+                                                  ? 'text-slate-700'
+                                                  : 'text-slate-600'
+                                              }
+                                            >
+                                              <Sandwich className="w-3 h-3 inline mr-1" />
+                                              {entry.individualSandwiches}{' '}
+                                              individual
+                                            </span>
+                                          </div>
+                                          <span
+                                            className={`font-bold px-2 py-1 rounded ${
+                                              isSelected
+                                                ? 'text-green-900 bg-green-100'
+                                                : 'text-slate-900 bg-slate-100'
+                                            }`}
+                                          >
+                                            {entry.totalSandwiches} total
+                                          </span>
+                                        </div>
+
+                                        <div
+                                          className={`text-sm ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                        >
+                                          <Calendar className="w-3 h-3 inline mr-1" />
+                                          Submitted:{' '}
+                                          {new Date(
+                                            entry.submittedAt
+                                          ).toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                              )}
+                            </RadioGroup>
+
+                            {/* Skip/Keep Both Button */}
+                            <div className="mt-3 pt-3 border-t">
+                              <Button
+                                variant={isSkipped ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const newSkipped = new Set(skippedGroups);
+                                  if (isSkipped) {
+                                    newSkipped.delete(groupIndex);
+                                  } else {
+                                    newSkipped.add(groupIndex);
+                                  }
+                                  setSkippedGroups(newSkipped);
+                                }}
+                                className="w-full"
+                              >
+                                {isSkipped ? '✓ Skipped - Will Keep All Duplicates' : 'Skip This Group (Keep All)'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                  {duplicateAnalysis.duplicates.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="text-base text-blue-800">
+                        {(() => {
+                          const totalEntriesToDelete =
+                            duplicateAnalysis.duplicates.reduce(
+                              (sum, group, index) => {
+                                if (skippedGroups.has(index)) {
+                                  return sum; // Skip this group
+                                }
+                                const keepId =
+                                  selectedKeepIds.get(index) ||
+                                  group.keepNewest.id;
+                                const allIds = [
+                                  group.keepNewest,
+                                  ...group.toDelete,
+                                ].map((e) => e.id);
+                                return (
+                                  sum +
+                                  allIds.filter((id) => id !== keepId).length
+                                );
+                              },
+                              0
+                            );
+                          const groupsToProcess = duplicateAnalysis.duplicates.length - skippedGroups.size;
+                          const skippedText = skippedGroups.size > 0 ? ` (${skippedGroups.size} group${skippedGroups.size === 1 ? '' : 's'} skipped)` : '';
+                          return `${totalEntriesToDelete} duplicate entr${totalEntriesToDelete === 1 ? 'y' : 'ies'} will be deleted from ${groupsToProcess} group${groupsToProcess === 1 ? '' : 's'}${skippedText}`;
+                        })()}
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
 
@@ -2478,7 +3126,7 @@ export default function SandwichCollectionLog() {
                               : allIds
                           );
                         }}
-                        className="text-xs"
+                        className="text-sm"
                       >
                         {selectedSuspiciousIds.size ===
                         duplicateAnalysis.suspiciousEntries.length
@@ -2487,7 +3135,7 @@ export default function SandwichCollectionLog() {
                       </Button>
                     </div>
                   </div>
-                  <div className="text-sm text-slate-600 mb-2">
+                  <div className="text-base text-slate-600 mb-2">
                     Review and select specific entries to delete. These entries
                     have problematic host names or data entry errors.
                   </div>
@@ -2517,18 +3165,18 @@ export default function SandwichCollectionLog() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-medium text-sm">
+                                  <span className="font-medium text-base">
                                     "{entry.hostName || 'No Host'}"
                                   </span>
-                                  <span className="text-xs text-slate-500">
+                                  <span className="text-sm text-slate-500">
                                     ID: {entry.id}
                                   </span>
                                 </div>
-                                <div className="text-sm font-medium text-slate-900">
+                                <div className="text-base font-medium text-slate-900">
                                   {totalSandwiches} sandwiches
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
+                              <div className="flex items-center justify-between text-sm text-slate-600 mt-1">
                                 <div>
                                   <Calendar className="w-3 h-3 inline mr-1" />
                                   {entry.collectionDate || 'No Date'}
@@ -2550,7 +3198,7 @@ export default function SandwichCollectionLog() {
                                 </div>
                               </div>
                               {groupData.length > 0 && (
-                                <div className="text-xs text-slate-500 mt-1">
+                                <div className="text-sm text-slate-500 mt-1">
                                   Groups:{' '}
                                   {groupData
                                     .map(
@@ -2568,7 +3216,7 @@ export default function SandwichCollectionLog() {
                   </div>
                   {selectedSuspiciousIds.size > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <div className="text-sm text-amber-800">
+                      <div className="text-base text-amber-800">
                         {selectedSuspiciousIds.size} entr
                         {selectedSuspiciousIds.size === 1 ? 'y' : 'ies'}{' '}
                         selected for deletion
@@ -2584,11 +3232,69 @@ export default function SandwichCollectionLog() {
                   onClick={() => {
                     setShowDuplicateAnalysis(false);
                     setSelectedSuspiciousIds(new Set());
+                    setSelectedDuplicateIds(new Set());
+                    setSelectedKeepIds(new Map());
+                    setSkippedGroups(new Set());
+                    setDuplicatePage(0);
                   }}
                   className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
+                {duplicateAnalysis.duplicates.length > 0 && (
+                  <Button
+                    onClick={() => {
+                      const idsToDelete: number[] = [];
+                      duplicateAnalysis.duplicates.forEach((group, index) => {
+                        if (skippedGroups.has(index)) {
+                          return; // Skip this group
+                        }
+                        const keepId =
+                          selectedKeepIds.get(index) || group.keepNewest.id;
+                        const allIds = [
+                          group.keepNewest,
+                          ...group.toDelete,
+                        ].map((e) => e.id);
+                        allIds.forEach((id) => {
+                          if (id !== keepId) {
+                            idsToDelete.push(id);
+                          }
+                        });
+                      });
+                      if (idsToDelete.length > 0) {
+                        cleanSelectedSuspiciousMutation.mutate(idsToDelete);
+                      }
+                    }}
+                    disabled={cleanSelectedSuspiciousMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                  >
+                    {cleanSelectedSuspiciousMutation.isPending
+                      ? 'Deleting...'
+                      : (() => {
+                          const totalToDelete =
+                            duplicateAnalysis.duplicates.reduce(
+                              (sum, group, index) => {
+                                if (skippedGroups.has(index)) {
+                                  return sum; // Skip this group
+                                }
+                                const keepId =
+                                  selectedKeepIds.get(index) ||
+                                  group.keepNewest.id;
+                                const allIds = [
+                                  group.keepNewest,
+                                  ...group.toDelete,
+                                ].map((e) => e.id);
+                                return (
+                                  sum +
+                                  allIds.filter((id) => id !== keepId).length
+                                );
+                              },
+                              0
+                            );
+                          return `Delete Duplicates (${totalToDelete})`;
+                        })()}
+                  </Button>
+                )}
                 {selectedSuspiciousIds.size > 0 && (
                   <Button
                     variant="outline"
@@ -2602,7 +3308,7 @@ export default function SandwichCollectionLog() {
                   >
                     {cleanSelectedSuspiciousMutation.isPending
                       ? 'Deleting...'
-                      : `Delete Selected (${selectedSuspiciousIds.size})`}
+                      : `Delete Selected Suspicious (${selectedSuspiciousIds.size})`}
                   </Button>
                 )}
                 {duplicateAnalysis.suspiciousPatterns > 0 && (
@@ -2617,17 +3323,6 @@ export default function SandwichCollectionLog() {
                       : `Delete All Suspicious (${duplicateAnalysis.suspiciousPatterns})`}
                   </Button>
                 )}
-                {duplicateAnalysis.totalDuplicateEntries > 0 && (
-                  <Button
-                    onClick={() => cleanDuplicatesMutation.mutate('exact')}
-                    disabled={cleanDuplicatesMutation.isPending}
-                    className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-                  >
-                    {cleanDuplicatesMutation.isPending
-                      ? 'Cleaning...'
-                      : `Clean Duplicates (${duplicateAnalysis.totalDuplicateEntries})`}
-                  </Button>
-                )}
               </div>
             </div>
           )}
@@ -2637,9 +3332,14 @@ export default function SandwichCollectionLog() {
       {/* Edit Modal */}
       <Dialog
         open={!!editingCollection}
-        onOpenChange={(open) => !open && setEditingCollection(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingCollection(null);
+            setShowEditIndividualBreakdown(false);
+          }
+        }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Collection</DialogTitle>
           </DialogHeader>
@@ -2663,9 +3363,23 @@ export default function SandwichCollectionLog() {
               <Label htmlFor="edit-host">Host Name</Label>
               <Select
                 value={editFormData.hostName}
-                onValueChange={(value) =>
-                  setEditFormData({ ...editFormData, hostName: value })
-                }
+                onValueChange={(value) => {
+                  setEditFormData({ ...editFormData, hostName: value });
+
+                  // Track location selection
+                  trackActivity({
+                    action: 'Select',
+                    section: 'Collections',
+                    feature: 'Collection Log',
+                    details: `Selected host/location: ${value}`,
+                    metadata: {
+                      formType: 'edit',
+                      selectedHost: value,
+                      collectionId: editingCollection?.id,
+                      timestamp: new Date().toISOString()
+                    },
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select host" />
@@ -2682,18 +3396,134 @@ export default function SandwichCollectionLog() {
 
             <div>
               <Label htmlFor="edit-individual">Individual Sandwiches</Label>
-              <Input
-                id="edit-individual"
-                type="number"
-                min="0"
-                value={editFormData.individualSandwiches}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    individualSandwiches: e.target.value,
-                  })
-                }
-              />
+              {!showEditIndividualBreakdown ? (
+                <Input
+                  id="edit-individual"
+                  type="number"
+                  min="0"
+                  value={editFormData.individualSandwiches}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      individualSandwiches: e.target.value,
+                    })
+                  }
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <Label htmlFor="edit-deli" className="text-sm">Deli</Label>
+                    <Input
+                      id="edit-deli"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualDeli}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualDeli: value,
+                          individualSandwiches: (
+                            (parseInt(value) || 0) +
+                            (parseInt(editFormData.individualPbj) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-pbj" className="text-sm">PBJ</Label>
+                    <Input
+                      id="edit-pbj"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualPbj}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualPbj: value,
+                          individualSandwiches: (
+                            (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(value) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Toggle for individual sandwich type breakdown */}
+              <div className="mt-3">
+                <div className={`border rounded-lg p-3 ${showEditIndividualBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="edit-individual-breakdown"
+                      checked={showEditIndividualBreakdown}
+                      onChange={(e) => {
+                        setShowEditIndividualBreakdown(e.target.checked);
+                        if (!e.target.checked) {
+                          // Clear breakdown when hiding
+                          setEditFormData({
+                            ...editFormData,
+                            individualDeli: '',
+                            individualPbj: '',
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                    />
+                    <label htmlFor="edit-individual-breakdown" className="text-sm font-medium cursor-pointer">
+                      Specify sandwich types (Deli/PBJ)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Status for Individual Breakdown */}
+              {showEditIndividualBreakdown && (
+                <div className="mt-2">
+                  {(() => {
+                    const individualDeli = parseInt(editFormData.individualDeli) || 0;
+                    const individualPbj = parseInt(editFormData.individualPbj) || 0;
+                    const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
+                    const breakdownSum = individualDeli + individualPbj;
+                    const hasAnyValue = individualDeli > 0 || individualPbj > 0;
+                    
+                    if (!hasAnyValue) {
+                      return null;
+                    }
+
+                    const isValid = breakdownSum === individualSandwiches;
+                    
+                    return (
+                      <div className={`border rounded-lg p-3 ${isValid ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                        <div className="flex items-center gap-2">
+                          {isValid ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              Breakdown Total: {breakdownSum} / Expected: {individualSandwiches}
+                            </div>
+                            {!isValid && (
+                              <div className="text-xs text-red-600 mt-1">
+                                {editIndividualBreakdownError}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             <div>
@@ -2701,64 +3531,192 @@ export default function SandwichCollectionLog() {
 
               <div className="space-y-3 mt-2">
                 {editGroupCollections.map((group) => (
-                  <div key={group.id} className="flex gap-3 items-center">
-                    <Input
-                      placeholder="Group name"
-                      value={group.groupName || ''}
-                      onChange={(e) =>
-                        updateEditGroupCollection(
-                          group.id,
-                          'groupName',
-                          e.target.value
-                        )
-                      }
-                      className="flex-1"
-                      required
-                    />
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Count"
-                      value={
-                        group.sandwichCount === 0
-                          ? ''
-                          : group.sandwichCount?.toString() || ''
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Allow empty string or valid numbers
-                        if (value === '' || value === '0') {
+                  <div key={group.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex gap-3 items-center">
+                      <Input
+                        placeholder="Group name"
+                        value={group.groupName || ''}
+                        onChange={(e) =>
                           updateEditGroupCollection(
                             group.id,
-                            'sandwichCount',
-                            0
-                          );
-                        } else {
-                          updateEditGroupCollection(
-                            group.id,
-                            'sandwichCount',
-                            parseInt(value) || 0
-                          );
+                            'groupName',
+                            e.target.value
+                          )
                         }
-                      }}
-                      onFocus={(e) => {
-                        // Clear the field if it shows 0 when focused
-                        if (e.target.value === '0') {
-                          e.target.value = '';
-                        }
-                      }}
-                      className="w-24"
-                    />
-                    {editGroupCollections.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeEditGroupRow(group.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        className="flex-1"
+                        required
+                      />
+                      {!group.hasTypeBreakdown && (
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Count"
+                          value={(() => {
+                            const groupCount = group.count || group.sandwichCount || 0;
+                            return groupCount === 0 ? '' : groupCount.toString();
+                          })()}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '0') {
+                              updateEditGroupCollection(
+                                group.id,
+                                'sandwichCount',
+                                0
+                              );
+                            } else {
+                              updateEditGroupCollection(
+                                group.id,
+                                'sandwichCount',
+                                parseInt(value) || 0
+                              );
+                            }
+                          }}
+                          onFocus={(e) => {
+                            if (e.target.value === '0') {
+                              e.target.value = '';
+                            }
+                          }}
+                          className="w-24"
+                        />
+                      )}
+                      
+                      {/* Individual toggle for this group's type breakdown */}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          id={`group-${group.id}-breakdown`}
+                          checked={group.hasTypeBreakdown || false}
+                          onChange={(e) => {
+                            const updatedGroup = {
+                              ...group,
+                              hasTypeBreakdown: e.target.checked,
+                            };
+                            if (!e.target.checked) {
+                              // Clear type data when disabling
+                              updatedGroup.deli = undefined;
+                              updatedGroup.pbj = undefined;
+                            }
+                            setEditGroupCollections(
+                              editGroupCollections.map((g) =>
+                                g.id === group.id ? updatedGroup : g
+                              )
+                            );
+                          }}
+                          className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                          title="Show sandwich types for this group"
+                        />
+                        <label 
+                          htmlFor={`group-${group.id}-breakdown`} 
+                          className="text-xs text-slate-600 cursor-pointer whitespace-nowrap"
+                          title="Show sandwich types for this group"
+                        >
+                          Types
+                        </label>
+                      </div>
+                      
+                      {editGroupCollections.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeEditGroupRow(group.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Type breakdown fields for group when enabled */}
+                    {group.hasTypeBreakdown && (
+                      <>
+                        <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
+                          <div>
+                            <Label className="text-xs">Deli</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.deli || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  deli: value,
+                                  sandwichCount: value + (group.pbj || 0),
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">PBJ</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.pbj || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  pbj: value,
+                                  sandwichCount: (group.deli || 0) + value,
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Validation Status for Group Breakdown */}
+                        {(() => {
+                          const deli = group.deli || 0;
+                          const pbj = group.pbj || 0;
+                          const breakdownSum = deli + pbj;
+                          const hasAnyValue = deli > 0 || pbj > 0;
+                          
+                          if (!hasAnyValue) {
+                            return null;
+                          }
+
+                          const groupCount = group.count || group.sandwichCount || 0;
+                          const isValid = breakdownSum === groupCount;
+                          const errorMsg = editGroupBreakdownErrors.get(group.id);
+                          
+                          return (
+                            <div className={`border rounded-lg p-2 mt-2 ${isValid ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                              <div className="flex items-center gap-2">
+                                {isValid ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-red-600" />
+                                )}
+                                <div className="flex-1">
+                                  <div className="text-xs font-medium">
+                                    Breakdown Total: {breakdownSum} / Expected: {groupCount}
+                                  </div>
+                                  {!isValid && errorMsg && (
+                                    <div className="text-xs text-red-600 mt-1">
+                                      {errorMsg}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                   </div>
                 ))}
@@ -2784,7 +3742,7 @@ export default function SandwichCollectionLog() {
               </Button>
               <Button
                 onClick={handleUpdate}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || editIndividualBreakdownError !== '' || editGroupBreakdownErrors.size > 0}
               >
                 {updateMutation.isPending ? 'Updating...' : 'Update Collection'}
               </Button>
@@ -2800,7 +3758,7 @@ export default function SandwichCollectionLog() {
             <DialogTitle>Batch Edit Collections</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600">
               Editing {selectedCollections.size} selected collections. Leave
               fields empty to keep existing values.
             </p>
@@ -2875,6 +3833,26 @@ export default function SandwichCollectionLog() {
               cleanDuplicatesMutation.mutate('og-duplicates')
             }
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={!!messageCollection} onOpenChange={() => setMessageCollection(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Message About Collection: {messageCollection?.hostName}
+            </DialogTitle>
+          </DialogHeader>
+          {messageCollection && (
+            <MessageComposer
+              contextType="collection"
+              contextId={messageCollection.id.toString()}
+              contextTitle={`${messageCollection.hostName} collection`}
+              onSent={() => setMessageCollection(null)}
+              onCancel={() => setMessageCollection(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

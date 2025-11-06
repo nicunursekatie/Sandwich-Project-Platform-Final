@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
   Database,
   FileText,
@@ -26,6 +27,7 @@ import {
   Download,
   Scan,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface MappingStats {
   hostName: string;
@@ -61,17 +63,16 @@ export default function BulkDataManager({
   const [showHostRecords, setShowHostRecords] = useState(false);
 
   // Permission checks
-  const canImport = hasPermission(user, PERMISSIONS.IMPORT_DATA);
-  const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
+  const { DATA_IMPORT: canImport, DATA_EXPORT: canExport } = usePermissions(['DATA_IMPORT', 'DATA_EXPORT']);
 
   // Fetch collection statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ['/api/collection-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
 
   // Fetch host mapping distribution
-  const { data: mappingStats, isLoading: mappingLoading } = useQuery({
+  const { data: mappingStats, isLoading: mappingLoading } = useQuery<any>({
     queryKey: ['/api/host-mapping-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
@@ -141,7 +142,7 @@ export default function BulkDataManager({
       });
     },
     onError: (error) => {
-      console.error('Data fix failed:', error);
+      logger.error('Data fix failed:', error);
       toast({
         title: 'Fix Failed',
         description: 'There was an error fixing data issues. Please try again.',
@@ -420,7 +421,7 @@ export default function BulkDataManager({
                   <Button
                     onClick={() => fixDataMutation.mutate()}
                     disabled={fixDataMutation.isPending}
-                    className="w-full flex items-center space-x-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="w-full flex items-center space-x-2 bg-brand-primary-lighter border-brand-primary-border-strong text-brand-primary hover:bg-brand-primary-light"
                     variant="outline"
                   >
                     {fixDataMutation.isPending ? (
@@ -461,14 +462,14 @@ export default function BulkDataManager({
                 </div>
               </div>
 
-              <div className="border rounded-lg p-4 bg-blue-50">
+              <div className="border rounded-lg p-4 bg-brand-primary-lighter">
                 <div className="flex items-start space-x-3">
                   <Database className="w-5 h-5 text-brand-primary mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-blue-900">
+                    <h4 className="font-medium text-brand-primary-darker">
                       Data Import Status
                     </h4>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-brand-primary mt-1">
                       Your CSV data import is running in the background. The
                       system automatically maps new records as they're imported.
                       You can manually trigger mapping above if needed.

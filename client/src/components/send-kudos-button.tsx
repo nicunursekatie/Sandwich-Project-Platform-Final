@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { Heart, Star, Trophy, Sparkles, Target } from 'lucide-react';
+import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
+import { logger } from '@/lib/logger';
 
 interface SendKudosButtonProps {
   recipientId: string;
@@ -33,6 +35,7 @@ export default function SendKudosButton({
 }: SendKudosButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { trackKudosSent } = useUserActivityTracking();
   const [hasSentKudos, setHasSentKudos] = useState(false);
 
   // Check if kudos already sent when component mounts
@@ -63,7 +66,7 @@ export default function SendKudosButton({
 
   // Don't render if recipientId is empty or invalid
   if (!recipientId || !recipientId.trim()) {
-    console.warn('SendKudosButton: Not rendering due to empty recipientId', {
+    logger.warn('SendKudosButton: Not rendering due to empty recipientId', {
       recipientId,
       recipientName,
       contextType,
@@ -79,11 +82,10 @@ export default function SendKudosButton({
   }
 
   // Don't render if user doesn't have permission to send kudos
-  if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
-    console.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
+  if (!hasPermission(user as any, PERMISSIONS.KUDOS_SEND)) {
+    logger.warn('SendKudosButton: User lacks KUDOS_SEND permission', {
       user: user ? { id: (user as any).id, email: (user as any).email } : null,
-      hasPermission: hasPermission(user, PERMISSIONS.SEND_KUDOS),
-      SEND_KUDOS: PERMISSIONS.SEND_KUDOS,
+      KUDOS_SEND: PERMISSIONS.KUDOS_SEND,
     });
     return null;
   }
@@ -97,7 +99,7 @@ export default function SendKudosButton({
       );
 
       // Debug logging
-      console.log('SendKudosButton mutation data:', {
+      logger.log('SendKudosButton mutation data:', {
         recipientId,
         recipientName,
         contextType,
@@ -107,7 +109,7 @@ export default function SendKudosButton({
       });
 
       if (!recipientId || !recipientId.trim()) {
-        console.error('SendKudosButton: Empty recipientId detected', {
+        logger.error('SendKudosButton: Empty recipientId detected', {
           recipientId,
           recipientName,
           contextType,
@@ -117,7 +119,7 @@ export default function SendKudosButton({
         throw new Error(`Cannot send kudos: recipient ID is empty`);
       }
 
-      return await apiRequest('POST', '/api/messaging/kudos', {
+      return await apiRequest('POST', '/api/messaging/kudos/send', {
         recipientId,
         contextType,
         contextId,
@@ -138,6 +140,9 @@ export default function SendKudosButton({
         description: `Kudos sent to ${recipientName}!`,
         duration: 3000,
       });
+
+      // Track the kudos send event
+      trackKudosSent(recipientName, contextTitle);
     },
     onError: (error: any) => {
       // Check if it's a 409 error (kudos already sent)

@@ -30,6 +30,7 @@ import {
 } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
 import { mlEngine } from '../../services/notifications/ml-engine';
+import { smartDeliveryService } from '../../services/notifications/smart-delivery';
 import { z } from 'zod';
 import logger from '../../utils/logger';
 
@@ -616,21 +617,40 @@ smartNotificationsRouter.get('/rules', async (req, res) => {
 
 /**
  * Helper method to deliver notification
- * TODO: Integrate with existing notification delivery systems
+ * Integrates with existing notification delivery systems
  */
 async function deliverNotification(notification: any, channel: string): Promise<void> {
-  smartLogger.info('Delivering notification', { 
-    notificationId: notification.id, 
-    channel, 
-    userId: notification.userId 
-  });
-  
-  // TODO: Implement actual delivery logic
-  // This would integrate with:
-  // - WebSocket for in_app notifications
-  // - Email service for email notifications  
-  // - SMS service for SMS notifications
-  // - Push notification service for push notifications
+  try {
+    smartLogger.info('Delivering notification', {
+      notificationId: notification.id,
+      channel,
+      userId: notification.userId
+    });
+
+    // Use the smart delivery service to deliver the notification
+    // This integrates with:
+    // - WebSocket for in_app notifications
+    // - SendGrid for email notifications
+    // - Twilio for SMS notifications
+    // - FCM/APNS for push notifications
+    await smartDeliveryService.deliverNotificationNow(notification, channel);
+
+    smartLogger.info('Notification delivered successfully', {
+      notificationId: notification.id,
+      channel,
+      userId: notification.userId
+    });
+
+  } catch (error) {
+    smartLogger.error('Failed to deliver notification', {
+      error,
+      notificationId: notification.id,
+      channel,
+      userId: notification.userId
+    });
+    // Don't throw - allow the notification to be stored even if delivery fails
+    // The user can still see it in their notification history
+  }
 }
 
 export { smartNotificationsRouter };

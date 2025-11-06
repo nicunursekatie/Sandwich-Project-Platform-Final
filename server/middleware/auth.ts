@@ -2,6 +2,53 @@ import type { RequestHandler } from 'express';
 import { storage } from '../storage-wrapper';
 import { PERMISSIONS } from '../../shared/auth-utils';
 import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
+import { logger } from '../utils/production-safe-logger';
+
+// Global middleware to block inactive (pending approval) users
+export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
+  try {
+    // Allow unauthenticated requests to proceed (they'll be caught by other auth checks)
+    if (!req.user && !req.session?.user) {
+      return next();
+    }
+
+    const user = req.user || req.session?.user;
+    
+    // Define exact path+method combinations that pending users CAN access
+    // Using exact matching to prevent bypassing mutation endpoints
+    const allowedRoutes = [
+      { method: 'GET', path: '/api/auth/user' },      // Get current user info
+      { method: 'POST', path: '/api/auth/login' },    // Login
+      { method: 'POST', path: '/api/auth/logout' },   // Logout
+      { method: 'POST', path: '/api/auth/signup' },   // Signup
+      { method: 'GET', path: '/api/user/me' },        // Get own profile (read-only)
+      { method: 'GET', path: '/healthz' },            // Health check
+      { method: 'GET', path: '/api/login' },          // Login page
+      { method: 'GET', path: '/api/logout' },         // Logout page
+    ];
+
+    // Check if the request method+path combination is allowed for inactive users
+    const isAllowedRoute = allowedRoutes.some(
+      route => route.method === req.method && req.path === route.path
+    );
+    
+    // If user is inactive and trying to access a protected route, block them
+    if (user && !user.isActive && !isAllowedRoute) {
+      logger.log(`❌ INACTIVE USER BLOCKED: ${user.email} attempted to access ${req.path}`);
+      return res.status(403).json({
+        message: 'Account pending approval',
+        code: 'PENDING_APPROVAL',
+        details: 'Your account is awaiting admin approval. You will be notified once approved.',
+        status: user.metadata?.status || 'pending_approval',
+      });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error in blockInactiveUsers middleware:', error);
+    next(); // Allow request to proceed on error to avoid breaking the app
+  }
+};
 
 // Single, authoritative requirePermission middleware
 // DENIES ACCESS BY DEFAULT - only grants access if explicitly authorized
@@ -11,7 +58,7 @@ export const requirePermission = (permission: string): RequestHandler => {
       // STEP 1: Ensure user is authenticated - DENY if not
       const user = req.user || req.session?.user;
       if (!user) {
-        console.log(`❌ AUTH: No user context for ${permission} - DENIED`);
+        logger.log(`❌ AUTH: No user context for ${permission} - DENIED`);
         return res.status(401).json({ message: 'Authentication required' });
       }
 
@@ -24,7 +71,7 @@ export const requirePermission = (permission: string): RequestHandler => {
             currentUser = freshUser;
             req.user = freshUser;
           } else {
-            console.log(
+            logger.log(
               `❌ AUTH: User ${user.email} not found or inactive - DENIED`
             );
             return res
@@ -32,7 +79,7 @@ export const requirePermission = (permission: string): RequestHandler => {
               .json({ message: 'User account not found or inactive' });
           }
         } catch (dbError) {
-          console.error(
+          logger.error(
             'Database error fetching user in requirePermission:',
             dbError
           );
@@ -47,18 +94,18 @@ export const requirePermission = (permission: string): RequestHandler => {
       const permissionResult = checkPermission(currentUser, permission);
       
       if (permissionResult.granted) {
-        console.log(
+        logger.log(
           `✅ AUTH: ${permissionResult.reason} for ${permission} to ${currentUser.email}`
         );
         return next();
       }
 
       // DEFAULT: DENY ACCESS
-      console.log(
+      logger.log(
         `❌ AUTH: Permission ${permission} DENIED for ${currentUser.email} (role: ${currentUser.role})`
       );
-      console.log(`   Reason: ${permissionResult.reason}`);
-      console.log(`   Available permissions:`, permissionResult.userPermissions);
+      logger.log(`   Reason: ${permissionResult.reason}`);
+      logger.log(`   Available permissions:`, permissionResult.userPermissions);
       
       return res.status(403).json({
         message: 'Insufficient permissions',
@@ -68,7 +115,7 @@ export const requirePermission = (permission: string): RequestHandler => {
         userPermissions: permissionResult.userPermissions || [],
       });
     } catch (error) {
-      console.error('❌ AUTH: Permission check failed:', error);
+      logger.error('❌ AUTH: Permission check failed:', error);
       // DENY access on any error
       return res.status(500).json({ message: 'Permission check failed' });
     }
@@ -86,7 +133,7 @@ export const requireOwnershipPermission = (
       // STEP 1: Ensure user is authenticated
       const user = req.user || req.session?.user;
       if (!user) {
-        console.log(`❌ AUTH: No user context for ownership check - DENIED`);
+        logger.log(`❌ AUTH: No user context for ownership check - DENIED`);
         return res.status(401).json({ message: 'Authentication required' });
       }
 
@@ -104,7 +151,7 @@ export const requireOwnershipPermission = (
               .json({ message: 'User account not found or inactive' });
           }
         } catch (dbError) {
-          console.error('Database error in ownership check:', dbError);
+          logger.error('Database error in ownership check:', dbError);
           return res
             .status(500)
             .json({ message: 'Unable to verify user permissions' });
@@ -123,17 +170,17 @@ export const requireOwnershipPermission = (
       );
       
       if (permissionResult.granted) {
-        console.log(
+        logger.log(
           `✅ AUTH: ${permissionResult.reason} for ${allPermission}/${ownPermission} to ${currentUser.email}`
         );
         return next();
       }
 
       // DEFAULT: DENY ACCESS
-      console.log(
+      logger.log(
         `❌ AUTH: Ownership permission DENIED for ${currentUser.email}`
       );
-      console.log(`   Reason: ${permissionResult.reason}`);
+      logger.log(`   Reason: ${permissionResult.reason}`);
       
       return res.status(403).json({
         message: 'Insufficient permissions',
@@ -143,7 +190,7 @@ export const requireOwnershipPermission = (
         userPermissions: permissionResult.userPermissions || [],
       });
     } catch (error) {
-      console.error('❌ AUTH: Ownership check failed:', error);
+      logger.error('❌ AUTH: Ownership check failed:', error);
       return res.status(500).json({ message: 'Permission check failed' });
     }
   };

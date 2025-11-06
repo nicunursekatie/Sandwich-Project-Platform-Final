@@ -52,6 +52,8 @@ import { Project, InsertProject } from '@shared/schema';
 import SendKudosButton from '@/components/send-kudos-button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { logger } from '@/lib/logger';
 
 // Component to display assignee email
 function AssigneeEmail({ assigneeId }: { assigneeId: string | number }) {
@@ -73,6 +75,7 @@ export default function ProjectsClean() {
   const { user } = useAuth();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
   const queryClient = useQueryClient();
+  const { track } = useOnboardingTracker();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -103,16 +106,19 @@ export default function ProjectsClean() {
     refetch,
   } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-    staleTime: 0, // Don't cache to ensure fresh data
-    refetchOnWindowFocus: true,
-    refetchOnMount: true, // Always refetch when component mounts
-    gcTime: 0, // Don't keep stale data in cache
+    staleTime: 3 * 60 * 1000, // 3 minutes - projects need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Fetch archived projects data
   const { data: archivedProjects = [], isLoading: archiveLoading } = useQuery({
     queryKey: ['/api/projects/archived'],
   });
+
+  // Track that user has viewed projects page
+  useEffect(() => {
+    track('view_projects');
+  }, []);
 
   // Mutations
   const createProjectMutation = useMutation({
@@ -341,9 +347,9 @@ export default function ProjectsClean() {
       key={project.id}
       className="hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-200 bg-white"
       onClick={() => {
-        console.log('🎯 Project card clicked:', project.id, project.title);
+        logger.log('🎯 Project card clicked:', project.id, project.title);
         setLocation(`/projects/${project.id}`);
-        console.log('🚀 setLocation called with:', `/projects/${project.id}`);
+        logger.log('🚀 setLocation called with:', `/projects/${project.id}`);
       }}
     >
       <CardContent className="p-4">
@@ -353,7 +359,7 @@ export default function ProjectsClean() {
             {project.googleSheetRowId ? (
               <Badge
                 variant="outline"
-                className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
               >
                 📊 Meeting
               </Badge>
@@ -670,7 +676,7 @@ export default function ProjectsClean() {
             className={`transition-all ${
               projectTypeFilter === 'meeting'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary'
-                : 'text-brand-primary hover:text-blue-700 hover:bg-blue-50'
+                : 'text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter'
             }`}
           >
             📊 Meeting Projects (
@@ -857,7 +863,7 @@ export default function ProjectsClean() {
                     onChange={() =>
                       setNewProject({ ...newProject, isMeetingProject: true })
                     }
-                    className="w-4 h-4 text-brand-primary border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 text-brand-primary border-gray-300 focus:ring-brand-primary-muted"
                   />
                   <span className="text-sm font-roboto">
                     📊 Meeting Project

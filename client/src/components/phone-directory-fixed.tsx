@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import {
   Phone,
   User,
@@ -51,6 +52,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 /* =========================
    Types
@@ -223,16 +225,20 @@ function PhoneDirectoryFixed() {
   const { toast } = useToast();
 
   // Permissions
-  const canViewHosts = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
-  const canViewRecipients = hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW);
-  const canViewDrivers = hasPermission(user, PERMISSIONS.DRIVERS_VIEW);
-  const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
+  const hostsPermissions = useResourcePermissions('HOSTS');
+  const recipientsPermissions = useResourcePermissions('RECIPIENTS');
+  const driversPermissions = useResourcePermissions('DRIVERS');
+
+  const canViewHosts = hostsPermissions.canView;
+  const canViewRecipients = recipientsPermissions.canView;
+  const canViewDrivers = driversPermissions.canView;
+  const canViewVolunteers = hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW);
   const canEditContacts =
     hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ||
     hasPermission(user, PERMISSIONS.USERS_EDIT) ||
     hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY) ||
     hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL) ||
-    hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ||
+    hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW) ||
     hasPermission(user, PERMISSIONS.HOSTS_VIEW);
 
   // Tabs
@@ -424,7 +430,7 @@ function PhoneDirectoryFixed() {
         deduplicatedAll.push(contact);
       } else {
         // If duplicate found, log it for debugging
-        console.log(
+        logger.log(
           `Duplicate contact found and removed: ${contact.name} (${contact.phone}) - ${contact.source}`
         );
       }
@@ -1130,7 +1136,7 @@ function PhoneDirectoryFixed() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() =>
-                                          console.log('Edit contact:', contact)
+                                          logger.log('Edit contact:', contact)
                                         }
                                       >
                                         <Edit className="w-4 h-4" />
@@ -1144,7 +1150,7 @@ function PhoneDirectoryFixed() {
                                               `Delete contact ${contact.name}?`
                                             )
                                           ) {
-                                            console.log(
+                                            logger.log(
                                               'Delete contact:',
                                               contact
                                             );
@@ -2395,8 +2401,8 @@ function PhoneDirectoryFixed() {
                               </div>
                             )}
                             {driver.availabilityNotes && (
-                              <div className="p-3 bg-blue-50 rounded-md">
-                                <p className="text-sm text-blue-700">
+                              <div className="p-3 bg-brand-primary-lighter rounded-md">
+                                <p className="text-sm text-brand-primary">
                                   <span className="font-medium">
                                     Availability:
                                   </span>{' '}

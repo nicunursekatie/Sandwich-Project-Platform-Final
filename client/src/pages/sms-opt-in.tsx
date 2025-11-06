@@ -140,7 +140,7 @@ export default function SMSOptInPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-b-2 border-[#1f7b7b] mx-auto"></div>
+          <div className="animate-spin h-8 w-8 border-b-2 border-brand-primary mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function SMSOptInPage() {
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="bg-[#1f7b7b] p-3 rounded-full">
+              <div className="bg-brand-primary p-3 rounded-full">
                 <MessageSquare className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -241,12 +241,12 @@ export default function SMSOptInPage() {
             ) : (
               // Not opted in - show sign-up form
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                <div className="bg-brand-primary/10 p-4 rounded-lg">
+                  <h3 className="font-medium text-brand-primary-dark mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
                     How SMS Reminders Work
                   </h3>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <ul className="text-sm text-brand-primary space-y-1">
                     <li>
                       • Get text reminders when weekly sandwich counts are
                       missing
@@ -312,7 +312,7 @@ export default function SMSOptInPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#1f7b7b] hover:bg-[#165a5a]"
+                  className="w-full bg-brand-primary hover:bg-brand-primary-dark"
                   disabled={
                     optInMutation.isPending || !consent || !phoneNumber.trim()
                   }

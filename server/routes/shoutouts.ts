@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { requirePermission } from '../middleware/auth';
 import { storage } from '../storage-wrapper';
 import { sendEmail } from '../services/sendgrid';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.post(
   requirePermission('USERS_EDIT'),
   async (req, res) => {
     try {
-      console.log('🧪 Testing SendGrid configuration...');
+      logger.log('🧪 Testing SendGrid configuration...');
 
       // Test with user's email
       const testEmail = req.user?.email || 'admin@sandwich.project';
@@ -31,7 +32,7 @@ router.post(
 
       for (const fromAddress of fromAddresses) {
         try {
-          console.log(`Testing from address: ${fromAddress}`);
+          logger.log(`Testing from address: ${fromAddress}`);
           await sendEmail({
             to: testEmail,
             from: fromAddress,
@@ -40,7 +41,7 @@ router.post(
             html: `<p>This is a test email from <strong>${fromAddress}</strong> to verify SendGrid configuration.</p>`,
           });
           results.push({ from: fromAddress, status: 'success' });
-          console.log(`✅ Success with ${fromAddress}`);
+          logger.log(`✅ Success with ${fromAddress}`);
         } catch (error) {
           results.push({
             from: fromAddress,
@@ -48,7 +49,7 @@ router.post(
             error: error.message,
             details: error.response?.body,
           });
-          console.log(`❌ Failed with ${fromAddress}: ${error.message}`);
+          logger.log(`❌ Failed with ${fromAddress}: ${error.message}`);
         }
       }
 
@@ -60,7 +61,7 @@ router.post(
         testRecipient: testEmail,
       });
     } catch (error) {
-      console.error('SendGrid test error:', error);
+      logger.error('SendGrid test error:', error);
       res.status(500).json({
         error: 'SendGrid test failed',
         message: error.message,
@@ -182,12 +183,12 @@ router.post(
             });
             workingSender = sender;
             successCount++;
-            console.log(`✅ Found working sender: ${sender}`);
+            logger.log(`✅ Found working sender: ${sender}`);
             break;
           } catch (error) {
-            console.log(`❌ Failed with sender ${sender}: ${error.message}`);
+            logger.log(`❌ Failed with sender ${sender}: ${error.message}`);
             if (error.response?.body) {
-              console.error(
+              logger.error(
                 'SendGrid error details:',
                 JSON.stringify(error.response.body, null, 2)
               );
@@ -230,7 +231,7 @@ router.post(
         } catch (error) {
           failureCount++;
           errors.push(`Failed to send to ${recipient.email}: ${error.message}`);
-          console.error(
+          logger.error(
             `Failed to send shoutout to ${recipient.email}:`,
             error
           );
@@ -256,8 +257,29 @@ router.post(
           failureCount,
         });
       } catch (logError) {
-        console.error('Failed to log shoutout:', logError);
+        logger.error('Failed to log shoutout:', logError);
         // Don't fail the request if logging fails
+      }
+
+      // Create notifications for all recipients who received the kudos
+      if (successCount > 0) {
+        for (const recipient of validRecipients.slice(0, successCount)) {
+          try {
+            await storage.createNotification({
+              userId: recipient.id,
+              type: 'kudos',
+              priority: 'low',
+              title: subject,
+              message: message.substring(0, 200) + (message.length > 200 ? '...' : ''),
+              category: 'social',
+              actionUrl: '/dashboard',
+              actionText: 'View Dashboard',
+            });
+          } catch (notifError) {
+            logger.error(`Failed to create notification for ${recipient.id}:`, notifError);
+            // Don't fail if notification creation fails
+          }
+        }
       }
 
       // Return result
@@ -281,7 +303,7 @@ router.post(
         });
       }
     } catch (error) {
-      console.error('Error sending shoutout:', error);
+      logger.error('Error sending shoutout:', error);
 
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -308,7 +330,7 @@ router.get(
       const history = await storage.getShoutoutHistory();
       res.json(history);
     } catch (error) {
-      console.error('Error fetching shoutout history:', error);
+      logger.error('Error fetching shoutout history:', error);
       res.status(500).json({
         error: 'Failed to fetch shoutout history',
         message: error.message,

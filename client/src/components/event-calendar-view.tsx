@@ -10,6 +10,10 @@ import {
   Clock,
   MapPin,
   Users,
+  Car,
+  Mic,
+  UserCheck,
+  Sandwich,
   Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -47,13 +51,13 @@ const MONTH_NAMES = [
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'new':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
+      return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong';
     case 'in_process':
       return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     case 'scheduled':
       return 'bg-green-100 text-green-800 border-green-300';
     case 'completed':
-      return 'bg-teal-100 text-teal-800 border-teal-300';
+      return 'bg-navy-100 text-navy-800 border-navy-300';
     case 'cancelled':
       return 'bg-red-100 text-red-800 border-red-300';
     default:
@@ -61,8 +65,122 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Helper function to get staffing indicators for an event
+const getStaffingIndicators = (event: EventRequest) => {
+  const indicators = [];
+
+  if (event.driversNeeded && event.driversNeeded > 0) {
+    indicators.push({
+      icon: Car,
+      count: event.driversNeeded,
+      color: 'text-blue-600',
+      tooltip: `${event.driversNeeded} driver${event.driversNeeded > 1 ? 's' : ''} needed`,
+    });
+  }
+
+  // Add van emoji if van driver is assigned
+  if (event.assignedVanDriverId) {
+    indicators.push({
+      icon: null, // We'll render the emoji directly
+      emoji: '🚐',
+      count: null,
+      color: 'text-blue-700',
+      tooltip: 'Van driver assigned',
+    });
+  }
+
+  if (event.speakersNeeded && event.speakersNeeded > 0) {
+    indicators.push({
+      icon: Mic,
+      count: event.speakersNeeded,
+      color: 'text-purple-600',
+      tooltip: `${event.speakersNeeded} speaker${event.speakersNeeded > 1 ? 's' : ''} needed`,
+    });
+  }
+
+  if (event.volunteersNeeded && event.volunteersNeeded > 0) {
+    indicators.push({
+      icon: UserCheck,
+      count: event.volunteersNeeded,
+      color: 'text-green-600',
+      tooltip: `${event.volunteersNeeded} volunteer${event.volunteersNeeded > 1 ? 's' : ''} needed`,
+    });
+  }
+
+  return indicators;
+};
+
+// Helper function to get sandwich information for an event
+const getSandwichInfo = (event: EventRequest) => {
+  const sandwichInfo = [];
+
+  // Check for estimated sandwich count
+  if (event.estimatedSandwichCount && event.estimatedSandwichCount > 0) {
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: event.estimatedSandwichCount,
+      color: 'text-[#fbad3f]',
+      tooltip: `${event.estimatedSandwichCount} sandwiches estimated`,
+    });
+  }
+  // Check for sandwich range (min-max)
+  else if (
+    (event as any).estimatedSandwichCountMin &&
+    (event as any).estimatedSandwichCountMax
+  ) {
+    const min = (event as any).estimatedSandwichCountMin;
+    const max = (event as any).estimatedSandwichCountMax;
+    const rangeType = (event as any).estimatedSandwichRangeType;
+
+    let rangeText = `${min}-${max}`;
+    if (rangeType) {
+      rangeText += ` ${rangeType}`;
+    }
+
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: null,
+      countText: rangeText,
+      color: 'text-[#fbad3f]',
+      tooltip: `${min}-${max} sandwiches estimated${rangeType ? ` (${rangeType})` : ''}`,
+    });
+  }
+
+  // Check for actual sandwich count (for completed events)
+  if (event.actualSandwichCount && event.actualSandwichCount > 0) {
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: event.actualSandwichCount,
+      color: 'text-[#fbad3f]',
+      tooltip: `${event.actualSandwichCount} sandwiches delivered`,
+    });
+  }
+
+  // Check for sandwich types (if available)
+  if (
+    event.sandwichTypes &&
+    Array.isArray(event.sandwichTypes) &&
+    event.sandwichTypes.length > 0
+  ) {
+    const typesText = event.sandwichTypes
+      .map((type) => `${type.quantity} ${type.type}`)
+      .join(', ');
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: null,
+      color: 'text-[#fbad3f]',
+      tooltip: `Types: ${typesText}`,
+      showTypes: true,
+      types: event.sandwichTypes,
+    });
+  }
+
+  return sandwichInfo;
+};
+
 export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<string[]>([
     'new',
     'in_process',
@@ -178,15 +296,27 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
     return date.toISOString().split('T')[0];
   };
 
+  const toggleDateExpansion = (dateKey: string) => {
+    setExpandedDates((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(dateKey)) {
+        newSet.delete(dateKey);
+      } else {
+        newSet.add(dateKey);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <CalendarIcon className="w-7 h-7" />
             Event Calendar
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -244,17 +374,17 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={goToToday}>
+            <Button variant="outline" size="default" onClick={goToToday} className="px-4 py-2">
               Today
             </Button>
-            <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-10 h-10">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
-            <div className="min-w-[200px] text-center font-semibold">
+            <div className="flex-1 min-w-0 text-center font-bold text-base sm:text-lg truncate px-2">
               {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </div>
-            <Button variant="outline" size="icon" onClick={goToNextMonth}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-10 h-10">
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -266,7 +396,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
           {DAYS_OF_WEEK.map((day) => (
             <div
               key={day}
-              className="p-2 text-center font-semibold text-sm text-gray-600 bg-gray-50 rounded"
+              className="p-2 text-center font-semibold text-sm text-gray-700 bg-gray-100 rounded"
             >
               {day}
             </div>
@@ -278,12 +408,13 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             const dayEvents = eventsByDate.get(dateKey) || [];
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDay = isToday(date);
+            const isExpanded = expandedDates.has(dateKey);
 
             return (
               <div
                 key={index}
                 className={cn(
-                  'min-h-[120px] border rounded-lg p-2',
+                  'min-h-[140px] border rounded-lg p-2',
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
@@ -293,10 +424,10 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 {/* Date number */}
                 <div
                   className={cn(
-                    'text-sm font-medium mb-1',
+                    'text-sm font-semibold mb-1',
                     isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
                     isTodayDay &&
-                      'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                      'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
                   )}
                 >
                   {date.getDate()}
@@ -304,30 +435,124 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                 {/* Events for this day */}
                 <div className="space-y-1">
-                  {dayEvents.slice(0, 3).map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => onEventClick?.(event)}
-                      className={cn(
-                        'w-full text-left text-xs p-1 rounded border truncate hover:shadow-md transition-shadow',
-                        getStatusColor(event.status)
-                      )}
-                      title={`${event.organizationName} - ${event.status}`}
-                    >
-                      <div className="font-medium truncate">
-                        {event.organizationName}
-                      </div>
-                      {event.eventStartTime && (
-                        <div className="text-[10px] opacity-75">
-                          {event.eventStartTime}
+                  {(isExpanded ? dayEvents : dayEvents.slice(0, 3)).map((event) => {
+                    const staffingIndicators = getStaffingIndicators(event);
+                    const sandwichInfo = getSandwichInfo(event);
+
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => onEventClick?.(event)}
+                        className={cn(
+                          'w-full text-left text-xs p-1.5 rounded border truncate hover:shadow-md transition-shadow',
+                          getStatusColor(event.status)
+                        )}
+                        title={`${event.organizationName} - ${event.status}`}
+                      >
+                        <div className="font-semibold truncate mb-1 text-[14px]">
+                          {event.organizationName}
                         </div>
-                      )}
-                    </button>
-                  ))}
+
+                        {/* Staffing indicators row */}
+                        {staffingIndicators.length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            {staffingIndicators.map((indicator, idx) => {
+                              const IconComponent = indicator.icon;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    'flex items-center',
+                                    indicator.color
+                                  )}
+                                  title={indicator.tooltip}
+                                >
+                                  {indicator.emoji ? (
+                                    <span className="text-lg">{indicator.emoji}</span>
+                                  ) : IconComponent ? (
+                                    <IconComponent className="w-5 h-5" />
+                                  ) : null}
+                                  {indicator.count && indicator.count > 1 && (
+                                    <span className="text-sm ml-1 font-semibold">
+                                      {indicator.count}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Sandwich information - single icon with compact info */}
+                        {sandwichInfo.length > 0 && (
+                          <div className="mt-1">
+                            {/* If we have sandwich types, show them with one icon */}
+                            {sandwichInfo.some(info => info.showTypes) ? (
+                              <div className="flex items-start gap-1">
+                                <Sandwich className="w-5 h-5 text-[#fbad3f] flex-shrink-0" />
+                                <div className="text-xs">
+                                  {sandwichInfo.map((info, idx) => (
+                                    info.showTypes && info.types ? (
+                                      info.types.slice(0, 2).map((type, typeIdx) => {
+                                        // Process sandwich type name
+                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
+
+                                        // Handle deli_turkey, deli_ham formats
+                                        if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
+                                          displayType = 'turkey';
+                                        } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
+                                          displayType = 'ham';
+                                        } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
+                                          displayType = 'deli';
+                                        } else if (displayType === 'pbj' || displayType === 'pb&j') {
+                                          displayType = 'PB&J';
+                                        }
+
+                                        return (
+                                          <div key={`${idx}-${typeIdx}`} className="font-semibold truncate">
+                                            {type.quantity} {displayType}
+                                          </div>
+                                        );
+                                      })
+                                    ) : null
+                                  ))}
+                                  {sandwichInfo.some(info => info.types && info.types.length > 2) && (
+                                    <div className="text-[10px] opacity-75">+more</div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              /* Just show count if no types specified */
+                              <div className="flex items-center gap-1">
+                                <Sandwich className="w-5 h-5 text-[#fbad3f]" />
+                                <span className="text-sm font-semibold">
+                                  {(sandwichInfo[0] as any).countText || sandwichInfo[0].count}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {event.eventStartTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 font-semibold">
+                            {event.eventStartTime}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
-                    <div className="text-xs text-gray-500 text-center">
-                      +{dayEvents.length - 3} more
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDateExpansion(dateKey);
+                      }}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 text-center font-semibold mt-0.5 w-full hover:underline"
+                    >
+                      {isExpanded
+                        ? 'Show less'
+                        : `+${dayEvents.length - 3} more`}
+                    </button>
                   )}
                 </div>
               </div>
@@ -336,23 +561,56 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-4 border-t flex flex-wrap gap-3 items-center">
-          <span className="text-sm font-medium text-gray-700">Status:</span>
-          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-            New
-          </Badge>
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-            In Process
-          </Badge>
-          <Badge className="bg-green-100 text-green-800 border-green-300">
-            Scheduled
-          </Badge>
-          <Badge className="bg-teal-100 text-teal-800 border-teal-300">
-            Completed
-          </Badge>
-          <Badge className="bg-red-100 text-red-800 border-red-300">
-            Cancelled
-          </Badge>
+        <div className="mt-6 pt-4 border-t space-y-4">
+          {/* Status Legend */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-semibold text-gray-800">Status:</span>
+            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
+              New
+            </Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
+              In Process
+            </Badge>
+            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
+              Scheduled
+            </Badge>
+            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
+              Completed
+            </Badge>
+            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
+              Cancelled
+            </Badge>
+          </div>
+
+          {/* Staffing Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Staffing Needed:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Car className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-700">Drivers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mic className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-700">Speakers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-gray-700">Volunteers</span>
+            </div>
+          </div>
+
+          {/* Sandwich Information Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Sandwiches:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
+              <span className="text-xs text-gray-700">Count & Types</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

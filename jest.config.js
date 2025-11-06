@@ -1,8 +1,13 @@
 export default {
+  displayName: 'server',
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
-  testMatch: ['**/test/**/*.test.(js|ts)'],
+  testMatch: [
+    '**/tests/**/*.test.{js,ts}',
+    '**/server/**/__tests__/**/*.test.{js,ts}',
+    '!**/client/**',
+    '!**/test/**',
+  ],
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
@@ -19,6 +24,25 @@ export default {
     '^@shared/(.*)$': '<rootDir>/shared/$1',
   },
   verbose: true,
-  collectCoverage: false,
+  collectCoverage: false, // Enable via CLI with --coverage flag
+  collectCoverageFrom: [
+    'server/**/*.ts',
+    'shared/**/*.ts',
+    '!server/**/*.d.ts',
+    '!server/index.ts',
+    '!shared/types.ts',
+    '!**/__tests__/**',
+    '!**/node_modules/**',
+  ],
+  coverageDirectory: '<rootDir>/coverage/server',
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+  coverageThreshold: {
+    global: {
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60,
+    },
+  },
   testTimeout: 30000,
 };

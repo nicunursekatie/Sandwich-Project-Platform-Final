@@ -40,6 +40,10 @@ import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { logger } from '@/lib/logger';
+import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
+import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -67,6 +71,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
   const [formData, setFormData] = useState({
     eventDate: '',
+    backupDates: [] as string[],
     eventStartTime: '',
     eventEndTime: '',
     pickupTime: '',
@@ -87,17 +92,55 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schedulingNotes: '',
     planningNotes: '',
     totalSandwichCount: 0,
+    estimatedSandwichCountMin: 0,
+    estimatedSandwichCountMax: 0,
+    rangeSandwichType: '',
+    volunteerCount: 0,
+    estimatedAttendance: 0,
+    adultCount: 0,
+    childrenCount: 0,
     status: 'new',
     toolkitSent: false,
     toolkitSentDate: '',
     toolkitStatus: 'not_sent',
+    // Completed event tracking fields
+    socialMediaPostRequested: false,
+    socialMediaPostRequestedDate: '',
+    socialMediaPostCompleted: false,
+    socialMediaPostCompletedDate: '',
+    socialMediaPostNotes: '',
+    actualSandwichCount: 0,
+    actualSandwichTypes: [] as Array<{type: string, quantity: number}>,
+    actualSandwichCountRecordedDate: '',
+    actualSandwichCountRecordedBy: '',
+    followUpOneDayCompleted: false,
+    followUpOneDayDate: '',
+    followUpOneMonthCompleted: false,
+    followUpOneMonthDate: '',
+    followUpNotes: '',
+    assignedRecipientIds: [] as string[],
+    // Contact information fields
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    organizationName: '',
+    department: '',
+    organizationCategory: '',
+    schoolClassification: '',
   });
 
-  const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
+  const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
+  const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
+  const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showCompletedDetails, setShowCompletedDetails] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
   const [isMessageEditable, setIsMessageEditable] = useState(false);
+  const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
+  const [mlkDayAsked, setMlkDayAsked] = useState(false);
+  const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -140,14 +183,100 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       // Determine mode based on existing data
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+      const hasRangeData = (eventRequest as any)?.estimatedSandwichCountMin && (eventRequest as any)?.estimatedSandwichCountMax;
       const totalCount = eventRequest?.estimatedSandwichCount || 0;
       
+      const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
+        (typeof eventRequest?.actualSandwichTypes === 'string' ? 
+          JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
+      
+      const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
+      
+      // Normalize assignedRecipientIds to new string format with prefixes
+      // Supports legacy numeric IDs and new prefixed format (host:ID, recipient:ID, custom:text)
+      const normalizeRecipientIds = (ids: any): string[] => {
+        if (!ids) return [];
+        
+        let rawIds: any[] = [];
+        
+        // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
+        if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
+          const arrayContent = ids.slice(1, -1); // Remove { and }
+          
+          // Parse PostgreSQL array format respecting quoted strings
+          // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
+          // Handles: {value1,value2} and {"value 1","value 2"} and {"value,with,commas"} and {"value with ""quotes"""}
+          const parsed: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < arrayContent.length; i++) {
+            const char = arrayContent[i];
+            const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
+            const prevChar = i > 0 ? arrayContent[i - 1] : null;
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                // Doubled quote ("") inside quoted string = escaped quote, add one quote
+                current += '"';
+                i++; // Skip the next quote
+              } else if (inQuotes && prevChar === '\\') {
+                // Backslash-escaped quote (\") = actual quote (backslash was already added)
+                current = current.slice(0, -1) + '"'; // Replace the backslash with quote
+              } else {
+                // Regular quote - toggle quote state
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              // Comma outside quotes = separator
+              if (current.trim()) {
+                parsed.push(current.trim());
+              }
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          
+          // Don't forget the last value
+          if (current.trim()) {
+            parsed.push(current.trim());
+          }
+          
+          rawIds = parsed;
+        }
+        // Handle JSON array format: [1,2,3] or ["host:5","recipient:10"]
+        else if (Array.isArray(ids)) {
+          rawIds = ids;
+        }
+        
+        // Convert to new format with prefixes
+        return rawIds.map(id => {
+          const idStr = String(id);
+          
+          // If already has a prefix (host:, recipient:, custom:), keep as-is
+          if (idStr.includes(':')) {
+            return idStr;
+          }
+          
+          // Legacy numeric ID - assume it's a recipient ID
+          const numId = parseInt(idStr, 10);
+          if (!isNaN(numId)) {
+            return `recipient:${numId}`;
+          }
+          
+          // Fallback - treat as custom text
+          return `custom:${idStr}`;
+        }).filter(id => id);
+      };
+
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+        backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
         eventStartTime: eventRequest?.eventStartTime || '',
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
-        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, eventRequest?.desiredEventDate),
+        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
@@ -163,6 +292,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
         totalSandwichCount: totalCount,
+        estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+        estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+        rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
+        volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+        estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
+        adultCount: (eventRequest as any)?.adultCount || 0,
+        childrenCount: (eventRequest as any)?.childrenCount || 0,
         // Contact information fields
         firstName: eventRequest?.firstName || '',
         lastName: eventRequest?.lastName || '',
@@ -170,6 +306,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         phone: eventRequest?.phone || '',
         organizationName: eventRequest?.organizationName || '',
         department: eventRequest?.department || '',
+        organizationCategory: (eventRequest as any)?.organizationCategory || '',
+        schoolClassification: (eventRequest as any)?.schoolClassification || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
         // Status
@@ -178,10 +316,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         toolkitSent: eventRequest?.toolkitSent || false,
         toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
         toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+        // Completed event tracking fields
+        socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+        socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+        socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+        socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+        socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+        actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+        actualSandwichTypes: existingActualSandwichTypes,
+        actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+        actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+        followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+        followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+        followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+        followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+        followUpNotes: (eventRequest as any)?.followUpNotes || '',
+        assignedRecipientIds: normalizeRecipientIds((eventRequest as any)?.assignedRecipientIds),
       });
       
       // Set mode based on existing data
-      setSandwichMode(hasTypesData ? 'types' : 'total');
+      setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
+      setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
+
+      // Set attendee mode based on whether adult/children breakdown exists
+      const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
+      setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
+
+      // Auto-expand Completed Event Details section if event is completed
+      setShowCompletedDetails(eventRequest?.status === 'completed');
     }
   }, [isVisible, isOpen, eventRequest, mode]);
 
@@ -190,7 +352,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
     retry: false,
     networkMode: 'always',
-    onSuccess: () => {
+    onSuccess: (updatedEvent: any) => {
+      // Mark as MLK Day if user decided to
+      if (pendingMlkDayDecision === true && updatedEvent?.id) {
+        markMlkDayMutation.mutate({ id: updatedEvent.id, isMlkDayEvent: true });
+      }
       const isEditMode = mode === 'edit';
       toast({
         title: isEditMode ? 'Event updated successfully' : 'Event scheduled successfully',
@@ -199,6 +365,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       onSuccessCallback();
       onClose();
+      setPendingMlkDayDecision(null);
     },
     onError: () => {
       const isEditMode = mode === 'edit';
@@ -212,11 +379,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) => {
-      console.log('🚀 CREATE MUTATION: Sending data:', data);
+      logger.log('🚀 CREATE MUTATION: Sending data:', data);
       return apiRequest('POST', '/api/event-requests', data);
     },
     onSuccess: (response) => {
-      console.log('✅ CREATE MUTATION SUCCESS: Response:', response);
+      logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
+      // Mark as MLK Day if user decided to
+      if (pendingMlkDayDecision === true && response?.id) {
+        markMlkDayMutation.mutate({ id: response.id, isMlkDayEvent: true });
+      }
       toast({
         title: 'Event created successfully',
         description: 'The new event request has been created.',
@@ -224,9 +395,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       onSuccessCallback();
       onClose();
+      setPendingMlkDayDecision(null);
     },
     onError: (error) => {
-      console.error('❌ CREATE MUTATION ERROR:', error);
+      logger.error('❌ CREATE MUTATION ERROR:', error);
       toast({
         title: 'Error',
         description: 'Failed to create event.',
@@ -255,8 +427,24 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
   });
 
+  // Mutation to mark event as MLK Day event
+  const markMlkDayMutation = useMutation({
+    mutationFn: ({ id, isMlkDayEvent }: { id: number; isMlkDayEvent: boolean }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/mlk-day`, { isMlkDayEvent }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if event is in MLK Day week and we haven't asked yet
+    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      setShowMlkDayDialog(true);
+      setMlkDayAsked(true);
+      return; // Stop submission until user responds
+    }
 
     // All fields are optional - no validation required
 
@@ -270,6 +458,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
+      backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
       // If status is scheduled, also set scheduledEventDate
       ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
       eventStartTime: formData.eventStartTime || null,
@@ -280,12 +469,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
       overnightPickupTime: formData.overnightPickupTime || null,
-      hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
+      hasRefrigeration: formData.hasRefrigeration === 'true' ? true :
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
       vanDriverNeeded: formData.vanDriverNeeded || false,
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
+      estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
       tspContact: formData.tspContact || null,
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
@@ -297,6 +487,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       phone: formData.phone || null,
       organizationName: formData.organizationName || null,
       department: formData.department || null,
+      organizationCategory: formData.organizationCategory || null,
+      schoolClassification: formData.schoolClassification || null,
       // Van driver assignment
       assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
       // Toolkit information
@@ -308,26 +500,68 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (sandwichMode === 'total') {
       eventData.estimatedSandwichCount = formData.totalSandwichCount;
       eventData.sandwichTypes = null; // Clear specific types when using total mode
+      eventData.estimatedSandwichCountMin = null;
+      eventData.estimatedSandwichCountMax = null;
+    } else if (sandwichMode === 'range') {
+      eventData.estimatedSandwichCountMin = formData.estimatedSandwichCountMin || null;
+      eventData.estimatedSandwichCountMax = formData.estimatedSandwichCountMax || null;
+      eventData.estimatedSandwichRangeType = formData.rangeSandwichType || null;
+      eventData.estimatedSandwichCount = null; // Clear exact count when using range
+      eventData.sandwichTypes = null;
     } else {
       eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+      eventData.estimatedSandwichCountMin = null;
+      eventData.estimatedSandwichCountMax = null;
     }
 
-    console.log('📋 FORM SUBMIT DEBUG:');
-    console.log('  - eventRequest exists?', !!eventRequest);
-    console.log('  - mode:', mode);
-    console.log('  - isCreateMode:', isCreateMode);
-    console.log('  - eventData being sent:', eventData);
+    // Include volunteer/attendee counts
+    eventData.volunteerCount = formData.volunteerCount || 0;
+    eventData.adultCount = formData.adultCount || 0;
+    eventData.childrenCount = formData.childrenCount || 0;
+
+    // Include completed event tracking fields
+    eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
+    eventData.socialMediaPostRequestedDate = serializeDateToISO(formData.socialMediaPostRequestedDate);
+    eventData.socialMediaPostCompleted = formData.socialMediaPostCompleted;
+    eventData.socialMediaPostCompletedDate = serializeDateToISO(formData.socialMediaPostCompletedDate);
+    eventData.socialMediaPostNotes = formData.socialMediaPostNotes || null;
+    
+    // Handle actual sandwich data based on mode
+    if (actualSandwichMode === 'total') {
+      eventData.actualSandwichCount = formData.actualSandwichCount;
+      eventData.actualSandwichTypes = null;
+    } else {
+      eventData.actualSandwichTypes = JSON.stringify(formData.actualSandwichTypes);
+      eventData.actualSandwichCount = formData.actualSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    }
+    eventData.actualSandwichCountRecordedDate = serializeDateToISO(formData.actualSandwichCountRecordedDate);
+    eventData.actualSandwichCountRecordedBy = formData.actualSandwichCountRecordedBy || null;
+    
+    eventData.followUpOneDayCompleted = formData.followUpOneDayCompleted;
+    eventData.followUpOneDayDate = serializeDateToISO(formData.followUpOneDayDate);
+    eventData.followUpOneMonthCompleted = formData.followUpOneMonthCompleted;
+    eventData.followUpOneMonthDate = serializeDateToISO(formData.followUpOneMonthDate);
+    eventData.followUpNotes = formData.followUpNotes || null;
+    
+    // Include assigned recipient IDs
+    eventData.assignedRecipientIds = formData.assignedRecipientIds || [];
+
+    logger.log('📋 FORM SUBMIT DEBUG:');
+    logger.log('  - eventRequest exists?', !!eventRequest);
+    logger.log('  - mode:', mode);
+    logger.log('  - isCreateMode:', isCreateMode);
+    logger.log('  - eventData being sent:', eventData);
 
     if (eventRequest) {
-      console.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
+      logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       // Update existing event request
       updateEventRequestMutation.mutate({
         id: eventRequest.id,
         data: eventData,
       });
     } else {
-      console.log('➕ Calling CREATE mutation for new event');
+      logger.log('➕ Calling CREATE mutation for new event');
       // Create new event request
       createEventRequestMutation.mutate(eventData);
     }
@@ -356,6 +590,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }));
   };
 
+  // Helper functions for actual sandwich types
+  const addActualSandwichType = () => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: [...prev.actualSandwichTypes, { type: 'deli_turkey', quantity: 0 }]
+    }));
+  };
+
+  const updateActualSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: prev.actualSandwichTypes.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeActualSandwichType = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: prev.actualSandwichTypes.filter((_, i) => i !== index)
+    }));
+  };
+
   // Handle date change confirmation
   const handleDateChangeConfirmation = () => {
     setFormData(prev => ({ ...prev, eventDate: pendingDateChange }));
@@ -365,7 +623,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const handleDateChangeCancellation = () => {
     setShowDateConfirmation(false);
-    setPendingDateChange('');
+  };
+
+  // MLK Day dialog handlers
+  const handleMlkDayMark = () => {
+    setPendingMlkDayDecision(true);
+    setShowMlkDayDialog(false);
+    // Re-trigger submission with MLK Day decision made
+    handleSubmit(new Event('submit') as any);
+  };
+
+  const handleMlkDaySkip = () => {
+    setPendingMlkDayDecision(false);
+    setShowMlkDayDialog(false);
+    // Re-trigger submission with MLK Day decision made
+    handleSubmit(new Event('submit') as any);
   };
 
   // For create mode, we can work with null eventRequest
@@ -454,9 +726,102 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       placeholder="Enter department"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="organizationCategory">Organization Category</Label>
+                    <Select
+                      value={formData.organizationCategory || ''}
+                      onValueChange={(value) => setFormData(prev => ({ 
+                        ...prev, 
+                        organizationCategory: value,
+                        // Clear school classification if category changes to non-school
+                        schoolClassification: value === 'school' ? prev.schoolClassification : ''
+                      }))}
+                    >
+                      <SelectTrigger id="organizationCategory">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small_medium_corp">Small/Medium Corporation</SelectItem>
+                        <SelectItem value="large_corp">Large Corporation</SelectItem>
+                        <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                        <SelectItem value="school">School</SelectItem>
+                        <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                        <SelectItem value="club">Club</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.organizationCategory === 'school' && (
+                    <div>
+                      <Label htmlFor="schoolClassification">School Classification</Label>
+                      <Select
+                        value={formData.schoolClassification || ''}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, schoolClassification: value }))}
+                      >
+                        <SelectTrigger id="schoolClassification">
+                          <SelectValue placeholder="Select school type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="public">Public</SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
+                          <SelectItem value="charter">Charter</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               </div>
             )}
+          </div>
+
+          {/* Status */}
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+              <SelectTrigger data-testid="select-status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">New Request</SelectItem>
+                <SelectItem value="in_process">In Process</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="declined">Declined</SelectItem>
+                <SelectItem value="postponed">Postponed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Toolkit Status Section */}
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Toolkit Status</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                <Select value={formData.toolkitStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, toolkitStatus: value }))}>
+                  <SelectTrigger data-testid="select-toolkit-status">
+                    <SelectValue placeholder="Select toolkit status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_sent">Not Sent</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
+                    <SelectItem value="not_needed">Not Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="toolkitSentDate">Toolkit Sent Date</Label>
+                <Input
+                  id="toolkitSentDate"
+                  type="date"
+                  value={formData.toolkitSentDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, toolkitSentDate: e.target.value }))}
+                  disabled={formData.toolkitStatus === 'not_sent' || formData.toolkitStatus === 'not_needed'}
+                  data-testid="input-toolkit-sent-date"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Event Schedule */}
@@ -487,6 +852,71 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   data-testid="input-event-date"
                 />
               </div>
+
+              {/* Backup Dates */}
+              <div className="md:col-span-2 lg:col-span-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Backup Dates (Optional)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          backupDates: [...prev.backupDates, '']
+                        }));
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      + Add Backup Date
+                    </Button>
+                  </div>
+                  {formData.backupDates.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {formData.backupDates.map((date, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            type="date"
+                            value={date}
+                            onChange={(e) => {
+                              const newBackupDates = [...formData.backupDates];
+                              newBackupDates[index] = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                backupDates: newBackupDates
+                              }));
+                            }}
+                            placeholder="Select backup date"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                backupDates: prev.backupDates.filter((_, i) => i !== index)
+                              }));
+                            }}
+                            className="h-9 w-9 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {formData.backupDates.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      Add alternate dates if the primary event date is not available
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="eventStartTime">Start Time</Label>
                 <Input
@@ -515,7 +945,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     // Clear legacy pickupTime when datetime is set
                     pickupTime: ''
                   }))}
-                  eventDate={formData.eventDate}
                   data-testid="pickup-datetime-picker"
                 />
               </div>
@@ -535,8 +964,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
           {/* Delivery Destinations */}
           <div className="space-y-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700 mb-2 font-medium">
+            <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
+              <p className="text-sm text-brand-primary mb-2 font-medium">
                 📍 Delivery Options: You can specify either a direct delivery destination, or an overnight holding location with a final destination.
               </p>
             </div>
@@ -553,30 +982,56 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 placeholder="Location where sandwiches will be stored overnight (e.g., church, community center)"
               />
               {formData.overnightHoldingLocation && (
-                <div className="ml-4 mt-2">
-                  <Label htmlFor="overnightPickupTime">Pickup Time from Overnight Location</Label>
-                  <Input
-                    id="overnightPickupTime"
-                    type="time"
-                    value={formData.overnightPickupTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, overnightPickupTime: e.target.value }))}
-                  />
+                <div className="ml-4 mt-2 space-y-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-medium text-green-900">Next-Day Delivery Details</h4>
+                  <div>
+                    <Label htmlFor="overnightPickupTime">Pickup Time from Overnight Location</Label>
+                    <Input
+                      id="overnightPickupTime"
+                      type="time"
+                      value={formData.overnightPickupTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, overnightPickupTime: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="deliveryTimeWindow">Delivery Time Window</Label>
+                    <Input
+                      id="deliveryTimeWindow"
+                      type="text"
+                      value={formData.deliveryTimeWindow || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deliveryTimeWindow: e.target.value }))}
+                      placeholder="e.g., 11:00 AM - 12:00 PM"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="deliveryParkingAccess">Parking/Access Details</Label>
+                    <Textarea
+                      id="deliveryParkingAccess"
+                      value={formData.deliveryParkingAccess || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deliveryParkingAccess: e.target.value }))}
+                      placeholder="e.g., Park in rear lot, use loading dock entrance"
+                      rows={2}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Final Delivery Destination */}
+            {/* Final Delivery Destination - Multiple Recipients */}
             <div>
               <Label htmlFor="deliveryDestination">
-                {formData.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination'}
+                {formData.overnightHoldingLocation ? '📍 Final Delivery Destinations' : '📍 Delivery Destinations'}
               </Label>
-              <RecipientSelector
-                value={formData.deliveryDestination}
-                onChange={(value) => setFormData(prev => ({ ...prev, deliveryDestination: value }))}
+              <p className="text-sm text-gray-500 mb-2">
+                Select one or more recipient organizations where the sandwiches will be delivered
+              </p>
+              <MultiRecipientSelector
+                value={formData.assignedRecipientIds}
+                onChange={(ids) => setFormData(prev => ({ ...prev, assignedRecipientIds: ids }))}
                 placeholder={formData.overnightHoldingLocation
-                  ? "Final destination after overnight hold (organization, address, etc.)"
-                  : "Where should the sandwiches be delivered? (organization, address, etc.)"}
-                data-testid="delivery-destination-selector"
+                  ? "Select recipient organizations for final delivery..."
+                  : "Select recipient organizations..."}
+                data-testid="delivery-destination-multi-selector"
               />
             </div>
           </div>
@@ -594,7 +1049,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 onClick={() => setSandwichMode('total')}
                 className="text-xs"
               >
-                Total Count Only
+                Exact Count
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={sandwichMode === 'range' ? 'default' : 'outline'}
+                onClick={() => setSandwichMode('range')}
+                className="text-xs"
+              >
+                Range
               </Button>
               <Button
                 type="button"
@@ -616,12 +1080,64 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   type="number"
                   value={formData.totalSandwichCount}
                   onChange={(e) => setFormData(prev => ({ ...prev, totalSandwichCount: parseInt(e.target.value) || 0 }))}
-                  placeholder="Enter total sandwich count"
+                  placeholder="Enter exact count (e.g., 550)"
                   min="0"
                   className="w-40"
                 />
                 <p className="text-sm text-[#236383]">
-                  Use this when you know the total count but types will be determined later.
+                  Use this when you know the exact count.
+                </p>
+              </div>
+            )}
+
+            {/* Range Mode */}
+            {sandwichMode === 'range' && (
+              <div className="space-y-3">
+                <div>
+                  <Label>Estimated Sandwich Range</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      id="sandwichCountMin"
+                      type="number"
+                      value={formData.estimatedSandwichCountMin || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMin: parseInt(e.target.value) || 0 }))}
+                      placeholder="Min (e.g., 500)"
+                      min="0"
+                      className="w-32"
+                    />
+                    <span className="text-gray-500">to</span>
+                    <Input
+                      id="sandwichCountMax"
+                      type="number"
+                      value={formData.estimatedSandwichCountMax || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMax: parseInt(e.target.value) || 0 }))}
+                      placeholder="Max (e.g., 700)"
+                      min="0"
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="rangeSandwichType">Type (Optional)</Label>
+                  <Select
+                    value={formData.rangeSandwichType || undefined}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, rangeSandwichType: value === 'none' ? '' : value }))}
+                  >
+                    <SelectTrigger id="rangeSandwichType" className="w-48">
+                      <SelectValue placeholder="Select type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No specific type</SelectItem>
+                      {SANDWICH_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-sm text-[#236383]">
+                  Use this when the final count isn't confirmed yet (e.g., 500-700 turkey sandwiches).
                 </p>
               </div>
             )}
@@ -687,6 +1203,104 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             )}
           </div>
 
+          {/* Volunteer/Attendee Count (Optional) */}
+          <div className="space-y-3">
+            <Label># of Attendees (Optional)</Label>
+
+            {/* Mode Selector */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={attendeeMode === 'total' ? 'default' : 'outline'}
+                onClick={() => setAttendeeMode('total')}
+                className="text-xs"
+              >
+                Total Count
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={attendeeMode === 'breakdown' ? 'default' : 'outline'}
+                onClick={() => setAttendeeMode('breakdown')}
+                className="text-xs"
+              >
+                Adults & Children
+              </Button>
+            </div>
+
+            {/* Total Count Mode */}
+            {attendeeMode === 'total' && (
+              <div>
+                <Label htmlFor="estimatedAttendance">Estimated Attendance</Label>
+                <Input
+                  id="estimatedAttendance"
+                  type="number"
+                  value={formData.estimatedAttendance}
+                  onChange={(e) => setFormData(prev => ({ ...prev, estimatedAttendance: parseInt(e.target.value) || 0, volunteerCount: parseInt(e.target.value) || 0, adultCount: 0, childrenCount: 0 }))}
+                  placeholder="Enter estimated number of attendees"
+                  min="0"
+                  className="w-40"
+                  data-testid="input-estimated-attendance"
+                />
+              </div>
+            )}
+
+            {/* Breakdown Mode */}
+            {attendeeMode === 'breakdown' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="adultCount">Adults</Label>
+                  <Input
+                    id="adultCount"
+                    type="number"
+                    value={formData.adultCount || 0}
+                    onChange={(e) => {
+                      const adults = parseInt(e.target.value) || 0;
+                      const children = formData.childrenCount || 0;
+                      setFormData(prev => ({
+                        ...prev,
+                        adultCount: adults,
+                        volunteerCount: adults + children,
+                        estimatedAttendance: adults + children
+                      }));
+                    }}
+                    placeholder="# of adults"
+                    min="0"
+                    className="w-32"
+                    data-testid="input-adult-count"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="childrenCount">Children</Label>
+                  <Input
+                    id="childrenCount"
+                    type="number"
+                    value={formData.childrenCount || 0}
+                    onChange={(e) => {
+                      const children = parseInt(e.target.value) || 0;
+                      const adults = formData.adultCount || 0;
+                      setFormData(prev => ({
+                        ...prev,
+                        childrenCount: children,
+                        volunteerCount: adults + children,
+                        estimatedAttendance: adults + children
+                      }));
+                    }}
+                    placeholder="# of children"
+                    min="0"
+                    className="w-32"
+                    data-testid="input-children-count"
+                  />
+                </div>
+              </div>
+            )}
+
+            <p className="text-sm text-[#236383]">
+              Optional: Estimate how many people will attend this event.
+            </p>
+          </div>
+
           {/* Refrigeration */}
           <div>
             <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
@@ -732,8 +1346,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 {formData.vanDriverNeeded && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
-                    <Select 
-                      value={formData.assignedVanDriverId || ''} 
+                    <Select
+                      value={formData.assignedVanDriverId || ''}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
                     >
                       <SelectTrigger>
@@ -753,6 +1367,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </p>
                   </div>
                 )}
+
               </div>
             </div>
 
@@ -770,6 +1385,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     min="0"
                   />
                 </div>
+
+                {/* Speaker Details - Only show when speakers are needed */}
+                {formData.speakersNeeded > 0 && (
+                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                    <h4 className="font-medium text-purple-900">Speaker Details</h4>
+                    <div>
+                      <Label htmlFor="speakerAudienceType">Audience Type</Label>
+                      <Input
+                        id="speakerAudienceType"
+                        type="text"
+                        value={formData.speakerAudienceType || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, speakerAudienceType: e.target.value }))}
+                        placeholder="e.g., Elementary School, Adults, Mixed"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="speakerDuration">Duration</Label>
+                      <Input
+                        id="speakerDuration"
+                        type="text"
+                        value={formData.speakerDuration || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, speakerDuration: e.target.value }))}
+                        placeholder="e.g., 30 minutes, 1 hour"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="volunteersNeeded">How many volunteers needed?</Label>
                   <Input
@@ -783,56 +1426,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Status */}
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New Request</SelectItem>
-                <SelectItem value="in_process">In Process</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Toolkit Status Section */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold">Toolkit Status</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="toolkitStatus">Toolkit Status</Label>
-                <Select value={formData.toolkitStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, toolkitStatus: value }))}>
-                  <SelectTrigger data-testid="select-toolkit-status">
-                    <SelectValue placeholder="Select toolkit status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_sent">Not Sent</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
-                    <SelectItem value="not_needed">Not Needed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="toolkitSentDate">Toolkit Sent Date</Label>
-                <Input
-                  id="toolkitSentDate"
-                  type="date"
-                  value={formData.toolkitSentDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, toolkitSentDate: e.target.value }))}
-                  disabled={formData.toolkitStatus === 'not_sent' || formData.toolkitStatus === 'not_needed'}
-                  data-testid="input-toolkit-sent-date"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* TSP Contact Assignment */}
           <div>
             <Label htmlFor="tspContact">TSP Contact Assignment</Label>
@@ -851,6 +1444,64 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Contact Attempts History Section */}
+          {eventRequest && (eventRequest.contactAttempts > 0 || eventRequest.unresponsiveNotes) && (
+            <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                Contact Attempts History
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="bg-white px-3 py-1 rounded border border-blue-300">
+                    <span className="font-medium text-blue-900">Total Attempts:</span>{' '}
+                    <span className="text-blue-700 font-bold">{eventRequest.contactAttempts || 0}</span>
+                  </div>
+                  {eventRequest.lastContactAttempt && (
+                    <div className="bg-white px-3 py-1 rounded border border-blue-300">
+                      <span className="font-medium text-blue-900">Last Attempt:</span>{' '}
+                      <span className="text-blue-700">
+                        {new Date(eventRequest.lastContactAttempt).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  {eventRequest.contactMethod && (
+                    <div className="bg-white px-3 py-1 rounded border border-blue-300">
+                      <span className="font-medium text-blue-900">Method:</span>{' '}
+                      <span className="text-blue-700 capitalize">{eventRequest.contactMethod}</span>
+                    </div>
+                  )}
+                </div>
+                {eventRequest.unresponsiveNotes && (
+                  <div className="bg-white p-3 rounded border border-blue-300">
+                    <p className="text-sm font-medium text-blue-900 mb-1">Attempt Log:</p>
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                      {eventRequest.unresponsiveNotes}
+                    </div>
+                  </div>
+                )}
+                {eventRequest.isUnresponsive && (
+                  <div className="bg-yellow-100 border border-yellow-400 rounded p-2 flex items-start gap-2">
+                    <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-yellow-800">Marked as Unresponsive</p>
+                      {eventRequest.unresponsiveReason && (
+                        <p className="text-sm text-yellow-700">Reason: {eventRequest.unresponsiveReason}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Notes & Requirements Section */}
           <div className="space-y-4">
@@ -905,7 +1556,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-200 text-sm text-gray-700">
+                  <div className="bg-brand-primary-lighter p-3 rounded border-l-4 border-brand-primary-border text-sm text-gray-700">
                     {formData.message || 'No initial message recorded'}
                   </div>
                 )}
@@ -938,6 +1589,303 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Completed Event Details Section - Only visible when status is "completed" */}
+          {formData.status === 'completed' && (
+            <div className="border rounded-lg">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full flex justify-between items-center p-4"
+                onClick={() => setShowCompletedDetails(!showCompletedDetails)}
+                data-testid="toggle-completed-details"
+              >
+                <span className="font-semibold text-[#236383]">
+                  Completed Event Details
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showCompletedDetails ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {showCompletedDetails && (
+                <div className="p-4 border-t bg-[#e6f2f5] space-y-6">
+                  
+                  {/* Social Media Tracking Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Social Media Tracking</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="socialMediaPostRequested"
+                            checked={formData.socialMediaPostRequested}
+                            onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostRequested: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-social-media-requested"
+                          />
+                          <Label htmlFor="socialMediaPostRequested">Social Media Post Requested</Label>
+                        </div>
+                        {formData.socialMediaPostRequested && (
+                          <div className="ml-6">
+                            <Label htmlFor="socialMediaPostRequestedDate">Requested Date</Label>
+                            <Input
+                              id="socialMediaPostRequestedDate"
+                              type="date"
+                              value={formData.socialMediaPostRequestedDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostRequestedDate: e.target.value }))}
+                              data-testid="input-social-media-requested-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="socialMediaPostCompleted"
+                            checked={formData.socialMediaPostCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-social-media-completed"
+                          />
+                          <Label htmlFor="socialMediaPostCompleted">Social Media Post Completed</Label>
+                        </div>
+                        {formData.socialMediaPostCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="socialMediaPostCompletedDate">Completed Date</Label>
+                            <Input
+                              id="socialMediaPostCompletedDate"
+                              type="date"
+                              value={formData.socialMediaPostCompletedDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostCompletedDate: e.target.value }))}
+                              data-testid="input-social-media-completed-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="socialMediaPostNotes">Social Media Notes</Label>
+                      <Textarea
+                        id="socialMediaPostNotes"
+                        value={formData.socialMediaPostNotes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostNotes: e.target.value }))}
+                        placeholder="Notes about social media posts, links, or other details"
+                        className="min-h-[80px]"
+                        data-testid="textarea-social-media-notes"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actual Sandwiches Delivered Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Actual Sandwiches Delivered</h4>
+                    
+                    {/* Mode Selector for Actual Sandwiches */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={actualSandwichMode === 'total' ? 'default' : 'outline'}
+                        onClick={() => setActualSandwichMode('total')}
+                        className="text-xs"
+                        data-testid="button-actual-sandwich-mode-total"
+                      >
+                        Total Count Only
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={actualSandwichMode === 'types' ? 'default' : 'outline'}
+                        onClick={() => setActualSandwichMode('types')}
+                        className="text-xs"
+                        data-testid="button-actual-sandwich-mode-types"
+                      >
+                        Specify Types
+                      </Button>
+                    </div>
+
+                    {/* Total Count Mode for Actual Sandwiches */}
+                    {actualSandwichMode === 'total' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="actualSandwichCount">Total Number of Sandwiches Actually Delivered</Label>
+                        <Input
+                          id="actualSandwichCount"
+                          type="number"
+                          value={formData.actualSandwichCount}
+                          onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCount: parseInt(e.target.value) || 0 }))}
+                          placeholder="Enter actual sandwich count"
+                          min="0"
+                          className="w-40"
+                          data-testid="input-actual-sandwich-count"
+                        />
+                      </div>
+                    )}
+
+                    {/* Specific Types Mode for Actual Sandwiches */}
+                    {actualSandwichMode === 'types' && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <Label>Actual Sandwich Types & Quantities</Label>
+                          <Button 
+                            type="button" 
+                            onClick={addActualSandwichType} 
+                            size="sm"
+                            data-testid="button-add-actual-sandwich-type"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Type
+                          </Button>
+                        </div>
+                        
+                        {formData.actualSandwichTypes.length === 0 ? (
+                          <div className="text-center py-4 text-[#007E8C] border-2 border-dashed border-[#236383]/30 rounded">
+                            <p>No actual sandwich types added yet. Click "Add Type" to get started.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {formData.actualSandwichTypes.map((sandwich, index) => (
+                              <div key={index} className="flex items-center gap-3 p-3 border rounded bg-white">
+                                <Select
+                                  value={sandwich.type}
+                                  onValueChange={(value) => updateActualSandwichType(index, 'type', value)}
+                                >
+                                  <SelectTrigger className="w-40">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {SANDWICH_TYPES.map((type) => (
+                                      <SelectItem key={type.value} value={type.value}>
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  type="number"
+                                  placeholder="Quantity"
+                                  value={sandwich.quantity}
+                                  onChange={(e) => updateActualSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeActualSandwichType(index)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            <div className="text-sm text-[#236383] bg-white p-2 rounded border border-[#236383]/30">
+                              <strong>Total:</strong> {formData.actualSandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <Label htmlFor="actualSandwichCountRecordedDate">Date Recorded</Label>
+                      <Input
+                        id="actualSandwichCountRecordedDate"
+                        type="date"
+                        value={formData.actualSandwichCountRecordedDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCountRecordedDate: e.target.value }))}
+                        data-testid="input-actual-sandwich-recorded-date"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="actualSandwichCountRecordedBy">Recorded By</Label>
+                      <Input
+                        id="actualSandwichCountRecordedBy"
+                        value={formData.actualSandwichCountRecordedBy}
+                        onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCountRecordedBy: e.target.value }))}
+                        placeholder="Enter name of person who recorded the count"
+                        data-testid="input-actual-sandwich-recorded-by"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Follow-up Completion Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Follow-up Completion</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="followUpOneDayCompleted"
+                            checked={formData.followUpOneDayCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, followUpOneDayCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-followup-oneday-completed"
+                          />
+                          <Label htmlFor="followUpOneDayCompleted">1-Day Follow-up Completed</Label>
+                        </div>
+                        {formData.followUpOneDayCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="followUpOneDayDate">Follow-up Date</Label>
+                            <Input
+                              id="followUpOneDayDate"
+                              type="date"
+                              value={formData.followUpOneDayDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, followUpOneDayDate: e.target.value }))}
+                              data-testid="input-followup-oneday-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="followUpOneMonthCompleted"
+                            checked={formData.followUpOneMonthCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, followUpOneMonthCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-followup-onemonth-completed"
+                          />
+                          <Label htmlFor="followUpOneMonthCompleted">1-Month Follow-up Completed</Label>
+                        </div>
+                        {formData.followUpOneMonthCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="followUpOneMonthDate">Follow-up Date</Label>
+                            <Input
+                              id="followUpOneMonthDate"
+                              type="date"
+                              value={formData.followUpOneMonthDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, followUpOneMonthDate: e.target.value }))}
+                              data-testid="input-followup-onemonth-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="followUpNotes">Follow-up Notes</Label>
+                      <Textarea
+                        id="followUpNotes"
+                        value={formData.followUpNotes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, followUpNotes: e.target.value }))}
+                        placeholder="Notes from follow-up conversations or feedback received"
+                        className="min-h-[80px]"
+                        data-testid="textarea-followup-notes"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Form Actions */}
           <div className="flex justify-between pt-4 border-t">
@@ -1009,6 +1957,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* MLK Day Dialog */}
+      <MlkDayDialog
+        isOpen={showMlkDayDialog}
+        onClose={() => setShowMlkDayDialog(false)}
+        onMarkAsMLK={handleMlkDayMark}
+        onSkip={handleMlkDaySkip}
+        eventDate={formData.eventDate}
+      />
     </Dialog>
   );
 };

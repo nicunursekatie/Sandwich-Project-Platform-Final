@@ -41,12 +41,14 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Driver, Host } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.DRIVERS_EDIT);
+  const { canEdit } = useResourcePermissions('DRIVERS');
   const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
   const queryClient = useQueryClient();
 
@@ -58,6 +60,7 @@ export default function DriversManagement() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [agreementFilter, setAgreementFilter] = useState<string>('all');
   const [vanFilter, setVanFilter] = useState<string>('all');
+  const [weeklyDriverFilter, setWeeklyDriverFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   const [newDriver, setNewDriver] = useState({
@@ -69,6 +72,7 @@ export default function DriversManagement() {
     availability: '',
     emailAgreementSent: false,
     vanApproved: false,
+    isWeeklyDriver: false,
     isActive: true,
   });
 
@@ -122,8 +126,15 @@ export default function DriversManagement() {
       filtered = filtered.filter((driver) => !driver.vanApproved);
     }
 
+    // Apply weekly driver filter
+    if (weeklyDriverFilter === 'weekly') {
+      filtered = filtered.filter((driver) => driver.isWeeklyDriver === true);
+    } else if (weeklyDriverFilter === 'not_weekly') {
+      filtered = filtered.filter((driver) => !driver.isWeeklyDriver);
+    }
+
     return filtered;
-  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter]);
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, weeklyDriverFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -136,7 +147,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver added successfully' });
     },
     onError: (error) => {
-      console.error('Driver addition error:', error);
+      logger.error('Driver addition error:', error);
       toast({ title: 'Error adding driver', variant: 'destructive' });
     },
   });
@@ -158,7 +169,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver updated successfully' });
     },
     onError: (error) => {
-      console.error('Driver update error:', error);
+      logger.error('Driver update error:', error);
       toast({ title: 'Error updating driver', variant: 'destructive' });
     },
   });
@@ -171,7 +182,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver deleted successfully' });
     },
     onError: (error) => {
-      console.error('Driver delete error:', error);
+      logger.error('Driver delete error:', error);
       toast({ title: 'Error deleting driver', variant: 'destructive' });
     },
   });
@@ -335,7 +346,7 @@ export default function DriversManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hostLocation">Host Location</Label>
+                      <Label htmlFor="hostLocation">Driver Location</Label>
                       <select
                         id="hostLocation"
                         value={newDriver.hostLocation}
@@ -347,7 +358,7 @@ export default function DriversManagement() {
                         }
                         className="w-full px-3 py-2 border rounded-md"
                       >
-                        <option value="">Select host location</option>
+                        <option value="">Select driver location</option>
                         {hosts.map((host) => (
                           <option key={host.id} value={host.name}>
                             {host.name}
@@ -384,6 +395,23 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="emailAgreementSent">
                         Agreement Signed
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isWeeklyDriver"
+                        checked={newDriver.isWeeklyDriver}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            isWeeklyDriver: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="isWeeklyDriver">
+                        Weekly Driver
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -504,7 +532,7 @@ export default function DriversManagement() {
                   value={agreementFilter}
                   onValueChange={setAgreementFilter}
                 >
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -520,7 +548,7 @@ export default function DriversManagement() {
                   Van Status
                 </Label>
                 <Select value={vanFilter} onValueChange={setVanFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -528,6 +556,22 @@ export default function DriversManagement() {
                     <SelectItem value="approved">Van Approved</SelectItem>
                     <SelectItem value="not_approved">
                       Not Van Approved
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="weeklyFilter">Weekly Driver</Label>
+                <Select value={weeklyDriverFilter} onValueChange={setWeeklyDriverFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="weekly">Weekly Only</SelectItem>
+                    <SelectItem value="not_weekly">
+                      Non-Weekly Only
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -542,6 +586,7 @@ export default function DriversManagement() {
                     setStatusFilter('all');
                     setAgreementFilter('all');
                     setVanFilter('all');
+                    setWeeklyDriverFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -631,7 +676,7 @@ export default function DriversManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-hostLocation">Host Location</Label>
+                <Label htmlFor="edit-hostLocation">Driver Location</Label>
                 <select
                   id="edit-hostLocation"
                   value={editingDriver.hostLocation || ''}
@@ -643,7 +688,7 @@ export default function DriversManagement() {
                   }
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="">Select host location</option>
+                  <option value="">Select driver location</option>
                   {hosts.map((host) => (
                     <option key={host.id} value={host.name}>
                       {host.name}
@@ -681,6 +726,21 @@ export default function DriversManagement() {
                 <Label htmlFor="edit-emailAgreementSent">
                   Agreement Signed
                 </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-isWeeklyDriver"
+                  checked={editingDriver.isWeeklyDriver || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      isWeeklyDriver: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-isWeeklyDriver">Weekly Driver</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -780,6 +840,15 @@ export default function DriversManagement() {
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Active
                             </Badge>
+                            {driver.isWeeklyDriver && (
+                              <Badge
+                                variant="default"
+                                className="bg-purple-100 text-purple-800 border-purple-200"
+                              >
+                                <Car className="w-3 h-3 mr-1" />
+                                Weekly Driver
+                              </Badge>
+                            )}
                             {driver.emailAgreementSent ? (
                               <Badge
                                 variant="default"
@@ -823,9 +892,9 @@ export default function DriversManagement() {
                               </div>
                             )}
                           </div>
-                          {driver.hostLocation && (
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Host Location: {driver.hostLocation}
+                              📍 Location: {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
                             </div>
                           )}
                           {driver.availability && (
@@ -836,7 +905,7 @@ export default function DriversManagement() {
                           {driver.vanApproved && (
                             <Badge
                               variant="default"
-                              className="bg-blue-100 text-blue-800 border-blue-200 mt-1"
+                              className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border mt-1"
                             >
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Van Approved

@@ -1,10 +1,10 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { z } from 'zod';
-import { storage } from '../storage-wrapper';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
-
-const router = Router();
+import bcrypt from 'bcrypt';
+import { logger } from '../utils/production-safe-logger';
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<
@@ -22,8 +22,12 @@ setInterval(() => {
   });
 }, 60000 * 60); // Clean up every hour
 
+export function createPasswordResetRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage } = deps;
+
 // Request password reset
-router.post('/forgot-password', async (req, res) => {
+  router.post('/forgot-password', async (req, res) => {
   try {
     const schema = z.object({
       email: z.string().email('Please enter a valid email address'),
@@ -174,12 +178,12 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
         `,
       });
 
-      console.log(`✅ Password reset email sent successfully to: ${email}`);
+      logger.log(`✅ Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send password reset email:', emailError);
+      logger.error('❌ Failed to send password reset email:', emailError);
       // For development, log the reset link as fallback
       if (process.env.NODE_ENV === 'development') {
-        console.log(`
+        logger.log(`
 🔧 DEVELOPMENT FALLBACK - Email failed, but reset link available:
 📧 Email: ${email}
 🔗 Reset Link: ${req.protocol}://${
@@ -196,7 +200,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
         'If an account with this email exists, you will receive a password reset link.',
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error('Forgot password error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -211,7 +215,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 });
 
 // Reset password with token
-router.post('/reset-password', async (req, res) => {
+  router.post('/reset-password', async (req, res) => {
   try {
     const schema = z.object({
       token: z.string().min(1, 'Reset token is required'),
@@ -246,21 +250,16 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    // Update user's password in metadata
-    const updatedUser = {
-      ...user,
-      metadata: {
-        ...(user.metadata || {}),
-        password: newPassword,
-      },
-    };
-
-    await storage.updateUser(user.id!, updatedUser);
+    // Hash and update user's password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await storage.updateUser(user.id!, {
+      password: hashedPassword,
+    });
 
     // Remove used token
     resetTokens.delete(token);
 
-    console.log(`Password reset successful for user: ${user.email}`);
+    logger.log(`Password reset successful for user: ${user.email}`);
 
     res.json({
       success: true,
@@ -268,7 +267,7 @@ router.post('/reset-password', async (req, res) => {
         'Password has been reset successfully. You can now log in with your new password.',
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error('Reset password error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -284,7 +283,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // Verify reset token (for frontend to check if token is valid)
-router.get('/verify-reset-token/:token', (req, res) => {
+  router.get('/verify-reset-token/:token', (req, res) => {
   const { token } = req.params;
   const tokenData = resetTokens.get(token);
 
@@ -301,4 +300,6 @@ router.get('/verify-reset-token/:token', (req, res) => {
   });
 });
 
-export default router;
+  return router;
+}
+

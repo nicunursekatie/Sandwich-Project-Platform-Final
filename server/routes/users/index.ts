@@ -82,11 +82,15 @@ usersRouter.patch(
       // Apply permission dependencies (e.g., NAV_EVENT_PLANNING automatically grants EVENT_REQUESTS_VIEW)
       const finalPermissions = permissions ? applyPermissionDependencies(permissions) : permissions;
 
-      const updatedUser = await userService.updateUser(id, {
-        role,
-        permissions: finalPermissions,
-        metadata,
-      });
+      const updatedUser = await userService.updateUser(
+        id,
+        {
+          role,
+          permissions: finalPermissions,
+          metadata,
+        },
+        req.user?.id
+      );
 
       res.json(updatedUser);
     } catch (error) {

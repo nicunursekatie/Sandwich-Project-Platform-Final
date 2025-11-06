@@ -65,6 +65,7 @@ import type { ToastActionElement } from '@/components/ui/toast';
 // Import types from hooks
 import type { Meeting } from '../hooks/useMeetings';
 import type { Project } from '../hooks/useProjects';
+import { logger } from '@/lib/logger';
 
 // Toast function type
 type ToastFunction = (props: {
@@ -81,7 +82,7 @@ interface NotesTabProps {
   allProjects: Project[];
   
   // Handlers (for agenda integration)
-  handleSendToAgenda?: (projectId: number) => void;
+  handleSendToAgenda?: (projectId: number, noteContent?: string) => void;
   
   // Dependencies
   queryClient: QueryClient;
@@ -139,6 +140,25 @@ export function NotesTab({
     ...filters,
     search: searchQuery,
   });
+
+  // Debug logging for notes
+  React.useEffect(() => {
+    logger.log('[NotesTab] Current filters:', filters);
+    logger.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
+    if (notes.length > 0) {
+      logger.log('[NotesTab] Sample notes (first 3):');
+      notes.slice(0, 3).forEach(note => {
+        logger.log({
+          id: note.id,
+          projectId: note.projectId,
+          meetingId: note.meetingId,
+          type: note.type,
+          status: note.status,
+          createdAt: note.createdAt
+        });
+      });
+    }
+  }, [notes, filters]);
 
   // Memoized data for performance
   const notesWithProjectInfo = useMemo(() => {
@@ -304,10 +324,12 @@ export function NotesTab({
 
   const handleUseInAgenda = (note: MeetingNote) => {
     if (handleSendToAgenda) {
-      handleSendToAgenda(note.projectId);
+      // Pass both projectId and note content so the discussion/decision points
+      // from past meetings are copied into the project's agenda fields
+      handleSendToAgenda(note.projectId, note.content);
       toast({
         title: 'Added to Agenda',
-        description: `Note for "${note.projectTitle}" has been added to agenda planning.`,
+        description: `Note for "${note.projectTitle}" has been added to agenda planning with past discussion content.`,
       });
     }
   };
@@ -315,9 +337,9 @@ export function NotesTab({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'discussion':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong';
       case 'meeting':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-[#47B3CB]/20 text-[#007E8C] border-[#007E8C]/40';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -325,7 +347,7 @@ export function NotesTab({
 
   const getStatusColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      ? 'bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30'
       : 'bg-gray-50 text-gray-600 border-gray-200';
   };
 
@@ -358,24 +380,24 @@ export function NotesTab({
 
             {/* Main Content - Discussion Points and Decision Items */}
             {parsed.discussionPoints && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+              <div className="bg-[#47B3CB]/10 border-l-4 border-[#47B3CB] p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-600 mt-1 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 text-[#47B3CB] mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Discussion Points/Questions</p>
-                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.discussionPoints}</p>
+                    <p className="text-sm font-medium text-[#007E8C] mb-1">📝 Pre-Meeting Discussion Points</p>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed italic">{parsed.discussionPoints}</p>
                   </div>
                 </div>
               </div>
             )}
             
             {parsed.decisionItems && (
-              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+              <div className="bg-[#A31C41]/10 border-l-4 border-[#A31C41] p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#A31C41] mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-green-800 mb-1">Meeting Notes</p>
-                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.decisionItems}</p>
+                    <p className="text-sm font-medium text-[#A31C41] mb-1">✅ Post-Meeting Outcome</p>
+                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed font-medium">{parsed.decisionItems}</p>
                   </div>
                 </div>
               </div>
@@ -420,8 +442,13 @@ export function NotesTab({
 
       // If it's not our structured format, return the parsed content as-is
       return <p className="text-gray-900 whitespace-pre-wrap">{note.content}</p>;
-    } catch {
+    } catch (error) {
       // If it's not JSON, render as plain text
+      logger.warn('[NotesTab] Failed to parse note content as JSON:', {
+        noteId: note.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        contentPreview: note.content.substring(0, 100),
+      });
       return (
         <div className="text-gray-900 leading-relaxed whitespace-pre-wrap">
           {expandedNotes.has(note.id)
@@ -579,8 +606,8 @@ export function NotesTab({
 
       {/* Bulk Actions */}
       {selectedNoteIds.length > 0 && (
-        <div className="flex items-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-sm font-medium text-blue-800">
+        <div className="flex items-center gap-2 p-4 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
+          <span className="text-sm font-medium text-brand-primary-dark">
             {selectedNoteIds.length} note(s) selected
           </span>
           <Button
@@ -735,11 +762,12 @@ export function NotesTab({
                         variant="outline"
                         size="sm"
                         onClick={() => handleUseInAgenda(note)}
-                        className="text-teal-600 border-teal-200 hover:bg-teal-50"
+                        className="text-teal-600 border-teal-200 hover:bg-teal-50 text-xs sm:text-sm whitespace-nowrap"
                         data-testid={`button-use-in-agenda-${note.id}`}
                       >
-                        <ArrowRight className="w-4 h-4 mr-1" />
-                        Use in Next Agenda
+                        <ArrowRight className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden xs:inline">Use in Next Agenda</span>
+                        <span className="xs:hidden">Next Agenda</span>
                       </Button>
                     )}
                   </div>

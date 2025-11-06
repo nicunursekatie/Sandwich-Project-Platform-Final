@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -17,12 +17,26 @@ import {
   Search,
   Filter,
   X,
+  CheckCircle,
+  RefreshCw,
+  Package,
+  HelpCircle,
 } from 'lucide-react';
+
+// Lazy load map and cooler tracking components
+const HostLocationsMap = lazy(() => import('@/pages/route-map'));
+const CoolerTracking = lazy(() => import('@/pages/cooler-tracking'));
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -43,7 +57,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type {
   Host,
   InsertHost,
@@ -51,6 +66,7 @@ import type {
   InsertHostContact,
   Recipient,
 } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface HostWithContacts extends Host {
   contacts: HostContact[];
@@ -61,10 +77,22 @@ interface ExtendedHostContact extends HostContact {
   newAssignmentId?: number;
 }
 
+// Predefined host areas/locations
+const HOST_AREAS = [
+  'Alpharetta',
+  'East Cobb/Roswell',
+  'Dacula',
+  'Dunwoody/PTC',
+  'Flowery Branch',
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead',
+  'Sandy Springs/Chastain',
+  'UGA',
+] as const;
+
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.HOSTS_EDIT);
+  const { canEdit } = useResourcePermissions('HOSTS');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHost, setEditingHost] = useState<Host | null>(null);
@@ -78,6 +106,7 @@ export default function HostsManagementConsolidated() {
     new Set()
   );
   const [hideEmptyHosts, setHideEmptyHosts] = useState(false);
+  const [activeLocationTab, setActiveLocationTab] = useState<string>('active');
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +116,7 @@ export default function HostsManagementConsolidated() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'locations' | 'contacts'>(
-    'locations'
+    'contacts'
   );
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)
@@ -133,6 +162,8 @@ export default function HostsManagementConsolidated() {
     role: '',
     phone: '',
     email: '',
+    address: '',
+    hostLocation: '',
     isPrimary: false,
     notes: '',
   });
@@ -141,8 +172,7 @@ export default function HostsManagementConsolidated() {
     HostWithContacts[]
   >({
     queryKey: ['/api/hosts-with-contacts'],
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache data
+    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
   });
 
   const { data: recipients = [] } = useQuery<Recipient[]>({
@@ -454,6 +484,8 @@ export default function HostsManagementConsolidated() {
         role: '',
         phone: '',
         email: '',
+        address: '',
+        hostLocation: '',
         isPrimary: false,
         notes: '',
       });
@@ -486,7 +518,7 @@ export default function HostsManagementConsolidated() {
 
   const updateContactMutation = useMutation({
     mutationFn: async (data: { id: number; updates: Partial<HostContact> }) => {
-      console.log('PATCH request data:', data);
+      logger.log('PATCH request data:', data);
       return await apiRequest(
         'PATCH',
         `/api/host-contacts/${data.id}`,
@@ -617,6 +649,29 @@ export default function HostsManagementConsolidated() {
     },
   });
 
+  const refreshAvailabilityMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/hosts/scrape-availability');
+    },
+    onSuccess: (result: any) => {
+      // Refresh hosts data to show updated weekly active status
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+
+      toast({
+        title: 'Availability Updated',
+        description: `${result.matchedContacts} contacts marked as available, ${result.unmatchedContacts} as unavailable.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to refresh availability: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddHost = () => {
     if (!newHost.name.trim()) return;
     createHostMutation.mutate(newHost);
@@ -636,7 +691,7 @@ export default function HostsManagementConsolidated() {
   };
 
   const handleDeleteHost = (id: number) => {
-    const host = hosts.find((h) => h.id === id);
+    const host = hostsWithContacts.find((h) => h.id === id);
     if (
       confirm(
         `Are you sure you want to hide "${host?.name}" from this list? It will be completely hidden but data will be preserved.`
@@ -650,18 +705,57 @@ export default function HostsManagementConsolidated() {
     }
   };
 
-  const handleAddContact = () => {
-    if (!selectedHost || !newContact.name.trim()) return;
-    createContactMutation.mutate({
-      ...newContact,
-      hostId: selectedHost.id,
-    });
+  const handleAddContact = async () => {
+    if (!newContact.name.trim()) return;
+
+    // If adding from within a host dialog, use that host's ID
+    if (selectedHost) {
+      createContactMutation.mutate({
+        ...newContact,
+        hostId: selectedHost.id,
+      });
+      return;
+    }
+
+    // If adding from main page, find or create a host for the selected area
+    let hostId: number;
+    const areaName = newContact.hostLocation || 'Unassigned';
+
+    // Try to find existing host with matching name
+    const existingHost = hostsWithContacts.find(h => h.name === areaName);
+
+    if (existingHost) {
+      hostId = existingHost.id;
+      createContactMutation.mutate({
+        ...newContact,
+        hostId,
+      });
+    } else {
+      // Create new host for this area
+      try {
+        const newHost = await apiRequest('POST', '/api/hosts', {
+          name: areaName,
+          status: 'active',
+          notes: `Auto-created for ${areaName} area`,
+        });
+        createContactMutation.mutate({
+          ...newContact,
+          hostId: newHost.id,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to create host area for contact',
+          variant: 'destructive',
+        });
+      }
+    }
   };
 
   const handleUpdateContact = () => {
     if (!editingContact) return;
 
-    console.log('Updating contact:', editingContact.id, editingContact);
+    logger.log('Updating contact:', editingContact.id, editingContact);
 
     // Clean the updates object to only include valid HostContact fields - exclude timestamps and IDs
     const updates = {
@@ -669,6 +763,9 @@ export default function HostsManagementConsolidated() {
       role: editingContact.role?.trim(),
       phone: editingContact.phone?.trim(),
       email: editingContact.email?.trim(),
+      address: editingContact.address?.trim() || '',
+      hostLocation: editingContact.hostLocation?.trim() || '',
+      weeklyActive: editingContact.weeklyActive || false,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -693,7 +790,7 @@ export default function HostsManagementConsolidated() {
   }
 
   // Filter hosts by status and contact count
-  const visibleHosts = hosts.filter((host) => {
+  const visibleHosts = hostsWithContacts.filter((host) => {
     // Always hide "hidden" hosts
     if (host.status === 'hidden') return false;
 
@@ -802,22 +899,37 @@ export default function HostsManagementConsolidated() {
                 {(() => {
                   const sortedContacts = sortContactsByPriority(host.contacts);
                   const isExpanded = expandedContacts.has(host.id);
+                  // Show first 5 contacts by default, then allow expanding to see all
                   const contactsToShow = isExpanded
                     ? sortedContacts
-                    : sortedContacts.slice(0, 2);
+                    : sortedContacts.slice(0, 5);
 
                   return (
                     <>
                       {contactsToShow.map((contact) => (
                         <div
                           key={contact.id}
-                          className="space-y-1 border-l-2 border-blue-200 pl-2"
+                          className="space-y-1 border-l-2 border-brand-primary-border pl-2"
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-slate-700">
                               {contact.name}
                             </span>
                             <div className="flex items-center space-x-1">
+                              {contact.weeklyActive && (
+                                <span
+                                  className="group relative flex items-center"
+                                  tabIndex={0}
+                                >
+                                  <CheckCircle
+                                    className="w-3 h-3 text-green-600 fill-current"
+                                    aria-label={`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
+                                  />
+                                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block group-focus:block bg-slate-800 text-white text-xs rounded px-2 py-1 z-10 whitespace-nowrap">
+                                    {`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
+                                  </span>
+                                </span>
+                              )}
                               {contact.role === 'lead' && (
                                 <Crown className="w-3 h-3 text-purple-600 fill-current" />
                               )}
@@ -841,16 +953,22 @@ export default function HostsManagementConsolidated() {
                               {contact.email}
                             </div>
                           )}
+                          {contact.address && (
+                            <div className="flex items-start text-xs text-slate-600">
+                              <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                              <span>{contact.address}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
-                      {sortedContacts.length > 2 && (
+                      {sortedContacts.length > 5 && (
                         <button
                           onClick={() => toggleContactExpansion(host.id)}
-                          className="text-xs text-brand-primary hover:text-blue-800 hover:underline cursor-pointer"
+                          className="text-xs text-brand-primary hover:text-brand-primary-dark hover:underline cursor-pointer"
                         >
                           {isExpanded
                             ? 'Show less'
-                            : `+${sortedContacts.length - 2} more contacts`}
+                            : `+${sortedContacts.length - 5} more contacts`}
                         </button>
                       )}
                     </>
@@ -866,7 +984,7 @@ export default function HostsManagementConsolidated() {
               </div>
             )}
 
-            <div className="flex flex-col space-y-2 pt-2">
+            <div className="pt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -877,7 +995,7 @@ export default function HostsManagementConsolidated() {
                   });
                   // Get the refreshed host data
                   const freshHosts = queryClient.getQueryData([
-                    '/api/hosts-with-contacts',
+                    '/api/hosts-with-contacts'
                   ]) as HostWithContacts[];
                   const freshHost = freshHosts?.find((h) => h.id === host.id);
                   setSelectedHost(freshHost || host);
@@ -887,125 +1005,6 @@ export default function HostsManagementConsolidated() {
                 <Users className="w-3 h-3 mr-1" />
                 Manage Contacts
               </Button>
-              <div className="flex space-x-2">
-                <Dialog
-                  open={editingHost?.id === host.id}
-                  onOpenChange={(open) => {
-                    if (!open) {
-                      setEditingHost(null);
-                    }
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!canEdit}
-                      onClick={() => setEditingHost(host)}
-                      className="flex-1"
-                    >
-                      <Edit className="w-3 h-3 mr-1" />
-                      Edit
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-lg sm:text-xl">
-                        Edit Host
-                      </DialogTitle>
-                    </DialogHeader>
-                    {editingHost && (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          handleUpdateHost();
-                        }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <Label htmlFor="edit-name">
-                            Host Location Name *
-                          </Label>
-                          <Input
-                            id="edit-name"
-                            value={editingHost.name}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditingHost({
-                                ...editingHost,
-                                name: e.target.value,
-                              });
-                            }}
-                            placeholder="Enter host location name"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="edit-status">Status</Label>
-                          <Select
-                            value={editingHost.status}
-                            onValueChange={(value) =>
-                              setEditingHost({ ...editingHost, status: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="edit-notes">Notes</Label>
-                          <Textarea
-                            id="edit-notes"
-                            value={editingHost.notes || ''}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditingHost({
-                                ...editingHost,
-                                notes: e.target.value,
-                              });
-                            }}
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setEditingHost(null)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="submit"
-                            disabled={
-                              !editingHost.name.trim() ||
-                              updateHostMutation.isPending
-                            }
-                          >
-                            {updateHostMutation.isPending
-                              ? 'Updating...'
-                              : 'Update Host'}
-                          </Button>
-                        </div>
-                      </form>
-                    )}
-                  </DialogContent>
-                </Dialog>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!canEdit}
-                  onClick={() => handleDeleteHost(host.id)}
-                  className="flex-1 text-orange-600 hover:text-orange-700"
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Hide
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -1014,17 +1013,29 @@ export default function HostsManagementConsolidated() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center">
-            <Building2 className="w-6 h-6 mr-2" />
-            Host Management
-          </h2>
-          <p className="text-slate-600 mt-1">
-            Manage collection hosts and their contact information
-          </p>
-        </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-6 h-6" />
+              Host Management
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Host Management Help</p>
+                  <p className="text-sm">Manage organizations that host sandwich collection events. Track contact information, view locations on a map, and manage cooler inventory.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h2>
+            <p className="text-slate-600 mt-1">
+              Manage collection hosts and their contact information
+            </p>
+          </div>
 
         {/* View Toggle */}
         <div className="flex items-center gap-2">
@@ -1054,75 +1065,160 @@ export default function HostsManagementConsolidated() {
 
       {/* Action Bar */}
       <div className="flex items-center justify-between">
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!canEdit}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Host
+        <div className="flex gap-2">
+          {viewMode === 'locations' && (
+            <Button
+              onClick={() => setActiveLocationTab('map')}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-md"
+              size="lg"
+            >
+              <MapPin className="w-5 h-5 mr-2" />
+              View Host Map
             </Button>
-          </DialogTrigger>
+          )}
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!canEdit}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Contact
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
-                Add New Host
+                Add New Contact
               </DialogTitle>
             </DialogHeader>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleAddHost();
+                handleAddContact();
               }}
               className="space-y-4"
             >
               <div>
-                <Label htmlFor="name">Host Location Name *</Label>
+                <Label htmlFor="main-contact-name">Name *</Label>
                 <Input
-                  id="name"
-                  value={newHost.name}
+                  id="main-contact-name"
+                  value={newContact.name}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, name: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      name: e.target.value,
+                    });
                   }}
-                  placeholder="Enter host location name (e.g., Alpharetta, Dunwoody/PTC)"
+                  placeholder="Enter contact name"
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="main-contact-role">Role</Label>
                 <Input
-                  id="address"
-                  value={newHost.address || ''}
+                  id="main-contact-role"
+                  value={newContact.role}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, address: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      role: e.target.value,
+                    });
                   }}
-                  placeholder="Enter host location address (e.g., 123 Main St, Alpharetta, GA 30009)"
+                  placeholder="e.g., Manager, Coordinator, Lead, Volunteer"
                 />
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="main-contact-phone">Phone</Label>
+                <Input
+                  id="main-contact-phone"
+                  value={newContact.phone}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      phone: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-email">Email</Label>
+                <Input
+                  id="main-contact-email"
+                  type="email"
+                  value={newContact.email}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      email: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-address">Address</Label>
+                <Input
+                  id="main-contact-address"
+                  value={newContact.address || ''}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      address: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter contact address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-location">Area/Location</Label>
                 <Select
-                  value={newHost.status}
-                  onValueChange={(value) =>
-                    setNewHost({ ...newHost, status: value })
-                  }
+                  value={newContact.hostLocation || ''}
+                  onValueChange={(value) => {
+                    setNewContact({
+                      ...newContact,
+                      hostLocation: value,
+                    });
+                  }}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="main-contact-location">
+                    <SelectValue placeholder="Select an area..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    {HOST_AREAS.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-slate-500 mt-1">
+                  Used to group contacts by geographic area on the main view
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="main-contact-primary"
+                  checked={newContact.isPrimary}
+                  onCheckedChange={(checked) =>
+                    setNewContact({ ...newContact, isPrimary: checked })
+                  }
+                />
+                <Label htmlFor="main-contact-primary">Primary Contact</Label>
               </div>
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="main-contact-notes">Notes</Label>
                 <Textarea
-                  id="notes"
-                  value={newHost.notes || ''}
+                  id="main-contact-notes"
+                  value={newContact.notes || ''}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, notes: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      notes: e.target.value,
+                    });
                   }}
                   placeholder="Enter any additional notes"
                   rows={3}
@@ -1139,15 +1235,25 @@ export default function HostsManagementConsolidated() {
                 <Button
                   type="submit"
                   disabled={
-                    !newHost.name.trim() || createHostMutation.isPending
+                    !newContact.name.trim() || createContactMutation.isPending
                   }
                 >
-                  {createHostMutation.isPending ? 'Adding...' : 'Add Host'}
+                  {createContactMutation.isPending ? 'Adding...' : 'Add Contact'}
                 </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
+
+        <Button
+          variant="outline"
+          disabled={!canEdit || refreshAvailabilityMutation.isPending}
+          onClick={() => refreshAvailabilityMutation.mutate()}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshAvailabilityMutation.isPending ? 'animate-spin' : ''}`} />
+          {refreshAvailabilityMutation.isPending ? 'Refreshing...' : 'Refresh Availability'}
+        </Button>
+      </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -1248,7 +1354,7 @@ export default function HostsManagementConsolidated() {
                 Contacts
               </Label>
               <Select value={contactFilter} onValueChange={setContactFilter}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1297,7 +1403,7 @@ export default function HostsManagementConsolidated() {
 
           {/* Results Summary */}
           <div className="text-sm text-slate-600">
-            Showing {hosts.length} of {hostsWithContacts.length} hosts
+            Showing {visibleHosts.length} of {hostsWithContacts.length} hosts
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
             {statusFilter !== 'all' && <span> • {statusFilter}</span>}
             {locationFilter !== 'all' && (
@@ -1351,13 +1457,19 @@ export default function HostsManagementConsolidated() {
                           <h3 className="font-semibold text-gray-900 truncate">
                             {contact.name}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {contact.weeklyActive && (
+                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Available This Week
+                              </Badge>
+                            )}
                             <Badge
                               className={`text-xs ${
                                 contact.role === 'lead'
                                   ? 'bg-purple-100 text-purple-800 border-purple-200'
                                   : contact.isPrimary
-                                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                    ? 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border'
                                     : contact.role === 'primary'
                                       ? 'bg-green-100 text-green-800 border-green-200'
                                       : 'bg-gray-100 text-gray-800 border-gray-200'
@@ -1366,7 +1478,7 @@ export default function HostsManagementConsolidated() {
                               {contact.role}
                             </Badge>
                             {contact.isPrimary && (
-                              <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                              <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border text-xs">
                                 <Star className="w-3 h-3 mr-1" />
                                 Primary
                               </Badge>
@@ -1402,6 +1514,13 @@ export default function HostsManagementConsolidated() {
                             >
                               {contact.email}
                             </a>
+                          </div>
+                        )}
+
+                        {(contact.address || contact.id === 7) && (
+                          <div className="flex items-start gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs">{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
                           </div>
                         )}
                       </div>
@@ -1451,18 +1570,241 @@ export default function HostsManagementConsolidated() {
               ))}
             </div>
           )}
+
+          {/* Edit Contact Dialog for Contacts View */}
+          <Dialog
+            open={!!editingContact && viewMode === 'contacts'}
+            onOpenChange={(open) => !open && setEditingContact(null)}
+          >
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Contact</DialogTitle>
+              </DialogHeader>
+              {editingContact && (
+                <div className="space-y-4">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateContact();
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <Label htmlFor="edit-contact-name">Name *</Label>
+                      <Input
+                        id="edit-contact-name"
+                        value={editingContact.name}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            name: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-role">Role</Label>
+                      <Input
+                        id="edit-contact-role"
+                        value={editingContact.role || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            role: e.target.value,
+                          });
+                        }}
+                        placeholder="e.g., Manager, Coordinator, Lead"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-phone">Phone *</Label>
+                      <Input
+                        id="edit-contact-phone"
+                        value={editingContact.phone}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            phone: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-email">Email</Label>
+                      <Input
+                        id="edit-contact-email"
+                        type="email"
+                        value={editingContact.email || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            email: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-address">Address</Label>
+                      <Input
+                        id="edit-contact-address"
+                        value={editingContact.address || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            address: e.target.value,
+                          });
+                        }}
+                        placeholder="Enter contact address"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-location">
+                        Area/Location
+                      </Label>
+                      <Select
+                        value={editingContact.hostLocation || ''}
+                        onValueChange={(value) => {
+                          setEditingContact({
+                            ...editingContact,
+                            hostLocation: value,
+                          });
+                        }}
+                      >
+                        <SelectTrigger id="edit-contact-location">
+                          <SelectValue placeholder="Select an area..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HOST_AREAS.map((area) => (
+                            <SelectItem key={area} value={area}>
+                              {area}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Used to group contacts by geographic area on the main
+                        view
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-notes">Notes</Label>
+                      <Textarea
+                        id="edit-contact-notes"
+                        value={editingContact.notes || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            notes: e.target.value,
+                          });
+                        }}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h3 className="font-medium text-sm text-slate-700 mb-3">
+                        Contact Settings
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-lead"
+                            checked={editingContact.role === 'lead'}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                role: checked ? 'lead' : '',
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-lead"
+                            className="text-sm"
+                          >
+                            Mark as Location Lead
+                            <span className="block text-xs text-slate-500">
+                              Leads will be highlighted with a crown icon
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-weekly-active"
+                            checked={editingContact.weeklyActive || false}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                weeklyActive: checked,
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-weekly-active"
+                            className="text-sm"
+                          >
+                            Available This Week (Manual Override)
+                            <span className="block text-xs text-slate-500">
+                              Will be reset on next Monday at 1pm when availability is auto-updated
+                            </span>
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setEditingContact(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={
+                          !editingContact.name.trim() ||
+                          !editingContact.phone.trim() ||
+                          updateContactMutation.isPending
+                        }
+                      >
+                        {updateContactMutation.isPending
+                          ? 'Saving...'
+                          : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       ) : (
         /* Original Location-based View */
-        <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeLocationTab} onValueChange={setActiveLocationTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Active Locations ({activeHosts.length})
+              Active ({activeHosts.length})
             </TabsTrigger>
             <TabsTrigger value="inactive" className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
-              Inactive Locations ({inactiveHosts.length})
+              Inactive ({inactiveHosts.length})
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Map
             </TabsTrigger>
           </TabsList>
 
@@ -1494,6 +1836,17 @@ export default function HostsManagementConsolidated() {
             ) : (
               <HostGrid hostList={inactiveHosts} />
             )}
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-6">
+            <Suspense fallback={
+              <div className="text-center py-12">
+                <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
+                <p className="text-slate-500">Loading map...</p>
+              </div>
+            }>
+              <HostLocationsMap />
+            </Suspense>
           </TabsContent>
         </Tabs>
       )}
@@ -1615,6 +1968,47 @@ export default function HostsManagementConsolidated() {
                             placeholder="Enter email address"
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="contact-address">Address</Label>
+                          <Input
+                            id="contact-address"
+                            value={newContact.address || ''}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({
+                                ...newContact,
+                                address: e.target.value,
+                              });
+                            }}
+                            placeholder="Enter contact address"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="contact-location">Area/Location</Label>
+                          <Select
+                            value={newContact.hostLocation || ''}
+                            onValueChange={(value) => {
+                              setNewContact({
+                                ...newContact,
+                                hostLocation: value,
+                              });
+                            }}
+                          >
+                            <SelectTrigger id="contact-location">
+                              <SelectValue placeholder="Select an area..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {HOST_AREAS.map((area) => (
+                                <SelectItem key={area} value={area}>
+                                  {area}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Used to group contacts by geographic area on the main view
+                          </p>
+                        </div>
                         <div className="flex items-center space-x-2">
                           <Switch
                             id="contact-primary"
@@ -1706,6 +2100,12 @@ export default function HostsManagementConsolidated() {
                                   {contact.email}
                                 </div>
                               )}
+                              {(contact.address || contact.id === 7) && (
+                                <div className="flex items-start text-sm text-slate-600">
+                                  <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                                  <span>{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
+                                </div>
+                              )}
                               {contact.notes && (
                                 <p className="text-sm text-slate-600 mt-2">
                                   {contact.notes}
@@ -1713,61 +2113,60 @@ export default function HostsManagementConsolidated() {
                               )}
                             </div>
                             <div className="flex space-x-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!canEdit}
+                                onClick={async () => {
+                                  logger.log(
+                                    'Edit button clicked for contact:',
+                                    contact.id,
+                                    contact.name
+                                  );
+
+                                  // Force fresh data before editing to ensure contact IDs are correct
+                                  await queryClient.refetchQueries({
+                                    queryKey: ['/api/hosts-with-contacts'],
+                                  });
+                                  const freshHosts =
+                                    queryClient.getQueryData([
+                                      '/api/hosts-with-contacts',
+                                    ]) as HostWithContacts[];
+                                  const freshHost = freshHosts?.find(
+                                    (h) => h.id === selectedHost?.id
+                                  );
+                                  const freshContact =
+                                    freshHost?.contacts?.find(
+                                      (c) => c.id === contact.id
+                                    );
+
+                                  logger.log(
+                                    'Fresh contact found:',
+                                    freshContact
+                                  );
+
+                                  if (freshContact) {
+                                    setEditingContact(freshContact);
+                                  } else {
+                                    logger.error(
+                                      'Could not find fresh contact data for ID:',
+                                      contact.id,
+                                      'Contact:',
+                                      contact.name
+                                    );
+                                    setEditingContact(contact);
+                                  }
+                                }}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+
                               <Dialog
                                 open={editingContact?.id === contact.id}
                                 onOpenChange={(open) =>
                                   !open && setEditingContact(null)
                                 }
                               >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!canEdit}
-                                    onClick={async () => {
-                                      console.log(
-                                        'Edit button clicked for contact:',
-                                        contact.id,
-                                        contact.name
-                                      );
-
-                                      // Force fresh data before editing to ensure contact IDs are correct
-                                      await queryClient.refetchQueries({
-                                        queryKey: ['/api/hosts-with-contacts'],
-                                      });
-                                      const freshHosts =
-                                        queryClient.getQueryData([
-                                          '/api/hosts-with-contacts',
-                                        ]) as HostWithContacts[];
-                                      const freshHost = freshHosts?.find(
-                                        (h) => h.id === selectedHost?.id
-                                      );
-                                      const freshContact =
-                                        freshHost?.contacts?.find(
-                                          (c) => c.id === contact.id
-                                        );
-
-                                      console.log(
-                                        'Fresh contact found:',
-                                        freshContact
-                                      );
-
-                                      if (freshContact) {
-                                        setEditingContact(freshContact);
-                                      } else {
-                                        console.error(
-                                          'Could not find fresh contact data for ID:',
-                                          contact.id,
-                                          'Contact:',
-                                          contact.name
-                                        );
-                                        setEditingContact(contact);
-                                      }
-                                    }}
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                </DialogTrigger>
                                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle>Edit Contact</DialogTitle>
@@ -1847,6 +2246,53 @@ export default function HostsManagementConsolidated() {
                                               });
                                             }}
                                           />
+                                        </div>
+
+                                        <div>
+                                          <Label htmlFor="edit-contact-address">
+                                            Address
+                                          </Label>
+                                          <Input
+                                            id="edit-contact-address"
+                                            value={editingContact.address || ''}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              setEditingContact({
+                                                ...editingContact,
+                                                address: e.target.value,
+                                              });
+                                            }}
+                                            placeholder="Enter contact address"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <Label htmlFor="edit-contact-location">
+                                            Area/Location
+                                          </Label>
+                                          <Select
+                                            value={editingContact.hostLocation || ''}
+                                            onValueChange={(value) => {
+                                              setEditingContact({
+                                                ...editingContact,
+                                                hostLocation: value,
+                                              });
+                                            }}
+                                          >
+                                            <SelectTrigger id="edit-contact-location">
+                                              <SelectValue placeholder="Select an area..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {HOST_AREAS.map((area) => (
+                                                <SelectItem key={area} value={area}>
+                                                  {area}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <p className="text-xs text-slate-500 mt-1">
+                                            Used to group contacts by geographic area on the main view
+                                          </p>
                                         </div>
 
                                         <div>
@@ -2006,5 +2452,6 @@ export default function HostsManagementConsolidated() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

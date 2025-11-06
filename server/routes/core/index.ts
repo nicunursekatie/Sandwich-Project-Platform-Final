@@ -6,6 +6,7 @@ import {
   createStandardMiddleware,
   createErrorHandler,
 } from '../../middleware';
+import { logger } from '../../utils/production-safe-logger';
 
 const router = Router();
 
@@ -50,7 +51,7 @@ router.get(
       const submissionStatus = await CoreService.getWeeklyMonitoringStatus(weeksAgo);
       res.json(submissionStatus);
     } catch (error) {
-      console.error('Error checking weekly submissions:', error);
+      logger.error('Error checking weekly submissions:', error);
       res.status(500).json({ error: 'Failed to check weekly submissions' });
     }
   }
@@ -65,7 +66,7 @@ router.get(
       const submissionStatus = await CoreService.getWeeklyMonitoringStatus(0);
       res.json(submissionStatus);
     } catch (error) {
-      console.error('Error checking weekly submissions:', error);
+      logger.error('Error checking weekly submissions:', error);
       res.status(500).json({ error: 'Failed to check weekly submissions' });
     }
   }
@@ -79,7 +80,7 @@ router.get(
       const stats = await CoreService.getMonitoringStats();
       res.json(stats);
     } catch (error) {
-      console.error('Error getting monitoring stats:', error);
+      logger.error('Error getting monitoring stats:', error);
       res.status(500).json({ error: 'Failed to get monitoring stats' });
     }
   }
@@ -93,7 +94,7 @@ router.post(
       await runWeeklyMonitoring();
       res.json({ success: true, message: 'Weekly monitoring check completed' });
     } catch (error) {
-      console.error('Error running weekly monitoring:', error);
+      logger.error('Error running weekly monitoring:', error);
       res.status(500).json({ error: 'Failed to run weekly monitoring' });
     }
   }
@@ -108,7 +109,7 @@ router.get(
       const status = await CoreService.getProjectDataStatus();
       res.json(status);
     } catch (error) {
-      console.error('Error getting project data status:', error);
+      logger.error('Error getting project data status:', error);
       res.status(500).json({
         status: 'error',
         message: 'Failed to get project data status',

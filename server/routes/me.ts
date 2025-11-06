@@ -1,29 +1,11 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { logger } from '../middleware/logger';
 import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import { logger } from '../utils/production-safe-logger';
+import type { AuthenticatedRequest } from '../types/express';
+import { getUserMetadata, getEventNotificationPreferences } from '@shared/types';
+import type { EventNotificationPreferences } from '@shared/types';
 
 interface DashboardItem {
   id: number;
@@ -129,7 +111,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     
     // Find current user details
     const currentUser = allUsers.find(
-      (u: any) => normalizeToString(u.id) === userId
+      (u) => normalizeToString(u.id) === userId
     );
     const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : '';
     const userDisplayName = currentUser?.displayName || '';
@@ -140,7 +122,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     logger.info(`Total projects to check: ${allProjects.length}`);
     
     const assignedProjects = allProjects
-      .filter((project: any) => {
+      .filter((project) => {
         // Check if user is assigned via ID fields (new way)
         const idAssigned = (
           normalizeToString(project.assigneeId) === userId ||
@@ -171,14 +153,14 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
         
         return isAssigned;
       })
-      .filter((project: any) => project.status !== 'completed')
-      .sort((a: any, b: any) => {
+      .filter((project) => project.status !== 'completed')
+      .sort((a, b) => {
         // Priority order: urgent > high > medium > low
         const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
         return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
       })
       .slice(0, 3)
-      .map((project: any) => ({
+      .map((project) => ({
         id: project.id,
         title: project.title,
         status: project.status,
@@ -190,16 +172,16 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     // Fetch assigned tasks using storage interface
     const allTasks = await storage.getAssignedTasks(userId);
     const assignedTasks = allTasks
-      .filter((task: any) => {
+      .filter((task) => {
         return ['pending', 'in_progress'].includes(task.status);
       })
-      .sort((a: any, b: any) => {
+      .sort((a, b) => {
         // Priority order: urgent > high > medium > low
         const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
         return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
       })
       .slice(0, 3)
-      .map((task: any) => ({
+      .map((task) => ({
         id: task.id,
         title: task.title,
         status: task.status,
@@ -213,9 +195,9 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     // Note: currentUser already defined above
 
     const assignedEvents = allEventRequests
-      .filter((event: any) => {
-        // Exclude completed events and only show upcoming events
-        if (event.status === 'completed') return false;
+      .filter((event) => {
+        // Exclude completed and declined events - only show active/upcoming events
+        if (event.status === 'completed' || event.status === 'declined') return false;
 
         // Method 1: Direct assignment via assignedTo field
         if (event.assignedTo === userId) return true;
@@ -275,7 +257,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
 
         return false;
       })
-      .sort((a: any, b: any) => {
+      .sort((a, b) => {
         // Sort by event date, upcoming first
         if (a.desiredEventDate && b.desiredEventDate) {
           return new Date(a.desiredEventDate).getTime() - new Date(b.desiredEventDate).getTime();
@@ -283,7 +265,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
         return 0;
       })
       .slice(0, 3)
-      .map((event: any) => ({
+      .map((event) => ({
         id: event.id,
         title: `${event.firstName} ${event.lastName}`,
         status: event.status,
@@ -300,10 +282,10 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
       const messageRecipients = await storage.getMessageRecipients?.(userId) || [];
       
       unreadMessages = messageRecipients
-        .filter((recipient: any) => !recipient.read)
+        .filter((recipient) => !recipient.read)
         .slice(0, 3)
-        .map((recipient: any) => {
-          const message = allMessages.find((m: any) => m.id === recipient.messageId);
+        .map((recipient) => {
+          const message = allMessages.find((m) => m.id === recipient.messageId);
           return {
             id: recipient.messageId,
             title: message?.subject || message?.content?.substring(0, 50) || 'New Message',
@@ -321,12 +303,12 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     // Get total counts - use the already filtered assignedProjects array
     const totalProjectsCount = assignedProjects.length;
 
-    const totalTasksCount = allTasks.filter((task: any) => {
+    const totalTasksCount = allTasks.filter((task) => {
       return ['pending', 'in_progress'].includes(task.status);
     }).length;
 
-    const totalEventsCount = allEventRequests.filter((event: any) => {
-      if (event.status === 'completed') return false;
+    const totalEventsCount = allEventRequests.filter((event) => {
+      if (event.status === 'completed' || event.status === 'declined') return false;
       return (
         event.assignedTo === userId ||
         event.tspContact === userId ||
@@ -341,7 +323,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     let totalMessagesCount = 0;
     try {
       const allUnreadRecipients = await storage.getMessageRecipients?.(userId) || [];
-      totalMessagesCount = allUnreadRecipients.filter((r: any) => !r.read).length;
+      totalMessagesCount = allUnreadRecipients.filter((r) => !r.read).length;
     } catch (error) {
       totalMessagesCount = 0;
     }
@@ -363,8 +345,118 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     res.json(dashboardData);
   } catch (error) {
     logger.error('Failed to fetch dashboard data', error);
-    console.error('Dashboard endpoint error:', error);
+    logger.error('Dashboard endpoint error:', error);
     res.status(500).json({ message: 'Failed to fetch dashboard data' });
+  }
+});
+
+// GET /notification-preferences - Get current user's event notification preferences
+meRouter.get('/notification-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) {
+      return res.status(400).json({ message: 'Invalid user identifier' });
+    }
+
+    // Get full user data from storage
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+
+    if (!fullUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get notification preferences with defaults
+    const preferences = getEventNotificationPreferences(fullUser);
+    
+    res.json(preferences);
+  } catch (error) {
+    logger.error('Failed to fetch notification preferences', error);
+    res.status(500).json({ message: 'Failed to fetch notification preferences' });
+  }
+});
+
+// PUT /notification-preferences - Update current user's event notification preferences
+meRouter.put('/notification-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) {
+      return res.status(400).json({ message: 'Invalid user identifier' });
+    }
+
+    // Validate request body
+    const {
+      primaryReminderEnabled,
+      primaryReminderHours,
+      primaryReminderType,
+      secondaryReminderEnabled,
+      secondaryReminderHours,
+      secondaryReminderType,
+    } = req.body as EventNotificationPreferences;
+
+    // Validate hours range (1-72)
+    if (primaryReminderHours < 1 || primaryReminderHours > 72) {
+      return res.status(400).json({ message: 'Primary reminder hours must be between 1 and 72' });
+    }
+    
+    if (secondaryReminderEnabled && (secondaryReminderHours < 1 || secondaryReminderHours > 72)) {
+      return res.status(400).json({ message: 'Secondary reminder hours must be between 1 and 72' });
+    }
+
+    // Validate reminder types
+    const validTypes = ['email', 'sms', 'both'];
+    if (!validTypes.includes(primaryReminderType)) {
+      return res.status(400).json({ message: 'Invalid primary reminder type' });
+    }
+    
+    if (secondaryReminderEnabled && !validTypes.includes(secondaryReminderType)) {
+      return res.status(400).json({ message: 'Invalid secondary reminder type' });
+    }
+
+    // Get current user data
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+
+    if (!fullUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get current metadata
+    const metadata = getUserMetadata(fullUser);
+
+    // Update notification preferences
+    const updatedMetadata = {
+      ...metadata,
+      eventNotificationPreferences: {
+        primaryReminderEnabled,
+        primaryReminderHours,
+        primaryReminderType,
+        secondaryReminderEnabled,
+        secondaryReminderHours,
+        secondaryReminderType,
+      } as EventNotificationPreferences,
+    };
+
+    // Save updated metadata
+    await storage.updateUser(normalizedUserId, {
+      metadata: updatedMetadata,
+    });
+
+    logger.info(`Updated notification preferences for user ${normalizedUserId}`);
+    res.json({ success: true, preferences: updatedMetadata.eventNotificationPreferences });
+  } catch (error) {
+    logger.error('Failed to update notification preferences', error);
+    res.status(500).json({ message: 'Failed to update notification preferences' });
   }
 });
 

@@ -241,7 +241,7 @@ export default function GmailInbox() {
                 onClick={() => setSelectedFolder(folder.id)}
                 className={`w-full flex items-center px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
                   selectedFolder === folder.id
-                    ? 'bg-blue-50 border-r-2 border-brand-primary'
+                    ? 'bg-brand-primary-lighter border-r-2 border-brand-primary'
                     : ''
                 }`}
               >
@@ -296,7 +296,7 @@ export default function GmailInbox() {
                   key={message.id}
                   onClick={() => handleSelectMessage(message)}
                   className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedMessage?.id === message.id ? 'bg-blue-50' : ''
+                    selectedMessage?.id === message.id ? 'bg-brand-primary-lighter' : ''
                   } ${!message.isRead ? 'bg-blue-25' : ''}`}
                 >
                   <div className="flex items-start justify-between">

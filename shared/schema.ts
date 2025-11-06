@@ -42,11 +42,14 @@ export const users = pgTable('users', {
   preferredEmail: varchar('preferred_email'), // Preferred email for communications (defaults to login email)
   role: varchar('role').notNull().default('volunteer'), // 'admin', 'admin_coordinator', 'volunteer', 'viewer'
   permissions: jsonb('permissions').default('[]'), // Array of specific permissions
+  permissionsModifiedAt: timestamp('permissions_modified_at'),
+  permissionsModifiedBy: varchar('permissions_modified_by'),
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  passwordBackup20241023: text('password_backup_20241023'),
 });
 
 // Audit logging table for tracking all data changes
@@ -97,6 +100,20 @@ export const userActivityLogs = pgTable(
     ),
   })
 );
+
+// Team member availability calendar system
+export const availabilitySlots = pgTable('availability_slots', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  startAt: timestamp('start_at').notNull(),
+  endAt: timestamp('end_at').notNull(),
+  status: varchar('status').notNull(), // 'available' or 'unavailable'
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
 
 // Chat messages table for real-time chat system
 export const chatMessages = pgTable('chat_messages', {
@@ -189,7 +206,7 @@ export const projects = pgTable('projects', {
   syncStatus: text('sync_status').default('unsynced'), // "unsynced", "synced", "conflict", "error"
   // Bidirectional sync metadata
   lastPulledFromSheetAt: timestamp('last_pulled_from_sheet_at'), // When last pulled changes from sheet
-  lastPushedToSheetAt: timestamp('last_pushed_to_sheet_at'), // When last pushed changes to sheet  
+  lastPushedToSheetAt: timestamp('last_pushed_to_sheet_at'), // When last pushed changes to sheet
   lastSheetHash: text('last_sheet_hash'), // Hash of sheet data for change detection
   lastAppHash: text('last_app_hash'), // Hash of app data for change detection
   tasksAndOwners: text('tasks_and_owners'), // Parsed from Google Sheets format: "Katie: Design, Chris: Review"
@@ -371,8 +388,9 @@ export const messages = pgTable('messages', {
   senderId: text('sender_id').notNull(),
   content: text('content').notNull(),
   sender: text('sender'), // Display name of sender
-  contextType: text('context_type'), // 'suggestion', 'project', 'task', 'direct'
+  contextType: text('context_type'), // 'suggestion', 'project', 'task', 'event', 'graphic', 'expense', 'collection', 'direct'
   contextId: text('context_id'),
+  contextTitle: text('context_title'), // Display name of related entity
   read: boolean('read').notNull().default(false), // Simple read status
   editedAt: timestamp('edited_at'),
   editedContent: text('edited_content'),
@@ -484,7 +502,7 @@ export const emailMessages = pgTable(
     isTrashed: boolean('is_trashed').notNull().default(false),
     isDraft: boolean('is_draft').notNull().default(false),
     parentMessageId: integer('parent_message_id'), // Reference to parent message for threading
-    contextType: varchar('context_type'), // 'project', 'task', 'suggestion', etc.
+    contextType: varchar('context_type'), // 'suggestion', 'project', 'task', 'event', 'graphic', 'expense', 'collection', 'direct'
     contextId: varchar('context_id'), // ID of the related entity
     contextTitle: varchar('context_title'), // Display name of related entity
     attachments: text('attachments').array(), // Array of attachment file paths
@@ -568,18 +586,41 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   collectionDate: text('collection_date').notNull(), // The date sandwiches were actually collected
   hostName: text('host_name').notNull(),
   individualSandwiches: integer('individual_sandwiches').notNull().default(0),
+  // Individual sandwich type breakdown (optional)
+  individualDeli: integer('individual_deli'), // Number of deli sandwiches for individuals
+  individualTurkey: integer('individual_turkey'), // Number of turkey sandwiches for individuals
+  individualHam: integer('individual_ham'), // Number of ham sandwiches for individuals
+  individualPbj: integer('individual_pbj'), // Number of PBJ sandwiches for individuals
   // Group collection columns (Phase 5: JSON column for unlimited groups)
   group1Name: text('group1_name'), // Name of first group (nullable) - LEGACY, use groupCollections
   group1Count: integer('group1_count'), // Count for first group (nullable) - LEGACY, use groupCollections
   group2Name: text('group2_name'), // Name of second group (nullable) - LEGACY, use groupCollections
   group2Count: integer('group2_count'), // Count for second group (nullable) - LEGACY, use groupCollections
   // New JSON column for unlimited groups
-  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number}
+  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number, deli?: number, turkey?: number, ham?: number, pbj?: number}
   createdBy: text('created_by'), // User ID who created this entry
   createdByName: text('created_by_name'), // Display name of creator
   submittedAt: timestamp('submitted_at').notNull().defaultNow(), // When form was submitted
   // Add field to track if this was submitted via walkthrough
   submissionMethod: text('submission_method').default('standard'), // 'standard' or 'walkthrough'
+  // Soft delete tracking
+  deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
+  deletedBy: text('deleted_by'), // User ID who deleted this record
+});
+
+// Authoritative weekly collections from Scott's Excel tracking system
+// This is the source of truth for analytics and reporting (2020-2025)
+// Imported from "New Sandwich Totals Scott" Excel file with weekly aggregated data
+export const authoritativeWeeklyCollections = pgTable('authoritative_weekly_collections', {
+  id: serial('id').primaryKey(),
+  weekDate: text('week_date').notNull(), // Date of the week (from Excel Date column)
+  location: text('location').notNull(), // Host location name
+  sandwiches: integer('sandwiches').notNull(), // Total sandwiches for this location for this week
+  weekOfYear: integer('week_of_year').notNull(), // Week number in the year (1-52)
+  weekOfProgram: integer('week_of_program').notNull(), // Week number since program start
+  year: integer('year').notNull(), // Year
+  importedAt: timestamp('imported_at').defaultNow().notNull(),
+  sourceFile: text('source_file').default('New Sandwich Totals Scott (5)_1761847323011.xlsx'),
 });
 
 export const meetingMinutes = pgTable('meeting_minutes', {
@@ -672,6 +713,7 @@ export const drivers = pgTable('drivers', {
   emailAgreementSent: boolean('email_agreement_sent').notNull().default(false),
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
+  isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -723,6 +765,9 @@ export const hosts = pgTable('hosts', {
   phone: text('phone'),
   status: text('status').notNull().default('active'), // 'active', 'inactive'
   notes: text('notes'),
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable for backwards compatibility)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable for backwards compatibility)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -734,9 +779,15 @@ export const hostContacts = pgTable('host_contacts', {
   role: text('role').notNull(), // 'Lead', 'host', 'alternate', 'volunteer', 'head of school'
   phone: text('phone').notNull(),
   email: text('email'),
+  address: text('address'), // Contact person's address
   isPrimary: boolean('is_primary').notNull().default(false),
   notes: text('notes'),
   hostLocation: text('host_location'), // Location name for grouping contacts
+  weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
+  lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -753,7 +804,8 @@ export const recipients = pgTable('recipients', {
   region: text('region'), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text('preferences'), // Legacy field - keeping for backward compatibility
   weeklyEstimate: integer('weekly_estimate'), // Estimated weekly sandwich count
-  focusArea: text('focus_area'), // What group they focus on (e.g., "youth", "veterans", "seniors", "families")
+  focusArea: text('focus_area'), // Legacy single focus area field (keeping for backward compatibility)
+  focusAreas: jsonb('focus_areas').$type<string[]>().default([]), // What groups they focus on (e.g., ["youth", "veterans", "seniors", "families"])
   status: text('status').notNull().default('active'), // 'active', 'inactive'
   // New detailed contact fields
   contactPersonName: text('contact_person_name'), // Our contact within the organization
@@ -937,6 +989,110 @@ export const confidentialDocuments = pgTable('confidential_documents', {
   uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
 });
 
+// Resources system - unified document and link management for easy discovery
+export const resources = pgTable(
+  'resources',
+  {
+    id: serial('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description'),
+    type: text('type').notNull(), // 'file', 'link', 'google_drive'
+    category: text('category').notNull(), // 'legal_governance', 'brand_marketing', 'operations_safety', 'forms_templates', 'training', 'master_documents'
+
+    // For files - references documents table
+    documentId: integer('document_id').references(() => documents.id, { onDelete: 'cascade' }),
+
+    // For external links
+    url: text('url'),
+
+    // Display and organization
+    icon: text('icon'), // Icon name for display
+    iconColor: text('icon_color'), // Color for icon
+    isPinnedGlobal: boolean('is_pinned_global').notNull().default(false), // Admin global pin
+    pinnedOrder: integer('pinned_order'), // Order for pinned items (lower = higher priority)
+
+    // Usage tracking
+    accessCount: integer('access_count').notNull().default(0),
+    lastAccessedAt: timestamp('last_accessed_at'),
+
+    // Metadata
+    createdBy: varchar('created_by').notNull(),
+    createdByName: text('created_by_name').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (table) => ({
+    categoryIdx: index('idx_resources_category').on(table.category),
+    typeIdx: index('idx_resources_type').on(table.type),
+    pinnedIdx: index('idx_resources_pinned').on(table.isPinnedGlobal, table.pinnedOrder),
+    accessCountIdx: index('idx_resources_access_count').on(table.accessCount),
+    activeIdx: index('idx_resources_active').on(table.isActive),
+  })
+);
+
+// User's personal favorite resources
+export const userResourceFavorites = pgTable(
+  'user_resource_favorites',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    resourceId: integer('resource_id')
+      .notNull()
+      .references(() => resources.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('idx_user_resource_favorites_user').on(table.userId),
+    resourceIdx: index('idx_user_resource_favorites_resource').on(table.resourceId),
+    uniqueFavorite: unique('unique_user_resource_favorite').on(
+      table.userId,
+      table.resourceId
+    ),
+  })
+);
+
+// Tag definitions for categorizing resources
+export const resourceTags = pgTable(
+  'resource_tags',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    color: text('color'), // Hex color for display
+    description: text('description'),
+    createdBy: varchar('created_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    nameIdx: index('idx_resource_tags_name').on(table.name),
+  })
+);
+
+// Many-to-many relationship between resources and tags
+export const resourceTagAssignments = pgTable(
+  'resource_tag_assignments',
+  {
+    id: serial('id').primaryKey(),
+    resourceId: integer('resource_id')
+      .notNull()
+      .references(() => resources.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => resourceTags.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    resourceIdx: index('idx_resource_tag_assignments_resource').on(table.resourceId),
+    tagIdx: index('idx_resource_tag_assignments_tag').on(table.tagId),
+    uniqueAssignment: unique('unique_resource_tag_assignment').on(
+      table.resourceId,
+      table.tagId
+    ),
+  })
+);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -980,6 +1136,8 @@ export const insertSandwichCollectionSchema = createInsertSchema(
           name: z.string().trim().min(1).max(120),
           count: z.number().int().min(0),
           deli: z.number().int().min(0).optional(),
+          turkey: z.number().int().min(0).optional(),
+          ham: z.number().int().min(0).optional(),
           pbj: z.number().int().min(0).optional(),
         })
       )
@@ -987,6 +1145,8 @@ export const insertSandwichCollectionSchema = createInsertSchema(
       .optional(),
     // Optional breakdown for individual sandwiches
     individualDeli: z.number().int().min(0).optional(),
+    individualTurkey: z.number().int().min(0).optional(),
+    individualHam: z.number().int().min(0).optional(),
     individualPbj: z.number().int().min(0).optional(),
   });
 export const insertMeetingMinutesSchema = createInsertSchema(
@@ -1083,6 +1243,32 @@ export const insertConfidentialDocumentSchema = createInsertSchema(
 export const insertDocumentAccessLogSchema = createInsertSchema(
   documentAccessLogs
 ).omit({ id: true, accessedAt: true });
+
+// Resource system insert schemas
+export const insertResourceSchema = createInsertSchema(resources).omit({
+  id: true,
+  accessCount: true,
+  lastAccessedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertUserResourceFavoriteSchema = createInsertSchema(
+  userResourceFavorites
+).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertResourceTagSchema = createInsertSchema(resourceTags).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertResourceTagAssignmentSchema = createInsertSchema(
+  resourceTagAssignments
+).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({
   id: true,
   createdAt: true,
@@ -1400,24 +1586,125 @@ export type InsertWishlistSuggestion = z.infer<
   typeof insertWishlistSuggestionSchema
 >;
 
+// Team Bulletin Board - simple board for tasks, notes, ideas, anything team wants to share
+export const teamBoardItems = pgTable('team_board_items', {
+  id: serial('id').primaryKey(),
+  content: text('content').notNull(), // The actual task/note/idea - can be anything
+  type: varchar('type').default('note'), // 'task', 'note', 'idea', 'reminder' - optional categorization
+  createdBy: varchar('created_by').notNull(), // User ID who posted it
+  createdByName: varchar('created_by_name').notNull(), // Display name of poster
+  assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
+  assignedToNames: text('assigned_to_names').array(), // Array of display names - supports multiple assignees
+  status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'), // When marked as done
+});
+
+export const insertTeamBoardItemSchema = createInsertSchema(
+  teamBoardItems
+).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
+export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
+
+// Team Board Comments - allow discussion on team board items
+export const teamBoardComments = pgTable('team_board_comments', {
+  id: serial('id').primaryKey(),
+  itemId: integer('item_id')
+    .notNull()
+    .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id').notNull(),
+  userName: varchar('user_name').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const insertTeamBoardCommentSchema = createInsertSchema(
+  teamBoardComments
+).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TeamBoardComment = typeof teamBoardComments.$inferSelect;
+export type InsertTeamBoardComment = z.infer<
+  typeof insertTeamBoardCommentSchema
+>;
+
+// Cooler Types table for defining types of coolers
+export const coolerTypes = pgTable('cooler_types', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(), // e.g., "Large rolling cooler"
+  description: text('description'), // Optional details
+  isActive: boolean('is_active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0), // For display ordering
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerTypeSchema = createInsertSchema(coolerTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerType = typeof coolerTypes.$inferSelect;
+export type InsertCoolerType = z.infer<typeof insertCoolerTypeSchema>;
+
+// Cooler Inventory table for tracking cooler locations
+export const coolerInventory = pgTable('cooler_inventory', {
+  id: serial('id').primaryKey(),
+  hostHomeId: varchar('host_home_id').notNull(), // User ID of the host home
+  coolerTypeId: integer('cooler_type_id')
+    .notNull()
+    .references(() => coolerTypes.id),
+  quantity: integer('quantity').notNull().default(0),
+  notes: text('notes'), // Optional notes about condition, etc.
+  reportedAt: timestamp('reported_at').defaultNow().notNull(),
+  reportedBy: varchar('reported_by').notNull(), // User ID who submitted the report
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerInventorySchema = createInsertSchema(
+  coolerInventory
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerInventory = typeof coolerInventory.$inferSelect;
+export type InsertCoolerInventory = z.infer<typeof insertCoolerInventorySchema>;
+
 // Event Requests table for tracking organization event planning
 export const eventRequests = pgTable(
   'event_requests',
   {
     id: serial('id').primaryKey(),
     // Submitter information
-    firstName: varchar('first_name').notNull(),
-    lastName: varchar('last_name').notNull(),
+    firstName: varchar('first_name'), // Made optional for manual entries
+    lastName: varchar('last_name'), // Made optional for manual entries
     email: varchar('email'), // Made optional - can be null
     phone: varchar('phone'),
 
     // Organization information
-    organizationName: varchar('organization_name').notNull(),
+    organizationName: varchar('organization_name'), // Made optional for manual entries
     department: varchar('department'),
+    organizationCategory: varchar('organization_category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
+    schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
+    backupDates: jsonb('backup_dates').$type<string[]>(), // Array of backup/alternate dates in ISO format
     scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
+    isConfirmed: boolean('is_confirmed').notNull().default(false), // Whether event is confirmed by our team (separate from status workflow)
+    addedToOfficialSheet: boolean('added_to_official_sheet')
+      .notNull()
+      .default(false), // Whether scheduled event has been manually added to the official events Google Sheet (not synced)
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience
@@ -1426,7 +1713,7 @@ export const eventRequests = pgTable(
       .default('i_dont_know'), // 'yes', 'no', 'i_dont_know'
 
     // System tracking
-    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined'
+    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
 
@@ -1443,7 +1730,15 @@ export const eventRequests = pgTable(
     communicationMethod: varchar('communication_method'), // 'phone', 'email', 'video_meeting'
     contactCompletionNotes: text('contact_completion_notes'), // Free text notes from the contact
     eventAddress: text('event_address'), // Event location address collected
+    latitude: varchar('latitude'), // Geocoded latitude for map display
+    longitude: varchar('longitude'), // Geocoded longitude for map display
     estimatedSandwichCount: integer('estimated_sandwich_count'), // Number of sandwiches planned
+    estimatedSandwichCountMin: integer('estimated_sandwich_count_min'), // Minimum sandwiches in range (optional)
+    estimatedSandwichCountMax: integer('estimated_sandwich_count_max'), // Maximum sandwiches in range (optional)
+    estimatedSandwichRangeType: varchar('estimated_sandwich_range_type'), // Type for sandwich range (e.g., 'turkey', 'ham')
+    volunteerCount: integer('volunteer_count'), // Number of attendees expected (general total, or can use adult/children breakdown)
+    adultCount: integer('adult_count'), // Number of adults (optional breakdown)
+    childrenCount: integer('children_count'), // Number of children (optional breakdown)
     hasRefrigeration: boolean('has_refrigeration'), // Whether site has refrigeration
     completedByUserId: varchar('completed_by_user_id'), // User ID who completed the contact
 
@@ -1463,6 +1758,8 @@ export const eventRequests = pgTable(
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
     pickupDateTime: timestamp('pickup_date_time'), // Full datetime for pickup time with date and time selection
+    pickupTimeWindow: text('pickup_time_window'), // Time window for pickup (e.g., "2:00 PM - 3:00 PM")
+    pickupPersonResponsible: text('pickup_person_responsible'), // Contact person who will pick up the sandwiches
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
     planningNotes: text('planning_notes'), // General planning notes
     schedulingNotes: text('scheduling_notes'), // Scheduling notes and instructions
@@ -1549,7 +1846,16 @@ export const eventRequests = pgTable(
     unresponsiveReason: text('unresponsive_reason'), // Why they were marked unresponsive
     contactMethod: varchar('contact_method'), // 'phone', 'email', 'both' - preferred contact method
     nextFollowUpDate: timestamp('next_follow_up_date'), // Scheduled next attempt date
-    unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status
+    unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status (legacy - use contactAttemptsLog for new entries)
+    contactAttemptsLog: jsonb('contact_attempts_log').$type<Array<{
+      attemptNumber: number;
+      timestamp: string;
+      method: string;
+      outcome: string;
+      notes?: string;
+      createdBy: string;
+      createdByName?: string;
+    }>>(), // Structured log of all contact attempts with metadata for editing/deleting
 
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
@@ -1557,11 +1863,24 @@ export const eventRequests = pgTable(
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
+    speakerAudienceType: text('speaker_audience_type'), // Type of audience for speaker (e.g., "Elementary School", "Adults", "Mixed")
+    speakerDuration: text('speaker_duration'), // Duration of speaker session (e.g., "30 minutes", "1 hour")
+    deliveryTimeWindow: text('delivery_time_window'), // Time window for next-day delivery after overnight storage
+    deliveryParkingAccess: text('delivery_parking_access'), // Parking/access details for delivery location
+
+    // Special event tracking
+    isMlkDayEvent: boolean('is_mlk_day_event').default(false), // Whether this event is designated as an MLK Day event
+    mlkDayMarkedAt: timestamp('mlk_day_marked_at'), // When it was marked as MLK Day event
+    mlkDayMarkedBy: varchar('mlk_day_marked_by'), // User ID who marked it as MLK Day event
 
     // Audit tracking
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     createdBy: varchar('created_by'), // User ID who created this record (if manually entered)
+
+    // Soft delete tracking
+    deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
+    deletedBy: varchar('deleted_by'), // User ID who deleted this record
   },
   (table) => ({
     orgNameIdx: index('idx_event_requests_org_name').on(table.organizationName),
@@ -1570,6 +1889,8 @@ export const eventRequests = pgTable(
     desiredDateIdx: index('idx_event_requests_desired_date').on(
       table.desiredEventDate
     ),
+    createdAtIdx: index('idx_event_requests_created_at').on(table.createdAt),
+    scheduledDateIdx: index('idx_event_requests_scheduled_date').on(table.scheduledEventDate),
   })
 );
 
@@ -1579,9 +1900,15 @@ export const organizations = pgTable(
   {
     id: serial('id').primaryKey(),
     name: varchar('name').notNull(),
+    department: varchar('department'), // Department within organization (e.g., "4th & 5th Graders")
     alternateNames: text('alternate_names').array(), // Array of variations/aliases
     addresses: text('addresses').array(), // Array of known addresses
     domains: text('domains').array(), // Array of email domains associated with this org
+
+    // Organization categorization
+    category: varchar('category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
+    schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only when category is 'school')
+    isReligious: boolean('is_religious').default(false), // Whether the organization has religious affiliation (can be true for schools, churches, etc.)
 
     // Event history
     totalEvents: integer('total_events').notNull().default(0),
@@ -1636,6 +1963,11 @@ export const eventVolunteers = pgTable(
     assignedBy: varchar('assigned_by'), // User ID who assigned this volunteer
     signedUpAt: timestamp('signed_up_at').defaultNow().notNull(),
     confirmedAt: timestamp('confirmed_at'),
+    reminderSentAt: timestamp('reminder_sent_at'), // When email reminder was sent (legacy/first reminder)
+    emailReminder1SentAt: timestamp('email_reminder_1_sent_at'), // First email reminder
+    emailReminder2SentAt: timestamp('email_reminder_2_sent_at'), // Second email reminder
+    smsReminder1SentAt: timestamp('sms_reminder_1_sent_at'), // First SMS reminder
+    smsReminder2SentAt: timestamp('sms_reminder_2_sent_at'), // Second SMS reminder
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -1697,12 +2029,10 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     // Make core required fields optional and nullable for creation
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
-    email: z.union([
-      z.string().email(),
-      z.literal(''),
-      z.null(),
-      z.undefined()
-    ]).transform((val) => val || undefined).optional(),
+    email: z
+      .union([z.string().email(), z.literal(''), z.null(), z.undefined()])
+      .transform((val) => val || undefined)
+      .optional(),
     organizationName: z.string().nullable().optional(),
     previouslyHosted: z.string().optional(),
     status: z.string().optional(),
@@ -1743,6 +2073,9 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     overnightHoldingLocation: z.string().nullable().optional(),
     overnightPickupTime: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
+    estimatedSandwichCountMin: z.number().nullable().optional(),
+    estimatedSandwichCountMax: z.number().nullable().optional(),
+    estimatedSandwichRangeType: z.string().nullable().optional(),
     // Attendance tracking fields
     actualAttendance: z.number().nullable().optional(),
     estimatedAttendance: z.number().nullable().optional(),
@@ -1754,17 +2087,18 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     scheduledCallDate: z
       .union([
         z.date(),
-        z.string()
+        z
+          .string()
           .trim()
           .transform((str) => {
             // Handle empty strings immediately
             if (!str) return null;
-            
+
             // Validate non-empty strings with regex
             if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-              throw new Error("Invalid date format, expected YYYY-MM-DD");
+              throw new Error('Invalid date format, expected YYYY-MM-DD');
             }
-            
+
             const date = new Date(str);
             return isNaN(date.getTime()) ? null : date;
           }),
@@ -1776,17 +2110,18 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     followUpOneDayDate: z
       .union([
         z.date(),
-        z.string()
+        z
+          .string()
           .trim()
           .transform((str) => {
             // Handle empty strings immediately
             if (!str) return null;
-            
+
             // Validate non-empty strings with regex
             if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-              throw new Error("Invalid date format, expected YYYY-MM-DD");
+              throw new Error('Invalid date format, expected YYYY-MM-DD');
             }
-            
+
             const date = new Date(str);
             return isNaN(date.getTime()) ? null : date;
           }),
@@ -1798,17 +2133,18 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     followUpOneMonthDate: z
       .union([
         z.date(),
-        z.string()
+        z
+          .string()
           .trim()
           .transform((str) => {
             // Handle empty strings immediately
             if (!str) return null;
-            
+
             // Validate non-empty strings with regex
             if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-              throw new Error("Invalid date format, expected YYYY-MM-DD");
+              throw new Error('Invalid date format, expected YYYY-MM-DD');
             }
-            
+
             const date = new Date(str);
             return isNaN(date.getTime()) ? null : date;
           }),
@@ -1848,7 +2184,24 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
-  });
+  })
+  .refine(
+    (data) => {
+      // Require at least organization name OR some contact information
+      const hasOrgName =
+        data.organizationName && data.organizationName.trim().length > 0;
+      const hasContactInfo =
+        (data.firstName && data.firstName.trim().length > 0) ||
+        (data.lastName && data.lastName.trim().length > 0) ||
+        (data.email && data.email.trim().length > 0);
+      return hasOrgName || hasContactInfo;
+    },
+    {
+      message:
+        'Either organization name or contact information (name/email) is required',
+      path: ['organizationName'],
+    }
+  );
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .omit({
@@ -2145,13 +2498,17 @@ export type MeetingNote = typeof meetingNotes.$inferSelect;
 export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
 
 // Imported external IDs schema types for permanent blacklist system
-export const insertImportedExternalIdSchema = createInsertSchema(importedExternalIds).omit({
+export const insertImportedExternalIdSchema = createInsertSchema(
+  importedExternalIds
+).omit({
   id: true,
   importedAt: true,
 });
 
 export type ImportedExternalId = typeof importedExternalIds.$inferSelect;
-export type InsertImportedExternalId = z.infer<typeof insertImportedExternalIdSchema>;
+export type InsertImportedExternalId = z.infer<
+  typeof insertImportedExternalIdSchema
+>;
 
 // =============================================================================
 // SMART NOTIFICATIONS SYSTEM SCHEMA
@@ -2160,292 +2517,848 @@ export type InsertImportedExternalId = z.infer<typeof insertImportedExternalIdSc
 // personalized notification delivery with learning capabilities
 
 // User notification preferences for smart delivery
-export const notificationPreferences = pgTable('notification_preferences', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  category: varchar('category').notNull(), // 'projects', 'tasks', 'meetings', 'chat', 'system', etc.
-  type: varchar('type').notNull(), // Specific notification type (e.g., 'task_assignment', 'project_update')
-  
-  // Delivery channel preferences
-  emailEnabled: boolean('email_enabled').notNull().default(true),
-  smsEnabled: boolean('sms_enabled').notNull().default(false),
-  inAppEnabled: boolean('in_app_enabled').notNull().default(true),
-  pushEnabled: boolean('push_enabled').notNull().default(true),
-  
-  // Smart delivery preferences
-  priority: varchar('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'urgent'
-  frequency: varchar('frequency').notNull().default('immediate'), // 'immediate', 'hourly', 'daily', 'weekly'
-  quietHoursStart: time('quiet_hours_start'), // e.g., '22:00'
-  quietHoursEnd: time('quiet_hours_end'), // e.g., '08:00'
-  timezone: varchar('timezone').default('America/New_York'),
-  
-  // Learning and personalization
-  relevanceScore: decimal('relevance_score', { precision: 5, scale: 2 }).default('50.00'), // 0-100 score
-  lastInteraction: timestamp('last_interaction'), // When user last interacted with this type
-  totalReceived: integer('total_received').notNull().default(0), // Total notifications received
-  totalOpened: integer('total_opened').notNull().default(0), // Total notifications opened/clicked
-  totalDismissed: integer('total_dismissed').notNull().default(0), // Total notifications dismissed
-  
-  // Metadata for learning algorithms
-  engagementMetadata: jsonb('engagement_metadata').default('{}'), // Patterns, timing preferences, etc.
-  
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userCategoryTypeIdx: unique().on(table.userId, table.category, table.type),
-  userCategoryIdx: index('idx_notif_prefs_user_category').on(table.userId, table.category),
-  relevanceScoreIdx: index('idx_notif_prefs_relevance').on(table.relevanceScore),
-}));
+export const notificationPreferences = pgTable(
+  'notification_preferences',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    category: varchar('category').notNull(), // 'projects', 'tasks', 'meetings', 'chat', 'system', etc.
+    type: varchar('type').notNull(), // Specific notification type (e.g., 'task_assignment', 'project_update')
+
+    // Delivery channel preferences
+    emailEnabled: boolean('email_enabled').notNull().default(true),
+    smsEnabled: boolean('sms_enabled').notNull().default(false),
+    inAppEnabled: boolean('in_app_enabled').notNull().default(true),
+    pushEnabled: boolean('push_enabled').notNull().default(true),
+
+    // Smart delivery preferences
+    priority: varchar('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'urgent'
+    frequency: varchar('frequency').notNull().default('immediate'), // 'immediate', 'hourly', 'daily', 'weekly'
+    quietHoursStart: time('quiet_hours_start'), // e.g., '22:00'
+    quietHoursEnd: time('quiet_hours_end'), // e.g., '08:00'
+    timezone: varchar('timezone').default('America/New_York'),
+
+    // Learning and personalization
+    relevanceScore: decimal('relevance_score', {
+      precision: 5,
+      scale: 2,
+    }).default('50.00'), // 0-100 score
+    lastInteraction: timestamp('last_interaction'), // When user last interacted with this type
+    totalReceived: integer('total_received').notNull().default(0), // Total notifications received
+    totalOpened: integer('total_opened').notNull().default(0), // Total notifications opened/clicked
+    totalDismissed: integer('total_dismissed').notNull().default(0), // Total notifications dismissed
+
+    // Metadata for learning algorithms
+    engagementMetadata: jsonb('engagement_metadata').default('{}'), // Patterns, timing preferences, etc.
+
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userCategoryTypeIdx: unique().on(table.userId, table.category, table.type),
+    userCategoryIdx: index('idx_notif_prefs_user_category').on(
+      table.userId,
+      table.category
+    ),
+    relevanceScoreIdx: index('idx_notif_prefs_relevance').on(
+      table.relevanceScore
+    ),
+  })
+);
 
 // Enhanced notification history with interaction tracking
-export const notificationHistory = pgTable('notification_history', {
-  id: serial('id').primaryKey(),
-  notificationId: integer('notification_id').notNull().references(() => notifications.id, { onDelete: 'cascade' }),
-  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  
-  // Delivery tracking
-  deliveryChannel: varchar('delivery_channel').notNull(), // 'email', 'sms', 'in_app', 'push'
-  deliveryStatus: varchar('delivery_status').notNull().default('pending'), // 'pending', 'sent', 'delivered', 'failed', 'bounced'
-  deliveryAttempts: integer('delivery_attempts').notNull().default(0),
-  lastDeliveryAttempt: timestamp('last_delivery_attempt'),
-  deliveredAt: timestamp('delivered_at'),
-  failureReason: text('failure_reason'),
-  
-  // Interaction tracking
-  openedAt: timestamp('opened_at'), // When notification was opened/viewed
-  clickedAt: timestamp('clicked_at'), // When user clicked action button
-  dismissedAt: timestamp('dismissed_at'), // When user dismissed/archived
-  interactionType: varchar('interaction_type'), // 'opened', 'clicked', 'dismissed', 'snoozed', 'shared'
-  timeToInteraction: integer('time_to_interaction'), // Seconds from delivery to interaction
-  
-  // Context and relevance
-  relevanceScore: decimal('relevance_score', { precision: 5, scale: 2 }), // Computed relevance at delivery time
-  contextMetadata: jsonb('context_metadata').default('{}'), // User context when delivered (active page, time, etc.)
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  notificationUserIdx: index('idx_notif_history_notif_user').on(table.notificationId, table.userId),
-  userChannelIdx: index('idx_notif_history_user_channel').on(table.userId, table.deliveryChannel),
-  deliveryStatusIdx: index('idx_notif_history_delivery_status').on(table.deliveryStatus),
-  interactionTimeIdx: index('idx_notif_history_interaction_time').on(table.openedAt, table.clickedAt),
-}));
+export const notificationHistory = pgTable(
+  'notification_history',
+  {
+    id: serial('id').primaryKey(),
+    notificationId: integer('notification_id')
+      .notNull()
+      .references(() => notifications.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Delivery tracking
+    deliveryChannel: varchar('delivery_channel').notNull(), // 'email', 'sms', 'in_app', 'push'
+    deliveryStatus: varchar('delivery_status').notNull().default('pending'), // 'pending', 'sent', 'delivered', 'failed', 'bounced'
+    deliveryAttempts: integer('delivery_attempts').notNull().default(0),
+    lastDeliveryAttempt: timestamp('last_delivery_attempt'),
+    deliveredAt: timestamp('delivered_at'),
+    failureReason: text('failure_reason'),
+
+    // Interaction tracking
+    openedAt: timestamp('opened_at'), // When notification was opened/viewed
+    clickedAt: timestamp('clicked_at'), // When user clicked action button
+    dismissedAt: timestamp('dismissed_at'), // When user dismissed/archived
+    interactionType: varchar('interaction_type'), // 'opened', 'clicked', 'dismissed', 'snoozed', 'shared'
+    timeToInteraction: integer('time_to_interaction'), // Seconds from delivery to interaction
+
+    // Context and relevance
+    relevanceScore: decimal('relevance_score', { precision: 5, scale: 2 }), // Computed relevance at delivery time
+    contextMetadata: jsonb('context_metadata').default('{}'), // User context when delivered (active page, time, etc.)
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    notificationUserIdx: index('idx_notif_history_notif_user').on(
+      table.notificationId,
+      table.userId
+    ),
+    userChannelIdx: index('idx_notif_history_user_channel').on(
+      table.userId,
+      table.deliveryChannel
+    ),
+    deliveryStatusIdx: index('idx_notif_history_delivery_status').on(
+      table.deliveryStatus
+    ),
+    interactionTimeIdx: index('idx_notif_history_interaction_time').on(
+      table.openedAt,
+      table.clickedAt
+    ),
+  })
+);
 
 // Smart notification rules for intelligent delivery timing and batching
-export const notificationRules = pgTable('notification_rules', {
-  id: serial('id').primaryKey(),
-  name: varchar('name').notNull(),
-  description: text('description'),
-  
-  // Rule conditions
-  category: varchar('category'), // Apply to specific category
-  type: varchar('type'), // Apply to specific type
-  priority: varchar('priority'), // Apply to specific priority level
-  userRole: varchar('user_role'), // Apply to specific user role
-  
-  // Smart delivery rules
-  batchingEnabled: boolean('batching_enabled').notNull().default(false),
-  batchingWindow: integer('batching_window').default(3600), // Seconds to wait before batching
-  maxBatchSize: integer('max_batch_size').default(5),
-  
-  // Timing rules
-  respectQuietHours: boolean('respect_quiet_hours').notNull().default(true),
-  minTimeBetween: integer('min_time_between').default(300), // Minimum seconds between similar notifications
-  maxDailyLimit: integer('max_daily_limit'), // Maximum notifications per day for this rule
-  
-  // Delivery optimization
-  smartChannelSelection: boolean('smart_channel_selection').notNull().default(true),
-  fallbackChannel: varchar('fallback_channel').default('in_app'),
-  retryAttempts: integer('retry_attempts').notNull().default(3),
-  retryDelay: integer('retry_delay').notNull().default(3600), // Seconds between retries
-  
-  // A/B testing
-  testVariant: varchar('test_variant'), // For A/B testing different rules
-  
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  categoryTypeIdx: index('idx_notif_rules_category_type').on(table.category, table.type),
-  activeRulesIdx: index('idx_notif_rules_active').on(table.isActive),
-}));
+export const notificationRules = pgTable(
+  'notification_rules',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name').notNull(),
+    description: text('description'),
+
+    // Rule conditions
+    category: varchar('category'), // Apply to specific category
+    type: varchar('type'), // Apply to specific type
+    priority: varchar('priority'), // Apply to specific priority level
+    userRole: varchar('user_role'), // Apply to specific user role
+
+    // Smart delivery rules
+    batchingEnabled: boolean('batching_enabled').notNull().default(false),
+    batchingWindow: integer('batching_window').default(3600), // Seconds to wait before batching
+    maxBatchSize: integer('max_batch_size').default(5),
+
+    // Timing rules
+    respectQuietHours: boolean('respect_quiet_hours').notNull().default(true),
+    minTimeBetween: integer('min_time_between').default(300), // Minimum seconds between similar notifications
+    maxDailyLimit: integer('max_daily_limit'), // Maximum notifications per day for this rule
+
+    // Delivery optimization
+    smartChannelSelection: boolean('smart_channel_selection')
+      .notNull()
+      .default(true),
+    fallbackChannel: varchar('fallback_channel').default('in_app'),
+    retryAttempts: integer('retry_attempts').notNull().default(3),
+    retryDelay: integer('retry_delay').notNull().default(3600), // Seconds between retries
+
+    // A/B testing
+    testVariant: varchar('test_variant'), // For A/B testing different rules
+
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    categoryTypeIdx: index('idx_notif_rules_category_type').on(
+      table.category,
+      table.type
+    ),
+    activeRulesIdx: index('idx_notif_rules_active').on(table.isActive),
+  })
+);
 
 // User behavior patterns for machine learning and personalization
-export const userNotificationPatterns = pgTable('user_notification_patterns', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  
-  // Behavioral patterns
-  mostActiveHours: jsonb('most_active_hours').default('[]'), // Array of hour numbers (0-23)
-  mostActiveDays: jsonb('most_active_days').default('[]'), // Array of day numbers (0-6, Sun-Sat)
-  averageResponseTime: integer('average_response_time'), // Average seconds to respond to notifications
-  preferredChannels: jsonb('preferred_channels').default('[]'), // Ordered array of channel preferences
-  
-  // Engagement metrics
-  overallEngagementScore: decimal('overall_engagement_score', { precision: 5, scale: 2 }).default('50.00'),
-  categoryEngagement: jsonb('category_engagement').default('{}'), // Engagement scores by category
-  recentEngagementTrend: varchar('recent_engagement_trend').default('stable'), // 'increasing', 'decreasing', 'stable'
-  
-  // Learning model data
-  lastModelUpdate: timestamp('last_model_update'),
-  modelVersion: varchar('model_version').default('1.0'),
-  learningMetadata: jsonb('learning_metadata').default('{}'), // ML model parameters and features
-  
-  // Personalization features
-  contentPreferences: jsonb('content_preferences').default('{}'), // Preferred content types, lengths, etc.
-  timingPreferences: jsonb('timing_preferences').default('{}'), // Optimal delivery times and patterns
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdx: unique().on(table.userId),
-  engagementScoreIdx: index('idx_user_patterns_engagement').on(table.overallEngagementScore),
-  modelUpdateIdx: index('idx_user_patterns_model_update').on(table.lastModelUpdate),
-}));
+export const userNotificationPatterns = pgTable(
+  'user_notification_patterns',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Behavioral patterns
+    mostActiveHours: jsonb('most_active_hours').default('[]'), // Array of hour numbers (0-23)
+    mostActiveDays: jsonb('most_active_days').default('[]'), // Array of day numbers (0-6, Sun-Sat)
+    averageResponseTime: integer('average_response_time'), // Average seconds to respond to notifications
+    preferredChannels: jsonb('preferred_channels').default('[]'), // Ordered array of channel preferences
+
+    // Engagement metrics
+    overallEngagementScore: decimal('overall_engagement_score', {
+      precision: 5,
+      scale: 2,
+    }).default('50.00'),
+    categoryEngagement: jsonb('category_engagement').default('{}'), // Engagement scores by category
+    recentEngagementTrend: varchar('recent_engagement_trend').default('stable'), // 'increasing', 'decreasing', 'stable'
+
+    // Learning model data
+    lastModelUpdate: timestamp('last_model_update'),
+    modelVersion: varchar('model_version').default('1.0'),
+    learningMetadata: jsonb('learning_metadata').default('{}'), // ML model parameters and features
+
+    // Personalization features
+    contentPreferences: jsonb('content_preferences').default('{}'), // Preferred content types, lengths, etc.
+    timingPreferences: jsonb('timing_preferences').default('{}'), // Optimal delivery times and patterns
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: unique().on(table.userId),
+    engagementScoreIdx: index('idx_user_patterns_engagement').on(
+      table.overallEngagementScore
+    ),
+    modelUpdateIdx: index('idx_user_patterns_model_update').on(
+      table.lastModelUpdate
+    ),
+  })
+);
 
 // Notification analytics for system optimization
-export const notificationAnalytics = pgTable('notification_analytics', {
-  id: serial('id').primaryKey(),
-  
-  // Time period this analytics entry covers
-  periodType: varchar('period_type').notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
-  periodStart: timestamp('period_start').notNull(),
-  periodEnd: timestamp('period_end').notNull(),
-  
-  // Aggregated metrics
-  category: varchar('category'),
-  type: varchar('type'),
-  deliveryChannel: varchar('delivery_channel'),
-  
-  // Counts
-  totalSent: integer('total_sent').notNull().default(0),
-  totalDelivered: integer('total_delivered').notNull().default(0),
-  totalOpened: integer('total_opened').notNull().default(0),
-  totalClicked: integer('total_clicked').notNull().default(0),
-  totalDismissed: integer('total_dismissed').notNull().default(0),
-  totalFailed: integer('total_failed').notNull().default(0),
-  
-  // Calculated rates
-  deliveryRate: decimal('delivery_rate', { precision: 5, scale: 2 }),
-  openRate: decimal('open_rate', { precision: 5, scale: 2 }),
-  clickRate: decimal('click_rate', { precision: 5, scale: 2 }),
-  dismissalRate: decimal('dismissal_rate', { precision: 5, scale: 2 }),
-  
-  // Performance metrics
-  averageDeliveryTime: integer('average_delivery_time'), // Average seconds from trigger to delivery
-  averageResponseTime: integer('average_response_time'), // Average seconds from delivery to interaction
-  
-  // Additional insights
-  peakHours: jsonb('peak_hours').default('[]'), // Hours with highest engagement
-  insights: jsonb('insights').default('{}'), // ML-generated insights and patterns
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  periodTypeStartIdx: index('idx_notif_analytics_period').on(table.periodType, table.periodStart),
-  categoryTypeChannelIdx: index('idx_notif_analytics_category_type_channel').on(table.category, table.type, table.deliveryChannel),
-  performanceMetricsIdx: index('idx_notif_analytics_performance').on(table.openRate, table.clickRate),
-}));
+export const notificationAnalytics = pgTable(
+  'notification_analytics',
+  {
+    id: serial('id').primaryKey(),
+
+    // Time period this analytics entry covers
+    periodType: varchar('period_type').notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
+    periodStart: timestamp('period_start').notNull(),
+    periodEnd: timestamp('period_end').notNull(),
+
+    // Aggregated metrics
+    category: varchar('category'),
+    type: varchar('type'),
+    deliveryChannel: varchar('delivery_channel'),
+
+    // Counts
+    totalSent: integer('total_sent').notNull().default(0),
+    totalDelivered: integer('total_delivered').notNull().default(0),
+    totalOpened: integer('total_opened').notNull().default(0),
+    totalClicked: integer('total_clicked').notNull().default(0),
+    totalDismissed: integer('total_dismissed').notNull().default(0),
+    totalFailed: integer('total_failed').notNull().default(0),
+
+    // Calculated rates
+    deliveryRate: decimal('delivery_rate', { precision: 5, scale: 2 }),
+    openRate: decimal('open_rate', { precision: 5, scale: 2 }),
+    clickRate: decimal('click_rate', { precision: 5, scale: 2 }),
+    dismissalRate: decimal('dismissal_rate', { precision: 5, scale: 2 }),
+
+    // Performance metrics
+    averageDeliveryTime: integer('average_delivery_time'), // Average seconds from trigger to delivery
+    averageResponseTime: integer('average_response_time'), // Average seconds from delivery to interaction
+
+    // Additional insights
+    peakHours: jsonb('peak_hours').default('[]'), // Hours with highest engagement
+    insights: jsonb('insights').default('{}'), // ML-generated insights and patterns
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    periodTypeStartIdx: index('idx_notif_analytics_period').on(
+      table.periodType,
+      table.periodStart
+    ),
+    categoryTypeChannelIdx: index(
+      'idx_notif_analytics_category_type_channel'
+    ).on(table.category, table.type, table.deliveryChannel),
+    performanceMetricsIdx: index('idx_notif_analytics_performance').on(
+      table.openRate,
+      table.clickRate
+    ),
+  })
+);
 
 // A/B testing framework for notification optimization
-export const notificationABTests = pgTable('notification_ab_tests', {
-  id: serial('id').primaryKey(),
-  name: varchar('name').notNull(),
-  description: text('description'),
-  hypothesis: text('hypothesis'), // What we're testing
-  
-  // Test configuration
-  testType: varchar('test_type').notNull(), // 'delivery_time', 'content', 'channel', 'frequency'
-  category: varchar('category'), // Limit test to specific category
-  type: varchar('type'), // Limit test to specific type
-  
-  // Variants
-  controlGroup: jsonb('control_group').notNull(), // Configuration for control group
-  testGroup: jsonb('test_group').notNull(), // Configuration for test group
-  trafficSplit: integer('traffic_split').notNull().default(50), // Percentage going to test group (0-100)
-  
-  // Test status and timeline
-  status: varchar('status').notNull().default('draft'), // 'draft', 'running', 'paused', 'completed', 'cancelled'
-  startDate: timestamp('start_date'),
-  endDate: timestamp('end_date'),
-  targetSampleSize: integer('target_sample_size').default(1000),
-  
-  // Success metrics
-  primaryMetric: varchar('primary_metric').notNull(), // 'open_rate', 'click_rate', 'engagement_score'
-  targetImprovement: decimal('target_improvement', { precision: 5, scale: 2 }).default('5.00'), // % improvement needed
-  significanceLevel: decimal('significance_level', { precision: 3, scale: 2 }).default('0.05'),
-  
-  // Results
-  controlResults: jsonb('control_results').default('{}'),
-  testResults: jsonb('test_results').default('{}'),
-  statisticalSignificance: boolean('statistical_significance'),
-  winnerVariant: varchar('winner_variant'), // 'control', 'test', 'inconclusive'
-  
-  // Metadata
-  createdBy: varchar('created_by').references(() => users.id),
-  metadata: jsonb('metadata').default('{}'),
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  statusIdx: index('idx_notif_ab_tests_status').on(table.status),
-  categoryTypeIdx: index('idx_notif_ab_tests_category_type').on(table.category, table.type),
-  activeTestsIdx: index('idx_notif_ab_tests_active').on(table.status, table.startDate, table.endDate),
-}));
+export const notificationABTests = pgTable(
+  'notification_ab_tests',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name').notNull(),
+    description: text('description'),
+    hypothesis: text('hypothesis'), // What we're testing
+
+    // Test configuration
+    testType: varchar('test_type').notNull(), // 'delivery_time', 'content', 'channel', 'frequency'
+    category: varchar('category'), // Limit test to specific category
+    type: varchar('type'), // Limit test to specific type
+
+    // Variants
+    controlGroup: jsonb('control_group').notNull(), // Configuration for control group
+    testGroup: jsonb('test_group').notNull(), // Configuration for test group
+    trafficSplit: integer('traffic_split').notNull().default(50), // Percentage going to test group (0-100)
+
+    // Test status and timeline
+    status: varchar('status').notNull().default('draft'), // 'draft', 'running', 'paused', 'completed', 'cancelled'
+    startDate: timestamp('start_date'),
+    endDate: timestamp('end_date'),
+    targetSampleSize: integer('target_sample_size').default(1000),
+
+    // Success metrics
+    primaryMetric: varchar('primary_metric').notNull(), // 'open_rate', 'click_rate', 'engagement_score'
+    targetImprovement: decimal('target_improvement', {
+      precision: 5,
+      scale: 2,
+    }).default('5.00'), // % improvement needed
+    significanceLevel: decimal('significance_level', {
+      precision: 3,
+      scale: 2,
+    }).default('0.05'),
+
+    // Results
+    controlResults: jsonb('control_results').default('{}'),
+    testResults: jsonb('test_results').default('{}'),
+    statisticalSignificance: boolean('statistical_significance'),
+    winnerVariant: varchar('winner_variant'), // 'control', 'test', 'inconclusive'
+
+    // Metadata
+    createdBy: varchar('created_by').references(() => users.id),
+    metadata: jsonb('metadata').default('{}'),
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    statusIdx: index('idx_notif_ab_tests_status').on(table.status),
+    categoryTypeIdx: index('idx_notif_ab_tests_category_type').on(
+      table.category,
+      table.type
+    ),
+    activeTestsIdx: index('idx_notif_ab_tests_active').on(
+      table.status,
+      table.startDate,
+      table.endDate
+    ),
+  })
+);
+
+// Notification action history - tracks when users execute actions from notifications
+export const notificationActionHistory = pgTable(
+  'notification_action_history',
+  {
+    id: serial('id').primaryKey(),
+    notificationId: integer('notification_id')
+      .notNull()
+      .references(() => notifications.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Action details
+    actionType: varchar('action_type').notNull(), // 'approve', 'decline', 'mark_complete', 'assign', etc.
+    actionStatus: varchar('action_status').notNull().default('pending'), // 'pending', 'success', 'failed'
+
+    // Execution tracking
+    startedAt: timestamp('started_at').defaultNow().notNull(),
+    completedAt: timestamp('completed_at'),
+    errorMessage: text('error_message'),
+
+    // Related entity changes
+    relatedType: varchar('related_type'), // 'event_request', 'task', 'project', etc.
+    relatedId: integer('related_id'),
+
+    // Undo support
+    undoneAt: timestamp('undone_at'),
+    undoneBy: varchar('undone_by').references(() => users.id),
+
+    // Additional context
+    metadata: jsonb('metadata').default('{}'), // Action-specific data
+  },
+  (table) => ({
+    notificationActionIdx: index('idx_notif_action_history_notif').on(
+      table.notificationId
+    ),
+    userActionIdx: index('idx_notif_action_history_user').on(
+      table.userId,
+      table.actionType
+    ),
+    statusIdx: index('idx_notif_action_history_status').on(
+      table.actionStatus
+    ),
+  })
+);
 
 // =============================================================================
 // SMART NOTIFICATIONS SYSTEM - INSERT SCHEMAS AND TYPES
 // =============================================================================
 
 // Smart notification insert schemas
-export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+export const insertNotificationPreferencesSchema = createInsertSchema(
+  notificationPreferences
+).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertNotificationHistorySchema = createInsertSchema(notificationHistory).omit({
+export const insertNotificationHistorySchema = createInsertSchema(
+  notificationHistory
+).omit({
   id: true,
   createdAt: true,
 });
 
-export const insertNotificationRulesSchema = createInsertSchema(notificationRules).omit({
+export const insertNotificationRulesSchema = createInsertSchema(
+  notificationRules
+).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertUserNotificationPatternsSchema = createInsertSchema(userNotificationPatterns).omit({
+export const insertUserNotificationPatternsSchema = createInsertSchema(
+  userNotificationPatterns
+).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertNotificationAnalyticsSchema = createInsertSchema(notificationAnalytics).omit({
+export const insertNotificationActionHistorySchema = createInsertSchema(
+  notificationActionHistory
+).omit({
+  id: true,
+  startedAt: true,
+});
+
+export const insertNotificationAnalyticsSchema = createInsertSchema(
+  notificationAnalytics
+).omit({
   id: true,
   createdAt: true,
 });
 
-export const insertNotificationABTestsSchema = createInsertSchema(notificationABTests).omit({
+export const insertNotificationABTestsSchema = createInsertSchema(
+  notificationABTests
+).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
 // Smart notification types
-export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
-export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences =
+  typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<
+  typeof insertNotificationPreferencesSchema
+>;
 
 export type NotificationHistory = typeof notificationHistory.$inferSelect;
-export type InsertNotificationHistory = z.infer<typeof insertNotificationHistorySchema>;
+export type InsertNotificationHistory = z.infer<
+  typeof insertNotificationHistorySchema
+>;
 
 export type NotificationRules = typeof notificationRules.$inferSelect;
-export type InsertNotificationRules = z.infer<typeof insertNotificationRulesSchema>;
+export type InsertNotificationRules = z.infer<
+  typeof insertNotificationRulesSchema
+>;
 
-export type UserNotificationPatterns = typeof userNotificationPatterns.$inferSelect;
-export type InsertUserNotificationPatterns = z.infer<typeof insertUserNotificationPatternsSchema>;
+export type UserNotificationPatterns =
+  typeof userNotificationPatterns.$inferSelect;
+export type InsertUserNotificationPatterns = z.infer<
+  typeof insertUserNotificationPatternsSchema
+>;
 
 export type NotificationAnalytics = typeof notificationAnalytics.$inferSelect;
-export type InsertNotificationAnalytics = z.infer<typeof insertNotificationAnalyticsSchema>;
+export type InsertNotificationAnalytics = z.infer<
+  typeof insertNotificationAnalyticsSchema
+>;
 
 export type NotificationABTests = typeof notificationABTests.$inferSelect;
-export type InsertNotificationABTests = z.infer<typeof insertNotificationABTestsSchema>;
+export type InsertNotificationABTests = z.infer<
+  typeof insertNotificationABTestsSchema
+>;
+
+export type NotificationActionHistory =
+  typeof notificationActionHistory.$inferSelect;
+export type InsertNotificationActionHistory = z.infer<
+  typeof insertNotificationActionHistorySchema
+>;
+
+// Availability slots insert schema and types
+export const insertAvailabilitySlotSchema = createInsertSchema(
+  availabilitySlots
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
+export type InsertAvailabilitySlot = z.infer<
+  typeof insertAvailabilitySlotSchema
+>;
+
+// Dashboard document preferences - which documents appear on dashboard
+export const dashboardDocuments = pgTable('dashboard_documents', {
+  id: serial('id').primaryKey(),
+  documentId: varchar('document_id').notNull().unique(), // References the id from adminDocuments array
+  displayOrder: integer('display_order').notNull().default(0), // Order to display on dashboard
+  isActive: boolean('is_active').notNull().default(true), // Whether to show on dashboard
+  addedBy: varchar('added_by'), // User who added this document to dashboard
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertDashboardDocumentSchema = createInsertSchema(
+  dashboardDocuments
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type DashboardDocument = typeof dashboardDocuments.$inferSelect;
+export type InsertDashboardDocument = z.infer<
+  typeof insertDashboardDocumentSchema
+>;
+
+// Onboarding Challenge - Gamification for feature exploration
+export const onboardingChallenges = pgTable('onboarding_challenges', {
+  id: serial('id').primaryKey(),
+  actionKey: varchar('action_key').notNull().unique(), // e.g., 'chat_first_message', 'view_important_docs'
+  title: varchar('title').notNull(), // e.g., 'Send your first chat message'
+  description: text('description'), // Detailed description of the action
+  category: varchar('category').notNull(), // 'communication', 'documents', 'team', 'projects'
+  points: integer('points').notNull().default(10), // Points awarded for completion
+  icon: varchar('icon'), // Icon name for UI
+  order: integer('order').notNull().default(0), // Display order
+  promotion: text('promotion'), // Promotion text to highlight special challenges
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const onboardingProgress = pgTable(
+  'onboarding_progress',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id').notNull(),
+    challengeId: integer('challenge_id').notNull(),
+    completedAt: timestamp('completed_at').notNull().defaultNow(),
+    metadata: jsonb('metadata').default('{}'), // Additional context about completion
+  },
+  (table) => [
+    unique().on(table.userId, table.challengeId), // Each user can complete each challenge once
+  ]
+);
+
+export const insertOnboardingChallengeSchema = createInsertSchema(
+  onboardingChallenges
+).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOnboardingProgressSchema = createInsertSchema(
+  onboardingProgress
+).omit({
+  id: true,
+  completedAt: true,
+});
+
+export type OnboardingChallenge = typeof onboardingChallenges.$inferSelect;
+export type InsertOnboardingChallenge = z.infer<
+  typeof insertOnboardingChallengeSchema
+>;
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type InsertOnboardingProgress = z.infer<
+  typeof insertOnboardingProgressSchema
+>;
+
+// Feature Flags - Gradual feature rollout and A/B testing
+export const featureFlags = pgTable('feature_flags', {
+  id: serial('id').primaryKey(),
+  flagName: varchar('flag_name', { length: 255 }).notNull().unique(), // e.g., 'unified-activities', 'new-ui-v2'
+  description: text('description'), // Human-readable description of what this flag controls
+  enabled: boolean('enabled').notNull().default(false), // Global enable/disable
+  enabledForUsers: jsonb('enabled_for_users').default('[]'), // Array of user IDs who have access
+  enabledForRoles: jsonb('enabled_for_roles').default('[]'), // Array of roles that have access
+  enabledPercentage: integer('enabled_percentage').default(0), // For gradual rollout (0-100)
+  metadata: jsonb('metadata').default('{}'), // Additional configuration (variants, parameters, etc.)
+  createdBy: varchar('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_feature_flags_enabled').on(table.enabled),
+  index('idx_feature_flags_flag_name').on(table.flagName),
+]);
+
+export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;
+
+// ============================================================================
+// UNIFIED TASK + COMMUNICATION SYSTEM (Phase 1)
+// ============================================================================
+
+/**
+ * Activities - Unified table for tasks, events, projects, messages, and more
+ * Replaces scattered task/event/message tables with one threaded conversation system
+ */
+export const activities = pgTable('activities', {
+  id: varchar('id').primaryKey().notNull(), // UUID from client or server
+  type: varchar('type', { length: 50 }).notNull(), // 'task', 'event', 'project', 'collection', 'message', 'kudos', 'system_log'
+  title: text('title').notNull(), // Main description or message preview
+  content: text('content'), // Detailed body - for messages or rich descriptions
+  createdBy: varchar('created_by').notNull(), // FK to users.id
+  assignedTo: jsonb('assigned_to').default('[]'), // Array of user IDs
+  status: varchar('status', { length: 50 }), // 'open', 'in_progress', 'done', 'declined', 'postponed', NULL for messages
+  priority: varchar('priority', { length: 20 }), // 'low', 'medium', 'high', 'urgent', NULL for non-tasks
+  parentId: varchar('parent_id'), // Self-referential FK for threading (replies)
+  rootId: varchar('root_id'), // Denormalized root of thread for efficient queries
+  contextType: varchar('context_type', { length: 50 }), // 'event_request', 'project', 'collection', 'kudos', 'direct', 'channel'
+  contextId: varchar('context_id'), // FK to eventRequests/projects/collections/etc
+  metadata: jsonb('metadata').default('{}'), // Flexible field for type-specific data
+  isDeleted: boolean('is_deleted').default(false), // Soft delete flag
+  threadCount: integer('thread_count').default(0), // Denormalized count of replies
+  lastActivityAt: timestamp('last_activity_at').defaultNow(), // For sorting threads by recent activity
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_activities_type').on(table.type),
+  index('idx_activities_created_by').on(table.createdBy),
+  index('idx_activities_parent_id').on(table.parentId),
+  index('idx_activities_root_id').on(table.rootId),
+  index('idx_activities_context').on(table.contextType, table.contextId),
+  index('idx_activities_last_activity').on(table.lastActivityAt),
+  index('idx_activities_is_deleted').on(table.isDeleted),
+  index('idx_activities_status').on(table.status),
+  index('idx_activities_created_at').on(table.createdAt),
+]);
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  threadCount: true,
+  lastActivityAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+/**
+ * Activity Participants - Track who's involved in each activity
+ * Used for permissions, notifications, and unread tracking
+ */
+export const activityParticipants = pgTable('activity_participants', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  userId: varchar('user_id').notNull(), // FK to users.id
+  role: varchar('role', { length: 50 }).notNull(), // 'assignee', 'follower', 'mentioned', 'creator'
+  lastReadAt: timestamp('last_read_at'), // For unread tracking
+  notificationsEnabled: boolean('notifications_enabled').default(true), // Per-thread notification preference
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_participants_activity').on(table.activityId),
+  index('idx_activity_participants_user').on(table.userId),
+  index('idx_activity_participants_activity_user').on(table.activityId, table.userId),
+  unique().on(table.activityId, table.userId, table.role), // Prevent duplicate participant roles
+]);
+
+export const insertActivityParticipantSchema = createInsertSchema(activityParticipants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ActivityParticipant = typeof activityParticipants.$inferSelect;
+export type InsertActivityParticipant = z.infer<typeof insertActivityParticipantSchema>;
+
+/**
+ * Activity Reactions - Likes, celebrates, helpful, etc.
+ * Lightweight engagement on activities and messages
+ */
+export const activityReactions = pgTable('activity_reactions', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  userId: varchar('user_id').notNull(), // FK to users.id
+  reactionType: varchar('reaction_type', { length: 50 }).notNull(), // 'like', 'celebrate', 'helpful', 'complete', 'question'
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_reactions_activity').on(table.activityId),
+  index('idx_activity_reactions_user').on(table.userId),
+  unique().on(table.activityId, table.userId, table.reactionType), // One reaction type per user per activity
+]);
+
+export const insertActivityReactionSchema = createInsertSchema(activityReactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ActivityReaction = typeof activityReactions.$inferSelect;
+export type InsertActivityReaction = z.infer<typeof insertActivityReactionSchema>;
+
+/**
+ * Activity Attachments - File uploads on threads
+ * Links to storage service (Google Cloud Storage)
+ */
+export const activityAttachments = pgTable('activity_attachments', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  fileUrl: text('file_url').notNull(), // URL to file in storage
+  fileType: varchar('file_type', { length: 100 }), // MIME type
+  fileName: text('file_name').notNull(), // Original filename
+  fileSize: integer('file_size'), // Size in bytes
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_attachments_activity').on(table.activityId),
+  index('idx_activity_attachments_uploaded_by').on(table.uploadedBy),
+]);
+
+export const insertActivityAttachmentSchema = createInsertSchema(activityAttachments).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type ActivityAttachment = typeof activityAttachments.$inferSelect;
+export type InsertActivityAttachment = z.infer<typeof insertActivityAttachmentSchema>;
+
+/**
+ * Promotion Graphics - Social media graphics for team sharing
+ * Store graphics that hosts can share on their social media
+ */
+export const promotionGraphics = pgTable('promotion_graphics', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  imageUrl: text('image_url').notNull(), // URL to the uploaded graphic
+  fileName: text('file_name').notNull(), // Original filename
+  fileSize: integer('file_size'), // Size in bytes
+  fileType: varchar('file_type', { length: 100 }), // MIME type (image/png, image/jpeg, etc.)
+  intendedUseDate: timestamp('intended_use_date'), // When the graphic should be used
+  targetAudience: text('target_audience').default('hosts'), // 'hosts', 'volunteers', 'all', etc.
+  status: varchar('status', { length: 50 }).default('active'), // 'active', 'archived'
+  notificationSent: boolean('notification_sent').default(false), // Track if email was sent
+  notificationSentAt: timestamp('notification_sent_at'), // When notification was sent
+  viewCount: integer('view_count').default(0), // Track how many times the graphic has been viewed
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedByName: text('uploaded_by_name').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_promotion_graphics_status').on(table.status),
+  index('idx_promotion_graphics_target_audience').on(table.targetAudience),
+  index('idx_promotion_graphics_uploaded_by').on(table.uploadedBy),
+  index('idx_promotion_graphics_intended_use_date').on(table.intendedUseDate),
+]);
+
+export const insertPromotionGraphicSchema = createInsertSchema(promotionGraphics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  notificationSent: true,
+  notificationSentAt: true,
+});
+
+export type PromotionGraphic = typeof promotionGraphics.$inferSelect;
+export type InsertPromotionGraphic = z.infer<typeof insertPromotionGraphicSchema>;
+
+/**
+ * Expenses - Track expenses and receipts for events, projects, or general use
+ * Supports receipt file uploads via storage service
+ */
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  contextType: varchar('context_type', { length: 50 }), // 'event', 'project', 'general'
+  contextId: integer('context_id'), // FK to eventRequests.id or projects.id
+  description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  category: varchar('category', { length: 100 }), // 'food', 'supplies', 'transport', 'reimbursement', 'other'
+  vendor: varchar('vendor', { length: 255 }), // Where the purchase was made
+  purchaseDate: timestamp('purchase_date'), // When the purchase was made
+  receiptUrl: text('receipt_url'), // URL to receipt file in storage
+  receiptFileName: text('receipt_file_name'), // Original filename
+  receiptFileSize: integer('receipt_file_size'), // Size in bytes
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+  approvedBy: varchar('approved_by'), // FK to users.id (for approval workflow)
+  approvedAt: timestamp('approved_at'),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'approved', 'rejected', 'reimbursed'
+  notes: text('notes'),
+  metadata: jsonb('metadata').default('{}'), // Additional context
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_expenses_context').on(table.contextType, table.contextId),
+  index('idx_expenses_uploaded_by').on(table.uploadedBy),
+  index('idx_expenses_status').on(table.status),
+  index('idx_expenses_category').on(table.category),
+  index('idx_expenses_purchase_date').on(table.purchaseDate),
+]);
+
+export const insertExpenseSchema = createInsertSchema(expenses, {
+  amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Amount must be a valid decimal with up to 2 decimal places"),
+  description: z.string().min(1, "Description is required"),
+  category: z.enum(['food', 'supplies', 'transport', 'reimbursement', 'other']).optional(),
+  status: z.enum(['pending', 'approved', 'rejected', 'reimbursed']).optional(),
+  contextType: z.enum(['event', 'project', 'general']).optional(),
+}).omit({
+  id: true,
+  uploadedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateExpenseSchema = insertExpenseSchema.partial();
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
+
+/**
+ * Search Analytics - Track SmartSearch usage for learning and improvement
+ * Enables ML-powered search result optimization and user behavior analysis
+ */
+export const searchAnalytics = pgTable('search_analytics', {
+  id: serial('id').primaryKey(),
+  query: text('query').notNull(), // The search query
+  resultId: varchar('result_id'), // Which result was clicked (nullable)
+  clicked: boolean('clicked').notNull().default(false), // Whether a result was clicked
+  timestamp: timestamp('timestamp').defaultNow().notNull(), // When the search occurred
+  userId: varchar('user_id'), // Who performed the search (nullable for anonymous)
+  userRole: varchar('user_role'), // User's role at time of search
+  usedAI: boolean('used_ai').notNull().default(false), // Whether AI semantic search was used
+  resultsCount: integer('results_count').notNull().default(0), // How many results were returned
+  queryTime: integer('query_time').notNull().default(0), // Milliseconds to process query
+}, (table) => [
+  index('idx_search_analytics_query').on(table.query),
+  index('idx_search_analytics_user').on(table.userId),
+  index('idx_search_analytics_timestamp').on(table.timestamp),
+  index('idx_search_analytics_clicked').on(table.clicked),
+]);
+
+export const insertSearchAnalyticsSchema = createInsertSchema(searchAnalytics).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type SearchAnalytics = typeof searchAnalytics.$inferSelect;
+export type InsertSearchAnalytics = z.infer<typeof insertSearchAnalyticsSchema>;
+
+/**
+ * Dismissed announcements - Track which users have dismissed which announcements
+ * Allows for one-time popups and announcements that don't show repeatedly
+ */
+export const dismissedAnnouncements = pgTable('dismissed_announcements', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull(), // FK to users.id
+  announcementId: varchar('announcement_id').notNull(), // Unique identifier for the announcement (e.g., 'sms_launch_2024')
+  dismissedAt: timestamp('dismissed_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_dismissed_announcements_user').on(table.userId),
+  unique('unique_user_announcement').on(table.userId, table.announcementId),
+]);
+
+export const insertDismissedAnnouncementSchema = createInsertSchema(dismissedAnnouncements).omit({
+  id: true,
+  dismissedAt: true,
+});
+
+export type DismissedAnnouncement = typeof dismissedAnnouncements.$inferSelect;
+export type InsertDismissedAnnouncement = z.infer<typeof insertDismissedAnnouncementSchema>;

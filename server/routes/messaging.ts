@@ -1,11 +1,20 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { messagingService } from '../services/messaging-service';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
+import { AuthenticatedRequest } from '../types';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
+// Get messages for an event context (stub route - events don't have messaging yet)
+router.get('/context/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  // Event requests don't have a messaging system yet, so return empty array
+  // This prevents 404 errors in the console when EventMessageThread loads
+  res.json({ messages: [] });
+});
+
 // Get unread messages for the user
-router.get('/unread', isAuthenticated, async (req: any, res) => {
+router.get('/unread', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -24,37 +33,37 @@ router.get('/unread', isAuthenticated, async (req: any, res) => {
       res.json({ messages });
     }
   } catch (error) {
-    console.error('[Messaging API] Error fetching unread messages:', error);
+    logger.error('[Messaging API] Error fetching unread messages:', error);
     res.json({ messages: [] });
   }
 });
 
 // Get unnotified kudos for login notifications
-router.get('/kudos/unnotified', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/unnotified', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    console.log(`[Messaging API] Getting unnotified kudos for user: ${user.email}`);
+    logger.log(`[Messaging API] Getting unnotified kudos for user: ${user.email}`);
 
     const unnotifiedKudos = await messagingService.getUnnotifiedKudos(user.id);
 
     // Ensure we always return an array
     const kudosArray = Array.isArray(unnotifiedKudos) ? unnotifiedKudos : [];
 
-    console.log(`[Messaging API] Found ${kudosArray.length} unnotified kudos`);
+    logger.log(`[Messaging API] Found ${kudosArray.length} unnotified kudos`);
     res.json(kudosArray);
   } catch (error) {
-    console.error('[Messaging API] Error fetching unnotified kudos:', error);
+    logger.error('[Messaging API] Error fetching unnotified kudos:', error);
     // Return empty array on error to prevent slice errors
     res.json([]);
   }
 });
 
 // Mark kudos as initially notified
-router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: any, res) => {
+router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -67,43 +76,43 @@ router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: any, re
       return res.status(400).json({ message: 'kudosIds array is required' });
     }
 
-    console.log(`[Messaging API] Marking ${kudosIds.length} kudos as initially notified for user: ${user.email}`);
+    logger.log(`[Messaging API] Marking ${kudosIds.length} kudos as initially notified for user: ${user.email}`);
 
     await messagingService.markKudosInitiallyNotified(user.id, kudosIds);
 
     res.json({ success: true, message: 'Kudos marked as initially notified' });
   } catch (error) {
-    console.error('[Messaging API] Error marking kudos as initially notified:', error);
+    logger.error('[Messaging API] Error marking kudos as initially notified:', error);
     res.status(500).json({ message: 'Failed to mark kudos as initially notified' });
   }
 });
 
 // Get received kudos for a user
-router.get('/kudos/received', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/received', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    console.log(`[Messaging API] Getting received kudos for user: ${user.email}`);
+    logger.log(`[Messaging API] Getting received kudos for user: ${user.email}`);
 
     const kudos = await messagingService.getReceivedKudos(user.id);
 
     // Ensure we always return an array
     const kudosArray = Array.isArray(kudos) ? kudos : [];
 
-    console.log(`[Messaging API] Found ${kudosArray.length} received kudos`);
+    logger.log(`[Messaging API] Found ${kudosArray.length} received kudos`);
     res.json(kudosArray);
   } catch (error) {
-    console.error('[Messaging API] Error fetching received kudos:', error);
+    logger.error('[Messaging API] Error fetching received kudos:', error);
     // Return empty array on error
     res.json([]);
   }
 });
 
 // Send kudos
-router.post('/kudos/send', isAuthenticated, async (req: any, res) => {
+router.post('/kudos/send', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -124,7 +133,7 @@ router.post('/kudos/send', isAuthenticated, async (req: any, res) => {
       });
     }
 
-    console.log(`[Messaging API] Sending kudos from ${user.email} to ${recipientId}`);
+    logger.log(`[Messaging API] Sending kudos from ${user.email} to ${recipientId}`);
 
     const result = await messagingService.sendKudos({
       senderId: user.id,
@@ -137,13 +146,13 @@ router.post('/kudos/send', isAuthenticated, async (req: any, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('[Messaging API] Error sending kudos:', error);
+    logger.error('[Messaging API] Error sending kudos:', error);
     res.status(500).json({ message: 'Failed to send kudos' });
   }
 });
 
 // Check if kudos was already sent
-router.get('/kudos/check', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/check', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -153,8 +162,8 @@ router.get('/kudos/check', isAuthenticated, async (req: any, res) => {
     const { recipientId, contextType, contextId } = req.query;
 
     if (!recipientId || !contextType || !contextId) {
-      return res.status(400).json({ 
-        message: 'recipientId, contextType, and contextId are required' 
+      return res.status(400).json({
+        message: 'recipientId, contextType, and contextId are required'
       });
     }
 
@@ -167,8 +176,52 @@ router.get('/kudos/check', isAuthenticated, async (req: any, res) => {
 
     res.json({ hasSent });
   } catch (error) {
-    console.error('[Messaging API] Error checking kudos status:', error);
+    logger.error('[Messaging API] Error checking kudos status:', error);
     res.status(500).json({ message: 'Failed to check kudos status' });
+  }
+});
+
+// Send message
+router.post('/send', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const {
+      recipientIds,
+      content,
+      contextType,
+      contextId,
+      contextTitle,
+      parentMessageId,
+    } = req.body;
+
+    if (!recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).json({ message: 'recipientIds array is required' });
+    }
+
+    if (!content) {
+      return res.status(400).json({ message: 'content is required' });
+    }
+
+    logger.log(`[Messaging API] Sending message from ${user.email} to ${recipientIds.length} recipient(s)`);
+
+    const result = await messagingService.sendMessage({
+      senderId: user.id,
+      recipientIds,
+      content,
+      contextType,
+      contextId,
+      contextTitle,
+      parentMessageId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('[Messaging API] Error sending message:', error);
+    res.status(500).json({ message: 'Failed to send message' });
   }
 });
 

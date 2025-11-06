@@ -33,8 +33,11 @@ import {
   eventRequests,
   organizations,
   eventVolunteers,
+  eventReminders,
   meetingNotes,
   importedExternalIds,
+  availabilitySlots,
+  searchAnalytics,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -108,6 +111,10 @@ import {
   type InsertMeetingNote,
   type ImportedExternalId,
   type InsertImportedExternalId,
+  type AvailabilitySlot,
+  type InsertAvailabilitySlot,
+  type SearchAnalytics,
+  type InsertSearchAnalytics,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -316,6 +323,7 @@ export interface IStorage {
   // Meetings
   getCurrentMeeting(): Promise<Meeting | undefined>;
   getAllMeetings(): Promise<Meeting[]>;
+  getMeeting(id: number): Promise<Meeting | undefined>;
   getMeetingsByType(type: string): Promise<Meeting[]>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeetingAgenda(id: number, agenda: string): Promise<Meeting | undefined>;
@@ -324,6 +332,7 @@ export interface IStorage {
     updates: Partial<Meeting>
   ): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<boolean>;
+  getCompiledAgendasByMeeting(meetingId: number): Promise<CompiledAgenda[]>;
 
   // Meeting Notes
   getAllMeetingNotes(): Promise<MeetingNote[]>;
@@ -398,6 +407,7 @@ export interface IStorage {
 
   // Host Contacts
   createHostContact(contact: InsertHostContact): Promise<HostContact>;
+  getHostContact(id: number): Promise<HostContact | undefined>;
   getHostContacts(hostId: number): Promise<HostContact[]>;
   updateHostContact(
     id: number,
@@ -655,6 +665,39 @@ export interface IStorage {
     sourceTable?: string
   ): Promise<ImportedExternalId | undefined>;
   backfillExistingExternalIds(): Promise<number>;
+
+  // Availability Slots (Team member availability calendar)
+  getAllAvailabilitySlots(): Promise<AvailabilitySlot[]>;
+  getAvailabilitySlotById(id: number): Promise<AvailabilitySlot | undefined>;
+  getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]>;
+  getAvailabilitySlotsByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<AvailabilitySlot[]>;
+  createAvailabilitySlot(
+    slot: InsertAvailabilitySlot
+  ): Promise<AvailabilitySlot>;
+  updateAvailabilitySlot(
+    id: number,
+    updates: Partial<InsertAvailabilitySlot>
+  ): Promise<AvailabilitySlot>;
+  deleteAvailabilitySlot(id: number): Promise<void>;
+
+  // Dashboard Documents (Configure which documents appear on dashboard)
+  getDashboardDocuments(): Promise<any[]>;
+  addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ): Promise<any>;
+  removeDashboardDocument(documentId: string): Promise<boolean>;
+  updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ): Promise<void>;
+
+  // Search Analytics (SmartSearch usage tracking for ML improvements)
+  logSearchAnalytics(data: InsertSearchAnalytics): Promise<void>;
+  getSearchAnalytics(options?: { limit?: number; userId?: string }): Promise<SearchAnalytics[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -690,6 +733,7 @@ export class MemStorage implements IStorage {
   private eventRequests: Map<number, EventRequest>;
   private organizations: Map<number, Organization>;
   private eventVolunteers: Map<number, EventVolunteer>;
+  private dashboardDocuments: Map<number, any>;
   private currentIds: {
     user: number;
     project: number;
@@ -721,6 +765,7 @@ export class MemStorage implements IStorage {
     eventRequest: number;
     organization: number;
     eventVolunteer: number;
+    dashboardDocument: number;
   };
 
   constructor() {
@@ -757,6 +802,7 @@ export class MemStorage implements IStorage {
     this.eventRequests = new Map();
     this.organizations = new Map();
     this.eventVolunteers = new Map();
+    this.dashboardDocuments = new Map();
     this.currentIds = {
       user: 1,
       project: 1,
@@ -789,6 +835,7 @@ export class MemStorage implements IStorage {
       eventRequest: 1,
       organization: 1,
       eventVolunteer: 1,
+      dashboardDocument: 1,
     };
 
     // No sample data - start with clean storage
@@ -826,11 +873,14 @@ export class MemStorage implements IStorage {
     const newUser: User = {
       id: userData.id,
       email: userData.email || null,
+      password: userData.password || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       profileImageUrl: userData.profileImageUrl || null,
       role: userData.role || 'volunteer',
       permissions: userData.permissions || {},
+      permissionsModifiedAt: userData.permissionsModifiedAt || null,
+      permissionsModifiedBy: userData.permissionsModifiedBy || null,
       metadata: userData.metadata || {},
       isActive: userData.isActive ?? true,
       createdAt: new Date(),
@@ -854,11 +904,14 @@ export class MemStorage implements IStorage {
       const newUser: User = {
         id: userData.id,
         email: userData.email || null,
+        password: userData.password || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
         role: userData.role || 'volunteer',
         permissions: userData.permissions || {},
+        permissionsModifiedAt: userData.permissionsModifiedAt || null,
+        permissionsModifiedBy: userData.permissionsModifiedBy || null,
         isActive: userData.isActive ?? true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1146,7 +1199,7 @@ export class MemStorage implements IStorage {
     // For the real-time messaging system, we don't have a read status field in the Message schema
     // This is a placeholder implementation for now
     // In a real implementation, you would need a separate table for message read status
-    console.log(
+    logger.log(
       `MemStorage: Marking message ${messageId} as read for user ${userId}`
     );
   }
@@ -1591,10 +1644,18 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getMeeting(id: number): Promise<Meeting | undefined> {
+    return this.meetings.get(id);
+  }
+
   async getMeetingsByType(type: string): Promise<Meeting[]> {
     return Array.from(this.meetings.values())
       .filter((m) => m.type === type)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  async getCompiledAgendasByMeeting(meetingId: number): Promise<CompiledAgenda[]> {
+    return [];
   }
 
   async createMeeting(insertMeeting: InsertMeeting): Promise<Meeting> {
@@ -1883,7 +1944,7 @@ export class MemStorage implements IStorage {
           contact.name === insertContact.name &&
           contact.email === insertContact.email
         ) {
-          console.log(
+          logger.log(
             `Duplicate host contact prevented in memory: ${insertContact.name} (${insertContact.email})`
           );
           return contact;
@@ -1901,6 +1962,10 @@ export class MemStorage implements IStorage {
     };
     this.hostContacts.set(id, contact);
     return contact;
+  }
+
+  async getHostContact(id: number): Promise<HostContact | undefined> {
+    return this.hostContacts.get(id);
   }
 
   async getHostContacts(hostId: number): Promise<HostContact[]> {
@@ -2308,7 +2373,7 @@ export class MemStorage implements IStorage {
     updates: { content: string }
   ): Promise<void> {
     // In-memory storage doesn't persist anyway, so just log
-    console.log(
+    logger.log(
       `[MemStorage] Updated chat message ${id} with content: ${updates.content}`
     );
   }
@@ -2326,7 +2391,7 @@ export class MemStorage implements IStorage {
     channel: string
   ): Promise<void> {
     // No-op for memory storage since it doesn't persist anyway
-    console.log(
+    logger.log(
       `[MemStorage] Marked all messages in ${channel} as read for user ${userId}`
     );
   }
@@ -2594,11 +2659,11 @@ export class MemStorage implements IStorage {
       }
       
       if (addedCount > 0) {
-        console.log(`📄 Auto-populated ${addedCount} documents from public folders`);
+        logger.log(`📄 Auto-populated ${addedCount} documents from public folders`);
       }
       
     } catch (error) {
-      console.error('Error auto-populating documents:', error);
+      logger.error('Error auto-populating documents:', error);
     }
   }
 
@@ -2960,70 +3025,99 @@ export class MemStorage implements IStorage {
     return this.eventVolunteers.delete(id);
   }
 
-  // Event reminders methods
-  private eventReminders: Map<number, any> = new Map();
-  private nextEventReminderId = 1;
-
+  // Event reminders methods - Database implementation
   async getEventRemindersCount(userId?: string): Promise<number> {
-    if (userId) {
-      return Array.from(this.eventReminders.values()).filter(
-        (reminder) =>
-          reminder.assignedToUserId === userId && reminder.status === 'pending'
-      ).length;
+    try {
+      let query = this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(eventReminders)
+        .where(eq(eventReminders.status, 'pending'));
+      
+      if (userId) {
+        query = query.where(eq(eventReminders.assignedToUserId, userId)) as any;
+      }
+      
+      const result = await query;
+      return Number(result[0]?.count || 0);
+    } catch (error) {
+      logger.error('Error getting event reminders count:', error);
+      throw error;
     }
-    return Array.from(this.eventReminders.values()).filter(
-      (reminder) => reminder.status === 'pending'
-    ).length;
   }
 
   async getAllEventReminders(userId?: string): Promise<any[]> {
-    let reminders = Array.from(this.eventReminders.values());
-    if (userId) {
-      reminders = reminders.filter(
-        (reminder) =>
-          reminder.assignedToUserId === userId || reminder.createdBy === userId
-      );
+    try {
+      let query = this.db
+        .select()
+        .from(eventReminders)
+        .orderBy(desc(eventReminders.createdAt));
+      
+      if (userId) {
+        query = query.where(
+          or(
+            eq(eventReminders.assignedToUserId, userId),
+            eq(eventReminders.createdBy, userId)
+          )
+        ) as any;
+      }
+      
+      return await query;
+    } catch (error) {
+      logger.error('Error getting all event reminders:', error);
+      throw error;
     }
-    return reminders.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
   }
 
   async createEventReminder(reminderData: any): Promise<any> {
-    const reminder = {
-      id: this.nextEventReminderId++,
-      ...reminderData,
-      status: reminderData.status || 'pending',
-      priority: reminderData.priority || 'medium',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.eventReminders.set(reminder.id, reminder);
-    return reminder;
+    try {
+      const [reminder] = await this.db
+        .insert(eventReminders)
+        .values({
+          ...reminderData,
+          status: reminderData.status || 'pending',
+          priority: reminderData.priority || 'medium',
+        })
+        .returning();
+      return reminder;
+    } catch (error) {
+      logger.error('Error creating event reminder:', error);
+      throw error;
+    }
   }
 
   async updateEventReminder(id: number, updates: any): Promise<any> {
-    const reminder = this.eventReminders.get(id);
-    if (!reminder) return null;
-
-    const updated = {
-      ...reminder,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    // Handle completion
-    if (updates.status === 'completed' && !reminder.completedAt) {
-      updated.completedAt = new Date();
+    try {
+      const updateData: any = { ...updates };
+      
+      // Handle completion
+      if (updates.status === 'completed' && !updates.completedAt) {
+        updateData.completedAt = new Date();
+      }
+      
+      const [updated] = await this.db
+        .update(eventReminders)
+        .set(updateData)
+        .where(eq(eventReminders.id, id))
+        .returning();
+      
+      return updated || null;
+    } catch (error) {
+      logger.error('Error updating event reminder:', error);
+      throw error;
     }
-
-    this.eventReminders.set(id, updated);
-    return updated;
   }
 
   async deleteEventReminder(id: number): Promise<boolean> {
-    return this.eventReminders.delete(id);
+    try {
+      const result = await this.db
+        .delete(eventReminders)
+        .where(eq(eventReminders.id, id))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      logger.error('Error deleting event reminder:', error);
+      throw error;
+    }
   }
 
   // External ID Blacklist methods (stub implementations for memory storage)
@@ -3095,10 +3189,65 @@ export class MemStorage implements IStorage {
     // This prevents the "method not found" error
     return false;
   }
+
+  // Dashboard Documents Methods (fallback implementations for memory storage)
+  async getDashboardDocuments(): Promise<any[]> {
+    // Return all active dashboard documents sorted by display order
+    return Array.from(this.dashboardDocuments.values())
+      .filter((doc) => doc.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  async addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ): Promise<any> {
+    const id = this.currentIds.dashboardDocument++;
+    const doc = {
+      id,
+      documentId,
+      displayOrder,
+      isActive: true,
+      addedBy: userId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.dashboardDocuments.set(id, doc);
+    return doc;
+  }
+
+  async removeDashboardDocument(documentId: string): Promise<boolean> {
+    // Find and delete the document by documentId
+    for (const [id, doc] of this.dashboardDocuments.entries()) {
+      if (doc.documentId === documentId) {
+        this.dashboardDocuments.delete(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ): Promise<void> {
+    // Update display order for each document
+    for (const update of updates) {
+      for (const [id, doc] of this.dashboardDocuments.entries()) {
+        if (doc.documentId === update.documentId) {
+          doc.displayOrder = update.displayOrder;
+          doc.updatedAt = new Date().toISOString();
+          this.dashboardDocuments.set(id, doc);
+          break;
+        }
+      }
+    }
+  }
 }
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system
 import { DatabaseStorage } from './database-storage';
+import { logger } from './utils/production-safe-logger';
 
 // Create storage instance with error handling
 let storageInstance: IStorage;
@@ -3106,19 +3255,19 @@ let storageInstance: IStorage;
 try {
   // Priority 1: Use database storage if available (for persistence across deployments)
   if (process.env.DATABASE_URL) {
-    console.log('Using database storage for data persistence...');
+    logger.log('Using database storage for data persistence...');
     storageInstance = new DatabaseStorage();
   }
   // Old Google Sheets storage system completely removed
   // Fallback: Memory storage (data will not persist across deployments)
   else {
-    console.log(
+    logger.log(
       'No persistent storage configured, using memory storage (data will not persist)'
     );
     storageInstance = new MemStorage();
   }
 } catch (error) {
-  console.error(
+  logger.error(
     'Failed to initialize persistent storage, falling back to memory:',
     error
   );

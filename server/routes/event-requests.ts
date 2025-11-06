@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage-wrapper';
 import {
@@ -6,14 +6,20 @@ import {
   insertOrganizationSchema,
   insertEventVolunteerSchema,
   auditLogs,
+  type EventRequest,
+  type User,
 } from '@shared/schema';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
-import { eq, desc, and, sql, gte } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
+import { EmailNotificationService } from '../services/email-notification-service';
+import { logger } from '../middleware/logger';
+import type { AuthenticatedRequest } from '../types/express';
+import { safeJsonParse } from '../utils/safe-json';
 
 const router = Router();
 
@@ -39,9 +45,8 @@ const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null 
     
     // Create datetime with the same date but specified time
     const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
-    return dateTime; // Return Date object, not ISO string
+    return dateTime.toISOString(); // Return ISO string as per function signature
   } catch (error) {
-    console.warn('Failed to convert time to datetime:', timeStr, error);
     return null;
   }
 };
@@ -62,13 +67,12 @@ const extractTimeFromDateTime = (dateTimeStr: string): string | null => {
     
     return timeStr;
   } catch (error) {
-    console.warn('Failed to extract time from datetime:', dateTimeStr, error);
     return null;
   }
 };
 
 // Data migration logic for pickup time fields
-const processPickupTimeFields = (updates: any, existingData?: any) => {
+const processPickupTimeFields = (updates: Partial<EventRequest>, existingData?: Partial<EventRequest>) => {
   const result = { ...updates };
   
   // Get existing values for reference
@@ -78,7 +82,6 @@ const processPickupTimeFields = (updates: any, existingData?: any) => {
   
   // Handle the case where both fields are provided in the update
   if (updates.pickupTime && updates.pickupDateTime) {
-    console.log('📅 Both pickup fields provided - prioritizing pickupDateTime');
     // Prioritize pickupDateTime, but ensure pickupTime is consistent
     const extractedTime = extractTimeFromDateTime(updates.pickupDateTime);
     if (extractedTime) {
@@ -87,7 +90,6 @@ const processPickupTimeFields = (updates: any, existingData?: any) => {
   }
   // Handle the case where only pickupDateTime is provided
   else if (updates.pickupDateTime && !updates.pickupTime) {
-    console.log('📅 Only pickupDateTime provided - extracting time for legacy field');
     const extractedTime = extractTimeFromDateTime(updates.pickupDateTime);
     if (extractedTime) {
       result.pickupTime = extractedTime;
@@ -95,7 +97,6 @@ const processPickupTimeFields = (updates: any, existingData?: any) => {
   }
   // Handle the case where only pickupTime is provided
   else if (updates.pickupTime && !updates.pickupDateTime) {
-    console.log('📅 Only pickupTime provided - converting to datetime format');
     // Try to convert using scheduled date or today as base
     const baseDate = existingScheduledDate ? new Date(existingScheduledDate) : new Date();
     const convertedDateTime = convertTimeToDateTime(updates.pickupTime, baseDate);
@@ -107,14 +108,12 @@ const processPickupTimeFields = (updates: any, existingData?: any) => {
   else if (!updates.pickupTime && !updates.pickupDateTime && existingData) {
     // Fill in missing fields from existing data
     if (existingPickupTime && !existingPickupDateTime) {
-      console.log('📅 Migrating existing pickupTime to pickupDateTime');
       const baseDate = existingScheduledDate ? new Date(existingScheduledDate) : new Date();
       const convertedDateTime = convertTimeToDateTime(existingPickupTime, baseDate);
       if (convertedDateTime) {
         result.pickupDateTime = convertedDateTime;
       }
     } else if (existingPickupDateTime && !existingPickupTime) {
-      console.log('📅 Migrating existing pickupDateTime to pickupTime');
       const extractedTime = extractTimeFromDateTime(existingPickupDateTime);
       if (extractedTime) {
         result.pickupTime = extractedTime;
@@ -128,19 +127,11 @@ const processPickupTimeFields = (updates: any, existingData?: any) => {
 // Get available drivers for event assignments
 router.get('/drivers/available', isAuthenticated, async (req, res) => {
   try {
-    console.log('🔍 Driver lookup permission check:', {
-      userPermissions: req.user?.permissions,
-      requiredPermission: PERMISSIONS.DRIVERS_VIEW,
-      hasPermission: hasPermission(req.user, PERMISSIONS.DRIVERS_VIEW),
-    });
-
     if (!hasPermission(req.user, PERMISSIONS.DRIVERS_VIEW)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
-    console.log('🚗 Fetching all drivers from storage...');
     const drivers = await storage.getAllDrivers();
-    console.log(`📊 Total drivers retrieved: ${drivers.length}`);
 
     // Only return active drivers with essential info
     const availableDrivers = drivers
@@ -158,19 +149,9 @@ router.get('/drivers/available', isAuthenticated, async (req, res) => {
         vehicleType: driver.vehicleType,
       }));
 
-    console.log(
-      `✅ Active drivers filtered: ${availableDrivers.length} out of ${drivers.length}`
-    );
-    console.log(
-      '🔍 Sample driver data:',
-      availableDrivers[0]
-        ? JSON.stringify(availableDrivers[0], null, 2)
-        : 'No drivers found'
-    );
-
     res.json(availableDrivers);
   } catch (error) {
-    console.error('❌ Error in /api/event-requests/drivers/available:', error);
+    logger.error('Failed to fetch available drivers', error);
     res.status(500).json({ error: 'Failed to fetch available drivers' });
   }
 });
@@ -186,7 +167,7 @@ router.get(
       // Get event request matching the organization and contact
       const allEventRequests = await storage.getAllEventRequests();
       const eventRequest = allEventRequests.find(
-        (request: any) =>
+        (request) =>
           request.organizationName === organizationName &&
           request.firstName + ' ' + request.lastName === contactName
       );
@@ -198,39 +179,26 @@ router.get(
       // Return complete event details
       res.json(eventRequest);
     } catch (error) {
-      console.error('Error fetching event details:', error);
+      logger.error('Failed to fetch event details', error);
       res.status(500).json({ error: 'Failed to fetch event details' });
     }
   }
 );
 
-// Debug middleware to catch all requests to this router
-router.use((req, res, next) => {
-  if ((req.method === 'PATCH' || req.method === 'PUT') && req.params.id) {
-    console.log(`=== ROUTER DEBUG: ${req.method} ${req.originalUrl} ===`);
-    console.log('Request params:', req.params);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
 
 // Enhanced logging function for activity tracking with audit details
 const logActivity = async (
-  req: any,
-  res: any,
+  req: AuthenticatedRequest,
+  res: Response,
   permission: string,
   message: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ) => {
   // Store audit details in res.locals for the activity logger middleware to capture
   if (metadata) {
     res.locals.eventRequestAuditDetails = metadata;
   }
   // Activity logging will be handled by the global middleware
-  console.log(
-    `Activity: ${permission} - ${message}`,
-    metadata ? `(with ${Object.keys(metadata).length} metadata fields)` : ''
-  );
 };
 
 // Valid status values for event requests
@@ -257,11 +225,11 @@ const validateEventRequestStatus = (status: string): string | null => {
   const normalizedStatus = status.toLowerCase();
   const mappedStatus = statusMap[normalizedStatus] || normalizedStatus;
   
-  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as any)) {
+  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as typeof VALID_EVENT_REQUEST_STATUSES[number])) {
     return mappedStatus;
   }
   
-  console.warn(`⚠️ Invalid event request status "${status}" - will not be logged in audit`);
+  logger.warn(`Invalid event request status "${status}" - will not be logged in audit`);
   return null;
 };
 
@@ -269,10 +237,10 @@ const validateEventRequestStatus = (status: string): string | null => {
 const logEventRequestAudit = async (
   action: string,
   eventId: string,
-  oldData: any,
-  newData: any,
-  req: any,
-  additionalContext?: any
+  oldData: Partial<EventRequest> | null,
+  newData: Partial<EventRequest>,
+  req: AuthenticatedRequest,
+  additionalContext?: Record<string, unknown>
 ) => {
   try {
     // PROBLEM 1 FIX: Ensure we have complete event request data
@@ -281,17 +249,12 @@ const logEventRequestAudit = async (
     
     // Check if newData has essential fields for audit logging
     if (!newData?.organizationName || !newData?.firstName || !newData?.lastName) {
-      console.log('📋 Audit logging: newData appears incomplete, fetching complete event data...');
       try {
         const completeEventData = await storage.getEventRequestById(parseInt(eventId));
         if (completeEventData) {
           completeNewData = completeEventData;
-          console.log('✅ Retrieved complete event data for audit logging');
-        } else {
-          console.warn('⚠️ Could not retrieve complete event data for audit logging');
         }
       } catch (error) {
-        console.error('❌ Error retrieving complete event data for audit:', error);
         // Continue with partial data rather than failing
       }
     }
@@ -300,7 +263,6 @@ const logEventRequestAudit = async (
     if (completeNewData?.status) {
       const validatedStatus = validateEventRequestStatus(completeNewData.status);
       if (validatedStatus && validatedStatus !== completeNewData.status) {
-        console.log(`🔄 Status mapping: "${completeNewData.status}" -> "${validatedStatus}"`);
         completeNewData = {
           ...completeNewData,
           status: validatedStatus
@@ -327,12 +289,8 @@ const logEventRequestAudit = async (
       context,
       additionalContext
     );
-
-    console.log(
-      `🔍 AUDIT LOG: ${action} on Event ${eventId} by ${req.user?.email}`
-    );
   } catch (error) {
-    console.error('Failed to log audit entry:', error);
+    logger.error('Failed to log audit entry', error);
   }
 };
 
@@ -346,10 +304,10 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
     const allEventRequests = await storage.getAllEventRequests();
     const users = await storage.getAllUsers();
-    const currentUser = users.find((u: any) => u.id === userId);
+    const currentUser = users.find((u) => u.id === userId);
 
     // Filter event requests assigned to this user via multiple assignment methods
-    const assignedEvents = allEventRequests.filter((event: any) => {
+    const assignedEvents = allEventRequests.filter((event) => {
       // Method 1: Direct assignment via assignedTo field
       if (event.assignedTo === userId) return true;
 
@@ -427,7 +385,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
     // Add follow-up tracking for past events
     const now = new Date();
-    const eventsWithFollowUp = assignedEvents.map((event: any) => {
+    const eventsWithFollowUp = assignedEvents.map((event) => {
       let followUpNeeded = false;
       let followUpReason = '';
 
@@ -454,7 +412,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
             followUpReason = '1-month follow-up needed';
           }
         } catch (error) {
-          console.error('Error parsing event date for follow-up:', error);
+          // Silently handle date parsing errors
         }
       }
 
@@ -475,16 +433,16 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
     res.json(eventsWithFollowUp);
   } catch (error) {
-    console.error('Error fetching assigned event requests:', error);
+    logger.error('Failed to fetch assigned event requests', error);
     res.status(500).json({ error: 'Failed to fetch assigned event requests' });
   }
 });
 
 // Helper function to determine assignment type
 function getAssignmentType(
-  event: any,
+  event: EventRequest,
   userId: string,
-  currentUser: any
+  currentUser: User | undefined
 ): string[] {
   const types: string[] = [];
 
@@ -578,9 +536,23 @@ router.get(
         'Retrieved all event requests'
       );
       const eventRequests = await storage.getAllEventRequests();
+      
+      // DEBUG: Log details about what we're returning
+      const completedCount = eventRequests.filter(e => e.status === 'completed').length;
+      logger.info(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
+      
+      // Check for duplicate IDs
+      const ids = eventRequests.map(e => e.id);
+      const uniqueIds = new Set(ids);
+      if (ids.length !== uniqueIds.size) {
+        logger.error(`⚠️ DUPLICATE EVENT IDS DETECTED! Total: ${ids.length}, Unique: ${uniqueIds.size}`);
+        const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+        logger.error(`Duplicate IDs: ${[...new Set(duplicates)].join(', ')}`);
+      }
+      
       res.json(eventRequests);
     } catch (error) {
-      console.error('Error fetching event requests:', error);
+      logger.error('Failed to fetch event requests', error);
       res.status(500).json({ message: 'Failed to fetch event requests' });
     }
   }
@@ -603,7 +575,7 @@ router.get(
       const eventRequests = await storage.getEventRequestsByStatus(status);
       res.json(eventRequests);
     } catch (error) {
-      console.error('Error fetching event requests by status:', error);
+      logger.error('Failed to fetch event requests by status', error);
       res.status(500).json({ message: 'Failed to fetch event requests' });
     }
   }
@@ -612,16 +584,12 @@ router.get(
 // Get organization event counts (completed events only) - MUST BE BEFORE /:id route
 router.get('/organization-counts', isAuthenticated, async (req, res) => {
   try {
-    console.log('🔍 Organization Counts API called by user:', req.user?.email);
-    console.log('🔍 User permissions:', req.user?.permissions);
-
     const allEventRequests = await storage.getAllEventRequests();
-    console.log('📊 Total event requests retrieved:', allEventRequests.length);
 
     // Count completed events by organization
     const organizationCounts = new Map();
 
-    allEventRequests.forEach((event: any) => {
+    allEventRequests.forEach((event) => {
       // Only count completed events
       if (event.status === 'completed' && event.organizationName) {
         const orgName = event.organizationName.trim();
@@ -639,14 +607,9 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
       .map(([name, count]) => ({ organizationName: name, eventCount: count }))
       .sort((a, b) => b.eventCount - a.eventCount);
 
-    console.log(
-      '📊 Organization counts calculated:',
-      sortedCounts.length,
-      'organizations'
-    );
     res.json(sortedCounts);
   } catch (error) {
-    console.error('❌ Error in organization counts API:', error);
+    logger.error('Failed to fetch organization counts', error);
     res.status(500).json({ error: 'Failed to fetch organization counts' });
   }
 });
@@ -676,7 +639,7 @@ router.get(
       );
       res.json(eventRequest);
     } catch (error) {
-      console.error('Error fetching event request:', error);
+      logger.error('Failed to fetch event request', error);
       res.status(500).json({ message: 'Failed to fetch event request' });
     }
   }
@@ -689,10 +652,6 @@ router.post(
   requirePermission('EVENT_REQUESTS_ADD'),
   async (req, res) => {
     try {
-      console.log('🚀 POST /api/event-requests - Creating new event request');
-      console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
-      console.log('👤 User:', req.user?.email);
-
       const user = req.user;
 
       // Generate externalId for manual entries if not provided
@@ -703,19 +662,29 @@ router.post(
         requestData.externalId = `manual-${timestamp}-${randomSuffix}`;
       }
 
-      console.log('🔍 Validating data with Zod schema...');
-      const validatedData = insertEventRequestSchema.parse(requestData);
-      console.log('✅ Data validated successfully');
+      let validatedData;
+      try {
+        validatedData = insertEventRequestSchema.parse(requestData);
+      } catch (validationError: unknown) {
+        const errorDetails = validationError instanceof z.ZodError
+          ? validationError.errors
+          : (validationError as Error).message;
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: errorDetails,
+          message: 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
+        });
+      }
 
       // Check for organization duplicates
-      const duplicateCheck = { exists: false, matches: [] as any[] };
+      const duplicateCheck = { exists: false, matches: [] as Array<{ name: string }> };
 
       const newEventRequest = await storage.createEventRequest({
         ...validatedData,
         organizationExists: duplicateCheck.exists,
         duplicateNotes: duplicateCheck.exists
           ? `Potential matches found: ${duplicateCheck.matches
-              .map((m: any) => m.name)
+              .map((m) => m.name)
               .join(', ')}`
           : null,
         duplicateCheckDate: new Date(),
@@ -749,7 +718,7 @@ router.post(
           .status(400)
           .json({ message: 'Invalid input', errors: error.errors });
       }
-      console.error('Error creating event request:', error);
+      logger.error('Failed to create event request', error);
       res.status(500).json({ message: 'Failed to create event request' });
     }
   }
@@ -823,7 +792,7 @@ router.patch(
           .status(400)
           .json({ message: 'Invalid completion data', errors: error.errors });
       }
-      console.error('Error completing contact:', error);
+      logger.error('Error completing contact:', error);
       res.status(500).json({ message: 'Failed to complete contact' });
     }
   }
@@ -838,9 +807,6 @@ router.post(
     try {
       const { id, ...updates } = req.body;
 
-      console.log('=== COMPLETE CONTACT WITH DETAILS ===');
-      console.log('Event ID:', id);
-      console.log('Updates:', JSON.stringify(updates, null, 2));
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
@@ -869,11 +835,9 @@ router.post(
             );
           }
         } catch (error) {
-          console.warn('Failed to update Google Sheets status:', error);
         }
       }
 
-      console.log('Successfully completed contact with details for:', id);
       await logActivity(
         req,
         res,
@@ -882,7 +846,7 @@ router.post(
       );
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error completing contact:', error);
+      logger.error('Error completing contact:', error);
       res.status(500).json({ message: 'Failed to complete contact' });
     }
   }
@@ -898,9 +862,6 @@ router.post(
       // Skip validation entirely and just process the raw data
       const { id, ...updates } = req.body;
 
-      console.log('=== COMPLETE EVENT DETAILS ===');
-      console.log('Event ID:', id);
-      console.log('Updates:', JSON.stringify(updates, null, 2));
 
       // Handle date conversion properly on server side
       if (
@@ -911,15 +872,11 @@ router.post(
         updates.desiredEventDate = new Date(
           updates.desiredEventDate + 'T12:00:00.000Z'
         );
-        console.log('🔧 Converted date:', updates.desiredEventDate);
       }
 
       // CRITICAL FIX: Explicitly set status to 'scheduled' when completing event details
       updates.status = 'scheduled';
       updates.scheduledAt = new Date(); // Add audit trail timestamp
-      console.log(
-        "🎯 Status transition: Setting status to 'scheduled' for completed event details"
-      );
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
@@ -930,7 +887,6 @@ router.post(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      console.log('Successfully updated event details for:', id);
       await logActivity(
         req,
         res,
@@ -940,13 +896,13 @@ router.post(
       res.json(updatedEventRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error('Validation error:', error.errors);
+        logger.error('Validation error:', error.errors);
         return res.status(400).json({
           message: 'Invalid event details data',
           errors: error.errors,
         });
       }
-      console.error('Error completing event details:', error);
+      logger.error('Error completing event details:', error);
       res.status(500).json({ message: 'Failed to complete event details' });
     }
   }
@@ -961,10 +917,6 @@ router.post(
     try {
       const { id, method, updatedEmail, notes } = req.body;
 
-      console.log('=== FOLLOW-UP RECORDING ===');
-      console.log('Event ID:', id);
-      console.log('Method:', method);
-      console.log('Updated email:', updatedEmail);
 
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
@@ -972,12 +924,7 @@ router.post(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      console.log(
-        'Original event desiredEventDate:',
-        originalEvent.desiredEventDate
-      );
-
-      const updates: any = {
+      const updates: Partial<EventRequest> = {
         followUpMethod: method,
         followUpDate: new Date(),
         updatedAt: new Date(),
@@ -989,10 +936,6 @@ router.post(
       // Explicitly preserve critical fields that must not be lost during status transitions
       if (originalEvent.desiredEventDate) {
         updates.desiredEventDate = originalEvent.desiredEventDate;
-        console.log(
-          'Explicitly preserving desiredEventDate:',
-          updates.desiredEventDate
-        );
       }
 
       if (method === 'call' && updatedEmail) {
@@ -1009,17 +952,7 @@ router.post(
           : notes;
       }
 
-      console.log(
-        'Updates object before storage call:',
-        JSON.stringify(updates, null, 2)
-      );
-
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
-
-      console.log(
-        'Updated event desiredEventDate after storage call:',
-        updatedEventRequest?.desiredEventDate
-      );
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -1045,7 +978,6 @@ router.post(
         }
       );
 
-      console.log('Successfully recorded follow-up for:', id);
       await logActivity(
         req,
         res,
@@ -1054,7 +986,7 @@ router.post(
       );
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error recording follow-up:', error);
+      logger.error('Error recording follow-up:', error);
       res.status(500).json({ message: 'Failed to record follow-up' });
     }
   }
@@ -1077,16 +1009,15 @@ router.patch(
       }
 
       // Process pickup time fields for data migration
-      console.log('📅 Processing pickup time fields for event-details update');
       const processedUpdates = processPickupTimeFields(updates, originalEvent);
 
       // Automatically assign the current user as TSP contact if toolkit is being marked as sent
+      // This auto-assignment happens silently (no email) since toolkit sending happens later in workflow
       if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
           !originalEvent.tspContact &&
           req.user?.id) {
         processedUpdates.tspContact = req.user.id;
         processedUpdates.tspContactAssignedDate = new Date();
-        console.log('Auto-assigning TSP contact (event-details):', req.user.id, '(', req.user.email, ')');
       }
 
       // Always update the updatedAt timestamp
@@ -1114,33 +1045,59 @@ router.patch(
         }
       );
 
+      // Create meaningful activity log with event details and what changed
+      const organizationName = updatedEventRequest.organizationName || `Event #${id}`;
+      const contactName = updatedEventRequest.firstName && updatedEventRequest.lastName 
+        ? `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}` 
+        : 'contact';
+      
       // Prepare audit details for activity logging
-      const auditDetails: any = {};
+      const auditDetails: Record<string, { from: unknown; to: unknown }> = {};
+      const changeDescriptions: string[] = [];
+
       for (const [key, newValue] of Object.entries(updates)) {
         if (key !== 'updatedAt') {
           // Skip timestamp field
-          const oldValue = (originalEvent as any)[key];
+          const oldValue = originalEvent[key as keyof EventRequest];
           if (oldValue !== newValue && newValue !== undefined) {
             auditDetails[key] = {
               from: oldValue,
               to: newValue,
             };
+            
+            // Create human-readable descriptions for key fields
+            if (key === 'status') {
+              changeDescriptions.push(`status: ${oldValue} → ${newValue}`);
+            } else if (key === 'scheduledEventDate' || key === 'desiredEventDate') {
+              const dateStr = newValue ? new Date(newValue).toLocaleDateString('en-US') : 'none';
+              changeDescriptions.push(`event date: ${dateStr}`);
+            } else if (key === 'estimatedSandwichCount') {
+              changeDescriptions.push(`estimated sandwiches: ${newValue}`);
+            } else if (key === 'pickupTime') {
+              changeDescriptions.push(`pickup time: ${newValue}`);
+            } else if (key === 'eventAddress') {
+              changeDescriptions.push(`address updated`);
+            } else {
+              changeDescriptions.push(key.replace(/([A-Z])/g, ' $1').toLowerCase());
+            }
           }
         }
       }
+
+      const changesSummary = changeDescriptions.length > 0 
+        ? changeDescriptions.slice(0, 3).join(', ') + (changeDescriptions.length > 3 ? '...' : '')
+        : 'details updated';
 
       await logActivity(
         req,
         res,
         'EVENT_REQUESTS_EDIT',
-        `Updated event request details: ${Object.keys(auditDetails).join(
-          ', '
-        )}`,
+        `Updated ${organizationName} (${contactName}): ${changesSummary}`,
         { auditDetails: auditDetails }
       );
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error updating event request details:', error);
+      logger.error('Error updating event request details:', error);
       res
         .status(500)
         .json({ message: 'Failed to update event request details' });
@@ -1158,9 +1115,6 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
-      console.log('=== EVENT REQUEST UPDATE (PATCH) ===');
-      console.log('Request ID:', id);
-      console.log('Updates received:', JSON.stringify(updates, null, 2));
 
       // Validate scheduledCallDate if present using z.coerce.date()
       if (updates.scheduledCallDate !== undefined) {
@@ -1175,12 +1129,8 @@ router.patch(
             scheduledCallDate: updates.scheduledCallDate,
           });
           updates.scheduledCallDate = validated.scheduledCallDate;
-          console.log(
-            '✅ Validated scheduledCallDate:',
-            updates.scheduledCallDate
-          );
         } catch (error) {
-          console.error('❌ Invalid scheduledCallDate:', error);
+          logger.error('❌ Invalid scheduledCallDate:', error);
           return res.status(400).json({
             message: 'Invalid scheduledCallDate format',
             error: error instanceof z.ZodError ? error.errors : error instanceof Error ? error.message : String(error),
@@ -1195,7 +1145,6 @@ router.patch(
       }
 
       // Process pickup time fields for data migration
-      console.log('📅 Processing pickup time fields for PATCH update');
       const pickupProcessedUpdates = processPickupTimeFields(updates, originalEvent);
 
       // Process timestamp fields to ensure they're proper Date objects
@@ -1218,53 +1167,41 @@ router.patch(
         'statusChangedAt',
         'pickupDateTime',
         'scheduledEventDate',
+        'socialMediaPostRequestedDate',
+        'socialMediaPostCompletedDate',
       ];
       
-      console.log('🔍 Pre-conversion debug - checking timestamp fields:');
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
-        }
-      });
-
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            const dateValue = new Date(processedUpdates[field]);
+            const dateString = processedUpdates[field] as string;
+            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
+            let dateValue: Date;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
+              dateValue = new Date(dateString + 'T12:00:00.000Z');
+            } else {
+              dateValue = new Date(dateString);
+            }
+
             // Check if the date is valid
             if (isNaN(dateValue.getTime())) {
-              console.error(
-                `❌ Invalid date value for field ${field}:`,
-                processedUpdates[field]
-              );
+              logger.error(`[PATCH] Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
-              const originalValue = processedUpdates[field];
               processedUpdates[field] = dateValue;
-              console.log(`✅ Converted ${field} from string "${originalValue}" to Date object:`, dateValue);
+              logger.info(`[PATCH] Converted ${field} from "${dateString}" to ${dateValue.toISOString()}`);
             }
           } catch (error) {
-            console.error(
-              `❌ Failed to parse date field ${field}:`,
-              processedUpdates[field],
-              error
-            );
+            logger.error(`[PATCH] Error parsing date for field ${field}:`, error);
             delete processedUpdates[field]; // Remove invalid date fields
           }
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
           // Allow null or empty string to clear date fields
           processedUpdates[field] = null;
-          console.log(`✅ Set ${field} to null`);
-        }
-      });
-
-      console.log('🔍 Post-conversion debug - final timestamp fields:');
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
         }
       });
 
@@ -1274,18 +1211,31 @@ router.patch(
         processedUpdates.status !== originalEvent.status
       ) {
         processedUpdates.statusChangedAt = new Date();
-        console.log(
-          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
-        );
+
+        // If status is changing to 'completed', auto-confirm the event
+        if (processedUpdates.status === 'completed') {
+          processedUpdates.isConfirmed = true;
+        }
+      }
+
+      // Automatically set isConfirmed = true when scheduledEventDate is set
+      if (processedUpdates.scheduledEventDate && !originalEvent.scheduledEventDate) {
+        processedUpdates.isConfirmed = true;
+      }
+
+      // Allow manual override: if isConfirmed is explicitly provided, respect it
+      // Exception: completed events are always confirmed
+      if (processedUpdates.status === 'completed' || originalEvent.status === 'completed') {
+        processedUpdates.isConfirmed = true;
       }
 
       // Automatically assign the current user as TSP contact if toolkit is being marked as sent
+      // This auto-assignment happens silently (no email) since toolkit sending happens later in workflow
       if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
           !originalEvent.tspContact &&
           req.user?.id) {
         processedUpdates.tspContact = req.user.id;
         processedUpdates.tspContactAssignedDate = new Date();
-        console.log('Auto-assigning TSP contact (general PATCH):', req.user.id, '(', req.user.email, ')');
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states
@@ -1303,7 +1253,6 @@ router.patch(
       if (processedUpdates.driversNeeded !== undefined) {
         if (processedUpdates.driversNeeded < totalAssignedDrivers) {
           processedUpdates.driversNeeded = totalAssignedDrivers;
-          console.log(`⚠️ Prevented invalid state: driversNeeded cannot be ${processedUpdates.driversNeeded} when ${totalAssignedDrivers} drivers are assigned. Auto-corrected to ${totalAssignedDrivers}.`);
         }
       }
       
@@ -1313,7 +1262,6 @@ router.patch(
         
         if (totalAssignedDrivers > currentDriversNeeded) {
           processedUpdates.driversNeeded = totalAssignedDrivers;
-          console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalAssignedDrivers} based on assignments (regular: ${assignedRegularDrivers}, van: ${hasAssignedVanDriver ? 1 : 0})`);
         }
       }
 
@@ -1325,7 +1273,6 @@ router.patch(
         
         if (assignedSpeakerCount > currentSpeakersNeeded) {
           processedUpdates.speakersNeeded = assignedSpeakerCount;
-          console.log(`🔧 Auto-adjusted speakersNeeded from ${currentSpeakersNeeded} to ${assignedSpeakerCount} based on assignments`);
         }
       }
 
@@ -1337,19 +1284,10 @@ router.patch(
         
         if (assignedVolunteerCount > currentVolunteersNeeded) {
           processedUpdates.volunteersNeeded = assignedVolunteerCount;
-          console.log(`🔧 Auto-adjusted volunteersNeeded from ${currentVolunteersNeeded} to ${assignedVolunteerCount} based on assignments`);
         }
       }
 
       // Always update the updatedAt timestamp
-      console.log('🔍 About to call storage.updateEventRequest. Checking all Date-like fields:');
-      Object.keys(processedUpdates).forEach(key => {
-        const val = processedUpdates[key];
-        if (val && (key.toLowerCase().includes('date') || key.toLowerCase().includes('at'))) {
-          console.log(`  ${key}:`, val, typeof val, val instanceof Date ? 'IS Date' : 'NOT A DATE!');
-        }
-      });
-
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
@@ -1374,36 +1312,75 @@ router.patch(
         }
       );
 
+      // Create meaningful activity log with event details and what changed
+      const organizationName = updatedEventRequest.organizationName || `Event #${id}`;
+      const contactName = updatedEventRequest.firstName && updatedEventRequest.lastName 
+        ? `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}` 
+        : 'contact';
+      
+      // Build human-readable change summary
+      const changedFields = Object.keys(processedUpdates).filter(key => 
+        key !== 'updatedAt' && processedUpdates[key] !== undefined
+      );
+      
+      const changeDescriptions: string[] = [];
+      changedFields.forEach(field => {
+        const oldValue = (originalEvent as any)[field];
+        const newValue = processedUpdates[field];
+        
+        // Skip if values are the same
+        if (oldValue === newValue) return;
+        
+        // Create human-readable descriptions for key fields
+        if (field === 'status') {
+          changeDescriptions.push(`status: ${oldValue} → ${newValue}`);
+        } else if (field === 'scheduledEventDate' || field === 'desiredEventDate') {
+          const dateStr = newValue ? new Date(newValue).toLocaleDateString('en-US') : 'none';
+          changeDescriptions.push(`event date: ${dateStr}`);
+        } else if (field === 'estimatedSandwichCount') {
+          changeDescriptions.push(`estimated sandwiches: ${newValue}`);
+        } else if (field === 'assignedDriverIds' && Array.isArray(newValue)) {
+          changeDescriptions.push(`drivers assigned: ${newValue.length}`);
+        } else if (field === 'recipientIds' && Array.isArray(newValue)) {
+          changeDescriptions.push(`destinations: ${newValue.length}`);
+        } else if (field === 'toolkitSent' || field === 'toolkitStatus') {
+          changeDescriptions.push('toolkit sent');
+        } else {
+          // For other fields, just include the field name
+          changeDescriptions.push(field.replace(/([A-Z])/g, ' $1').toLowerCase());
+        }
+      });
+      
+      const changesSummary = changeDescriptions.length > 0 
+        ? changeDescriptions.slice(0, 3).join(', ') + (changeDescriptions.length > 3 ? '...' : '')
+        : 'details updated';
+      
       await logActivity(
         req,
         res,
         'EVENT_REQUESTS_EDIT',
-        `Updated event request: ${Object.keys(processedUpdates).join(', ')}`
+        `Updated ${organizationName} (${contactName}): ${changesSummary}`
       );
 
       res.json(updatedEventRequest);
-    } catch (error: any) {
-      console.error('Error updating event request:', error);
-      console.error('Error stack:', error?.stack);
-      console.error('Error details:', {
-        id: req.params.id,
-        updates: req.body,
-        message: error?.message
-      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      logger.error('Error updating event request:', error);
+      logger.error('Error stack:', err?.stack);
 
       // Check for specific database errors
-      if (error?.message?.includes('invalid input syntax')) {
+      if (err?.message?.includes('invalid input syntax')) {
         return res.status(400).json({
           message: 'Invalid data format',
-          error: error.message,
+          error: err.message,
           details: 'Please check that all fields contain valid data'
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
-        error: error?.message || 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        error: err?.message || 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }
   }
@@ -1419,9 +1396,6 @@ router.put(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
-      console.log('=== EVENT REQUEST UPDATE (PUT) ===');
-      console.log('Request ID:', id);
-      console.log('Updates received:', JSON.stringify(updates, null, 2));
 
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
@@ -1430,7 +1404,6 @@ router.put(
       }
 
       // Process pickup time fields for data migration
-      console.log('📅 Processing pickup time fields for PUT update');
       const pickupProcessedUpdates = processPickupTimeFields(updates, originalEvent);
 
       // Process ALL date/timestamp fields to ensure they're proper Date objects
@@ -1455,51 +1428,42 @@ router.put(
         'scheduledEventDate',
       ];
       
-      console.log('🔍 PUT Pre-conversion debug - checking timestamp fields:');
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
-        }
-      });
-
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            const dateValue = new Date(processedUpdates[field]);
+            const dateString = processedUpdates[field] as string;
+            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
+            let dateValue: Date;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
+              dateValue = new Date(dateString + 'T12:00:00.000Z');
+            } else {
+              dateValue = new Date(dateString);
+            }
+
             // Check if the date is valid
             if (isNaN(dateValue.getTime())) {
-              console.error(
-                `❌ PUT Invalid date value for field ${field}:`,
-                processedUpdates[field]
-              );
+              logger.error(`Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
-              const originalValue = processedUpdates[field];
               processedUpdates[field] = dateValue;
-              console.log(`✅ PUT Converted ${field} from string "${originalValue}" to Date object:`, dateValue);
+              logger.info(`Converted ${field} from "${dateString}" to ${dateValue.toISOString()}`);
             }
           } catch (error) {
-            console.error(
-              `❌ PUT Failed to parse date field ${field}:`,
-              processedUpdates[field],
-              error
-            );
+            logger.error(`Error parsing date for field ${field}:`, error);
             delete processedUpdates[field]; // Remove invalid fields
           }
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
           // Allow null or empty string to clear date fields
           processedUpdates[field] = null;
-          console.log(`✅ PUT Set ${field} to null`);
         }
       });
 
-      console.log('🔍 PUT Post-conversion debug - final timestamp fields:');
       timestampFields.forEach(field => {
         if (processedUpdates[field] !== undefined) {
-          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
         }
       });
 
@@ -1509,11 +1473,9 @@ router.put(
 
         // Check if phone field contains an Excel serial number (5-6 digits)
         if (/^\d{5,6}$/.test(phoneStr)) {
-          console.warn(`Phone field contains Excel serial number: "${phoneStr}" - clearing it`);
           processedUpdates.phone = ''; // Clear invalid phone number
         } else if (phoneStr.length > 30) {
           // If phone field is too long, it might contain message text
-          console.warn(`Phone field too long (${phoneStr.length} chars), likely contains other data - clearing it`);
           processedUpdates.phone = '';
         } else {
           // Clean the phone number - keep only digits and common separators
@@ -1527,12 +1489,10 @@ router.put(
 
         // Check if message looks like a phone number
         if (/^[\d\s\-\(\)\+\.]{7,20}$/.test(messageStr)) {
-          console.warn(`Message field might contain phone number: "${messageStr}"`);
           // You might want to swap with phone field if phone is empty
           if (!processedUpdates.phone || processedUpdates.phone === '') {
             processedUpdates.phone = messageStr;
             processedUpdates.message = '';
-            console.log(`Moved phone number from message to phone field`);
           }
         }
       }
@@ -1567,10 +1527,6 @@ router.put(
         processedUpdates.status === 'scheduled' &&
         originalEvent.status !== 'scheduled'
       ) {
-        console.log(
-          '🎯 Processing NEW scheduled status transition - validating required fields'
-        );
-
         // Check required fields for NEW scheduled events
         const requiredFields = {
           desiredEventDate:
@@ -1597,72 +1553,69 @@ router.put(
           });
         }
       } else if (processedUpdates.status === 'scheduled') {
-        console.log(
-          '🎯 Editing existing scheduled event - allowing flexible updates'
-        );
       }
+
+      // Ensure boolean fields are properly typed (for ALL updates)
+      const booleanFields = [
+        'hasRefrigeration',
+        'volunteersNeeded',
+        'vanDriverNeeded',
+        'isConfirmed',
+        'addedToOfficialSheet',
+      ];
+      booleanFields.forEach((field) => {
+        if (processedUpdates[field] !== undefined) {
+          const originalValue = processedUpdates[field];
+          const convertedValue =
+            processedUpdates[field] === true ||
+            processedUpdates[field] === 'true';
+          processedUpdates[field] = convertedValue;
+          logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
+        }
+      });
 
       // Process comprehensive scheduling data if status is scheduled
       if (processedUpdates.status === 'scheduled') {
-        console.log('✅ Processing scheduling data for scheduled status');
 
         // Process sandwich types if provided
         if (processedUpdates.sandwichTypes) {
-          try {
-            if (typeof processedUpdates.sandwichTypes === 'string') {
-              processedUpdates.sandwichTypes = JSON.parse(
-                processedUpdates.sandwichTypes
-              );
+          if (typeof processedUpdates.sandwichTypes === 'string') {
+            const parseResult = safeJsonParse(
+              processedUpdates.sandwichTypes,
+              [],  // Default to empty array
+              'sandwichTypes field'
+            );
+
+            if (!parseResult.success) {
+              logger.error('Failed to parse sandwichTypes', {
+                error: parseResult.error,
+                value: processedUpdates.sandwichTypes.substring(0, 100)
+              });
+              return res.status(400).json({
+                error: 'Invalid sandwichTypes: must be valid JSON array.'
+              });
             }
-            console.log(
-              '📋 Processed sandwich types:',
-              processedUpdates.sandwichTypes
-            );
-          } catch (error) {
-            console.warn(
-              '⚠️ Failed to parse sandwich types, keeping as string:',
-              error
-            );
+
+            processedUpdates.sandwichTypes = parseResult.data;
           }
-        } else {
-          console.warn('⚠️ No sandwich types provided in scheduling request');
         }
 
         // Log sandwich count for debugging
-        console.log(
-          '📋 Estimated sandwich count:',
-          processedUpdates.estimatedSandwichCount
-        );
 
         // Ensure numeric fields are properly typed
         const numericFields = [
           'driversNeeded',
           'speakersNeeded',
           'estimatedSandwichCount',
+          'estimatedSandwichCountMin',
+          'estimatedSandwichCountMax',
         ];
         numericFields.forEach((field) => {
-          if (processedUpdates[field] !== undefined) {
+          if (processedUpdates[field] !== undefined && processedUpdates[field] !== null) {
             processedUpdates[field] = parseInt(processedUpdates[field]) || 0;
           }
         });
 
-        // Ensure boolean fields are properly typed
-        const booleanFields = [
-          'hasRefrigeration',
-          'volunteersNeeded',
-          'vanDriverNeeded',
-        ];
-        booleanFields.forEach((field) => {
-          if (processedUpdates[field] !== undefined) {
-            processedUpdates[field] =
-              processedUpdates[field] === true ||
-              processedUpdates[field] === 'true';
-          }
-        });
-
-        console.log(
-          '✅ Processed comprehensive scheduling data for scheduled status'
-        );
       }
 
       // Check if status is changing and set statusChangedAt accordingly
@@ -1671,9 +1624,6 @@ router.put(
         processedUpdates.status !== originalEvent.status
       ) {
         processedUpdates.statusChangedAt = new Date();
-        console.log(
-          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
-        );
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states (PUT endpoint)
@@ -1691,7 +1641,6 @@ router.put(
       if (processedUpdates.driversNeeded !== undefined) {
         if (processedUpdates.driversNeeded < putTotalAssignedDrivers) {
           processedUpdates.driversNeeded = putTotalAssignedDrivers;
-          console.log(`⚠️ PUT Prevented invalid state: driversNeeded cannot be ${processedUpdates.driversNeeded} when ${putTotalAssignedDrivers} drivers are assigned. Auto-corrected to ${putTotalAssignedDrivers}.`);
         }
       }
       
@@ -1701,7 +1650,6 @@ router.put(
         
         if (putTotalAssignedDrivers > currentDriversNeeded) {
           processedUpdates.driversNeeded = putTotalAssignedDrivers;
-          console.log(`🔧 PUT Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${putTotalAssignedDrivers} based on assignments (regular: ${putAssignedRegularDrivers}, van: ${putHasAssignedVanDriver ? 1 : 0})`);
         }
       }
 
@@ -1713,7 +1661,6 @@ router.put(
         
         if (assignedSpeakerCount > currentSpeakersNeeded) {
           processedUpdates.speakersNeeded = assignedSpeakerCount;
-          console.log(`🔧 PUT Auto-adjusted speakersNeeded from ${currentSpeakersNeeded} to ${assignedSpeakerCount} based on assignments`);
         }
       }
 
@@ -1725,7 +1672,6 @@ router.put(
         
         if (assignedVolunteerCount > currentVolunteersNeeded) {
           processedUpdates.volunteersNeeded = assignedVolunteerCount;
-          console.log(`🔧 PUT Auto-adjusted volunteersNeeded from ${currentVolunteersNeeded} to ${assignedVolunteerCount} based on assignments`);
         }
       }
 
@@ -1741,7 +1687,7 @@ router.put(
 
       // Determine action type based on changes
       let actionType = 'EVENT_REQUEST_UPDATED';
-      let actionContext: any = {
+      let actionContext: Record<string, unknown> = {
         organizationName: originalEvent.organizationName,
         contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
         fieldsUpdated: Object.keys(processedUpdates),
@@ -1778,7 +1724,6 @@ router.put(
             scheduledAt: new Date().toISOString(),
             comprehensiveDataProcessed: true,
           };
-          console.log('🎯 Enhanced audit logging for EVENT_SCHEDULED action');
         }
       }
 
@@ -1802,10 +1747,6 @@ router.put(
         }
       );
 
-      console.log(
-        'Updated event request:',
-        JSON.stringify(updatedEventRequest, null, 2)
-      );
       await logActivity(
         req,
         res,
@@ -1814,12 +1755,7 @@ router.put(
       );
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error updating event request:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : 'Unknown',
-      });
+      logger.error('Error updating event request', error);
       res.status(500).json({
         message: 'Failed to update event request',
         error: error instanceof Error ? error.message : String(error),
@@ -1844,7 +1780,7 @@ router.delete(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      const deleted = await storage.deleteEventRequest(id);
+      const deleted = await storage.deleteEventRequest(id, req.user?.id);
 
       if (!deleted) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -1872,8 +1808,57 @@ router.delete(
       );
       res.json({ message: 'Event request deleted successfully' });
     } catch (error) {
-      console.error('Error deleting event request:', error);
+      logger.error('Error deleting event request:', error);
       res.status(500).json({ message: 'Failed to delete event request' });
+    }
+  }
+);
+
+// Restore (undo delete) event request
+router.post(
+  '/:id/restore',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_DELETE_CARD'), // Same permission as delete
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const restored = await storage.restoreEventRequest(id);
+
+      if (!restored) {
+        return res.status(404).json({ message: 'Event request not found or not deleted' });
+      }
+
+      // Get the restored event for audit logging
+      const restoredEvent = await storage.getEventRequestById(id);
+
+      // Log the restoration
+      if (restoredEvent) {
+        await AuditLogger.logEventRequestChange(
+          id.toString(),
+          null,
+          restoredEvent,
+          {
+            userId: req.user?.id,
+            ipAddress: req.ip || req.connection?.remoteAddress,
+            userAgent: req.get('User-Agent'),
+            sessionId: req.session?.id || req.sessionID,
+          },
+          { actionType: 'RESTORE' }
+        );
+      }
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_RESTORE',
+        `Restored event request: ${id}`
+      );
+
+      res.json({ message: 'Event request restored successfully', eventRequest: restoredEvent });
+    } catch (error) {
+      logger.error('Error restoring event request:', error);
+      res.status(500).json({ message: 'Failed to restore event request' });
     }
   }
 );
@@ -1900,7 +1885,7 @@ router.post('/check-duplicates', async (req, res) => {
     );
     res.json(duplicateCheck);
   } catch (error) {
-    console.error('Error checking organization duplicates:', error);
+    logger.error('Error checking organization duplicates:', error);
     res.status(500).json({ message: 'Failed to check duplicates' });
   }
 });
@@ -1922,7 +1907,7 @@ router.get('/organizations/all', async (req, res) => {
     );
     res.json(organizations);
   } catch (error) {
-    console.error('Error fetching organizations:', error);
+    logger.error('Error fetching organizations:', error);
     res.status(500).json({ message: 'Failed to fetch organizations' });
   }
 });
@@ -1950,7 +1935,7 @@ router.post('/organizations', async (req, res) => {
         .status(400)
         .json({ message: 'Invalid input', errors: error.errors });
     }
-    console.error('Error creating organization:', error);
+    logger.error('Error creating organization:', error);
     res.status(500).json({ message: 'Failed to create organization' });
   }
 });
@@ -1985,7 +1970,6 @@ router.post(
   async (req, res) => {
     try {
       const user = req.user;
-      console.log('🔍 Sync to sheets - User:', user?.email);
 
       if (!user) {
         return res.status(403).json({ message: 'Authentication required' });
@@ -2011,7 +1995,7 @@ router.post(
 
       res.json(result);
     } catch (error) {
-      console.error('Error syncing event requests to Google Sheets:', error);
+      logger.error('Error syncing event requests to Google Sheets:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to sync to Google Sheets',
@@ -2052,7 +2036,7 @@ router.post(
 
       res.json(result);
     } catch (error) {
-      console.error('Error syncing event requests from Google Sheets:', error);
+      logger.error('Error syncing event requests from Google Sheets:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to sync from Google Sheets',
@@ -2096,7 +2080,7 @@ router.get(
         targetSpreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID,
       });
     } catch (error) {
-      console.error('Error analyzing Event Requests Google Sheet:', error);
+      logger.error('Error analyzing Event Requests Google Sheet:', error);
       res.status(500).json({
         success: false,
         message: 'Google Sheets analysis failed. Please check API credentials.',
@@ -2110,21 +2094,8 @@ router.get(
 router.get('/orgs-catalog-test', async (req, res) => {
   try {
     const user = req.user;
-    console.log('🔍 Organizations catalog GET - Full debug:', {
-      userExists: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      sessionExists: !!req.session,
-      sessionUser: req.session?.user?.email || 'none',
-      userPermissionsCount: user?.permissions?.length || 0,
-      hasViewOrgsPermission: user
-        ? hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW)
-        : false,
-      permissionConstant: PERMISSIONS.ORGANIZATIONS_VIEW,
-    });
 
     // TEMP: Completely bypass auth for testing
-    console.log('🔧 TEMP: Bypassing all auth checks for testing');
 
     // Get all event requests and aggregate by organization and contact
     const allEventRequests = await storage.getAllEventRequests();
@@ -2177,7 +2148,7 @@ router.get('/orgs-catalog-test', async (req, res) => {
     );
     res.json(organizations);
   } catch (error) {
-    console.error('Error fetching organizations catalog:', error);
+    logger.error('Error fetching organizations catalog:', error);
     res.status(500).json({ message: 'Failed to fetch organizations catalog' });
   }
 });
@@ -2209,7 +2180,7 @@ router.patch(
       }
 
       // Prepare update data based on follow-up type
-      const updateData: any = {
+      const updateData: Partial<EventRequest> = {
         followUpNotes: notes || eventRequest.followUpNotes,
       };
 
@@ -2254,7 +2225,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error marking follow-up as completed:', error);
+      logger.error('Error marking follow-up as completed:', error);
       res.status(500).json({ error: 'Failed to mark follow-up as completed' });
     }
   }
@@ -2285,7 +2256,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     }
 
     // Update the event with driver assignments
-    const updateData: any = {
+    const updateData: Partial<EventRequest> = {
       assignedDriverIds: assignedDriverIds || [],
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
@@ -2318,12 +2289,10 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     // Ensure driversNeeded is at least equal to total assigned drivers (prevent impossible states)
     if (totalDriverCount > currentDriversNeeded) {
       updateData.driversNeeded = totalDriverCount;
-      console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalDriverCount} based on driver assignments (regular: ${regularDriverCount}, van: ${hasVanDriver ? 1 : 0})`);
     }
 
     const updatedEvent = await storage.updateEventRequest(eventId, updateData);
 
-    console.log(`Updated driver assignments for event ${eventId}:`, updateData);
 
     // Enhanced audit logging for driver assignment updates
     await AuditLogger.logEventRequestChange(
@@ -2348,7 +2317,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
 
     res.json(updatedEvent);
   } catch (error) {
-    console.error('Error updating driver assignments:', error);
+    logger.error('Error updating driver assignments:', error);
     res.status(500).json({ error: 'Failed to update driver assignments' });
   }
 });
@@ -2366,12 +2335,9 @@ router.get('/:eventId/volunteers', isAuthenticated, async (req, res) => {
 
     const volunteers = await storage.getEventVolunteersByEventId(eventId);
 
-    console.log(
-      `Retrieved ${volunteers.length} volunteers for event ${eventId}`
-    );
     res.json(volunteers);
   } catch (error) {
-    console.error('Error fetching event volunteers:', error);
+    logger.error('Error fetching event volunteers:', error);
     res.status(500).json({ error: 'Failed to fetch event volunteers' });
   }
 });
@@ -2421,7 +2387,7 @@ router.post('/:eventId/volunteers', isAuthenticated, async (req, res) => {
 
     res.status(201).json(newVolunteer);
   } catch (error) {
-    console.error('Error creating event volunteer signup:', error);
+    logger.error('Error creating event volunteer signup:', error);
     if (error instanceof z.ZodError) {
       return res
         .status(400)
@@ -2460,7 +2426,7 @@ router.patch('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
 
     res.json(updatedVolunteer);
   } catch (error) {
-    console.error('Error updating event volunteer:', error);
+    logger.error('Error updating event volunteer:', error);
     res.status(500).json({ error: 'Failed to update volunteer assignment' });
   }
 });
@@ -2475,10 +2441,6 @@ router.patch(
       const id = parseInt(req.params.id);
       const { toolkitSentDate } = req.body;
 
-      console.log('=== MARK TOOLKIT AS SENT ===');
-      console.log('Event ID:', id);
-      console.log('Toolkit Sent Date:', toolkitSentDate);
-      console.log('Toolkit Sent By:', req.user?.id, '(', req.user?.email, ')');
 
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
@@ -2489,7 +2451,7 @@ router.patch(
       // Parse the toolkit sent date
       const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
 
-      const updates: any = {
+      const updates: Partial<EventRequest> = {
         toolkitSent: true,
         toolkitSentDate: sentDate,
         toolkitStatus: 'sent',
@@ -2499,10 +2461,10 @@ router.patch(
       };
 
       // Automatically assign the current user as TSP contact if not already assigned
+      // This auto-assignment happens silently (no email) since toolkit sending happens later in workflow
       if (!originalEvent.tspContact && req.user?.id) {
         updates.tspContact = req.user.id;
         updates.tspContactAssignedDate = new Date();
-        console.log('Auto-assigning TSP contact:', req.user.id, '(', req.user.email, ')');
       }
 
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
@@ -2526,7 +2488,6 @@ router.patch(
         }
       );
 
-      console.log('Successfully marked toolkit as sent for:', id);
       await logActivity(
         req,
         res,
@@ -2536,7 +2497,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error marking toolkit as sent:', error);
+      logger.error('Error marking toolkit as sent:', error);
       res.status(500).json({ message: 'Failed to mark toolkit as sent' });
     }
   }
@@ -2566,7 +2527,7 @@ router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error removing event volunteer:', error);
+    logger.error('Error removing event volunteer:', error);
     res.status(500).json({ error: 'Failed to remove volunteer assignment' });
   }
 });
@@ -2595,12 +2556,9 @@ router.get('/my-volunteers', isAuthenticated, async (req, res) => {
       })
     );
 
-    console.log(
-      `Retrieved ${userVolunteers.length} volunteer signups for user ${userId}`
-    );
     res.json(enrichedVolunteers);
   } catch (error) {
-    console.error('Error fetching user volunteers:', error);
+    logger.error('Error fetching user volunteers:', error);
     res.status(500).json({ error: 'Failed to fetch volunteer signups' });
   }
 });
@@ -2620,7 +2578,7 @@ router.patch(
         return res.status(400).json({ error: 'Valid event ID required' });
       }
 
-      const updates: any = {};
+      const updates: Partial<EventRequest> = {};
 
       if (socialMediaPostRequested !== undefined) {
         updates.socialMediaPostRequested = socialMediaPostRequested;
@@ -2669,7 +2627,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error updating social media tracking:', error);
+      logger.error('Error updating social media tracking:', error);
       res.status(500).json({ error: 'Failed to update social media tracking' });
     }
   }
@@ -2729,7 +2687,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error recording actual sandwich count:', error);
+      logger.error('Error recording actual sandwich count:', error);
       res.status(500).json({ error: 'Failed to record actual sandwich count' });
     }
   }
@@ -2809,7 +2767,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error recording sandwich distribution:', error);
+      logger.error('Error recording sandwich distribution:', error);
       res.status(500).json({ error: 'Failed to record sandwich distribution' });
     }
   }
@@ -2901,7 +2859,7 @@ router.patch(
 
       res.json(updatedEventRequest);
     } catch (error) {
-      console.error('Error recording actual sandwich data:', error);
+      logger.error('Error recording actual sandwich data:', error);
 
       // Handle validation errors specifically
       if (error instanceof z.ZodError) {
@@ -2926,9 +2884,13 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'Valid event ID required' });
     }
 
-    // Check permissions - only admin@sandwich.project and katielong2316@gmail.com
+    // Check permissions - only admin@sandwich.project, katielong2316@gmail.com, and christine@thesandwichproject.org
     const userEmail = req.user?.email;
-    const allowedEmails = ['admin@sandwich.project', 'katielong2316@gmail.com'];
+    const allowedEmails = [
+      'admin@sandwich.project',
+      'katielong2316@gmail.com',
+      'christine@thesandwichproject.org'
+    ];
 
     if (!userEmail || !allowedEmails.includes(userEmail)) {
       return res.status(403).json({
@@ -2940,6 +2902,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     // Create validation schema for the payload
     const tspContactSchema = z.object({
       tspContact: z.string().optional().nullable(),
+      customTspContact: z.string().optional().nullable(),
     });
 
     const validatedData = tspContactSchema.parse(req.body);
@@ -2951,13 +2914,14 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     }
 
     // Prepare updates object
-    const updates: any = {
+    const updates: Partial<EventRequest> = {
       tspContact: validatedData.tspContact || null,
+      customTspContact: validatedData.customTspContact || null,
       updatedAt: new Date(),
     };
 
-    // If assigning a TSP contact (not removing), set the assignment date
-    if (validatedData.tspContact) {
+    // If assigning a TSP contact (user or custom text, not removing), set the assignment date
+    if (validatedData.tspContact || validatedData.customTspContact) {
       updates.tspContactAssignedDate = new Date();
     } else {
       // If removing TSP contact, clear the assignment date
@@ -2968,6 +2932,59 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 
     if (!updatedEventRequest) {
       return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Send email and SMS notifications if:
+    // 1. TSP contact was assigned (not removed)
+    // 2. It changed from previous value
+    // 3. Event is not already completed or declined
+    if (
+      validatedData.tspContact && 
+      originalEvent.tspContact !== validatedData.tspContact &&
+      originalEvent.status !== 'completed' &&
+      originalEvent.status !== 'declined'
+    ) {
+      try {
+        // Send email notification
+        await EmailNotificationService.sendTspContactAssignmentNotification(
+          validatedData.tspContact!,
+          id,
+          originalEvent.organizationName,
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+        );
+      } catch (error) {
+        // Log error but don't fail the request if email notification fails
+        logger.error('Failed to send TSP contact assignment email:', error);
+      }
+
+      // Send SMS notification if user has opted in
+      try {
+        const assignedUser = await storage.getUserById(validatedData.tspContact!);
+        if (assignedUser) {
+          const metadata = assignedUser.metadata as any || {};
+          const smsConsent = metadata.smsConsent || {};
+          
+          // Only send SMS if user has confirmed SMS opt-in
+          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const { sendTspContactAssignmentSMS } = await import('../sms-service');
+            const smsResult = await sendTspContactAssignmentSMS(
+              smsConsent.phoneNumber,
+              originalEvent.organizationName,
+              id,
+              originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+            );
+            
+            if (smsResult.success) {
+              logger.log(`✅ TSP contact assignment SMS sent to ${assignedUser.email}`);
+            } else {
+              logger.warn(`⚠️ TSP contact assignment SMS failed: ${smsResult.message}`);
+            }
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the request if SMS notification fails
+        logger.error('Failed to send TSP contact assignment SMS:', error);
+      }
     }
 
     // Enhanced audit logging for this operation
@@ -2998,7 +3015,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 
     res.json(updatedEventRequest);
   } catch (error) {
-    console.error('Error updating TSP contact:', error);
+    logger.error('Error updating TSP contact:', error);
 
     // Handle validation errors specifically
     if (error instanceof z.ZodError) {
@@ -3035,15 +3052,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     const userId = req.query.userId as string;
     const eventId = req.query.eventId as string;
 
-    console.log(`🔍 Fetching audit logs with params:`, {
-      hours,
-      limit,
-      offset,
-      action,
-      userId,
-      eventId,
-    });
-
     // Calculate time cutoff
     const hoursAgo = new Date();
     hoursAgo.setHours(hoursAgo.getHours() - hours);
@@ -3051,8 +3059,20 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     // Build query conditions using Drizzle ORM
     const conditions = [];
 
-    // Always filter for event_requests table
-    conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    // Filter for event_requests table by default, but allow users table entries for user management
+    const tableFilter = req.query.tableName as string;
+    if (tableFilter === 'users' || tableFilter === 'user_management') {
+      // Allow both users and user_management for backward compatibility
+      conditions.push(
+        or(
+          eq(auditLogs.tableName, 'users'),
+          eq(auditLogs.tableName, 'user_management')
+        )
+      );
+    } else {
+      // Default to event_requests table
+      conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    }
 
     // Add time filter if specified - using SQL comparison as a workaround
     if (hours > 0) {
@@ -3075,10 +3095,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       conditions.push(eq(auditLogs.recordId, eventId));
     }
 
-    console.log(
-      '📋 Executing audit log query with conditions:',
-      conditions.length
-    );
 
     // Execute query using Drizzle ORM
     const rawLogs = await db
@@ -3089,7 +3105,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       .limit(limit)
       .offset(offset);
 
-    console.log(`📊 Raw audit logs found: ${rawLogs.length}`);
 
     // Get users for enriching the audit log data
     // Get users for enriching the audit log data
@@ -3102,29 +3117,40 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     const eventMap = new Map(allEventRequests.map((e) => [String(e.id), e]));
 
     // Helper to pull from camelCase or snake_case
-    const getField = (row: any, camel: string, snake: string) =>
+    const getField = (row: Record<string, unknown>, camel: string, snake: string) =>
       row[camel] !== undefined ? row[camel] : row[snake];
 
     // Transform raw logs to the expected format
-    const enrichedLogs = rawLogs.map((log: any) => {
+    const enrichedLogs = rawLogs.map((log) => {
       const recordId = String(getField(log, 'recordId', 'record_id'));
       const userId = String(getField(log, 'userId', 'user_id'));
 
-      let newData: any = null;
-      let oldData: any = null;
-      try {
-        newData = getField(log, 'newData', 'new_data')
-          ? JSON.parse(getField(log, 'newData', 'new_data'))
-          : null;
-      } catch {}
-      try {
-        oldData = getField(log, 'oldData', 'old_data')
-          ? JSON.parse(getField(log, 'oldData', 'old_data'))
-          : null;
-      } catch {}
+      let newData: Partial<EventRequest> | null = null;
+      let oldData: Partial<EventRequest> | null = null;
 
-      const user = userMap.get(userId);
+      // Safely parse newData with error handling
+      const newDataField = getField(log, 'newData', 'new_data');
+      if (newDataField) {
+        const parseResult = safeJsonParse(String(newDataField), {}, 'event audit log newData');
+        newData = parseResult.data;
+      }
+
+      // Safely parse oldData with error handling
+      const oldDataField = getField(log, 'oldData', 'old_data');
+      if (oldDataField) {
+        const parseResult = safeJsonParse(String(oldDataField), {}, 'event audit log oldData');
+        oldData = parseResult.data;
+      }
+
+      const user = userMap.get(userId); // User who made the change
       const event = eventMap.get(recordId);
+      const tableName = String(getField(log, 'tableName', 'table_name'));
+      
+      // For user management logs, get the user being updated
+      let updatedUser = null;
+      if (tableName === 'users' || tableName === 'user_management') {
+        updatedUser = userMap.get(recordId) || newData || oldData;
+      }
 
       // Extract follow-up context and audit metadata from newData or oldData
       let followUpMethod = null;
@@ -3133,6 +3159,31 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       let actionDescription = '';
       let changeDescription = '';
       let statusChange = null;
+
+      // Extract change metadata from _auditMetadata if available
+      const metadata = newData?._auditMetadata || oldData?._auditMetadata;
+      if (metadata) {
+        if (metadata.summary) {
+          changeDescription = metadata.summary;
+        }
+        if (metadata.changes && Array.isArray(metadata.changes)) {
+          // Build a summary of changes from the metadata
+          const changeDescriptions = metadata.changes
+            .slice(0, 3)
+            .map((change: any) => {
+              const fieldName = change.fieldDisplayName || change.fieldName || change.field;
+              const oldVal = change.oldValue === null || change.oldValue === undefined ? 'Not set' : change.oldValue;
+              const newVal = change.newValue === null || change.newValue === undefined ? 'Not set' : change.newValue;
+              return `${fieldName}: ${oldVal} → ${newVal}`;
+            });
+          if (changeDescriptions.length > 0) {
+            changeDescription = changeDescriptions.join(', ');
+            if (metadata.changes.length > 3) {
+              changeDescription += ` (+${metadata.changes.length - 3} more)`;
+            }
+          }
+        }
+      }
 
       // Try to extract follow-up context from newData first, then oldData
       const dataWithContext = newData || oldData;
@@ -3147,8 +3198,11 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
                            dataWithContext.actionDescription || 
                            getField(log, 'action', 'action') || '';
         
-        changeDescription = dataWithContext._auditMetadata?.changeDescription || 
-                           dataWithContext.changeDescription || '';
+        // Only override changeDescription if we don't already have one from metadata
+        if (!changeDescription) {
+          changeDescription = dataWithContext._auditMetadata?.changeDescription || 
+                             dataWithContext.changeDescription || '';
+        }
         
         // Extract status change information
         statusChange = dataWithContext._auditMetadata?.statusChange || 
@@ -3160,22 +3214,45 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
         }
       }
 
+      // For user management entries, show the updated user's name instead of organization/contact
+      let organizationName = 'Unknown Organization';
+      let contactName = 'Unknown Contact';
+      
+      if (tableName === 'users' || tableName === 'user_management') {
+        // This is a user profile update - show the updated user's info
+        const displayName = updatedUser?.displayName ||
+                          (updatedUser?.firstName && updatedUser?.lastName 
+                            ? `${updatedUser.firstName} ${updatedUser.lastName}`.trim()
+                            : updatedUser?.email?.split('@')[0] ||
+                              updatedUser?.email ||
+                              'Unknown User');
+        organizationName = displayName;
+        contactName = updatedUser?.email || updatedUser?.preferredEmail || '';
+      } else {
+        // Event request entry - use existing logic
+        organizationName =
+          event?.organizationName ||
+          oldData?.organizationName ||
+          newData?.organizationName ||
+          'Unknown Organization';
+        contactName = event
+          ? `${event.firstName || ''} ${event.lastName || ''}`.trim()
+          : oldData
+            ? `${oldData.firstName || ''} ${oldData.lastName || ''}`.trim()
+            : newData
+              ? `${newData.firstName || ''} ${newData.lastName || ''}`.trim()
+              : 'Unknown Contact';
+      }
+
       return {
         id: getField(log, 'id', 'id'),
         action: getField(log, 'action', 'action'),
         eventId: recordId,
         timestamp: getField(log, 'timestamp', 'timestamp'),
         userId,
-        userEmail: user?.email || user?.preferredEmail || 'Unknown User',
-        organizationName:
-          event?.organizationName ||
-          oldData?.organizationName ||
-          'Unknown Organization',
-        contactName: event
-          ? `${event.firstName} ${event.lastName}`
-          : oldData
-            ? `${oldData.firstName} ${oldData.lastName}`
-            : 'Unknown Contact',
+        userEmail: user?.email || user?.preferredEmail || userId || 'Unknown User',
+        organizationName,
+        contactName,
         // CRITICAL FIX: Expose oldData/newData at top level (not buried in details)
         oldData,
         newData,
@@ -3188,12 +3265,15 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
         statusChange,
         // Keep details for backward compatibility but make it secondary
         details: { oldData, newData },
+        // Include table name for filtering
+        tableName,
       };
     });
 
-    console.log(
-      `✅ Returning ${enrichedLogs.length} enriched audit log entries`
-    );
+    
+    // Debug: Log unique users in the returned logs
+    const uniqueUserIds = new Set(enrichedLogs.map(log => log.userId));
+    const uniqueUserEmails = new Set(enrichedLogs.map(log => log.userEmail));
 
     res.json({
       logs: enrichedLogs,
@@ -3201,17 +3281,13 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       offset,
       limit,
     });
-  } catch (error: any) {
-    console.error('❌ Error fetching audit logs:', error);
-    console.error('Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name
-    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('Failed to fetch audit logs', error);
 
     res.status(500).json({
       error: 'Failed to fetch audit logs',
-      message: error?.message || 'Unknown error occurred'
+      message: err?.message || 'Unknown error occurred'
     });
   }
 });
@@ -3226,9 +3302,6 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'Valid event ID required' });
     }
 
-    console.log('=== RECIPIENT ASSIGNMENT UPDATE ===');
-    console.log('Event ID:', eventId);
-    console.log('Recipient IDs:', assignedRecipientIds);
 
     // Check permissions
     if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
@@ -3261,7 +3334,7 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
 
     res.json(updatedEventRequest);
   } catch (error) {
-    console.error('Error updating recipient assignment:', error);
+    logger.error('Error updating recipient assignment:', error);
     res.status(500).json({ error: 'Failed to update recipient assignment' });
   }
 });
@@ -3295,56 +3368,36 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
     // Import SendGrid service and email footer
     const { sendEmail } = await import('../sendgrid');
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+    const path = await import('path');
 
-    // Build email body with attachments as links
-    let emailBodyText = content;
-    let emailBodyHtml = content.replace(/\n/g, '<br>');
-
-    if (attachments.length > 0) {
-      emailBodyText += '\n\n---\n\nAttached Documents:\n';
-      emailBodyHtml += '<br><br><hr style="margin: 20px 0;"><br><strong>Attached Documents:</strong><br><ul style="margin: 10px 0;">';
-      
-      attachments.forEach((filePath: string) => {
-        const fileName = filePath.split('/').pop() || filePath;
-        const documentUrl = `${req.protocol}://${req.get('host')}${filePath}`;
-        emailBodyText += `\n• ${fileName}: ${documentUrl}`;
-        emailBodyHtml += `<li><a href="${documentUrl}" style="color: #236383;">${fileName}</a></li>`;
-      });
-      
-      emailBodyHtml += '</ul>';
-    }
-
-    // Add compliance footer
-    emailBodyText += EMAIL_FOOTER_TEXT;
-    emailBodyHtml += EMAIL_FOOTER_HTML;
+    // Use the HTML content as-is (already styled from EventEmailComposer)
+    // Only add footer to the existing content
+    const emailBodyText = content + EMAIL_FOOTER_TEXT;
+    const emailBodyHtml = content + EMAIL_FOOTER_HTML;
 
     // Determine from and reply-to addresses
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
     const replyToEmail = req.user?.preferredEmail || req.user?.email || fromEmail;
 
-    console.log('📧 Sending email to event organizer:', {
-      eventId,
-      recipientEmail,
-      subject,
-      fromEmail,
-      replyToEmail,
-      attachmentsCount: attachments.length,
+    // Convert attachment paths to absolute file system paths
+    const attachmentPaths = attachments.map((filePath: string) => {
+      // If path starts with /, it's already an absolute path from /uploads
+      // Convert to filesystem path
+      if (filePath.startsWith('/uploads/')) {
+        return path.join(process.cwd(), filePath);
+      }
+      return filePath;
     });
 
-    // Send email via SendGrid
+    // Send email via SendGrid with actual file attachments
     const emailSent = await sendEmail({
       to: recipientEmail,
       from: fromEmail,
       replyTo: replyToEmail,
       subject,
       text: emailBodyText,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="margin-bottom: 20px;">
-            ${emailBodyHtml}
-          </div>
-        </div>
-      `,
+      html: emailBodyHtml, // Use the styled HTML as-is, no wrapping
+      attachments: attachmentPaths, // Pass actual file paths for attachment
     });
 
     if (!emailSent) {
@@ -3368,11 +3421,233 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
       success: true, 
       message: 'Email sent successfully' 
     });
-  } catch (error: any) {
-    console.error('❌ Error sending email:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error sending email:', error);
+    res.status(500).json({
+      error: 'Failed to send email',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
+// AI Date Suggestion - Analyze possible dates and suggest optimal scheduling
+router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Get flexibility options from request body
+    const flexibilityOptions = {
+      canChangeDayOfWeek: req.body?.canChangeDayOfWeek || false,
+      canChangeWeek: req.body?.canChangeWeek || false,
+      canChangeMonth: req.body?.canChangeMonth || false,
+    };
+
+    // Get the event request
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Get all scheduled events for analysis
+    const allEventRequests = await storage.getAllEventRequests();
+    const scheduledEvents = allEventRequests.filter(e => 
+      e.status === 'scheduled' && e.scheduledEventDate
+    );
+
+    // Import and call AI scheduling assistant with flexibility options
+    const { suggestOptimalEventDate } = await import('../services/ai-scheduling');
+    const suggestion = await suggestOptimalEventDate(eventRequest, scheduledEvents, flexibilityOptions);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI assistant to analyze dates for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName, flexibility: flexibilityOptions }
+    );
+
+    res.json(suggestion);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error generating AI date suggestion:', error);
+    res.status(500).json({
+      error: 'Failed to generate AI suggestion',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
+// AI Intake Assistant - Comprehensive analysis and suggestions for intake coordinators
+router.post('/:id/ai-intake-assist', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Get the event request
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Get all scheduled events for context (for date conflict analysis)
+    const allEventRequests = await storage.getAllEventRequests();
+    const scheduledEvents = allEventRequests.filter(e =>
+      e.status === 'scheduled' && e.scheduledEventDate
+    );
+
+    // Import and call AI intake assistant
+    const { analyzeEventRequest } = await import('../services/ai-intake-assistant');
+    const analysis = await analyzeEventRequest(eventRequest, scheduledEvents);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI intake assistant for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName }
+    );
+
+    res.json(analysis);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error generating AI intake assistance:', error);
+    res.status(500).json({
+      error: 'Failed to generate AI assistance',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
+// Schedule a follow-up call
+router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { scheduledCallDate } = req.body;
+
+
+    // Validate the date
+    if (!scheduledCallDate) {
+      return res.status(400).json({ message: 'Scheduled call date is required' });
+    }
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update the event request with the scheduled call date
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      scheduledCallDate: new Date(scheduledCallDate),
+      callScheduledAt: new Date(),
+      scheduledBy: req.user?.id,
+    });
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Log the change
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_SCHEDULE_CALL',
+      `Scheduled call for event request: ${id}`,
+      { scheduledCallDate }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error scheduling call:', error);
     res.status(500).json({ 
-      error: 'Failed to send email', 
-      message: error?.message || 'Unknown error occurred' 
+      message: 'Failed to schedule call',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Mark event as MLK Day event
+router.patch('/:id/mlk-day', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { isMlkDayEvent } = req.body;
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update the event request
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      isMlkDayEvent,
+      mlkDayMarkedAt: isMlkDayEvent ? new Date() : null,
+      mlkDayMarkedBy: isMlkDayEvent ? req.user?.id : null,
+    });
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Log the change
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_MLK_DAY_UPDATE',
+      `${isMlkDayEvent ? 'Marked' : 'Unmarked'} event as MLK Day event: ${id}`,
+      { isMlkDayEvent }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error updating MLK Day status:', error);
+    res.status(500).json({ 
+      message: 'Failed to update MLK Day status',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

@@ -1,10 +1,24 @@
 import { GoogleSheetsViewer } from '@/components/google-sheets-viewer';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function GoogleSheetsPage() {
   const { user } = useAuth();
-  const canView = hasPermission(user, PERMISSIONS.VIEW_SANDWICH_DATA);
+  const { VIEW_SANDWICH_DATA: canView } = usePermissions(['VIEW_SANDWICH_DATA']);
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    if (canView) {
+      trackView(
+        'Data',
+        'Data',
+        'Google Sheets Data',
+        'User accessed Google Sheets data viewer'
+      );
+    }
+  }, [canView, trackView]);
 
   if (!canView) {
     return (
@@ -35,11 +49,11 @@ export default function GoogleSheetsPage() {
 
       <GoogleSheetsViewer title="Sandwich Totals Data Sheet" height={700} />
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">
+      <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-4">
+        <h3 className="font-semibold text-brand-primary-darker mb-2">
           About This Data Sheet:
         </h3>
-        <ul className="text-sm text-blue-800 space-y-1">
+        <ul className="text-sm text-brand-primary-dark space-y-1">
           <li>• Complete sandwich collection totals spanning 2023-2025</li>
           <li>• Shows the most recent version of the data spreadsheet</li>
           <li>

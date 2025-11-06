@@ -9,19 +9,19 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-brand-primary text-white hover:bg-brand-primary-dark',
-        destructive: 'bg-red-600 text-white hover:bg-red-700',
+        default: 'bg-brand-primary text-white hover:bg-brand-primary-dark active:bg-brand-primary-darker',
+        destructive: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
         outline:
-          'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-        secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-        ghost: 'text-gray-700 hover:bg-gray-100',
+          'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100',
+        secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300',
+        ghost: 'text-gray-700 hover:bg-gray-100 active:bg-gray-200',
         link: 'text-brand-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
+        default: 'min-h-[44px] h-10 md:h-10 px-4 py-2',
+        sm: 'min-h-[40px] h-9 md:h-9 rounded-md px-3',
+        lg: 'min-h-[48px] h-12 md:h-11 rounded-md px-8',
+        icon: 'min-h-[44px] min-w-[44px] h-10 w-10',
       },
     },
     defaultVariants: {

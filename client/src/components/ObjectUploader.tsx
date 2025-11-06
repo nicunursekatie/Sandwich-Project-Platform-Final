@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
@@ -109,7 +110,7 @@ export function ObjectUploader({
 
       onComplete?.(uploadedFiles);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: 'Upload failed',
         description:

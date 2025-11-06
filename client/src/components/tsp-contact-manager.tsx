@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import type { RecipientTspContact, User as AppUser } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface TSPContactManagerProps {
   recipientId: number;
@@ -67,24 +68,13 @@ export default function TSPContactManager({
       fetch(`/api/recipient-tsp-contacts/${recipientId}`).then((res) =>
         res.json()
       ),
-    staleTime: 0, // Always fresh data for immediate updates
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    gcTime: 0, // Don't cache at all for debugging
+    staleTime: 30 * 1000, // 30 seconds - contact data changes frequently, needs short cache
+    refetchOnWindowFocus: true, // Refetch to see contact updates when user returns
+    // Note: recipientId in queryKey ensures separate cache entries per recipient
   });
 
-  // Clear cache and refetch on mount
-  useEffect(() => {
-    queryClient.removeQueries({
-      queryKey: ['/api/recipient-tsp-contacts', recipientId],
-    });
-    setTimeout(() => {
-      refetch();
-    }, 100);
-  }, [recipientId, refetch]);
-
   // Debug logging
-  console.log('TSP Contact Manager Debug:', {
+  logger.log('TSP Contact Manager Debug:', {
     recipientId,
     recipientName,
     tspContactsLength: tspContacts.length,
@@ -791,7 +781,7 @@ export default function TSPContactManager({
           tspContacts.map((contact) => (
             <Card
               key={contact.id}
-              className={contact.isPrimary ? 'border-blue-300 bg-blue-50' : ''}
+              className={contact.isPrimary ? 'border-brand-primary-border-strong bg-brand-primary-lighter' : ''}
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">

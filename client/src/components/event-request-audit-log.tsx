@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import {
   Card,
   CardContent,
@@ -48,6 +49,7 @@ import {
   hasPermission,
   PERMISSIONS,
 } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 
 interface AuditLogEntry {
   id: number;
@@ -84,6 +86,7 @@ export function EventRequestAuditLog({
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [userNameCache, setUserNameCache] = useState<Record<string, string>>({});
   const { trackView, trackClick, trackFilter, trackSearch } =
     useActivityTracker();
 
@@ -118,6 +121,30 @@ export function EventRequestAuditLog({
         : 'Viewing general event request audit log'
     );
   }, [trackView, eventId]);
+
+  // Fetch all users to map IDs to names
+  const { data: allUsers } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const users = await response.json();
+      
+      // Build user name cache
+      const cache: Record<string, string> = {};
+      users.forEach((user: any) => {
+        const displayName = user.displayName || 
+                          `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+                          user.email?.split('@')[0] || 
+                          'Unknown User';
+        cache[user.id] = displayName;
+      });
+      setUserNameCache(cache);
+      
+      return users;
+    },
+    enabled: hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW),
+  });
 
   // Fetch audit logs
   const {
@@ -187,8 +214,11 @@ export function EventRequestAuditLog({
       case 'PRIMARY_CONTACT_COMPLETED':
         return <UserCheck className={iconClass} />;
       case 'EVENT_DETAILS_UPDATED':
+      case 'EVENT_REQUEST_CHANGE':
+      case 'UPDATE':
         return <Edit className={iconClass} />;
       case 'STATUS_CHANGED':
+      case 'EVENT_SCHEDULED':
         return <RefreshCw className={iconClass} />;
       case 'FOLLOW_UP_RECORDED':
         return <Mail className={iconClass} />;
@@ -206,11 +236,13 @@ export function EventRequestAuditLog({
       case 'CREATE':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'PRIMARY_CONTACT_COMPLETED':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-brand-primary-lighter text-brand-primary border-brand-primary-border';
       case 'EVENT_DETAILS_UPDATED':
       case 'UPDATE':
+      case 'EVENT_REQUEST_CHANGE':
         return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'STATUS_CHANGED':
+      case 'EVENT_SCHEDULED':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'FOLLOW_UP_RECORDED':
         return 'bg-cyan-50 text-cyan-700 border-cyan-200';
@@ -218,6 +250,8 @@ export function EventRequestAuditLog({
         return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       case 'DELETE':
         return 'bg-red-50 text-red-700 border-red-200';
+      case 'EVENT_REQUEST_SIGNIFICANT_CHANGE':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -314,13 +348,21 @@ export function EventRequestAuditLog({
       'lastContactedAt': 'Last Contacted',
       
       // Technical fields
-      'userId': 'User ID',
+      'userId': 'User',
       'eventId': 'Event ID',
       'requestId': 'Request ID',
       'organizationId': 'Organization ID',
       'submittedBy': 'Submitted By',
       'assignedTo': 'Assigned To',
       'modifiedBy': 'Modified By',
+      'tspContact': 'TSP Contact',
+      'tspContactAssigned': 'TSP Contact',
+      'tspContactAssignedDate': 'TSP Contact Assigned Date',
+      'additionalTspContacts': 'Additional TSP Contacts',
+      'toolkitSent': 'Toolkit Sent',
+      'toolkitSentDate': 'Toolkit Sent Date',
+      'toolkitStatus': 'Toolkit Status',
+      'toolkitSentBy': 'Toolkit Sent By',
       
       // Boolean flags
       'isPublic': 'Public Event',
@@ -367,6 +409,34 @@ export function EventRequestAuditLog({
     
     // Convert to string for processing
     const stringValue = String(value);
+    
+    // Check if this looks like a user ID and convert to name
+    if (stringValue.startsWith('user_') && stringValue.includes('_')) {
+      // This is a user ID - convert to name
+      const userName = userNameCache[stringValue];
+      if (userName) {
+        return userName;
+      }
+      // If not in cache, try to make it more readable
+      return 'User (loading...)';
+    }
+    
+    // Also check if field name suggests it's a user field
+    if (fieldName && (
+      fieldName.toLowerCase().includes('tspcontact') ||
+      fieldName.toLowerCase().includes('assignedto') ||
+      fieldName.toLowerCase().includes('userid') ||
+      fieldName.toLowerCase().includes('assignee') ||
+      fieldName === 'tspContact' ||
+      fieldName === 'Tsp Contact' ||
+      fieldName === 'TSP Contact'
+    )) {
+      // Try to get user name from cache
+      const userName = userNameCache[stringValue];
+      if (userName) {
+        return userName;
+      }
+    }
     
     // Handle boolean values
     if (typeof value === 'boolean') {
@@ -464,25 +534,43 @@ export function EventRequestAuditLog({
   // Helper function to convert action names to human-readable format
   const getHumanReadableActionName = (action: string): string => {
     const actionMapping: Record<string, string> = {
-      'CREATE': 'Request Created',
-      'UPDATE': 'Request Updated', 
-      'PRIMARY_CONTACT_COMPLETED': 'Initial Contact Made',
-      'EVENT_DETAILS_UPDATED': 'Event Details Updated',
+      'CREATE': 'Created',
+      'UPDATE': 'Updated', 
+      'PRIMARY_CONTACT_COMPLETED': 'Contact Made',
+      'EVENT_DETAILS_UPDATED': 'Details Updated',
       'STATUS_CHANGED': 'Status Changed',
-      'FOLLOW_UP_RECORDED': 'Follow-up Recorded',
+      'EVENT_SCHEDULED': 'Event Scheduled',
+      'FOLLOW_UP_RECORDED': 'Follow-up Added',
       'MARKED_UNRESPONSIVE': 'Marked Unresponsive',
-      'DELETE': 'Request Deleted',
-      'APPROVED': 'Request Approved',
-      'REJECTED': 'Request Rejected',
-      'CANCELLED': 'Request Cancelled',
-      'COMPLETED': 'Request Completed',
-      'ASSIGNED': 'Request Assigned',
-      'UNASSIGNED': 'Request Unassigned',
-      'REOPENED': 'Request Reopened',
-      'ARCHIVED': 'Request Archived'
+      'DELETE': 'Deleted',
+      'APPROVED': 'Approved',
+      'REJECTED': 'Rejected',
+      'CANCELLED': 'Cancelled',
+      'COMPLETED': 'Completed',
+      'ASSIGNED': 'Assigned',
+      'UNASSIGNED': 'Unassigned',
+      'REOPENED': 'Reopened',
+      'ARCHIVED': 'Archived',
+      // Add missing action types
+      'EVENT_REQUEST_CHANGE': 'Modified',
+      'EVENT_REQUEST_SIGNIFICANT_CHANGE': 'Major Update',
+      'TSP_CONTACT_ASSIGNED': 'TSP Contact Set',
+      'TSP_CONTACT_REMOVED': 'TSP Contact Removed'
     };
     
-    return actionMapping[action] || formatFieldName(action);
+    // If not in mapping, clean up the action name
+    if (!actionMapping[action]) {
+      return action
+        .replace(/_/g, ' ')
+        .replace(/EVENT REQUEST/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    return actionMapping[action];
   };
 
   // Helper function to render field changes from structured _auditMetadata or fallback to changeDescription
@@ -552,7 +640,7 @@ export function EventRequestAuditLog({
         }
       }
     } catch (error) {
-      console.warn('Failed to parse structured audit metadata:', error);
+      logger.warn('Failed to parse structured audit metadata:', error);
     }
 
     // Fallback: If we have a changeDescription from the enhanced AuditLogger but no structured data
@@ -582,7 +670,7 @@ export function EventRequestAuditLog({
                 {log.details.updatedFields.map((fieldName: string, index: number) => (
                   <span 
                     key={index}
-                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-200 font-medium"
+                    className="inline-flex items-center px-2 py-1 text-xs bg-brand-primary-light text-brand-primary rounded border border-brand-primary-border font-medium"
                   >
                     {getHumanReadableFieldName(fieldName)}
                   </span>
@@ -597,14 +685,22 @@ export function EventRequestAuditLog({
     return null;
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    logger.log('🔄 Refresh button clicked');
     trackClick(
       'Refresh Audit Log',
       'Audit',
       'Event Requests',
       'Manual refresh of audit log data'
     );
-    refetch();
+    try {
+      logger.log('📡 Triggering refetch...');
+      // Use refetch directly from the query hook
+      await refetch();
+      logger.log('✅ Refetch complete');
+    } catch (error) {
+      logger.error('❌ Refetch error:', error);
+    }
   };
 
   const handleFilterChange = (type: string, value: string) => {
@@ -727,6 +823,7 @@ export function EventRequestAuditLog({
                       <SelectItem value="72">Last 3 days</SelectItem>
                       <SelectItem value="168">Last Week</SelectItem>
                       <SelectItem value="720">Last Month</SelectItem>
+                      <SelectItem value="0">All Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -817,10 +914,10 @@ export function EventRequestAuditLog({
                 <Card key={log.id} className="shadow-sm hover:shadow-md transition-shadow" data-testid={`audit-entry-${log.id}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
-                      {/* Action Badge */}
-                      <div className={`inline-flex items-center px-3 py-2 rounded-lg border ${getActionStyle(log.action)} flex-shrink-0`}>
+                      {/* Action Badge - More Compact */}
+                      <div className={`inline-flex items-center px-2 py-1 rounded-md border ${getActionStyle(log.action)} flex-shrink-0 max-w-[150px]`}>
                         {getActionIcon(log.action)}
-                        <span className="ml-2 font-medium text-[12px]">
+                        <span className="ml-1 font-medium text-[11px] truncate">
                           {getHumanReadableActionName(log.action)}
                         </span>
                       </div>
@@ -864,18 +961,18 @@ export function EventRequestAuditLog({
                               followUpContext = newDataParsed?._auditActionContext || {};
                             }
                           } catch (error) {
-                            console.warn('Failed to parse audit action context:', error);
+                            logger.warn('Failed to parse audit action context:', error);
                           }
                           
                           const hasFollowUpData = log.statusChange || log.followUpMethod || followUpContext.followUpMethod;
                           
                           if (hasFollowUpData) {
                             return (
-                              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                              <div className="mt-4 p-3 bg-brand-primary-lighter rounded-lg">
                                 <div className="text-sm font-medium text-gray-700 mb-2">Additional Context:</div>
                                 <div className="space-y-2">
                                   {log.statusChange && (
-                                    <div className="flex items-center text-sm text-blue-700">
+                                    <div className="flex items-center text-sm text-brand-primary">
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                       Status: {log.statusChange}
                                     </div>
@@ -887,7 +984,7 @@ export function EventRequestAuditLog({
                                     </div>
                                   )}
                                   {followUpContext.followUpAction && (
-                                    <div className="flex items-center text-sm text-blue-700">
+                                    <div className="flex items-center text-sm text-brand-primary">
                                       <UserCheck className="h-4 w-4 mr-2" />
                                       Action: {followUpContext.followUpAction}
                                     </div>

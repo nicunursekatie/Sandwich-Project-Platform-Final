@@ -1,3 +1,32 @@
+import type { UserForPermissions } from './types';
+
+// Resource interfaces for permission checking
+export interface ResourceWithOwner {
+  id?: number | string;
+  createdBy?: string | null;
+  created_by?: string | null;
+}
+
+export interface ProjectResource extends ResourceWithOwner {
+  assigneeId?: string | number | null;
+  assignee_id?: string | number | null;
+  assigneeIds?: string[] | string | null;
+  assignee_ids?: string[] | string | null;
+  supportPeopleIds?: string[] | string | null;
+  support_people_ids?: string[] | string | null;
+  assigneeName?: string[] | string | null;
+  assigneeNames?: string[] | string | null;
+  supportPeople?: string[] | string | null;
+}
+
+export interface WorkLogResource extends ResourceWithOwner {
+  userId?: string | null;
+}
+
+export interface SuggestionResource extends ResourceWithOwner {
+  submittedBy?: string | null;
+}
+
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
@@ -17,6 +46,10 @@ export const PERMISSIONS = {
   // ADMINISTRATIVE PERMISSIONS
   ADMIN_ACCESS: 'ADMIN_ACCESS',
   MANAGE_ANNOUNCEMENTS: 'MANAGE_ANNOUNCEMENTS',
+  
+  // CONTACTS - Phone directory
+  CONTACTS_VIEW: 'CONTACTS_VIEW', // View phone directory
+  MANAGE_DIRECTORY: 'MANAGE_DIRECTORY', // Manage phone directory entries
 
   // HOSTS - Host location management
   HOSTS_VIEW: 'HOSTS_VIEW',
@@ -86,7 +119,8 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_INLINE_EDIT_SANDWICHES: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', // Edit sandwich count/types inline
   EVENT_REQUESTS_INLINE_EDIT_STAFFING: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING', // Edit drivers/speakers/volunteers needed inline
   EVENT_REQUESTS_INLINE_EDIT_LOGISTICS: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', // Edit refrigeration and other logistics inline
-  
+  EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS: 'EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS', // Edit organization name and department inline
+
   // EVENT_REQUESTS - Self-signup and assignment permissions
   EVENT_REQUESTS_SELF_SIGNUP: 'EVENT_REQUESTS_SELF_SIGNUP', // Sign up self for driver/speaker/volunteer roles
   EVENT_REQUESTS_ASSIGN_OTHERS: 'EVENT_REQUESTS_ASSIGN_OTHERS', // Assign others to driver/speaker/volunteer roles
@@ -121,8 +155,17 @@ export const PERMISSIONS = {
   SUGGESTIONS_DELETE_ALL: 'SUGGESTIONS_DELETE_ALL', // Delete any suggestions
   SUGGESTIONS_MANAGE: 'SUGGESTIONS_MANAGE', // Respond to suggestions
 
+  // AVAILABILITY - Team member availability calendar
+  AVAILABILITY_VIEW: 'AVAILABILITY_VIEW',
+  AVAILABILITY_ADD: 'AVAILABILITY_ADD',
+  AVAILABILITY_EDIT_OWN: 'AVAILABILITY_EDIT_OWN', // Edit own availability
+  AVAILABILITY_EDIT_ALL: 'AVAILABILITY_EDIT_ALL', // Edit any availability
+  AVAILABILITY_DELETE_OWN: 'AVAILABILITY_DELETE_OWN', // Delete own availability
+  AVAILABILITY_DELETE_ALL: 'AVAILABILITY_DELETE_ALL', // Delete any availability
+
   // CHAT - Chat room access
   CHAT_GENERAL: 'CHAT_GENERAL',
+  CHAT_COMMITTEE: 'CHAT_COMMITTEE', // General committee chat
   CHAT_GRANTS_COMMITTEE: 'CHAT_GRANTS_COMMITTEE',
   CHAT_EVENTS_COMMITTEE: 'CHAT_EVENTS_COMMITTEE',
   CHAT_BOARD: 'CHAT_BOARD',
@@ -143,6 +186,22 @@ export const PERMISSIONS = {
 
   // ANALYTICS - Dashboard analytics
   ANALYTICS_VIEW: 'ANALYTICS_VIEW',
+  ANALYTICS_EXPORT: 'ANALYTICS_EXPORT',
+  
+  // GRANT_METRICS - Grant reporting and metrics
+  GRANT_METRICS_VIEW: 'GRANT_METRICS_VIEW',
+  GRANT_METRICS_EXPORT: 'GRANT_METRICS_EXPORT',
+  GRANT_METRICS_EDIT: 'GRANT_METRICS_EDIT',
+
+  // COOLER_TRACKING - Cooler inventory management
+  COOLERS_VIEW: 'COOLERS_VIEW', // View all cooler inventory (everyone sees where coolers are)
+  COOLERS_REPORT: 'COOLERS_REPORT', // Report/update cooler location
+  COOLERS_MANAGE: 'COOLERS_MANAGE', // Admin: manage cooler types and settings
+
+  // VOLUNTEER_CALENDAR - Google Calendar integration
+  VOLUNTEER_CALENDAR_VIEW: 'VOLUNTEER_CALENDAR_VIEW', // View volunteer calendar
+  VOLUNTEER_CALENDAR_SYNC: 'VOLUNTEER_CALENDAR_SYNC', // Sync with Google Calendar
+  VOLUNTEER_CALENDAR_MANAGE: 'VOLUNTEER_CALENDAR_MANAGE', // Manage calendar settings
 
   // MEETINGS - Meeting management
   MEETINGS_VIEW: 'MEETINGS_VIEW',
@@ -188,9 +247,25 @@ export const PERMISSIONS = {
   NAV_ANALYTICS: 'NAV_ANALYTICS', // Access to Analytics tab
   NAV_WEEKLY_MONITORING: 'NAV_WEEKLY_MONITORING', // Access to Weekly Monitoring tab
   NAV_IMPORTANT_DOCUMENTS: 'NAV_IMPORTANT_DOCUMENTS', // Access to Important Documents tab
-  NAV_IMPORTANT_LINKS: 'NAV_IMPORTANT_LINKS', // Access to Important Links tab
+  NAV_IMPORTANT_LINKS: 'NAV_IMPORTANT_LINKS', // Access to Quick Tools tab
   NAV_TOOLKIT: 'NAV_TOOLKIT', // Access to Toolkit tab
   NAV_DOCUMENT_MANAGEMENT: 'NAV_DOCUMENT_MANAGEMENT', // Access to Document Management tab
+  NAV_MY_AVAILABILITY: 'NAV_MY_AVAILABILITY', // Access to My Availability tab
+  NAV_TEAM_AVAILABILITY: 'NAV_TEAM_AVAILABILITY', // Access to Team Availability tab
+  NAV_VOLUNTEER_CALENDAR: 'NAV_VOLUNTEER_CALENDAR', // Access to Volunteer Calendar tab
+  NAV_GRANT_METRICS: 'NAV_GRANT_METRICS', // Access to Grant Metrics tab
+  NAV_SIGNUP_GENIUS: 'NAV_SIGNUP_GENIUS', // Access to Sign Up Genius tab
+  NAV_WISHLIST: 'NAV_WISHLIST', // Access to Amazon Wishlist tab
+  NAV_COOLER_TRACKING: 'NAV_COOLER_TRACKING', // Access to Cooler Tracking tab
+  NAV_ROUTE_MAP: 'NAV_ROUTE_MAP', // Access to Host Locations/Route Map tab
+  NAV_HISTORICAL_IMPORT: 'NAV_HISTORICAL_IMPORT', // Access to Historical Import tab
+  NAV_HELP: 'NAV_HELP', // Access to Help tab
+  NAV_USER_MANAGEMENT: 'NAV_USER_MANAGEMENT', // Access to User Management tab
+  NAV_TEAM_BOARD: 'NAV_TEAM_BOARD', // Access to Team Board tab
+  NAV_PROMOTION: 'NAV_PROMOTION', // Access to Promotion (Social Media Graphics) tab
+  NAV_QUICK_SMS_LINKS: 'NAV_QUICK_SMS_LINKS', // Access to Quick SMS Links tab
+  NAV_EXPENSES: 'NAV_EXPENSES', // Access to Expenses & Receipts tab
+  NAV_RESOURCES: 'NAV_RESOURCES', // Access to Resources tab
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
@@ -216,9 +291,21 @@ export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
   [PERMISSIONS.NAV_WORK_LOG]: [PERMISSIONS.WORK_LOGS_VIEW],
   [PERMISSIONS.NAV_TOOLKIT]: [PERMISSIONS.TOOLKIT_ACCESS],
   [PERMISSIONS.NAV_DOCUMENT_MANAGEMENT]: [PERMISSIONS.DOCUMENTS_VIEW],
-  // Note: NAV_INVENTORY_CALCULATOR, NAV_EVENT_REMINDERS, NAV_WEEKLY_MONITORING, 
-  // NAV_IMPORTANT_DOCUMENTS, and NAV_IMPORTANT_LINKS don't have separate functional 
-  // permissions - the nav permission itself grants access
+  [PERMISSIONS.NAV_MY_AVAILABILITY]: [PERMISSIONS.AVAILABILITY_EDIT_OWN],
+  [PERMISSIONS.NAV_TEAM_AVAILABILITY]: [PERMISSIONS.AVAILABILITY_VIEW],
+  [PERMISSIONS.NAV_GRANT_METRICS]: [PERMISSIONS.GRANT_METRICS_VIEW],
+  [PERMISSIONS.NAV_COOLER_TRACKING]: [PERMISSIONS.COOLERS_VIEW, PERMISSIONS.COOLERS_REPORT],
+  [PERMISSIONS.NAV_VOLUNTEER_CALENDAR]: [PERMISSIONS.VOLUNTEER_CALENDAR_VIEW],
+  [PERMISSIONS.NAV_EXPENSES]: [PERMISSIONS.EXPENSES_VIEW],
+  [PERMISSIONS.NAV_EVENT_REMINDERS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
+  [PERMISSIONS.NAV_SIGNUP_GENIUS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
+  [PERMISSIONS.NAV_RESOURCES]: [PERMISSIONS.RESOURCES_VIEW],
+  [PERMISSIONS.NAV_HISTORICAL_IMPORT]: [PERMISSIONS.DATA_IMPORT],
+  [PERMISSIONS.NAV_USER_MANAGEMENT]: [PERMISSIONS.USERS_VIEW],
+  [PERMISSIONS.NAV_ROUTE_MAP]: [PERMISSIONS.HOSTS_VIEW],
+  // Note: NAV_INVENTORY_CALCULATOR, NAV_WEEKLY_MONITORING, NAV_TEAM_BOARD, NAV_PROMOTION,
+  // NAV_IMPORTANT_DOCUMENTS, NAV_IMPORTANT_LINKS, NAV_HELP, NAV_WISHLIST, and NAV_QUICK_SMS_LINKS
+  // don't have separate functional permissions - the nav permission itself grants access
 };
 
 // Helper function to apply permission dependencies
@@ -251,6 +338,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.COMMITTEE_MEMBER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Core access permissions
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
@@ -263,6 +353,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         // Basic messaging and chat
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_EVENTS_COMMITTEE,
         PERMISSIONS.CHAT_WEB_COMMITTEE,
@@ -272,6 +364,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions + edit/delete own
         PERMISSIONS.DATA_EXPORT,
 
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -280,6 +378,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.HOST:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Directory access
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -294,6 +395,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
 
         // Analytics and other access
         PERMISSIONS.ANALYTICS_VIEW,
@@ -304,6 +406,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
         PERMISSIONS.ORGANIZATIONS_VIEW,
 
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -312,6 +420,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.CORE_TEAM:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Core viewing permissions
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -355,6 +466,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_CORE_TEAM,
         PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_EVENTS_COMMITTEE,
         PERMISSIONS.CHAT_WEB_COMMITTEE,
@@ -364,6 +476,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         // Data and analytics
         PERMISSIONS.DATA_EXPORT,
 
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -372,6 +490,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.DRIVER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
@@ -379,9 +500,15 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_DRIVER,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW,
@@ -389,18 +516,27 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.VOLUNTEER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.COLLECTIONS_ADD, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.PROJECTS_ADD, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW,
@@ -408,21 +544,33 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.RECIPIENT:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_RECIPIENT,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_RECEIVE, // Recipients can receive kudos but not send them by default
         PERMISSIONS.KUDOS_VIEW,
       ];
 
     case USER_ROLES.DEMO_USER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Can view all main sections but cannot edit/delete/manage anything
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -442,9 +590,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.ADMIN_ACCESS,
         PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.AVAILABILITY_VIEW,
 
         // Chat permissions (read-only)
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_DRIVER,
@@ -461,25 +612,44 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.VIEWER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
+        PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.KUDOS_VIEW, // Viewers can only view kudos, not send or receive
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
       ];
 
     case USER_ROLES.WORK_LOGGER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
-        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         'log_work',
       ];
 
@@ -505,7 +675,7 @@ export const CHAT_PERMISSIONS = {
 } as const;
 
 // Function to check if user has access to a specific chat room
-export function hasAccessToChat(user: any, chatRoom: string): boolean {
+export function hasAccessToChat(user: UserForPermissions | null | undefined, chatRoom: string): boolean {
   if (!user || !user.permissions) return false;
 
   const requiredPermission =
@@ -514,13 +684,17 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
   // Simple permission check without the unified utils
   if (!user.permissions) return false;
-  
+
   if (Array.isArray(user.permissions)) {
     return user.permissions.includes(requiredPermission);
   }
-  
+
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true to avoid filtering issues
+    // 🚨 SECURITY WARNING: This grants ALL chat access to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`);
     return true;
   }
 
@@ -529,16 +703,19 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
 // DEPRECATED: Use unified hasPermission from unified-auth-utils instead
 // This function is kept for backwards compatibility only
-export function hasPermission(user: any, permission: string): boolean {
+export function hasPermission(user: UserForPermissions | null | undefined, permission: string): boolean {
   // Simple permission check to avoid import issues in browser
   if (!user || !permission) return false;
-  
+
+  // Universal permissions: All authenticated users have these
+  if (permission === 'VOLUNTEERS_VIEW') return true;
+
   // Super admins have all permissions
   if (user.role === 'super_admin') return true;
-  
+
   // Admins get automatic access to navigation and core functionality (backward compatibility)
   if (user.role === 'admin') {
-    if (permission.startsWith('NAV_') || 
+    if (permission.startsWith('NAV_') ||
         permission === 'ADMIN_PANEL_ACCESS' ||
         permission.startsWith('EVENT_REQUESTS_') ||
         permission.startsWith('DOCUMENTS_') ||
@@ -549,17 +726,22 @@ export function hasPermission(user: any, permission: string): boolean {
       return true;
     }
   }
-  
+
   // If no permissions array, return false (except for admin/super_admin above)
   if (!user.permissions) return false;
-  
+
   if (Array.isArray(user.permissions)) {
-    return user.permissions.includes(permission);
+    // Apply permission dependencies at runtime to handle legacy permissions
+    const effectivePermissions = applyPermissionDependencies(user.permissions);
+    return effectivePermissions.includes(permission);
   }
-  
+
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true for now to avoid filtering issues
-    // The actual permission checking should be done on the server side
+    // 🚨 SECURITY WARNING: This grants ALL permissions to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`);
     return true;
   }
 
@@ -567,40 +749,40 @@ export function hasPermission(user: any, permission: string): boolean {
 }
 
 // Function to check if user can edit a specific collection entry
-export function canEditCollection(user: any, collection: any): boolean {
+export function canEditCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
-  
+
   // Check if user has edit all permission
   if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)) {
     return true;
   }
-  
+
   // Check if user owns the collection and has edit own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
   if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_OWN)) {
     return true;
   }
-  
+
   return false;
 }
 
 // Function to check if user can delete a specific collection entry
-export function canDeleteCollection(user: any, collection: any): boolean {
+export function canDeleteCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
-  
+
   // Check if user has delete all permission
   if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)) {
     return true;
   }
-  
+
   // Check if user owns the collection and has delete own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
   if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_OWN)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -675,8 +857,8 @@ const parseNameList = (value: unknown): string[] => {
 };
 
 export function isProjectOwnerOrAssignee(
-  user: any,
-  project: any
+  user: UserForPermissions | null | undefined,
+  project: ProjectResource | null | undefined
 ): boolean {
   if (!user || !project) return false;
 
@@ -715,7 +897,7 @@ export function isProjectOwnerOrAssignee(
   return false;
 }
 
-export function canEditProject(user: any, project: any): boolean {
+export function canEditProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
   if (!user) return false;
 
   const userPermissions = Array.isArray(user.permissions)
@@ -754,10 +936,11 @@ export function canEditProject(user: any, project: any): boolean {
   );
 
   if (projectNames.size > 0) {
+    const userAsAny = user as any; // Temporary for accessing optional user properties
     const candidateNames = [
-      [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
-      user.displayName,
-      user.preferredEmail,
+      [userAsAny.firstName, userAsAny.lastName].filter(Boolean).join(' ').trim(),
+      userAsAny.displayName,
+      userAsAny.preferredEmail,
       user.email,
     ]
       .filter((value): value is string => Boolean(value))
@@ -773,7 +956,7 @@ export function canEditProject(user: any, project: any): boolean {
 }
 
 // Function to check if user can delete a specific project
-export function canDeleteProject(user: any, project: any): boolean {
+export function canDeleteProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_PROJECTS can delete all projects
@@ -794,7 +977,7 @@ export function canDeleteProject(user: any, project: any): boolean {
 }
 
 // Function to check if user can edit a specific suggestion entry
-export function canEditSuggestion(user: any, suggestion: any): boolean {
+export function canEditSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_SUGGESTIONS can edit all suggestions
@@ -817,7 +1000,7 @@ export function canEditSuggestion(user: any, suggestion: any): boolean {
 }
 
 // Function to check if user can delete a specific suggestion entry
-export function canDeleteSuggestion(user: any, suggestion: any): boolean {
+export function canDeleteSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_SUGGESTIONS can delete all suggestions
@@ -840,7 +1023,7 @@ export function canDeleteSuggestion(user: any, suggestion: any): boolean {
 }
 
 // Function to check if user can edit a specific work log entry
-export function canEditWorkLog(user: any, workLog: any): boolean {
+export function canEditWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
@@ -863,7 +1046,7 @@ export function canEditWorkLog(user: any, workLog: any): boolean {
 }
 
 // Function to check if user can delete a specific work log entry
-export function canDeleteWorkLog(user: any, workLog: any): boolean {
+export function canDeleteWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs

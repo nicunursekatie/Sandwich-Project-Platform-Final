@@ -63,13 +63,10 @@ export default function createProjectRoutes(options: {
   // GET /for-review - Get projects for review
   projectsRouter.get('/for-review', async (req: AuthenticatedRequest, res: Response) => {
     try {
-      console.log('[Projects API] Getting projects for review');
       const projects = await storage.getProjectsForReview();
-      console.log(`[Projects API] Found ${projects.length} projects for review`);
       res.json(projects);
     } catch (error) {
       logger.error('Failed to get projects for review', error);
-      console.error('[Projects API] Error fetching projects for review:', error);
       res.json([]);
     }
   });
@@ -99,17 +96,13 @@ export default function createProjectRoutes(options: {
           return res.status(401).json({ message: 'Authentication required' });
         }
 
-        console.log('Received project data:', req.body);
-
         const project = await projectService.createProject({
           data: req.body,
           user,
         });
 
-        console.log('Created project:', project);
         res.status(201).json(project);
       } catch (error) {
-        console.error('Project creation error details:', error);
         logger.error('Failed to create project', error);
 
         const message =
@@ -200,12 +193,6 @@ export default function createProjectRoutes(options: {
           return res.status(401).json({ message: 'Authentication required' });
         }
 
-        console.log('=== PROJECT PATCH DEBUG ===');
-        console.log('Project ID:', id);
-        console.log('Updates received:', updates);
-        console.log('Support People value:', updates.supportPeople);
-        console.log('User:', user.email);
-
         const updatedProject = await projectService.updateProject({
           id,
           updates,
@@ -213,18 +200,11 @@ export default function createProjectRoutes(options: {
         });
 
         if (!updatedProject) {
-          console.log('Failed to update project in storage');
           return res.status(404).json({ message: 'Project not found' });
         }
 
-        console.log(
-          'Project updated successfully:',
-          updatedProject.supportPeople
-        );
         res.json(updatedProject);
       } catch (error) {
-        console.error('=== PROJECT PATCH ERROR ===');
-        console.error('Error details:', error);
         logger.error('Failed to update project', error);
 
         const message =

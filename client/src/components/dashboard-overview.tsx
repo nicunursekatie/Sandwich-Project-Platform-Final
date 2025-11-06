@@ -32,13 +32,16 @@ import {
 } from '@/components/ui/card';
 
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { useToast } from '@/hooks/use-toast';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
+import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
+import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
 import {
@@ -50,6 +53,7 @@ import {
   NetworkIcon,
 } from '@/components/modern-dashboard/custom-svg-icons';
 import CMYK_PRINT_TSP_01__2_ from '@assets/CMYK_PRINT_TSP-01 (2).png';
+import { logger } from '@/lib/logger';
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = '/logo-optimized.svg';
 const sandwichIconSvg = '/sandwich-icon-optimized.svg';
@@ -64,6 +68,11 @@ export default function DashboardOverview({
   onSectionChange?: (section: string) => void;
 }) {
   const { user } = useAuth();
+  const { COLLECTIONS_ADD, COLLECTIONS_EDIT_OWN, ADMIN_ACCESS } = usePermissions([
+    'COLLECTIONS_ADD',
+    'COLLECTIONS_EDIT_OWN',
+    'ADMIN_ACCESS',
+  ]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -120,6 +129,52 @@ export default function DashboardOverview({
     }
   };
 
+  const handleShareEventToolkit = async () => {
+    const url = 'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
+    const title = 'Event Toolkit for Volunteers';
+    const text =
+      'Everything you need to plan and host a sandwich-making event - includes safety guides, instructions, and labels';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(url);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(url);
+    }
+  };
+
+  const handleShareCollectionSites = async () => {
+    const url = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
+    const title = 'Host Collection Sites Directory';
+    const text =
+      'Public-facing directory of all host collection sites - easy to share with volunteers and partners';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(url);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(url);
+    }
+  };
+
   const handleCopyLink = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -129,7 +184,7 @@ export default function DashboardOverview({
           'The inventory calculator link has been copied to your clipboard.',
       });
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      logger.error('Failed to copy link:', error);
       toast({
         title: 'Error',
         description: 'Failed to copy link to clipboard.',
@@ -153,58 +208,63 @@ export default function DashboardOverview({
     staleTime: 30 * 1000, // 30 seconds for dashboard stats
     refetchOnMount: true,
     refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
-    keepPreviousData: true,
     enabled: deferredLoad,
   });
-
-  // Trigger deferred loading after initial render
   React.useEffect(() => {
     const timer = setTimeout(() => setDeferredLoad(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // Key organizational documents from attached assets
-  const importantDocuments = [
-    {
-      title: 'Key Findings: Peak Collection Weeks',
-      description:
-        'Comprehensive analysis of peak performance and organizational growth',
-      category: 'Strategy',
-      path: '/attached_assets/Key Findings_ Peak Sandwich Collection Weeks_1753498455636.pdf',
-    },
-    {
-      title: 'Food Safety Guidelines',
-      description: 'Essential safety protocols for volunteers',
-      category: 'Operations',
-      path: '/attached_assets/20230525-TSP-Food Safety Volunteers_1749341933308.pdf',
-    },
-    {
-      title: 'Volunteer Driver Agreement',
-      description: 'Required agreement form for volunteer drivers',
-      category: 'Forms',
-      path: '/attached_assets/TSP Volunteer Driver Agreement (1).pdf',
-    },
-    {
-      title: 'Community Service Hours Form',
-      description: 'Form for tracking and documenting community service hours',
-      category: 'Forms',
-      path: '/attached_assets/TSP COMMUNITY SERVICE HOURS (1) (1) (1).pdf',
-    },
-    {
-      title: 'ACORD Document',
-      description: 'Official ACORD documentation for organizational reference',
-      category: 'Forms',
-      path: '/attached_assets/ACORD®_1756831296864.pdf',
-    },
-  ];
+  // Fetch dashboard documents configuration from API
+  const { data: dashboardDocumentsData } = useQuery({
+    queryKey: ['/api/dashboard-documents'],
+    // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
+  });
+
+  // Map dashboard document IDs to full document details from adminDocuments
+  const importantDocuments = React.useMemo(() => {
+    if (!dashboardDocumentsData || !Array.isArray(dashboardDocumentsData)) {
+      logger.log('📄 Dashboard documents: No data or not array', dashboardDocumentsData);
+      // Return empty array if no documents configured
+      return [];
+    }
+
+    logger.log('📄 Dashboard documents data received:', dashboardDocumentsData);
+
+    const mapped = dashboardDocumentsData
+      .map((dashDoc: any) => {
+        const doc = adminDocuments.find((d: any) => d.id === dashDoc.documentId);
+        if (!doc) {
+          logger.warn(`⚠️ Document not found in adminDocuments: ${dashDoc.documentId}`);
+          return null;
+        }
+
+        logger.log(`✅ Found document: ${doc.name} (${dashDoc.documentId})`);
+
+        return {
+          title: doc.name,
+          description: doc.description,
+          category: doc.category,
+          path: doc.path,
+          type: doc.type,
+        };
+      })
+      .filter((doc: any) => doc !== null);
+
+    logger.log('📄 Final important documents:', mapped);
+    return mapped;
+  }, [dashboardDocumentsData]);
 
   // Fetch all collections for peak calculations
   const { data: allCollectionsData } = useQuery({
     queryKey: ['/api/sandwich-collections/all'],
     queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?page=1&limit=5000', {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        '/api/sandwich-collections?page=1&limit=5000',
+        {
+          credentials: 'include',
+        }
+      );
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
@@ -237,11 +297,11 @@ export default function DashboardOverview({
     // Calculate peak week from collections data if available
     let peakWeekRecord = statsData.peakWeekRecord || 0;
     let peakWeekDate = statsData.peakWeekDate || 'Calculating...';
-    
+
     if (allCollectionsData?.collections) {
       const collections = allCollectionsData.collections;
       const weeklyTotals: Record<string, { total: number; date: string }> = {};
-      
+
       collections.forEach((collection: any) => {
         if (collection.collectionDate) {
           const date = new Date(collection.collectionDate);
@@ -249,63 +309,78 @@ export default function DashboardOverview({
           const monday = new Date(date);
           monday.setDate(date.getDate() - date.getDay() + 1);
           const weekKey = monday.toISOString().split('T')[0];
-          
+
           if (!weeklyTotals[weekKey]) {
-            weeklyTotals[weekKey] = { total: 0, date: monday.toLocaleDateString() };
+            weeklyTotals[weekKey] = {
+              total: 0,
+              date: monday.toLocaleDateString(),
+            };
           }
-          
+
           // Calculate total sandwiches for this collection
           const individualCount = collection.individualSandwiches || 0;
           let groupCount = 0;
-          if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
-            groupCount = collection.groupCollections.reduce((sum: number, group: any) => {
-              return sum + (group.count || group.sandwichCount || 0);
-            }, 0);
+          if (
+            collection.groupCollections &&
+            Array.isArray(collection.groupCollections)
+          ) {
+            groupCount = collection.groupCollections.reduce(
+              (sum: number, group: any) => {
+                return sum + (group.count || group.sandwichCount || 0);
+              },
+              0
+            );
           }
           weeklyTotals[weekKey].total += individualCount + groupCount;
         }
       });
-      
+
       // Find peak week
-      const peakWeek = Object.values(weeklyTotals).reduce((max, week) => 
-        week.total > max.total ? week : max, { total: 0, date: 'N/A' });
-      
+      const peakWeek = Object.values(weeklyTotals).reduce(
+        (max, week) => (week.total > max.total ? week : max),
+        { total: 0, date: 'N/A' }
+      );
+
       if (peakWeek.total > peakWeekRecord) {
         peakWeekRecord = peakWeek.total;
         peakWeekDate = peakWeek.date;
       }
     }
-    
+
     // Calculate dynamic values from actual data
     const currentYear = new Date().getFullYear();
-    
+
     // Calculate operational years from actual data if available
-    const earliestYear = statsData.earliestCollectionDate ? 
-      new Date(statsData.earliestCollectionDate).getFullYear() : 2020;
+    const earliestYear = statsData.earliestCollectionDate
+      ? new Date(statsData.earliestCollectionDate).getFullYear()
+      : 2020;
     const operationalYears = currentYear - earliestYear;
+
+    // Annual goal - organizational target
+    const annualGoal = 500000; // The Sandwich Project's annual target
     
-    // Calculate annual capacity based on recent performance trends
+    // Calculate weekly average for other metrics
     const weeklyAverage = totalSandwiches / (operationalYears * 52);
-    const annualCapacity = Math.round(weeklyAverage * 52);
-    
+
     // Calculate baseline and surge capacity from data patterns
     const baselineMin = Math.round(weeklyAverage * 0.7);
     const baselineMax = Math.round(weeklyAverage * 1.3);
     const surgeMin = Math.round(weeklyAverage * 3);
     const surgeMax = Math.round(weeklyAverage * 5);
-    
+
     // Calculate growth multiplier using first year data if available
     const firstYearTotal = statsData.firstYearTotal || 1000; // Fallback estimate
     const firstYearWeekly = firstYearTotal / 52;
-    const growthMultiplier = firstYearWeekly > 0 ? 
-      Math.round(weeklyAverage / firstYearWeekly) : 
-      Math.round(weeklyAverage / (1000 / 52));
+    const growthMultiplier =
+      firstYearWeekly > 0
+        ? Math.round(weeklyAverage / firstYearWeekly)
+        : Math.round(weeklyAverage / (1000 / 52));
 
     return {
       totalLifetimeSandwiches: totalSandwiches.toLocaleString(),
       peakWeekRecord: peakWeekRecord.toLocaleString(),
       peakWeekDate: peakWeekDate,
-      currentAnnualCapacity: annualCapacity.toLocaleString(),
+      currentAnnualCapacity: annualGoal.toLocaleString(),
       weeklyBaseline: `${baselineMin.toLocaleString()}-${baselineMax.toLocaleString()}`,
       surgingCapacity: `${surgeMin.toLocaleString()}-${surgeMax.toLocaleString()}`,
       operationalYears: operationalYears.toString(),
@@ -319,58 +394,57 @@ export default function DashboardOverview({
   // Remove fake mini chart data - only use real data
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8">
+      <div className="space-y-8 pb-8 w-full">
         {/* Header */}
-        <div className="bg-white rounded-xl mx-4 mt-8 p-6 sm:p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-          <div className="relative">
+        <div className="premium-card mx-4 mt-8 p-6 sm:p-8 text-center max-w-full">
+          <div className="relative max-w-full">
             <img
               src={CMYK_PRINT_TSP_01__2_}
               alt="The Sandwich Project"
-              className="w-[200px] sm:w-[250px] md:w-[400px] mb-4 sm:mb-6 mx-auto"
+              className="w-[200px] sm:w-[250px] md:w-[400px] max-w-full mb-4 sm:mb-6 mx-auto"
               width="400"
               height="125"
             />
           </div>
-          <p className="text-base sm:text-lg md:text-xl text-brand-primary font-medium">
-            Community Impact Through Coordinated Action
+          <p className="premium-text-body-lg text-brand-primary font-medium">
+            Nourish The Hungry. Feed The Soul.
           </p>
         </div>
 
         {/* Collection Call-to-Action */}
-        {(hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-          hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT)) && (
-          <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-            <div className="text-center">
+        {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
+          <div className="premium-card-elevated mx-4 p-4 sm:p-6 max-w-full">
+            <div className="text-center max-w-full">
               <div className="mb-4 sm:mb-6">
-                <h2 className="sm:text-xl font-semibold text-brand-primary mb-2 text-[22px]">
+                <h2 className="premium-text-h3 text-brand-primary mb-2">
                   Record Collection Data
                 </h2>
                 {showCollectionForm && (
-                  <p className="text-sm sm:text-base text-gray-700">
+                  <p className="premium-text-body-sm text-gray-700">
                     Submit your sandwich contributions to help our community
                   </p>
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px] text-[16px]"
+                <button
+                  className="premium-btn-accent"
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm
                     ? 'Hide Form'
                     : 'Enter New Collection Data'}
-                </Button>
-                <Button
-                  className="bg-white border border-brand-light-blue text-brand-light-blue hover:bg-brand-light-blue hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-[16px] sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
+                </button>
+                <button
+                  className="premium-btn-outline"
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -394,14 +468,9 @@ export default function DashboardOverview({
           </div>
         )}
 
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
-
         {/* Hero Impact Section */}
-        <div className="mx-4 mb-8 sm:mb-12">
-          <div className="bg-white rounded-xl p-8 sm:p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
+          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
             <div className="mb-4">
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
                 <AnimatedCounter
@@ -410,47 +479,58 @@ export default function DashboardOverview({
               </h1>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
                 <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
-                <p className="text-lg sm:text-xl text-brand-primary font-medium text-center">
+                <p className="premium-text-body-lg text-brand-primary font-medium text-center">
                   Total sandwiches distributed since 2020
                 </p>
                 <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
               </div>
             </div>
-            <div className="text-sm text-gray-600 border-t border-gray-200 pt-4 sm:pt-6 mt-4 sm:mt-6">
+            <div className="premium-divider my-4 sm:my-6"></div>
+            <div className="premium-text-body-sm text-gray-600">
               Real data from verified collection records
             </div>
           </div>
         </div>
 
+        {/* Action Tracker Widget */}
+        <div className="mx-4 mb-8 max-w-full">
+          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
+        </div>
+
+        {/* Recently Accessed Resources Widget */}
+        <div className="mx-4 mb-8 max-w-full">
+          <RecentlyAccessedResources />
+        </div>
+
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mx-4 mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
+        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8 max-w-full">
+          <div className="premium-card premium-interactive p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
                 Individual Collections
               </h3>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-orange rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-brand-orange mb-2">
+            <div className="premium-text-h2 text-brand-orange mb-2">
               <AnimatedCounter value={statsData?.individualSandwiches || 0} />
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="premium-text-body-sm text-gray-600">
               Personal contributions
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
+          <div className="premium-card premium-interactive p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
                 Group Collections
               </h3>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-light-blue rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-brand-light-blue mb-2">
+            <div className="premium-text-h2 text-brand-light-blue mb-2">
               <AnimatedCounter
                 value={
                   statsData
@@ -460,76 +540,76 @@ export default function DashboardOverview({
                 }
               />
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="premium-text-body-sm text-gray-600">
               Organization donations
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 sm:col-span-2 lg:col-span-1">
+          <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
                 Collection Records
               </h3>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-primary rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-brand-primary mb-2">
+            <div className="premium-text-h2 text-brand-primary mb-2">
               <AnimatedCounter value={statsData?.totalEntries || 0} />
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">Data submissions</p>
+            <p className="premium-text-body-sm text-gray-600">Data submissions</p>
           </div>
         </div>
 
         {/* Operational Capacity - Clean Design with Brand Color Accents */}
-        <div className="mx-4 mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-            <h2 className="text-base sm:text-lg font-semibold text-[#646464] mb-4 sm:mb-6">
+        <div className="mx-4 mb-6 sm:mb-8 max-w-full">
+          <div className="premium-card p-4 sm:p-6 max-w-full">
+            <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy hover:shadow-md transition-shadow">
-                <div className="text-lg sm:text-2xl font-bold text-brand-burgundy mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h3 text-brand-burgundy mb-1">
                   {organizationalStats.peakWeekRecord}
                 </div>
-                <div className="text-xs sm:text-sm text-[#646464] font-medium">
+                <div className="premium-text-body-sm text-gray-700 font-medium">
                   Peak Week
                 </div>
-                <div className="text-xs text-[#646464] mt-1">Nov 15, 2023</div>
+                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
               </div>
 
-              {/* Annual Target - Orange accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange hover:shadow-md transition-shadow">
-                <div className="text-lg sm:text-2xl font-bold text-brand-orange mb-1">
+              {/* Annual Goal - Orange accent */}
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h3 text-brand-orange mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
-                <div className="text-xs sm:text-sm text-[#646464] font-medium">
-                  Annual Target
+                <div className="premium-text-body-sm text-gray-700 font-medium">
+                  Annual Goal
                 </div>
-                <div className="text-xs text-[#646464] mt-1">Current year</div>
+                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
               </div>
 
               {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue hover:shadow-md transition-shadow">
-                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-brand-light-blue mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h4 text-brand-light-blue mb-1">
                   {organizationalStats.weeklyBaseline}
                 </div>
-                <div className="text-xs sm:text-sm text-[#646464] font-medium">
+                <div className="premium-text-body-sm text-gray-700 font-medium">
                   Weekly Baseline
                 </div>
-                <div className="text-xs text-[#646464] mt-1">Regular ops</div>
+                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
               </div>
 
               {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal hover:shadow-md transition-shadow">
-                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-brand-teal mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h4 text-brand-teal mb-1">
                   {organizationalStats.surgingCapacity}
                 </div>
-                <div className="text-xs sm:text-sm text-[#646464] font-medium">
+                <div className="premium-text-body-sm text-gray-700 font-medium">
                   Surge Capacity
                 </div>
-                <div className="text-xs text-[#646464] mt-1">
+                <div className="premium-text-caption text-gray-600 mt-1">
                   Peak mobilization
                 </div>
               </div>
@@ -538,113 +618,186 @@ export default function DashboardOverview({
         </div>
 
         {/* Planning Tools Section */}
-        <div className="mx-4 mb-8">
-          <h3 className="text-lg font-semibold text-brand-primary mb-6">
+        <div className="mx-4 mb-8 max-w-full">
+          <h3 className="premium-text-h3 text-brand-primary mb-6">
             Planning Tools
           </h3>
 
           {/* Inventory Calculator - Clean and prominent */}
-          <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-primary/20 mb-6">
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #236383' }}>
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mr-4">
                 <Calculator className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h4 className="text-xl font-bold text-brand-primary mb-1">
+                <h4 className="premium-text-h4 text-brand-primary mb-1">
                   Inventory Calculator
                 </h4>
-                <p className="text-gray-600">
+                <p className="premium-text-body-sm text-gray-600">
                   Essential tool for planning sandwich quantities
                 </p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                size="lg"
+              <button
                 onClick={() =>
                   window.open(
                     'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
                     '_blank'
                   )
                 }
-                className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-8 py-3 text-base flex-1"
+                className="premium-btn-primary flex-1"
               >
-                <Calculator className="w-5 h-5 mr-2" />
+                <Calculator className="w-5 h-5" />
                 Open Calculator
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
+              </button>
+              <button
                 onClick={handleShareInventoryCalculator}
-                className="border-brand-primary text-brand-primary hover:bg-brand-primary/5 px-6 py-3 font-medium"
+                className="premium-btn-outline"
               >
-                <Share2 className="w-5 h-5 mr-2" />
+                <Share2 className="w-5 h-5" />
                 Share Tool
-              </Button>
+              </button>
+            </div>
+          </div>
+
+          {/* Event Toolkit - Share with volunteers */}
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #FBAD3F' }}>
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mr-4">
+                <span className="text-2xl">📦</span>
+              </div>
+              <div>
+                <h4 className="premium-text-h4 text-brand-orange mb-1">
+                  Event Toolkit for Volunteers
+                </h4>
+                <p className="premium-text-body-sm text-gray-600">
+                  Share with anyone making sandwiches - includes guides and labels
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() =>
+                  window.open(
+                    'https://nicunursekatie.github.io/sandwichinventory/toolkit.html',
+                    '_blank'
+                  )
+                }
+                className="premium-btn-accent flex-1"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Open Event Toolkit
+              </button>
+              <button
+                onClick={handleShareEventToolkit}
+                className="premium-btn-outline"
+              >
+                <Share2 className="w-5 h-5" />
+                Share Toolkit
+              </button>
+            </div>
+          </div>
+
+          {/* Host Collection Sites Directory */}
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #007E8C' }}>
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mr-4">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="premium-text-h4 text-brand-teal mb-1">
+                  Host Collection Sites Directory
+                </h4>
+                <p className="premium-text-body-sm text-gray-600">
+                  Public directory of all collection sites - share with volunteers and partners
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() =>
+                  window.open(
+                    'https://nicunursekatie.github.io/sandwichprojectcollectionsites/',
+                    '_blank'
+                  )
+                }
+                className="premium-btn-secondary flex-1"
+              >
+                <Building2 className="w-5 h-5" />
+                View Collection Sites
+              </button>
+              <button
+                onClick={handleShareCollectionSites}
+                className="premium-btn-outline"
+              >
+                <Share2 className="w-5 h-5" />
+                Share Directory
+              </button>
             </div>
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-full">
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
+              className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
             >
-              <div className="w-12 h-12 bg-brand-light-blue rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-light-blue rounded-lg flex items-center justify-center mb-3">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-brand-primary mb-1">
+              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Collections
               </h3>
-              <p className="text-sm text-gray-600 mb-3">View all data</p>
+              <p className="premium-text-body-sm text-gray-600 mb-3">View all data</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Collections →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
+              className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('analytics')}
             >
-              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mb-3">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-brand-primary mb-1">
+              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Analytics
               </h3>
-              <p className="text-sm text-gray-600 mb-3">Deep insights</p>
+              <p className="premium-text-body-sm text-gray-600 mb-3">Deep insights</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 View Analytics →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
+              className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('event-requests')}
             >
-              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-brand-primary mb-1">
+              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Event Requests
               </h3>
-              <p className="text-sm text-gray-600 mb-3">Manage events</p>
+              <p className="premium-text-body-sm text-gray-600 mb-3">Manage events</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Event Requests →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
+              className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('messages')}
             >
-              <div className="w-12 h-12 bg-brand-burgundy rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-burgundy rounded-lg flex items-center justify-center mb-3">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-brand-primary mb-1">
+              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Messages
               </h3>
-              <p className="text-sm text-gray-600 mb-3">Communication</p>
+              <p className="premium-text-body-sm text-gray-600 mb-3">Communication</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Messages →
               </div>
@@ -653,11 +806,11 @@ export default function DashboardOverview({
         </div>
 
         {/* Resources Section */}
-        <div className="mx-4 mb-8">
+        <div className="mx-4 mb-8 max-w-full">
           <h3 className="text-lg font-semibold text-brand-primary mb-6">
             Resources
           </h3>
-          <div className="bg-white rounded-xl p-6 shadow-md">
+          <div className="bg-white rounded-xl p-6 shadow-md max-w-full">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
@@ -673,8 +826,23 @@ export default function DashboardOverview({
             </div>
 
             {/* Documents Grid - Compact design */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {importantDocuments.map((doc, index) => (
+            {importantDocuments.length === 0 ? (
+              <div className="text-center py-8 px-4 max-w-full" data-testid="no-documents-message">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 mb-2">No documents configured for dashboard</p>
+                {ADMIN_ACCESS && (
+                  <p className="text-xs text-gray-400">
+                    Admins can configure documents in the{' '}
+                    <a href="/important-documents" className="text-brand-primary hover:underline">
+                      Important Documents
+                    </a>{' '}
+                    page
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-full">
+                {importantDocuments.map((doc, index) => (
                 <div
                   key={index}
                   className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-brand-primary/30"
@@ -719,12 +887,13 @@ export default function DashboardOverview({
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Help System */}
-        <div className="mx-4 mt-6 sm:mt-8">
+        <div className="mx-4 mt-6 sm:mt-8 max-w-full">
           <HelpBubble
             title="Dashboard Overview"
             content="This dashboard shows your impact at a glance! These numbers represent real meals provided to community members in your area. Use the forms above to submit new collection data or browse documents for guidance."

@@ -579,8 +579,8 @@ export default function SignupPage() {
                     )}
                   />
 
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm text-blue-800">
+                  <div className="bg-brand-primary-lighter p-4 rounded-lg">
+                    <p className="text-sm text-brand-primary-dark">
                       <strong>Next Steps:</strong> After submitting your
                       application, our volunteer coordinator will review your
                       information and contact you within 2-3 business days with

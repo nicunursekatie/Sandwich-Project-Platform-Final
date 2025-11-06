@@ -14,12 +14,23 @@ import {
   Phone,
 } from 'lucide-react';
 import PhoneDirectoryFixed from '@/components/phone-directory-fixed';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 export default function PhoneDirectoryPage() {
   const [location] = useLocation();
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Directory',
+      'Directory',
+      'Phone Directory',
+      'User accessed phone directory'
+    );
+  }, [trackView]);
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -76,7 +87,7 @@ export default function PhoneDirectoryPage() {
                     href={item.path}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-brand-primary-lighter text-brand-primary border border-brand-primary-border'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >

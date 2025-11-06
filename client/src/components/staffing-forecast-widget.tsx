@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -191,7 +192,7 @@ export default function StaffingForecastWidget() {
         week.unfulfilled.vanDrivers += Math.max(0, vanDriversNeeded - vanDriversAssigned);
 
       } catch (error) {
-        console.warn('Error processing event date:', request.desiredEventDate);
+        logger.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 
@@ -388,7 +389,7 @@ export default function StaffingForecastWidget() {
                             </Badge>
                           )}
                           {volunteersNeeded > 0 && (
-                            <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">
+                            <Badge variant="outline" className="border-brand-primary-border-strong text-brand-primary bg-brand-primary-lighter">
                               <UserCheck className="w-3 h-3 mr-1" />
                               {volunteersNeeded} Volunteer{volunteersNeeded > 1 ? 's' : ''} needed
                             </Badge>

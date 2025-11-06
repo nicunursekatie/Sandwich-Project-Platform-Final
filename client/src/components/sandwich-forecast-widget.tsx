@@ -8,11 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function SandwichForecastWidget() {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests?all=true'],
   });
+
+  // Add state for weekend preference (after vs before)
+  const [useWeekendAfter, setUseWeekendAfter] = useState(true);
 
   // Weekly sandwich prediction calculator
   const weeklySandwichForecast = useMemo(() => {
@@ -23,6 +27,8 @@ export default function SandwichForecastWidget() {
       {
         weekStartDate: string;
         weekEndDate: string;
+        distributionDate?: string;
+        isComplete: boolean;
         events: EventRequest[];
         totalEstimated: number;
         confirmedCount: number;
@@ -30,29 +36,41 @@ export default function SandwichForecastWidget() {
       }
     > = {};
 
-    // Helper function to get the Thursday of a given week (distribution day)
+    // Helper function to get the Thursday of a distribution week
+    // For planning purposes, we group events by the Thursday they distribute on
     const getDistributionThursday = (date: Date) => {
       const d = new Date(date);
-      const day = d.getDay(); // 0 = Sunday, 4 = Thursday
-      const daysToThursday = (4 - day + 7) % 7; // Days until next Thursday
+      d.setHours(0, 0, 0, 0);
 
-      // If it's already Thursday or later in the week, get this week's Thursday
-      // Otherwise get next week's Thursday
-      if (day <= 4) {
-        d.setDate(d.getDate() + daysToThursday);
+      const day = d.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+
+      // Handle Wed/Thu based on user preference
+      if (day === 3 || day === 4) {
+        if (useWeekendAfter) {
+          // Weekend AFTER: find NEXT week's Thursday
+          const daysToNextThursday = 7 + (4 - day);
+          d.setDate(d.getDate() + daysToNextThursday);
+        } else {
+          // Weekend BEFORE: find this week's Thursday
+          const daysToThursday = 4 - day;
+          d.setDate(d.getDate() + daysToThursday);
+        }
+      } else if (day === 2) {
+        // It's Tuesday - find this week's Thursday
+        d.setDate(d.getDate() + 2);
       } else {
-        d.setDate(d.getDate() + (7 - day + 4)); // Next Thursday
+        // It's Fri/Sat/Sun/Mon - find next Thursday
+        const daysToNextThursday = (11 - day) % 7;
+        d.setDate(d.getDate() + daysToNextThursday);
       }
 
-      d.setHours(0, 0, 0, 0);
       return d;
     };
 
-    // Helper function to get Wednesday (prep day) before Thursday
-    const getPrepWednesday = (thursday: Date) => {
-      const d = new Date(thursday);
-      d.setDate(d.getDate() - 1); // Day before Thursday
-      return d;
+    // Helper function to check if a distribution week is complete
+    const isWeekComplete = (thursdayDate: Date) => {
+      const now = new Date();
+      return now > thursdayDate;
     };
 
     // Get current date for filtering events
@@ -97,12 +115,27 @@ export default function SandwichForecastWidget() {
       try {
         const eventDate = new Date(request.desiredEventDate!);
         const distributionThursday = getDistributionThursday(eventDate);
-        const prepWednesday = getPrepWednesday(distributionThursday);
         const weekKey = distributionThursday.toISOString().split('T')[0];
+        const weekComplete = isWeekComplete(distributionThursday);
+
+        // Debug logging for event grouping
+        if (eventDate.getDay() === 5) { // Friday
+          logger.log('🔍 Friday Event Grouping:', {
+            org: request.organizationName,
+            eventDate: eventDate.toDateString(),
+            eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
+            assignedThursday: distributionThursday.toDateString(),
+            weekKey
+          });
+        }
+
+        // Calculate Tuesday (2 days before Thursday) as the start of the distribution window
+        const tuesdayStart = new Date(distributionThursday);
+        tuesdayStart.setDate(distributionThursday.getDate() - 2);
 
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = {
-            weekStartDate: prepWednesday.toLocaleDateString('en-US', {
+            weekStartDate: tuesdayStart.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
@@ -117,6 +150,7 @@ export default function SandwichForecastWidget() {
               month: 'long',
               day: 'numeric',
             }),
+            isComplete: weekComplete,
             events: [],
             totalEstimated: 0,
             confirmedCount: 0,
@@ -125,18 +159,21 @@ export default function SandwichForecastWidget() {
         }
 
         weeklyData[weekKey].events.push(request);
-        weeklyData[weekKey].totalEstimated +=
-          request.estimatedSandwichCount || 0;
+        
+        // Use actual count for completed events, estimated for others
+        const sandwichCount = request.status === 'completed' && request.actualSandwichCount 
+          ? request.actualSandwichCount 
+          : request.estimatedSandwichCount || 0;
+        
+        weeklyData[weekKey].totalEstimated += sandwichCount;
 
         if (request.status === 'completed' || request.status === 'scheduled') {
-          weeklyData[weekKey].confirmedCount +=
-            request.estimatedSandwichCount || 0;
+          weeklyData[weekKey].confirmedCount += sandwichCount;
         } else {
-          weeklyData[weekKey].pendingCount +=
-            request.estimatedSandwichCount || 0;
+          weeklyData[weekKey].pendingCount += sandwichCount;
         }
       } catch (error) {
-        console.warn('Error processing event date:', request.desiredEventDate);
+        logger.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 
@@ -147,7 +184,7 @@ export default function SandwichForecastWidget() {
         ...data,
       }))
       .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Show all weeks in range
-  }, [eventRequests]);
+  }, [eventRequests, useWeekendAfter]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -228,28 +265,66 @@ export default function SandwichForecastWidget() {
     return count + Math.max(0, needed - assigned);
   }, 0) || 0;
 
-  // New logic for distribution events (Tue/Wed/Thu) and other events
-  const isDistributionEvent = (date: Date) => {
+  // Helper to parse dates consistently (avoid timezone issues)
+  const parseEventDate = (dateStr: string) => {
+    // Extract YYYY-MM-DD from any format
+    let datePart = dateStr;
+    if (dateStr.includes('T')) {
+      datePart = dateStr.split('T')[0]; // Get YYYY-MM-DD
+    }
+
+    // Parse explicitly using Date constructor with year, month, day
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Month is 0-indexed in JavaScript Date constructor
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+  };
+
+  // New logic for distribution events (Wed/Thu) and other events
+  // Wed/Thu events use sandwiches made on the weekend AFTER
+  const isDistributionEvent = (dateStr: string) => {
+    const date = parseEventDate(dateStr);
     const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
-    return day === 2 || day === 3 || day === 4; // Tue, Wed, Thu
+    return day === 3 || day === 4; // Wed, Thu
   };
-  const isOtherEvent = (date: Date) => {
+  const isOtherEvent = (dateStr: string) => {
+    const date = parseEventDate(dateStr);
     const day = date.getDay();
-    return day !== 2 && day !== 3 && day !== 4;
+    return day !== 3 && day !== 4;
   };
 
-  const distributionEvents = (currentWeek?.events || []).filter(e => {
-    if (!e.desiredEventDate) return false;
-    return isDistributionEvent(new Date(e.desiredEventDate));
-  });
-  const otherEvents = (currentWeek?.events || []).filter(e => {
-    if (!e.desiredEventDate) return false;
-    return isOtherEvent(new Date(e.desiredEventDate));
-  });
+  const distributionEvents = (currentWeek?.events || [])
+    .filter(e => {
+      if (!e.desiredEventDate) return false;
+      return isDistributionEvent(e.desiredEventDate);
+    })
+    .sort((a, b) => {
+      // Sort by date (earliest first)
+      const dateA = parseEventDate(a.desiredEventDate!).getTime();
+      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      return dateA - dateB;
+    });
 
-  // Totals
-  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
-  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+  const otherEvents = (currentWeek?.events || [])
+    .filter(e => {
+      if (!e.desiredEventDate) return false;
+      return isOtherEvent(e.desiredEventDate);
+    })
+    .sort((a, b) => {
+      // Sort by date (earliest first)
+      const dateA = parseEventDate(a.desiredEventDate!).getTime();
+      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      return dateA - dateB;
+    });
+
+  // Totals - use actual count for completed events, estimated for others
+  const getSandwichCount = (event: EventRequest) => {
+    return event.status === 'completed' && event.actualSandwichCount 
+      ? event.actualSandwichCount 
+      : event.estimatedSandwichCount || 0;
+  };
+  
+  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + getSandwichCount(e), 0);
+  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + getSandwichCount(e), 0);
 
   if (isLoading) {
     return (
@@ -272,16 +347,43 @@ export default function SandwichForecastWidget() {
   return (
     <Card className="border-2 border-brand-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-brand-primary flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Weekly Sandwich Planning
-        </CardTitle>
-        <p className="text-sm text-[#646464] mt-1">
-          This view helps you plan for Thursday group distributions and see all sandwich events for the week.
-        </p>
-        <p className="text-xs text-brand-primary mt-1 font-medium">
-          📅 Individual makers prep Wednesdays • Group distributions Thursdays
-        </p>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-brand-primary flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Weekly Sandwich Planning
+            </CardTitle>
+            <p className="text-sm text-[#646464] mt-1">
+              Events grouped by Thursday distribution date. {useWeekendAfter ? 'Wed/Thu events use weekend AFTER.' : 'Tue/Wed/Thu events use same week.'}
+            </p>
+            <p className="text-xs text-brand-primary mt-1 font-medium">
+              📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 items-end ml-4">
+            <label className="text-xs font-medium text-[#646464]">Wed/Thu Sandwiches</label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={useWeekendAfter ? 'outline' : 'default'}
+                onClick={() => setUseWeekendAfter(false)}
+                className="text-xs h-7"
+              >
+                Weekend Before
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={useWeekendAfter ? 'default' : 'outline'}
+                onClick={() => setUseWeekendAfter(true)}
+                className="text-xs h-7"
+              >
+                Weekend After
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Week Navigation */}
@@ -294,8 +396,15 @@ export default function SandwichForecastWidget() {
           >
             Previous Week
           </Button>
-          <div className="font-bold text-lg text-brand-primary">
-            {currentWeek?.distributionDate || 'No week selected'}
+          <div className="flex flex-col items-center">
+            <div className="font-bold text-lg text-brand-primary">
+              {currentWeek?.distributionDate || 'No week selected'}
+            </div>
+            {currentWeek && !currentWeek.isComplete && (
+              <Badge className="bg-yellow-100 text-yellow-800 text-xs mt-1">
+                Week in Progress
+              </Badge>
+            )}
           </div>
           <Button
             variant="outline"
@@ -321,7 +430,7 @@ export default function SandwichForecastWidget() {
                   <Info className="w-4 h-4 text-[#007E8C] cursor-pointer ml-1" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  Sandwiches needed for Thursday group distribution (includes events on Tuesday, Wednesday, and Thursday).
+                  Sandwiches needed for Thursday group distribution ({useWeekendAfter ? 'includes events on Tuesday only; Wed/Thu use following weekend' : 'includes events on Tuesday, Wednesday, and Thursday'}).
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -388,7 +497,7 @@ export default function SandwichForecastWidget() {
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -406,10 +515,24 @@ export default function SandwichForecastWidget() {
                           </>
                         );
                       })()}
-                      <div className="font-semibold text-brand-primary">
-                        {(event.estimatedSandwichCount || 0).toLocaleString()}
+                      <div className="text-right">
+                        <div className="font-semibold text-brand-primary">
+                          {getSandwichCount(event).toLocaleString()}
+                        </div>
+                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            {event.sandwichTypes.map((st: any, idx: number) => (
+                              <span key={idx}>
+                                {st.quantity} {st.type}
+                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">sandwiches</div>
                     </div>
                   </div>
                 );
@@ -445,7 +568,7 @@ export default function SandwichForecastWidget() {
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -463,10 +586,24 @@ export default function SandwichForecastWidget() {
                           </>
                         );
                       })()}
-                      <div className="font-semibold text-brand-primary">
-                        {(event.estimatedSandwichCount || 0).toLocaleString()}
+                      <div className="text-right">
+                        <div className="font-semibold text-brand-primary">
+                          {getSandwichCount(event).toLocaleString()}
+                        </div>
+                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            {event.sandwichTypes.map((st: any, idx: number) => (
+                              <span key={idx}>
+                                {st.quantity} {st.type}
+                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">sandwiches</div>
                     </div>
                   </div>
                 );

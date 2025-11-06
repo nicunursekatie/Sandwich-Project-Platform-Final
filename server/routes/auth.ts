@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
+import bcrypt from 'bcrypt';
+import { logger } from '../utils/production-safe-logger';
 
 interface AuthDependencies {
   isAuthenticated?: any;
@@ -8,7 +10,7 @@ interface AuthDependencies {
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();
 
-  // Login endpoint - moved from temp-auth.ts to proper auth router
+  // Login endpoint - moved from auth.ts to proper auth router
   router.post('/login', async (req: any, res) => {
     try {
       const { email, password } = req.body;
@@ -29,13 +31,65 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         });
       }
 
-      // Check password (stored in metadata for now)
-      const storedPassword = (user.metadata as any)?.password;
-      if (storedPassword !== password) {
+      // Check password with automatic migration to bcrypt hashing
+      let storedPassword = user.password;
+      if (!storedPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
         });
+      }
+
+      let isValidPassword = false;
+      let needsHashUpgrade = false;
+      let plaintextPassword: string | null = null;
+
+      // Try bcrypt comparison first (for already-hashed passwords)
+      // CRITICAL: Trim password to match registration behavior
+      try {
+        isValidPassword = await bcrypt.compare(password.trim(), storedPassword);
+      } catch (bcryptError) {
+        // bcrypt.compare failed - password might be in legacy format
+        isValidPassword = false;
+      }
+
+      // If bcrypt failed, check for legacy plaintext formats
+      if (!isValidPassword) {
+        // Format 1: JSON wrapped password {"password": "xxx"}
+        try {
+          const parsed = JSON.parse(storedPassword);
+          if (parsed.password && typeof parsed.password === 'string') {
+            plaintextPassword = parsed.password.trim();
+            isValidPassword = plaintextPassword === password.trim();
+            needsHashUpgrade = isValidPassword; // Upgrade if valid
+          }
+        } catch {
+          // Not JSON - check Format 2: plain string
+          if (storedPassword.trim() === password.trim()) {
+            plaintextPassword = storedPassword.trim();
+            isValidPassword = true;
+            needsHashUpgrade = true;
+          }
+        }
+      }
+
+      // Reject if password doesn't match in any format
+      if (!isValidPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+
+      // AUTO-UPGRADE: Hash plaintext password on successful login
+      if (needsHashUpgrade && plaintextPassword) {
+        logger.log(`🔐 Auto-upgrading password to bcrypt hash for: ${email}`);
+        const SALT_ROUNDS = 10;
+        const hashedPassword = await bcrypt.hash(plaintextPassword, SALT_ROUNDS);
+        
+        // Update password in database
+        await storage.updateUser(user.id, { password: hashedPassword });
+        logger.log(`✅ Password upgraded successfully for: ${email}`);
       }
 
       // Create session user object
@@ -58,20 +112,30 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       req.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res
-            .status(500)
-            .json({ success: false, message: 'Session save failed' });
-        }
-        console.log('Session saved successfully for user:', sessionUser.email);
-        console.log('Session ID:', req.sessionID);
-        console.log('Session data:', req.session);
-        res.json({ success: true, user: sessionUser });
-      });
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              logger.error('Session save error:', err);
+              reject(err);
+            } else {
+              resolve(undefined);
+            }
+          });
+        });
+        
+        logger.log('Session saved successfully for user:', sessionUser.email);
+        logger.log('Session ID:', req.sessionID);
+        logger.log('Session data:', req.session);
+
+        // Redirect to dashboard after successful login
+        res.redirect('/');
+      } catch (sessionError) {
+        logger.error('Session save error:', sessionError);
+        res.status(500).json({ success: false, message: 'Session save failed' });
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
@@ -122,22 +186,32 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       req.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Dev auto-login session save error:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Session save failed' 
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              logger.error('Dev auto-login session save error:', err);
+              reject(err);
+            } else {
+              resolve(undefined);
+            }
           });
-        }
-        console.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
-        console.log('🔧 Session ID:', req.sessionID);
+        });
+        
+        logger.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
+        logger.log('🔧 Session ID:', req.sessionID);
         
         // Redirect to dashboard after successful login
         res.redirect('/');
-      });
+      } catch (sessionError) {
+        logger.error('Dev auto-login session save error:', sessionError);
+        res.status(500).json({
+          success: false,
+          message: 'Session save failed'
+        });
+      }
     } catch (error) {
-      console.error('Dev auto-login error:', error);
+      logger.error('Dev auto-login error:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Auto-login failed' 
@@ -148,25 +222,33 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   // Logout endpoint
   router.post('/logout', async (req: any, res) => {
     try {
+      // Determine if we're in production (same logic as session setup)
+      const isProduction = process.env.NODE_ENV === 'production';
+      
       // Destroy the session
       req.session.destroy((err: any) => {
         if (err) {
-          console.error('Session destroy error:', err);
+          logger.error('Session destroy error:', err);
           return res.status(500).json({ 
             success: false, 
             message: 'Failed to logout' 
           });
         }
         
-        // Clear the session cookie (using actual session name from routes.ts)
-        res.clearCookie('tsp.session');
+        // Clear the session cookie with matching options (must match session cookie config)
+        res.clearCookie('tsp.session', {
+          path: '/',
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax'
+        });
         res.json({ 
           success: true, 
           message: 'Logged out successfully' 
         });
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Logout failed' 
@@ -177,10 +259,20 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   // Get current authenticated user
   router.get('/user', async (req: any, res) => {
     try {
+      // Debug logging
+      logger.log('🔍 /api/auth/user Debug:', {
+        hasSession: !!req.session,
+        sessionID: req.sessionID,
+        hasSessionUser: !!req.session?.user,
+        hasReqUser: !!req.user,
+        cookies: req.headers.cookie
+      });
+
       // Get user from session (temp auth) or req.user (Replit auth)
       const user = req.session?.user || req.user;
 
       if (!user) {
+        logger.log('❌ No user found in session');
         return res.status(401).json({ message: 'No user in session' });
       }
 
@@ -189,6 +281,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         try {
           const dbUser = await storage.getUserByEmail(req.session.user.email);
           if (dbUser && dbUser.isActive) {
+            // Update last login time to track session start
+            await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+            
             // Return fresh user data with updated permissions
             res.json({
               id: dbUser.id,
@@ -204,7 +299,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
             return;
           }
         } catch (error) {
-          console.error('Error getting fresh user data:', error);
+          logger.error('Error getting fresh user data:', error);
           // Fallback to session user if database error
           res.json(user);
           return;
@@ -214,9 +309,15 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // For Replit auth, get user from database
       const userId = req.user.claims?.sub || req.user.id;
       const dbUser = await storage.getUser(userId);
+      
+      // Update last login time for Replit auth too
+      if (dbUser && dbUser.id) {
+        await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+      }
+      
       res.json(dbUser || user);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      logger.error('Error fetching user:', error);
       res.status(500).json({ message: 'Failed to fetch user' });
     }
   });
@@ -254,7 +355,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         isActive: dbUser.isActive,
       });
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
       res.status(500).json({ message: 'Failed to fetch user profile' });
     }
   });
@@ -313,7 +414,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         isActive: updatedUser.isActive,
       });
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      logger.error('Error updating user profile:', error);
       res.status(500).json({ message: 'Failed to update user profile' });
     }
   });

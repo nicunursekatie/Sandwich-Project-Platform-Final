@@ -509,12 +509,12 @@ export default function HostAnalytics({
                   </div>
                 </div>
                 {includeHistoricalData && isCombinedLocation(selectedHost) && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-blue-800">
+                  <div className="mt-4 p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-brand-primary-dark">
                       <History className="w-4 h-4" />
                       <span className="font-medium">Historical Data Included</span>
                     </div>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-brand-primary mt-1">
                       This view includes data from component locations: {parseComponentLocations(selectedHost).join(', ')}
                     </p>
                   </div>

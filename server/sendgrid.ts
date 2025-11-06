@@ -1,46 +1,152 @@
 import { MailService } from '@sendgrid/mail';
-
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error('SENDGRID_API_KEY environment variable must be set');
-}
+import * as fs from 'fs';
+import * as path from 'path';
+import { logger } from './utils/production-safe-logger';
 
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+
+if (process.env.SENDGRID_API_KEY) {
+  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  logger.warn('⚠️ SENDGRID_API_KEY not set - email functionality will be disabled');
+}
+
+interface EmailAttachment {
+  filePath: string;
+  originalName?: string;
+}
+
+interface Base64Attachment {
+  content: string;
+  filename: string;
+  type: string;
+  disposition: string;
+}
 
 interface EmailParams {
   to: string;
   from: string;
   replyTo?: string;
+  bcc?: string | string[];
   subject: string;
   text?: string;
   html?: string;
+  attachments?: (string | EmailAttachment | Base64Attachment)[];
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    logger.warn('Email sending skipped - SENDGRID_API_KEY not configured');
+    return false;
+  }
+  
   try {
-    console.log(
+    logger.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
     );
     const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text || '',
-      html: params.html || '',
     };
+    
+    // Only include HTML if provided
+    if (params.html) {
+      emailData.html = params.html;
+      // Only include plain text as fallback if HTML is not provided
+      // or if specifically provided along with HTML
+      if (params.text && params.text !== params.html) {
+        emailData.text = params.text;
+      }
+    } else if (params.text) {
+      // If only text is provided (no HTML), use it
+      emailData.text = params.text;
+    }
     
     // Add Reply-To header if provided
     if (params.replyTo) {
       emailData.replyTo = params.replyTo;
     }
     
+    // Add BCC if provided
+    if (params.bcc) {
+      emailData.bcc = params.bcc;
+    }
+    
+    // Process attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      const processedAttachments = [];
+      
+      for (const attachment of params.attachments) {
+        try {
+          // Handle base64 attachments (already processed from GCS)
+          if (attachment && typeof attachment === 'object' && 'content' in attachment && 'filename' in attachment) {
+            processedAttachments.push(attachment);
+            logger.log(`Added base64 attachment: ${attachment.filename}`);
+            continue;
+          }
+          
+          // Handle both string paths and attachment objects
+          const filePath = typeof attachment === 'string' ? attachment : attachment.filePath;
+          const originalName = typeof attachment === 'string' ? undefined : attachment.originalName;
+          
+          // Check if file exists
+          if (!fs.existsSync(filePath)) {
+            logger.warn(`Attachment file not found: ${filePath}`);
+            continue;
+          }
+          
+          // Read file from disk
+          const fileContent = fs.readFileSync(filePath);
+          const base64Content = fileContent.toString('base64');
+          
+          // Use original name if provided, otherwise extract from path
+          const filename = originalName || path.basename(filePath);
+          
+          // Determine content type based on file extension
+          const ext = path.extname(filename).toLowerCase();
+          const contentTypeMap: Record<string, string> = {
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.txt': 'text/plain',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+          };
+          
+          const contentType = contentTypeMap[ext] || 'application/octet-stream';
+          
+          processedAttachments.push({
+            content: base64Content,
+            filename: filename,
+            type: contentType,
+            disposition: 'attachment',
+          });
+          
+          logger.log(`Processed attachment: ${filename} (${contentType})`);
+        } catch (attachmentError) {
+          logger.error(`Failed to process attachment ${filePath}:`, attachmentError);
+          // Continue processing other attachments even if one fails
+        }
+      }
+      
+      if (processedAttachments.length > 0) {
+        emailData.attachments = processedAttachments;
+        logger.log(`Added ${processedAttachments.length} attachment(s) to email`);
+      }
+    }
+    
     await mailService.send(emailData);
-    console.log(`Email sent successfully to ${params.to}`);
+    logger.log(`Email sent successfully to ${params.to}`);
     return true;
   } catch (error) {
-    console.error('SendGrid email error:', error);
+    logger.error('SendGrid email error:', error);
     if (error.response && error.response.body) {
-      console.error(
+      logger.error(
         'SendGrid error details:',
         JSON.stringify(error.response.body, null, 2)
       );
@@ -109,4 +215,25 @@ This is an automated notification from The Sandwich Project suggestions portal.$
     text: emailContent,
     html: htmlContent,
   });
+}
+
+export async function sendWeeklyMonitoringReminder(location: string): Promise<{success: boolean; message?: string}> {
+  try {
+    // Import the proper email reminder function from weekly-monitoring
+    const { sendEmailReminder } = await import('./weekly-monitoring');
+    
+    // Use the updated function with proper location-to-contact mapping
+    const result = await sendEmailReminder(location);
+    
+    return {
+      success: result.success,
+      message: result.message
+    };
+  } catch (error) {
+    logger.error('Error sending weekly monitoring reminder:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to send email'
+    };
+  }
 }

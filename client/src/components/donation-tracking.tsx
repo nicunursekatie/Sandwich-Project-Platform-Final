@@ -537,7 +537,7 @@ export default function DonationTracking() {
                         <div className="flex items-center gap-4">
                           <Badge
                             variant="outline"
-                            className="bg-blue-50 text-blue-700 border-blue-200"
+                            className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border"
                           >
                             {format(
                               new Date(distribution.distributionDate),

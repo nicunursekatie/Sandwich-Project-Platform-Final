@@ -41,14 +41,28 @@ import {
   Pie,
 } from 'recharts';
 import { apiRequest } from '@/lib/queryClient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
+import ActionCenter from '@/components/action-center';
+import PredictiveForecasts from '@/components/predictive-forecasts';
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { logger } from '@/lib/logger';
 
 export default function ImpactDashboard() {
+  const { trackView, trackClick } = useActivityTracker();
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
     'monthly'
   );
+
+  useEffect(() => {
+    trackView(
+      'Analytics',
+      'Analytics',
+      'Impact Dashboard',
+      'User accessed impact dashboard'
+    );
+  }, [trackView]);
   const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
   
@@ -73,6 +87,15 @@ export default function ImpactDashboard() {
   });
 
   const collections = collectionsData?.collections || [];
+
+  // Fetch hybrid stats (authoritative data + collection log)
+  const { data: hybridStats } = useQuery({
+    queryKey: ['/api/collections/hybrid-stats'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnMount: true,
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
+    keepPreviousData: true,
+  });
 
   // Fetch collection stats
   const { data: stats } = useQuery({
@@ -196,7 +219,7 @@ export default function ImpactDashboard() {
         )
       );
 
-    console.log('Processed chart data:', processedData);
+    logger.log('Processed chart data:', processedData);
     return processedData;
   };
 
@@ -386,8 +409,8 @@ export default function ImpactDashboard() {
   };
 
   const calculateImpactMetrics = () => {
-    // Use the stats API for total sandwiches since it's calculated server-side
-    const totalSandwiches = (stats as any)?.completeTotalSandwiches || 0;
+    // Use hybrid stats total (authoritative data through 8/6/2025 + collection log after)
+    const totalSandwiches = hybridStats?.total || (stats as any)?.completeTotalSandwiches || 0;
     const totalCollections = collections?.length || 0;
     const uniqueHosts = 34; // Override to show correct active hosts count
 
@@ -398,13 +421,42 @@ export default function ImpactDashboard() {
     let currentMonthTotal = 0;
     let currentMonthCollections = 0;
 
-    // Calculate year totals from actual collections data
-    const yearTotals = {
+    // Use authoritative yearly totals from hybrid stats if available
+    const yearTotals: Record<number, number> = {
       2023: 0,
       2024: 0,
       2025: 0,
     };
+    
+    if (hybridStats?.byYear) {
+      Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
+        const y = parseInt(year);
+        if (yearTotals[y] !== undefined) {
+          yearTotals[y] = data.sandwiches;
+        }
+      });
+    } else {
+      // Fallback to calculating from collections if hybrid stats not available
+      if (Array.isArray(collections)) {
+        collections.forEach((collection: any) => {
+          if (collection.collectionDate) {
+            const date = parseCollectionDate(collection.collectionDate);
+            if (Number.isNaN(date.getTime())) {
+              return;
+            }
+            const year = date.getFullYear();
+            const collectionTotal = calculateTotalSandwiches(collection);
 
+            // Add to year totals
+            if (yearTotals[year] !== undefined) {
+              yearTotals[year] += collectionTotal;
+            }
+          }
+        });
+      }
+    }
+
+    // Calculate current month totals (always from collections for real-time data)
     if (Array.isArray(collections)) {
       collections.forEach((collection: any) => {
         if (collection.collectionDate) {
@@ -414,51 +466,7 @@ export default function ImpactDashboard() {
           }
           const year = date.getFullYear();
           const month = date.getMonth();
-
-          // Calculate total sandwiches for this collection
-          const individualSandwiches = collection.individualSandwiches || 0;
-          let groupSandwiches = 0;
-
-          // Handle groupCollections properly
-          if (
-            collection.groupCollections &&
-            Array.isArray(collection.groupCollections) &&
-            collection.groupCollections.length > 0
-          ) {
-            groupSandwiches = collection.groupCollections.reduce(
-              (sum, group) => {
-                const count = group.count || group.sandwichCount || 0;
-                return sum + count;
-              },
-              0
-            );
-          } else if (
-            collection.groupCollections &&
-            typeof collection.groupCollections === 'string' &&
-            collection.groupCollections !== '' &&
-            collection.groupCollections !== '[]'
-          ) {
-            try {
-              const groupData = JSON.parse(collection.groupCollections);
-              if (Array.isArray(groupData)) {
-                groupSandwiches = groupData.reduce(
-                  (sum, group) =>
-                    sum + (group.count || group.sandwichCount || 0),
-                  0
-                );
-              }
-            } catch (e) {
-              console.log('Error parsing groupCollections JSON:', e);
-              groupSandwiches = 0;
-            }
-          }
-
-          const collectionTotal = individualSandwiches + groupSandwiches;
-
-          // Add to year totals
-          if (yearTotals[year] !== undefined) {
-            yearTotals[year] += collectionTotal;
-          }
+          const collectionTotal = calculateTotalSandwiches(collection);
 
           // Add to current month totals
           if (year === currentYear && month === currentMonth) {
@@ -487,13 +495,13 @@ export default function ImpactDashboard() {
   const trendAnalysis = calculateTrendAnalysis();
 
   // Debug logging for final data
-  console.log('=== IMPACT DASHBOARD DEBUG ===');
-  console.log('Final chartData:', chartData);
-  console.log('Final chartData length:', chartData?.length);
-  console.log('Chart view:', chartView);
-  console.log('Collections data from API:', collectionsData);
-  console.log('Stats data from API:', stats);
-  console.log('=== END DEBUG ===');
+  logger.log('=== IMPACT DASHBOARD DEBUG ===');
+  logger.log('Final chartData:', chartData);
+  logger.log('Final chartData length:', chartData?.length);
+  logger.log('Chart view:', chartView);
+  logger.log('Collections data from API:', collectionsData);
+  logger.log('Stats data from API:', stats);
+  logger.log('=== END DEBUG ===');
 
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
@@ -583,18 +591,26 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Charts and Visualizations */}
-        <Tabs defaultValue="weekly" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="actions" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="actions" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Action Center
+            </TabsTrigger>
+            <TabsTrigger value="forecasts" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Forecasts
+            </TabsTrigger>
             <TabsTrigger value="weekly" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Weekly Planning
             </TabsTrigger>
             <TabsTrigger value="trends" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
+              <BarChart3 className="w-4 h-4" />
               Collection Trends
             </TabsTrigger>
             <TabsTrigger value="analysis" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
+              <PieChart className="w-4 h-4" />
               Monthly Analysis
             </TabsTrigger>
             <TabsTrigger value="impact" className="flex items-center gap-2">
@@ -603,7 +619,17 @@ export default function ImpactDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Weekly Planning Tab - NEW! */}
+          {/* Action Center Tab - NEW! */}
+          <TabsContent value="actions">
+            <ActionCenter />
+          </TabsContent>
+
+          {/* Predictive Forecasts Tab - NEW! */}
+          <TabsContent value="forecasts">
+            <PredictiveForecasts />
+          </TabsContent>
+
+          {/* Weekly Planning Tab */}
           <TabsContent value="weekly">
             <div className="space-y-6">
               {/* Weekly Chart Controls */}
@@ -626,7 +652,7 @@ export default function ImpactDashboard() {
                         <select
                           value={weeklyRange}
                           onChange={(e) => setWeeklyRange(e.target.value as any)}
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary-muted"
                         >
                           <option value="8weeks">Last 8 weeks</option>
                           <option value="16weeks">Last 16 weeks</option>
@@ -641,7 +667,7 @@ export default function ImpactDashboard() {
                           type="checkbox"
                           checked={showCollections}
                           onChange={(e) => setShowCollections(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-brand-primary-muted focus:ring-brand-primary-muted"
                         />
                         Show collection counts
                       </label>
@@ -1047,7 +1073,7 @@ export default function ImpactDashboard() {
                   {chartData && chartData.length > 0 ? (
                     <>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="bg-brand-primary-lighter p-4 rounded-lg">
                           <div className="text-2xl font-bold text-brand-primary">
                             {chartData.reduce((sum, item) => sum + item.sandwiches, 0).toLocaleString()}
                           </div>
@@ -1280,13 +1306,13 @@ export default function ImpactDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-start space-x-3 p-3 bg-brand-primary-lighter rounded-lg">
                       <Users className="w-5 h-5 text-brand-primary mt-1" />
                       <div>
-                        <p className="font-medium text-blue-900">
+                        <p className="font-medium text-brand-primary-darker">
                           Community Engagement
                         </p>
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-brand-primary">
                           {impactMetrics.uniqueHosts} active host locations
                           contributing to the cause
                         </p>

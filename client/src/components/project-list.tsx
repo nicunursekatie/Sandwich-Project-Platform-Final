@@ -33,6 +33,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import SendKudosButton from '@/components/send-kudos-button';
 import type { Project as ProjectBase } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 // Extend Project type to include attachments for local use
 interface Project extends ProjectBase {
@@ -144,7 +145,7 @@ export default function ProjectList() {
         riskAssessment: projectData.riskAssessment || null,
         successCriteria: projectData.successCriteria || null,
       };
-      console.log('Sending project data:', transformedData);
+      logger.log('Sending project data:', transformedData);
       const response = await apiRequest(
         'POST',
         '/api/projects',
@@ -152,7 +153,7 @@ export default function ProjectList() {
       );
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
+        logger.error('API Error:', response.status, errorText);
         throw new Error(`API Error: ${response.status} ${errorText}`);
       }
       return response.json();
@@ -187,7 +188,7 @@ export default function ProjectList() {
       });
     },
     onError: (error) => {
-      console.error('Project creation error:', error);
+      logger.error('Project creation error:', error);
       toast({
         title: 'Failed to create project',
         description: 'Please check your input and try again.',
@@ -343,11 +344,11 @@ export default function ProjectList() {
       case 'in_progress':
         return 'px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full';
       case 'planning':
-        return 'px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full';
+        return 'px-2 py-1 text-xs font-medium bg-brand-primary-light text-brand-primary-dark rounded-full';
       case 'completed':
         return 'px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full';
       default:
-        return 'px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full';
+        return 'px-2 py-1 text-xs font-medium bg-brand-primary-light text-brand-primary-dark rounded-full';
     }
   };
 
@@ -960,15 +961,29 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter border-brand-primary-border"
                         >
                           Claim
                         </Button>
                       )
                     ) : project.assigneeName ? (
-                      <span className="text-sm text-slate-500">
-                        Assigned to {project.assigneeName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">
+                          Assigned to {project.assigneeName}
+                        </span>
+                        {project.assigneeId && (
+                          <SendKudosButton
+                            recipientId={project.assigneeId.toString()}
+                            recipientName={project.assigneeName}
+                            contextType="project"
+                            contextId={project.id.toString()}
+                            contextTitle={project.title}
+                            size="sm"
+                            variant="outline"
+                            iconOnly
+                          />
+                        )}
+                      </div>
                     ) : null}
                     <Button
                       variant="ghost"
@@ -1358,15 +1373,29 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter border-brand-primary-border"
                         >
                           Claim
                         </Button>
                       )
                     ) : project.assigneeName ? (
-                      <span className="text-sm text-slate-500">
-                        Assigned to {project.assigneeName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">
+                          Assigned to {project.assigneeName}
+                        </span>
+                        {project.assigneeId && (
+                          <SendKudosButton
+                            recipientId={project.assigneeId.toString()}
+                            recipientName={project.assigneeName}
+                            contextType="project"
+                            contextId={project.id.toString()}
+                            contextTitle={project.title}
+                            size="sm"
+                            variant="outline"
+                            iconOnly
+                          />
+                        )}
+                      </div>
                     ) : null}
                     <Button
                       variant="ghost"

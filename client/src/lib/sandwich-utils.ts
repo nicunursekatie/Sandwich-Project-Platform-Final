@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 /**
  * Utility functions for handling sandwich types data
  * Ensures consistent JSON string storage and safe parsing
@@ -37,7 +39,7 @@ export function parseSandwichTypes(sandwichTypes: any): SandwichType[] | null {
     if (typeof sandwichTypes === 'object') {
       // Convert object with numeric keys to array
       const values = Object.values(sandwichTypes);
-      if (values.every(item => typeof item === 'object' && 'type' in item && 'quantity' in item)) {
+      if (values.every(item => item && typeof item === 'object' && 'type' in item && 'quantity' in item)) {
         return values as SandwichType[];
       }
 
@@ -81,13 +83,13 @@ export function stringifySandwichTypes(sandwichTypes: SandwichType[] | null): st
     );
 
     if (!valid) {
-      console.warn('Invalid sandwich types data:', sandwichTypes);
+      logger.warn('Invalid sandwich types data:', sandwichTypes);
       return null;
     }
 
     return JSON.stringify(sandwichTypes);
   } catch (error) {
-    console.error('Error stringifying sandwich types:', error);
+    logger.error('Error stringifying sandwich types:', error);
     return null;
   }
 }
@@ -101,7 +103,7 @@ function formatSandwichTypeName(type: string): string {
     'pb&j': 'PB&J',
     'peanut butter and jelly': 'PB&J',
     'deli': 'Deli',
-    'deli_turkey': 'Deli',
+    'deli_turkey': 'Turkey',
     'deli_ham': 'Ham',
     'deli_roast beef': 'Roast Beef',
     'deli_tuna': 'Tuna',

@@ -112,7 +112,7 @@ export default function SuggestionsPortal() {
 
   // Fetch suggestions
   const { data: suggestions = [], isLoading } = useQuery({
-    queryKey: ['/api/suggestions'],
+    queryKey: ['/api/wishlist-suggestions'],
     enabled: hasPermission(currentUser, 'view_suggestions'),
     staleTime: 0
   });
@@ -129,17 +129,17 @@ export default function SuggestionsPortal() {
 
   // Fetch responses for selected suggestion
   const { data: responses = [] } = useQuery({
-    queryKey: ['/api/suggestions', selectedSuggestion?.id, 'responses'],
+    queryKey: ['/api/wishlist-suggestions', selectedSuggestion?.id, 'responses'],
     enabled: !!selectedSuggestion?.id
   });
 
   // Submit suggestion mutation
   const submitSuggestionMutation = useMutation({
     mutationFn: (data: SuggestionFormData) => {
-      return apiRequest('POST', '/api/suggestions', data);
+      return apiRequest('POST', '/api/wishlist-suggestions', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
       setShowSubmissionForm(false);
       suggestionForm.reset();
       toast({
@@ -158,9 +158,9 @@ export default function SuggestionsPortal() {
 
   // Upvote suggestion mutation
   const upvoteMutation = useMutation({
-    mutationFn: (suggestionId: number) => apiRequest('POST', `/api/suggestions/${suggestionId}/upvote`),
+    mutationFn: (suggestionId: number) => apiRequest('POST', `/api/wishlist-suggestions/${suggestionId}/upvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
       toast({
         title: "Success",
         description: "Suggestion upvoted!"
@@ -171,9 +171,9 @@ export default function SuggestionsPortal() {
   // Submit response mutation
   const submitResponseMutation = useMutation({
     mutationFn: ({ suggestionId, data }: { suggestionId: number; data: ResponseFormData }) => 
-      apiRequest('POST', `/api/suggestions/${suggestionId}/responses`, data),
+      apiRequest('POST', `/api/wishlist-suggestions/${suggestionId}/responses`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions', selectedSuggestion?.id, 'responses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions', selectedSuggestion?.id, 'responses'] });
       toast({
         title: "Success",
         description: "Response submitted successfully!"
@@ -183,9 +183,9 @@ export default function SuggestionsPortal() {
 
   // Delete suggestion mutation (admin only)
   const deleteSuggestionMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/suggestions/${id}`),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/wishlist-suggestions/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'], staleTime: 0 });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'], staleTime: 0 });
       setSelectedSuggestion(null);
       toast({
         title: "Suggestion deleted",
@@ -204,13 +204,13 @@ export default function SuggestionsPortal() {
   // Update suggestion mutation (admin only)
   const updateSuggestionMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<Suggestion> }) => 
-      apiRequest('PATCH', `/api/suggestions/${id}`, updates),
+      apiRequest('PATCH', `/api/wishlist-suggestions/${id}`, updates),
     onSuccess: (updatedSuggestion) => {
       if (selectedSuggestion && updatedSuggestion) {
         setSelectedSuggestion({ ...selectedSuggestion, ...updatedSuggestion });
       }
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
-      queryClient.refetchQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
+      queryClient.refetchQueries({ queryKey: ['/api/wishlist-suggestions'] });
       toast({
         title: "Success",
         description: "Suggestion updated successfully!"
@@ -311,8 +311,8 @@ export default function SuggestionsPortal() {
       case "in_progress": 
         return { 
           icon: <Clock className="h-4 w-4" />, 
-          color: "text-blue-600",
-          bg: "bg-blue-50",
+          color: "text-brand-primary-muted",
+          bg: "bg-brand-primary-lighter",
           label: "In Progress"
         };
       case "under_review": 
@@ -387,7 +387,7 @@ export default function SuggestionsPortal() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Lightbulb className="h-8 w-8 text-blue-600" />
+            <Lightbulb className="h-8 w-8 text-brand-primary-muted" />
             Suggestions Portal
           </h1>
           <p className="text-gray-600 mt-1">Share ideas and feedback to improve our operations</p>
@@ -680,7 +680,7 @@ export default function SuggestionsPortal() {
                 return (
                   <Card 
                     key={suggestion.id} 
-                    className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-200 group border-l-4 border-l-teal-500" 
+                    className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-brand-primary-border group border-l-4 border-l-teal-500" 
                     onClick={() => setSelectedSuggestion(suggestion)}
                   >
                     <CardHeader className="pb-3">
@@ -701,7 +701,7 @@ export default function SuggestionsPortal() {
                               {suggestion.priority.charAt(0).toUpperCase() + suggestion.priority.slice(1)}
                             </Badge>
                           </div>
-                          <CardTitle className="text-lg group-hover:text-blue-600 transition-colors line-clamp-2">
+                          <CardTitle className="text-lg group-hover:text-brand-primary-muted transition-colors line-clamp-2">
                             {suggestion.title}
                           </CardTitle>
                           <CardDescription className="mt-2 line-clamp-2">
@@ -745,7 +745,7 @@ export default function SuggestionsPortal() {
                               e.stopPropagation();
                               upvoteMutation.mutate(suggestion.id);
                             }}
-                            className="flex items-center gap-1 h-8 px-2 hover:bg-blue-50 hover:text-blue-600"
+                            className="flex items-center gap-1 h-8 px-2 hover:bg-brand-primary-lighter hover:text-brand-primary-muted"
                           >
                             <ThumbsUp className="h-4 w-4" />
                             <span className="font-medium">{suggestion.upvotes || 0}</span>
@@ -773,7 +773,7 @@ export default function SuggestionsPortal() {
                               });
                             }}
                             disabled={suggestion.status === 'under_review'}
-                            className="h-7 px-3 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200"
+                            className="h-7 px-3 text-xs bg-brand-primary-lighter hover:bg-brand-primary-light border-brand-primary-border"
                           >
                             📋 Going to Work
                           </Button>
@@ -898,7 +898,7 @@ export default function SuggestionsPortal() {
                 </div>
 
                 {hasPermission(currentUser, 'manage_suggestions') && (
-                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <div className="bg-brand-primary-lighter p-6 rounded-lg border border-brand-primary-border">
                     <h3 className="font-semibold mb-4 text-lg flex items-center">
                       ⚡ Workflow Actions
                     </h3>
@@ -908,7 +908,7 @@ export default function SuggestionsPortal() {
                         size="default"
                         onClick={() => updateSuggestionMutation.mutate({ id: selectedSuggestion.id, updates: { status: 'under_review', assignedTo: currentUser?.id } })}
                         disabled={selectedSuggestion.status === 'under_review'}
-                        className="h-12 bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800 font-medium"
+                        className="h-12 bg-brand-primary-light hover:bg-brand-primary-soft border-brand-primary-border-strong text-brand-primary-dark font-medium"
                       >
                         📋 Going to Work on This
                       </Button>
@@ -942,7 +942,7 @@ export default function SuggestionsPortal() {
                         ❓ Ask for Clarification
                       </Button>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-blue-300">
+                    <div className="mt-4 pt-4 border-t border-brand-primary-border-strong">
                       <Button
                         variant="outline"
                         size="default"
@@ -957,7 +957,7 @@ export default function SuggestionsPortal() {
                         Delete Suggestion
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm mt-4 pt-4 border-t border-blue-300">
+                    <div className="grid grid-cols-2 gap-4 text-sm mt-4 pt-4 border-t border-brand-primary-border-strong">
                       <div>
                         <span className="font-medium">Current Status:</span> {selectedSuggestion.status}
                       </div>
@@ -989,7 +989,7 @@ export default function SuggestionsPortal() {
 
                   <div className="space-y-4 max-h-60 overflow-y-auto">
                     {responses.map((response: SuggestionResponse) => (
-                      <div key={response.id} className={`p-3 rounded-lg ${response.isAdminResponse ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
+                      <div key={response.id} className={`p-3 rounded-lg ${response.isAdminResponse ? 'bg-brand-primary-lighter border border-brand-primary-border' : 'bg-gray-50'}`}>
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium text-sm">
                             {response.respondentName || "Unknown"}

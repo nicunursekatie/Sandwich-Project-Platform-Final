@@ -17,6 +17,7 @@ import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { getSandwichTypesSummary } from './utils';
 import SandwichDestinationTracker from './SandwichDestinationTracker';
+import { logger } from '@/lib/logger';
 
 // Event Collection Log Component
 interface EventCollectionLogProps {
@@ -94,7 +95,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
         description: 'Sandwich destination has been updated successfully.',
       });
     } catch (error) {
-      console.error('Error updating destination:', error);
+      logger.error('Error updating destination:', error);
       toast({
         title: 'Update Failed',
         description: 'Failed to update sandwich destination.',
@@ -200,23 +201,25 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
               <h3 className="text-sm font-semibold">Collection Records</h3>
               {collections.map((collection) => (
                 <Card key={collection.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <Calendar className="w-5 h-5 text-brand-primary" />
-                        <span className="font-medium">
-                          {new Date(
-                            collection.collectionDate
-                          ).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </span>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
+                          <span className="font-medium text-sm sm:text-base">
+                            {new Date(
+                              collection.collectionDate
+                            ).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </div>
                         <Badge
                           variant="secondary"
-                          className="bg-brand-primary text-white"
+                          className="bg-brand-primary text-white self-start sm:self-auto"
                         >
                           {collection.sandwichCount || 0} sandwiches
                         </Badge>
@@ -224,7 +227,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
 
                       {/* Sandwich Types Breakdown */}
                       {collection.sandwichTypes && (
-                        <div className="ml-8">
+                        <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
                           <p className="text-sm text-[#236383]">
                             Types:{' '}
                             {getSandwichTypesSummary(collection).breakdown}
@@ -233,7 +236,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                       )}
 
                       {/* Destination with inline editing */}
-                      <div className="ml-8 flex items-center space-x-2">
+                      <div className="ml-0 sm:ml-8 pl-7 sm:pl-0 flex flex-col sm:flex-row sm:items-center gap-2">
                         {editingDestination?.id === collection.id ? (
                           <SandwichDestinationTracker
                             value={editingDestination?.value || ''}
@@ -246,7 +249,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                             onCancel={handleDestinationCancel}
                           />
                         ) : (
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center flex-wrap gap-2">
                             <span className="text-sm text-[#236383]">
                               <strong>Destination:</strong>{' '}
                               {collection.sandwichDestination ||
@@ -271,7 +274,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                       </div>
 
                       {collection.notes && (
-                        <div className="ml-8">
+                        <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
                           <p className="text-sm text-[#236383]">
                             <strong>Notes:</strong> {collection.notes}
                           </p>

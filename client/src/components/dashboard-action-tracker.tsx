@@ -3,19 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Calendar, 
-  Clock, 
-  FileText, 
-  MessageCircle, 
+import {
+  Calendar,
+  Clock,
+  FileText,
+  MessageCircle,
   ArrowRight,
   CheckCircle,
   AlertCircle,
-  Mail
+  Mail,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 // Helper function to properly format status text
 const formatStatusText = (status: string): string => {
@@ -56,10 +59,12 @@ interface DashboardActionTrackerProps {
 }
 
 const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => {
+  const [isCollapsed, setIsCollapsed] = React.useState(true);
+
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['/api/me/dashboard'],
-    staleTime: 0, // Always fetch fresh data for action items
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes - action items need reasonable freshness
+    refetchOnWindowFocus: true, // Refetch when user returns to ensure fresh data for real-time updates
   });
 
   const formatDate = (dateString?: string) => {
@@ -92,7 +97,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-primary-light text-brand-primary-dark';
       case 'pending':
       case 'waiting':
         return 'bg-yellow-100 text-yellow-800';
@@ -106,7 +111,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   };
 
   const handleNavigation = (linkPath: string) => {
-    console.log('🔗 Action Tracker handleNavigation called with:', linkPath);
+    logger.log('🔗 Action Tracker handleNavigation called with:', linkPath);
     
     // Honor full linkPath for deep-linking to detail views
     // Extract the path and query parameters
@@ -115,13 +120,13 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       const queryString = linkPath.substring('/dashboard?'.length);
       const urlParams = new URLSearchParams(queryString);
       
-      console.log('📋 Parsed query string:', queryString);
-      console.log('🔍 URL params:', Object.fromEntries(urlParams.entries()));
+      logger.log('📋 Parsed query string:', queryString);
+      logger.log('🔍 URL params:', Object.fromEntries(urlParams.entries()));
       
       // Check if this is a project detail view
       if (urlParams.get('section') === 'projects' && urlParams.get('view') === 'detail' && urlParams.get('id')) {
         const projectId = urlParams.get('id');
-        console.log('🎯 Navigating to project detail:', projectId);
+        logger.log('🎯 Navigating to project detail:', projectId);
         // Navigate to project detail using the project-{id} format
         onNavigate(`project-${projectId}`);
         return;
@@ -130,7 +135,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       // Check if this is an event detail view
       if (urlParams.get('section') === 'event-requests' && urlParams.get('eventId')) {
         const eventId = urlParams.get('eventId');
-        console.log('🎯 Navigating to event detail:', eventId);
+        logger.log('🎯 Navigating to event detail:', eventId);
         // Navigate to event requests with the specific event
         onNavigate(`event-requests?eventId=${eventId}`);
         return;
@@ -139,19 +144,19 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       // If we have other specific item parameters, navigate with full context
       if (urlParams.get('id') || urlParams.get('eventId') || urlParams.get('view') || urlParams.get('tab')) {
         // Pass the full query string to enable deep-linking
-        console.log('🎯 Navigating with full query string:', queryString);
+        logger.log('🎯 Navigating with full query string:', queryString);
         onNavigate(queryString);
       } else {
         // Fallback to just section if no specific parameters
         const section = urlParams.get('section') || 'dashboard';
-        console.log('🎯 Navigating to section:', section);
+        logger.log('🎯 Navigating to section:', section);
         onNavigate(section);
       }
     } else {
       // For non-dashboard paths, extract section as before
       const urlParams = new URLSearchParams(linkPath.split('?')[1] || '');
       const section = urlParams.get('section') || 'dashboard';
-      console.log('🎯 Navigating to non-dashboard section:', section);
+      logger.log('🎯 Navigating to non-dashboard section:', section);
       onNavigate(section);
     }
   };
@@ -291,15 +296,74 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   return (
     <div className="space-y-6" data-testid="dashboard-action-tracker">
       <div className="text-center">
-        <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="mb-2"
+            data-testid="collapse-action-tracker"
+          >
+            {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+          </Button>
+        </div>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
+        
+        {/* Collapsed State Summary */}
+        {isCollapsed && (
+          <div className="mt-4 inline-flex items-center gap-3 bg-gray-50 px-6 py-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setIsCollapsed(false)}>
+            {isLoading ? (
+              <span className="text-sm text-gray-600">Loading...</span>
+            ) : (
+              <>
+                {dashboardData?.counts && (
+                  <>
+                    {dashboardData.counts.projects > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-[#236383]" />
+                        <span className="text-sm font-semibold text-[#236383]">{dashboardData.counts.projects}</span>
+                        <span className="text-sm text-gray-600">Project{dashboardData.counts.projects !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.tasks > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <CheckSquare className="w-4 h-4 text-[#007E8C]" />
+                        <span className="text-sm font-semibold text-[#007E8C]">{dashboardData.counts.tasks}</span>
+                        <span className="text-sm text-gray-600">Task{dashboardData.counts.tasks !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.events > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[#47B3CB]" />
+                        <span className="text-sm font-semibold text-[#47B3CB]">{dashboardData.counts.events}</span>
+                        <span className="text-sm text-gray-600">Event{dashboardData.counts.events !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.messages > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4 text-[#FBAD3F]" />
+                        <span className="text-sm font-semibold text-[#FBAD3F]">{dashboardData.counts.messages}</span>
+                        <span className="text-sm text-gray-600">Message{dashboardData.counts.messages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.projects === 0 && dashboardData.counts.tasks === 0 && dashboardData.counts.events === 0 && dashboardData.counts.messages === 0 && (
+                      <span className="text-sm text-gray-500">No pending items</span>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {!isCollapsed && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Projects Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <FileText className="w-5 h-5 text-brand-primary-muted" />
               <span className="text-[#236383] text-[18px]">Projects</span>
             </CardTitle>
           </CardHeader>
@@ -321,7 +385,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full mt-2 text-blue-600 hover:text-blue-800" 
+                    className="w-full mt-2 text-brand-primary-muted hover:text-brand-primary-dark" 
                     onClick={() => onNavigate('projects')}
                     data-testid="projects-view-all"
                   >
@@ -447,6 +511,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </CardContent>
         </Card>
       </div>
+      )}
       {/* Quick Action Buttons */}
       {!isLoading && dashboardData && (
         <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">

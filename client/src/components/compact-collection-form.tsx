@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calculator, Plus, HelpCircle, AlertCircle } from 'lucide-react';
+import { Calculator, Plus, HelpCircle, AlertCircle, CheckCircle } from 'lucide-react';
 import sandwichLogo from '@assets/LOGOS/sandwich logo.png';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -33,20 +33,33 @@ export default function CompactCollectionForm({
   );
   const [date, setDate] = useState(localDate.toISOString().split('T')[0]);
   const [location, setLocation] = useState('');
-  const [individualCount, setIndividualCount] = useState(0);
   const [groupCollections, setGroupCollections] = useState<
-    Array<{ name: string; count: number; deli?: number; pbj?: number }>
+    Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>
   >([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCount, setNewGroupCount] = useState(0);
 
-  // Optional sandwich type breakdown
-  const [showIndividualBreakdown, setShowIndividualBreakdown] = useState(false);
-  const [individualDeli, setIndividualDeli] = useState(0);
-  const [individualPbj, setIndividualPbj] = useState(0);
+  // Dual mode sandwich tracking - ALWAYS VISIBLE
+  const [totalMode, setTotalMode] = useState<'simple' | 'detailed'>('simple');
+  const [simpleTotal, setSimpleTotal] = useState('');
+  const [details, setDetails] = useState({
+    deli: '',
+    pbj: '',
+    other: ''
+  });
+
+  // Group breakdown state
   const [showGroupBreakdown, setShowGroupBreakdown] = useState(false);
   const [newGroupDeli, setNewGroupDeli] = useState(0);
   const [newGroupPbj, setNewGroupPbj] = useState(0);
+  const [newGroupOther, setNewGroupOther] = useState(0);
+
+  // Calculator state
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState('');
+
+  // Validation state
+  const [groupBreakdownError, setGroupBreakdownError] = useState<string>('');
 
   const { toast} = useToast();
   const queryClient = useQueryClient();
@@ -57,6 +70,36 @@ export default function CompactCollectionForm({
 
   // Filter to only show active hosts
   const hosts = allHosts.filter((host: any) => host.status === 'active');
+
+  // Calculate individual total based on active mode
+  const getIndividualTotal = () => {
+    if (totalMode === 'simple') {
+      return parseInt(simpleTotal) || 0;
+    } else {
+      return Object.values(details).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+    }
+  };
+
+  // Check if any detail fields have values
+  const hasDetails = Object.values(details).some(v => v && v !== '0');
+
+  // Auto-switch to detailed mode if user starts typing in detail fields
+  const handleDetailChange = (type: keyof typeof details, value: string) => {
+    setDetails(prev => ({ ...prev, [type]: value }));
+    if (value && totalMode === 'simple') {
+      setTotalMode('detailed');
+      setSimpleTotal(''); // Clear simple total when switching
+    }
+  };
+
+  // Handle simple total change
+  const handleSimpleTotalChange = (value: string) => {
+    setSimpleTotal(value);
+    if (value && totalMode === 'detailed') {
+      setTotalMode('simple');
+      setDetails({ deli: '', pbj: '', other: '' }); // Clear details
+    }
+  };
 
   const submitMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -78,10 +121,9 @@ export default function CompactCollectionForm({
       });
       onSuccess?.();
       // Reset form
-      setIndividualCount(0);
-      setIndividualDeli(0);
-      setIndividualPbj(0);
-      setShowIndividualBreakdown(false);
+      setSimpleTotal('');
+      setDetails({ deli: '', pbj: '', other: '' });
+      setTotalMode('simple');
       setGroupCollections([]);
       setLocation('');
     },
@@ -91,28 +133,57 @@ export default function CompactCollectionForm({
   });
 
   const totalSandwiches =
-    individualCount +
+    getIndividualTotal() +
     groupCollections.reduce((sum, group) => sum + group.count, 0);
 
-  // Debug logging to track calculation
-  console.log('Calculation Debug:', {
-    individualCount,
-    groupCollections,
-    groupTotal: groupCollections.reduce((sum, group) => sum + group.count, 0),
-    totalSandwiches,
-  });
+  // Calculate breakdown sum for groups
+  const groupBreakdownSum = newGroupDeli + newGroupPbj + newGroupOther;
+
+  // Validation for group breakdown
+  useEffect(() => {
+    if (!showGroupBreakdown) {
+      setGroupBreakdownError('');
+      return;
+    }
+
+    const hasAnyValue = newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0;
+
+    if (!hasAnyValue) {
+      // Allow empty breakdown (optional)
+      setGroupBreakdownError('');
+      return;
+    }
+
+    // If any value is entered, enforce sum validation
+    if (groupBreakdownSum !== newGroupCount) {
+      setGroupBreakdownError(`Group type breakdown (${groupBreakdownSum}) must equal group total (${newGroupCount})`);
+    } else {
+      setGroupBreakdownError('');
+    }
+  }, [showGroupBreakdown, newGroupDeli, newGroupPbj, newGroupOther, newGroupCount, groupBreakdownSum]);
 
   const addGroup = () => {
+    // Prevent adding if there's a validation error
+    if (groupBreakdownError) {
+      toast({ 
+        title: 'Invalid breakdown', 
+        description: groupBreakdownError,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     if (newGroupName && newGroupCount > 0) {
-      const newGroup: { name: string; count: number; deli?: number; pbj?: number } = {
+      const newGroup: { name: string; count: number; deli?: number; pbj?: number; other?: number } = {
         name: newGroupName,
         count: Number(newGroupCount),
       };
 
       // Only include breakdown if provided
-      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0)) {
+      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
         newGroup.deli = newGroupDeli;
         newGroup.pbj = newGroupPbj;
+        newGroup.other = newGroupOther;
       }
 
       setGroupCollections([...groupCollections, newGroup]);
@@ -120,6 +191,7 @@ export default function CompactCollectionForm({
       setNewGroupCount(0);
       setNewGroupDeli(0);
       setNewGroupPbj(0);
+      setNewGroupOther(0);
       setShowGroupBreakdown(false);
     }
   };
@@ -145,14 +217,15 @@ export default function CompactCollectionForm({
     const submissionData: any = {
       collectionDate: date,
       hostName: location,
-      individualSandwiches: individualCount,
+      individualSandwiches: getIndividualTotal(),
       submissionMethod: 'standard', // Track that this was submitted via standard form
     };
 
-    // Include individual sandwich type breakdown if provided
-    if (showIndividualBreakdown && (individualDeli > 0 || individualPbj > 0)) {
-      submissionData.individualDeli = individualDeli;
-      submissionData.individualPbj = individualPbj;
+    // Include individual sandwich type breakdown if provided (detailed mode)
+    if (totalMode === 'detailed' && hasDetails) {
+      if (details.deli) submissionData.individualDeli = parseInt(details.deli);
+      if (details.pbj) submissionData.individualPbj = parseInt(details.pbj);
+      if (details.other) submissionData.individualOther = parseInt(details.other);
     }
 
     // Include ALL groups in the submission (unlimited groups)
@@ -163,9 +236,139 @@ export default function CompactCollectionForm({
     submitMutation.mutate(submissionData);
   };
 
+  // Secure math parser to replace eval()
+  const safeMathEvaluator = (expression: string): number => {
+    // Remove spaces and validate characters
+    const cleaned = expression.replace(/\s/g, '');
+
+    // Only allow numbers, operators, and decimal points
+    if (!/^[0-9+\-*/.()]*$/.test(cleaned)) {
+      throw new Error('Invalid characters');
+    }
+
+    // Simple tokenizer
+    const tokens: (number | string)[] = [];
+    let current = '';
+
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i];
+
+      if ('+-*/()'.includes(char)) {
+        if (current) {
+          const num = parseFloat(current);
+          if (isNaN(num)) throw new Error('Invalid number');
+          tokens.push(num);
+          current = '';
+        }
+        tokens.push(char);
+      } else {
+        current += char;
+      }
+    }
+
+    if (current) {
+      const num = parseFloat(current);
+      if (isNaN(num)) throw new Error('Invalid number');
+      tokens.push(num);
+    }
+
+    if (tokens.length === 0) return 0;
+
+    // Evaluate expression with proper order of operations
+    const evaluateTokens = (tokens: (number | string)[]): number => {
+      // Handle parentheses first
+      while (tokens.includes('(')) {
+        let openIndex = -1;
+        let closeIndex = -1;
+
+        for (let i = 0; i < tokens.length; i++) {
+          if (tokens[i] === '(') openIndex = i;
+          if (tokens[i] === ')') {
+            closeIndex = i;
+            break;
+          }
+        }
+
+        if (openIndex === -1 || closeIndex === -1) {
+          throw new Error('Mismatched parentheses');
+        }
+
+        const subTokens = tokens.slice(openIndex + 1, closeIndex);
+        const result = evaluateTokens(subTokens);
+        tokens.splice(openIndex, closeIndex - openIndex + 1, result);
+      }
+
+      // Handle multiplication and division
+      for (let i = 1; i < tokens.length; i += 2) {
+        if (tokens[i] === '*' || tokens[i] === '/') {
+          const left = tokens[i - 1] as number;
+          const right = tokens[i + 1] as number;
+          const operator = tokens[i] as string;
+
+          if (operator === '/' && right === 0) {
+            throw new Error('Division by zero');
+          }
+
+          const result = operator === '*' ? left * right : left / right;
+          tokens.splice(i - 1, 3, result);
+          i -= 2;
+        }
+      }
+
+      // Handle addition and subtraction
+      for (let i = 1; i < tokens.length; i += 2) {
+        if (tokens[i] === '+' || tokens[i] === '-') {
+          const left = tokens[i - 1] as number;
+          const right = tokens[i + 1] as number;
+          const operator = tokens[i] as string;
+
+          const result = operator === '+' ? left + right : left - right;
+          tokens.splice(i - 1, 3, result);
+          i -= 2;
+        }
+      }
+
+      if (tokens.length !== 1 || typeof tokens[0] !== 'number') {
+        throw new Error('Invalid expression');
+      }
+
+      return tokens[0];
+    };
+
+    return evaluateTokens([...tokens]);
+  };
+
+  // Calculator functions
+  const handleCalcInput = (value: string) => {
+    if (value === '=') {
+      try {
+        const result = safeMathEvaluator(calcDisplay);
+        // Round to 2 decimal places to avoid floating point issues
+        const rounded = Math.round(result * 100) / 100;
+        setCalcDisplay(rounded.toString());
+      } catch {
+        setCalcDisplay('Error');
+      }
+    } else if (value === 'C') {
+      setCalcDisplay('');
+    } else if (value === '←') {
+      setCalcDisplay(calcDisplay.slice(0, -1));
+    } else {
+      setCalcDisplay(calcDisplay + value);
+    }
+  };
+
+  const useCalcResult = () => {
+    if (calcDisplay && !isNaN(Number(calcDisplay))) {
+      handleSimpleTotalChange(calcDisplay);
+      setShowCalculator(false);
+      setCalcDisplay('');
+    }
+  };
+
   return (
     <TooltipProvider>
-      <div className="max-w-sm mx-auto bg-white">
+      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm">
         {/* Compact header */}
         <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white text-center py-4 px-4">
           <h1 className="text-xl md:text-lg font-semibold mb-1">
@@ -236,12 +439,12 @@ export default function CompactCollectionForm({
             </div>
           </div>
 
-          {/* Individual sandwiches - compact row */}
-          <div className="bg-gray-50 rounded p-2">
-            <div className="flex items-center gap-1 mb-1">
-              <label className="text-base md:text-sm font-medium text-brand-primary">
+          {/* Individual sandwiches - DUAL MODE (always visible) */}
+          <div className="bg-gray-50 rounded-lg p-5">
+            <div className="flex items-center gap-1 mb-4">
+              <h3 className="text-base font-semibold text-brand-primary uppercase tracking-wide">
                 Individual Sandwiches
-              </label>
+              </h3>
               <Tooltip>
                 <TooltipTrigger>
                   <HelpCircle className="h-5 w-5 md:h-4 md:w-4 text-gray-400" />
@@ -255,100 +458,89 @@ export default function CompactCollectionForm({
                 </TooltipContent>
               </Tooltip>
             </div>
-            {!showIndividualBreakdown ? (
-              // Simple total count input when not using breakdown
-              <>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    value={individualCount}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setIndividualCount(value);
-                    }}
-                    className="h-12 md:h-10 text-lg md:text-base flex-1"
-                    placeholder="0"
-                  />
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-10 md:h-8 px-3 md:px-2"
-                        onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
-                      >
-                        <Calculator className="h-4 w-4 md:h-3 md:w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Need help counting? Use this calculator</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className="text-base md:text-sm text-gray-600 mt-1">
-                  Don't include group totals
-                </p>
-              </>
-            ) : (
-              // Breakdown inputs when specifying sandwich types
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Deli</label>
-                  <Input
-                    type="number"
-                    value={individualDeli || ''}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setIndividualDeli(value);
-                      // Auto-calculate total
-                      setIndividualCount(value + individualPbj);
-                    }}
-                    className="h-12 md:h-10 text-lg md:text-base"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">PBJ</label>
-                  <Input
-                    type="number"
-                    value={individualPbj || ''}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setIndividualPbj(value);
-                      // Auto-calculate total
-                      setIndividualCount(individualDeli + value);
-                    }}
-                    className="h-12 md:h-10 text-lg md:text-base"
-                    placeholder="0"
-                  />
-                </div>
-                {(individualDeli > 0 || individualPbj > 0) && (
-                  <div className="col-span-2 text-center text-sm text-gray-600 bg-gray-100 rounded p-2">
-                    Total: <span className="font-bold text-brand-orange">{individualDeli + individualPbj}</span>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Toggle for sandwich type breakdown */}
-            <div className="mt-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowIndividualBreakdown(!showIndividualBreakdown);
-                  // Reset breakdown when hiding
-                  if (showIndividualBreakdown) {
-                    setIndividualDeli(0);
-                    setIndividualPbj(0);
-                  }
-                }}
-                className="text-brand-primary text-sm"
-              >
-                {showIndividualBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
-              </Button>
+            {/* Simple Total Input - Always Visible */}
+            <div className={`transition-opacity ${totalMode === 'detailed' ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className="flex items-center justify-center gap-3">
+                <Input
+                  type="number"
+                  value={simpleTotal}
+                  onChange={(e) => handleSimpleTotalChange(e.target.value)}
+                  placeholder="0"
+                  className={`w-32 h-14 text-2xl font-semibold text-center ${totalMode === 'simple' && simpleTotal ? 'border-brand-primary bg-brand-primary/5' : ''}`}
+                  disabled={totalMode === 'detailed'}
+                />
+                <span className="text-gray-600 font-medium">total sandwiches</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCalculator(true)}
+                      disabled={totalMode === 'detailed'}
+                    >
+                      <Calculator className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Need help counting? Use this calculator</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+
+            {/* OR Divider */}
+            <div className="relative text-center my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <span className="relative bg-gray-50 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                or break down by type
+              </span>
+            </div>
+
+            {/* Detailed Input - Always Visible */}
+            <div className={`transition-opacity ${totalMode === 'simple' && !hasDetails ? 'opacity-60' : ''}`}>
+              <div className="flex flex-wrap justify-center items-center gap-3">
+                {[
+                  { key: 'deli' as const, label: 'Deli', color: 'focus:border-green-400' },
+                  { key: 'pbj' as const, label: 'PB&J', color: 'focus:border-purple-400' },
+                  { key: 'other' as const, label: 'Generic', color: 'focus:border-gray-400' }
+                ].map(({ key, label, color }) => (
+                  <div key={key} className="flex flex-col items-center">
+                    <label className="text-xs text-gray-600 mb-1 font-medium">{label}</label>
+                    <Input
+                      type="number"
+                      value={details[key]}
+                      onChange={(e) => handleDetailChange(key, e.target.value)}
+                      placeholder="0"
+                      className={`w-20 h-12 text-center border rounded-lg ${color} ${totalMode === 'detailed' && details[key] ? 'border-brand-primary bg-brand-primary/5' : ''}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Sum display for detailed mode */}
+              {totalMode === 'detailed' && hasDetails && (
+                <div className="text-center mt-3">
+                  <span className="text-sm font-semibold text-brand-primary">
+                    Total: {getIndividualTotal()} sandwiches
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Mode indicator */}
+            <div className="text-center mt-4">
+              <span className="text-xs text-gray-500">
+                {totalMode === 'simple'
+                  ? hasDetails
+                    ? "Start typing in any box above to switch modes"
+                    : "Using simple total"
+                  : `Using breakdown (${Object.entries(details).filter(([_, v]) => v).length} types)`
+                }
+              </span>
             </div>
           </div>
 
@@ -382,22 +574,35 @@ export default function CompactCollectionForm({
                 className="h-12 md:h-10 text-lg md:text-base"
               />
 
-              {!showGroupBreakdown ? (
-                // Simple total count input when not using breakdown
-                <Input
-                  type="number"
-                  placeholder="Enter count (e.g. 25)"
-                  value={newGroupCount || ''}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    setNewGroupCount(value);
-                  }}
-                  className="h-12 md:h-10 text-lg md:text-base"
-                />
-              ) : (
+              {/* Simple total count input */}
+              <Input
+                type="number"
+                placeholder="Enter count (e.g. 25)"
+                value={newGroupCount || ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  setNewGroupCount(value);
+                }}
+                className="h-12 md:h-10 text-lg md:text-base"
+                disabled={showGroupBreakdown}
+              />
+
+              {/* OR Divider */}
+              <div className="relative text-center my-3">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <span className="relative bg-gray-50 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  or break down by type
+                </span>
+              </div>
+
+              {/* Breakdown inputs */}
+              <div className={`transition-opacity ${!showGroupBreakdown ? 'opacity-60' : ''}`}>
+                {showGroupBreakdown ? (
                 // Breakdown inputs when specifying sandwich types
                 <>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs font-medium text-gray-700">Deli</label>
                       <Input
@@ -407,7 +612,7 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupDeli(value);
                           // Auto-calculate total
-                          setNewGroupCount(value + newGroupPbj);
+                          setNewGroupCount(value + newGroupPbj + newGroupOther);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
@@ -422,46 +627,104 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupPbj(value);
                           // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + value);
+                          setNewGroupCount(newGroupDeli + value + newGroupOther);
+                        }}
+                        className="h-10 text-base"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Generic</label>
+                      <Input
+                        type="number"
+                        value={newGroupOther || ''}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setNewGroupOther(value);
+                          // Auto-calculate total
+                          setNewGroupCount(newGroupDeli + newGroupPbj + value);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
                       />
                     </div>
                   </div>
-                  {(newGroupDeli > 0 || newGroupPbj > 0) && (
-                    <div className="text-center text-xs text-gray-600 bg-gray-100 rounded p-2">
-                      Total: <span className="font-bold text-brand-orange">{newGroupDeli + newGroupPbj}</span>
+                  {(newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0) && (
+                    <div className={`text-center text-xs rounded p-2 border-2 ${
+                      groupBreakdownError 
+                        ? 'bg-red-50 border-red-400 text-red-800' 
+                        : 'bg-green-50 border-green-400 text-green-800'
+                    }`}>
+                      <div className="flex items-center justify-center gap-1">
+                        {groupBreakdownError ? (
+                          <AlertCircle className="h-3 w-3" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3" />
+                        )}
+                        <span className="font-medium">
+                          Breakdown Total: <span className="font-bold">{groupBreakdownSum}</span>
+                          {newGroupCount > 0 && ` / Expected: ${newGroupCount}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {groupBreakdownError && (
+                    <div className="bg-red-50 border border-red-400 rounded-lg p-2">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-red-800">
+                          <p className="font-medium">{groupBreakdownError}</p>
+                          <p className="text-xs mt-1">
+                            Please adjust the values so they add up to {newGroupCount}.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </>
-              )}
-
-              {/* Toggle for sandwich type breakdown for groups */}
-              <div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowGroupBreakdown(!showGroupBreakdown);
-                    // Reset breakdown when hiding
-                    if (showGroupBreakdown) {
-                      setNewGroupDeli(0);
-                      setNewGroupPbj(0);
-                    }
-                  }}
-                  className="text-brand-primary text-xs"
-                >
-                  {showGroupBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
-                </Button>
+                ) : (
+                  // Placeholder when not using breakdown - show disabled inputs
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-none">
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Deli</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">PBJ</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Generic</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
                 <Button
                   onClick={addGroup}
-                  disabled={!newGroupName || newGroupCount <= 0}
+                  disabled={!newGroupName || newGroupCount <= 0 || !!groupBreakdownError}
                   className="flex-1 h-12 md:h-10 text-lg md:text-base bg-brand-light-blue hover:bg-brand-primary"
+                  data-testid="button-add-group"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add This Group
@@ -471,6 +734,9 @@ export default function CompactCollectionForm({
                     onClick={() => {
                       setNewGroupName('');
                       setNewGroupCount(0);
+                      setNewGroupDeli(0);
+                      setNewGroupPbj(0);
+                      setNewGroupOther(0);
                     }}
                     variant="outline"
                     className="h-12 md:h-10 px-3 md:px-2"
@@ -518,9 +784,13 @@ export default function CompactCollectionForm({
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
                       {group.count}
                     </div>
-                    {(group.deli || group.pbj) && (
+                    {(group.deli || group.pbj || group.other) && (
                       <div className="text-xs text-gray-600 mt-1">
-                        {group.deli ? `Deli: ${group.deli}` : ''} {group.deli && group.pbj ? '• ' : ''} {group.pbj ? `PBJ: ${group.pbj}` : ''}
+                        {[
+                          group.deli && `Deli: ${group.deli}`,
+                          group.pbj && `PBJ: ${group.pbj}`,
+                          group.other && `Generic: ${group.other}`
+                        ].filter(Boolean).join(' • ')}
                       </div>
                     )}
                   </div>
@@ -535,6 +805,7 @@ export default function CompactCollectionForm({
               onClick={handleSubmit}
               disabled={submitMutation.isPending}
               className="flex-1 h-14 md:h-12 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white font-semibold text-xl md:text-lg"
+              data-testid="button-submit-collection"
             >
               {submitMutation.isPending ? 'Saving...' : 'Save My Collection'}
             </Button>
@@ -564,6 +835,164 @@ export default function CompactCollectionForm({
             </div>
           </div>
         </div>
+
+        {/* Calculator Modal */}
+        {showCalculator && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setShowCalculator(false)}
+          >
+            <div
+              className="bg-white rounded-lg p-5 shadow-xl w-60"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 className="text-base font-semibold text-brand-primary mb-3">
+                Calculator Helper
+              </h4>
+              <p className="text-sm text-gray-600 mb-3">
+                Calculate your individual count (e.g., 150 - 25 - 30 = 95)
+              </p>
+
+              <input
+                type="text"
+                value={calcDisplay}
+                readOnly
+                className="w-full h-10 px-3 border border-gray-200 rounded text-right mb-3 bg-gray-50"
+                placeholder="Enter calculation..."
+              />
+
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <button
+                  className="h-11 border rounded bg-brand-primary text-white font-semibold hover:bg-brand-primary/90"
+                  onClick={() => handleCalcInput('C')}
+                >
+                  C
+                </button>
+                <button
+                  className="h-11 border rounded bg-brand-primary text-white font-semibold hover:bg-brand-primary/90"
+                  onClick={() => handleCalcInput('←')}
+                >
+                  ←
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('/')}
+                >
+                  /
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('*')}
+                >
+                  ×
+                </button>
+
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('7')}
+                >
+                  7
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('8')}
+                >
+                  8
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('9')}
+                >
+                  9
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('-')}
+                >
+                  -
+                </button>
+
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('4')}
+                >
+                  4
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('5')}
+                >
+                  5
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('6')}
+                >
+                  6
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('+')}
+                >
+                  +
+                </button>
+
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('1')}
+                >
+                  1
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('2')}
+                >
+                  2
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('3')}
+                >
+                  3
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50 row-span-2"
+                  onClick={() => handleCalcInput('=')}
+                >
+                  =
+                </button>
+
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50 col-span-2"
+                  onClick={() => handleCalcInput('0')}
+                >
+                  0
+                </button>
+                <button
+                  className="h-11 border rounded bg-white hover:bg-gray-50"
+                  onClick={() => handleCalcInput('.')}
+                >
+                  .
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 h-11 bg-brand-orange text-white rounded font-semibold hover:bg-brand-orange/90"
+                  onClick={useCalcResult}
+                >
+                  Use Result
+                </button>
+                <button
+                  className="flex-1 h-11 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  onClick={() => setShowCalculator(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

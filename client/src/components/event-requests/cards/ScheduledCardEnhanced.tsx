@@ -1,0 +1,1809 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Clock,
+  Package,
+  MapPin,
+  Building2,
+  Edit2,
+  Save,
+  X,
+  Trash2,
+  Calendar,
+  Users,
+  Car,
+  Megaphone,
+  UserPlus,
+  Phone,
+  Mail,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  History,
+  FileText,
+  MessageSquare,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
+import {
+  formatTime12Hour,
+  formatTimeForInput,
+  formatEventDate,
+} from '@/components/event-requests/utils';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+import {
+  SANDWICH_TYPES,
+  statusOptions,
+} from '@/components/event-requests/constants';
+import {
+  parseSandwichTypes,
+  formatSandwichTypesDisplay,
+} from '@/lib/sandwich-utils';
+import type { EventRequest } from '@shared/schema';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import SendKudosButton from '@/components/send-kudos-button';
+import { MessageComposer } from '@/components/message-composer';
+import { EventMessageThread } from '@/components/event-message-thread';
+import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+
+interface ScheduledCardEnhancedProps {
+  request: EventRequest;
+  editingField: string | null;
+  editingValue: string;
+  isEditingThisCard: boolean;
+  inlineSandwichMode: 'total' | 'types' | 'range';
+  inlineTotalCount: number;
+  inlineSandwichTypes: Array<{ type: string; quantity: number }>;
+  inlineRangeMin: number;
+  inlineRangeMax: number;
+  inlineRangeType: string;
+  isSaving?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onContact: () => void;
+  onAssignTspContact: () => void;
+  onEditTspContact: () => void;
+  onLogContact: () => void;
+  onFollowUp: () => void;
+  onReschedule: () => void;
+  onAiIntakeAssist?: () => void;
+  startEditing: (field: string, value: string) => void;
+  saveEdit: () => void;
+  cancelEdit: () => void;
+  setEditingValue: (value: string) => void;
+  tempIsConfirmed: boolean;
+  setTempIsConfirmed: (value: boolean) => void;
+  quickToggleBoolean: (field: 'isConfirmed' | 'addedToOfficialSheet', value: boolean) => void;
+  setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
+  setInlineTotalCount: (count: number) => void;
+  setInlineRangeMin: (count: number) => void;
+  setInlineRangeMax: (count: number) => void;
+  setInlineRangeType: (type: string) => void;
+  addInlineSandwichType: () => void;
+  updateInlineSandwichType: (index: number, field: 'type' | 'quantity', value: string | number) => void;
+  removeInlineSandwichType: (index: number) => void;
+  resolveUserName: (id: string) => string;
+  resolveRecipientName?: (id: string) => string;
+  openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  canEdit?: boolean;
+}
+
+const parsePostgresArray = (arr: unknown): string[] => {
+  if (!arr) return [];
+  if (Array.isArray(arr)) return arr;
+  if (typeof arr === 'string') {
+    if (arr === '{}' || arr === '') return [];
+    const cleaned = arr.replace(/^{|}$/g, '');
+    if (!cleaned) return [];
+    return cleaned.split(',').map((item) => item.trim()).filter((item) => item);
+  }
+  return [];
+};
+
+const extractCustomName = (id: string): string => {
+  if (!id || typeof id !== 'string') return '';
+  if (id.startsWith('custom-')) {
+    const parts = id.split('-');
+    if (parts.length >= 3) {
+      const nameParts = parts.slice(2);
+      return nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
+    }
+    return 'Custom Volunteer';
+  }
+  return ''; // Return empty string so resolveUserName gets called
+};
+
+export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
+  request,
+  editingField,
+  editingValue,
+  isEditingThisCard,
+  inlineSandwichMode,
+  inlineTotalCount,
+  inlineSandwichTypes,
+  inlineRangeMin,
+  inlineRangeMax,
+  inlineRangeType,
+  isSaving = false,
+  onEdit,
+  onDelete,
+  onContact,
+  onAssignTspContact,
+  onEditTspContact,
+  onLogContact,
+  onFollowUp,
+  onReschedule,
+  onAiIntakeAssist,
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue,
+  tempIsConfirmed,
+  setTempIsConfirmed,
+  quickToggleBoolean,
+  setInlineSandwichMode,
+  setInlineTotalCount,
+  setInlineRangeMin,
+  setInlineRangeMax,
+  setInlineRangeType,
+  addInlineSandwichType,
+  updateInlineSandwichType,
+  removeInlineSandwichType,
+  resolveUserName,
+  resolveRecipientName,
+  openAssignmentDialog,
+  handleRemoveAssignment,
+  canEdit = true,
+}) => {
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [addingAllTimes, setAddingAllTimes] = useState(false);
+  const [tempStartTime, setTempStartTime] = useState('');
+  const [tempEndTime, setTempEndTime] = useState('');
+  const [tempPickupTime, setTempPickupTime] = useState('');
+
+  const queryClient = useQueryClient();
+
+  // Mutation for updating event request fields
+  const updateFieldsMutation = useMutation({
+    mutationFn: async (updates: Record<string, unknown>) => {
+      const response = await fetch(`/api/event-requests/${request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update event request');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setAddingAllTimes(false);
+      setTempStartTime('');
+      setTempEndTime('');
+      setTempPickupTime('');
+    },
+  });
+
+  // Fetch data for recipient resolution
+  const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
+    id: number;
+    displayName: string;
+    name: string;
+    hostLocationName: string;
+    email?: string;
+    phone?: string;
+  }>>({
+    queryKey: ['/api/host-contacts'],
+    staleTime: 1 * 60 * 1000,
+    queryFn: async () => {
+      const response = await fetch('/api/host-contacts');
+      if (!response.ok) throw new Error('Failed to fetch host contacts');
+      return response.json();
+    },
+  });
+
+  // Debug logging for host contacts
+  React.useEffect(() => {
+    if (hostContacts.length > 0) {
+      console.log('ScheduledCardEnhanced: hostContacts loaded', hostContacts.length, 'contacts');
+      console.log('ScheduledCardEnhanced: First few contacts:', hostContacts.slice(0, 3));
+    } else if (!isLoadingHostContacts) {
+      console.warn('ScheduledCardEnhanced: No host contacts loaded!');
+    }
+  }, [hostContacts, isLoadingHostContacts]);
+
+  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/recipients'],
+    staleTime: 1 * 60 * 1000,
+  });
+
+  const { data: hostLocations = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/hosts'],
+    staleTime: 1 * 60 * 1000,
+  });
+
+  const resolveLocalRecipientName = (recipientId: string): string => {
+    // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
+    if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
+      // Extract just the name part from formats like:
+      // - "custom-1761977247368-David" -> "David"
+      // - "custom:David" -> "David"
+      const parts = recipientId.split('-');
+      if (parts.length >= 3) {
+        // Format: custom-timestamp-Name
+        return parts.slice(2).join('-'); // Handle names with dashes
+      } else if (recipientId.includes(':')) {
+        // Format: custom:Name
+        return recipientId.split(':')[1];
+      }
+      return recipientId.replace('custom-', '').replace('custom:', '');
+    }
+
+    if (recipientId.includes(':')) {
+      const [type, ...rest] = recipientId.split(':');
+      const value = rest.join(':');
+
+      if (!isNaN(Number(value))) {
+        const numId = Number(value);
+
+        if (type === 'host') {
+          console.log(`resolveLocalRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
+          const hostContact = hostContacts.find(hc => hc.id === numId);
+          if (hostContact) {
+            console.log(`resolveLocalRecipientName: Found host contact:`, hostContact);
+            // Prefer displayName (includes host location), then name, then hostLocationName
+            if (hostContact.displayName) {
+              return hostContact.displayName;
+            }
+            if (hostContact.name) {
+              return hostContact.name;
+            }
+            if (hostContact.hostLocationName) {
+              return hostContact.hostLocationName;
+            }
+          }
+          console.log(`resolveLocalRecipientName: Host contact ${numId} not found, checking host locations`);
+          const hostLocation = hostLocations.find(h => h.id === numId);
+          if (hostLocation) {
+            console.log(`resolveLocalRecipientName: Found host location:`, hostLocation);
+            return hostLocation.name;
+          }
+          // If host not found, return a helpful message instead of just the ID
+          console.warn(`resolveLocalRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
+          return `Host ID ${numId}`;
+        } else if (type === 'recipient') {
+          // Check recipients first
+          const recipient = recipients.find(r => r.id === numId);
+          if (recipient) return recipient.name;
+
+          // Fallback: check host contacts (in case data was mislabeled)
+          console.log(`resolveLocalRecipientName: Recipient ${numId} not found, checking hosts as fallback`);
+          const hostContact = hostContacts.find(hc => hc.id === numId);
+          if (hostContact) {
+            if (hostContact.displayName) return hostContact.displayName;
+            if (hostContact.name) return hostContact.name;
+            if (hostContact.hostLocationName) return hostContact.hostLocationName;
+          }
+
+          // Fallback: check host locations
+          const hostLocation = hostLocations.find(h => h.id === numId);
+          if (hostLocation) return hostLocation.name;
+
+          // If not found anywhere, return a helpful message
+          return `Recipient ID ${numId}`;
+        }
+      }
+      return value;
+    }
+
+    // Handle plain numeric IDs (legacy format without "host:" prefix)
+    if (!isNaN(Number(recipientId))) {
+      const numId = Number(recipientId);
+      // Check host contacts first (more specific), then locations, then recipients
+      const hostContact = hostContacts.find(h => h.id === numId);
+      if (hostContact) {
+        // Prefer displayName (includes host location), then name, then hostLocationName
+        if (hostContact.displayName) {
+          return hostContact.displayName;
+        }
+        if (hostContact.name) {
+          return hostContact.name;
+        }
+        if (hostContact.hostLocationName) {
+          return hostContact.hostLocationName;
+        }
+      }
+      const hostLocation = hostLocations.find(h => h.id === numId);
+      if (hostLocation) return hostLocation.name;
+      const recipient = recipients.find(r => r.id === numId);
+      if (recipient) return recipient.name;
+      // If not found anywhere, return a helpful message
+      return `ID ${numId}`;
+    }
+
+    return recipientId;
+  };
+
+  // Use the prop if provided, otherwise use local implementation
+  const getRecipientName = resolveRecipientName || resolveLocalRecipientName;
+
+  // Get display date
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
+
+  // Calculate staffing
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+  const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
+  const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
+  const driverNeeded = request.driversNeeded || 0;
+  const speakerNeeded = request.speakersNeeded || 0;
+  const volunteerNeeded = request.volunteersNeeded || 0;
+  const totalAssigned = driverAssigned + speakerAssigned + volunteerAssigned;
+  const totalNeeded = driverNeeded + speakerNeeded + volunteerNeeded;
+  const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
+
+  // Sandwich info
+  const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+  let sandwichInfo;
+  if (hasRange) {
+    const rangeType = request.estimatedSandwichRangeType;
+    const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
+    sandwichInfo = `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}${typeLabel ? ` ${typeLabel}` : ''}`;
+  } else {
+    sandwichInfo = formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined);
+  }
+
+  const missingInfo = getMissingIntakeInfo(request);
+
+  const formatDateForInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    return dateStr.split('T')[0];
+  };
+
+  let dateFieldToEdit = 'desiredEventDate';
+  let dateLabel = 'Requested Date';
+  if (request.scheduledEventDate) {
+    dateFieldToEdit = 'scheduledEventDate';
+    dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
+  }
+
+  return (
+    <Card 
+      className="w-full bg-[#E4EFF6] border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl"
+      style={{ borderLeftColor: '#236383' }}
+    >
+      <CardContent className="p-3">
+        {/* Header Row - Organization & Status */}
+        <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+              <h2 className="text-2xl font-bold text-[#236383]">
+                {request.organizationName}
+              </h2>
+              {request.department && (
+                <>
+                  <span className="text-[#236383]/60">•</span>
+                  <span className="text-lg text-[#236383]/70 font-medium">
+                    {request.department}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Status Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
+                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
+                  request.isConfirmed
+                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
+                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                }`}
+              >
+                {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+              </Badge>
+
+              <Badge
+                onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
+                  request.addedToOfficialSheet
+                    ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
+                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                }`}
+              >
+                {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
+              </Badge>
+
+              {request.isMlkDayEvent && <MlkDayBadge />}
+
+              {/* Sandwich count badge */}
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
+                <span>🥪</span>
+                <span>{sandwichInfo} Sandwiches</span>
+              </Badge>
+
+              {request.externalId && request.externalId.startsWith('manual-') && (
+                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                  <FileText className="w-3 h-3 mr-1" />
+                  Manual Entry
+                </Badge>
+              )}
+
+              {staffingComplete ? (
+                <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
+                  Fully Staffed
+                </Badge>
+              ) : (
+                <>
+                  {driverNeeded > driverAssigned && (
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {speakerNeeded > speakerAssigned && (
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {volunteerNeeded > volunteerAssigned && (
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                </>
+              )}
+
+              {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium">
+                  <Car className="w-3 h-3 mr-1" />
+                  Van Driver Needed
+                </Badge>
+              )}
+
+              {request.assignedVanDriverId && (
+                <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
+                  🚐 Van Assigned
+                </Badge>
+              )}
+
+              {missingInfo.length > 0 && (
+                <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  {missingInfo.length} Missing
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Date Display - Right Side */}
+          <div className="flex items-center shrink-0">
+            {isEditingThisCard && editingField === dateFieldToEdit ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="date"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                />
+                <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
+                  <Save className="w-3 h-3" aria-hidden="true" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                  <X className="w-3 h-3" aria-hidden="true" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 group">
+                <Calendar className="w-5 h-5 text-[#007E8C]" />
+                <span className="text-2xl font-bold text-[#47B3CB] whitespace-nowrap">
+                  {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
+                </span>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                    className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
+                    aria-label="Edit date"
+                  >
+                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons Section */}
+        <div className="mb-3">
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => setShowMessageDialog(true)}
+                variant="ghost"
+                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                aria-label="Message about this event"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              </Button>
+              <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
+                <Edit2 className="w-4 h-4" aria-hidden="true" />
+              </Button>
+              <ConfirmationDialog
+                trigger={
+                  <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                }
+                title="Delete Event"
+                description={`Delete ${request.organizationName}?`}
+                confirmText="Delete"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Main Info Section - 3 Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 lg:items-start">
+          {/* Column 1: Event Details */}
+          <div className="flex flex-col h-full">
+            {/* Event Details Card */}
+            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
+                <Calendar className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                Event Details
+              </h3>
+              <div className="space-y-3">
+            {/* Times Row with Add Times button */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="grid grid-cols-3 gap-2 text-sm flex-1">
+                {/* Start Time */}
+                <div>
+                  <div className="text-[#236383] text-sm uppercase font-semibold">Start</div>
+                  {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="time"
+                        value={addingAllTimes ? tempStartTime : editingValue}
+                        onChange={(e) => addingAllTimes ? setTempStartTime(e.target.value) : setEditingValue(e.target.value)}
+                        className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                      />
+                      {!addingAllTimes && (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-base font-bold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                      {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <div className="text-[#236383] text-sm uppercase font-semibold">End</div>
+                  {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="time"
+                        value={addingAllTimes ? tempEndTime : editingValue}
+                        onChange={(e) => addingAllTimes ? setTempEndTime(e.target.value) : setEditingValue(e.target.value)}
+                        className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                      />
+                      {!addingAllTimes && (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-base font-bold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                      {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pickup Time */}
+                <div>
+                  <div className="text-gray-700 text-sm uppercase font-semibold">Pickup</div>
+                  {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
+                    <div className="flex flex-col gap-1">
+                      {addingAllTimes ? (
+                        <Input
+                          type="time"
+                          value={tempPickupTime}
+                          onChange={(e) => setTempPickupTime(e.target.value)}
+                          className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                        />
+                      ) : (
+                        <>
+                          <DateTimePicker
+                            value={editingValue}
+                            onChange={setEditingValue}
+                            className="h-7 text-xs border-[#007E8C]/20"
+                          />
+                          <div className="flex gap-1">
+                            <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                              <Save className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                              <X className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                      {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Add Times button or Save/Cancel buttons */}
+              {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
+                <div className="flex items-center gap-1 mt-4">
+                  {!addingAllTimes ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-2 h-7 text-xs"
+                      onClick={() => {
+                        // Initialize temp values with existing times
+                        setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
+                        setTempEndTime(formatTimeForInput(request.eventEndTime || ''));
+                        setTempPickupTime(request.pickupDateTime ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTimeForInput(request.pickupTime) : ''));
+                        setAddingAllTimes(true);
+                      }}
+                      title="Set all time fields at once"
+                    >
+                      <Clock className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Prepare updates object with all modified times
+                          const updates: Record<string, string> = {};
+
+                          // Get existing pickup time value for comparison
+                          const existingPickupTime = request.pickupDateTime
+                            ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                            : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
+
+                          if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
+                            updates.eventStartTime = tempStartTime;
+                          }
+                          if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
+                            updates.eventEndTime = tempEndTime;
+                          }
+                          if (tempPickupTime && tempPickupTime !== existingPickupTime) {
+                            updates.pickupTime = tempPickupTime;
+                          }
+
+                          // Save all fields at once
+                          if (Object.keys(updates).length > 0) {
+                            updateFieldsMutation.mutate(updates);
+                          } else {
+                            setAddingAllTimes(false);
+                          }
+                        }}
+                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap"
+                        disabled={updateFieldsMutation.isPending}
+                        aria-label="Save all times"
+                      >
+                        <Save className="w-3 h-3 mr-1" aria-hidden="true" />
+                        {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setAddingAllTimes(false);
+                          setTempStartTime('');
+                          setTempEndTime('');
+                          setTempPickupTime('');
+                        }}
+                        className="text-gray-600 hover:bg-gray-100"
+                        aria-label="Cancel"
+                      >
+                        <X className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Address */}
+            <div className="flex items-start gap-2">
+              <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-[#007E8C]" />
+              {isEditingThisCard && editingField === 'eventAddress' ? (
+                <div className="flex-1 flex flex-col gap-2">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    className="bg-white text-gray-900 border-[#007E8C]/20"
+                    placeholder="Event address"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white">
+                      <Save className="w-3 h-3 mr-1" /> Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 group">
+                  {request.eventAddress ? (
+                    <a
+                      href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-base text-[#007E8C] hover:text-[#007E8C]/80 underline font-semibold"
+                    >
+                      {request.eventAddress}
+                    </a>
+                  ) : (
+                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-sm">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      No address set
+                    </Badge>
+                  )}
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('eventAddress', request.eventAddress || '')}
+                      className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 ml-2"
+                      aria-label="Edit"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Sandwiches - Inline Editable */}
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 shrink-0" />
+              {isEditingThisCard && editingField === 'sandwichTypes' ? (
+                <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('total')}
+                      className="h-7"
+                    >
+                      Exact
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('range')}
+                      className="h-7"
+                    >
+                      Range
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('types')}
+                      className="h-7"
+                    >
+                      By Type
+                    </Button>
+                  </div>
+
+                  {inlineSandwichMode === 'total' && (
+                    <Input
+                      type="number"
+                      value={inlineTotalCount}
+                      onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+                      placeholder="Total count"
+                      className="bg-white text-gray-900"
+                    />
+                  )}
+
+                  {inlineSandwichMode === 'range' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={inlineRangeMin}
+                          onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
+                          placeholder="Min"
+                          className="w-24 bg-white text-gray-900"
+                        />
+                        <span className="text-white self-center">to</span>
+                        <Input
+                          type="number"
+                          value={inlineRangeMax}
+                          onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
+                          placeholder="Max"
+                          className="w-24 bg-white text-gray-900"
+                        />
+                      </div>
+                      <Select value={inlineRangeType || undefined} onValueChange={setInlineRangeType}>
+                        <SelectTrigger className="bg-white text-gray-900">
+                          <SelectValue placeholder="Type (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SANDWICH_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {inlineSandwichMode === 'types' && (
+                    <div className="space-y-2">
+                      {inlineSandwichTypes.map((item, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Select
+                            value={item.type}
+                            onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+                          >
+                            <SelectTrigger className="bg-white text-gray-900">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SANDWICH_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                            className="w-20 bg-white text-gray-900"
+                          />
+                          <Button size="sm" variant="ghost" onClick={() => removeInlineSandwichType(index)} className="text-white" aria-label="Remove sandwich type">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button size="sm" onClick={addInlineSandwichType} variant="outline" className="w-full">
+                        + Add Type
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </>
+                      )}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 group flex items-center gap-2">
+                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                    <span className="text-xl">🥪</span>
+                    <span>{sandwichInfo}</span>
+                  </Badge>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('sandwichTypes', '')}
+                      className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2"
+                      aria-label="Edit sandwich types"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Attendance */}
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 shrink-0" />
+              {isEditingThisCard && editingField === 'estimatedAttendance' ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    type="number"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    className="h-8 w-24 bg-white text-gray-900"
+                    placeholder="Attendance"
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90" aria-label="Save">
+                    <Save className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20" aria-label="Cancel">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || '')}>
+                  <span className="text-base font-semibold">
+                    {request.estimatedAttendance ? `${request.estimatedAttendance} people expected` : <span className="text-gray-600 font-medium">No attendance set</span>}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || ''); }}
+                      className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2"
+                      aria-label="Edit attendance"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Team Assignments */}
+          <div className="flex flex-col h-full lg:order-2">
+            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
+                Team Assignments
+              </h3>
+              <div className="space-y-3">
+
+                {/* Drivers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'driversNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Car className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                          <Save className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                          <X className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                          <Car className="w-5 h-5" />
+                          {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                        </span>
+                        {canEdit && driverNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
+                            <UserPlus className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {driverNeeded > 0 ? (
+                      <>
+                        {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                <SendKudosButton
+                                  recipientId={id}
+                                  recipientName={extractCustomName(id) || resolveUserName(id)}
+                                  contextType="project"
+                                  contextId={request.id.toString()}
+                                  contextTitle={`${request.organizationName} event`}
+                                  size="sm"
+                                  variant="outline"
+                                  iconOnly
+                                />
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('driver', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                          </div>
+                        ))}
+                        {request.assignedVanDriverId && (
+                          <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                            <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
+                              {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
+                            </span>
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                              <SendKudosButton
+                                recipientId={request.assignedVanDriverId}
+                                recipientName={resolveUserName(request.assignedVanDriverId)}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
+                                size="sm"
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
+                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('driversNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Speakers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'speakersNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Megaphone className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                          <Save className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                          <X className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                          <Megaphone className="w-5 h-5" />
+                          {speakerNeeded > 0 ? `Speakers (${speakerAssigned}/${speakerNeeded})` : 'Speakers'}
+                        </span>
+                        {canEdit && speakerNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white" aria-label="Add speaker">
+                            <UserPlus className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {speakerNeeded > 0 ? (
+                      <>
+                        {Object.keys(request.speakerDetails || {}).map((id) => {
+                          const detailName = (request.speakerDetails as any)?.[id]?.name;
+                          const customName = extractCustomName(id);
+                          const userName = resolveUserName(id);
+                          // Try getRecipientName for host-contact IDs
+                          const recipientName = id.startsWith('host-contact-') && getRecipientName
+                            ? getRecipientName(id)
+                            : null;
+                          // Check if detailName is actually just the ID (common with host-contact and custom IDs)
+                          const isDetailNameJustId = detailName === id ||
+                            detailName?.startsWith('host-contact-') ||
+                            detailName?.startsWith('custom-');
+                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+                          const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
+                            ? detailName
+                            : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
+                          return (
+                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                <SendKudosButton
+                                  recipientId={id}
+                                  recipientName={displayName}
+                                  contextType="project"
+                                  contextId={request.id.toString()}
+                                  contextTitle={`${request.organizationName} event`}
+                                  size="sm"
+                                  variant="outline"
+                                  iconOnly
+                                />
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('speaker', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
+                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Megaphone className="w-3 h-3 mr-1" />No speakers needed</Badge>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('speakersNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Volunteers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'volunteersNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Users className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                          <Save className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                          <X className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                          <Users className="w-5 h-5" />
+                          {volunteerNeeded > 0 ? `Volunteers (${volunteerAssigned}/${volunteerNeeded})` : 'Volunteers'}
+                        </span>
+                        {canEdit && volunteerNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
+                            <UserPlus className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {volunteerNeeded > 0 ? (
+                      <>
+                        {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                              <SendKudosButton
+                                recipientId={id}
+                                recipientName={extractCustomName(id) || resolveUserName(id)}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
+                                size="sm"
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('volunteer', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
+                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Users className="w-3 h-3 mr-1" />No volunteers needed</Badge>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('volunteersNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Event Organizer & Delivery Logistics */}
+          <div className="flex flex-col gap-4 h-full lg:order-3">
+            {/* Event Organizer */}
+            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                Event Organizer
+              </h3>
+              <div className="space-y-2 text-sm text-gray-900">
+                {(request.firstName || request.lastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">
+                      {request.firstName} {request.lastName}
+                    </span>
+                  </div>
+                )}
+                {request.email && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <a href={`mailto:${request.email}`} className="hover:underline break-all min-w-0">
+                      {request.email}
+                    </a>
+                  </div>
+                )}
+                {request.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <a href={`tel:${request.phone}`} className="hover:underline">
+                      {request.phone}
+                    </a>
+                  </div>
+                )}
+                {(request.tspContact || request.customTspContact) && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/30">
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
+                    {canEdit && (
+                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {!request.tspContact && !request.customTspContact && (
+                  <Button
+                    size="sm"
+                    onClick={onAssignTspContact}
+                    className="w-full bg-white/20 hover:bg-white/30 text-white mt-2"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Assign TSP Contact
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Delivery Logistics */}
+            <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                Delivery Logistics
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Recipients */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
+                    {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                    <div className="space-y-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipients..."
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="min-w-0">
+                      {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
+                            const recipientName = getRecipientName(id);
+                            // Skip if the name still contains the raw ID format
+                            if (recipientName.startsWith('recipient:') || recipientName.startsWith('host:') || recipientName.startsWith('Recipient ID') || recipientName.startsWith('Host ID')) {
+                              return null;
+                            }
+                            const cleanName = recipientName.includes('(')
+                              ? recipientName.substring(0, recipientName.indexOf('(')).trim()
+                              : recipientName;
+                            const displayName = cleanName.length > 25
+                              ? cleanName.substring(0, 22) + '...'
+                              : cleanName;
+                            return (
+                              <Badge
+                                key={idx}
+                                title={recipientName}
+                                className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
+                              >
+                                <span className="text-sm shrink-0">🏠</span>
+                                <span className="truncate">{displayName}</span>
+                              </Badge>
+                            );
+                          }).filter(Boolean)}
+                          {request.assignedRecipientIds.length > 3 && (
+                            <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-xs font-medium px-2 py-1 shadow-sm w-fit">
+                              +{request.assignedRecipientIds.length - 3} more recipients
+                            </Badge>
+                          )}
+                        </div>
+                      ) : request.recipientsCount ? (
+                        <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                          <span className="text-sm">🏠</span>
+                          <span>Unknown Host ({request.recipientsCount})</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-sm">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          No recipients assigned
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Overnight Holding */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
+                    {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="bg-white text-gray-900 h-8 text-sm"
+                        placeholder="Overnight holding location"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
+                      {request.overnightHoldingLocation || <span className="text-gray-600 font-medium">Not set</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Requirements Section */}
+        {(request.message ||
+          request.planningNotes ||
+          request.schedulingNotes ||
+          request.additionalRequirements ||
+          request.volunteerNotes ||
+          request.driverNotes ||
+          request.vanDriverNotes ||
+          request.followUpNotes ||
+          request.distributionNotes ||
+          request.duplicateNotes ||
+          request.unresponsiveNotes ||
+          request.socialMediaPostNotes) && (
+          <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md">
+            <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#236383]" />
+              Notes & Requirements
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+              {request.message && (
+                <div className="sm:col-span-2">
+                  <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
+                    {request.message}
+                  </p>
+                </div>
+              )}
+              {request.additionalRequirements && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Special Requirements:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-orange-400 whitespace-pre-wrap">
+                    {request.additionalRequirements}
+                  </p>
+                </div>
+              )}
+              {request.planningNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-gray-900">Planning Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                        className="h-6 px-2"
+                        aria-label="Edit planning notes"
+                      >
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'planningNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add planning notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/30 to-[#47B3CB]/15 p-3 rounded border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 whitespace-pre-wrap">
+                      {request.planningNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+              {request.schedulingNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-gray-900">Scheduling Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
+                        className="h-6 px-2"
+                        aria-label="Edit scheduling notes"
+                      >
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'schedulingNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add scheduling notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-green-400 whitespace-pre-wrap">
+                      {request.schedulingNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+              {request.volunteerNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Volunteer Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-purple-400 whitespace-pre-wrap">
+                    {request.volunteerNotes}
+                  </p>
+                </div>
+              )}
+              {request.driverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
+                    {request.driverNotes}
+                  </p>
+                </div>
+              )}
+              {request.vanDriverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Van Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-red-400 whitespace-pre-wrap">
+                    {request.vanDriverNotes}
+                  </p>
+                </div>
+              )}
+              {request.followUpNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Follow-up Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-yellow-400 whitespace-pre-wrap">
+                    {request.followUpNotes}
+                  </p>
+                </div>
+              )}
+              {request.distributionNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Distribution Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-teal-400 whitespace-pre-wrap">
+                    {request.distributionNotes}
+                  </p>
+                </div>
+              )}
+              {request.duplicateNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Duplicate Check Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
+                    {request.duplicateNotes}
+                  </p>
+                </div>
+              )}
+              {request.unresponsiveNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Contact Attempts Logged:</p>
+                  <p className="text-sm text-gray-700 bg-gradient-to-r from-[#A31C41]/30 to-[#A31C41]/15 p-3 rounded border-l-4 border-[#A31C41]">
+                    {request.unresponsiveNotes}
+                  </p>
+                </div>
+              )}
+              {request.socialMediaPostNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Social Media Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-indigo-400">
+                    {request.socialMediaPostNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Communication & Notes Section */}
+        {request.id && (
+          <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
+            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+              <EventMessageThread
+                eventId={request.id.toString()}
+                eventRequest={request}
+                eventTitle={`${request.organizationName} event`}
+                maxHeight="300px"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons Row */}
+        <div className="flex flex-wrap gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+          <Button
+            onClick={onContact}
+            className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Contact Organizer
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            Log Contact
+          </Button>
+          {onAiIntakeAssist && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAiIntakeAssist}
+              className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
+              data-testid="button-ai-intake-check"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              AI Intake Check
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onReschedule} className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10">
+            Reschedule
+          </Button>
+          <Button size="sm" onClick={onFollowUp} className="bg-[#236383] text-white hover:bg-[#236383]/90">
+            Follow Up
+          </Button>
+
+          {!(request.tspContact || request.customTspContact) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssignTspContact}
+              className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign TSP Contact
+            </Button>
+          )}
+        </div>
+
+        {/* Activity History Toggle */}
+        <div className="border-t-2 border-[#007E8C]/10 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" aria-hidden="true" />
+              Activity History
+            </div>
+            {showAuditLog ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+          </Button>
+        </div>
+
+        {showAuditLog && (
+          <div className="mt-4 pt-4 border-t-2 border-[#007E8C]/10">
+            <EventRequestAuditLog
+              eventId={request.id?.toString()}
+              showFilters={false}
+              compact={true}
+            />
+          </div>
+        )}
+      </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event${displayDate ? ` on ${formatEventDate(displayDate.toString())}` : ''}`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};

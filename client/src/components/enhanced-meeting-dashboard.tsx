@@ -50,6 +50,7 @@ import { MeetingDetailsDialog } from './meetings/dashboard/dialogs/MeetingDetail
 import { MeetingOverviewTab } from './meetings/dashboard/tabs/MeetingOverviewTab';
 import { AgendaPlanningTab } from './meetings/dashboard/tabs/AgendaPlanningTab';
 import { NotesTab } from './meetings/dashboard/tabs/NotesTab';
+import { NotesHistoryTab } from './meetings/dashboard/tabs/NotesHistoryTab';
 import { getCategoryIcon } from './meetings/dashboard/utils/categories';
 import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
 import { formatMeetingDate, formatMeetingTime, isPastMeeting, getCurrentDateRange, formatSectionName } from './meetings/dashboard/utils/date';
@@ -93,6 +94,7 @@ import {
 import type { Meeting, MeetingFormData } from './meetings/dashboard/hooks/useMeetings';
 import type { Project, NewProjectData } from './meetings/dashboard/hooks/useProjects';
 import type { AgendaItem, OffAgendaItemData } from './meetings/dashboard/hooks/useAgenda';
+import { logger } from '@/lib/logger';
 
 export default function EnhancedMeetingDashboard() {
   const { user } = useAuth();
@@ -104,7 +106,7 @@ export default function EnhancedMeetingDashboard() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
-  const [activeTab, setActiveTab] = useState<'overview' | 'agenda' | 'notes'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agenda' | 'notes' | 'notes-history'>('overview');
   const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
   const [newMeetingData, setNewMeetingData] = useState<MeetingFormData>({
     title: '',
@@ -247,25 +249,37 @@ export default function EnhancedMeetingDashboard() {
       const planningMeetings = safeMeetings.filter(m => m.status === 'planning');
       if (planningMeetings.length > 0) {
         // Sort by date (most recent first) and select the first one
-        const sortedPlanning = planningMeetings.sort((a, b) => 
+        // Create a copy to avoid mutating the original array
+        const sortedPlanning = [...planningMeetings].sort((a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        console.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
+        logger.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
         setSelectedMeeting(sortedPlanning[0]);
         return;
       }
-      
+
       // Priority 2: Most recent meeting by date
-      const sortedMeetings = safeMeetings.sort((a, b) => 
+      // Create a copy to avoid mutating the original array
+      const sortedMeetings = [...safeMeetings].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      console.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
+      logger.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
       setSelectedMeeting(sortedMeetings[0]);
     }
-  }, [safeMeetings, selectedMeeting]);
+    // Only depend on safeMeetings - selectedMeeting is checked inside the effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeMeetings]);
 
   // Debounced handlers for auto-save
   const debouncedUpdateRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  // Cleanup debounced timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      debouncedUpdateRef.current.forEach(timeout => clearTimeout(timeout));
+      debouncedUpdateRef.current.clear();
+    };
+  }, []);
 
   const handleUpdateProjectDiscussion = useCallback(
     (
@@ -332,23 +346,47 @@ export default function EnhancedMeetingDashboard() {
     [localProjectText]
   );
 
-  // Handler for agenda actions
+  // Handler for agenda actions - with optional note content transfer
   const handleSendToAgenda = useCallback(
-    (projectId: number) => {
+    (projectId: number, noteContent?: string) => {
       // Debug logging for Christine's issue
-      console.log('🔍 Send to Agenda Debug Info:', {
+      logger.log('🔍 Send to Agenda Debug Info:', {
         user: user?.email,
         role: user?.role,
         permissions: Array.isArray(user?.permissions) ? user.permissions.length : 0,
         projectId,
+        hasNoteContent: !!noteContent,
         timestamp: new Date().toISOString(),
       });
 
       setProjectAgendaStatus((prev) => ({ ...prev, [projectId]: 'agenda' }));
       setMinimizedProjects((prev) => new Set([...Array.from(prev), projectId]));
+      
+      // Prepare updates object
+      const updates: {
+        reviewInNextMeeting: boolean;
+        meetingDiscussionPoints?: string;
+        meetingDecisionItems?: string;
+      } = { reviewInNextMeeting: true };
+      
+      // If note content is provided, parse it and copy to project fields
+      if (noteContent) {
+        try {
+          const parsed = JSON.parse(noteContent);
+          if (parsed.discussionPoints) {
+            updates.meetingDiscussionPoints = parsed.discussionPoints;
+          }
+          if (parsed.decisionItems) {
+            updates.meetingDecisionItems = parsed.decisionItems;
+          }
+        } catch (error) {
+          logger.warn('Failed to parse note content:', error);
+        }
+      }
+      
       updateProjectDiscussionMutation.mutate({
         projectId,
-        updates: { reviewInNextMeeting: true },
+        updates,
       });
       toast({
         title: 'Added to Agenda',
@@ -410,11 +448,11 @@ export default function EnhancedMeetingDashboard() {
 
       await generateAgendaPDF(projectAgendaStatus);
     } catch (error) {
-      console.error('=== PDF GENERATION CLIENT ERROR ===');
-      console.error('Error details:', error);
-      console.error('User permissions:', user?.permissions);
-      console.error('User email:', user?.email);
-      console.error('====================================');
+      logger.error('=== PDF GENERATION CLIENT ERROR ===');
+      logger.error('Error details:', error);
+      logger.error('User permissions:', user?.permissions);
+      logger.error('User email:', user?.email);
+      logger.error('====================================');
 
       let errorMessage = 'Failed to generate agenda PDF';
       const errorObj = error as { message?: string } | undefined;
@@ -547,11 +585,21 @@ export default function EnhancedMeetingDashboard() {
 
   const handleDeleteMeeting = () => {
     if (!editingMeeting) return;
-    
+
     if (window.confirm(`Are you sure you want to delete "${editingMeeting.title}"? This action cannot be undone.`)) {
-      deleteMeetingMutation.mutate(editingMeeting.id);
-      setShowEditMeetingDialog(false);
-      setEditingMeeting(null);
+      const deletedMeetingId = editingMeeting.id;
+      deleteMeetingMutation.mutate(editingMeeting.id, {
+        onSuccess: () => {
+          // Only clear state after successful deletion
+          setShowEditMeetingDialog(false);
+          setEditingMeeting(null);
+
+          // Clear selectedMeeting if it's the one being deleted
+          if (selectedMeeting?.id === deletedMeetingId) {
+            setSelectedMeeting(null);
+          }
+        }
+      });
     }
   };
 
@@ -696,6 +744,18 @@ export default function EnhancedMeetingDashboard() {
           <FileText className="w-4 h-4" />
           <span className="hidden sm:inline">Meeting </span>Notes
         </button>
+        <button
+          onClick={() => setActiveTab('notes-history')}
+          data-testid="button-notes-history-tab"
+          className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+            activeTab === 'notes-history'
+              ? 'bg-white text-teal-700 shadow-sm'
+              : 'text-gray-600 hover:text-teal-700'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span className="hidden sm:inline">Notes </span>History
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -815,6 +875,9 @@ export default function EnhancedMeetingDashboard() {
           queryClient={baseQueryClient}
           toast={toast}
         />
+      )}
+      {activeTab === 'notes-history' && (
+        <NotesHistoryTab selectedMeeting={selectedMeeting} />
       )}
 
       {/* Edit Support People Dialog */}

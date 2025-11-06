@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { createHash } from 'crypto';
+import { logger } from './utils/production-safe-logger';
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
@@ -47,11 +48,11 @@ export class GoogleSheetsService {
 
   private async initializeAuth() {
     try {
-      console.log('🔧 Initializing Google Sheets authentication...');
+      logger.log('🔧 Initializing Google Sheets authentication...');
 
       // Run diagnostics if authentication fails repeatedly
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Running authentication diagnostics...');
+        logger.log('🔍 Running authentication diagnostics...');
         const { googleSheetsDiagnostics } = await import(
           './google-sheets-diagnostics'
         );
@@ -62,10 +63,10 @@ export class GoogleSheetsService {
         );
 
         if (criticalIssues.length > 0) {
-          console.log('❌ Critical authentication issues detected:');
+          logger.log('❌ Critical authentication issues detected:');
           criticalIssues.forEach((issue) => {
-            console.log(`   - ${issue.issue}: ${issue.description}`);
-            console.log(`     Solution: ${issue.solution}`);
+            logger.log(`   - ${issue.issue}: ${issue.description}`);
+            logger.log(`     Solution: ${issue.solution}`);
           });
           googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
         }
@@ -85,7 +86,7 @@ export class GoogleSheetsService {
       // Handle private key format more robustly - Node.js v20 compatibility fix
       let cleanPrivateKey = privateKey;
 
-      console.log('🔧 Original private key format check:', {
+      logger.log('🔧 Original private key format check:', {
         hasBackslashN: cleanPrivateKey.includes('\\n'),
         hasRealNewlines: cleanPrivateKey.includes('\n'),
         hasBeginHeader: cleanPrivateKey.includes('-----BEGIN'),
@@ -96,7 +97,7 @@ export class GoogleSheetsService {
       // Replit often stores literal \n characters instead of actual newlines
       if (cleanPrivateKey.includes('\\n')) {
         cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
-        console.log('🔧 Converted \\n to actual newlines (Node.js v20 fix)');
+        logger.log('🔧 Converted \\n to actual newlines (Node.js v20 fix)');
       }
 
       // Additional newline handling for different platforms
@@ -111,7 +112,7 @@ export class GoogleSheetsService {
         !cleanPrivateKey.includes('\n') &&
         cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')
       ) {
-        console.log(
+        logger.log(
           '🔧 Detected single-line private key - fixing for Node.js v20...'
         );
 
@@ -134,7 +135,7 @@ export class GoogleSheetsService {
           lines.push(endMarker);
 
           cleanPrivateKey = lines.join('\n');
-          console.log(
+          logger.log(
             '🔧 Rebuilt private key with proper line breaks for Node.js v20'
           );
         }
@@ -146,14 +147,14 @@ export class GoogleSheetsService {
         (cleanPrivateKey.startsWith("'") && cleanPrivateKey.endsWith("'"))
       ) {
         cleanPrivateKey = cleanPrivateKey.slice(1, -1);
-        console.log('🔧 Removed surrounding quotes from private key');
+        logger.log('🔧 Removed surrounding quotes from private key');
       }
 
       // Ensure proper PEM format
       if (!cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
         // If it's just the key content without headers, add them
         cleanPrivateKey = `-----BEGIN PRIVATE KEY-----\n${cleanPrivateKey}\n-----END PRIVATE KEY-----`;
-        console.log('🔧 Added PEM headers to private key');
+        logger.log('🔧 Added PEM headers to private key');
       }
 
       // Clean up any extra whitespace and normalize line endings
@@ -184,7 +185,7 @@ export class GoogleSheetsService {
 
       cleanPrivateKey = properLines.join('\n');
 
-      console.log('🔧 Final private key format:', {
+      logger.log('🔧 Final private key format:', {
         lineCount: cleanPrivateKey.split('\n').length,
         hasProperHeaders:
           cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----') &&
@@ -195,7 +196,7 @@ export class GoogleSheetsService {
 
       // Use direct JWT authentication - simpler and more reliable
       try {
-        console.log('🔧 Attempting direct JWT authentication...');
+        logger.log('🔧 Attempting direct JWT authentication...');
 
         // Simple JWT auth using google.auth.JWT directly
         const auth = new google.auth.JWT(
@@ -209,7 +210,7 @@ export class GoogleSheetsService {
         this.sheets = google.sheets({ version: 'v4', auth });
 
         // Test with a simple API call to verify authentication actually works
-        console.log('🔧 Testing authentication with real API call...');
+        logger.log('🔧 Testing authentication with real API call...');
 
         try {
           // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet, not demo
@@ -224,7 +225,7 @@ export class GoogleSheetsService {
             fields: 'spreadsheetId,properties.title',
           });
 
-          console.log(
+          logger.log(
             "✅ Authentication test successful against USER'S spreadsheet:",
             {
               spreadsheetId: testResponse.data.spreadsheetId,
@@ -232,19 +233,19 @@ export class GoogleSheetsService {
             }
           );
 
-          console.log(
+          logger.log(
             '✅ Google Sheets JWT authentication FULLY VERIFIED against actual spreadsheet'
           );
           return;
         } catch (testError) {
           const error = testError as Error;
-          console.error('❌ Authentication test failed:', error.message);
+          logger.error('❌ Authentication test failed:', error.message);
           throw new Error(
             `JWT authentication test failed: ${error.message}`
           );
         }
       } catch (authError) {
-        console.log(
+        logger.log(
           '⚠️ JWT auth failed, trying simplified approach:',
           (authError as Error).message
         );
@@ -269,7 +270,7 @@ export class GoogleSheetsService {
         'google-service-account.json'
       );
       fs.writeFileSync(tempFilePath, serviceAccountContent);
-      console.log('🔧 Created temporary service account file');
+      logger.log('🔧 Created temporary service account file');
 
       const auth = new google.auth.GoogleAuth({
         keyFile: tempFilePath,
@@ -281,7 +282,7 @@ export class GoogleSheetsService {
       this.sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
       // Test file-based authentication with real API call
-      console.log('🔧 Testing file-based authentication with real API call...');
+      logger.log('🔧 Testing file-based authentication with real API call...');
 
       try {
         // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet
@@ -296,7 +297,7 @@ export class GoogleSheetsService {
           fields: 'spreadsheetId,properties.title',
         });
 
-        console.log(
+        logger.log(
           "✅ File-based authentication test successful against USER'S spreadsheet:",
           {
             spreadsheetId: testResponse.data.spreadsheetId,
@@ -305,7 +306,7 @@ export class GoogleSheetsService {
         );
       } catch (testError) {
         const error = testError as Error;
-        console.error(
+        logger.error(
           "❌ File-based authentication test failed against user's spreadsheet:",
           error.message
         );
@@ -314,22 +315,22 @@ export class GoogleSheetsService {
         );
       }
 
-      console.log('✅ Google Sheets file-based authentication fully verified');
+      logger.log('✅ Google Sheets file-based authentication fully verified');
 
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
-      console.log('🔧 Cleaned up temporary service account file');
+      logger.log('🔧 Cleaned up temporary service account file');
     } catch (error) {
       const err = error as Error;
-      console.error('❌ Google Sheets authentication failed:', err.message);
+      logger.error('❌ Google Sheets authentication failed:', err.message);
       if (
         err.message.includes('DECODER') ||
         err.message.includes('OSSL_UNSUPPORTED')
       ) {
-        console.error(
+        logger.error(
           '💡 This is a Node.js v20 OpenSSL compatibility issue with the private key format'
         );
-        console.error(
+        logger.error(
           '💡 The private key from your Google Cloud Console may need to be regenerated for Node.js v20+'
         );
       }
@@ -389,7 +390,7 @@ export class GoogleSheetsService {
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
-      console.error('Error reading Google Sheet:', error);
+      logger.error('Error reading Google Sheet:', error);
       throw new Error('Failed to read from Google Sheets');
     }
   }
@@ -441,13 +442,13 @@ export class GoogleSheetsService {
             range: `${this.config.worksheetName}!A${existingRowIndex}:M${existingRowIndex}`,
             values: [rowData],
           });
-          console.log(
+          logger.log(
             `🔄 Updating existing row ${existingRowIndex} for: "${row.project}"`
           );
         } else {
           // New row to append
           newRows.push(rowData);
-          console.log(`➕ Adding new row for: "${row.project}"`);
+          logger.log(`➕ Adding new row for: "${row.project}"`);
         }
       }
 
@@ -460,7 +461,7 @@ export class GoogleSheetsService {
             data: updates,
           },
         });
-        console.log(`Updated ${updates.length} existing rows`);
+        logger.log(`Updated ${updates.length} existing rows`);
       }
 
       // Insert new rows at specific location (NOT append to avoid column drift)
@@ -485,14 +486,14 @@ export class GoogleSheetsService {
           },
         });
 
-        console.log(
+        logger.log(
           `📍 Added ${newRows.length} new rows directly at A${insertRowStart}:N${insertRowEnd}`
         );
       }
 
       return true;
     } catch (error) {
-      console.error('Error updating Google Sheet:', error);
+      logger.error('Error updating Google Sheet:', error);
       throw new Error('Failed to update Google Sheets');
     }
   }
@@ -554,7 +555,7 @@ export class GoogleSheetsService {
           },
         });
 
-        console.log(
+        logger.log(
           `📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:N${insertRowEnd}` // FIXED: was A:M, now A:N
         );
       }
@@ -564,7 +565,7 @@ export class GoogleSheetsService {
         skipped: rows.length - newRows.length,
       };
     } catch (error) {
-      console.error('Error in append-only sync:', error);
+      logger.error('Error in append-only sync:', error);
       throw new Error('Failed to perform append-only sync');
     }
   }
@@ -600,7 +601,7 @@ export class GoogleSheetsService {
         },
       });
     } catch (error) {
-      console.error('Error setting headers:', error);
+      logger.error('Error setting headers:', error);
       throw new Error('Failed to set sheet headers');
     }
   }
@@ -794,7 +795,7 @@ export function getGoogleSheetsService(
     !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
     !process.env.GOOGLE_PRIVATE_KEY
   ) {
-    console.log(
+    logger.log(
       'Google Sheets service not configured - missing environment variables'
     );
     return null;
@@ -803,7 +804,7 @@ export function getGoogleSheetsService(
   // If custom config is provided, create a new instance
   if (customConfig) {
     if (!customConfig.spreadsheetId) {
-      console.log(
+      logger.log(
         'Google Sheets service not configured - missing spreadsheetId in custom config'
       );
       return null;
@@ -819,7 +820,7 @@ export function getGoogleSheetsService(
     };
 
     if (!config.spreadsheetId) {
-      console.log(
+      logger.log(
         'Google Sheets service not configured - missing GOOGLE_SPREADSHEET_ID'
       );
       return null;
@@ -834,7 +835,7 @@ export function getGoogleSheetsService(
 // Project-specific Google Sheets service
 export function getProjectsGoogleSheetsService(): GoogleSheetsService | null {
   if (!process.env.PROJECTS_SHEET_ID) {
-    console.log(
+    logger.log(
       'Projects Google Sheets service not configured - missing PROJECTS_SHEET_ID'
     );
     return null;

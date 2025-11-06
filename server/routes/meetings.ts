@@ -1,23 +1,43 @@
-import { Router } from 'express';
-import { isAuthenticated } from '../temp-auth';
+import { Router, Response } from 'express';
+import { isAuthenticated } from '../auth';
 import { storage } from '../storage-wrapper';
 import logger from '../utils/logger';
 import { z } from 'zod';
-import { insertMeetingNoteSchema } from '@shared/schema';
+import { insertMeetingNoteSchema, type MeetingNote } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
+import type { AuthenticatedRequest } from '../types/express';
+import { safeAssign, validateNoPrototypePollution } from '../utils/object-utils';
+
+// Type for project objects used in agenda compilation
+interface AgendaProject {
+  id?: number;
+  title: string;
+  status?: string;
+  priority?: string;
+  description?: string;
+  discussionPoints?: string;
+  decisionItems?: string;
+  owner?: string;
+  supportPeople?: string;
+  tasks?: unknown[];
+  attachments?: unknown[];
+  reason?: string;
+  reviewInNextMeeting?: boolean;
+}
 
 const router = Router();
 
 // Get all meetings
-router.get('/', isAuthenticated, async (req: any, res) => {
+router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('[Meetings API] Getting all meetings');
+    logger.log('[Meetings API] Getting all meetings');
     const meetings = await storage.getAllMeetings();
     
     // Ensure we always return an array
     const meetingsArray = Array.isArray(meetings) ? meetings : [];
     
-    console.log(`[Meetings API] Found ${meetingsArray.length} meetings`);
-    console.log('[Meetings API] Meetings data:', JSON.stringify(meetingsArray, null, 2));
+    logger.log(`[Meetings API] Found ${meetingsArray.length} meetings`);
+    logger.log('[Meetings API] Meetings data:', JSON.stringify(meetingsArray, null, 2));
     
     // Map database field names to client field names
     const mappedMeetings = meetingsArray.map(meeting => ({
@@ -28,41 +48,41 @@ router.get('/', isAuthenticated, async (req: any, res) => {
       agenda: meeting.finalAgenda,   // Map finalAgenda to agenda for client
     }));
     
-    console.log('[Meetings API] Mapped meetings for client:', JSON.stringify(mappedMeetings, null, 2));
+    logger.log('[Meetings API] Mapped meetings for client:', JSON.stringify(mappedMeetings, null, 2));
     res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to get meetings', error);
-    console.error('[Meetings API] Error fetching meetings:', error);
+    logger.error('[Meetings API] Error fetching meetings:', error);
     // Return empty array on error to prevent filter errors
     res.json([]);
   }
 });
 
 // Get meetings by type
-router.get('/type/:type', isAuthenticated, async (req: any, res) => {
+router.get('/type/:type', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { type } = req.params;
-    console.log(`[Meetings API] Getting meetings by type: ${type}`);
+    logger.log(`[Meetings API] Getting meetings by type: ${type}`);
     
     const meetings = await storage.getMeetingsByType(type);
     
     // Ensure we always return an array
     const meetingsArray = Array.isArray(meetings) ? meetings : [];
     
-    console.log(`[Meetings API] Found ${meetingsArray.length} meetings of type ${type}`);
+    logger.log(`[Meetings API] Found ${meetingsArray.length} meetings of type ${type}`);
     res.json(meetingsArray);
   } catch (error) {
     logger.error('Failed to get meetings by type', error);
-    console.error('[Meetings API] Error fetching meetings by type:', error);
+    logger.error('[Meetings API] Error fetching meetings by type:', error);
     // Return empty array on error
     res.json([]);
   }
 });
 
 // Get current meeting
-router.get('/current', isAuthenticated, async (req: any, res) => {
+router.get('/current', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('[Meetings API] Getting current meeting');
+    logger.log('[Meetings API] Getting current meeting');
     
     const currentMeeting = await storage.getCurrentMeeting();
     
@@ -70,17 +90,17 @@ router.get('/current', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'No current meeting found' });
     }
     
-    console.log(`[Meetings API] Found current meeting: ${currentMeeting.title}`);
+    logger.log(`[Meetings API] Found current meeting: ${currentMeeting.title}`);
     res.json(currentMeeting);
   } catch (error) {
     logger.error('Failed to get current meeting', error);
-    console.error('[Meetings API] Error fetching current meeting:', error);
+    logger.error('[Meetings API] Error fetching current meeting:', error);
     res.status(500).json({ message: 'Failed to get current meeting' });
   }
 });
 
 // Create a new meeting
-router.post('/', isAuthenticated, async (req: any, res) => {
+router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -88,8 +108,8 @@ router.post('/', isAuthenticated, async (req: any, res) => {
     }
 
     const meetingData = req.body;
-    console.log(`[Meetings API] Creating new meeting: ${meetingData.title}`);
-    console.log('[Meetings API] Meeting data received:', JSON.stringify(meetingData, null, 2));
+    logger.log(`[Meetings API] Creating new meeting: ${meetingData.title}`);
+    logger.log('[Meetings API] Meeting data received:', JSON.stringify(meetingData, null, 2));
 
     // Map client field names to database field names
     const mappedMeetingData = {
@@ -103,22 +123,22 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       status: meetingData.status || 'planning', // Default to planning if not specified
     };
 
-    console.log('[Meetings API] Mapped meeting data:', JSON.stringify(mappedMeetingData, null, 2));
+    logger.log('[Meetings API] Mapped meeting data:', JSON.stringify(mappedMeetingData, null, 2));
 
     const newMeeting = await storage.createMeeting(mappedMeetingData);
     
-    console.log(`[Meetings API] Created meeting with ID: ${newMeeting.id}`);
-    console.log('[Meetings API] Created meeting data:', JSON.stringify(newMeeting, null, 2));
+    logger.log(`[Meetings API] Created meeting with ID: ${newMeeting.id}`);
+    logger.log('[Meetings API] Created meeting data:', JSON.stringify(newMeeting, null, 2));
     res.status(201).json(newMeeting);
   } catch (error) {
     logger.error('Failed to create meeting', error);
-    console.error('[Meetings API] Error creating meeting:', error);
+    logger.error('[Meetings API] Error creating meeting:', error);
     res.status(500).json({ message: 'Failed to create meeting' });
   }
 });
 
 // Update a meeting
-router.patch('/:id', isAuthenticated, async (req: any, res) => {
+router.patch('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -128,7 +148,7 @@ router.patch('/:id', isAuthenticated, async (req: any, res) => {
     const meetingId = parseInt(req.params.id);
     const updates = req.body;
     
-    console.log(`[Meetings API] Updating meeting ${meetingId}`);
+    logger.log(`[Meetings API] Updating meeting ${meetingId}`);
 
     const updatedMeeting = await storage.updateMeeting(meetingId, updates);
     
@@ -136,17 +156,17 @@ router.patch('/:id', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
     
-    console.log(`[Meetings API] Updated meeting ${meetingId}`);
+    logger.log(`[Meetings API] Updated meeting ${meetingId}`);
     res.json(updatedMeeting);
   } catch (error) {
     logger.error('Failed to update meeting', error);
-    console.error('[Meetings API] Error updating meeting:', error);
+    logger.error('[Meetings API] Error updating meeting:', error);
     res.status(500).json({ message: 'Failed to update meeting' });
   }
 });
 
 // Update meeting agenda
-router.patch('/:id/agenda', isAuthenticated, async (req: any, res) => {
+router.patch('/:id/agenda', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -156,7 +176,7 @@ router.patch('/:id/agenda', isAuthenticated, async (req: any, res) => {
     const meetingId = parseInt(req.params.id);
     const { agenda } = req.body;
     
-    console.log(`[Meetings API] Updating agenda for meeting ${meetingId}`);
+    logger.log(`[Meetings API] Updating agenda for meeting ${meetingId}`);
 
     const updatedMeeting = await storage.updateMeetingAgenda(meetingId, agenda);
     
@@ -164,17 +184,17 @@ router.patch('/:id/agenda', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
     
-    console.log(`[Meetings API] Updated agenda for meeting ${meetingId}`);
+    logger.log(`[Meetings API] Updated agenda for meeting ${meetingId}`);
     res.json(updatedMeeting);
   } catch (error) {
     logger.error('Failed to update meeting agenda', error);
-    console.error('[Meetings API] Error updating meeting agenda:', error);
+    logger.error('[Meetings API] Error updating meeting agenda:', error);
     res.status(500).json({ message: 'Failed to update meeting agenda' });
   }
 });
 
 // Delete a meeting
-router.delete('/:id', isAuthenticated, async (req: any, res) => {
+router.delete('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -182,7 +202,7 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
     }
 
     const meetingId = parseInt(req.params.id);
-    console.log(`[Meetings API] Deleting meeting ${meetingId}`);
+    logger.log(`[Meetings API] Deleting meeting ${meetingId}`);
 
     const success = await storage.deleteMeeting(meetingId);
     
@@ -190,20 +210,20 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
     
-    console.log(`[Meetings API] Deleted meeting ${meetingId}`);
+    logger.log(`[Meetings API] Deleted meeting ${meetingId}`);
     res.status(204).send();
   } catch (error) {
     logger.error('Failed to delete meeting', error);
-    console.error('[Meetings API] Error deleting meeting:', error);
+    logger.error('[Meetings API] Error deleting meeting:', error);
     res.status(500).json({ message: 'Failed to delete meeting' });
   }
 });
 
 // Simple One-Off Agenda Items - Fresh Implementation
 // GET agenda items for a meeting
-router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
+router.get('/agenda-items', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('🟢 Simple Agenda API - GET request:', req.query);
+    logger.log('🟢 Simple Agenda API - GET request:', req.query);
     const { meetingId } = req.query;
     
     if (!meetingId) {
@@ -213,18 +233,18 @@ router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
     const items = await storage.getAllAgendaItems();
     const filteredItems = items.filter(item => item.meetingId === parseInt(meetingId));
     
-    console.log('✅ Simple Agenda API - Returning', filteredItems.length, 'items for meeting', meetingId);
+    logger.log('✅ Simple Agenda API - Returning', filteredItems.length, 'items for meeting', meetingId);
     res.json(filteredItems);
   } catch (error) {
-    console.error('❌ Simple Agenda API - Error:', error);
+    logger.error('❌ Simple Agenda API - Error:', error);
     res.status(500).json({ message: 'Failed to fetch agenda items' });
   }
 });
 
 // POST create agenda item
-router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
+router.post('/agenda-items', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('🟢 Simple Agenda API - POST request:', req.body);
+    logger.log('🟢 Simple Agenda API - POST request:', req.body);
     
     const { title, description, meetingId } = req.body;
     
@@ -240,21 +260,21 @@ router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
       status: 'pending'
     });
     
-    console.log('✅ Simple Agenda API - Created item:', newItem.id);
+    logger.log('✅ Simple Agenda API - Created item:', newItem.id);
     res.status(201).json(newItem);
   } catch (error) {
-    console.error('❌ Simple Agenda API - Error:', error);
+    logger.error('❌ Simple Agenda API - Error:', error);
     res.status(500).json({ message: 'Failed to create agenda item' });
   }
 });
 
 // POST /api/meetings/finalize-agenda-pdf - Generate and download agenda PDF
-router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
+router.post('/finalize-agenda-pdf', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('📄 Generating agenda PDF...');
+    logger.log('📄 Generating agenda PDF...');
     
     const agendaData = req.body;
-    console.log('Agenda data received:', JSON.stringify(agendaData, null, 2));
+    logger.log('Agenda data received:', JSON.stringify(agendaData, null, 2));
     
     // Import the PDF generator
     const { generateMeetingAgendaPDF } = await import('../meeting-agenda-pdf-generator');
@@ -278,7 +298,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
       agendaSections.push({
         id: 1,
         title: 'Needs Discussion',
-        items: agendaData.agendaProjects.map((project: any, index: number) => ({
+        items: agendaData.agendaProjects.map((project: AgendaProject, index: number) => ({
           id: index + 1,
           title: project.title,
           description: project.discussionPoints || project.decisionItems || '',
@@ -308,7 +328,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
       agendaSections.push({
         id: agendaSections.length + 1,
         title: 'Tabled Items',
-        items: agendaData.tabledProjects.map((project: any, index: number) => ({
+        items: agendaData.tabledProjects.map((project: AgendaProject, index: number) => ({
           id: index + 1,
           title: project.title,
           description: project.reason || 'No reason specified',
@@ -347,17 +367,17 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
           if (!acc[section]) acc[section] = [];
           acc[section].push(item);
           return acc;
-        }, {} as any);
-        
+        }, {} as Record<string, typeof currentMeetingItems>);
+
         // Add each section
-        Object.entries(itemsBySection).forEach(([sectionName, items]: [string, any]) => {
+        Object.entries(itemsBySection).forEach(([sectionName, items]) => {
           const sectionTitle = sectionName.replace(/_/g, ' ')
             .replace(/\b\w/g, l => l.toUpperCase());
           
           agendaSections.push({
             id: agendaSections.length + 1,
             title: sectionTitle,
-            items: items.map((item: any, index: number) => ({
+            items: items.map((item, index: number) => ({
               id: index + 1,
               title: item.title,
               description: item.description || '',
@@ -369,7 +389,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
         });
       }
     } catch (error) {
-      console.error('Error fetching agenda items:', error);
+      logger.error('Error fetching agenda items:', error);
     }
     
     const compiledAgenda = {
@@ -399,29 +419,68 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
     
     // Send the PDF
     res.send(pdfBuffer);
-    console.log('✅ Agenda PDF generated and sent successfully');
+    logger.log('✅ Agenda PDF generated and sent successfully');
     
   } catch (error) {
-    console.error('Error generating agenda PDF:', error);
+    logger.error('Error generating agenda PDF:', error);
     res.status(500).json({ error: 'Failed to generate agenda PDF' });
   }
 });
 
 // GET /api/meetings/:id/download-pdf - Download existing meeting PDF
-router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
+router.get('/:id/download-pdf', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const meetingId = req.params.id;
-    console.log('📄 Downloading PDF for meeting:', meetingId);
+    const meetingId = parseInt(req.params.id);
+    logger.log('📄 Downloading PDF for meeting:', meetingId);
     
-    // For now, return a simple text response indicating the feature is not yet implemented
-    // TODO: Implement actual PDF download functionality
-    res.status(501).json({ 
-      error: 'PDF download not yet implemented',
-      message: 'The PDF download feature is under development. Please use the export to Google Sheets functionality for now.'
-    });
+    // Fetch the meeting from storage
+    const meeting = await storage.getMeeting(meetingId);
+    
+    if (!meeting) {
+      return res.status(404).json({ 
+        error: 'Meeting not found',
+        message: `No meeting found with ID ${meetingId}`
+      });
+    }
+    
+    // Try to fetch the compiled agenda for the meeting
+    let compiledAgenda;
+    try {
+      const agendas = await storage.getCompiledAgendasByMeeting(meetingId);
+      if (agendas && agendas.length > 0) {
+        // Get the most recent compiled agenda
+        compiledAgenda = agendas[0];
+        logger.log('📋 Found compiled agenda for meeting:', compiledAgenda.id);
+      }
+    } catch (err) {
+      logger.log('ℹ️ No compiled agenda found for meeting, will use meeting details only');
+    }
+    
+    // Import the PDF generator
+    const { generateMeetingMinutesPDF } = await import('../meeting-minutes-pdf-generator');
+    
+    // Generate the PDF
+    const pdfBuffer = await generateMeetingMinutesPDF(meeting, compiledAgenda);
+    
+    // Create a safe filename from the meeting title and date
+    const safeTitle = meeting.title
+      .replace(/[^a-z0-9]/gi, '-')
+      .toLowerCase()
+      .substring(0, 50);
+    const meetingDate = new Date(meeting.date).toISOString().split('T')[0];
+    const filename = `meeting-minutes-${safeTitle}-${meetingDate}.pdf`;
+    
+    // Set appropriate headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+    logger.log('✅ Meeting minutes PDF generated and sent successfully');
     
   } catch (error) {
-    console.error('Error downloading meeting PDF:', error);
+    logger.error('Error downloading meeting PDF:', error);
     res.status(500).json({ error: 'Failed to download meeting PDF' });
   }
 });
@@ -429,74 +488,99 @@ router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
 // Meeting Notes API Endpoints
 
 // GET /api/meetings/notes - Get all meeting notes with optional query filters
-router.get('/notes', isAuthenticated, async (req: any, res) => {
+router.get('/notes', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log('[Meeting Notes API] Getting meeting notes with filters:', req.query);
+    logger.log('[Meeting Notes API] Getting meeting notes with filters:', req.query);
     const { projectId, meetingId, type, status } = req.query;
-    
-    const filters: any = {};
+
+    const filters: Partial<MeetingNote> = {};
     if (projectId) filters.projectId = parseInt(projectId as string);
     if (meetingId) filters.meetingId = parseInt(meetingId as string);
     if (type) filters.type = type as string;
     if (status) filters.status = status as string;
 
-    const notes = Object.keys(filters).length > 0 
+    const notes = Object.keys(filters).length > 0
       ? await storage.getMeetingNotesByFilters(filters)
       : await storage.getAllMeetingNotes();
-    
-    // TODO: Add joined data (projectTitle, meetingTitle) if needed by frontend
-    console.log(`[Meeting Notes API] Found ${notes.length} meeting notes`);
+
+    // Log detailed info about notes
+    logger.log(`[Meeting Notes API] Found ${notes.length} meeting notes`);
+    if (notes.length > 0) {
+      logger.log('[Meeting Notes API] Sample of notes (first 3):');
+      notes.slice(0, 3).forEach(note => {
+        logger.log({
+          id: note.id,
+          projectId: note.projectId,
+          meetingId: note.meetingId,
+          type: note.type,
+          status: note.status,
+          createdAt: note.createdAt,
+          contentPreview: note.content.substring(0, 100)
+        });
+      });
+    }
+
     res.json(notes);
   } catch (error) {
     logger.error('Failed to get meeting notes', error);
-    console.error('[Meeting Notes API] Error fetching meeting notes:', error);
+    logger.error('[Meeting Notes API] Error fetching meeting notes:', error);
     res.status(500).json({ message: 'Failed to get meeting notes' });
   }
 });
 
-// POST /api/meetings/notes - Create a new meeting note  
-router.post('/notes', isAuthenticated, async (req: any, res) => {
+// POST /api/meetings/notes - Create a new meeting note
+router.post('/notes', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    console.log('[Meeting Notes API] Creating new meeting note:', req.body);
-    
+    logger.log('[Meeting Notes API] Creating new meeting note:', req.body);
+
     const noteData = insertMeetingNoteSchema.parse(req.body);
-    
+
     // Add creator information
     noteData.createdBy = user.id;
     noteData.createdByName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-    
+
+    logger.log('[Meeting Notes API] Note data after validation and user info:', {
+      projectId: noteData.projectId,
+      meetingId: noteData.meetingId,
+      type: noteData.type,
+      status: noteData.status,
+      createdBy: noteData.createdBy,
+      createdByName: noteData.createdByName,
+      contentLength: noteData.content?.length || 0
+    });
+
     const note = await storage.createMeetingNote(noteData);
-    
-    console.log(`[Meeting Notes API] Created meeting note with ID: ${note.id}`);
+
+    logger.log(`[Meeting Notes API] ✅ Successfully created meeting note with ID: ${note.id}, meetingId: ${note.meetingId}, status: ${note.status}`);
     res.status(201).json(note);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('[Meeting Notes API] Validation error:', error.errors);
-      return res.status(400).json({ 
-        message: 'Invalid meeting note data', 
-        errors: error.errors 
+      logger.error('[Meeting Notes API] Validation error:', error.errors);
+      return res.status(400).json({
+        message: 'Invalid meeting note data',
+        errors: error.errors
       });
     }
     logger.error('Failed to create meeting note', error);
-    console.error('[Meeting Notes API] Error creating meeting note:', error);
+    logger.error('[Meeting Notes API] ❌ Error creating meeting note:', error);
     res.status(500).json({ message: 'Failed to create meeting note' });
   }
 });
 
 // GET /api/meetings/notes/:id - Get a single meeting note by ID
-router.get('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.get('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
 
-    console.log(`[Meeting Notes API] Getting meeting note ${id}`);
+    logger.log(`[Meeting Notes API] Getting meeting note ${id}`);
     
     const note = await storage.getMeetingNote(id);
     if (!note) {
@@ -504,17 +588,17 @@ router.get('/notes/:id', isAuthenticated, async (req: any, res) => {
     }
 
     // TODO: Add joined data (projectTitle, meetingTitle) if needed by frontend
-    console.log(`[Meeting Notes API] Found meeting note ${id}`);
+    logger.log(`[Meeting Notes API] Found meeting note ${id}`);
     res.json(note);
   } catch (error) {
     logger.error('Failed to get meeting note', error);
-    console.error('[Meeting Notes API] Error fetching meeting note:', error);
+    logger.error('[Meeting Notes API] Error fetching meeting note:', error);
     res.status(500).json({ message: 'Failed to get meeting note' });
   }
 });
 
 // PATCH /api/meetings/notes/:id - Update a meeting note
-router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.patch('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -526,18 +610,27 @@ router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
 
-    console.log(`[Meeting Notes API] Updating meeting note ${id}`, req.body);
+    logger.log(`[Meeting Notes API] Updating meeting note ${id}`, req.body);
 
-    // Validate that only allowed fields are being updated
-    const allowedUpdates = ['content', 'type', 'status'];
-    const updates: any = {};
-    
-    for (const key of allowedUpdates) {
-      if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
-      }
+    // Validate against prototype pollution attempts
+    try {
+      validateNoPrototypePollution(req.body);
+    } catch (error) {
+      logger.error('Prototype pollution attempt detected in meeting note update', {
+        userId: user.id,
+        noteId: id,
+        error
+      });
+      return res.status(400).json({
+        message: 'Invalid request: prohibited property names detected'
+      });
     }
-    
+
+    // Validate that only allowed fields are being updated (using safe assignment)
+    const allowedUpdates = ['content', 'type', 'status'];
+    const updates: Partial<MeetingNote> = {};
+    safeAssign(updates, req.body, allowedUpdates);
+
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: 'No valid fields to update' });
     }
@@ -547,17 +640,17 @@ router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'Meeting note not found' });
     }
 
-    console.log(`[Meeting Notes API] Updated meeting note ${id}`);
+    logger.log(`[Meeting Notes API] Updated meeting note ${id}`);
     res.json(updatedNote);
   } catch (error) {
     logger.error('Failed to update meeting note', error);
-    console.error('[Meeting Notes API] Error updating meeting note:', error);
+    logger.error('[Meeting Notes API] Error updating meeting note:', error);
     res.status(500).json({ message: 'Failed to update meeting note' });
   }
 });
 
 // DELETE /api/meetings/notes/:id - Delete a meeting note
-router.delete('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.delete('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -569,7 +662,7 @@ router.delete('/notes/:id', isAuthenticated, async (req: any, res) => {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
 
-    console.log(`[Meeting Notes API] Deleting meeting note ${id}`);
+    logger.log(`[Meeting Notes API] Deleting meeting note ${id}`);
 
     const success = await storage.deleteMeetingNote(id);
     
@@ -577,11 +670,11 @@ router.delete('/notes/:id', isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: 'Meeting note not found' });
     }
     
-    console.log(`[Meeting Notes API] Deleted meeting note ${id}`);
+    logger.log(`[Meeting Notes API] Deleted meeting note ${id}`);
     res.status(204).send();
   } catch (error) {
     logger.error('Failed to delete meeting note', error);
-    console.error('[Meeting Notes API] Error deleting meeting note:', error);
+    logger.error('[Meeting Notes API] Error deleting meeting note:', error);
     res.status(500).json({ message: 'Failed to delete meeting note' });
   }
 });

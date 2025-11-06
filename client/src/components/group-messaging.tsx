@@ -17,6 +17,7 @@ import { MessageCircle, Plus, Users, Send, Crown, Trash2, UserPlus, Edit, MoreVe
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Message, User } from "@shared/schema";
 import { PERMISSIONS } from "@shared/auth-utils";
+import { logger } from '@/lib/logger';
 
 interface GroupWithMembers {
   id: number;
@@ -100,7 +101,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
   const { data: groups = [], isLoading: groupsLoading, error: groupsError } = useQuery<GroupWithMembers[]>({
     queryKey: ["/api/conversations/groups"],
     queryFn: async () => {
-      console.log("🔍 Fetching groups from API...");
+      logger.log("🔍 Fetching groups from API...");
       const response = await fetch('/api/conversations?type=group', {
         credentials: 'include'
       });
@@ -110,7 +111,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
       }
       
       const data = await response.json();
-      console.log("🔍 Raw API response:", data);
+      logger.log("🔍 Raw API response:", data);
       
       const mappedGroups = (data || []).map((conv: any) => ({
         id: conv.id,
@@ -122,7 +123,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
         createdAt: conv.createdAt,
         createdBy: conv.createdBy || "system"
       }));
-      console.log("🔍 Mapped groups:", mappedGroups);
+      logger.log("🔍 Mapped groups:", mappedGroups);
       return mappedGroups;
     },
     refetchOnMount: true,
@@ -227,7 +228,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
           message: `🎉 You've successfully created the "${newGroup.name}" group. Start collaborating with your team members!`,
           data: { groupId: newGroup.id, action: "group_created" }
         }),
-      }).catch(err => console.log("Notification failed:", err));
+      }).catch(err => logger.log("Notification failed:", err));
       
       // Also send a welcome message to the group
       fetch("/api/messages", {
@@ -238,7 +239,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
           committee: `group_${newGroup.id}`,
           sender: "System"
         }),
-      }).catch(err => console.log("Welcome message failed:", err));
+      }).catch(err => logger.log("Welcome message failed:", err));
     },
   });
 
@@ -496,7 +497,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
     }
     
     // Super admins can moderate any message
-    if (currentUser?.permissions?.includes(PERMISSIONS.MODERATE_MESSAGES)) {
+    if (currentUser?.permissions?.includes(PERMISSIONS.MESSAGES_MODERATE)) {
       return true;
     }
     
@@ -657,7 +658,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                         <div className="flex items-center gap-1 mt-1">
                           <Users className="h-3 w-3 text-gray-400" />
                           <button 
-                            className="text-xs text-brand-primary hover:text-blue-800 hover:underline"
+                            className="text-xs text-brand-primary hover:text-brand-primary-dark hover:underline"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedGroup(group);
@@ -696,7 +697,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     <button 
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-brand-primary-light hover:bg-brand-primary-soft text-brand-primary rounded"
                       onClick={() => setShowMemberDialog(true)}
                     >
                       <Users className="h-3 w-3" />
