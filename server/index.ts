@@ -69,6 +69,12 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Security middleware - must come after body parsers
+import { prototypePollutionGuard } from './middleware/prototype-pollution-guard';
+import { jsonErrorHandler } from './middleware/json-validator';
+app.use(prototypePollutionGuard);  // Detect prototype pollution attempts
+app.use(jsonErrorHandler);  // Handle malformed JSON errors
+
 // Add CDN caching headers for static assets
 app.use((req: Request, res: Response, next: NextFunction) => {
   const path = req.path;

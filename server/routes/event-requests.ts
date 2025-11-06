@@ -19,6 +19,7 @@ import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
+import { safeJsonParse } from '../utils/safe-json';
 
 const router = Router();
 
@@ -1578,13 +1579,21 @@ router.put(
 
         // Process sandwich types if provided
         if (processedUpdates.sandwichTypes) {
-          try {
-            if (typeof processedUpdates.sandwichTypes === 'string') {
-              processedUpdates.sandwichTypes = JSON.parse(
-                processedUpdates.sandwichTypes
-              );
+          if (typeof processedUpdates.sandwichTypes === 'string') {
+            const parseResult = safeJsonParse(
+              processedUpdates.sandwichTypes,
+              [],  // Default to empty array
+              'sandwichTypes field'
+            );
+
+            if (!parseResult.success) {
+              logger.error('Failed to parse sandwichTypes', {
+                error: parseResult.error,
+                value: processedUpdates.sandwichTypes.substring(0, 100)
+              });
             }
-          } catch (error) {
+
+            processedUpdates.sandwichTypes = parseResult.data;
           }
         }
 
@@ -3115,16 +3124,20 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
 
       let newData: Partial<EventRequest> | null = null;
       let oldData: Partial<EventRequest> | null = null;
-      try {
-        newData = getField(log, 'newData', 'new_data')
-          ? JSON.parse(getField(log, 'newData', 'new_data'))
-          : null;
-      } catch {}
-      try {
-        oldData = getField(log, 'oldData', 'old_data')
-          ? JSON.parse(getField(log, 'oldData', 'old_data'))
-          : null;
-      } catch {}
+
+      // Safely parse newData with error handling
+      const newDataField = getField(log, 'newData', 'new_data');
+      if (newDataField) {
+        const parseResult = safeJsonParse(String(newDataField), {}, 'event audit log newData');
+        newData = parseResult.data;
+      }
+
+      // Safely parse oldData with error handling
+      const oldDataField = getField(log, 'oldData', 'old_data');
+      if (oldDataField) {
+        const parseResult = safeJsonParse(String(oldDataField), {}, 'event audit log oldData');
+        oldData = parseResult.data;
+      }
 
       const user = userMap.get(userId); // User who made the change
       const event = eventMap.get(recordId);
