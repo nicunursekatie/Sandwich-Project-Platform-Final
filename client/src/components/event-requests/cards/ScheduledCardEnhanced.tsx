@@ -180,10 +180,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  
+  // Check if there's any communication/notes content to show
+  const hasCommunicationContent = !!(
+    (request.contactAttemptsLog && request.contactAttemptsLog.length > 0) ||
+    (request.unresponsiveNotes && (!request.contactAttemptsLog || request.contactAttemptsLog.length === 0)) ||
+    request.followUpNotes ||
+    request.distributionNotes ||
+    request.duplicateNotes ||
+    request.socialMediaPostNotes
+  );
+  
+  // Default to collapsed when there's no content
+  const [showCommunicationNotes, setShowCommunicationNotes] = useState(hasCommunicationContent);
   const [addingAllTimes, setAddingAllTimes] = useState(false);
   const [tempStartTime, setTempStartTime] = useState('');
   const [tempEndTime, setTempEndTime] = useState('');
   const [tempPickupTime, setTempPickupTime] = useState('');
+  const [tempOvernightHolding, setTempOvernightHolding] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -1014,7 +1028,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <div className="space-y-3">
 
                 {/* Drivers */}
-                {driverNeeded > 0 ? (
+                {(driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                     {isEditingThisCard && editingField === 'driversNeeded' ? (
@@ -1128,7 +1142,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
 
                 {/* Speakers */}
-                {speakerNeeded > 0 ? (
+                {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'speakersNeeded' ? (
@@ -1230,7 +1244,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
 
                 {/* Volunteers */}
-                {volunteerNeeded > 0 ? (
+                {(volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
@@ -1391,7 +1405,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                          onClick={() => {
+                            setTempOvernightHolding(request.overnightHoldingLocation || '');
+                            startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
+                          }}
                           className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -1399,17 +1416,60 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                     {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-                      <div className="space-y-2">
-                        <MultiRecipientSelector
-                          value={editingValue ? JSON.parse(editingValue) : []}
-                          onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                          placeholder="Select recipients..."
-                        />
+                      <div className="space-y-4">
+                        <div>
+                          <MultiRecipientSelector
+                            value={editingValue ? JSON.parse(editingValue) : []}
+                            onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                            placeholder="Select recipients..."
+                          />
+                        </div>
+                        
+                        {/* Overnight Holding Location */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding Location</span>
+                          </div>
+                          <Input
+                            type="text"
+                            value={tempOvernightHolding}
+                            onChange={(e) => setTempOvernightHolding(e.target.value)}
+                            placeholder="Enter overnight holding location (optional)"
+                            className="text-sm"
+                          />
+                        </div>
+                        
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              // Save both recipients and overnight holding location
+                              const updates: Record<string, unknown> = {
+                                assignedRecipientIds: editingValue ? JSON.parse(editingValue) : []
+                              };
+                              if (tempOvernightHolding !== request.overnightHoldingLocation) {
+                                updates.overnightHoldingLocation = tempOvernightHolding || null;
+                              }
+                              updateFieldsMutation.mutate(updates, {
+                                onSuccess: () => {
+                                  cancelEdit();
+                                  setTempOvernightHolding('');
+                                }
+                              });
+                            }} 
+                            className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90"
+                          >
                             <Save className="w-3 h-3 mr-1" /> Save
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => {
+                              cancelEdit();
+                              setTempOvernightHolding('');
+                            }} 
+                            className="text-gray-600 hover:bg-gray-100"
+                          >
                             Cancel
                           </Button>
                         </div>
@@ -1520,7 +1580,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                        onClick={() => {
+                          setTempOvernightHolding(request.overnightHoldingLocation || '');
+                          startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
+                        }}
                         className="h-5 px-2 text-[#007E8C] text-xs"
                       >
                         <Edit2 className="w-3 h-3 mr-0.5" />
@@ -1738,14 +1801,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
-            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
-              <EventMessageThread
-                eventId={request.id.toString()}
-                eventRequest={request}
-                eventTitle={`${request.organizationName} event`}
-                maxHeight="300px"
-              />
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCommunicationNotes(!showCommunicationNotes)}
+              className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto mb-0"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#236383]" />
+                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
+                  Communication & Notes
+                </h3>
+              </div>
+              {showCommunicationNotes ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+            </Button>
+            {showCommunicationNotes && (
+              <div className="overflow-y-auto mt-3" style={{ maxHeight: '300px' }}>
+                <EventMessageThread
+                  eventId={request.id.toString()}
+                  eventRequest={request}
+                  eventTitle={`${request.organizationName} event`}
+                  maxHeight="300px"
+                />
+              </div>
+            )}
           </div>
         )}
 
