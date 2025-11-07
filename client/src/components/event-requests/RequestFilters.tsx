@@ -94,10 +94,23 @@ export default function RequestFilters({
   totalPages,
 }: RequestFiltersProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+  const hasAdminOverviewPermission = user?.permissions?.includes('view_admin_overview') || user?.role === 'super_admin';
 
   // Tab configuration with icons and labels
-  const tabConfig = [
+  const tabConfig = [];
+
+  // Add admin overview tab first if user has permission
+  if (hasAdminOverviewPermission && children.admin_overview) {
+    tabConfig.push({
+      value: 'admin_overview',
+      label: 'Admin Overview',
+      shortLabel: 'Admin',
+      icon: BarChart3,
+    });
+  }
+
+  // Add remaining tabs
+  tabConfig.push(
     {
       value: 'new',
       label: 'New',
@@ -140,19 +153,8 @@ export default function RequestFilters({
       shortLabel: 'Mine',
       icon: UserCheck,
       count: statusCounts.my_assignments,
-    },
-  ];
-
-  // Add admin overview tab if user is admin
-  if (isAdmin && children.admin_overview) {
-    tabConfig.push({
-      value: 'admin_overview',
-      label: 'Admin Overview',
-      shortLabel: 'Admin',
-      icon: BarChart3,
-      count: 0,
-    });
-  }
+    }
+  );
 
   // Get current tab info for mobile selector
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
@@ -168,7 +170,7 @@ export default function RequestFilters({
                 <>
                   <currentTab.icon className="w-4 h-4 text-[#007E8C]" />
                   <SelectValue>
-                    {currentTab.label} ({currentTab.count})
+                    {currentTab.label}{currentTab.count !== undefined && ` (${currentTab.count})`}
                   </SelectValue>
                 </>
               )}
@@ -183,7 +185,7 @@ export default function RequestFilters({
                 <div className="flex items-center space-x-2">
                   <tab.icon className="w-4 h-4 text-[#007E8C]" />
                   <span>{tab.label}</span>
-                  <span className="text-gray-500">({tab.count})</span>
+                  {tab.count !== undefined && <span className="text-gray-500">({tab.count})</span>}
                   {tab.hasNotification && (
                     <div className="w-2 h-2 bg-red-500 rounded-full" />
                   )}
@@ -211,7 +213,7 @@ export default function RequestFilters({
                     <tab.icon className="w-3 h-3 flex-shrink-0" />
                     <span className="hidden lg:inline">{tab.label}</span>
                     <span className="lg:hidden">{tab.shortLabel}</span>
-                    <span className="text-xs opacity-70">({tab.count})</span>
+                    {tab.count !== undefined && <span className="text-xs opacity-70">({tab.count})</span>}
                   </div>
                   {tab.hasNotification && (
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />

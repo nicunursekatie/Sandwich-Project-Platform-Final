@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import {
   Megaphone,
   UserPlus,
   FileText,
+  GripVertical,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
@@ -63,6 +64,12 @@ export const ScheduledSpreadsheetView: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<'thisWeek' | 'nextWeek' | 'next2Weeks' | 'nextMonth' | 'all'>('next2Weeks');
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    // Load saved column order from localStorage
+    const saved = localStorage.getItem('scheduledSpreadsheetColumnOrder');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
@@ -277,23 +284,32 @@ export const ScheduledSpreadsheetView: React.FC = () => {
   };
 
   const getRowColor = (index: number) => {
-    const colors = ['bg-white', 'bg-purple-50', 'bg-yellow-50'];
+    // Use brand colors with light opacity for alternating rows
+    const colors = [
+      'bg-white',
+      'bg-[#47B3CB]/5', // Light teal
+      'bg-[#FBAD3F]/5', // Light orange
+    ];
     return colors[index % 3];
   };
 
-  const columns: Column[] = [
+  // Define default columns
+  const defaultColumns: Column[] = [
     {
       id: 'eventDate',
       label: 'Event Date',
-      width: '120px',
+      width: '85px',
       sortable: true,
       render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
     },
     {
       id: 'dayOfWeek',
-      label: 'Day of Week',
-      width: '120px',
-      render: (event) => formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate),
+      label: 'Day',
+      width: '70px',
+      render: (event) => {
+        const day = formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
+        return day ? day.substring(0, 3) : ''; // Abbreviate to 3 letters
+      },
     },
     {
       id: 'groupName',
@@ -450,6 +466,50 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     },
   ];
 
+  // Reorder columns based on saved order
+  const columns: Column[] = useMemo(() => {
+    // Reorder columns if saved order exists
+    if (columnOrder && columnOrder.length === defaultColumns.length) {
+      const columnMap = new Map(defaultColumns.map(col => [col.id, col]));
+      return columnOrder.map(id => columnMap.get(id)).filter(Boolean) as Column[];
+    }
+    
+    return defaultColumns;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnOrder]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedColumnIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) {
+      setDraggedColumnIndex(null);
+      return;
+    }
+
+    // Get current column order (either from state or default)
+    const currentOrder = columnOrder || defaultColumns.map(col => col.id);
+    const newOrder = [...currentOrder];
+    const [removed] = newOrder.splice(draggedColumnIndex, 1);
+    newOrder.splice(dropIndex, 0, removed);
+    
+    setColumnOrder(newOrder);
+    localStorage.setItem('scheduledSpreadsheetColumnOrder', JSON.stringify(newOrder));
+    setDraggedColumnIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumnIndex(null);
+  };
+
   const isEditing = (eventId: number, field: string) => {
     return editingScheduledId === eventId && editingField === field;
   };
@@ -545,7 +605,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             onClick={() => startEditing(event.id, column.id, getRawValue())}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
           >
-            <Edit2 className="h-3 w-3 text-gray-400" />
+            <Edit2 className="h-3 w-3 text-[#007E8C]" />
           </button>
         )}
       </div>
@@ -583,6 +643,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             variant={dateRange === 'thisWeek' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDateRange('thisWeek')}
+            className={dateRange === 'thisWeek' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             This Week
           </Button>
@@ -590,6 +651,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             variant={dateRange === 'nextWeek' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDateRange('nextWeek')}
+            className={dateRange === 'nextWeek' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             Next Week
           </Button>
@@ -597,6 +659,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             variant={dateRange === 'next2Weeks' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDateRange('next2Weeks')}
+            className={dateRange === 'next2Weeks' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             Next 2 Weeks
           </Button>
@@ -604,6 +667,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             variant={dateRange === 'nextMonth' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDateRange('nextMonth')}
+            className={dateRange === 'nextMonth' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             Next Month
           </Button>
@@ -611,6 +675,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             variant={dateRange === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDateRange('all')}
+            className={dateRange === 'all' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             All Events
           </Button>
@@ -621,16 +686,25 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       <div className="border rounded-lg overflow-hidden bg-white">
         <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
           <table className="w-full border-collapse">
-            <thead className="bg-orange-100 border-b-2 border-orange-300 sticky top-0 z-10">
+            <thead className="bg-[#007E8C] border-b-2 border-[#236383] sticky top-0 z-10">
               <tr>
-                {columns.map((column) => (
+                {columns.map((column, index) => (
                   <th
                     key={column.id}
-                    className="px-1.5 py-1 text-left text-[10px] font-semibold text-gray-700 border-r border-gray-300 whitespace-nowrap"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`px-1.5 py-1 text-left text-[10px] font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
+                      draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
+                    }`}
                     style={{ width: column.width, minWidth: column.width }}
+                    title="Drag to reorder columns"
                   >
                     <div className="flex items-center gap-1">
-                      <span>{column.label}</span>
+                      <GripVertical className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      <span className="flex-1">{column.label}</span>
                       {column.sortable && (() => {
                         const columnSortField = getSortFieldForColumn(column.id);
                         const isActive = columnSortField && sortField === columnSortField;
@@ -641,16 +715,16 @@ export const ScheduledSpreadsheetView: React.FC = () => {
                                 handleSort(columnSortField);
                               }
                             }}
-                            className="hover:bg-gray-200 rounded p-0.5 ml-0.5"
+                            className="hover:bg-[#236383] rounded p-0.5 ml-0.5"
                           >
                             {isActive ? (
                               sortDirection === 'asc' ? (
-                                <ArrowUp className="h-2.5 w-2.5" />
+                                <ArrowUp className="h-2.5 w-2.5 text-white" />
                               ) : (
-                                <ArrowDown className="h-2.5 w-2.5" />
+                                <ArrowDown className="h-2.5 w-2.5 text-white" />
                               )
                             ) : (
-                              <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
+                              <ArrowUpDown className="h-2.5 w-2.5 text-white/70" />
                             )}
                           </button>
                         );
@@ -664,7 +738,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-gray-100 transition-colors h-6`}
+                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-6`}
                 >
                   {columns.map((column) => (
                     <td
@@ -683,9 +757,15 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       </div>
 
       {/* Instructions */}
-      <div className="mt-4 text-xs text-gray-500 flex items-center gap-2">
-        <FileText className="h-4 w-4" />
-        <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
+      <div className="mt-4 text-xs text-gray-500 flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4" />
+          <span>Drag column headers to reorder columns. Your preference will be saved.</span>
+        </div>
       </div>
     </div>
   );

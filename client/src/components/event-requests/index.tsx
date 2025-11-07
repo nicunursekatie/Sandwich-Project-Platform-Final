@@ -184,13 +184,13 @@ const EventRequestsManagementContent: React.FC = () => {
       my_assignments: <MyAssignmentsTab />,
     };
 
-    // Add admin overview tab for admins
-    if (user?.role === 'super_admin' || user?.role === 'admin') {
+    // Add admin overview tab for users with permission
+    if (user?.permissions?.includes('view_admin_overview') || user?.role === 'super_admin') {
       tabs.admin_overview = <AdminOverviewTab eventRequests={eventRequests} />;
     }
 
     return tabs;
-  }, [eventRequests, user?.role]);
+  }, [eventRequests, user?.role, user?.permissions]);
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
