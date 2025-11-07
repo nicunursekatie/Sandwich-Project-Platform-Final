@@ -299,8 +299,9 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     return colors[index % 3];
   };
 
-  // Define default columns
+  // Define default columns - ordered by workflow priority
   const defaultColumns: Column[] = [
+    // 1. Event date
     {
       id: 'eventDate',
       label: 'Event Date',
@@ -308,6 +309,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       sortable: true,
       render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
     },
+    // 2. Day of week
     {
       id: 'dayOfWeek',
       label: 'Day',
@@ -317,33 +319,134 @@ export const ScheduledSpreadsheetView: React.FC = () => {
         return day ? day.substring(0, 3) : ''; // Abbreviate to 3 letters
       },
     },
+    // 3. Group/department
     {
       id: 'groupName',
-      label: 'Group Name',
-      width: '200px',
+      label: 'Group/Dept',
+      width: '180px',
       sortable: true,
-      render: (event) => event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A',
+      render: (event) => {
+        const org = event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A';
+        const dept = event.department ? ` (${event.department})` : '';
+        return org + dept;
+      },
     },
+    // 4. Location (with Google map link)
+    {
+      id: 'address',
+      label: 'Location',
+      width: '200px',
+      render: (event) => {
+        const address = event.eventAddress || '';
+        if (!address) return '';
+        return (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#007E8C] hover:underline flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{address}</span>
+          </a>
+        );
+      },
+    },
+    // 5. Times - start, end, pickup
     {
       id: 'eventStartTime',
-      label: 'Event Start Time',
-      width: '140px',
+      label: 'Start Time',
+      width: '100px',
       sortable: true,
       render: (event) => event.eventStartTime || '',
     },
     {
       id: 'eventEndTime',
-      label: 'Event End Time',
-      width: '140px',
+      label: 'End Time',
+      width: '100px',
       render: (event) => event.eventEndTime || '',
     },
     {
       id: 'pickupTime',
-      label: 'Pick up Time',
-      width: '140px',
+      label: 'Pickup Time',
+      width: '100px',
       sortable: true,
       render: (event) => event.pickupTime || '',
     },
+    // 6. Sandwiches # and type
+    {
+      id: 'estimatedSandwiches',
+      label: '# Sandwiches',
+      width: '100px',
+      sortable: true,
+      render: (event) => {
+        const count = event.estimatedSandwichCount;
+        const min = event.estimatedSandwichCountMin;
+        const max = event.estimatedSandwichCountMax;
+        if (min && max) return `${min}-${max}`;
+        return count?.toString() || '';
+      },
+    },
+    {
+      id: 'sandwichType',
+      label: 'Type',
+      width: '100px',
+      render: (event) => getSandwichTypeDisplay(event),
+    },
+    // 7. Assigned staff (TSP Contact)
+    {
+      id: 'tspContact',
+      label: 'TSP Contact',
+      width: '140px',
+      render: (event) => {
+        const contacts = [];
+        if (event.tspContact) contacts.push(event.tspContact);
+        if (event.tspContactAssigned) contacts.push(event.tspContactAssigned);
+        if (event.customTspContact) contacts.push(event.customTspContact);
+        return contacts.join(', ') || '';
+      },
+    },
+    // 8. Driver/speaker/volunteer need
+    {
+      id: 'volunteersNeeded',
+      label: 'Staff Needed',
+      width: '140px',
+      render: (event) => {
+        const needs = [];
+        if (event.volunteersNeeded && event.volunteersNeeded > 0) needs.push(`${event.volunteersNeeded} vol`);
+        if (event.driversNeeded && event.driversNeeded > 0) needs.push(`${event.driversNeeded} driver`);
+        if (event.speakersNeeded && event.speakersNeeded > 0) needs.push(`${event.speakersNeeded} speaker`);
+        return needs.join(', ') || 'None';
+      },
+    },
+    // 9. Van booked
+    {
+      id: 'vanBooked',
+      label: 'Van Booked?',
+      width: '100px',
+      render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
+    },
+    // 10. Contact name, #, and email for organization
+    {
+      id: 'contactName',
+      label: 'Contact Name',
+      width: '140px',
+      render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
+    },
+    {
+      id: 'phone',
+      label: 'Contact #',
+      width: '120px',
+      render: (event) => event.phone || '',
+    },
+    {
+      id: 'email',
+      label: 'Email',
+      width: '180px',
+      render: (event) => event.email || event.updatedEmail || '',
+    },
+    // 11. The rest (all details, etc.)
     {
       id: 'allDetails',
       label: 'ALL DETAILS',
@@ -359,116 +462,37 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       },
     },
     {
+      id: 'toolkitSent',
+      label: 'Toolkit Sent',
+      width: '100px',
+      render: (event) => event.toolkitSent ? 'Yes' : 'No',
+    },
+    {
+      id: 'finalSandwiches',
+      label: 'Final # Made',
+      width: '100px',
+      render: (event) => event.actualSandwichCount?.toString() || '',
+    },
+    {
       id: 'socialPost',
       label: 'Social Post',
-      width: '150px',
+      width: '100px',
       render: (event) => {
-        if (event.socialMediaPostCompleted) return '✓ Completed';
-        if (event.socialMediaPostRequested) return 'Requested';
+        if (event.socialMediaPostCompleted) return '✓ Done';
+        if (event.socialMediaPostRequested) return 'Req';
         return '';
       },
     },
     {
-      id: 'volunteersNeeded',
-      label: 'Volunteers/Drivers/Speakers Needed?',
-      width: '200px',
-      render: (event) => {
-        const needs = [];
-        if (event.volunteersNeeded && event.volunteersNeeded > 0) needs.push(`${event.volunteersNeeded} volunteers`);
-        if (event.driversNeeded && event.driversNeeded > 0) needs.push(`${event.driversNeeded} drivers`);
-        if (event.speakersNeeded && event.speakersNeeded > 0) needs.push(`${event.speakersNeeded} speakers`);
-        return needs.join(', ') || 'None';
-      },
-    },
-    {
-      id: 'estimatedSandwiches',
-      label: 'Estimate # sandwiches',
-      width: '150px',
-      sortable: true,
-      render: (event) => {
-        const count = event.estimatedSandwichCount;
-        const min = event.estimatedSandwichCountMin;
-        const max = event.estimatedSandwichCountMax;
-        if (min && max) return `${min}-${max}`;
-        return count?.toString() || '';
-      },
-    },
-    {
-      id: 'sandwichType',
-      label: 'Deli or PBJ?',
-      width: '120px',
-      render: (event) => getSandwichTypeDisplay(event),
-    },
-    {
-      id: 'finalSandwiches',
-      label: 'Final # sandwiches made',
-      width: '150px',
-      render: (event) => event.actualSandwichCount?.toString() || '',
-    },
-    {
-      id: 'toolkitSent',
-      label: 'Sent toolkit',
-      width: '120px',
-      render: (event) => event.toolkitSent ? 'Yes' : 'No',
-    },
-    {
-      id: 'contact',
-      label: 'Contact',
-      width: '150px',
-      render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
-    },
-    {
-      id: 'contactName',
-      label: 'Contact Name',
-      width: '150px',
-      render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
-    },
-    {
-      id: 'email',
-      label: 'Email Address',
-      width: '200px',
-      render: (event) => event.email || event.updatedEmail || '',
-    },
-    {
-      id: 'phone',
-      label: 'Contact Cell Number',
-      width: '150px',
-      render: (event) => event.phone || '',
-    },
-    {
-      id: 'tspContact',
-      label: 'TSP Contact',
-      width: '150px',
-      render: (event) => {
-        const contacts = [];
-        if (event.tspContact) contacts.push(event.tspContact);
-        if (event.tspContactAssigned) contacts.push(event.tspContactAssigned);
-        if (event.customTspContact) contacts.push(event.customTspContact);
-        return contacts.join(', ') || '';
-      },
-    },
-    {
-      id: 'address',
-      label: 'Address',
-      width: '250px',
-      render: (event) => event.eventAddress || '',
-    },
-    {
-      id: 'vanBooked',
-      label: 'Van Booked?',
-      width: '120px',
-      render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
-    },
-    {
       id: 'notes',
       label: 'Notes',
-      width: '200px',
+      width: '150px',
       render: (event) => event.planningNotes || '',
     },
     {
       id: 'additionalNotes',
       label: 'Add\'l Notes',
-      width: '200px',
+      width: '150px',
       render: (event) => event.schedulingNotes || '',
     },
   ];
@@ -575,14 +599,25 @@ export const ScheduledSpreadsheetView: React.FC = () => {
 
     const renderedContent = column.render ? column.render(event) : '';
     
+    // Special handling for address column (returns JSX with link)
+    if (column.id === 'address') {
+      if (React.isValidElement(renderedContent)) {
+        return (
+          <div className="flex items-center gap-0.5 min-h-[20px] overflow-hidden">
+            {renderedContent}
+          </div>
+        );
+      }
+      // Fallback if no address
+      return <span className="text-[11px] text-gray-400">-</span>;
+    }
+    
     // Special handling for allDetails column
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
-      if (!detailsData.hasContent) {
+      if (!detailsData.hasContent || !detailsData) {
         return <span className="text-[11px] text-gray-400">-</span>;
       }
-      
-      const isTruncated = detailsData.fullText.length > 80;
       
       return (
         <Popover>
@@ -591,13 +626,14 @@ export const ScheduledSpreadsheetView: React.FC = () => {
               className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
               onClick={(e) => e.stopPropagation()} // Prevent double-click editing
             >
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] truncate flex-1 leading-tight" title={detailsData.fullText}>
+              <div className="flex items-center gap-1 min-w-0 w-full">
+                <span 
+                  className="text-[11px] leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0" 
+                  title={detailsData.fullText}
+                >
                   {detailsData.fullText}
                 </span>
-                {isTruncated && (
-                  <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view full details" />
-                )}
+                <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view full details" />
               </div>
             </button>
           </PopoverTrigger>
@@ -795,8 +831,8 @@ export const ScheduledSpreadsheetView: React.FC = () => {
                   {columns.map((column) => (
                     <td
                       key={column.id}
-                      className="px-1.5 py-1 border-r border-gray-200 text-[11px] leading-tight"
-                      style={{ width: column.width, minWidth: column.width }}
+                      className="px-1.5 py-1 border-r border-gray-200 text-[11px] leading-tight overflow-hidden"
+                      style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
                     >
                       {renderCell(event, column)}
                     </td>
@@ -822,4 +858,5 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     </div>
   );
 };
+
 
