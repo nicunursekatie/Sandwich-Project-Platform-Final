@@ -36,9 +36,19 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [eventSortBy, setEventSortBy] = useState<'status' | 'date' | 'organization'>('status');
 
   // Fetch users to get proper names
-  const { data: users = [] } = useQuery<any[]>({
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<any[]>({
     queryKey: ['/api/users'],
   });
+
+  // Debug logging
+  React.useEffect(() => {
+    if (usersError) {
+      console.error('Failed to fetch users for admin overview:', usersError);
+    }
+    if (!usersLoading && users.length === 0) {
+      console.warn('Users array is empty in admin overview');
+    }
+  }, [users, usersLoading, usersError]);
 
   const handleSort = (field: 'name' | 'total' | 'new' | 'in_process') => {
     if (sortBy === field) {
@@ -79,9 +89,19 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
       if (!statsMap.has(contactId)) {
         // Find the user name from users array
         const user = users.find(u => u.id === contactId);
-        const userName = user
-          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || contactId
-          : contactId;
+        let userName = contactId; // Default to user ID if no match found
+
+        if (user) {
+          // Try to construct a proper name
+          const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+          if (fullName) {
+            userName = fullName;
+          } else if (user.email) {
+            userName = user.email;
+          } else if (user.name) {
+            userName = user.name;
+          }
+        }
 
         statsMap.set(contactId, {
           userId: contactId,

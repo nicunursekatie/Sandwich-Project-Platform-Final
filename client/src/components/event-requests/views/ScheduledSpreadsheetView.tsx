@@ -63,6 +63,8 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     setEditingField,
     editingValue,
     setEditingValue,
+    setSelectedEventRequest,
+    setActiveTab,
   } = useEventRequestContext();
 
   const { updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
@@ -301,8 +303,19 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     return colors[index % 3];
   };
 
+  // Handle clicking on event date to navigate to card view
+  const handleEventDateClick = (event: EventRequest) => {
+    setSelectedEventRequest(event);
+    setActiveTab('scheduled');
+    // Scroll to top to ensure the card view is visible
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
   // Define default columns - ordered by workflow priority
   // Note: resolveUserName is used in the render functions, so columns must be defined after resolveUserName is available
+  // Note: handleEventDateClick is used in renderCell, but we define it outside useMemo since it's stable
   const defaultColumns: Column[] = useMemo(() => [
     // 1. Event date
     {
@@ -646,6 +659,23 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     }
 
     const renderedContent = column.render ? column.render(event) : '';
+    
+    // Special handling for eventDate column (make it clickable)
+    if (column.id === 'eventDate') {
+      const dateText = typeof renderedContent === 'string' ? renderedContent : String(renderedContent);
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEventDateClick(event);
+          }}
+          className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer w-full text-left"
+          title="Click to view event details in card view"
+        >
+          {dateText}
+        </button>
+      );
+    }
     
     // Special handling for address column (returns JSX with link)
     if (column.id === 'address') {
