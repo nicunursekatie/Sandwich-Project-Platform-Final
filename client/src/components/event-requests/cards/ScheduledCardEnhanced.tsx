@@ -1048,7 +1048,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         )}
                       </>
                     )}
-                  </div>
+                    </div>
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedDriverIds).map((id) => (
                         <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
@@ -1108,6 +1108,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                       {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
                     </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-between py-0.5">
                     <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
