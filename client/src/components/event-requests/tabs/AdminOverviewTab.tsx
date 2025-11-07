@@ -446,7 +446,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                 </div>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                       </div>
                     </div>
                   )}
