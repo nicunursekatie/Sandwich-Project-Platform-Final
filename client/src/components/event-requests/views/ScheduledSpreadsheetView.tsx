@@ -136,10 +136,34 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       const eventDate = event.scheduledEventDate || event.desiredEventDate;
       if (!eventDate) return false;
       
-      const eventDateObj = new Date(eventDate);
-      eventDateObj.setHours(0, 0, 0, 0);
+      // Use timezone-safe date parsing
+      let eventDateObj: Date;
+      const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
       
-      return eventDateObj >= startDate && eventDateObj <= endDate;
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        const dateOnly = dateStr.split(' ')[0];
+        eventDateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+        const dateOnly = dateStr.split('T')[0];
+        eventDateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        eventDateObj = new Date(dateStr + 'T12:00:00');
+      } else {
+        const tempDate = new Date(dateStr);
+        if (isNaN(tempDate.getTime())) return false;
+        const year = tempDate.getUTCFullYear();
+        const month = String(tempDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(tempDate.getUTCDate()).padStart(2, '0');
+        eventDateObj = new Date(`${year}-${month}-${day}T12:00:00`);
+      }
+      
+      // Normalize comparison dates to noon as well
+      const compareStart = new Date(startDate);
+      compareStart.setHours(12, 0, 0, 0);
+      const compareEnd = new Date(endDate);
+      compareEnd.setHours(12, 0, 0, 0);
+      
+      return eventDateObj >= compareStart && eventDateObj <= compareEnd;
     });
   }, [scheduledEvents, dateRange]);
 
@@ -166,8 +190,32 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
       switch (sortField) {
         case 'eventDate':
-          aValue = a.scheduledEventDate ? new Date(a.scheduledEventDate).getTime() : (a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0);
-          bValue = b.scheduledEventDate ? new Date(b.scheduledEventDate).getTime() : (b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0);
+          // Use timezone-safe date parsing for sorting
+          const parseDateSafe = (date: string | Date | null | undefined): number => {
+            if (!date) return 0;
+            const dateStr = typeof date === 'string' ? date : date.toISOString();
+            let dateObj: Date;
+            
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+              const dateOnly = dateStr.split(' ')[0];
+              dateObj = new Date(dateOnly + 'T12:00:00');
+            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+              const dateOnly = dateStr.split('T')[0];
+              dateObj = new Date(dateOnly + 'T12:00:00');
+            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              dateObj = new Date(dateStr + 'T12:00:00');
+            } else {
+              const tempDate = new Date(dateStr);
+              if (isNaN(tempDate.getTime())) return 0;
+              const year = tempDate.getUTCFullYear();
+              const month = String(tempDate.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(tempDate.getUTCDate()).padStart(2, '0');
+              dateObj = new Date(`${year}-${month}-${day}T12:00:00`);
+            }
+            return dateObj.getTime();
+          };
+          aValue = parseDateSafe(a.scheduledEventDate || a.desiredEventDate);
+          bValue = parseDateSafe(b.scheduledEventDate || b.desiredEventDate);
           break;
         case 'groupName':
           aValue = a.organizationName || `${a.firstName} ${a.lastName}`.trim() || '';
@@ -271,7 +319,33 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const formatDate = (date: string | Date | null | undefined) => {
     if (!date) return '';
     try {
-      return format(new Date(date), 'M/d/yyyy');
+      // Handle timezone issues by parsing date-only strings at noon
+      let dateObj: Date;
+      const dateStr = typeof date === 'string' ? date : date.toISOString();
+      
+      // Check if it's a date-only format or midnight UTC timestamp
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        // Database timestamp format: "2025-09-03 00:00:00"
+        const dateOnly = dateStr.split(' ')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+        // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
+        const dateOnly = dateStr.split('T')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // YYYY-MM-DD format
+        dateObj = new Date(dateStr + 'T12:00:00');
+      } else {
+        // For other formats, try to extract date components
+        const tempDate = new Date(dateStr);
+        if (isNaN(tempDate.getTime())) return '';
+        const year = tempDate.getUTCFullYear();
+        const month = String(tempDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(tempDate.getUTCDate()).padStart(2, '0');
+        dateObj = new Date(`${year}-${month}-${day}T12:00:00`);
+      }
+      
+      return format(dateObj, 'M/d/yyyy');
     } catch {
       return '';
     }
@@ -280,7 +354,33 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const formatDayOfWeek = (date: string | Date | null | undefined) => {
     if (!date) return '';
     try {
-      return format(new Date(date), 'EEEE');
+      // Handle timezone issues by parsing date-only strings at noon
+      let dateObj: Date;
+      const dateStr = typeof date === 'string' ? date : date.toISOString();
+      
+      // Check if it's a date-only format or midnight UTC timestamp
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        // Database timestamp format: "2025-09-03 00:00:00"
+        const dateOnly = dateStr.split(' ')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+        // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
+        const dateOnly = dateStr.split('T')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // YYYY-MM-DD format
+        dateObj = new Date(dateStr + 'T12:00:00');
+      } else {
+        // For other formats, try to extract date components
+        const tempDate = new Date(dateStr);
+        if (isNaN(tempDate.getTime())) return '';
+        const year = tempDate.getUTCFullYear();
+        const month = String(tempDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(tempDate.getUTCDate()).padStart(2, '0');
+        dateObj = new Date(`${year}-${month}-${day}T12:00:00`);
+      }
+      
+      return format(dateObj, 'EEEE');
     } catch {
       return '';
     }

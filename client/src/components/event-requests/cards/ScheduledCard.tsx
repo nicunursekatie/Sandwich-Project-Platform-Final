@@ -301,6 +301,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const isMobile = useIsMobile();
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -1545,9 +1546,35 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         )}
 
-        {/* Notes Section */}
-        {(request.message ||
-          request.planningNotes ||
+        {/* Initial Request Message - Collapsible */}
+        {request.message && (
+          <div className="bg-gradient-to-r from-[#236383]/20 to-[#236383]/10 rounded-lg border-l-4 border-[#236383] shadow-md mb-4">
+            <button
+              onClick={() => setIsInitialMessageExpanded(!isInitialMessageExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-[#236383]/5 transition-colors"
+            >
+              <h3 className="text-base font-semibold text-[#236383] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#236383]" />
+                Initial Request Message
+              </h3>
+              {isInitialMessageExpanded ? (
+                <ChevronUp className="w-5 h-5 text-[#236383]" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-[#236383]" />
+              )}
+            </button>
+            {isInitialMessageExpanded && (
+              <div className="px-4 pb-4">
+                <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-[#236383] whitespace-pre-wrap">
+                  {request.message}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Notes & Requirements Section */}
+        {(request.planningNotes ||
           request.schedulingNotes ||
           request.additionalRequirements ||
           request.volunteerNotes ||
@@ -1558,20 +1585,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           request.duplicateNotes ||
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
-          <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 border-l-4 border-[#236383] shadow-md">
+          <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 border-l-4 border-[#236383] shadow-md mb-4">
             <h3 className="text-base font-semibold text-[#236383] mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#236383]" />
               Notes & Requirements
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {request.message && (
-                <div className="sm:col-span-2">
-                  <p className="text-base font-medium mb-1">Original Request Message:</p>
-                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 p-3 rounded border-l-4 border-[#236383] whitespace-pre-wrap">
-                    {request.message}
-                  </p>
-                </div>
-              )}
               {request.additionalRequirements && (
                 <div>
                   <p className="text-base font-medium mb-1">Special Requirements:</p>
