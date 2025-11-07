@@ -23,6 +23,14 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { X, Sparkles } from 'lucide-react';
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -71,6 +79,12 @@ interface RequestFiltersProps {
   // Pagination info
   totalItems: number;
   totalPages: number;
+
+  // Feature discovery
+  showAdminOverviewTip?: boolean;
+  showSpreadsheetTip?: boolean;
+  onDismissAdminOverviewTip?: () => void;
+  onDismissSpreadsheetTip?: () => void;
 }
 
 export default function RequestFilters({
@@ -92,9 +106,16 @@ export default function RequestFilters({
   children,
   totalItems,
   totalPages,
+  showAdminOverviewTip,
+  showSpreadsheetTip,
+  onDismissAdminOverviewTip,
+  onDismissSpreadsheetTip,
 }: RequestFiltersProps) {
   const { user } = useAuth();
-  const hasAdminOverviewPermission = user?.permissions?.includes('view_admin_overview') || user?.role === 'super_admin';
+  // Support both old and new permission strings for backward compatibility
+  const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
+    user?.permissions?.includes('view_admin_overview') ||
+    user?.role === 'super_admin';
 
   // Tab configuration with icons and labels
   const tabConfig = [];
@@ -201,25 +222,73 @@ export default function RequestFilters({
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
             <TabsList className="inline-flex w-auto min-w-full gap-1">
-              {tabConfig.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
-                  data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
-                  data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
-                >
-                  <div className="flex items-center justify-center space-x-1">
-                    <tab.icon className="w-3 h-3 flex-shrink-0" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                    <span className="lg:hidden">{tab.shortLabel}</span>
-                    {tab.count !== undefined && <span className="text-xs opacity-70">({tab.count})</span>}
-                  </div>
-                  {tab.hasNotification && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                  )}
-                </TabsTrigger>
-              ))}
+              {tabConfig.map((tab) => {
+                const showAdminTip = tab.value === 'admin_overview' && showAdminOverviewTip;
+                const showScheduledTip = tab.value === 'scheduled' && showSpreadsheetTip;
+                const showTip = showAdminTip || showScheduledTip;
+
+                const TabTriggerContent = (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
+                    data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+                    data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
+                  >
+                    <div className="flex items-center justify-center space-x-1">
+                      <tab.icon className="w-3 h-3 flex-shrink-0" />
+                      <span className="hidden lg:inline">{tab.label}</span>
+                      <span className="lg:hidden">{tab.shortLabel}</span>
+                      {tab.count !== undefined && <span className="text-xs opacity-70">({tab.count})</span>}
+                      {showTip && <Sparkles className="w-3 h-3 text-[#FBAD3F] animate-pulse" />}
+                    </div>
+                    {tab.hasNotification && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    )}
+                  </TabsTrigger>
+                );
+
+                if (!showTip) {
+                  return TabTriggerContent;
+                }
+
+                return (
+                  <TooltipProvider key={tab.value}>
+                    <Tooltip open={showTip} delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        {TabTriggerContent}
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs bg-white border-[#FBAD3F] shadow-lg">
+                        <div className="flex items-start gap-2 p-2">
+                          <Sparkles className="w-4 h-4 text-[#FBAD3F] flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm mb-1" style={{ color: '#236383' }}>
+                              {showAdminTip ? 'New: Admin Overview' : 'New: Spreadsheet View'}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {showAdminTip
+                                ? 'View all TSP contact assignments and workload distribution at a glance!'
+                                : 'Switch to spreadsheet view in the Scheduled tab for a compact table layout.'}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 hover:bg-slate-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (showAdminTip) onDismissAdminOverviewTip?.();
+                              if (showScheduledTip) onDismissSpreadsheetTip?.();
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
             </TabsList>
           </div>
         </Tabs>
