@@ -20,7 +20,9 @@ import {
   UserCheck,
   Star,
   Pause,
+  BarChart3,
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -63,6 +65,7 @@ interface RequestFiltersProps {
     completed: ReactNode;
     declined: ReactNode;
     my_assignments: ReactNode;
+    admin_overview?: ReactNode;
   };
 
   // Pagination info
@@ -90,6 +93,9 @@ export default function RequestFilters({
   totalItems,
   totalPages,
 }: RequestFiltersProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+
   // Tab configuration with icons and labels
   const tabConfig = [
     {
@@ -136,6 +142,17 @@ export default function RequestFilters({
       count: statusCounts.my_assignments,
     },
   ];
+
+  // Add admin overview tab if user is admin
+  if (isAdmin && children.admin_overview) {
+    tabConfig.push({
+      value: 'admin_overview',
+      label: 'Admin Overview',
+      shortLabel: 'Admin',
+      icon: BarChart3,
+      count: 0,
+    });
+  }
 
   // Get current tab info for mobile selector
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
