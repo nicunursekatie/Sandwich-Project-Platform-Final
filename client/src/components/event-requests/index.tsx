@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { PERMISSIONS } from '@shared/auth-utils';
 import {
   EventRequestProvider,
   useEventRequestContext,
@@ -168,6 +169,42 @@ const EventRequestsManagementContent: React.FC = () => {
   const isMobile = useIsMobile();
   const { trackButtonClick, trackFormSubmit } = useAnalytics();
 
+  // Feature discovery state
+  const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
+  const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
+
+  // Support both old and new permission strings for backward compatibility
+  const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
+    user?.permissions?.includes('view_admin_overview') ||
+    user?.role === 'super_admin';
+
+  // Check if user has seen feature tips
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const adminOverviewKey = `feature-tip-admin-overview-${user.id}`;
+    const spreadsheetKey = `feature-tip-spreadsheet-${user.id}`;
+
+    const adminOverviewSeen = localStorage.getItem(adminOverviewKey);
+    const spreadsheetSeen = localStorage.getItem(spreadsheetKey);
+
+    // Show admin overview tip if user has permission and hasn't seen it more than 3 times
+    if (hasAdminOverviewPermission) {
+      const viewCount = parseInt(adminOverviewSeen || '0', 10);
+      if (viewCount < 3) {
+        setShowAdminOverviewTip(true);
+        localStorage.setItem(adminOverviewKey, String(viewCount + 1));
+      }
+    }
+
+    // Show spreadsheet tip if hasn't seen it more than 3 times
+    const spreadsheetViewCount = parseInt(spreadsheetSeen || '0', 10);
+    if (spreadsheetViewCount < 3) {
+      setShowSpreadsheetTip(true);
+      localStorage.setItem(spreadsheetKey, String(spreadsheetViewCount + 1));
+    }
+  }, [user?.id, hasAdminOverviewPermission]);
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -184,8 +221,10 @@ const EventRequestsManagementContent: React.FC = () => {
       my_assignments: <MyAssignmentsTab />,
     };
 
-    // Add admin overview tab for users with permission
-    if (user?.permissions?.includes('view_admin_overview') || user?.role === 'super_admin') {
+    // Add admin overview tab for users with permission (support both old and new permission strings)
+    if (user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
+        user?.permissions?.includes('view_admin_overview') ||
+        user?.role === 'super_admin') {
       tabs.admin_overview = <AdminOverviewTab eventRequests={eventRequests} />;
     }
 
@@ -343,6 +382,10 @@ const EventRequestsManagementContent: React.FC = () => {
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}
+            showAdminOverviewTip={showAdminOverviewTip}
+            showSpreadsheetTip={showSpreadsheetTip}
+            onDismissAdminOverviewTip={() => setShowAdminOverviewTip(false)}
+            onDismissSpreadsheetTip={() => setShowSpreadsheetTip(false)}
           />
         )}
 

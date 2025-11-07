@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
+import { useEventAssignments } from '../hooks/useEventAssignments';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +66,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
   } = useEventRequestContext();
 
   const { updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
+  const { resolveUserName } = useEventAssignments();
 
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -300,7 +302,8 @@ export const ScheduledSpreadsheetView: React.FC = () => {
   };
 
   // Define default columns - ordered by workflow priority
-  const defaultColumns: Column[] = [
+  // Note: resolveUserName is used in the render functions, so columns must be defined after resolveUserName is available
+  const defaultColumns: Column[] = useMemo(() => [
     // 1. Event date
     {
       id: 'eventDate',
@@ -401,10 +404,10 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       width: '140px',
       render: (event) => {
         const contacts = [];
-        if (event.tspContact) contacts.push(event.tspContact);
-        if (event.tspContactAssigned) contacts.push(event.tspContactAssigned);
-        if (event.customTspContact) contacts.push(event.customTspContact);
-        return contacts.join(', ') || '';
+        if (event.tspContact) contacts.push(resolveUserName(event.tspContact));
+        if (event.tspContactAssigned) contacts.push(resolveUserName(event.tspContactAssigned));
+        if (event.customTspContact) contacts.push(event.customTspContact); // Custom is already text
+        return contacts.filter(c => c && c !== 'Not assigned').join(', ') || '';
       },
     },
     // 8. Driver/speaker/volunteer need
@@ -420,14 +423,60 @@ export const ScheduledSpreadsheetView: React.FC = () => {
         return needs.join(', ') || 'None';
       },
     },
-    // 9. Van booked
+    // 9. Assigned Staff (who is actually assigned)
+    {
+      id: 'assignedStaff',
+      label: 'Assigned Staff',
+      width: '180px',
+      render: (event) => {
+        const assigned = [];
+        
+        // Van driver
+        if (event.assignedVanDriverId) {
+          assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
+        }
+        
+        // Drivers
+        if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
+          const driverNames = event.assignedDriverIds
+            .map(id => resolveUserName(id))
+            .filter(name => name && name !== 'Not assigned');
+          if (driverNames.length > 0) {
+            assigned.push(`🚗 ${driverNames.join(', ')}`);
+          }
+        }
+        
+        // Speakers
+        if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
+          const speakerNames = event.assignedSpeakerIds
+            .map(id => resolveUserName(id))
+            .filter(name => name && name !== 'Not assigned');
+          if (speakerNames.length > 0) {
+            assigned.push(`🎤 ${speakerNames.join(', ')}`);
+          }
+        }
+        
+        // Volunteers
+        if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
+          const volunteerNames = event.assignedVolunteerIds
+            .map(id => resolveUserName(id))
+            .filter(name => name && name !== 'Not assigned');
+          if (volunteerNames.length > 0) {
+            assigned.push(`👥 ${volunteerNames.join(', ')}`);
+          }
+        }
+        
+        return assigned.length > 0 ? assigned.join(' | ') : '';
+      },
+    },
+    // 10. Van booked
     {
       id: 'vanBooked',
       label: 'Van Booked?',
       width: '100px',
       render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
     },
-    // 10. Contact name, #, and email for organization
+    // 11. Contact name, #, and email for organization
     {
       id: 'contactName',
       label: 'Contact Name',
@@ -446,7 +495,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       width: '180px',
       render: (event) => event.email || event.updatedEmail || '',
     },
-    // 11. The rest (all details, etc.)
+    // 12. The rest (all details, etc.)
     {
       id: 'allDetails',
       label: 'ALL DETAILS',
@@ -495,7 +544,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       width: '150px',
       render: (event) => event.schedulingNotes || '',
     },
-  ];
+  ], [resolveUserName]);
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {
@@ -506,8 +555,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     }
     
     return defaultColumns;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnOrder]);
+  }, [columnOrder, defaultColumns]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedColumnIndex(index);
@@ -557,7 +605,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
               value={editingValue}
               onValueChange={setEditingValue}
             >
-              <SelectTrigger className="h-6 text-[11px] w-16 px-1.5 py-0.5">
+              <SelectTrigger className="h-7 text-sm w-16 px-1.5 py-0.5">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -580,7 +628,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
           <Input
             value={editingValue}
             onChange={(e) => setEditingValue(e.target.value)}
-            className="h-6 text-[11px] px-1.5 py-0.5"
+            className="h-7 text-sm px-1.5 py-0.5"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') saveEdit();
@@ -609,15 +657,18 @@ export const ScheduledSpreadsheetView: React.FC = () => {
         );
       }
       // Fallback if no address
-      return <span className="text-[11px] text-gray-400">-</span>;
+      return <span className="text-sm text-gray-400">-</span>;
     }
     
     // Special handling for allDetails column
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
-        return <span className="text-[11px] text-gray-400">-</span>;
+        return <span className="text-sm text-gray-400">-</span>;
       }
+      
+      // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
+      const isTruncated = detailsData.fullText.length > 80;
       
       return (
         <Popover>
@@ -628,12 +679,14 @@ export const ScheduledSpreadsheetView: React.FC = () => {
             >
               <div className="flex items-center gap-1 min-w-0 w-full">
                 <span 
-                  className="text-[11px] leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0" 
+                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0" 
                   title={detailsData.fullText}
                 >
                   {detailsData.fullText}
                 </span>
-                <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view full details" />
+                {isTruncated && (
+                  <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view full details" />
+                )}
               </div>
             </button>
           </PopoverTrigger>
@@ -687,7 +740,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
         className="flex items-center gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className="text-[11px] truncate flex-1 leading-tight">{content || '-'}</span>
+        <span className="text-sm truncate flex-1 leading-tight">{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
@@ -784,7 +837,7 @@ export const ScheduledSpreadsheetView: React.FC = () => {
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`px-1.5 py-1 text-left text-[10px] font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
+                    className={`px-1.5 py-1 text-left text-xs font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
                       draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
                     }`}
                     style={{ width: column.width, minWidth: column.width }}
@@ -826,12 +879,12 @@ export const ScheduledSpreadsheetView: React.FC = () => {
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-6`}
+                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-8`}
                 >
                   {columns.map((column) => (
                     <td
                       key={column.id}
-                      className="px-1.5 py-1 border-r border-gray-200 text-[11px] leading-tight overflow-hidden"
+                      className="px-1.5 py-1 border-r border-gray-200 text-sm leading-tight overflow-hidden"
                       style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
                     >
                       {renderCell(event, column)}
