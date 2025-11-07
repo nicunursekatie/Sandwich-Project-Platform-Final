@@ -324,7 +324,29 @@ export const ScheduledTab: React.FC = () => {
       )}
 
       {viewMode === 'spreadsheet' ? (
-        <ScheduledSpreadsheetView />
+        <ScheduledSpreadsheetView 
+          onEventDateClick={(event) => {
+            setSelectedEventRequest(event);
+            setViewMode('card');
+            // Scroll to the card after React has rendered the card view
+            setTimeout(() => {
+              const cardElement = document.querySelector(`[data-event-id="${event.id}"]`);
+              if (cardElement) {
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else {
+                // If card not found, try again after a longer delay
+                setTimeout(() => {
+                  const retryElement = document.querySelector(`[data-event-id="${event.id}"]`);
+                  if (retryElement) {
+                    retryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }, 200);
+              }
+            }, 150);
+          }}
+        />
       ) : scheduledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No scheduled events
@@ -332,7 +354,7 @@ export const ScheduledTab: React.FC = () => {
       ) : (
         <div className="space-y-4 max-w-7xl mx-auto px-4">
           {scheduledRequests.map((request) => (
-            <div key={request.id} className="w-full">
+            <div key={request.id} className="w-full" data-event-id={request.id}>
               <ScheduledCardEnhanced
                 request={request}
                 editingField={editingField}
