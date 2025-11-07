@@ -70,11 +70,13 @@ export function DateTimePicker({
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date && selectedTime) {
-      // Combine date and time
+      // Combine date and time - create local datetime string without timezone conversion
       const [hours, minutes] = selectedTime.split(':');
-      const combinedDateTime = new Date(date);
-      combinedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      onChange?.(combinedDateTime.toISOString());
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+      onChange?.(localDateTime);
     }
   };
 
@@ -82,11 +84,13 @@ export function DateTimePicker({
   const handleTimeChange = (time: string) => {
     setSelectedTime(time);
     if (selectedDate && time) {
-      // Combine date and time
+      // Combine date and time - create local datetime string without timezone conversion
       const [hours, minutes] = time.split(':');
-      const combinedDateTime = new Date(selectedDate);
-      combinedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      onChange?.(combinedDateTime.toISOString());
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+      onChange?.(localDateTime);
     }
   };
 
