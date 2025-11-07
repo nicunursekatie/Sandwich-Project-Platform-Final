@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User, Calendar, ArrowUpDown } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
+import { useQuery } from '@tanstack/react-query';
 
 interface TspContactStats {
   userId: string;
@@ -27,6 +28,12 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [sortBy, setSortBy] = useState<'name' | 'total' | 'new' | 'in_process'>('total');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
+  const [includeCompleted, setIncludeCompleted] = useState(false);
+
+  // Fetch users to get proper names
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+  });
 
   const handleSort = (field: 'name' | 'total' | 'new' | 'in_process') => {
     if (sortBy === field) {
@@ -40,19 +47,34 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const tspContactStats = useMemo(() => {
     const statsMap = new Map<string, TspContactStats>();
 
-    // Process all event requests
+    // Filter out completed/declined/postponed events by default unless includeCompleted is true
+    let baseFilteredRequests = eventRequests;
+    if (!includeCompleted) {
+      baseFilteredRequests = eventRequests.filter(e => {
+        const status = e.status?.toLowerCase();
+        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled';
+      });
+    }
+
+    // Apply status filter
     const filteredRequests = statusFilter === 'all'
-      ? eventRequests
-      : eventRequests.filter(e => e.status?.toLowerCase() === statusFilter);
+      ? baseFilteredRequests
+      : baseFilteredRequests.filter(e => e.status?.toLowerCase() === statusFilter);
 
     filteredRequests.forEach((event) => {
       const contactId = event.tspContact || event.customTspContact;
       if (!contactId) return;
 
       if (!statsMap.has(contactId)) {
+        // Find the user name from users array
+        const user = users.find(u => u.id === contactId);
+        const userName = user
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || contactId
+          : contactId;
+
         statsMap.set(contactId, {
           userId: contactId,
-          name: event.tspContactName || contactId,
+          name: userName,
           totalAssigned: 0,
           byStatus: {
             new: 0,
@@ -101,18 +123,29 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
     });
 
     return sortedStats;
-  }, [eventRequests, sortBy, sortDirection, statusFilter]);
+  }, [eventRequests, sortBy, sortDirection, statusFilter, includeCompleted, users]);
 
-  const totalAssigned = eventRequests.filter(e => e.tspContact || e.customTspContact).length;
-  const totalUnassigned = eventRequests.filter(e => !e.tspContact && !e.customTspContact).length;
+  // Calculate totals based on filtered events (excluding completed by default)
+  const activeEvents = includeCompleted
+    ? eventRequests
+    : eventRequests.filter(e => {
+        const status = e.status?.toLowerCase();
+        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled';
+      });
+
+  const totalAssigned = activeEvents.filter(e => e.tspContact || e.customTspContact).length;
+  const totalUnassigned = activeEvents.filter(e => !e.tspContact && !e.customTspContact).length;
 
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">Total Events</div>
-          <div className="text-2xl font-bold text-brand-primary">{eventRequests.length}</div>
+          <div className="text-sm text-slate-600">Active Events</div>
+          <div className="text-2xl font-bold text-brand-primary">{activeEvents.length}</div>
+          <div className="text-xs text-slate-500 mt-1">
+            {includeCompleted ? 'Including completed' : 'Excluding completed'}
+          </div>
         </div>
         <div className="premium-card-flat p-4">
           <div className="text-sm text-slate-600">Assigned</div>
@@ -128,7 +161,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
       <div className="premium-card p-4 space-y-4">
         <div className="flex gap-4 items-center flex-wrap">
           <div className="flex gap-2 items-center">
-            <span className="text-sm font-medium text-slate-600">Filter:</span>
+            <span className="text-sm font-medium text-slate-600">Status:</span>
             <div className="flex gap-1">
               <Button
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -159,6 +192,18 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                 Scheduled
               </Button>
             </div>
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeCompleted}
+                onChange={(e) => setIncludeCompleted(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-slate-600">Include completed/declined</span>
+            </label>
           </div>
         </div>
 
