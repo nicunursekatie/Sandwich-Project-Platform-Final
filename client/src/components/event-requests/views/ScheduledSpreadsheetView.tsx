@@ -54,7 +54,11 @@ interface Column {
 type SortField = 'eventDate' | 'groupName' | 'eventStartTime' | 'pickupTime' | 'estimatedSandwiches';
 type SortDirection = 'asc' | 'desc';
 
-export const ScheduledSpreadsheetView: React.FC = () => {
+interface ScheduledSpreadsheetViewProps {
+  onEventDateClick?: (event: EventRequest) => void;
+}
+
+export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick }) => {
   const {
     eventRequests,
     editingScheduledId,
@@ -305,12 +309,16 @@ export const ScheduledSpreadsheetView: React.FC = () => {
 
   // Handle clicking on event date to navigate to card view
   const handleEventDateClick = (event: EventRequest) => {
-    setSelectedEventRequest(event);
-    setActiveTab('scheduled');
-    // Scroll to top to ensure the card view is visible
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+    if (onEventDateClick) {
+      onEventDateClick(event);
+    } else {
+      // Fallback if no callback provided
+      setSelectedEventRequest(event);
+      setActiveTab('scheduled');
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   // Define default columns - ordered by workflow priority
@@ -536,16 +544,6 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       render: (event) => event.actualSandwichCount?.toString() || '',
     },
     {
-      id: 'socialPost',
-      label: 'Social Post',
-      width: '100px',
-      render: (event) => {
-        if (event.socialMediaPostCompleted) return '✓ Done';
-        if (event.socialMediaPostRequested) return 'Req';
-        return '';
-      },
-    },
-    {
       id: 'notes',
       label: 'Notes',
       width: '150px',
@@ -557,14 +555,35 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       width: '150px',
       render: (event) => event.schedulingNotes || '',
     },
+    {
+      id: 'socialPost',
+      label: 'Social Post',
+      width: '100px',
+      render: (event) => {
+        if (event.socialMediaPostCompleted) return '✓ Done';
+        if (event.socialMediaPostRequested) return 'Req';
+        return '';
+      },
+    },
   ], [resolveUserName]);
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {
-    // Reorder columns if saved order exists
+    // Reorder columns if saved order exists and matches current column count
     if (columnOrder && columnOrder.length === defaultColumns.length) {
       const columnMap = new Map(defaultColumns.map(col => [col.id, col]));
-      return columnOrder.map(id => columnMap.get(id)).filter(Boolean) as Column[];
+      const orderedColumns = columnOrder.map(id => columnMap.get(id)).filter(Boolean) as Column[];
+      // If all columns are present, return ordered columns
+      if (orderedColumns.length === defaultColumns.length) {
+        return orderedColumns;
+      }
+    }
+    
+    // If saved order is outdated or doesn't exist, use default order
+    // Clear outdated saved order
+    if (columnOrder && columnOrder.length !== defaultColumns.length) {
+      localStorage.removeItem('scheduledSpreadsheetColumnOrder');
+      setColumnOrder(null);
     }
     
     return defaultColumns;
