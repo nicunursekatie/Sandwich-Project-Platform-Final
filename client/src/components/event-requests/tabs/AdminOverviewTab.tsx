@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Calendar, ArrowUpDown } from 'lucide-react';
+import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 interface TspContactStats {
   userId: string;
@@ -29,6 +30,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
   const [includeCompleted, setIncludeCompleted] = useState(false);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   // Fetch users to get proper names
   const { data: users = [] } = useQuery<any[]>({
@@ -249,64 +251,152 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            {tspContactStats.map((stat) => (
-              <div
-                key={stat.userId}
-                className="premium-card p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-brand-primary/10 flex items-center justify-center">
-                      <User className="w-5 h-5 text-brand-primary" />
+            {tspContactStats.map((stat) => {
+              const isExpanded = expandedUserId === stat.userId;
+
+              return (
+                <div
+                  key={stat.userId}
+                  className="premium-card overflow-hidden"
+                >
+                  <button
+                    onClick={() => setExpandedUserId(isExpanded ? null : stat.userId)}
+                    className="w-full p-4 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                        )}
+                        <div className="w-10 h-10 rounded-full bg-brand-primary/10 flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-brand-primary" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-900">{stat.name}</div>
+                          <div className="text-sm text-slate-500">
+                            <Calendar className="w-3 h-3 inline mr-1" />
+                            {stat.totalAssigned} {stat.totalAssigned === 1 ? 'event' : 'events'} assigned
+                          </div>
+                        </div>
+                      </div>
+                      <Badge className="bg-brand-primary text-white">
+                        {stat.totalAssigned}
+                      </Badge>
                     </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{stat.name}</div>
-                      <div className="text-sm text-slate-500">
-                        <Calendar className="w-3 h-3 inline mr-1" />
-                        {stat.totalAssigned} {stat.totalAssigned === 1 ? 'event' : 'events'} assigned
+
+                    {/* Status Breakdown */}
+                    <div className="flex flex-wrap gap-2 ml-13">
+                      {stat.byStatus.new > 0 && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          New: {stat.byStatus.new}
+                        </Badge>
+                      )}
+                      {stat.byStatus.in_process > 0 && (
+                        <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                          In Process: {stat.byStatus.in_process}
+                        </Badge>
+                      )}
+                      {stat.byStatus.scheduled > 0 && (
+                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                          Scheduled: {stat.byStatus.scheduled}
+                        </Badge>
+                      )}
+                      {stat.byStatus.completed > 0 && (
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                          Completed: {stat.byStatus.completed}
+                        </Badge>
+                      )}
+                      {stat.byStatus.declined > 0 && (
+                        <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                          Declined: {stat.byStatus.declined}
+                        </Badge>
+                      )}
+                      {stat.byStatus.postponed > 0 && (
+                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                          Postponed: {stat.byStatus.postponed}
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded Event List */}
+                  {isExpanded && (
+                    <div className="border-t bg-slate-50 p-4">
+                      <h4 className="font-semibold text-sm text-slate-700 mb-3">Assigned Events</h4>
+                      <div className="space-y-2">
+                        {stat.events
+                          .sort((a, b) => {
+                            // Sort by event date, most recent first
+                            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
+                            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+                            return dateB - dateA;
+                          })
+                          .map((event) => (
+                            <div
+                              key={event.id}
+                              className="bg-white rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-slate-900 truncate">
+                                    {event.organizationName || 'Unnamed Organization'}
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-1 space-y-0.5">
+                                    {event.eventDate && (
+                                      <div>
+                                        <Calendar className="w-3 h-3 inline mr-1" />
+                                        {format(new Date(event.eventDate), 'MMM d, yyyy')}
+                                      </div>
+                                    )}
+                                    {event.estimatedAttendees && (
+                                      <div>
+                                        👥 {event.estimatedAttendees} attendees
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${
+                                      event.status === 'new'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : event.status === 'in_process'
+                                        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                        : event.status === 'scheduled'
+                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        : event.status === 'completed'
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : event.status === 'declined'
+                                        ? 'bg-red-50 text-red-700 border-red-200'
+                                        : event.status === 'postponed'
+                                        ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                        : event.status === 'cancelled'
+                                        ? 'bg-gray-50 text-gray-700 border-gray-200'
+                                        : 'bg-pink-50 text-pink-700 border-pink-200'
+                                    }`}
+                                  >
+                                    {event.status || '(no status)'}
+                                  </Badge>
+                                  <a
+                                    href={`#/dashboard?section=event-requests&tab=${event.status || 'new'}&eventId=${event.id}`}
+                                    className="text-xs text-brand-primary hover:text-brand-primary/80 flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    View <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                       </div>
                     </div>
-                  </div>
-                  <Badge className="bg-brand-primary text-white">
-                    {stat.totalAssigned}
-                  </Badge>
-                </div>
-
-                {/* Status Breakdown */}
-                <div className="flex flex-wrap gap-2 ml-13">
-                  {stat.byStatus.new > 0 && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      New: {stat.byStatus.new}
-                    </Badge>
-                  )}
-                  {stat.byStatus.in_process > 0 && (
-                    <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                      In Process: {stat.byStatus.in_process}
-                    </Badge>
-                  )}
-                  {stat.byStatus.scheduled > 0 && (
-                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                      Scheduled: {stat.byStatus.scheduled}
-                    </Badge>
-                  )}
-                  {stat.byStatus.completed > 0 && (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                      Completed: {stat.byStatus.completed}
-                    </Badge>
-                  )}
-                  {stat.byStatus.declined > 0 && (
-                    <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                      Declined: {stat.byStatus.declined}
-                    </Badge>
-                  )}
-                  {stat.byStatus.postponed > 0 && (
-                    <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
-                      Postponed: {stat.byStatus.postponed}
-                    </Badge>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
