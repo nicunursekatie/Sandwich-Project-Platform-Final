@@ -31,6 +31,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
   const [includeCompleted, setIncludeCompleted] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [eventSortBy, setEventSortBy] = useState<'status' | 'date' | 'organization'>('status');
 
   // Fetch users to get proper names
   const { data: users = [] } = useQuery<any[]>({
@@ -289,32 +290,32 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                     {/* Status Breakdown */}
                     <div className="flex flex-wrap gap-2 ml-13">
                       {stat.byStatus.new > 0 && (
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="outline" className="text-xs border-[#47B3CB] bg-[#47B3CB]/10" style={{ color: '#236383' }}>
                           New: {stat.byStatus.new}
                         </Badge>
                       )}
                       {stat.byStatus.in_process > 0 && (
-                        <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                        <Badge variant="outline" className="text-xs border-[#FBAD3F] bg-[#FBAD3F]/10" style={{ color: '#236383' }}>
                           In Process: {stat.byStatus.in_process}
                         </Badge>
                       )}
                       {stat.byStatus.scheduled > 0 && (
-                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        <Badge variant="outline" className="text-xs border-[#007E8C] bg-[#007E8C]/10" style={{ color: '#236383' }}>
                           Scheduled: {stat.byStatus.scheduled}
                         </Badge>
                       )}
                       {stat.byStatus.completed > 0 && (
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="text-xs border-[#007E8C] bg-[#007E8C]/20" style={{ color: '#236383' }}>
                           Completed: {stat.byStatus.completed}
                         </Badge>
                       )}
                       {stat.byStatus.declined > 0 && (
-                        <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                        <Badge variant="outline" className="text-xs border-[#A31C41] bg-[#A31C41]/10" style={{ color: '#A31C41' }}>
                           Declined: {stat.byStatus.declined}
                         </Badge>
                       )}
                       {stat.byStatus.postponed > 0 && (
-                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                        <Badge variant="outline" className="text-xs border-slate-400 bg-slate-50" style={{ color: '#236383' }}>
                           Postponed: {stat.byStatus.postponed}
                         </Badge>
                       )}
@@ -324,51 +325,88 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                   {/* Expanded Event List */}
                   {isExpanded && (
                     <div className="border-t bg-slate-50 p-4">
-                      <h4 className="font-semibold text-sm text-slate-700 mb-3">Assigned Events</h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-sm text-slate-700">Assigned Events</h4>
+                        <div className="flex gap-1">
+                          <Button
+                            variant={eventSortBy === 'status' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setEventSortBy('status')}
+                            className="text-xs h-7"
+                          >
+                            Status
+                          </Button>
+                          <Button
+                            variant={eventSortBy === 'date' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setEventSortBy('date')}
+                            className="text-xs h-7"
+                          >
+                            Date
+                          </Button>
+                          <Button
+                            variant={eventSortBy === 'organization' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setEventSortBy('organization')}
+                            className="text-xs h-7"
+                          >
+                            Org
+                          </Button>
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         {stat.events
                           .sort((a, b) => {
-                            // Sort by event date, most recent first
-                            const dateA = (a.scheduledEventDate || a.desiredEventDate) ? new Date(a.scheduledEventDate || a.desiredEventDate).getTime() : 0;
-                            const dateB = (b.scheduledEventDate || b.desiredEventDate) ? new Date(b.scheduledEventDate || b.desiredEventDate).getTime() : 0;
-                            return dateB - dateA;
+                            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
+                            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+
+                            if (eventSortBy === 'status') {
+                              // Sort by status first, then date
+                              const statusOrder = { new: 0, in_process: 1, scheduled: 2, completed: 3, declined: 4, postponed: 5, cancelled: 6, contact_completed: 7 };
+                              const statusA = statusOrder[a.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
+                              const statusB = statusOrder[b.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
+                              if (statusA !== statusB) return statusA - statusB;
+                              return dateB - dateA;
+                            } else if (eventSortBy === 'date') {
+                              return dateB - dateA;
+                            } else {
+                              return (a.organizationName || '').localeCompare(b.organizationName || '');
+                            }
                           })
-                          .map((event) => {
-                            const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                            return (
+                          .map((event) => (
                             <div
                               key={event.id}
                               className="bg-white rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition-colors"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-slate-900 truncate">
+                                  <div className="font-medium text-base text-slate-900 truncate">
                                     {event.organizationName || 'Unnamed Organization'}
                                   </div>
-                                  <div className="text-xs mt-1 space-y-0.5" style={{ color: '#236383' }}>
-                                    {eventDate && (
+                                  <div className="text-sm mt-1 space-y-1" style={{ color: '#236383' }}>
+                                    {event.eventDate && (
                                       <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        {format(new Date(eventDate), 'MMM d, yyyy')}
+                                        <Calendar className="w-4 h-4" />
+                                        {format(new Date(event.eventDate), 'MMM d, yyyy')}
                                       </div>
                                     )}
-                                    {event.eventAddress && (
+                                    {event.eventLocation && (
                                       <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventLocation)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1 hover:underline"
                                         style={{ color: '#007E8C' }}
                                         onClick={(e) => e.stopPropagation()}
                                       >
-                                        <MapPin className="w-3 h-3" />
-                                        {event.eventAddress}
+                                        <MapPin className="w-4 h-4" />
+                                        {event.eventLocation}
                                       </a>
                                     )}
-                                    {(event.estimatedSandwichCount || event.volunteerCount) && (
+                                    {(event.estimatedSandwiches || event.estimatedAttendees) && (
                                       <div className="flex items-center gap-1">
-                                        🥪 {event.estimatedSandwichCount || event.volunteerCount || 0} sandwiches
-                                        {event.volunteerCount && !event.estimatedSandwichCount && ' (from attendees)'}
+                                        <span className="text-base">🥪</span> {event.estimatedSandwiches || event.estimatedAttendees || 0} sandwiches
+                                        {event.estimatedAttendees && !event.estimatedSandwiches && ' (from attendees)'}
                                       </div>
                                     )}
                                   </div>
@@ -376,7 +414,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                 <div className="flex flex-col items-end gap-1">
                                   <Badge
                                     variant="outline"
-                                    className={`text-xs ${
+                                    className={`text-sm ${
                                       event.status === 'new'
                                         ? 'border-[#47B3CB] text-[#236383]'
                                         : event.status === 'in_process'
@@ -398,11 +436,11 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   </Badge>
                                   <a
                                     href={`#/dashboard?section=event-requests&tab=${event.status || 'new'}&eventId=${event.id}`}
-                                    className="text-xs flex items-center gap-1"
+                                    className="text-sm flex items-center gap-1 font-medium"
                                     style={{ color: '#007E8C' }}
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    View <ExternalLink className="w-3 h-3" />
+                                    View <ExternalLink className="w-3.5 h-3.5" />
                                   </a>
                                 </div>
                               </div>
