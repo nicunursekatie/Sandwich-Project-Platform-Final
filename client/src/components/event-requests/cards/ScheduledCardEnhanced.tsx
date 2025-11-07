@@ -1389,7 +1389,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Delivery Logistics */}
-            {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation) ? (
+            {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation || (isEditingThisCard && editingField === 'assignedRecipientIds')) ? (
               <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
                 <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                   <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
