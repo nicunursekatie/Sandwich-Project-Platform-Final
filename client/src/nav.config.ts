@@ -248,6 +248,16 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'admin-overview',
+    label: 'Admin Overview',
+    icon: BarChart3,
+    href: 'event-requests?tab=admin_overview',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
+    group: 'event-planning',
+    parentId: 'event-requests',
+    isSubItem: true,
+  },
+  {
     id: 'event-map',
     label: 'Event Map',
     icon: MapPin,
