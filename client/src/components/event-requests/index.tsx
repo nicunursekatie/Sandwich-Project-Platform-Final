@@ -9,9 +9,10 @@ import { ScheduledTab } from './tabs/ScheduledTab';
 import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
+import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, BarChart3 } from 'lucide-react';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
   Dialog,
@@ -173,14 +174,23 @@ const EventRequestsManagementContent: React.FC = () => {
   }, []);
 
   // Memoize tab children to prevent recreation on every render
-  const tabChildren = useMemo(() => ({
-    new: <NewRequestsTab />,
-    in_process: <InProcessTab />,
-    scheduled: <ScheduledTab />,
-    completed: <CompletedTab />,
-    declined: <DeclinedTab />,
-    my_assignments: <MyAssignmentsTab />,
-  }), []);
+  const tabChildren = useMemo(() => {
+    const tabs: any = {
+      new: <NewRequestsTab />,
+      in_process: <InProcessTab />,
+      scheduled: <ScheduledTab />,
+      completed: <CompletedTab />,
+      declined: <DeclinedTab />,
+      my_assignments: <MyAssignmentsTab />,
+    };
+
+    // Add admin overview tab for admins
+    if (user?.role === 'super_admin' || user?.role === 'admin') {
+      tabs.admin_overview = <AdminOverviewTab eventRequests={eventRequests} />;
+    }
+
+    return tabs;
+  }, [eventRequests, user?.role]);
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
