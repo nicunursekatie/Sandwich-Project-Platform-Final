@@ -13,6 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -31,6 +36,7 @@ import {
   UserPlus,
   FileText,
   GripVertical,
+  Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
@@ -41,7 +47,7 @@ interface Column {
   label: string;
   width?: string;
   sortable?: boolean;
-  render?: (event: EventRequest) => React.ReactNode;
+  render?: (event: EventRequest) => React.ReactNode | string | { fullText: string; hasContent: boolean };
 }
 
 type SortField = 'eventDate' | 'groupName' | 'eventStartTime' | 'pickupTime' | 'estimatedSandwiches';
@@ -341,14 +347,15 @@ export const ScheduledSpreadsheetView: React.FC = () => {
     {
       id: 'allDetails',
       label: 'ALL DETAILS',
-      width: '300px',
+      width: '150px',
       render: (event) => {
         const details = [];
         if (event.message) details.push(event.message);
         if (event.planningNotes) details.push(`Planning: ${event.planningNotes}`);
         if (event.schedulingNotes) details.push(`Scheduling: ${event.schedulingNotes}`);
         if (event.additionalRequirements) details.push(`Requirements: ${event.additionalRequirements}`);
-        return details.join(' | ') || '';
+        const fullText = details.join(' | ') || '';
+        return { fullText, hasContent: fullText.length > 0 };
       },
     },
     {
@@ -566,7 +573,52 @@ export const ScheduledSpreadsheetView: React.FC = () => {
       );
     }
 
-    const content = column.render ? column.render(event) : '';
+    const renderedContent = column.render ? column.render(event) : '';
+    
+    // Special handling for allDetails column
+    if (column.id === 'allDetails') {
+      const detailsData = renderedContent as { fullText: string; hasContent: boolean };
+      if (!detailsData.hasContent) {
+        return <span className="text-[11px] text-gray-400">-</span>;
+      }
+      
+      const isTruncated = detailsData.fullText.length > 80;
+      
+      return (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button 
+              className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
+              onClick={(e) => e.stopPropagation()} // Prevent double-click editing
+            >
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] truncate flex-1 leading-tight" title={detailsData.fullText}>
+                  {detailsData.fullText}
+                </span>
+                {isTruncated && (
+                  <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view full details" />
+                )}
+              </div>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="w-96 max-h-96 overflow-y-auto"
+            side="right"
+            align="start"
+            onClick={(e) => e.stopPropagation()} // Prevent event bubbling
+          >
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm text-[#236383] mb-2">All Details</h4>
+              <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                {detailsData.fullText || 'No details available'}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      );
+    }
+    
+    const content = typeof renderedContent === 'string' ? renderedContent : String(renderedContent);
     
     // Get the raw value for editing (not the formatted display)
     const getRawValue = () => {

@@ -5,6 +5,7 @@ import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, M
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { useEventRequestContext } from '../context/EventRequestContext';
 
 interface TspContactStats {
   userId: string;
@@ -26,6 +27,7 @@ interface AdminOverviewTabProps {
 }
 
 export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
+  const { setSelectedEventRequest, setShowEventDetails, setActiveTab } = useEventRequestContext();
   const [sortBy, setSortBy] = useState<'name' | 'total' | 'new' | 'in_process'>('total');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
@@ -45,6 +47,12 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
       setSortBy(field);
       setSortDirection('desc');
     }
+  };
+
+  const handleViewEvent = (event: EventRequest) => {
+    setSelectedEventRequest(event);
+    setActiveTab(event.status || 'new');
+    setShowEventDetails(true);
   };
 
   const tspContactStats = useMemo(() => {
@@ -449,14 +457,18 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   >
                                     {event.status?.replace('_', ' ') || '(no status)'}
                                   </Badge>
-                                  <a
-                                    href={`#/dashboard?section=event-requests&tab=${event.status || 'new'}&eventId=${event.id}`}
-                                    className="text-sm flex items-center gap-1 font-medium"
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-sm h-auto p-0 font-medium hover:bg-transparent"
                                     style={{ color: '#007E8C' }}
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewEvent(event);
+                                    }}
                                   >
-                                    View <ExternalLink className="w-3.5 h-3.5" />
-                                  </a>
+                                    View <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                                  </Button>
                                 </div>
                               </div>
                             </div>
