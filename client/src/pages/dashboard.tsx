@@ -217,8 +217,11 @@ export default function Dashboard({
     if (section.includes('?')) {
       const [basePath, queryString] = section.split('?');
       setActiveSection(basePath);
-      // Update URL with query parameters
-      setLocation(`?section=${basePath}&${queryString}`);
+      // Update URL with query parameters using window.history
+      const newUrl = `${window.location.pathname}?section=${basePath}&${queryString}`;
+      window.history.pushState({}, '', newUrl);
+      // Force a location update to trigger effects
+      setLocation(window.location.pathname + window.location.search);
     } else {
       setActiveSection(section);
     }
