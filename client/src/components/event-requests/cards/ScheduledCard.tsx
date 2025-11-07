@@ -95,6 +95,13 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
     request.pickupDateTime?.toString() || ''
   );
 
+  // Sync state with request prop when it changes (e.g., when dialog opens)
+  React.useEffect(() => {
+    setTempStartTime(request.eventStartTime || '');
+    setTempEndTime(request.eventEndTime || '');
+    setTempPickupDateTime(request.pickupDateTime?.toString() || '');
+  }, [request.eventStartTime, request.eventEndTime, request.pickupDateTime]);
+
   const handleSave = () => {
     if (tempStartTime && !request.eventStartTime) {
       startEditing('eventStartTime', tempStartTime);
