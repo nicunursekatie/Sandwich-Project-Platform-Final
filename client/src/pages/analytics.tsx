@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img src="/api/placeholder/32/32" alt="Logo" className="w-8 h-8" />
+            <img src="/sandwich-icon-optimized.svg" alt="Logo" className="w-8 h-8" />
             <span className="text-xl font-semibold text-slate-900">
               The Sandwich Project
             </span>
@@ -38,10 +38,7 @@ export default function AnalyticsPage() {
       <div className="flex flex-1">
         {/* Sidebar */}
         <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
-          <SimpleNav
-            navigationItems={[]}
-            onSectionChange={() => {}}
-          />
+          <SimpleNav />
         </div>
 
         {/* Main Content */}
