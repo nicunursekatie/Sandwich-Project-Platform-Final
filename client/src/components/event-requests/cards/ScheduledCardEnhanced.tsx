@@ -178,6 +178,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   canEdit = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [addingAllTimes, setAddingAllTimes] = useState(false);
   const [tempStartTime, setTempStartTime] = useState('');
@@ -1374,132 +1375,162 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Delivery Logistics */}
-            <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
-              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                Delivery Logistics
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Recipients */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
-                    {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
-                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
+            {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation) ? (
+              <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
+                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                  Delivery Logistics
+                </h3>
+                
+                <div className="space-y-4">
+                  {/* Recipients */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
+                      {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                    {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                      <div className="space-y-2">
+                        <MultiRecipientSelector
+                          value={editingValue ? JSON.parse(editingValue) : []}
+                          onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                          placeholder="Select recipients..."
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
+                            <Save className="w-3 h-3 mr-1" /> Save
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="min-w-0">
+                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
+                              const recipientName = getRecipientName(id);
+                              // Skip if the name still contains the raw ID format
+                              if (recipientName.startsWith('recipient:') || recipientName.startsWith('host:') || recipientName.startsWith('Recipient ID') || recipientName.startsWith('Host ID')) {
+                                return null;
+                              }
+                              const cleanName = recipientName.includes('(')
+                                ? recipientName.substring(0, recipientName.indexOf('(')).trim()
+                                : recipientName;
+                              const displayName = cleanName.length > 25
+                                ? cleanName.substring(0, 22) + '...'
+                                : cleanName;
+                              return (
+                                <Badge
+                                  key={idx}
+                                  title={recipientName}
+                                  className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
+                                >
+                                  <span className="text-sm shrink-0">🏠</span>
+                                  <span className="truncate">{displayName}</span>
+                                </Badge>
+                              );
+                            }).filter(Boolean)}
+                            {request.assignedRecipientIds.length > 3 && (
+                              <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-xs font-medium px-2 py-1 shadow-sm w-fit">
+                                +{request.assignedRecipientIds.length - 3} more recipients
+                              </Badge>
+                            )}
+                          </div>
+                        ) : request.recipientsCount ? (
+                          <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                            <span className="text-sm">🏠</span>
+                            <span>Unknown Host ({request.recipientsCount})</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
+                            <Building2 className="w-3 h-3 mr-1" />
+                            No recipients assigned
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2">
-                      <MultiRecipientSelector
-                        value={editingValue ? JSON.parse(editingValue) : []}
-                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                        placeholder="Select recipients..."
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
-                          <Save className="w-3 h-3 mr-1" /> Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
-                          Cancel
-                        </Button>
+
+                  {/* Overnight Holding */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
+                        {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="min-w-0">
-                      {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                        <div className="flex flex-col gap-1.5 min-w-0">
-                          {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                            const recipientName = getRecipientName(id);
-                            // Skip if the name still contains the raw ID format
-                            if (recipientName.startsWith('recipient:') || recipientName.startsWith('host:') || recipientName.startsWith('Recipient ID') || recipientName.startsWith('Host ID')) {
-                              return null;
-                            }
-                            const cleanName = recipientName.includes('(')
-                              ? recipientName.substring(0, recipientName.indexOf('(')).trim()
-                              : recipientName;
-                            const displayName = cleanName.length > 25
-                              ? cleanName.substring(0, 22) + '...'
-                              : cleanName;
-                            return (
-                              <Badge
-                                key={idx}
-                                title={recipientName}
-                                className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
-                              >
-                                <span className="text-sm shrink-0">🏠</span>
-                                <span className="truncate">{displayName}</span>
-                              </Badge>
-                            );
-                          }).filter(Boolean)}
-                          {request.assignedRecipientIds.length > 3 && (
-                            <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-xs font-medium px-2 py-1 shadow-sm w-fit">
-                              +{request.assignedRecipientIds.length - 3} more recipients
-                            </Badge>
-                          )}
+                      {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="bg-white text-gray-900 h-8 text-sm"
+                            placeholder="Overnight holding location"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                              <Save className="w-3 h-3 mr-1" /> Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                      ) : request.recipientsCount ? (
-                        <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
-                          <span className="text-sm">🏠</span>
-                          <span>Unknown Host ({request.recipientsCount})</span>
-                        </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-sm">
-                          <Building2 className="w-3 h-3 mr-1" />
-                          No recipients assigned
-                        </Badge>
+                        <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
+                          {request.overnightHoldingLocation}
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
-
-                {/* Overnight Holding */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
-                    {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-3 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                    <span className="text-xs uppercase text-gray-600 font-medium">Delivery Logistics</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
+                      <Building2 className="w-3 h-3 mr-1" />
+                      No recipients
+                    </Badge>
+                    {canEdit && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                        onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Set
                       </Button>
                     )}
                   </div>
-                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="bg-white text-gray-900 h-8 text-sm"
-                        placeholder="Overnight holding location"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
-                          <Save className="w-3 h-3 mr-1" /> Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
-                      {request.overnightHoldingLocation || <span className="text-gray-600 font-medium">Not set</span>}
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -1517,11 +1548,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
           <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md">
-            <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#236383]" />
-              Notes & Requirements
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowNotesAndRequirements(!showNotesAndRequirements)}
+              className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto mb-0"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#236383]" />
+                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
+                  Notes & Requirements
+                </h3>
+              </div>
+              {showNotesAndRequirements ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+            </Button>
+            {showNotesAndRequirements && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto mt-3">
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
@@ -1688,7 +1730,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </p>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
