@@ -385,8 +385,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                       <div className="space-y-2">
                         {stat.events
                           .sort((a, b) => {
-                            const dateA = (a.scheduledEventDate || a.desiredEventDate) ? new Date(a.scheduledEventDate || a.desiredEventDate).getTime() : 0;
-                            const dateB = (b.scheduledEventDate || b.desiredEventDate) ? new Date(b.scheduledEventDate || b.desiredEventDate).getTime() : 0;
+                            const dateA = a.scheduledEventDate ? new Date(a.scheduledEventDate).getTime() : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+                            const dateB = b.scheduledEventDate ? new Date(b.scheduledEventDate).getTime() : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
 
                             if (eventSortBy === 'status') {
                               // Sort by status first, then date
@@ -447,9 +447,9 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                         {event.eventAddress}
                                       </a>
                                     )}
-                                    {event.estimatedSandwiches && (
+                                    {event.estimatedSandwichCount && (
                                       <div className="flex items-center gap-1">
-                                        <span className="text-base">🥪</span> {event.estimatedSandwiches} sandwiches
+                                        <span className="text-base">🥪</span> {event.estimatedSandwichCount} sandwiches
                                       </div>
                                     )}
                                   </div>
@@ -492,8 +492,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                 </div>
                               </div>
                             </div>
-                            );
-                          })}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
