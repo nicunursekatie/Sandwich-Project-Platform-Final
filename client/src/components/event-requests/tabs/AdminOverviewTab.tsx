@@ -164,27 +164,29 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
         return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled' && status !== 'contact_completed';
       });
 
-  const totalAssigned = activeEvents.filter(e => e.tspContact || e.customTspContact).length;
-  const totalUnassigned = activeEvents.filter(e => !e.tspContact && !e.customTspContact).length;
+  // Count events by status
+  const newCount = eventRequests.filter(e => e.status?.toLowerCase() === 'new').length;
+  const inProcessCount = eventRequests.filter(e => e.status?.toLowerCase() === 'in_process').length;
+  const scheduledCount = eventRequests.filter(e => e.status?.toLowerCase() === 'scheduled').length;
 
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">Active Events</div>
-          <div className="text-2xl font-bold text-brand-primary">{activeEvents.length}</div>
-          <div className="text-xs text-slate-500 mt-1">
-            {includeCompleted ? 'Including completed' : 'Excluding completed'}
-          </div>
+          <div className="text-sm text-slate-600">New</div>
+          <div className="text-2xl font-bold text-blue-600">{newCount}</div>
+          <div className="text-xs text-slate-500 mt-1">New requests</div>
         </div>
         <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">Assigned</div>
-          <div className="text-2xl font-bold text-green-600">{totalAssigned}</div>
+          <div className="text-sm text-slate-600">In Process</div>
+          <div className="text-2xl font-bold text-yellow-600">{inProcessCount}</div>
+          <div className="text-xs text-slate-500 mt-1">Being worked on</div>
         </div>
         <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">Unassigned</div>
-          <div className="text-2xl font-bold text-orange-600">{totalUnassigned}</div>
+          <div className="text-sm text-slate-600">Scheduled</div>
+          <div className="text-2xl font-bold text-green-600">{scheduledCount}</div>
+          <div className="text-xs text-slate-500 mt-1">Ready to go</div>
         </div>
       </div>
 
