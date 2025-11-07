@@ -78,15 +78,8 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
     if (!eventRequest) return items;
 
-    // Add initial request message at the top (if present)
-    if (eventRequest.message) {
-      items.push({
-        type: 'initial',
-        icon: <FileText className="h-4 w-4" />,
-        title: 'Initial Request Message',
-        content: eventRequest.message,
-      });
-    }
+    // Note: Initial request message is displayed in the "Notes & Requirements" section
+    // of the card, so we don't duplicate it here
 
     // Add structured contact attempts from new contactAttemptsLog
     if (eventRequest.contactAttemptsLog && Array.isArray(eventRequest.contactAttemptsLog)) {
@@ -140,65 +133,8 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     }
 
-    // Add planning notes
-    if (eventRequest.planningNotes) {
-      items.push({
-        type: 'note',
-        icon: <ClipboardList className="h-4 w-4" />,
-        title: 'Planning Notes',
-        content: eventRequest.planningNotes,
-      });
-    }
-
-    // Add scheduling notes
-    if (eventRequest.schedulingNotes) {
-      items.push({
-        type: 'note',
-        icon: <Calendar className="h-4 w-4" />,
-        title: 'Scheduling Notes',
-        content: eventRequest.schedulingNotes,
-      });
-    }
-
-    // Add additional requirements
-    if (eventRequest.additionalRequirements) {
-      items.push({
-        type: 'note',
-        icon: <AlertCircle className="h-4 w-4" />,
-        title: 'Special Requirements',
-        content: eventRequest.additionalRequirements,
-      });
-    }
-
-    // Add volunteer notes
-    if (eventRequest.volunteerNotes) {
-      items.push({
-        type: 'note',
-        icon: <Users className="h-4 w-4" />,
-        title: 'Volunteer Notes',
-        content: eventRequest.volunteerNotes,
-      });
-    }
-
-    // Add driver notes
-    if (eventRequest.driverNotes) {
-      items.push({
-        type: 'note',
-        icon: <Car className="h-4 w-4" />,
-        title: 'Driver Notes',
-        content: eventRequest.driverNotes,
-      });
-    }
-
-    // Add van driver notes
-    if (eventRequest.vanDriverNotes) {
-      items.push({
-        type: 'note',
-        icon: <Truck className="h-4 w-4" />,
-        title: 'Van Driver Notes',
-        content: eventRequest.vanDriverNotes,
-      });
-    }
+    // Note: Planning notes, scheduling notes, and other notes are displayed in the 
+    // "Notes & Requirements" section of the card, so we don't duplicate them here
 
     // Add follow-up notes
     if (eventRequest.followUpNotes) {
