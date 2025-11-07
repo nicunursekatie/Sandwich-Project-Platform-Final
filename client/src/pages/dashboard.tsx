@@ -209,10 +209,19 @@ export default function Dashboard({
     logger.log('Dashboard activeSection changed to:', activeSection);
   }, [activeSection]);
 
-  // Enhanced setActiveSection with debugging
+  // Enhanced setActiveSection with debugging and query param support
   const enhancedSetActiveSection = (section: string) => {
     logger.log('📍 Dashboard setActiveSection called with:', section);
-    setActiveSection(section);
+
+    // Check if section includes query parameters
+    if (section.includes('?')) {
+      const [basePath, queryString] = section.split('?');
+      setActiveSection(basePath);
+      // Update URL with query parameters
+      setLocation(`?section=${basePath}&${queryString}`);
+    } else {
+      setActiveSection(section);
+    }
   };
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
