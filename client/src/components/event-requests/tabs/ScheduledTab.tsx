@@ -10,6 +10,9 @@ import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
+import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
+import { Button } from '@/components/ui/button';
+import { LayoutGrid, Table2 } from 'lucide-react';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -17,6 +20,7 @@ export const ScheduledTab: React.FC = () => {
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('card');
 
   // State for confirmation checkbox when editing dates
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
@@ -290,7 +294,38 @@ export const ScheduledTab: React.FC = () => {
 
   return (
     <>
-      {scheduledRequests.length === 0 ? (
+      {/* View Toggle */}
+      {scheduledRequests.length > 0 && (
+        <div className="flex items-center justify-between mb-4 px-4">
+          <div className="text-sm text-gray-600">
+            {scheduledRequests.length} scheduled event{scheduledRequests.length !== 1 ? 's' : ''}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+              className="flex items-center gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Card View
+            </Button>
+            <Button
+              variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('spreadsheet')}
+              className="flex items-center gap-2"
+            >
+              <Table2 className="h-4 w-4" />
+              Spreadsheet View
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'spreadsheet' ? (
+        <ScheduledSpreadsheetView />
+      ) : scheduledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No scheduled events
         </div>

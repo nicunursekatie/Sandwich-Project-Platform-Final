@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, MapPin } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -54,7 +54,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
     if (!includeCompleted) {
       baseFilteredRequests = eventRequests.filter(e => {
         const status = e.status?.toLowerCase();
-        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled';
+        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled' && status !== 'contact_completed';
       });
     }
 
@@ -132,7 +132,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
     ? eventRequests
     : eventRequests.filter(e => {
         const status = e.status?.toLowerCase();
-        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled';
+        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled' && status !== 'contact_completed';
       });
 
   const totalAssigned = activeEvents.filter(e => e.tspContact || e.customTspContact).length;
@@ -329,11 +329,13 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                         {stat.events
                           .sort((a, b) => {
                             // Sort by event date, most recent first
-                            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
-                            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+                            const dateA = (a.scheduledEventDate || a.desiredEventDate) ? new Date(a.scheduledEventDate || a.desiredEventDate).getTime() : 0;
+                            const dateB = (b.scheduledEventDate || b.desiredEventDate) ? new Date(b.scheduledEventDate || b.desiredEventDate).getTime() : 0;
                             return dateB - dateA;
                           })
-                          .map((event) => (
+                          .map((event) => {
+                            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                            return (
                             <div
                               key={event.id}
                               className="bg-white rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition-colors"
@@ -343,16 +345,30 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   <div className="font-medium text-slate-900 truncate">
                                     {event.organizationName || 'Unnamed Organization'}
                                   </div>
-                                  <div className="text-xs text-slate-500 mt-1 space-y-0.5">
-                                    {event.eventDate && (
-                                      <div>
-                                        <Calendar className="w-3 h-3 inline mr-1" />
-                                        {format(new Date(event.eventDate), 'MMM d, yyyy')}
+                                  <div className="text-xs mt-1 space-y-0.5" style={{ color: '#236383' }}>
+                                    {eventDate && (
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {format(new Date(eventDate), 'MMM d, yyyy')}
                                       </div>
                                     )}
-                                    {event.estimatedAttendees && (
-                                      <div>
-                                        👥 {event.estimatedAttendees} attendees
+                                    {event.eventAddress && (
+                                      <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 hover:underline"
+                                        style={{ color: '#007E8C' }}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MapPin className="w-3 h-3" />
+                                        {event.eventAddress}
+                                      </a>
+                                    )}
+                                    {(event.estimatedSandwichCount || event.volunteerCount) && (
+                                      <div className="flex items-center gap-1">
+                                        🥪 {event.estimatedSandwichCount || event.volunteerCount || 0} sandwiches
+                                        {event.volunteerCount && !event.estimatedSandwichCount && ' (from attendees)'}
                                       </div>
                                     )}
                                   </div>
@@ -362,27 +378,28 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                     variant="outline"
                                     className={`text-xs ${
                                       event.status === 'new'
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        ? 'border-[#47B3CB] text-[#236383]'
                                         : event.status === 'in_process'
-                                        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                        ? 'border-[#FBAD3F] text-[#236383]'
                                         : event.status === 'scheduled'
-                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        ? 'border-[#007E8C] text-[#236383]'
                                         : event.status === 'completed'
-                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                        : event.status === 'declined'
-                                        ? 'bg-red-50 text-red-700 border-red-200'
+                                        ? 'border-[#007E8C] text-[#236383] bg-[#007E8C]/10'
+                                        : event.status === 'declined' || event.status === 'cancelled'
+                                        ? 'border-[#A31C41] text-[#A31C41]'
                                         : event.status === 'postponed'
-                                        ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                        : event.status === 'cancelled'
-                                        ? 'bg-gray-50 text-gray-700 border-gray-200'
-                                        : 'bg-pink-50 text-pink-700 border-pink-200'
+                                        ? 'border-slate-400 text-slate-600'
+                                        : event.status === 'contact_completed'
+                                        ? 'border-[#007E8C] text-[#236383] bg-[#007E8C]/5'
+                                        : 'border-slate-300 text-slate-600'
                                     }`}
                                   >
-                                    {event.status || '(no status)'}
+                                    {event.status?.replace('_', ' ') || '(no status)'}
                                   </Badge>
                                   <a
                                     href={`#/dashboard?section=event-requests&tab=${event.status || 'new'}&eventId=${event.id}`}
-                                    className="text-xs text-brand-primary hover:text-brand-primary/80 flex items-center gap-1"
+                                    className="text-xs flex items-center gap-1"
+                                    style={{ color: '#007E8C' }}
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     View <ExternalLink className="w-3 h-3" />
@@ -390,7 +407,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                 </div>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                       </div>
                     </div>
                   )}
