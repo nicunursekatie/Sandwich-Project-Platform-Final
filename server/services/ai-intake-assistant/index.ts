@@ -106,15 +106,19 @@ const VALIDATION_RULES: ValidationRule[] = [
     severity: 'critical',
     check: (event) => {
       const hasDate = event.scheduledEventDate || event.desiredEventDate;
-      if (hasDate && (!event.eventStartTime || !event.eventEndTime)) {
+      const hasEventTimes = event.eventStartTime && event.eventEndTime;
+      const hasPickupTime = event.pickupTime;
+      
+      // If we have a date, we need either event times OR pickup time (either is acceptable)
+      if (hasDate && !hasEventTimes && !hasPickupTime) {
         return {
           category: 'scheduling',
           severity: 'critical',
           field: 'eventStartTime',
           title: 'Event Times Missing',
-          message: 'Event start and end times are required for scheduling.',
-          suggestion: 'Ask for specific start and end times for the sandwich-making event.',
-          action: 'Get event start and end times'
+          message: 'Either event start/end times OR a pickup time is required for scheduling.',
+          suggestion: 'Ask for either the event times (start and end) or the pickup time for sandwiches.',
+          action: 'Get event times or pickup time'
         };
       }
       return null;
