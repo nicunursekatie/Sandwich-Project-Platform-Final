@@ -1013,8 +1013,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <div className="space-y-3">
 
                 {/* Drivers */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                {driverNeeded > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
                     {isEditingThisCard && editingField === 'driversNeeded' ? (
                       <div className="flex items-center gap-2 flex-1">
                         <Car className="w-4 h-4 text-[#236383]" />
@@ -1048,232 +1049,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    {driverNeeded > 0 ? (
-                      <>
-                        {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
-                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                <SendKudosButton
-                                  recipientId={id}
-                                  recipientName={extractCustomName(id) || resolveUserName(id)}
-                                  contextType="project"
-                                  contextId={request.id.toString()}
-                                  contextTitle={`${request.organizationName} event`}
-                                  size="sm"
-                                  variant="outline"
-                                  iconOnly
-                                />
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleRemoveAssignment('driver', id)}
-                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                          </div>
-                        ))}
-                        {request.assignedVanDriverId && (
-                          <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
-                            <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
-                              {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
-                            </span>
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              <SendKudosButton
-                                recipientId={request.assignedVanDriverId}
-                                recipientName={resolveUserName(request.assignedVanDriverId)}
-                                contextType="project"
-                                contextId={request.id.toString()}
-                                contextTitle={`${request.organizationName} event`}
-                                size="sm"
-                                variant="outline"
-                                iconOnly
-                              />
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('driversNeeded', '1')}
-                            className="h-6 px-2 text-[#007E8C]"
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Set Need
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Speakers */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    {isEditingThisCard && editingField === 'speakersNeeded' ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Megaphone className="w-4 h-4 text-[#236383]" />
-                        <Input
-                          type="number"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-7 w-16 text-sm"
-                          min="0"
-                          placeholder="0"
-                        />
-                        <span className="text-sm text-[#236383]">needed</span>
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          <Megaphone className="w-5 h-5" />
-                          {speakerNeeded > 0 ? `Speakers (${speakerAssigned}/${speakerNeeded})` : 'Speakers'}
-                        </span>
-                        {canEdit && speakerNeeded > 0 && (
-                          <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white" aria-label="Add speaker">
-                            <UserPlus className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {speakerNeeded > 0 ? (
-                      <>
-                        {Object.keys(request.speakerDetails || {}).map((id) => {
-                          const detailName = (request.speakerDetails as any)?.[id]?.name;
-                          const customName = extractCustomName(id);
-                          const userName = resolveUserName(id);
-                          // Try getRecipientName for host-contact IDs
-                          const recipientName = id.startsWith('host-contact-') && getRecipientName
-                            ? getRecipientName(id)
-                            : null;
-                          // Check if detailName is actually just the ID (common with host-contact and custom IDs)
-                          const isDetailNameJustId = detailName === id ||
-                            detailName?.startsWith('host-contact-') ||
-                            detailName?.startsWith('custom-');
-                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
-                          const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
-                            ? detailName
-                            : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
-                          return (
-                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                <SendKudosButton
-                                  recipientId={id}
-                                  recipientName={displayName}
-                                  contextType="project"
-                                  contextId={request.id.toString()}
-                                  contextTitle={`${request.organizationName} event`}
-                                  size="sm"
-                                  variant="outline"
-                                  iconOnly
-                                />
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleRemoveAssignment('speaker', id)}
-                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Megaphone className="w-3 h-3 mr-1" />No speakers needed</Badge>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('speakersNeeded', '1')}
-                            className="h-6 px-2 text-[#007E8C]"
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Set Need
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Volunteers */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    {isEditingThisCard && editingField === 'volunteersNeeded' ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Users className="w-4 h-4 text-[#236383]" />
-                        <Input
-                          type="number"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-7 w-16 text-sm"
-                          min="0"
-                          placeholder="0"
-                        />
-                        <span className="text-sm text-[#236383]">needed</span>
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          <Users className="w-5 h-5" />
-                          {volunteerNeeded > 0 ? `Volunteers (${volunteerAssigned}/${volunteerNeeded})` : 'Volunteers'}
-                        </span>
-                        {canEdit && volunteerNeeded > 0 && (
-                          <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
-                            <UserPlus className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {volunteerNeeded > 0 ? (
-                      <>
-                        {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
-                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                    <div className="space-y-1">
+                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
                             <div className="flex items-center gap-1 shrink-0 pt-0.5">
                               <SendKudosButton
                                 recipientId={id}
@@ -1289,7 +1068,136 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleRemoveAssignment('volunteer', id)}
+                                  onClick={() => handleRemoveAssignment('driver', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                        </div>
+                      ))}
+                      {request.assignedVanDriverId && (
+                        <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                          <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
+                            {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
+                          </span>
+                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                            <SendKudosButton
+                              recipientId={request.assignedVanDriverId}
+                              recipientName={resolveUserName(request.assignedVanDriverId)}
+                              contextType="project"
+                              contextId={request.id.toString()}
+                              contextTitle={`${request.organizationName} event`}
+                              size="sm"
+                              variant="outline"
+                              iconOnly
+                            />
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                ) : (
+                  <div className="flex items-center justify-between py-0.5">
+                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('driversNeeded', '1')}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
+                      >
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Set Need
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Speakers */}
+                {speakerNeeded > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      {isEditingThisCard && editingField === 'speakersNeeded' ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Megaphone className="w-4 h-4 text-[#236383]" />
+                          <Input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-7 w-16 text-sm"
+                            min="0"
+                            placeholder="0"
+                          />
+                          <span className="text-sm text-[#236383]">needed</span>
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                            <Megaphone className="w-5 h-5" />
+                            Speakers ({speakerAssigned}/{speakerNeeded})
+                          </span>
+                          {canEdit && (
+                            <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white" aria-label="Add speaker">
+                              <UserPlus className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {Object.keys(request.speakerDetails || {}).map((id) => {
+                        const detailName = (request.speakerDetails as any)?.[id]?.name;
+                        const customName = extractCustomName(id);
+                        const userName = resolveUserName(id);
+                        // Try getRecipientName for host-contact IDs
+                        const recipientName = id.startsWith('host-contact-') && getRecipientName
+                          ? getRecipientName(id)
+                          : null;
+                        // Check if detailName is actually just the ID (common with host-contact and custom IDs)
+                        const isDetailNameJustId = detailName === id ||
+                          detailName?.startsWith('host-contact-') ||
+                          detailName?.startsWith('custom-');
+                        // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+                        const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
+                          ? detailName
+                          : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
+                        return (
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                              <SendKudosButton
+                                recipientId={id}
+                                recipientName={displayName}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
+                                size="sm"
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('speaker', id)}
                                   className="h-5 w-5 p-0 text-red-600 shrink-0"
                                 >
                                   <X className="w-3 h-3" />
@@ -1297,27 +1205,112 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               )}
                             </div>
                           </div>
-                        ))}
-                        {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                        <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium"><Users className="w-3 h-3 mr-1" />No volunteers needed</Badge>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('volunteersNeeded', '1')}
-                            className="h-6 px-2 text-[#007E8C]"
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Set Need
-                          </Button>
-                        )}
-                      </div>
+                        );
+                      })}
+                      {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between py-0.5">
+                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Megaphone className="w-3 h-3 mr-1" />No speakers needed</Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('speakersNeeded', '1')}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
+                      >
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Set Need
+                      </Button>
                     )}
                   </div>
-                </div>
+                )}
+
+                {/* Volunteers */}
+                {volunteerNeeded > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      {isEditingThisCard && editingField === 'volunteersNeeded' ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Users className="w-4 h-4 text-[#236383]" />
+                          <Input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-7 w-16 text-sm"
+                            min="0"
+                            placeholder="0"
+                          />
+                          <span className="text-sm text-[#236383]">needed</span>
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                            <Users className="w-5 h-5" />
+                            Volunteers ({volunteerAssigned}/{volunteerNeeded})
+                          </span>
+                          {canEdit && (
+                            <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
+                              <UserPlus className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                            <SendKudosButton
+                              recipientId={id}
+                              recipientName={extractCustomName(id) || resolveUserName(id)}
+                              contextType="project"
+                              contextId={request.id.toString()}
+                              contextTitle={`${request.organizationName} event`}
+                              size="sm"
+                              variant="outline"
+                              iconOnly
+                            />
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('volunteer', id)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between py-0.5">
+                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Users className="w-3 h-3 mr-1" />No volunteers needed</Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('volunteersNeeded', '1')}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
+                      >
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Set Need
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
