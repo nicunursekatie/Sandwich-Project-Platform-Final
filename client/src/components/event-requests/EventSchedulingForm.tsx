@@ -78,6 +78,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     pickupDateTime: '',
     eventAddress: '',
     deliveryDestination: '',
+    holdingOvernight: false,
     overnightHoldingLocation: '',
     overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
@@ -279,6 +280,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
+        holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
         overnightPickupTime: eventRequest?.overnightPickupTime || '',
         sandwichTypes: existingSandwichTypes,
@@ -970,18 +972,48 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </p>
             </div>
 
-            {/* Overnight Holding Location (Optional) */}
-            <div className="space-y-2">
-              <Label htmlFor="overnightHoldingLocation">
-                🌙 Overnight Holding Location (Optional)
-              </Label>
-              <Input
-                id="overnightHoldingLocation"
-                value={formData.overnightHoldingLocation}
-                onChange={(e) => setFormData(prev => ({ ...prev, overnightHoldingLocation: e.target.value }))}
-                placeholder="Location where sandwiches will be stored overnight (e.g., church, community center)"
+            {/* Overnight Holding Checkbox */}
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <input
+                type="checkbox"
+                id="holdingOvernight"
+                checked={formData.holdingOvernight}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    holdingOvernight: checked,
+                    // Clear overnight fields if unchecking
+                    ...(checked ? {} : {
+                      overnightHoldingLocation: '',
+                      overnightPickupTime: '',
+                      deliveryTimeWindow: '',
+                      deliveryParkingAccess: ''
+                    })
+                  }));
+                }}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                data-testid="checkbox-holding-overnight"
               />
-              {formData.overnightHoldingLocation && (
+              <Label htmlFor="holdingOvernight" className="text-sm font-medium text-blue-900 cursor-pointer">
+                🌙 This group will hold sandwiches overnight
+              </Label>
+            </div>
+
+            {/* Overnight Holding Location (shows when checkbox is checked) */}
+            {formData.holdingOvernight && (
+              <div className="space-y-2">
+                <Label htmlFor="overnightHoldingLocation">
+                  Overnight Holding Location
+                </Label>
+                <Input
+                  id="overnightHoldingLocation"
+                  value={formData.overnightHoldingLocation}
+                  onChange={(e) => setFormData(prev => ({ ...prev, overnightHoldingLocation: e.target.value }))}
+                  placeholder="Location where sandwiches will be stored overnight (e.g., church, community center)"
+                  data-testid="input-overnight-location"
+                />
+                {formData.overnightHoldingLocation && (
                 <div className="ml-4 mt-2 space-y-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <h4 className="font-medium text-green-900">Next-Day Delivery Details</h4>
                   <div>
@@ -1014,8 +1046,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     />
                   </div>
                 </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Final Delivery Destination - Multiple Recipients */}
             <div>

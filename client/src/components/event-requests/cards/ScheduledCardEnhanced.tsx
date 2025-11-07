@@ -458,6 +458,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
               {request.isMlkDayEvent && <MlkDayBadge />}
 
+              {/* Overnight holding badge */}
+              {request.overnightHoldingLocation && (
+                <Badge className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border border-indigo-500 font-medium flex items-center gap-1">
+                  <span>🌙</span>
+                  <span>Holding Overnight</span>
+                </Badge>
+              )}
+
               {/* Sandwich count badge */}
               <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
                 <span>🥪</span>
