@@ -382,16 +382,16 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
+                                  {eventDate && (
+                                    <div className="flex items-center gap-1 font-semibold text-base mb-1" style={{ color: '#236383' }}>
+                                      <Calendar className="w-4 h-4" />
+                                      {format(new Date(eventDate), 'MMM d, yyyy')}
+                                    </div>
+                                  )}
                                   <div className="font-medium text-base text-slate-900 truncate">
                                     {event.organizationName || 'Unnamed Organization'}
                                   </div>
                                   <div className="text-sm mt-1 space-y-1" style={{ color: '#236383' }}>
-                                    {eventDate && (
-                                      <div className="flex items-center gap-1">
-                                        <Calendar className="w-4 h-4" />
-                                        {format(new Date(eventDate), 'MMM d, yyyy')}
-                                      </div>
-                                    )}
                                     {event.eventAddress && (
                                       <a
                                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
