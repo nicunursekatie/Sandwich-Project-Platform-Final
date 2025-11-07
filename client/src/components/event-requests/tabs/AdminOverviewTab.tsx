@@ -357,8 +357,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                       <div className="space-y-2">
                         {stat.events
                           .sort((a, b) => {
-                            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
-                            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+                            const dateA = (a.scheduledEventDate || a.desiredEventDate) ? new Date(a.scheduledEventDate || a.desiredEventDate).getTime() : 0;
+                            const dateB = (b.scheduledEventDate || b.desiredEventDate) ? new Date(b.scheduledEventDate || b.desiredEventDate).getTime() : 0;
 
                             if (eventSortBy === 'status') {
                               // Sort by status first, then date
@@ -378,7 +378,21 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                             return (
                             <div
                               key={event.id}
-                              className="bg-white rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition-colors"
+                              className={`rounded-lg p-3 border-l-4 border transition-colors ${
+                                event.status === 'new'
+                                  ? 'bg-[#E2F5F6] border-l-[#47B3CB] border-slate-200 hover:shadow-md'
+                                  : event.status === 'in_process'
+                                  ? 'bg-[#FFF4E5] border-l-[#FBAD3F] border-slate-200 hover:shadow-md'
+                                  : event.status === 'scheduled'
+                                  ? 'bg-[#E4EFF6] border-l-[#007E8C] border-slate-200 hover:shadow-md'
+                                  : event.status === 'completed' || event.status === 'contact_completed'
+                                  ? 'bg-[#E8F7FB] border-l-[#007E8C] border-slate-200 hover:shadow-md'
+                                  : event.status === 'declined' || event.status === 'cancelled'
+                                  ? 'bg-[#FAE7ED] border-l-[#A31C41] border-slate-200 hover:shadow-md'
+                                  : event.status === 'postponed'
+                                  ? 'bg-slate-50 border-l-slate-400 border-slate-200 hover:shadow-md'
+                                  : 'bg-white border-l-slate-300 border-slate-200 hover:shadow-md'
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
