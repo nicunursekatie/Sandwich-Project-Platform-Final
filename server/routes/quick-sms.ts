@@ -70,10 +70,16 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    // Build the app URL
-    const appUrl = process.env.REPLIT_DOMAIN
-      ? `https://${process.env.REPLIT_DOMAIN}`
-      : 'https://your-app.replit.app';
+    // Build the app URL using the same logic as the rest of the app
+    let appUrl: string;
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      appUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      appUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+    } else {
+      // Fallback to request origin
+      appUrl = req.headers.origin || 'https://sandwich-project-platform-final-katielong2316.replit.app';
+    }
     
     // Build the direct link to the app section
     const directLink = `${appUrl}/${appSection}`;
