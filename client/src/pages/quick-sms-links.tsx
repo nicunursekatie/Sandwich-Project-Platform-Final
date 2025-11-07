@@ -30,12 +30,12 @@ export default function QuickSMSLinks() {
   const [customMessage, setCustomMessage] = useState('');
   const [lastSent, setLastSent] = useState<string | null>(null);
 
-  // Get all navigable sections (exclude groups, sub-items, etc.)
+  // Get all navigable sections (include sub-items for specific deep links)
   const appSections = NAV_ITEMS.filter(
-    (item) => item.href && !item.isSubItem
+    (item) => item.href
   ).map((item) => ({
     value: item.href!,
-    label: item.label,
+    label: item.isSubItem ? `  → ${item.label}` : item.label, // Indent sub-items visually
   }));
 
   const sendSMSMutation = useMutation({
