@@ -373,7 +373,9 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                               return (a.organizationName || '').localeCompare(b.organizationName || '');
                             }
                           })
-                          .map((event) => (
+                          .map((event) => {
+                            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                            return (
                             <div
                               key={event.id}
                               className="bg-white rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition-colors"
@@ -384,15 +386,15 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                     {event.organizationName || 'Unnamed Organization'}
                                   </div>
                                   <div className="text-sm mt-1 space-y-1" style={{ color: '#236383' }}>
-                                    {event.eventDate && (
+                                    {eventDate && (
                                       <div className="flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />
-                                        {format(new Date(event.eventDate), 'MMM d, yyyy')}
+                                        {format(new Date(eventDate), 'MMM d, yyyy')}
                                       </div>
                                     )}
-                                    {event.eventLocation && (
+                                    {event.eventAddress && (
                                       <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventLocation)}`}
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1 hover:underline"
@@ -400,13 +402,12 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <MapPin className="w-4 h-4" />
-                                        {event.eventLocation}
+                                        {event.eventAddress}
                                       </a>
                                     )}
-                                    {(event.estimatedSandwiches || event.estimatedAttendees) && (
+                                    {event.estimatedSandwiches && (
                                       <div className="flex items-center gap-1">
-                                        <span className="text-base">🥪</span> {event.estimatedSandwiches || event.estimatedAttendees || 0} sandwiches
-                                        {event.estimatedAttendees && !event.estimatedSandwiches && ' (from attendees)'}
+                                        <span className="text-base">🥪</span> {event.estimatedSandwiches} sandwiches
                                       </div>
                                     )}
                                   </div>
