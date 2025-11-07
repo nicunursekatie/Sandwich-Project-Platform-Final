@@ -12,13 +12,10 @@ export function createImportEventsRouter(deps: RouterDependencies) {
   const { storage, isAuthenticated } = deps;
 
 // Helper functions for pickup time data migration (same as in event-requests.ts)
-const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null => {
+const convertTimeToDateTime = (timeStr: string, baseDate?: Date | string): string | null => {
   if (!timeStr) return null;
   
   try {
-    // Use base date or today if not provided
-    const date = baseDate || new Date();
-    
     // Parse time string (supports formats like "2:30 PM", "14:30", "2:30")
     const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
     if (!timeMatch) return null;
@@ -31,9 +28,35 @@ const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null 
     if (ampm === 'PM' && hours !== 12) hours += 12;
     if (ampm === 'AM' && hours === 12) hours = 0;
     
-    // Create datetime with the same date but specified time
-    const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
-    return dateTime.toISOString();
+    // Extract date components safely without timezone conversion
+    let year: number, month: string, day: string;
+    
+    if (baseDate) {
+      const dateStr = typeof baseDate === 'string' ? baseDate : baseDate.toISOString();
+      // Extract YYYY-MM-DD directly from the string to avoid timezone issues
+      const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (dateMatch) {
+        year = parseInt(dateMatch[1]);
+        month = dateMatch[2];
+        day = dateMatch[3];
+      } else {
+        // Fallback to Date object if string parsing fails
+        const d = new Date(dateStr);
+        year = d.getUTCFullYear();
+        month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        day = String(d.getUTCDate()).padStart(2, '0');
+      }
+    } else {
+      // Use today's date in local timezone
+      const now = new Date();
+      year = now.getFullYear();
+      month = String(now.getMonth() + 1).padStart(2, '0');
+      day = String(now.getDate()).padStart(2, '0');
+    }
+    
+    const hoursStr = String(hours).padStart(2, '0');
+    const minutesStr = String(minutes).padStart(2, '0');
+    return `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
   } catch (error) {
     logger.warn('Failed to convert time to datetime:', timeStr, error);
     return null;
