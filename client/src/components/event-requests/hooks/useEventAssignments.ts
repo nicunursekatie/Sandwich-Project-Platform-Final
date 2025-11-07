@@ -169,6 +169,38 @@ export const useEventAssignments = () => {
       return resolveUserName(recipientIdOrName);
     }
 
+    // Handle new "host:ID" format from MultiRecipientSelector
+    if (recipientIdOrName.startsWith('host:')) {
+      const hostId = recipientIdOrName.replace('host:', '');
+      const numericHostId = parseInt(hostId);
+      
+      // Try to find in hostsWithContacts
+      if (hostsWithContacts && hostsWithContacts.length > 0) {
+        for (const host of hostsWithContacts) {
+          const contact = host.contacts?.find((c: any) => c.id === numericHostId);
+          if (contact) {
+            const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email;
+            return contactName || `Host Contact #${hostId}`;
+          }
+        }
+      }
+      
+      return `Host Contact #${hostId}`;
+    }
+
+    // Handle new "recipient:ID" format from MultiRecipientSelector
+    if (recipientIdOrName.startsWith('recipient:')) {
+      const recipientId = recipientIdOrName.replace('recipient:', '');
+      const recipient = recipients.find((r) => r.id.toString() === recipientId);
+      return recipient ? recipient.name : `Recipient #${recipientId}`;
+    }
+
+    // Handle custom entries "custom:name"
+    if (recipientIdOrName.startsWith('custom:')) {
+      return recipientIdOrName.replace('custom:', '');
+    }
+
+    // Legacy numeric IDs
     if (/^\d+$/.test(recipientIdOrName)) {
       const recipient = recipients.find((r) => r.id.toString() === recipientIdOrName);
       return recipient ? recipient.name : recipientIdOrName;
