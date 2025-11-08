@@ -315,7 +315,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
 
   const { user } = useAuth();
-  const canSendSMS = user && hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
