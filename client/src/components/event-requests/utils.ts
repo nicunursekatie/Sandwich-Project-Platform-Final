@@ -3,10 +3,22 @@ import { logger } from '@/lib/logger';
 
 // Utility function to convert 24-hour time to 12-hour format
 export const formatTime12Hour = (time24: string): string => {
-  if (!time24) return '';
+  if (!time24 || typeof time24 !== 'string') return '';
 
-  const [hours, minutes] = time24.split(':');
-  const hour24 = parseInt(hours);
+  // If already formatted (contains AM/PM), return as-is
+  if (time24.includes('AM') || time24.includes('PM') || time24.includes('am') || time24.includes('pm')) {
+    return time24;
+  }
+
+  // Parse HH:MM or HH:MM:SS format
+  const match = time24.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return ''; // Return empty if format not recognized
+
+  const hours = match[1];
+  const minutes = match[2];
+  const hour24 = parseInt(hours, 10);
+
+  if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '';
 
   if (hour24 === 0) return `12:${minutes} AM`;
   if (hour24 < 12) return `${hour24}:${minutes} AM`;
@@ -17,16 +29,20 @@ export const formatTime12Hour = (time24: string): string => {
 
 // Utility function to convert 24-hour time to 12-hour format for input display
 export const formatTimeForInput = (time24: string): string => {
-  if (!time24) return '';
+  if (!time24 || typeof time24 !== 'string') return '';
 
-  const [hours, minutes] = time24.split(':');
-  const hour24 = parseInt(hours);
+  // If contains AM/PM, strip it and parse
+  const timeWithoutPeriod = time24.replace(/\s*(AM|PM|am|pm)\s*/g, '').trim();
+  
+  // Parse HH:MM or HH:MM:SS or H:MM format
+  const match = timeWithoutPeriod.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return '';
 
-  if (hour24 === 0) return `12:${minutes}`;
-  if (hour24 < 12) return `${hour24}:${minutes}`;
-  if (hour24 === 12) return `12:${minutes}`;
+  const hours = match[1];
+  const minutes = match[2];
 
-  return `${hour24 - 12}:${minutes}`;
+  // For HTML time input, we need HH:MM in 24-hour format
+  return `${hours.padStart(2, '0')}:${minutes}`;
 };
 
 // Helper function to get sandwich types summary for new standardized format
