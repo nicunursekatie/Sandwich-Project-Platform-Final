@@ -910,15 +910,38 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
       
-      // Special handling for time fields
+      // Special handling for time fields with auto-formatting
       if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(column.id)) {
+        const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const input = e.target.value;
+          // Remove all non-digits
+          const digitsOnly = input.replace(/\D/g, '');
+          
+          // Auto-format as HH:MM while typing
+          if (digitsOnly.length === 0) {
+            setEditingValue('');
+          } else if (digitsOnly.length <= 2) {
+            setEditingValue(digitsOnly);
+          } else if (digitsOnly.length <= 4) {
+            const hours = digitsOnly.slice(0, 2);
+            const minutes = digitsOnly.slice(2);
+            setEditingValue(`${hours}:${minutes}`);
+          } else {
+            // Limit to 4 digits (HHMM)
+            const hours = digitsOnly.slice(0, 2);
+            const minutes = digitsOnly.slice(2, 4);
+            setEditingValue(`${hours}:${minutes}`);
+          }
+        };
+        
         return (
           <div className="flex items-center gap-0.5">
             <Input
-              type="time"
+              type="text"
               value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-7 text-sm px-1.5 py-0.5 w-24"
+              onChange={handleTimeChange}
+              placeholder="HH:MM"
+              className="h-7 text-sm px-1.5 py-0.5 w-20"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') saveEdit();
