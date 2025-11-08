@@ -460,7 +460,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
               {/* Overnight holding badge */}
               {request.overnightHoldingLocation && (
-                <Badge className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border border-indigo-500 font-medium flex items-center gap-1">
+                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
                   <span>🌙</span>
                   <span>Holding Overnight</span>
                 </Badge>
