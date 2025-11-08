@@ -62,7 +62,6 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
-import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
@@ -1076,28 +1075,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {parsePostgresArray(request.assignedDriverIds).map((id) => (
                         <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                           <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              <SendKudosButton
-                                recipientId={id}
-                                recipientName={extractCustomName(id) || resolveUserName(id)}
-                                contextType="project"
-                                contextId={request.id.toString()}
-                                contextTitle={`${request.organizationName} event`}
-                                size="sm"
-                                variant="outline"
-                                iconOnly
-                              />
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('driver', id)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                       ))}
                       {request.assignedVanDriverId && (
@@ -1105,28 +1092,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
                             {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
                           </span>
-                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                            <SendKudosButton
-                              recipientId={request.assignedVanDriverId}
-                              recipientName={resolveUserName(request.assignedVanDriverId)}
-                              contextType="project"
-                              contextId={request.id.toString()}
-                              contextTitle={`${request.organizationName} event`}
+                          {canEdit && (
+                            <Button
                               size="sm"
-                              variant="outline"
-                              iconOnly
-                            />
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
-                                className="h-5 w-5 p-0 text-red-600 shrink-0"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                       )}
                       {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
@@ -1206,28 +1181,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         return (
                           <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                             <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              <SendKudosButton
-                                recipientId={id}
-                                recipientName={displayName}
-                                contextType="project"
-                                contextId={request.id.toString()}
-                                contextTitle={`${request.organizationName} event`}
+                            {canEdit && (
+                              <Button
                                 size="sm"
-                                variant="outline"
-                                iconOnly
-                              />
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('speaker', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('speaker', id)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
                         );
                       })}
@@ -1292,28 +1255,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
                         <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                           <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
-                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                            <SendKudosButton
-                              recipientId={id}
-                              recipientName={extractCustomName(id) || resolveUserName(id)}
-                              contextType="project"
-                              contextId={request.id.toString()}
-                              contextTitle={`${request.organizationName} event`}
+                          {canEdit && (
+                            <Button
                               size="sm"
-                              variant="outline"
-                              iconOnly
-                            />
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('volunteer', id)}
-                                className="h-5 w-5 p-0 text-red-600 shrink-0"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('volunteer', id)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                       ))}
                       {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
