@@ -587,7 +587,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 startEditing(field, value?.toString() || '');
               }
             }}
-            className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+            className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
           >
             <Edit2 className="w-3 h-3" />
           </Button>
@@ -640,7 +640,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={() => startEditing('sandwichTypes', '')}
-                  className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1071,7 +1071,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       formatDateForInput(displayDate?.toString() || '')
                     )
                   }
-                  className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1117,7 +1117,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               formatTimeForInput(request.eventStartTime || '')
                             )
                           }
-                          className="h-5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                          className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1162,7 +1162,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               formatTimeForInput(request.eventEndTime || '')
                             )
                           }
-                          className="h-5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                          className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1257,7 +1257,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               );
                             }
                           }}
-                          className="h-5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                          className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1369,7 +1369,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         JSON.stringify(request.assignedRecipientIds || [])
                       )
                     }
-                    className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#236383] hover:bg-[#236383]/10"
+                    className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                   >
                     <Edit2 className="w-3 h-3" />
                   </Button>

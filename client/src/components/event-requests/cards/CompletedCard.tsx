@@ -412,7 +412,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         size="sm"
                         variant="ghost"
                         onClick={startEditingTspContact}
-                        className="ml-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        className="ml-2 h-6 w-6 p-0 text-[#236383] hover:bg-[#236383]/10 transition-colors"
                         title="Edit TSP contact"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -1148,7 +1148,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                   >
                     View on Instagram
                   </a>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                  <div className="flex gap-1">
                     <button
                       onClick={() => {
                         setTempInstagramLink(getInstagramLinkFromNotes() || '');

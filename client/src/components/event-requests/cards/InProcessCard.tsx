@@ -285,7 +285,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     formatDateForInput(displayDate?.toString() || '')
                   )
                 }
-                className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
+                className="h-6 px-2 text-white hover:bg-white/20 transition-colors"
                 title={`Edit ${dateLabel}`}
                 data-testid="button-edit-date"
               >
