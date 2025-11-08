@@ -185,7 +185,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   
   const { user } = useAuth();
-  const canSendSMS = user && hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
   
   // Check if there's any communication/notes content to show
   const hasCommunicationContent = !!(
