@@ -552,7 +552,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                    className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
+                    className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 transition-colors"
                     aria-label="Edit date"
                   >
                     <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -973,7 +973,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('sandwichTypes', '')}
-                      className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2"
+                      className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
                       aria-label="Edit sandwich types"
                     >
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -1012,7 +1012,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={(e) => { e.stopPropagation(); startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || ''); }}
-                      className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2"
+                      className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
                       aria-label="Edit attendance"
                     >
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
