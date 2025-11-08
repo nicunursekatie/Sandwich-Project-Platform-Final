@@ -439,7 +439,13 @@ export const getPickupDateTimeForInput = (
     if (pickupDateTime) {
       const date = new Date(pickupDateTime);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().slice(0, 16); // Format for datetime-local input
+        // Create local datetime string without timezone conversion
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
       }
     }
 
@@ -453,7 +459,13 @@ export const getPickupDateTimeForInput = (
         
         const combinedDateTime = new Date(`${baseDateStr}T${pickupTime}:00`);
         if (!isNaN(combinedDateTime.getTime())) {
-          return combinedDateTime.toISOString().slice(0, 16);
+          // Create local datetime string without timezone conversion
+          const year = combinedDateTime.getFullYear();
+          const month = String(combinedDateTime.getMonth() + 1).padStart(2, '0');
+          const day = String(combinedDateTime.getDate()).padStart(2, '0');
+          const hours = String(combinedDateTime.getHours()).padStart(2, '0');
+          const minutes = String(combinedDateTime.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
       } catch (error) {
         logger.warn('Error combining pickupTime with eventDate for input:', error);
