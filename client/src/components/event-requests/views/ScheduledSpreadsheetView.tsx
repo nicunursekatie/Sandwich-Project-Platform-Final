@@ -14,6 +14,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -38,10 +45,13 @@ import {
   FileText,
   GripVertical,
   Eye,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
+import { SANDWICH_TYPES } from '../constants';
 
 interface Column {
   id: string;
@@ -84,6 +94,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     const saved = localStorage.getItem('scheduledSpreadsheetColumnOrder');
     return saved ? JSON.parse(saved) : null;
   });
+  
+  // Sandwich types dialog state
+  const [showSandwichDialog, setShowSandwichDialog] = useState(false);
+  const [sandwichDialogEventId, setSandwichDialogEventId] = useState<number | null>(null);
+  const [dialogSandwichTypes, setDialogSandwichTypes] = useState<Array<{ type: string; quantity: number }>>([]);
 
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
@@ -335,6 +350,49 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     setEditingScheduledId(null);
     setEditingField(null);
     setEditingValue('');
+  };
+  
+  // Sandwich types dialog handlers
+  const openSandwichDialog = (event: EventRequest) => {
+    const existingTypes = parseSandwichTypes(event.sandwichTypes) || [];
+    setDialogSandwichTypes(existingTypes.length > 0 ? existingTypes : [{ type: 'deli', quantity: 0 }]);
+    setSandwichDialogEventId(event.id);
+    setShowSandwichDialog(true);
+  };
+  
+  const closeSandwichDialog = () => {
+    setShowSandwichDialog(false);
+    setSandwichDialogEventId(null);
+    setDialogSandwichTypes([]);
+  };
+  
+  const addSandwichType = () => {
+    setDialogSandwichTypes([...dialogSandwichTypes, { type: 'deli', quantity: 0 }]);
+  };
+  
+  const updateSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    const updated = [...dialogSandwichTypes];
+    updated[index] = { ...updated[index], [field]: value };
+    setDialogSandwichTypes(updated);
+  };
+  
+  const removeSandwichType = (index: number) => {
+    setDialogSandwichTypes(dialogSandwichTypes.filter((_, i) => i !== index));
+  };
+  
+  const saveSandwichTypes = () => {
+    if (!sandwichDialogEventId) return;
+    
+    // Filter out any entries with quantity 0 or invalid types
+    const validTypes = dialogSandwichTypes.filter(st => st.quantity > 0);
+    
+    updateScheduledFieldMutation.mutate({
+      id: sandwichDialogEventId,
+      field: 'sandwichTypes',
+      value: validTypes.length > 0 ? validTypes : null,
+    });
+    
+    closeSandwichDialog();
   };
 
   const formatDate = (date: string | Date | null | undefined) => {
@@ -805,6 +863,26 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const renderCell = (event: EventRequest, column: Column) => {
     const isEditable = ['eventStartTime', 'eventEndTime', 'pickupTime', 'estimatedSandwiches', 'sandwichType', 'toolkitSent', 'tspContact', 'address', 'notes', 'additionalNotes'].includes(column.id);
     
+    // Special handling for sandwich type - use dialog instead of inline edit
+    if (column.id === 'sandwichType' && !isEditing(event.id, column.id)) {
+      const displayValue = getSandwichTypeDisplay(event);
+      return (
+        <div 
+          className="flex items-center gap-0.5 group min-h-[20px]"
+          onDoubleClick={() => openSandwichDialog(event)}
+        >
+          <span className="text-sm truncate flex-1 leading-tight">{displayValue || '-'}</span>
+          <button
+            onClick={() => openSandwichDialog(event)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            data-testid={`button-edit-sandwich-types-${event.id}`}
+          >
+            <Edit2 className="h-3 w-3 text-[#007E8C]" />
+          </button>
+        </div>
+      );
+    }
+    
     if (isEditing(event.id, column.id)) {
       // Special handling for toolkitSent (boolean)
       if (column.id === 'toolkitSent') {
@@ -1159,6 +1237,92 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           <span>Drag column headers to reorder columns. Your preference will be saved.</span>
         </div>
       </div>
+
+      {/* Sandwich Types Dialog */}
+      <Dialog open={showSandwichDialog} onOpenChange={setShowSandwichDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Sandwich Types</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {dialogSandwichTypes.map((sandwichType, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1 grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <Select
+                      value={sandwichType.type}
+                      onValueChange={(value) => updateSandwichType(index, 'type', value)}
+                    >
+                      <SelectTrigger className="w-full" data-testid={`select-sandwich-type-${index}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pbj">PB&J</SelectItem>
+                        <SelectItem value="deli">Deli</SelectItem>
+                        <SelectItem value="deli_turkey">Turkey</SelectItem>
+                        <SelectItem value="deli_ham">Ham</SelectItem>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Quantity</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={sandwichType.quantity}
+                      onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                      className="w-full"
+                      data-testid={`input-sandwich-quantity-${index}`}
+                    />
+                  </div>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeSandwichType(index)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
+                  disabled={dialogSandwichTypes.length === 1}
+                  data-testid={`button-remove-sandwich-type-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            <Button
+              variant="outline"
+              onClick={addSandwichType}
+              className="w-full border-dashed border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+              data-testid="button-add-sandwich-type"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Type
+            </Button>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeSandwichDialog}
+              data-testid="button-cancel-sandwich-dialog"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveSandwichTypes}
+              className="bg-[#007E8C] hover:bg-[#236383] text-white"
+              data-testid="button-save-sandwich-types"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
