@@ -65,6 +65,9 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -179,6 +182,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+  
+  const { user } = useAuth();
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
   
   // Check if there's any communication/notes content to show
   const hasCommunicationContent = !!(
@@ -576,6 +583,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               >
                 <MessageSquare className="w-4 h-4" aria-hidden="true" />
               </Button>
+              {canSendSMS && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowSendSmsDialog(true)}
+                  variant="ghost"
+                  className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
+                  aria-label="Send event details via SMS"
+                  data-testid="button-send-sms-card"
+                >
+                  <Phone className="w-4 h-4" aria-hidden="true" />
+                </Button>
+              )}
               <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
                 <Edit2 className="w-4 h-4" aria-hidden="true" />
               </Button>
@@ -1879,6 +1898,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Send Event Details via SMS Dialog */}
+      <SendEventDetailsSMSDialog
+        isOpen={showSendSmsDialog}
+        onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
     </Card>
   );
 };

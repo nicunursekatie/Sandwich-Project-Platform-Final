@@ -32,7 +32,6 @@ import {
   ChevronDown,
   Plus,
   Trash2,
-  MessageSquare,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -45,7 +44,6 @@ import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector
 import { logger } from '@/lib/logger';
 import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
 import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
-import { SendEventDetailsSMSDialog } from './dialogs/SendEventDetailsSMSDialog';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -144,7 +142,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
   const [mlkDayAsked, setMlkDayAsked] = useState(false);
   const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
-  const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1925,7 +1922,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
           {/* Form Actions */}
           <div className="flex justify-between pt-4 border-t">
-            <div className="flex gap-2">
+            <div>
               {/* Delete button - only show for existing events */}
               {eventRequest && onDelete && (
                 <Button
@@ -1946,20 +1943,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
-                </Button>
-              )}
-              
-              {/* Send Event Details via SMS button - only show for existing scheduled events */}
-              {eventRequest && eventRequest.status === 'scheduled' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="btn-tsp-primary"
-                  onClick={() => setShowSendSmsDialog(true)}
-                  data-testid="button-send-sms"
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Send Event Details via SMS
                 </Button>
               )}
             </div>
@@ -2015,13 +1998,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         onMarkAsMLK={handleMlkDayMark}
         onSkip={handleMlkDaySkip}
         eventDate={formData.eventDate}
-      />
-
-      {/* Send Event Details via SMS Dialog */}
-      <SendEventDetailsSMSDialog
-        isOpen={showSendSmsDialog}
-        onClose={() => setShowSendSmsDialog(false)}
-        eventRequest={eventRequest}
       />
     </Dialog>
   );

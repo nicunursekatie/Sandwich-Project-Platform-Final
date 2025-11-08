@@ -71,6 +71,9 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
+import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -309,6 +312,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
+  const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+
+  const { user } = useAuth();
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -1875,6 +1882,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
+          {canSendSMS && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowSendSmsDialog(true)}
+              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+              data-testid="button-send-sms-card"
+            >
+              <Phone className="w-4 h-4 mr-1" />
+              Send SMS Details
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={onReschedule}>
             Reschedule
           </Button>
@@ -1942,6 +1961,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Send Event Details via SMS Dialog */}
+      <SendEventDetailsSMSDialog
+        isOpen={showSendSmsDialog}
+        onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
     </Card>
   );
 };
