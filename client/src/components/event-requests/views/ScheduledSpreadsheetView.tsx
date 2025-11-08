@@ -273,6 +273,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const startEditing = (eventId: number, field: string, currentValue: any) => {
     setEditingScheduledId(eventId);
     setEditingField(field);
+    
+    // Special handling for sandwich types
+    if (field === 'sandwichType') {
+      const event = eventRequests.find(e => e.id === eventId);
+      if (event) {
+        setEditingValue(getSandwichTypeEditValue(event));
+        return;
+      }
+    }
+    
     setEditingValue(currentValue?.toString() || '');
   };
 
@@ -289,6 +299,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         'address': 'eventAddress',
         'notes': 'planningNotes',
         'additionalNotes': 'schedulingNotes',
+        'sandwichType': 'sandwichTypes',
       };
 
       const dbField = fieldMap[editingField] || editingField;
@@ -299,7 +310,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           id: editingScheduledId,
           data: { toolkitSent: editingValue === 'Yes' || editingValue === 'true' },
         });
-      } else {
+      } 
+      // Handle sandwich types
+      else if (dbField === 'sandwichTypes') {
+        const parsedTypes = parseSandwichTypeEditValue(editingValue);
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: dbField,
+          value: parsedTypes,
+        });
+      } 
+      else {
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
           field: dbField,
@@ -389,12 +410,45 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const getSandwichTypeDisplay = (event: EventRequest) => {
     const sandwichTypes = parseSandwichTypes(event.sandwichTypes);
     if (sandwichTypes && sandwichTypes.length > 0) {
+      // Only show types, not counts - this is the TYPE column
       return sandwichTypes.map(st => `${st.type} (${st.quantity})`).join(', ');
     }
-    if (event.estimatedSandwichCountMin && event.estimatedSandwichCountMax) {
-      return `${event.estimatedSandwichCountMin}-${event.estimatedSandwichCountMax} ${event.estimatedSandwichRangeType || ''}`;
+    // If no sandwich types specified, return empty string (don't show counts here)
+    return '';
+  };
+
+  const getSandwichTypeEditValue = (event: EventRequest): string => {
+    const sandwichTypes = parseSandwichTypes(event.sandwichTypes);
+    if (sandwichTypes && sandwichTypes.length > 0) {
+      // Format for editing: "deli: 200, pbj: 100"
+      return sandwichTypes.map(st => `${st.type}: ${st.quantity}`).join(', ');
     }
-    return event.estimatedSandwichCount?.toString() || '';
+    return '';
+  };
+
+  const parseSandwichTypeEditValue = (value: string): any => {
+    if (!value || !value.trim()) return null;
+    
+    try {
+      // Parse format like "deli: 200, pbj: 100" or "deli (200), pbj (100)"
+      const parts = value.split(',').map(p => p.trim());
+      const types = parts.map(part => {
+        // Handle both "type: quantity" and "type (quantity)" formats
+        const colonMatch = part.match(/^(\w+):\s*(\d+)$/);
+        const parenMatch = part.match(/^(\w+)\s*\((\d+)\)$/);
+        
+        if (colonMatch) {
+          return { type: colonMatch[1].trim(), quantity: parseInt(colonMatch[2], 10) };
+        } else if (parenMatch) {
+          return { type: parenMatch[1].trim(), quantity: parseInt(parenMatch[2], 10) };
+        }
+        return null;
+      }).filter(Boolean);
+      
+      return types.length > 0 ? types : null;
+    } catch {
+      return null;
+    }
   };
 
   const formatTime = (timeString: string | null | undefined): string => {
@@ -749,7 +803,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   };
 
   const renderCell = (event: EventRequest, column: Column) => {
-    const isEditable = ['eventStartTime', 'eventEndTime', 'pickupTime', 'estimatedSandwiches', 'toolkitSent', 'tspContact', 'address', 'notes', 'additionalNotes'].includes(column.id);
+    const isEditable = ['eventStartTime', 'eventEndTime', 'pickupTime', 'estimatedSandwiches', 'sandwichType', 'toolkitSent', 'tspContact', 'address', 'notes', 'additionalNotes'].includes(column.id);
     
     if (isEditing(event.id, column.id)) {
       // Special handling for toolkitSent (boolean)
