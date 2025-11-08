@@ -397,6 +397,29 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return event.estimatedSandwichCount?.toString() || '';
   };
 
+  const formatTime = (timeString: string | null | undefined): string => {
+    if (!timeString) return '';
+    
+    // If already formatted (contains AM/PM), return as-is
+    if (timeString.includes('AM') || timeString.includes('PM') || timeString.includes('am') || timeString.includes('pm')) {
+      return timeString;
+    }
+    
+    // Parse HH:MM or HH:MM:SS format
+    const match = timeString.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!match) return timeString; // Return as-is if format not recognized
+    
+    const hours24 = parseInt(match[1], 10);
+    const minutes = match[2];
+    
+    if (hours24 < 0 || hours24 > 23) return timeString;
+    
+    const period = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+    
+    return `${hours12}:${minutes} ${period}`;
+  };
+
   const getRowColor = (index: number) => {
     // Use brand colors with light opacity for alternating rows
     const colors = [
@@ -483,20 +506,20 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       label: 'Start Time',
       width: '100px',
       sortable: true,
-      render: (event) => event.eventStartTime || '',
+      render: (event) => formatTime(event.eventStartTime),
     },
     {
       id: 'eventEndTime',
       label: 'End Time',
       width: '100px',
-      render: (event) => event.eventEndTime || '',
+      render: (event) => formatTime(event.eventEndTime),
     },
     {
       id: 'pickupTime',
       label: 'Pickup Time',
       width: '100px',
       sortable: true,
-      render: (event) => event.pickupTime || '',
+      render: (event) => formatTime(event.pickupTime),
     },
     // 6. Sandwiches # and type
     {
@@ -745,6 +768,31 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <SelectItem value="No">No</SelectItem>
               </SelectContent>
             </Select>
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-5 w-5 p-0">
+              <Save className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-5 w-5 p-0">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        );
+      }
+      
+      // Special handling for time fields
+      if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(column.id)) {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              type="time"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-7 text-sm px-1.5 py-0.5 w-24"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
             <Button size="sm" variant="ghost" onClick={saveEdit} className="h-5 w-5 p-0">
               <Save className="h-3 w-3" />
             </Button>
