@@ -1174,6 +1174,8 @@ router.patch(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
+      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
+      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
       const timestampFields = [
         'toolkitSentDate',
         'contactedAt',
@@ -1188,7 +1190,6 @@ router.patch(
         'scheduledCallDate',
         'tspContactAssignedDate',
         'statusChangedAt',
-        'pickupDateTime',
         'scheduledEventDate',
         'socialMediaPostRequestedDate',
         'socialMediaPostCompletedDate',
@@ -1433,6 +1434,8 @@ router.put(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
+      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
+      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
       const timestampFields = [
         'toolkitSentDate',
         'contactedAt',
@@ -1447,7 +1450,6 @@ router.put(
         'scheduledCallDate',
         'tspContactAssignedDate',
         'statusChangedAt',
-        'pickupDateTime',
         'scheduledEventDate',
       ];
       
