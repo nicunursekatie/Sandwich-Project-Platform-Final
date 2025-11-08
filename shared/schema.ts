@@ -1757,7 +1757,7 @@ export const eventRequests = pgTable(
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
-    pickupDateTime: timestamp('pickup_date_time'), // Full datetime for pickup time with date and time selection
+    pickupDateTime: varchar('pickup_date_time'), // Full datetime for pickup time - stored as local datetime string (YYYY-MM-DDTHH:MM:SS) to avoid timezone conversion
     pickupTimeWindow: text('pickup_time_window'), // Time window for pickup (e.g., "2:00 PM - 3:00 PM")
     pickupPersonResponsible: text('pickup_person_responsible'), // Contact person who will pick up the sandwiches
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
@@ -2056,13 +2056,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
     pickupTime: z.string().nullable().optional(),
-    pickupDateTime: z
-      .union([
-        z.date(),
-        z.string().transform((str) => (str ? new Date(str) : null)),
-        z.null(),
-      ])
-      .optional(),
+    pickupDateTime: z.string().nullable().optional(), // Stored as local datetime string to avoid timezone conversion
     customTspContact: z.string().nullable().optional(),
     additionalContact1: z.string().nullable().optional(),
     additionalContact2: z.string().nullable().optional(),
