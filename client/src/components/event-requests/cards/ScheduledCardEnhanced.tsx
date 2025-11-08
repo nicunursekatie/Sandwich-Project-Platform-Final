@@ -973,7 +973,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('sandwichTypes', '')}
-                      className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
+                      className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
                       aria-label="Edit sandwich types"
                     >
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -1328,7 +1328,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <UserPlus className="w-4 h-4 shrink-0" />
                     <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
                     {canEdit && (
-                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
+                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors" aria-label="Edit TSP contact">
                         <Edit2 className="w-3 h-3" aria-hidden="true" />
                       </Button>
                     )}
