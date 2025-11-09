@@ -117,14 +117,20 @@ export function SendCorrectionSMSDialog({
     }
   };
 
-  // Filter users based on search
+  // Filter users based on search and SMS consent
   const filteredUsers = users.filter(user => {
     const searchLower = searchQuery.toLowerCase();
     const displayName = user.displayName || `${user.firstName} ${user.lastName}`.trim() || user.email;
-    const hasPhone = user.phoneNumber || (user.metadata as any)?.smsConsent?.phoneNumber;
+    const smsConsent = (user.metadata as any)?.smsConsent;
+    
+    // Only show users who have confirmed SMS opt-in
+    const hasConfirmedSmsConsent = 
+      smsConsent?.status === 'confirmed' && 
+      smsConsent?.enabled === true && 
+      smsConsent?.phoneNumber;
     
     return (
-      hasPhone && // Only show users with phone numbers
+      hasConfirmedSmsConsent && // Only show users with confirmed SMS consent
       (displayName.toLowerCase().includes(searchLower) ||
        user.email.toLowerCase().includes(searchLower))
     );
