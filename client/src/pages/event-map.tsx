@@ -296,15 +296,29 @@ export default function EventMapView() {
     return Array.from(years).sort((a, b) => b - a); // Most recent first
   }, [events]);
 
-  // Extract unique organization categories from events
-  const availableCategories = useMemo(() => {
-    const categories = new Set<string>();
+  // All available organization categories (from schema)
+  const ALL_ORGANIZATION_CATEGORIES = [
+    { value: 'small_medium_corp', label: 'Small/Medium Corporation' },
+    { value: 'large_corp', label: 'Large Corporation' },
+    { value: 'church_faith', label: 'Church/Faith Group' },
+    { value: 'school', label: 'School' },
+    { value: 'neighborhood', label: 'Neighborhood' },
+    { value: 'club', label: 'Club' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  // Count events per category for display
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    ALL_ORGANIZATION_CATEGORIES.forEach(cat => {
+      counts[cat.value] = 0;
+    });
     events.forEach(event => {
-      if (event.organizationCategory && event.organizationCategory.trim()) {
-        categories.add(event.organizationCategory);
+      if (event.organizationCategory && counts[event.organizationCategory] !== undefined) {
+        counts[event.organizationCategory]++;
       }
     });
-    return Array.from(categories).sort(); // Alphabetically
+    return counts;
   }, [events]);
 
   // Search and filtering
@@ -543,9 +557,9 @@ export default function EventMapView() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {availableCategories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              {ALL_ORGANIZATION_CATEGORIES.map(category => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label} ({categoryCounts[category.value] || 0})
                 </SelectItem>
               ))}
             </SelectContent>
