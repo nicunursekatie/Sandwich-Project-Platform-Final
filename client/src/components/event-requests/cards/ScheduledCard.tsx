@@ -72,6 +72,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
@@ -313,6 +314,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+  const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -1883,16 +1885,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Log Contact
           </Button>
           {canSendSMS && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowSendSmsDialog(true)}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-              data-testid="button-send-sms-card"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Send SMS Details
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSendSmsDialog(true)}
+                className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                data-testid="button-send-sms-card"
+              >
+                <Phone className="w-4 h-4 mr-1" />
+                Send SMS Details
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSendCorrectionDialog(true)}
+                className="border-orange-600 text-orange-600 hover:bg-orange-100"
+                data-testid="button-send-correction-card"
+              >
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                Send Correction
+              </Button>
+            </>
           )}
           <Button size="sm" variant="outline" onClick={onReschedule}>
             Reschedule
@@ -1966,6 +1980,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       <SendEventDetailsSMSDialog
         isOpen={showSendSmsDialog}
         onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
+
+      {/* Send Correction SMS Dialog */}
+      <SendCorrectionSMSDialog
+        isOpen={showSendCorrectionDialog}
+        onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
       />
     </Card>

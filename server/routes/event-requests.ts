@@ -3823,4 +3823,120 @@ Thank you for volunteering!`;
   }
 });
 
+// Send correction SMS for event details
+router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVENT_REQUESTS_SEND_SMS'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { userIds, customMessage } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'Please select at least one user' });
+    }
+
+    if (!customMessage || typeof customMessage !== 'string' || customMessage.trim().length === 0) {
+      return res.status(400).json({ message: 'Please provide a correction message' });
+    }
+
+    // Get event details
+    const event = await storage.getEventRequestById(id);
+    if (!event) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Import SMS service
+    const { SMSProviderFactory } = await import('../sms-providers/provider-factory');
+    const factory = SMSProviderFactory.getInstance();
+    const smsProvider = factory.getProvider();
+
+    if (!smsProvider || !smsProvider.isConfigured()) {
+      return res.status(500).json({ message: 'SMS service not configured' });
+    }
+
+    // Get users and their phone numbers
+    const users = await Promise.all(
+      userIds.map(userId => storage.getUserById(userId))
+    );
+
+    const results = [];
+    for (const user of users) {
+      if (!user) {
+        results.push({ userId: 'unknown', success: false, error: 'User not found' });
+        continue;
+      }
+
+      // Try to get phone number from SMS consent or user profile
+      let phoneNumber = user.phoneNumber;
+      if (user.metadata && typeof user.metadata === 'object') {
+        const metadata = user.metadata as any;
+        if (metadata.smsConsent?.phoneNumber) {
+          phoneNumber = metadata.smsConsent.phoneNumber;
+        }
+      }
+
+      if (!phoneNumber) {
+        results.push({
+          userId: user.id,
+          userName: user.displayName || user.email,
+          success: false,
+          error: 'No phone number on file'
+        });
+        continue;
+      }
+
+      // Build correction SMS message
+      const message = `🥪 The Sandwich Project - CORRECTION
+
+${customMessage.trim()}
+
+We apologize for any confusion!`;
+
+      try {
+        const result = await smsProvider.sendSMS({
+          to: phoneNumber,
+          body: message,
+        });
+
+        results.push({
+          userId: user.id,
+          userName: user.displayName || user.email,
+          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone for privacy
+          success: result.success,
+          messageId: result.messageId,
+        });
+      } catch (error) {
+        results.push({
+          userId: user.id,
+          userName: user.displayName || user.email,
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to send'
+        });
+      }
+    }
+
+    // Count successes
+    const successCount = results.filter(r => r.success).length;
+    
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_CORRECTION_SMS_SENT',
+      `Sent correction SMS for event ${id} to ${successCount}/${results.length} users`,
+      { eventId: id, results }
+    );
+
+    res.json({
+      success: true,
+      message: `Sent correction to ${successCount} of ${results.length} users`,
+      results,
+    });
+  } catch (error) {
+    logger.error('Error sending correction SMS:', error);
+    res.status(500).json({ 
+      message: 'Failed to send correction SMS',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
