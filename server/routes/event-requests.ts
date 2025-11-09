@@ -3714,24 +3714,19 @@ router.post('/:id/send-details-sms', isAuthenticated, requirePermission('EVENT_R
         continue;
       }
 
-      // Try to get phone number from SMS consent or user profile
-      let phoneNumber = user.phoneNumber;
-      if (user.metadata && typeof user.metadata === 'object') {
-        const metadata = user.metadata as any;
-        if (metadata.smsConsent?.phoneNumber) {
-          phoneNumber = metadata.smsConsent.phoneNumber;
-        }
-      }
-
-      if (!phoneNumber) {
+      // Verify SMS consent - only send to users who have confirmed opt-in
+      const smsConsent = (user.metadata as any)?.smsConsent;
+      if (!smsConsent || smsConsent.status !== 'confirmed' || !smsConsent.enabled || !smsConsent.phoneNumber) {
         results.push({
           userId: user.id,
           userName: user.displayName || user.email,
           success: false,
-          error: 'No phone number on file'
+          error: 'User has not confirmed SMS opt-in'
         });
         continue;
       }
+
+      const phoneNumber = smsConsent.phoneNumber;
 
       // Format event details for SMS
       const organizationName = event.organizationName || 'Organization';
@@ -3864,24 +3859,19 @@ router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVEN
         continue;
       }
 
-      // Try to get phone number from SMS consent or user profile
-      let phoneNumber = user.phoneNumber;
-      if (user.metadata && typeof user.metadata === 'object') {
-        const metadata = user.metadata as any;
-        if (metadata.smsConsent?.phoneNumber) {
-          phoneNumber = metadata.smsConsent.phoneNumber;
-        }
-      }
-
-      if (!phoneNumber) {
+      // Verify SMS consent - only send to users who have confirmed opt-in
+      const smsConsent = (user.metadata as any)?.smsConsent;
+      if (!smsConsent || smsConsent.status !== 'confirmed' || !smsConsent.enabled || !smsConsent.phoneNumber) {
         results.push({
           userId: user.id,
           userName: user.displayName || user.email,
           success: false,
-          error: 'No phone number on file'
+          error: 'User has not confirmed SMS opt-in'
         });
         continue;
       }
+
+      const phoneNumber = smsConsent.phoneNumber;
 
       // Build correction SMS message
       const message = `🥪 The Sandwich Project - CORRECTION
