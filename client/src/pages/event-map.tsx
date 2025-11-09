@@ -680,12 +680,54 @@ export default function EventMapView() {
                         <h3 className="font-medium text-sm truncate">
                           {event.organizationName || 'Unknown'}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        
+                        {/* Contact Person */}
+                        {(event.firstName || event.lastName) && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {[event.firstName, event.lastName].filter(Boolean).join(' ')}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Email */}
+                        {event.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{event.email}</span>
+                          </div>
+                        )}
+                        
+                        {/* Phone */}
+                        {event.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                            <Phone className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{event.phone}</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">
                           {event.eventAddress}
                         </p>
-                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs mt-2`}>
-                          {event.status.replace('_', ' ')}
-                        </Badge>
+                        
+                        {/* Event ID and Google Sheet Row */}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
+                            {event.status.replace('_', ' ')}
+                          </Badge>
+                          {event.externalId && (
+                            <span className="text-xs text-gray-500">
+                              Event #{event.id}
+                            </span>
+                          )}
+                          {event.googleSheetRowId && (
+                            <span className="text-xs text-gray-500">
+                              Sheet Row: {event.googleSheetRowId}
+                            </span>
+                          )}
+                        </div>
+                        
                         <div className="flex gap-2 mt-2">
                           <Button
                             size="sm"
