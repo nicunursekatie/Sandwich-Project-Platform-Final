@@ -66,6 +66,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
@@ -183,6 +184,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+  const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -584,16 +586,28 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <MessageSquare className="w-4 h-4" aria-hidden="true" />
               </Button>
               {canSendSMS && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowSendSmsDialog(true)}
-                  variant="ghost"
-                  className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
-                  aria-label="Send event details via SMS"
-                  data-testid="button-send-sms-card"
-                >
-                  <Phone className="w-4 h-4" aria-hidden="true" />
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSendSmsDialog(true)}
+                    variant="ghost"
+                    className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
+                    aria-label="Send event details via SMS"
+                    data-testid="button-send-sms-card"
+                  >
+                    <Phone className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSendCorrectionDialog(true)}
+                    variant="ghost"
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
+                    aria-label="Send correction SMS"
+                    data-testid="button-send-correction-card"
+                  >
+                    <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                </>
               )}
               <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
                 <Edit2 className="w-4 h-4" aria-hidden="true" />
@@ -1903,6 +1917,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       <SendEventDetailsSMSDialog
         isOpen={showSendSmsDialog}
         onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
+
+      {/* Send Correction SMS Dialog */}
+      <SendCorrectionSMSDialog
+        isOpen={showSendCorrectionDialog}
+        onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
       />
     </Card>
