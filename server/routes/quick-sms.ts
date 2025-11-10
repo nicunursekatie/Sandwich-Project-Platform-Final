@@ -28,14 +28,8 @@ router.post('/send', async (req, res) => {
     }
 
     // Check if recipient has opted in to receive SMS
-    const allUsers = await storage.getAllUsers();
-    const recipientUser = allUsers.find((user) => {
-      const metadata = getUserMetadata(user);
-      const smsConsent = metadata.smsConsent;
-      // Match against stored phone number (normalized)
-      const storedPhone = smsConsent?.phoneNumber?.replace(/[\s\-\(\)]/g, '');
-      return storedPhone === normalizedPhone;
-    });
+    // Use efficient database query instead of loading all users
+    const recipientUser = await storage.findUserByPhoneNumber(normalizedPhone);
 
     if (recipientUser) {
       const metadata = getUserMetadata(recipientUser);
