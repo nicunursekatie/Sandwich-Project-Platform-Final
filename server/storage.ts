@@ -132,6 +132,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   setUserPassword(id: string, password: string): Promise<void>;
+  findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined>;
 
   // Legacy user methods (for backwards compatibility)
   getUserByUsername(username: string): Promise<User | undefined>;

@@ -1,30 +1,112 @@
 /**
  * Twilio SMS Provider
  * Wraps Twilio SDK for the common SMS provider interface
+ * Supports both manual credentials and Replit's managed Twilio connection
  */
 
 import Twilio from 'twilio';
 import { SMSProvider, SMSMessage, SMSResult } from './types';
+import { getTwilioClient, getTwilioFromPhoneNumber, isTwilioConnected } from './replit-twilio-connector';
+import { logger } from '../utils/production-safe-logger';
 
 export class TwilioProvider implements SMSProvider {
   name = 'twilio';
   
   private client: ReturnType<typeof Twilio> | null = null;
   private phoneNumber: string;
+  private useReplitIntegration: boolean;
+  private clientPromise: Promise<ReturnType<typeof Twilio>> | null = null;
+  private phoneNumberPromise: Promise<string> | null = null;
 
-  constructor(accountSid: string, authToken: string, phoneNumber: string) {
+  constructor(accountSid: string, authToken: string, phoneNumber: string, useReplitIntegration = false) {
     this.phoneNumber = phoneNumber;
+    this.useReplitIntegration = useReplitIntegration;
     
-    if (accountSid && authToken) {
+    // If using manual credentials
+    if (!useReplitIntegration && accountSid && authToken) {
       this.client = Twilio(accountSid, authToken);
     }
   }
 
+  /**
+   * Get Twilio client (lazy-loads from Replit integration if enabled)
+   * Caches the result onto this.client for subsequent synchronous access
+   */
+  private async getClient(): Promise<ReturnType<typeof Twilio> | null> {
+    if (this.useReplitIntegration) {
+      // Check if already cached from previous async call
+      if (this.client) {
+        return this.client;
+      }
+      
+      // Lazy-load client from Replit integration
+      if (!this.clientPromise) {
+        this.clientPromise = getTwilioClient()
+          .then(client => {
+            // Cache the resolved client for synchronous access
+            if (client) {
+              this.client = client;
+            }
+            return client;
+          })
+          .catch(error => {
+            logger.error('Failed to get Twilio client from Replit integration:', error);
+            throw error;
+          });
+      }
+      return this.clientPromise;
+    }
+    return this.client;
+  }
+
+  /**
+   * Get phone number (lazy-loads from Replit integration if enabled)
+   * Caches the result onto this.phoneNumber for subsequent synchronous access
+   */
+  private async getPhoneNumber(): Promise<string> {
+    if (this.useReplitIntegration) {
+      // Check if already cached from previous async call
+      if (this.phoneNumber) {
+        return this.phoneNumber;
+      }
+      
+      // Lazy-load phone number from Replit integration
+      if (!this.phoneNumberPromise) {
+        this.phoneNumberPromise = getTwilioFromPhoneNumber()
+          .then(phoneNumber => {
+            // Cache the resolved phone number for synchronous access
+            if (phoneNumber) {
+              this.phoneNumber = phoneNumber;
+            }
+            return phoneNumber;
+          })
+          .catch(error => {
+            logger.error('Failed to get Twilio phone number from Replit integration:', error);
+            return '';
+          });
+      }
+      return this.phoneNumberPromise;
+    }
+    return this.phoneNumber;
+  }
+
   isConfigured(): boolean {
+    if (this.useReplitIntegration) {
+      // For Replit integration, we'll check lazily
+      return true;
+    }
     return !!this.client && !!this.phoneNumber;
   }
 
   validateConfig(): { isValid: boolean; missingItems: string[] } {
+    if (this.useReplitIntegration) {
+      // Replit integration handles validation dynamically
+      return {
+        isValid: true,
+        missingItems: []
+      };
+    }
+
     const missingItems: string[] = [];
     
     if (!process.env.TWILIO_ACCOUNT_SID) missingItems.push('TWILIO_ACCOUNT_SID');
@@ -47,16 +129,21 @@ export class TwilioProvider implements SMSProvider {
 
   /**
    * Get the Twilio phone number SID for the configured phone number
+   * Works with both manual credentials and Replit integration
    */
   async getPhoneNumberSid(): Promise<string | null> {
-    if (!this.client || !this.phoneNumber) {
-      return null;
-    }
-
     try {
+      // Use async helpers to support Replit integration
+      const client = await this.getClient();
+      const phoneNumber = await this.getPhoneNumber();
+
+      if (!client || !phoneNumber) {
+        return null;
+      }
+
       // Search for the phone number to get its SID
-      const phoneNumbers = await this.client.incomingPhoneNumbers.list({
-        phoneNumber: this.phoneNumber,
+      const phoneNumbers = await client.incomingPhoneNumbers.list({
+        phoneNumber: phoneNumber,
         limit: 1
       });
 
@@ -66,43 +153,49 @@ export class TwilioProvider implements SMSProvider {
 
       return null;
     } catch (error) {
-      console.error('Error fetching phone number SID:', error);
+      logger.error('Error fetching phone number SID:', error);
       return null;
     }
   }
 
   /**
-   * Get the underlying Twilio client (for advanced operations)
+   * Get the underlying Twilio client synchronously (for advanced operations)
+   * Note: This only returns the cached client and won't trigger Replit integration fetch
+   * Use the private async getClient() for full support
    */
-  getClient(): ReturnType<typeof Twilio> | null {
+  getClientSync(): ReturnType<typeof Twilio> | null {
     return this.client;
   }
 
   async sendSMS(message: SMSMessage): Promise<SMSResult> {
-    if (!this.client) {
-      return {
-        success: false,
-        message: 'Twilio SMS service not configured - missing credentials',
-        error: 'MISSING_CONFIG'
-      };
-    }
-
-    if (!this.phoneNumber) {
-      return {
-        success: false,
-        message: 'Twilio SMS service not configured - missing phone number',
-        error: 'MISSING_PHONE'
-      };
-    }
-
     try {
-      const result = await this.client.messages.create({
+      // Get client and phone number (supports both integration and manual config)
+      const client = await this.getClient();
+      const phoneNumber = await this.getPhoneNumber();
+
+      if (!client) {
+        return {
+          success: false,
+          message: 'Twilio SMS service not configured - missing credentials',
+          error: 'MISSING_CONFIG'
+        };
+      }
+
+      if (!phoneNumber) {
+        return {
+          success: false,
+          message: 'Twilio SMS service not configured - missing phone number',
+          error: 'MISSING_PHONE'
+        };
+      }
+
+      const result = await client.messages.create({
         body: message.body,
-        from: this.phoneNumber,
+        from: phoneNumber,
         to: message.to,
       });
 
-      console.log(`✅ SMS sent via Twilio to ${message.to} (${result.sid})`);
+      logger.log(`✅ SMS sent via Twilio ${this.useReplitIntegration ? '(Replit integration)' : ''} to ${message.to} (${result.sid})`);
 
       return {
         success: true,
@@ -111,7 +204,7 @@ export class TwilioProvider implements SMSProvider {
         sentTo: message.to
       };
     } catch (error) {
-      console.error('Twilio SMS error:', error);
+      logger.error('Twilio SMS error:', error);
       return {
         success: false,
         message: `Twilio error: ${(error as Error).message}`,

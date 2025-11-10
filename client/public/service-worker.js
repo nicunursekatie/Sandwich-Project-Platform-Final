@@ -1,23 +1,21 @@
-const CACHE_NAME = 'tsp-v1.0.1';
-const RUNTIME_CACHE = 'tsp-runtime-v1.0.1';
+const CACHE_NAME = 'tsp-v1.1.0';
+const RUNTIME_CACHE = 'tsp-runtime-v1.1.0';
 
 // Assets to cache on install (only files guaranteed to exist in production)
 const PRECACHE_URLS = [
-  '/',
   '/attached_assets/LOGOS/TSP_transparent.png',
   '/attached_assets/LOGOS/sandwich logo.png',
 ];
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
+  console.log('[Service Worker v1.1.0] Installing with network-first strategy for JS chunks');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[Service Worker] Precaching assets');
-        // Use addAll with error handling for missing assets
         return cache.addAll(PRECACHE_URLS).catch((err) => {
           console.warn('[Service Worker] Failed to precache some assets:', err);
-          // Continue installation even if some assets fail
         });
       })
       .then(() => self.skipWaiting())
@@ -40,7 +38,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - network first with cache fallback for API, cache first for assets
+// Fetch event - strategic caching to prevent stale chunk errors
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -50,13 +48,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // NEVER cache JavaScript files - they change with every deployment
+  // This prevents the "r in a gray box" error from stale chunks
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.mjs') || url.pathname.includes('/assets/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Main HTML page - always fetch fresh to get latest chunk references
+  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Fallback to cache only if network fails completely
+        return caches.match(request);
+      })
+    );
+    return;
+  }
+
   // API requests - network first, cache fallback (GET only)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Only cache GET requests - POST/PUT/DELETE cannot be cached
-          if (request.method === 'GET') {
+          // Only cache GET requests
+          if (request.method === 'GET' && response.status === 200) {
             const responseClone = response.clone();
             caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseClone);
@@ -71,7 +87,6 @@ self.addEventListener('fetch', (event) => {
               if (cached) {
                 return cached;
               }
-              // Return offline response for API calls
               return new Response(
                 JSON.stringify({ error: 'Offline', message: 'No network connection' }),
                 { 
@@ -81,7 +96,6 @@ self.addEventListener('fetch', (event) => {
               );
             });
           }
-          // For non-GET requests, just return error
           return new Response(
             JSON.stringify({ error: 'Offline', message: 'No network connection' }),
             { 
@@ -94,7 +108,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets - cache first, network fallback
+  // Static assets (images, fonts, etc.) - cache first, network fallback
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) {
@@ -102,14 +116,11 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(request).then((response) => {
-        // Don't cache non-successful responses
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
         }
 
-        // Only cache GET requests (Cache API doesn't support POST/PUT/DELETE)
         if (request.method === 'GET') {
-          // Clone and cache the response
           const responseClone = response.clone();
           caches.open(RUNTIME_CACHE).then((cache) => {
             cache.put(request, responseClone);
