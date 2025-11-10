@@ -26,11 +26,9 @@ export function PageBreadcrumbs({ segments, className = '' }: PageBreadcrumbsPro
         {/* Home/Dashboard link */}
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/dashboard">
-              <a className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                <Home className="w-4 h-4" />
-                <span>Home</span>
-              </a>
+            <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <Home className="w-4 h-4" />
+              <span>Home</span>
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
@@ -48,10 +46,8 @@ export function PageBreadcrumbs({ segments, className = '' }: PageBreadcrumbsPro
                   <BreadcrumbPage>{segment.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={segment.href}>
-                      <a className="hover:text-primary transition-colors">
-                        {segment.label}
-                      </a>
+                    <Link href={segment.href} className="hover:text-primary transition-colors">
+                      {segment.label}
                     </Link>
                   </BreadcrumbLink>
                 )}

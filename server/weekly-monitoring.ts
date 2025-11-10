@@ -253,13 +253,13 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
 
   // Debug logging
   logger.log(`Dunwoody status check for ${location}:`, {
-    totalSubmissions: dunwoodySubmissions.length,
+    totalSubmissions: dunwoodySubmissions?.length || 0,
     lisaHiles: lisaSubmission,
     stephanieOrMarcy: stephanieOrMarcySubmission,
     complete: result.complete,
-    submitters: dunwoodySubmissions.map(sub => ({
-      submittedBy: sub.submittedBy,
-      createdBy: sub.createdBy,
+    submitters: (dunwoodySubmissions || []).map(sub => ({
+      submittedBy: sub?.submittedBy || 'unknown',
+      createdBy: sub?.createdBy || 'unknown',
     })),
   });
 
