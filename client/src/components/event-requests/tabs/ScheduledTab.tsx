@@ -41,6 +41,7 @@ export const ScheduledTab: React.FC = () => {
       timestamp: new Date().toISOString(),
     });
     setViewStartTime(Date.now());
+  }, [trackEvent]);
   }, [isMobile]);
 
   // Track view mode changes and time spent in each view

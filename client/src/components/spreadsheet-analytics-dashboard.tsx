@@ -1,16 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart3,
   TrendingUp,
   Users,
-  Clock,
   MousePointer,
   Eye,
-  ArrowRight,
   CheckCircle,
   AlertCircle,
   Target,
@@ -139,6 +137,10 @@ export default function SpreadsheetAnalyticsDashboard() {
   });
 
   // Process analytics from activity logs
+  // NOTE: This implementation assumes Google Analytics events are stored in activity logs.
+  // If GA events are not being stored in the database, this dashboard will show no data.
+  // Consider implementing a backend endpoint to capture and store GA events, or query
+  // the Google Analytics API directly instead.
   const analytics = useMemo(() => {
     const events = activityLogs.filter((log: any) =>
       log.action?.includes('event_requests') ||
@@ -168,9 +170,14 @@ export default function SpreadsheetAnalyticsDashboard() {
       e.action?.includes('floating_spreadsheet_button')
     ).length;
 
-    // Calculate percentages
+    // Calculate percentages - use initial_tab === 'scheduled' for accurate landing rate
+    const scheduledInitialViews = events.filter((e: any) =>
+      e.action?.includes('event_requests_initial_view') &&
+      (e.properties?.initial_tab === 'scheduled' || e.details?.includes('initial_tab":"scheduled'))
+    ).length;
+
     const scheduledLandingRate = totalPageLoads > 0
-      ? Math.round((scheduledTabViews / totalPageLoads) * 100)
+      ? Math.round((scheduledInitialViews / totalPageLoads) * 100)
       : 0;
 
     const spreadsheetPreference = (spreadsheetSwitches + cardSwitches) > 0
