@@ -98,7 +98,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       has_custom_column_order: !!columnOrder,
       timestamp: new Date().toISOString(),
     });
-  }, []);
+  }, [trackEvent, scheduledEvents.length, dateRange, columnOrder]);
 
   // Track search usage
   useEffect(() => {
@@ -112,7 +112,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       }, 500); // Debounce search tracking
       return () => clearTimeout(timer);
     }
-  }, [searchQuery]);
+  }, [searchQuery, trackEvent, filteredEvents.length]);
 
   // Track date filter changes
   useEffect(() => {
@@ -124,7 +124,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       });
       trackButtonClick(`filter_by_${dateRange}`, 'spreadsheet_view');
     }
-  }, [dateRange]);
+  }, [dateRange, trackEvent, trackButtonClick, dateFilteredEvents.length]);
 
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {

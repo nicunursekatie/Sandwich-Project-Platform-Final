@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { trackEvent } from '../../lib/analytics';
+import { trackEvent as gaTrackEvent } from '../../lib/analytics';
 
 /**
  * Hook for tracking Google Analytics events
@@ -13,19 +13,25 @@ import { trackEvent } from '../../lib/analytics';
  * - 'error' - Error occurrences
  */
 export function useAnalytics() {
+  // Generic event tracking with custom properties
+  const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', eventName, properties);
+    }
+  }, []);
   // Navigation tracking
   const trackNavigation = useCallback((destination: string, source?: string) => {
-    trackEvent('navigate', 'navigation', `${source || 'unknown'} -> ${destination}`);
+    gaTrackEvent('navigate', 'navigation', `${source || 'unknown'} -> ${destination}`);
   }, []);
 
   // Button click tracking
   const trackButtonClick = useCallback((buttonName: string, location?: string) => {
-    trackEvent('click', 'button', `${location || 'unknown'} - ${buttonName}`);
+    gaTrackEvent('click', 'button', `${location || 'unknown'} - ${buttonName}`);
   }, []);
 
   // Form submission tracking
   const trackFormSubmit = useCallback((formName: string, success: boolean = true) => {
-    trackEvent(
+    gaTrackEvent(
       success ? 'submit_success' : 'submit_error',
       'form',
       formName
@@ -34,45 +40,46 @@ export function useAnalytics() {
 
   // Download tracking
   const trackDownload = useCallback((fileName: string, fileType?: string) => {
-    trackEvent('download', 'engagement', `${fileType || 'file'} - ${fileName}`);
+    gaTrackEvent('download', 'engagement', `${fileType || 'file'} - ${fileName}`);
   }, []);
 
   // Document view tracking
   const trackDocumentView = useCallback((documentName: string, documentType?: string) => {
-    trackEvent('view', 'engagement', `${documentType || 'document'} - ${documentName}`);
+    gaTrackEvent('view', 'engagement', `${documentType || 'document'} - ${documentName}`);
   }, []);
 
   // Communication tracking
   const trackCommunication = useCallback((type: 'email' | 'sms' | 'chat', recipient?: string) => {
-    trackEvent('send', 'social', `${type}${recipient ? ` - ${recipient}` : ''}`);
+    gaTrackEvent('send', 'social', `${type}${recipient ? ` - ${recipient}` : ''}`);
   }, []);
 
   // Search tracking
   const trackSearch = useCallback((query: string, resultsCount?: number) => {
-    trackEvent('search', 'engagement', query, resultsCount);
+    gaTrackEvent('search', 'engagement', query, resultsCount);
   }, []);
 
   // Error tracking
   const trackError = useCallback((errorMessage: string, location?: string) => {
-    trackEvent('error', 'error', `${location || 'unknown'} - ${errorMessage}`);
+    gaTrackEvent('error', 'error', `${location || 'unknown'} - ${errorMessage}`);
   }, []);
 
   // Report generation tracking
   const trackReportGeneration = useCallback((reportType: string, format?: string) => {
-    trackEvent('generate', 'engagement', `${reportType}${format ? ` - ${format}` : ''}`);
+    gaTrackEvent('generate', 'engagement', `${reportType}${format ? ` - ${format}` : ''}`);
   }, []);
 
   // Data entry tracking
   const trackDataEntry = useCallback((dataType: string, location?: string) => {
-    trackEvent('entry', 'form', `${location || 'unknown'} - ${dataType}`);
+    gaTrackEvent('entry', 'form', `${location || 'unknown'} - ${dataType}`);
   }, []);
 
   // Feature usage tracking
   const trackFeatureUse = useCallback((featureName: string, action?: string) => {
-    trackEvent(action || 'use', 'engagement', featureName);
+    gaTrackEvent(action || 'use', 'engagement', featureName);
   }, []);
 
   return {
+    trackEvent,
     trackNavigation,
     trackButtonClick,
     trackFormSubmit,
