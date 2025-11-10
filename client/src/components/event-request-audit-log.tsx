@@ -951,11 +951,42 @@ export function EventRequestAuditLog({
                         </div>
 
                         {/* Primary description - only show if we have a meaningful one */}
-                        {log.changeDescription && (
-                          <p className="text-base text-gray-700 mb-3 leading-relaxed">
-                            {log.changeDescription}
-                          </p>
-                        )}
+                        {(() => {
+                          // Filter out technical/raw field descriptions that contain internal field names
+                          const internalFieldPatterns = [
+                            'externalId:',
+                            'googleSheetRowId:',
+                            'createdBy:',
+                            'lastSyncedAt:',
+                            'duplicateCheckDate:',
+                            'organizationExists:',
+                            'geocodedAt:',
+                          ];
+
+                          const description = log.changeDescription;
+
+                          // Don't show if it's empty or contains internal field patterns
+                          if (!description) return null;
+
+                          const hasInternalFields = internalFieldPatterns.some(pattern =>
+                            description.includes(pattern)
+                          );
+
+                          // Don't show if it looks like raw field dump (contains " → " and "Not set")
+                          const looksLikeRawDump = description.includes(' → ') &&
+                                                   description.includes('Not set') &&
+                                                   description.includes(',');
+
+                          if (hasInternalFields || looksLikeRawDump) {
+                            return null;
+                          }
+
+                          return (
+                            <p className="text-base text-gray-700 mb-3 leading-relaxed">
+                              {description}
+                            </p>
+                          );
+                        })()}
 
                         {/* Field Changes Display */}
                         {renderFieldChanges(log)}
