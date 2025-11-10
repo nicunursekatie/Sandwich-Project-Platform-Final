@@ -4,7 +4,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import {
   MapPin, Search, Calendar, Users, Package, Phone, Mail, AlertCircle,
-  ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X, User, ExternalLink
+  ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X, User, ExternalLink,
+  Clock
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -197,6 +198,7 @@ export default function EventMapView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'this_month' | 'upcoming'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -326,6 +328,39 @@ export default function EventMapView() {
   const filteredEvents = useMemo(() => {
     let filtered = eventsWithCoordinates;
 
+    // Upcoming events filter
+    if (upcomingFilter !== 'all') {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+
+      filtered = filtered.filter(event => {
+        const date = event.scheduledEventDate || event.desiredEventDate;
+        if (!date) return false;
+
+        const eventDate = new Date(date);
+        eventDate.setHours(0, 0, 0, 0);
+
+        // Only show future events
+        if (eventDate < now) return false;
+
+        if (upcomingFilter === 'this_week') {
+          // This week = next 7 days
+          const weekFromNow = new Date(now);
+          weekFromNow.setDate(now.getDate() + 7);
+          return eventDate >= now && eventDate <= weekFromNow;
+        } else if (upcomingFilter === 'this_month') {
+          // This month = next 30 days
+          const monthFromNow = new Date(now);
+          monthFromNow.setDate(now.getDate() + 30);
+          return eventDate >= now && eventDate <= monthFromNow;
+        } else if (upcomingFilter === 'upcoming') {
+          // All upcoming = any future date
+          return true;
+        }
+        return true;
+      });
+    }
+
     // Year filter
     if (yearFilter !== 'all') {
       const targetYear = parseInt(yearFilter);
@@ -345,7 +380,7 @@ export default function EventMapView() {
     // Search filter
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(event => 
+      filtered = filtered.filter(event =>
         event.organizationName?.toLowerCase().includes(search) ||
         event.department?.toLowerCase().includes(search) ||
         event.eventAddress?.toLowerCase().includes(search) ||
@@ -354,7 +389,7 @@ export default function EventMapView() {
     }
 
     return filtered;
-  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter]);
+  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter]);
 
   // Calculate map center
   const mapCenter: [number, number] = useMemo(() => {
@@ -596,6 +631,18 @@ export default function EventMapView() {
               <SelectItem value="in_process">In Process</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <Clock className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="this_week">This Week (Next 7 Days)</SelectItem>
+              <SelectItem value="this_month">This Month (Next 30 Days)</SelectItem>
+              <SelectItem value="upcoming">All Upcoming Events</SelectItem>
             </SelectContent>
           </Select>
         </div>
