@@ -625,8 +625,8 @@ export interface IStorage {
   // Event Collaboration Comments
   getEventCollaborationComments(eventRequestId: number): Promise<EventCollaborationComment[]>;
   createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment>;
-  updateEventCollaborationComment(id: number, data: { content: string }): Promise<EventCollaborationComment | undefined>;
-  deleteEventCollaborationComment(id: number): Promise<boolean>;
+  updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined>;
+  deleteEventCollaborationComment(id: number, userId: string): Promise<boolean>;
 
   // Event Field Locks
   getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]>;
@@ -636,6 +636,7 @@ export interface IStorage {
 
   // Event Edit Revisions
   getEventEditRevisions(eventRequestId: number, options?: { fieldName?: string; limit?: number }): Promise<EventEditRevision[]>;
+  getEventFieldRevisions(eventRequestId: number, fieldName: string, limit?: number, offset?: number): Promise<EventEditRevision[]>;
   createEventEditRevision(data: InsertEventEditRevision): Promise<EventEditRevision>;
 
   // Organizations (for duplicate detection)
