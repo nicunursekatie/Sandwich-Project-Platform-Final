@@ -7,6 +7,7 @@ import {
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -197,6 +198,11 @@ export default function RouteMapView() {
       {/* Header */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto">
+          <PageBreadcrumbs segments={[
+            { label: 'Operations' },
+            { label: 'Host Map' }
+          ]} />
+
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">

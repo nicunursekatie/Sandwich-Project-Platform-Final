@@ -53,6 +53,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
 import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
+import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -904,6 +905,7 @@ export default function Dashboard({
                   // Normal layout for other content
                   <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
                     <div className="w-full pb-20 min-h-full px-4 sm:px-6 pt-6">
+                      <DashboardBreadcrumbs activeSection={activeSection} />
                       {renderContent()}
                     </div>
                   </div>

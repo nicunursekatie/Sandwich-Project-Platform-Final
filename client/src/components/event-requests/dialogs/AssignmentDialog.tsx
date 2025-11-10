@@ -436,7 +436,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
         setSelectedAssignees([]);
       }
     }}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
           <DialogTitle className="flex items-center gap-2 text-[#236383] text-xl">
             <UserPlus className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />

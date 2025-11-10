@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { MentionTextarea, MessageWithMentions } from '@/components/mention-input';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Loader2,
   Plus,
@@ -730,6 +731,11 @@ export default function TeamBoard() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+      <PageBreadcrumbs segments={[
+        { label: 'Communication' },
+        { label: 'Team Board' }
+      ]} />
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">

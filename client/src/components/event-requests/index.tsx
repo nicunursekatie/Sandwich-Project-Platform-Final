@@ -332,9 +332,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4 premium-gradient-subtle min-h-screen p-4">
+      <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4">
         {/* Header */}
-        <div className="premium-card p-6">
+        <div className="premium-card p-4 sm:p-6">
           <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
             <div>
               <div className="flex items-center gap-2">
@@ -935,7 +935,7 @@ const EventRequestsManagementContent: React.FC = () => {
           open={showSandwichPlanningModal}
           onOpenChange={setShowSandwichPlanningModal}
         >
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
                 <Package className="w-6 h-6" />
@@ -991,7 +991,7 @@ const EventRequestsManagementContent: React.FC = () => {
           open={showStaffingPlanningModal}
           onOpenChange={setShowStaffingPlanningModal}
         >
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
                 <Users className="w-6 h-6" />

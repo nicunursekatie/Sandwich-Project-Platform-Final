@@ -92,6 +92,7 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT,
       PERMISSIONS.EVENT_REQUESTS_FOLLOW_UP,
       PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
+      PERMISSIONS.EVENT_REQUESTS_SEND_SMS,
     ],
   },
   MESSAGES: {
@@ -323,6 +324,7 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.HOSTS_VIEW]: 'View host location directory',
     [PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS]: 'Assign team members to events',
     [PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW]: 'View admin overview of TSP contact assignments and workload distribution',
+    [PERMISSIONS.EVENT_REQUESTS_SEND_SMS]: 'Send event details via SMS to selected users',
 
     // Chat room descriptions
     [PERMISSIONS.CHAT_GENERAL]: 'Access to general team chat',

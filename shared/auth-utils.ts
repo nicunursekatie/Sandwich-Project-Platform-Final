@@ -130,6 +130,7 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_FOLLOW_UP: 'EVENT_REQUESTS_FOLLOW_UP', // Use follow-up buttons (1 day, 1 month)
   EVENT_REQUESTS_EDIT_TSP_CONTACT: 'EVENT_REQUESTS_EDIT_TSP_CONTACT', // Edit TSP contact assignments
   EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW: 'EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW', // View admin overview of all TSP contact assignments
+  EVENT_REQUESTS_SEND_SMS: 'EVENT_REQUESTS_SEND_SMS', // Send event details via SMS to users
 
   // MESSAGES - Messaging system
   MESSAGES_VIEW: 'MESSAGES_VIEW',

@@ -12,6 +12,7 @@ import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
+import { createEventCollaborationRouter } from './event-collaboration';
 import eventMapRouter from './event-map';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
@@ -387,6 +388,17 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createStandardMiddleware(),
     eventRequestsRouter
   );
+
+  // Event Collaboration routes - real-time collaboration features
+  const eventCollaborationRouter = createEventCollaborationRouter(deps);
+  router.use(
+    '/api/event-requests',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventCollaborationRouter
+  );
+  
+  // Shared error handler for both event-requests and event-collaboration routes
   router.use('/api/event-requests', createErrorHandler('event-requests'));
 
   // Event map routes - map view of events with addresses

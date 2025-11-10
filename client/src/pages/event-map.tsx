@@ -4,14 +4,17 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import {
   MapPin, Search, Calendar, Users, Package, Phone, Mail, AlertCircle,
-  ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X
+  ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X, User, ExternalLink,
+  Clock
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format } from 'date-fns';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -66,6 +69,8 @@ interface EventMapData {
   tspContact: string | null;
   eventStartTime: string | null;
   eventEndTime: string | null;
+  googleSheetRowId: number | null;
+  externalId: string | null;
 }
 
 // Custom marker icons for different statuses
@@ -188,10 +193,12 @@ export default function EventMapView() {
   const { user } = useAuth();
   const { trackView, trackSearch } = useActivityTracker();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'this_month' | 'upcoming'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -292,20 +299,67 @@ export default function EventMapView() {
     return Array.from(years).sort((a, b) => b - a); // Most recent first
   }, [events]);
 
-  // Extract unique organization categories from events
-  const availableCategories = useMemo(() => {
-    const categories = new Set<string>();
+  // All available organization categories (from schema)
+  const ALL_ORGANIZATION_CATEGORIES = [
+    { value: 'small_medium_corp', label: 'Small/Medium Corporation' },
+    { value: 'large_corp', label: 'Large Corporation' },
+    { value: 'church_faith', label: 'Church/Faith Group' },
+    { value: 'school', label: 'School' },
+    { value: 'neighborhood', label: 'Neighborhood' },
+    { value: 'club', label: 'Club' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  // Count events per category for display
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    ALL_ORGANIZATION_CATEGORIES.forEach(cat => {
+      counts[cat.value] = 0;
+    });
     events.forEach(event => {
-      if (event.organizationCategory && event.organizationCategory.trim()) {
-        categories.add(event.organizationCategory);
+      if (event.organizationCategory && counts[event.organizationCategory] !== undefined) {
+        counts[event.organizationCategory]++;
       }
     });
-    return Array.from(categories).sort(); // Alphabetically
+    return counts;
   }, [events]);
 
   // Search and filtering
   const filteredEvents = useMemo(() => {
     let filtered = eventsWithCoordinates;
+
+    // Upcoming events filter
+    if (upcomingFilter !== 'all') {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+
+      filtered = filtered.filter(event => {
+        const date = event.scheduledEventDate || event.desiredEventDate;
+        if (!date) return false;
+
+        const eventDate = new Date(date);
+        eventDate.setHours(0, 0, 0, 0);
+
+        // Only show future events
+        if (eventDate < now) return false;
+
+        if (upcomingFilter === 'this_week') {
+          // This week = next 7 days
+          const weekFromNow = new Date(now);
+          weekFromNow.setDate(now.getDate() + 7);
+          return eventDate >= now && eventDate <= weekFromNow;
+        } else if (upcomingFilter === 'this_month') {
+          // This month = next 30 days
+          const monthFromNow = new Date(now);
+          monthFromNow.setDate(now.getDate() + 30);
+          return eventDate >= now && eventDate <= monthFromNow;
+        } else if (upcomingFilter === 'upcoming') {
+          // All upcoming = any future date
+          return true;
+        }
+        return true;
+      });
+    }
 
     // Year filter
     if (yearFilter !== 'all') {
@@ -326,7 +380,7 @@ export default function EventMapView() {
     // Search filter
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(event => 
+      filtered = filtered.filter(event =>
         event.organizationName?.toLowerCase().includes(search) ||
         event.department?.toLowerCase().includes(search) ||
         event.eventAddress?.toLowerCase().includes(search) ||
@@ -335,7 +389,7 @@ export default function EventMapView() {
     }
 
     return filtered;
-  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter]);
+  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter]);
 
   // Calculate map center
   const mapCenter: [number, number] = useMemo(() => {
@@ -351,6 +405,90 @@ export default function EventMapView() {
   const getEventDate = (event: EventMapData) => {
     const date = event.scheduledEventDate || event.desiredEventDate;
     return date ? format(new Date(date), 'MMM dd, yyyy') : 'No date set';
+  };
+
+  // Enhanced popup content component
+  const EnhancedPopupContent = ({ event }: { event: EventMapData }) => {
+    const contactName = [event.firstName, event.lastName].filter(Boolean).join(' ');
+    const navigate = setLocation;
+    
+    return (
+      <div className="p-2 min-w-[280px] max-w-[320px]">
+        <h3 className="font-semibold text-base mb-1">
+          {event.organizationName || 'Unknown Organization'}
+        </h3>
+        {event.department && (
+          <p className="text-sm text-gray-600 mb-2">{event.department}</p>
+        )}
+        
+        <div className="space-y-1.5 text-sm mb-3">
+          {contactName && (
+            <div className="flex items-center gap-2">
+              <User className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="text-gray-700">{contactName}</span>
+            </div>
+          )}
+          
+          {event.email && (
+            <div className="flex items-center gap-2">
+              <Mail className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="text-gray-700 text-xs truncate">{event.email}</span>
+            </div>
+          )}
+          
+          {event.phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="text-gray-700">{event.phone}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700">{getEventDate(event)}</span>
+          </div>
+          
+          {event.estimatedSandwichCount && (
+            <div className="flex items-center gap-2">
+              <Package className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="text-gray-700">~{event.estimatedSandwichCount} sandwiches</span>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-xs text-gray-600 line-clamp-2">{event.eventAddress}</span>
+          </div>
+        </div>
+        
+        <div className="space-y-2 pt-2 border-t border-gray-200">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>Event #{event.id}</span>
+            {event.googleSheetRowId && (
+              <span>Sheet Row: {event.googleSheetRowId}</span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
+              {event.status.replace('_', ' ').toUpperCase()}
+            </Badge>
+            <a 
+              href="/event-requests" 
+              className="ml-auto text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/event-requests');
+              }}
+              data-testid="link-view-edit-event"
+            >
+              View/Edit
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Loading state
@@ -403,6 +541,12 @@ export default function EventMapView() {
     <div className="h-screen flex flex-col bg-white">
       {/* Header */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+        <PageBreadcrumbs
+          segments={[
+            { label: 'Event Planning', href: '/dashboard?section=event-requests' },
+            { label: 'Event Requests Map' }
+          ]}
+        />
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#007E8C] to-[#005f6b] flex items-center justify-center">
@@ -455,9 +599,9 @@ export default function EventMapView() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {availableCategories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              {ALL_ORGANIZATION_CATEGORIES.map(category => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label} ({categoryCounts[category.value] || 0})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -487,6 +631,18 @@ export default function EventMapView() {
               <SelectItem value="in_process">In Process</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <Clock className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="this_week">This Week (Next 7 Days)</SelectItem>
+              <SelectItem value="this_month">This Month (Next 30 Days)</SelectItem>
+              <SelectItem value="upcoming">All Upcoming Events</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -527,33 +683,7 @@ export default function EventMapView() {
                       }}
                     >
                       <Popup>
-                        <div className="p-2 min-w-[250px]">
-                          <h3 className="font-semibold text-base mb-2">
-                            {event.organizationName || 'Unknown Organization'}
-                          </h3>
-                          {event.department && (
-                            <p className="text-sm text-gray-600 mb-2">{event.department}</p>
-                          )}
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-gray-500" />
-                              <span>{getEventDate(event)}</span>
-                            </div>
-                            {event.estimatedSandwichCount && (
-                              <div className="flex items-center gap-2">
-                                <Package className="w-3 h-3 text-gray-500" />
-                                <span>~{event.estimatedSandwichCount} sandwiches</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3 text-gray-500" />
-                              <span className="text-xs">{event.eventAddress}</span>
-                            </div>
-                          </div>
-                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
-                            {event.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
+                        <EnhancedPopupContent event={event} />
                       </Popup>
                     </Marker>
                   ))}
@@ -570,33 +700,7 @@ export default function EventMapView() {
                       }}
                     >
                       <Popup>
-                        <div className="p-2 min-w-[250px]">
-                          <h3 className="font-semibold text-base mb-2">
-                            {event.organizationName || 'Unknown Organization'}
-                          </h3>
-                          {event.department && (
-                            <p className="text-sm text-gray-600 mb-2">{event.department}</p>
-                          )}
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-gray-500" />
-                              <span>{getEventDate(event)}</span>
-                            </div>
-                            {event.estimatedSandwichCount && (
-                              <div className="flex items-center gap-2">
-                                <Package className="w-3 h-3 text-gray-500" />
-                                <span>~{event.estimatedSandwichCount} sandwiches</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3 text-gray-500" />
-                              <span className="text-xs">{event.eventAddress}</span>
-                            </div>
-                          </div>
-                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
-                            {event.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
+                        <EnhancedPopupContent event={event} />
                       </Popup>
                     </Marker>
                   ))}
@@ -644,12 +748,54 @@ export default function EventMapView() {
                         <h3 className="font-medium text-sm truncate">
                           {event.organizationName || 'Unknown'}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        
+                        {/* Contact Person */}
+                        {(event.firstName || event.lastName) && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {[event.firstName, event.lastName].filter(Boolean).join(' ')}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Email */}
+                        {event.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{event.email}</span>
+                          </div>
+                        )}
+                        
+                        {/* Phone */}
+                        {event.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                            <Phone className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{event.phone}</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">
                           {event.eventAddress}
                         </p>
-                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs mt-2`}>
-                          {event.status.replace('_', ' ')}
-                        </Badge>
+                        
+                        {/* Event ID and Google Sheet Row */}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
+                            {event.status.replace('_', ' ')}
+                          </Badge>
+                          {event.externalId && (
+                            <span className="text-xs text-gray-500">
+                              Event #{event.id}
+                            </span>
+                          )}
+                          {event.googleSheetRowId && (
+                            <span className="text-xs text-gray-500">
+                              Sheet Row: {event.googleSheetRowId}
+                            </span>
+                          )}
+                        </div>
+                        
                         <div className="flex gap-2 mt-2">
                           <Button
                             size="sm"
