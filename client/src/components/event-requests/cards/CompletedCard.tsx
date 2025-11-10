@@ -2498,9 +2498,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAuditLog(!showAuditLog)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAuditLog(!showAuditLog);
+            }}
             className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
             data-testid="button-toggle-audit-log"
+            type="button"
           >
             <div className="flex items-center gap-2">
               <History className="w-4 h-4" />
