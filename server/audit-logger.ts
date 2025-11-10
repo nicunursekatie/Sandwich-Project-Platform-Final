@@ -517,23 +517,39 @@ export class AuditLogger {
     changeContext?: ChangeContext
   ): Promise<void> {
     try {
+      // Determine if this is a CREATE or UPDATE operation
+      const isCreate = !oldData;
+      const actionType = isCreate ? 'CREATE' :
+                        (changeContext?.actionType === 'REAL_TIME_UPDATE' ? 'UPDATE' :
+                         'EVENT_REQUEST_CHANGE');
+
       // Identify all field-level changes
       const changes = this.identifyChanges(oldData, newData);
-      
+
       // Generate summary
-      const summary = this.generateChangeSummary(changes, changeContext);
-      
+      let summary = this.generateChangeSummary(changes, changeContext);
+
+      // For CREATE operations, provide a better summary
+      if (isCreate) {
+        const orgName = newData?.organizationName || 'Unknown Organization';
+        const contactName = newData?.firstName && newData?.lastName
+          ? `${newData.firstName} ${newData.lastName}`
+          : newData?.email || 'Unknown Contact';
+        summary = `Event request created for ${orgName} (${contactName})`;
+      }
+
       // Identify significant changes (status, assignments, dates)
       const significantChanges = changes
         .filter(change => {
           const field = change.field.toLowerCase();
-          return field.includes('status') || 
-                 field.includes('assigned') || 
+          return field.includes('status') ||
+                 field.includes('assigned') ||
                  field.includes('contact') ||
                  field.includes('date') ||
                  field === 'email' ||
                  field === 'phone' ||
-                 field.includes('toolkit');
+                 field.includes('toolkit') ||
+                 field.includes('tspcontact');
         })
         .map(change => change.description);
 
@@ -556,16 +572,16 @@ export class AuditLogger {
         ...(changeContext.operation && { operation: changeContext.operation }), // Keep operation
         ...(changeContext.section && { section: changeContext.section }), // Keep section
       } : undefined;
-      
+
       // Filter out field-level changes from the clean context to avoid duplication
       const fieldsInChanges = new Set(changes.map(change => change.field.toLowerCase()));
       const filteredContext: any = {};
-      
+
       if (cleanChangeContext) {
         Object.keys(cleanChangeContext).forEach(key => {
           const lowerKey = key.toLowerCase();
           // Only include context items that are NOT already captured in field changes
-          if (!fieldsInChanges.has(lowerKey) && 
+          if (!fieldsInChanges.has(lowerKey) &&
               !['email', 'phone', 'firstname', 'lastname', 'organizationname', 'status'].includes(lowerKey)) {
             filteredContext[key] = (cleanChangeContext as any)[key];
           }
@@ -582,15 +598,16 @@ export class AuditLogger {
           significantChanges,
           changeTimestamp: new Date().toISOString(),
           changedBy: context.userId || 'Unknown User',
+          isCreate,
           // Only include non-duplicate additional context
           additionalContext: Object.keys(filteredContext).length > 0 ? filteredContext : undefined
         }
       };
 
       // Log using the existing audit system with clean separation of concerns
-      // The _auditMetadata already includes significantChanges, so no need for a separate log entry
+      // Use appropriate action type (CREATE for new events, UPDATE/EVENT_REQUEST_CHANGE for modifications)
       await this.log(
-        'EVENT_REQUEST_CHANGE',
+        actionType,
         'event_requests',
         recordId,
         oldData,
@@ -598,8 +615,8 @@ export class AuditLogger {
         context
       );
 
-      // Log individual significant changes for better searchability
-      if (significantChanges.length > 0) {
+      // Log individual significant changes for better searchability (skip for CREATE)
+      if (!isCreate && significantChanges.length > 0) {
         await this.log(
           'EVENT_REQUEST_SIGNIFICANT_CHANGE',
           'event_requests',
@@ -609,6 +626,8 @@ export class AuditLogger {
           context
         );
       }
+
+      console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, action: ${actionType})`);
 
     } catch (error) {
       logger.error('Failed to log event request change:', error);

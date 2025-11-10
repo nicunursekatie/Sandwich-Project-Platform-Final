@@ -19,6 +19,80 @@ export function createVolunteersRouter(deps: RouterDependencies) {
     }
   });
 
+  // Export volunteers (CSV) - MUST come before /:id route
+  router.get('/export', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const volunteers = await storage.getAllVolunteers();
+      // Set CSV headers
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="volunteers_export_${new Date().toISOString().split('T')[0]}.csv"`
+      );
+
+      // Create CSV content with comprehensive contact information
+      const headers = [
+        'ID',
+        'Name',
+        'Email',
+        'Phone',
+        'Home Address',
+        'Status',
+        'Vehicle Type',
+        'License Number',
+        'Availability',
+        'Van Approved',
+        'Is Weekly Driver',
+        'Host Location',
+        'Route Description',
+        'Availability Notes',
+        'Notes',
+        'Email Agreement Sent',
+        'Voicemail Left',
+        'Inactive Reason',
+        'Created Date',
+      ];
+      const csvContent = [headers.join(',')];
+
+      for (const volunteer of volunteers) {
+        const escapeCSV = (str: string | null | undefined) => {
+          if (!str) return '';
+          return `"${String(str).replace(/"/g, '""')}"`;
+        };
+
+        const row = [
+          volunteer.id || '',
+          escapeCSV(volunteer.name),
+          volunteer.email || '',
+          volunteer.phone || '',
+          escapeCSV(volunteer.homeAddress || volunteer.address),
+          volunteer.isActive ? 'Active' : 'Inactive',
+          escapeCSV(volunteer.vehicleType),
+          escapeCSV(volunteer.licenseNumber),
+          escapeCSV(volunteer.availability),
+          volunteer.vanApproved ? 'Yes' : 'No',
+          volunteer.isWeeklyDriver ? 'Yes' : 'No',
+          escapeCSV(volunteer.hostLocation),
+          escapeCSV(volunteer.routeDescription),
+          escapeCSV(volunteer.availabilityNotes),
+          escapeCSV(volunteer.notes),
+          volunteer.emailAgreementSent ? 'Yes' : 'No',
+          volunteer.voicemailLeft ? 'Yes' : 'No',
+          escapeCSV(volunteer.inactiveReason),
+          volunteer.createdAt
+            ? new Date(volunteer.createdAt).toLocaleDateString()
+            : '',
+        ];
+        csvContent.push(row.join(','));
+      }
+
+      res.send(csvContent.join('\n'));
+    } catch (error) {
+      logger.error('Failed to export volunteers', error);
+      res.status(500).json({ message: 'Failed to export volunteers' });
+    }
+  });
+
   // Get volunteer by ID
   router.get('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
@@ -167,51 +241,6 @@ export function createVolunteersRouter(deps: RouterDependencies) {
     } catch (error) {
       logger.error('Failed to delete volunteer', error);
       res.status(500).json({ message: 'Failed to delete volunteer' });
-    }
-  });
-
-  // Export volunteers (CSV/Excel)
-  router.get('/export', isAuthenticated, async (req: any, res: any) => {
-    try {
-      const volunteers = await storage.getAllVolunteers();
-      // Set CSV headers
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename="volunteers.csv"'
-      );
-
-      // Create CSV content
-      const headers = [
-        'ID',
-        'Name',
-        'Email',
-        'Phone',
-        'Host',
-        'Notes',
-        'Created',
-      ];
-      const csvContent = [headers.join(',')];
-
-      for (const volunteer of volunteers) {
-        const row = [
-          volunteer.id || '',
-          `"${volunteer.name || ''}"`,
-          volunteer.email || '',
-          volunteer.phone || '',
-          volunteer.hostId ? `Host ${volunteer.hostId}` : '',
-          `"${(volunteer.notes || '').replace(/"/g, '""')}"`,
-          volunteer.createdAt
-            ? new Date(volunteer.createdAt).toLocaleDateString()
-            : '',
-        ];
-        csvContent.push(row.join(','));
-      }
-
-      res.send(csvContent.join('\n'));
-    } catch (error) {
-      logger.error('Failed to export volunteers', error);
-      res.status(500).json({ message: 'Failed to export volunteers' });
     }
   });
 

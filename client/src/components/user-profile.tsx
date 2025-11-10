@@ -839,6 +839,18 @@ export default function UserProfile() {
         </Card>
       )}
 
+      {/* Visual Separator */}
+      {activeTab === 'notifications' && (
+        <div className="relative my-8">
+          <Separator className="my-6" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="bg-background px-4 text-sm font-medium text-muted-foreground">
+              Optional: Customize Your Reminder Settings
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Event Notification Preferences */}
       {activeTab === 'notifications' && (
         <NotificationPreferences />

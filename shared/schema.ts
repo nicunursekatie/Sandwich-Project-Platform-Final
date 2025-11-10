@@ -1757,7 +1757,7 @@ export const eventRequests = pgTable(
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
-    pickupDateTime: timestamp('pickup_date_time'), // Full datetime for pickup time with date and time selection
+    pickupDateTime: varchar('pickup_date_time'), // Full datetime for pickup time - stored as local datetime string (YYYY-MM-DDTHH:MM:SS) to avoid timezone conversion
     pickupTimeWindow: text('pickup_time_window'), // Time window for pickup (e.g., "2:00 PM - 3:00 PM")
     pickupPersonResponsible: text('pickup_person_responsible'), // Contact person who will pick up the sandwiches
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
@@ -1881,6 +1881,9 @@ export const eventRequests = pgTable(
     // Soft delete tracking
     deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
     deletedBy: varchar('deleted_by'), // User ID who deleted this record
+
+    // Optimistic concurrency control for real-time collaboration
+    version: integer('version').notNull().default(1), // Incremented on each update for conflict detection
   },
   (table) => ({
     orgNameIdx: index('idx_event_requests_org_name').on(table.organizationName),
@@ -2018,6 +2021,67 @@ export const eventReminders = pgTable(
   })
 );
 
+// Event collaboration comments table for team discussion on event planning
+export const eventCollaborationComments = pgTable(
+  'event_collaboration_comments',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull().references(() => eventRequests.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull().references(() => users.id),
+    userName: varchar('user_name').notNull(),
+    content: text('content').notNull(),
+    parentCommentId: integer('parent_comment_id'), // For threaded replies
+    editedAt: timestamp('edited_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index('idx_event_collab_comments_event_id').on(table.eventRequestId),
+    userIdIdx: index('idx_event_collab_comments_user_id').on(table.userId),
+    createdAtIdx: index('idx_event_collab_comments_created_at').on(table.createdAt),
+  })
+);
+
+// Event field locks table for preventing edit conflicts
+export const eventFieldLocks = pgTable(
+  'event_field_locks',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull().references(() => eventRequests.id, { onDelete: 'cascade' }),
+    fieldName: varchar('field_name').notNull(), // Name of the field being edited
+    lockedBy: varchar('locked_by').notNull().references(() => users.id),
+    lockedByName: varchar('locked_by_name').notNull(),
+    lockedAt: timestamp('locked_at').defaultNow().notNull(),
+    expiresAt: timestamp('expires_at').notNull(), // Auto-expire locks after 5 minutes
+  },
+  (table) => ({
+    eventFieldIdx: unique().on(table.eventRequestId, table.fieldName), // One lock per field per event
+    eventIdIdx: index('idx_event_field_locks_event_id').on(table.eventRequestId),
+    expiresAtIdx: index('idx_event_field_locks_expires_at').on(table.expiresAt),
+  })
+);
+
+// Event edit revisions table for tracking change history
+export const eventEditRevisions = pgTable(
+  'event_edit_revisions',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull().references(() => eventRequests.id, { onDelete: 'cascade' }),
+    fieldName: varchar('field_name').notNull(), // Name of the field changed
+    oldValue: text('old_value'), // Previous value (JSON-stringified for complex types)
+    newValue: text('new_value'), // New value (JSON-stringified for complex types)
+    changedBy: varchar('changed_by').notNull().references(() => users.id),
+    changedByName: varchar('changed_by_name').notNull(),
+    changeType: varchar('change_type').notNull(), // 'create', 'update', 'delete'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index('idx_event_edit_revisions_event_id').on(table.eventRequestId),
+    fieldNameIdx: index('idx_event_edit_revisions_field_name').on(table.fieldName),
+    createdAtIdx: index('idx_event_edit_revisions_created_at').on(table.createdAt),
+  })
+);
+
 export const insertEventRequestSchema = createInsertSchema(eventRequests)
   .omit({
     id: true,
@@ -2056,13 +2120,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
     pickupTime: z.string().nullable().optional(),
-    pickupDateTime: z
-      .union([
-        z.date(),
-        z.string().transform((str) => (str ? new Date(str) : null)),
-        z.null(),
-      ])
-      .optional(),
+    pickupDateTime: z.string().nullable().optional(), // Stored as local datetime string to avoid timezone conversion
     customTspContact: z.string().nullable().optional(),
     additionalContact1: z.string().nullable().optional(),
     additionalContact2: z.string().nullable().optional(),
@@ -2218,6 +2276,35 @@ export const insertEventReminderSchema = createInsertSchema(eventReminders)
 
 export type InsertEventReminder = z.infer<typeof insertEventReminderSchema>;
 export type EventReminder = typeof eventReminders.$inferSelect;
+
+// Event collaboration comment schema types
+export const insertEventCollaborationCommentSchema = createInsertSchema(eventCollaborationComments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  editedAt: true,
+});
+
+export type EventCollaborationComment = typeof eventCollaborationComments.$inferSelect;
+export type InsertEventCollaborationComment = z.infer<typeof insertEventCollaborationCommentSchema>;
+
+// Event field lock schema types
+export const insertEventFieldLockSchema = createInsertSchema(eventFieldLocks).omit({
+  id: true,
+  lockedAt: true,
+});
+
+export type EventFieldLock = typeof eventFieldLocks.$inferSelect;
+export type InsertEventFieldLock = z.infer<typeof insertEventFieldLockSchema>;
+
+// Event edit revision schema types
+export const insertEventEditRevisionSchema = createInsertSchema(eventEditRevisions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EventEditRevision = typeof eventEditRevisions.$inferSelect;
+export type InsertEventEditRevision = z.infer<typeof insertEventEditRevisionSchema>;
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,

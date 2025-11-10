@@ -115,6 +115,12 @@ import {
   type InsertAvailabilitySlot,
   type SearchAnalytics,
   type InsertSearchAnalytics,
+  type EventCollaborationComment,
+  type InsertEventCollaborationComment,
+  type EventFieldLock,
+  type InsertEventFieldLock,
+  type EventEditRevision,
+  type InsertEventEditRevision,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -615,6 +621,23 @@ export interface IStorage {
   checkOrganizationDuplicates(
     organizationName: string
   ): Promise<{ exists: boolean; matches: Organization[] }>;
+
+  // Event Collaboration Comments
+  getEventCollaborationComments(eventRequestId: number): Promise<EventCollaborationComment[]>;
+  createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment>;
+  updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined>;
+  deleteEventCollaborationComment(id: number, userId: string): Promise<boolean>;
+
+  // Event Field Locks
+  getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]>;
+  createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock>;
+  deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean>;
+  cleanupExpiredLocks(): Promise<number>;
+
+  // Event Edit Revisions
+  getEventEditRevisions(eventRequestId: number, options?: { fieldName?: string; limit?: number }): Promise<EventEditRevision[]>;
+  getEventFieldRevisions(eventRequestId: number, fieldName: string, limit?: number, offset?: number): Promise<EventEditRevision[]>;
+  createEventEditRevision(data: InsertEventEditRevision): Promise<EventEditRevision>;
 
   // Organizations (for duplicate detection)
   getAllOrganizations(): Promise<Organization[]>;

@@ -95,9 +95,10 @@ router.post(
   async (req, res) => {
     try {
       const { phoneNumber, message } = testSMSSchema.parse(req.body);
-      const appUrl = process.env.REPLIT_DOMAIN
-        ? `https://${process.env.REPLIT_DOMAIN}`
-        : req.headers.origin || 'https://your-app.replit.app';
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN
+          ? `https://${process.env.REPLIT_DOMAIN}`
+          : req.headers.origin || 'https://sandwich-project-platform-final-katielong2316.replit.app');
 
       logger.log(
         `🧪 Sending test SMS to ${phoneNumber} from user ${req.user?.email}`
@@ -140,9 +141,10 @@ router.post(
   async (req, res) => {
     try {
       const { hostLocation } = reminderSMSSchema.parse(req.body);
-      const appUrl = process.env.REPLIT_DOMAIN
-        ? `https://${process.env.REPLIT_DOMAIN}`
-        : req.headers.origin || 'https://your-app.replit.app';
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN
+          ? `https://${process.env.REPLIT_DOMAIN}`
+          : req.headers.origin || 'https://sandwich-project-platform-final-katielong2316.replit.app');
 
       logger.log(
         `📱 Sending SMS reminder for location "${hostLocation}" from user ${req.user?.email}`
@@ -196,9 +198,10 @@ router.post(
         })
         .parse(req.body);
 
-      const appUrl = process.env.REPLIT_DOMAIN
-        ? `https://${process.env.REPLIT_DOMAIN}`
-        : req.headers.origin || 'https://your-app.replit.app';
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN
+          ? `https://${process.env.REPLIT_DOMAIN}`
+          : req.headers.origin || 'https://sandwich-project-platform-final-katielong2316.replit.app');
 
       logger.log(
         `📱 Sending weekly SMS reminders for ${missingLocations.length} locations from user ${req.user?.email}`

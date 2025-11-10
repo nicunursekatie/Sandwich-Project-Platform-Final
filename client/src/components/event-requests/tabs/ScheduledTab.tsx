@@ -18,6 +18,7 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { trackClick, trackView } = useAnalytics();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { trackEvent, trackButtonClick } = useAnalytics();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
@@ -41,8 +42,7 @@ export const ScheduledTab: React.FC = () => {
       timestamp: new Date().toISOString(),
     });
     setViewStartTime(Date.now());
-  }, [trackEvent]);
-  }, [isMobile]);
+  }, [trackEvent, isMobile]);
 
   // Track view mode changes and time spent in each view
   const handleViewModeChange = (newMode: 'card' | 'spreadsheet') => {
@@ -61,6 +61,12 @@ export const ScheduledTab: React.FC = () => {
       to: newMode,
       tab: 'scheduled',
       timestamp: new Date().toISOString(),
+    });
+
+    trackClick('scheduled_tab_view_mode_toggle', {
+      view_mode: newMode,
+      previous_mode: viewMode,
+      source: 'toggle_button',
     });
 
     trackButtonClick(`switch_to_${newMode}_view`, 'event_requests_scheduled_tab');
@@ -368,9 +374,15 @@ export const ScheduledTab: React.FC = () => {
       )}
 
       {viewMode === 'spreadsheet' ? (
-        <ScheduledSpreadsheetView 
+        <ScheduledSpreadsheetView
           onEventDateClick={(event) => {
             setSelectedEventRequest(event);
+            trackClick('scheduled_tab_view_mode_toggle', {
+              view_mode: 'card',
+              previous_mode: 'spreadsheet',
+              source: 'spreadsheet_event_click',
+              event_id: event.id,
+            });
             setViewMode('card');
             // Scroll to the card after React has rendered the card view
             setTimeout(() => {
@@ -468,6 +480,30 @@ export const ScheduledTab: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Floating Action Button for Quick View Toggle */}
+      {scheduledRequests.length > 0 && !isMobile && (
+        <button
+          onClick={() => {
+            const newMode = viewMode === 'spreadsheet' ? 'card' : 'spreadsheet';
+            trackClick('scheduled_tab_view_mode_toggle', {
+              view_mode: newMode,
+              previous_mode: viewMode,
+              source: 'floating_action_button',
+            });
+            setViewMode(newMode);
+          }}
+          className="fixed bottom-8 right-8 z-50 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
+          title={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
+          aria-label={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
+        >
+          {viewMode === 'spreadsheet' ? (
+            <LayoutGrid className="h-5 w-5" />
+          ) : (
+            <Table2 className="h-5 w-5" />
+          )}
+        </button>
       )}
 
     <RescheduleDialog

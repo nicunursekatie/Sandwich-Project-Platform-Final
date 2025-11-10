@@ -1961,7 +1961,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
               <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
               {isEditingSandwichCount ? (
-                <div className="flex flex-col items-center gap-2 mt-1 min-w-[200px]">
+                <div className="flex flex-col items-center gap-2 mt-1 min-w-0 sm:min-w-[200px]">
                   {editingMode === 'simple' ? (
                     // Simple mode - just a single total input
                     <>
@@ -2498,9 +2498,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAuditLog(!showAuditLog)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAuditLog(!showAuditLog);
+            }}
             className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
             data-testid="button-toggle-audit-log"
+            type="button"
           >
             <div className="flex items-center gap-2">
               <History className="w-4 h-4" />
@@ -2578,7 +2582,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>

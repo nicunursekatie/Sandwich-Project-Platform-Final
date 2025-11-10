@@ -51,7 +51,7 @@ export function SMSAnnouncementModal() {
 
   const handleGoToSettings = () => {
     dismissMutation.mutate();
-    setLocation('/profile');
+    setLocation('/profile?tab=notifications');
   };
 
   const handleDismiss = () => {
