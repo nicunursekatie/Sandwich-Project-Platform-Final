@@ -20,7 +20,7 @@ export const ScheduledTab: React.FC = () => {
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('spreadsheet');
 
   // State for confirmation checkbox when editing dates
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
