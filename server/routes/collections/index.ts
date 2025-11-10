@@ -14,6 +14,7 @@ import { insertSandwichCollectionSchema } from '@shared/schema';
 import historicalImportRouter from './historical-import';
 import { logger } from '../../utils/production-safe-logger';
 import { onboardingService } from '../../services/onboarding-service';
+import { getSocketInstance } from '../../socket-chat';
 
 const collectionsRouter = Router();
 
@@ -287,6 +288,22 @@ collectionsRouter.post(
       // Invalidate cache when new collection is created
       QueryOptimizer.invalidateCache('sandwich-collections');
       QueryOptimizer.invalidateCache('sandwich-collections-stats');
+
+      // Broadcast real-time update to all connected clients
+      try {
+        const io = getSocketInstance();
+        if (io) {
+          io.emit('collections:updated', {
+            collectionId: collection.id,
+            trigger: 'create',
+            timestamp: new Date().toISOString(),
+          });
+          logger.log('[Collections] Real-time update broadcast sent');
+        }
+      } catch (socketError) {
+        logger.error('[Collections] Failed to emit socket event:', socketError);
+        // Don't fail collection creation if socket broadcast fails
+      }
 
       // Track onboarding challenge completion for submitting a collection log
       if (user?.id) {

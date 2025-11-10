@@ -15,11 +15,13 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DocumentsBrowser } from '@/components/documents-browser';
 import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 import tspTransparent from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { logger } from '@/lib/logger';
+import { socket } from '@/lib/socket';
+import { queryClient } from '@/lib/queryClient';
 
 export default function Landing() {
   const [showToolkit, setShowToolkit] = useState(false);
@@ -38,6 +40,9 @@ export default function Landing() {
       return response.json();
     },
     retry: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000, // Polling fallback every 5 minutes
+    refetchOnWindowFocus: true,
   });
 
   const { data: collectionsResponse } = useQuery({
@@ -48,7 +53,26 @@ export default function Landing() {
       return response.json();
     },
     retry: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000, // Polling fallback every 5 minutes
+    refetchOnWindowFocus: true,
   });
+
+  // Listen for real-time collection updates via Socket.IO
+  useEffect(() => {
+    const handleCollectionUpdate = (data: any) => {
+      logger.log('[Landing] Collection updated via Socket.IO:', data);
+      // Invalidate queries to refetch latest stats
+      queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections'] });
+    };
+
+    socket.on('collections:updated', handleCollectionUpdate);
+
+    return () => {
+      socket.off('collections:updated', handleCollectionUpdate);
+    };
+  }, []);
 
   const collections = collectionsResponse?.collections || [];
   const totalSandwiches = statsData?.completeTotalSandwiches || 0;
