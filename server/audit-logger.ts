@@ -639,6 +639,7 @@ export class AuditLogger {
 
       // Log using the existing audit system with clean separation of concerns
       // Use appropriate action type (CREATE for new events, UPDATE/EVENT_REQUEST_CHANGE for modifications)
+      // Note: significantChanges are already included in enhancedNewData._auditMetadata
       await this.log(
         actionType,
         'event_requests',
@@ -647,18 +648,6 @@ export class AuditLogger {
         enhancedNewData,
         context
       );
-
-      // Log individual significant changes for better searchability (skip for CREATE)
-      if (!isCreate && significantChanges.length > 0) {
-        await this.log(
-          'EVENT_REQUEST_SIGNIFICANT_CHANGE',
-          'event_requests',
-          recordId,
-          { significantChanges: significantChanges },
-          { summary, totalChanges: changes.length },
-          context
-        );
-      }
 
       console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, action: ${actionType})`);
 
