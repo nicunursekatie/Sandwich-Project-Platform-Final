@@ -89,7 +89,7 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       const comment = await storage.createEventCollaborationComment({
         eventRequestId: eventId,
         userId: req.user.id,
-        userName: req.user.display_name || `${req.user.first_name} ${req.user.last_name}`,
+        userName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email || 'Unknown User',
         content: validatedData.content,
         parentCommentId: validatedData.parentCommentId,
       });
@@ -245,7 +245,7 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
         eventRequestId: eventId,
         fieldName: validatedData.fieldName,
         lockedBy: req.user.id,
-        lockedByName: req.user.display_name || `${req.user.first_name} ${req.user.last_name}`,
+        lockedByName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email || 'Unknown User',
         expiresAt,
       });
 

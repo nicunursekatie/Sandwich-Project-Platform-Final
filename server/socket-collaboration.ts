@@ -180,32 +180,37 @@ function updateHeartbeat(eventRequestId: number, userId: string): void {
 /**
  * Remove stale presence entries (no heartbeat in last 60 seconds)
  */
-function cleanupStalePresence(): void {
+async function cleanupStalePresence(): Promise<void> {
   const now = Date.now();
   const staleThreshold = 60 * 1000; // 60 seconds
 
   for (const [eventId, presenceMap] of presenceByEvent.entries()) {
+    const staleUsers: string[] = [];
+    
     for (const [userId, presence] of presenceMap.entries()) {
       const timeSinceHeartbeat = now - presence.lastHeartbeat.getTime();
       if (timeSinceHeartbeat > staleThreshold) {
         logger.log(
           `Removing stale presence for user ${userId} in event ${eventId}`
         );
-        presenceMap.delete(userId);
-
-        // Broadcast presence update
-        if (collaborationNamespace) {
-          collaborationNamespace
-            .to(getRoomName(eventId))
-            .emit('presence-updated', {
-              eventRequestId: eventId,
-              activeUsers: Array.from(presenceMap.values()),
-            });
-        }
+        staleUsers.push(userId);
       }
     }
 
-    // Clean up empty event entries
+    for (const userId of staleUsers) {
+      await releaseUserLocks(eventId, userId);
+      presenceMap.delete(userId);
+    }
+
+    if (staleUsers.length > 0 && collaborationNamespace) {
+      collaborationNamespace
+        .to(getRoomName(eventId))
+        .emit('presence-updated', {
+          eventRequestId: eventId,
+          activeUsers: Array.from(presenceMap.values()),
+        });
+    }
+
     if (presenceMap.size === 0) {
       presenceByEvent.delete(eventId);
     }
@@ -495,9 +500,17 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         const { eventRequestId, fieldName, value, expectedVersion, userId, userName } =
           validated;
 
-        // Update event with version check
-        const updateData = { [fieldName]: value };
         const expectedVersionDate = new Date(expectedVersion);
+        
+        if (isNaN(expectedVersionDate.getTime())) {
+          socket.emit('error', {
+            message: 'Invalid version format',
+          });
+          logger.error(`Invalid version string: ${expectedVersion}`);
+          return;
+        }
+
+        const updateData = { [fieldName]: value };
 
         try {
           await storage.updateEventRequest(eventRequestId, updateData, expectedVersionDate);

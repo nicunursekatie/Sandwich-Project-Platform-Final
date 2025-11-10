@@ -4051,23 +4051,33 @@ export class DatabaseStorage implements IStorage {
     return comment;
   }
 
-  async updateEventCollaborationComment(id: number, data: { content: string }): Promise<EventCollaborationComment | undefined> {
+  async updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined> {
     const [comment] = await db
       .update(eventCollaborationComments)
       .set({
-        content: data.content,
+        content,
         editedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(eventCollaborationComments.id, id))
+      .where(
+        and(
+          eq(eventCollaborationComments.id, id),
+          eq(eventCollaborationComments.userId, userId)
+        )
+      )
       .returning();
     return comment || undefined;
   }
 
-  async deleteEventCollaborationComment(id: number): Promise<boolean> {
+  async deleteEventCollaborationComment(id: number, userId: string): Promise<boolean> {
     const result = await db
       .delete(eventCollaborationComments)
-      .where(eq(eventCollaborationComments.id, id));
+      .where(
+        and(
+          eq(eventCollaborationComments.id, id),
+          eq(eventCollaborationComments.userId, userId)
+        )
+      );
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -4139,7 +4149,49 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(options.limit);
     }
 
-    return await query;
+    const revisions = await query;
+    
+    return revisions.map(revision => ({
+      ...revision,
+      oldValue: this.parseJsonValue(revision.oldValue),
+      newValue: this.parseJsonValue(revision.newValue),
+    }));
+  }
+
+  async getEventFieldRevisions(
+    eventRequestId: number,
+    fieldName: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<EventEditRevision[]> {
+    const revisions = await db
+      .select()
+      .from(eventEditRevisions)
+      .where(
+        and(
+          eq(eventEditRevisions.eventRequestId, eventRequestId),
+          eq(eventEditRevisions.fieldName, fieldName)
+        )
+      )
+      .orderBy(desc(eventEditRevisions.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return revisions.map(revision => ({
+      ...revision,
+      oldValue: this.parseJsonValue(revision.oldValue),
+      newValue: this.parseJsonValue(revision.newValue),
+    }));
+  }
+
+  private parseJsonValue(value: string | null): any {
+    if (!value) return null;
+    
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
   }
 
   async createEventEditRevision(data: InsertEventEditRevision): Promise<EventEditRevision> {
