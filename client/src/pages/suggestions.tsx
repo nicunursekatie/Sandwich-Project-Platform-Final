@@ -72,6 +72,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 import { logger } from '@/lib/logger';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 // Schema for suggestion form
 const suggestionSchema = z.object({
@@ -431,6 +432,14 @@ export default function SuggestionsPortal() {
       {/* Header Section with TSP Branding */}
       <div className="bg-gradient-to-br from-teal-600 to-teal-700 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
+          <PageBreadcrumbs
+            segments={[
+              { label: 'Communication' },
+              { label: 'Suggestions' }
+            ]}
+            className="mb-4"
+          />
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl sm:text-4xl font-bold font-roboto flex items-center gap-3">

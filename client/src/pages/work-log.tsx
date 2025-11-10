@@ -11,6 +11,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function WorkLogPage() {
   const { user } = useAuth();
@@ -99,6 +100,11 @@ export default function WorkLogPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-6">
+      <PageBreadcrumbs segments={[
+        { label: 'Operations' },
+        { label: 'Work Log' }
+      ]} />
+
       {/* Debug info - minimized and subtle */}
       <div className="text-xs text-gray-400 px-2">
         Debug: {safelogs.length} logs loaded • User:{' '}
