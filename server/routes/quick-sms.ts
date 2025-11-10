@@ -28,33 +28,8 @@ router.post('/send', async (req, res) => {
     }
 
     // Check if recipient has opted in to receive SMS
-
     // Use efficient database query instead of loading all users
     const recipientUser = await storage.findUserByPhoneNumber(normalizedPhone);
-    let allUsers;
-    try {
-      allUsers = await storage.getAllUsers();
-    } catch (dbError) {
-      logger.error('Database error fetching users:', dbError);
-      return res.status(500).json({
-        success: false,
-        message: 'Database error: Unable to fetch user information. Please try again later.',
-        error: dbError instanceof Error ? dbError.message : 'Unknown database error',
-      });
-    }
-
-    const recipientUser = allUsers.find((user) => {
-      try {
-        const metadata = getUserMetadata(user);
-        const smsConsent = metadata.smsConsent;
-        // Match against stored phone number (normalized)
-        const storedPhone = smsConsent?.phoneNumber?.replace(/[\s\-\(\)]/g, '');
-        return storedPhone === normalizedPhone;
-      } catch (metadataError) {
-        logger.error(`Error parsing metadata for user ${user.id}:`, metadataError);
-        return false;
-      }
-    });
 
     if (recipientUser) {
       const metadata = getUserMetadata(recipientUser);
@@ -77,9 +52,9 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    // Get the SMS provider
+    // Get the SMS provider with async initialization (ensures Replit integration credentials are loaded)
     const smsFactory = SMSProviderFactory.getInstance();
-    const smsProvider = smsFactory.getProvider();
+    const smsProvider = await smsFactory.getProviderAsync();
 
     if (!smsProvider || !smsProvider.isConfigured()) {
       logger.error('SMS provider not configured');
