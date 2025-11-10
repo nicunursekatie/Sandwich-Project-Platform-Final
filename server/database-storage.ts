@@ -212,6 +212,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(users.createdAt);
   }
 
+  async findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined> {
+    // Query the metadata JSON column for users with matching SMS phone number
+    // Uses PostgreSQL's JSON operators to search nested field: metadata->'smsConsent'->>'phoneNumber'
+    // Normalizes stored phone by stripping formatting characters (spaces, dashes, parentheses) to match input
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`regexp_replace(${users.metadata}->'smsConsent'->>'phoneNumber', '[\\s\\-\\(\\)]', '', 'g') = ${phoneNumber}`)
+      .limit(1);
+    return user || undefined;
+  }
+
   async updateUser(
     id: string,
     updates: Partial<User>

@@ -105,42 +105,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const [sandwichDialogEventId, setSandwichDialogEventId] = useState<number | null>(null);
   const [dialogSandwichTypes, setDialogSandwichTypes] = useState<Array<{ type: string; quantity: number }>>([]);
 
-  // Track spreadsheet feature usage
-  useEffect(() => {
-    trackEvent('spreadsheet_view_loaded', {
-      total_events: scheduledEvents.length,
-      default_date_range: dateRange,
-      has_custom_column_order: !!columnOrder,
-      timestamp: new Date().toISOString(),
-    });
-  }, [trackEvent, scheduledEvents.length, dateRange, columnOrder]);
-
-  // Track search usage
-  useEffect(() => {
-    if (searchQuery) {
-      const timer = setTimeout(() => {
-        trackEvent('spreadsheet_searched', {
-          query_length: searchQuery.length,
-          results_count: filteredEvents.length,
-          timestamp: new Date().toISOString(),
-        });
-      }, 500); // Debounce search tracking
-      return () => clearTimeout(timer);
-    }
-  }, [searchQuery, trackEvent, filteredEvents.length]);
-
-  // Track date filter changes
-  useEffect(() => {
-    if (dateRange !== 'next2Weeks') { // Only track when changed from default
-      trackEvent('spreadsheet_date_filter_changed', {
-        filter: dateRange,
-        events_shown: dateFilteredEvents.length,
-        timestamp: new Date().toISOString(),
-      });
-      trackButtonClick(`filter_by_${dateRange}`, 'spreadsheet_view');
-    }
-  }, [dateRange, trackEvent, trackButtonClick, dateFilteredEvents.length]);
-
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
     return eventRequests.filter(req => req.status === 'scheduled');
