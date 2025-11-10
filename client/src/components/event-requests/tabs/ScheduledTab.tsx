@@ -5,6 +5,7 @@ import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
@@ -17,10 +18,21 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { trackClick, trackView } = useAnalytics();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('spreadsheet'); // Default to spreadsheet for better UX
+
+  // Track view mode changes
+  const handleViewModeChange = (mode: 'card' | 'spreadsheet') => {
+    setViewMode(mode);
+    trackClick('scheduled_tab_view_mode_toggle', {
+      view_mode: mode,
+      previous_mode: viewMode,
+      source: 'toggle_button',
+    });
+  };
 
   // State for confirmation checkbox when editing dates
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
@@ -304,7 +316,7 @@ export const ScheduledTab: React.FC = () => {
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('card')}
+              onClick={() => handleViewModeChange('card')}
               className="flex items-center gap-2"
             >
               <LayoutGrid className="h-4 w-4" />
@@ -313,7 +325,7 @@ export const ScheduledTab: React.FC = () => {
             <Button
               variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('spreadsheet')}
+              onClick={() => handleViewModeChange('spreadsheet')}
               className="flex items-center gap-2"
             >
               <Table2 className="h-4 w-4" />
@@ -324,9 +336,15 @@ export const ScheduledTab: React.FC = () => {
       )}
 
       {viewMode === 'spreadsheet' ? (
-        <ScheduledSpreadsheetView 
+        <ScheduledSpreadsheetView
           onEventDateClick={(event) => {
             setSelectedEventRequest(event);
+            trackClick('scheduled_tab_view_mode_toggle', {
+              view_mode: 'card',
+              previous_mode: 'spreadsheet',
+              source: 'spreadsheet_event_click',
+              event_id: event.id,
+            });
             setViewMode('card');
             // Scroll to the card after React has rendered the card view
             setTimeout(() => {
@@ -424,6 +442,30 @@ export const ScheduledTab: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Floating Action Button for Quick View Toggle */}
+      {scheduledRequests.length > 0 && !isMobile && (
+        <button
+          onClick={() => {
+            const newMode = viewMode === 'spreadsheet' ? 'card' : 'spreadsheet';
+            trackClick('scheduled_tab_view_mode_toggle', {
+              view_mode: newMode,
+              previous_mode: viewMode,
+              source: 'floating_action_button',
+            });
+            setViewMode(newMode);
+          }}
+          className="fixed bottom-8 right-8 z-50 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
+          title={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
+          aria-label={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
+        >
+          {viewMode === 'spreadsheet' ? (
+            <LayoutGrid className="h-5 w-5" />
+          ) : (
+            <Table2 className="h-5 w-5" />
+          )}
+        </button>
       )}
 
     <RescheduleDialog
