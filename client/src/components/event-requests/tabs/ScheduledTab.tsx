@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -20,22 +20,60 @@ export const ScheduledTab: React.FC = () => {
   const isMobile = useIsMobile();
   const { trackClick, trackView } = useAnalytics();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
+  const { trackEvent, trackButtonClick } = useAnalytics();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('spreadsheet'); // Default to spreadsheet for better UX
 
-  // Track view mode changes
-  const handleViewModeChange = (mode: 'card' | 'spreadsheet') => {
-    setViewMode(mode);
-    trackClick('scheduled_tab_view_mode_toggle', {
-      view_mode: mode,
-      previous_mode: viewMode,
-      source: 'toggle_button',
-    });
-  };
+  // Default to card view on mobile (better touch UX), spreadsheet on desktop (familiar workflow)
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>(() => {
+    return isMobile ? 'card' : 'spreadsheet';
+  });
+  const [viewStartTime, setViewStartTime] = useState<number>(Date.now());
 
   // State for confirmation checkbox when editing dates
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
+
+  // Track when user first lands on scheduled tab
+  useEffect(() => {
+    trackEvent('scheduled_tab_viewed', {
+      default_view: isMobile ? 'card' : 'spreadsheet',
+      is_default: true,
+      is_mobile: isMobile,
+      timestamp: new Date().toISOString(),
+    });
+    setViewStartTime(Date.now());
+  }, [trackEvent, isMobile]);
+
+  // Track view mode changes and time spent in each view
+  const handleViewModeChange = (newMode: 'card' | 'spreadsheet') => {
+    const timeSpent = Date.now() - viewStartTime;
+
+    // Track time spent in previous view
+    trackEvent('view_mode_duration', {
+      view_mode: viewMode,
+      duration_seconds: Math.round(timeSpent / 1000),
+      switched_to: newMode,
+    });
+
+    // Track the switch
+    trackEvent('view_mode_changed', {
+      from: viewMode,
+      to: newMode,
+      tab: 'scheduled',
+      timestamp: new Date().toISOString(),
+    });
+
+    trackClick('scheduled_tab_view_mode_toggle', {
+      view_mode: newMode,
+      previous_mode: viewMode,
+      source: 'toggle_button',
+    });
+
+    trackButtonClick(`switch_to_${newMode}_view`, 'event_requests_scheduled_tab');
+
+    setViewMode(newMode);
+    setViewStartTime(Date.now());
+  };
 
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, rescheduleEventMutation } = useEventMutations();

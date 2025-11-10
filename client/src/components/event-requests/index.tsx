@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   EventRequestProvider,
@@ -13,7 +13,7 @@ import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, BarChart3 } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
   Dialog,
@@ -169,9 +169,13 @@ const EventRequestsManagementContent: React.FC = () => {
   const isMobile = useIsMobile();
   const { trackButtonClick, trackFormSubmit } = useAnalytics();
 
+  // Track initial page load only once
+  const hasLoggedInitialView = useRef(false);
+
   // Feature discovery state
   const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
   const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
+  const [showFloatingTip, setShowFloatingTip] = React.useState(false);
 
   // Support both old and new permission strings for backward compatibility
   const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
@@ -184,9 +188,11 @@ const EventRequestsManagementContent: React.FC = () => {
 
     const adminOverviewKey = `feature-tip-admin-overview-${user.id}`;
     const spreadsheetKey = `feature-tip-spreadsheet-${user.id}`;
+    const floatingButtonKey = `feature-tip-floating-button-${user.id}`;
 
     const adminOverviewSeen = localStorage.getItem(adminOverviewKey);
     const spreadsheetSeen = localStorage.getItem(spreadsheetKey);
+    const floatingButtonSeen = localStorage.getItem(floatingButtonKey);
 
     // Show admin overview tip if user has permission and hasn't seen it more than 3 times
     if (hasAdminOverviewPermission) {
@@ -197,13 +203,48 @@ const EventRequestsManagementContent: React.FC = () => {
       }
     }
 
+    // Show floating button tip if user hasn't dismissed it
+    const floatingButtonDismissed = floatingButtonSeen === 'dismissed';
+    if (!floatingButtonDismissed && activeTab !== 'scheduled') {
+      setShowFloatingTip(true);
+    } else if (activeTab === 'scheduled') {
+      // Hide floating tip when on scheduled tab
+      setShowFloatingTip(false);
+    }
+
     // Show spreadsheet tip if hasn't seen it more than 3 times
     const spreadsheetViewCount = parseInt(spreadsheetSeen || '0', 10);
     if (spreadsheetViewCount < 3) {
       setShowSpreadsheetTip(true);
       localStorage.setItem(spreadsheetKey, String(spreadsheetViewCount + 1));
     }
-  }, [user?.id, hasAdminOverviewPermission]);
+  }, [user?.id, hasAdminOverviewPermission, activeTab]);
+
+  // Track initial page load with default tab (only once)
+  useEffect(() => {
+    if (user?.id && !hasLoggedInitialView.current) {
+      hasLoggedInitialView.current = true;
+
+      trackButtonClick('event_requests_page_loaded', 'event_requests');
+
+      // Track which tab user lands on (now defaults to 'scheduled' for key roles)
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'event_requests_initial_view', {
+          initial_tab: activeTab,
+          user_role: user.role,
+          is_new_default: activeTab === 'scheduled',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  }, [user?.id, trackButtonClick, activeTab, user?.role]);
+
+  // Track tab changes
+  useEffect(() => {
+    if (user?.id && activeTab) {
+      trackButtonClick(`tab_${activeTab}_viewed`, 'event_requests');
+    }
+  }, [activeTab, user?.id]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -243,6 +284,42 @@ const EventRequestsManagementContent: React.FC = () => {
       id: selectedEventRequest.id,
       scheduledCallDate: combinedDateTime,
     });
+  };
+
+  // Handle floating button click to switch to scheduled + spreadsheet view
+  const handleSwitchToSpreadsheet = () => {
+    const previousTab = activeTab;
+    setActiveTab('scheduled');
+
+    // Track floating button usage with detailed context
+    trackButtonClick('floating_spreadsheet_button', 'event_requests');
+
+    // Track navigation from current tab to scheduled
+    if (user) {
+      const event = {
+        feature: 'floating_spreadsheet_button',
+        from_tab: previousTab,
+        to_tab: 'scheduled',
+        user_role: user.role,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Log to analytics
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'spreadsheet_quick_access', event);
+      }
+    }
+  };
+
+  // Handle dismissing floating button tip
+  const handleDismissFloatingTip = () => {
+    if (!user?.id) return;
+    const floatingButtonKey = `feature-tip-floating-button-${user.id}`;
+    localStorage.setItem(floatingButtonKey, 'dismissed');
+    setShowFloatingTip(false);
+
+    // Track tip dismissal
+    trackButtonClick('dismiss_floating_tip', 'event_requests');
   };
 
   if (isLoading) {
@@ -965,6 +1042,44 @@ const EventRequestsManagementContent: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Floating Action Button for Spreadsheet View - Only show when NOT on scheduled tab */}
+        {activeTab !== 'scheduled' && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <button
+              onClick={handleSwitchToSpreadsheet}
+              className="h-16 w-16 rounded-full shadow-2xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              title="Switch to Spreadsheet View"
+              aria-label="Switch to Spreadsheet View"
+            >
+              <Sheet className="h-6 w-6" />
+            </button>
+
+            {/* Tooltip that appears on first few visits */}
+            {showFloatingTip && (
+              <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border-2 border-green-500 rounded-lg shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <button
+                  onClick={handleDismissFloatingTip}
+                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Dismiss tip"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm mb-1 text-gray-900">
+                      Quick access to Spreadsheet View!
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Click here anytime to jump to the familiar table layout (like your Google Sheet)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
