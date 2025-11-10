@@ -217,6 +217,30 @@ const EventRequestsManagementContent: React.FC = () => {
     }
   }, [user?.id, hasAdminOverviewPermission, activeTab]);
 
+  // Track initial page load with default tab
+  useEffect(() => {
+    if (user?.id) {
+      trackButtonClick('event_requests_page_loaded', 'event_requests');
+
+      // Track which tab user lands on (now defaults to 'scheduled' for key roles)
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'event_requests_initial_view', {
+          initial_tab: activeTab,
+          user_role: user.role,
+          is_new_default: activeTab === 'scheduled',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  }, [user?.id]); // Only run once on mount
+
+  // Track tab changes
+  useEffect(() => {
+    if (user?.id && activeTab) {
+      trackButtonClick(`tab_${activeTab}_viewed`, 'event_requests');
+    }
+  }, [activeTab, user?.id]);
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -259,8 +283,27 @@ const EventRequestsManagementContent: React.FC = () => {
 
   // Handle floating button click to switch to scheduled + spreadsheet view
   const handleSwitchToSpreadsheet = () => {
+    const previousTab = activeTab;
     setActiveTab('scheduled');
+
+    // Track floating button usage with detailed context
     trackButtonClick('floating_spreadsheet_button', 'event_requests');
+
+    // Track navigation from current tab to scheduled
+    if (user) {
+      const event = {
+        feature: 'floating_spreadsheet_button',
+        from_tab: previousTab,
+        to_tab: 'scheduled',
+        user_role: user.role,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Log to analytics
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'spreadsheet_quick_access', event);
+      }
+    }
   };
 
   // Handle dismissing floating button tip
@@ -269,6 +312,9 @@ const EventRequestsManagementContent: React.FC = () => {
     const floatingButtonKey = `feature-tip-floating-button-${user.id}`;
     localStorage.setItem(floatingButtonKey, 'dismissed');
     setShowFloatingTip(false);
+
+    // Track tip dismissal
+    trackButtonClick('dismiss_floating_tip', 'event_requests');
   };
 
   if (isLoading) {
