@@ -11,6 +11,7 @@ import {
 import { Plus } from 'lucide-react';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { ExpensesList } from '@/components/expenses/ExpensesList';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function ExpensesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -21,6 +22,11 @@ export default function ExpensesPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <PageBreadcrumbs segments={[
+        { label: 'Operations' },
+        { label: 'Expenses & Receipts' }
+      ]} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Expenses & Receipts</h1>

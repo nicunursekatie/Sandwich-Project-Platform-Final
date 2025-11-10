@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useEffect } from 'react';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function AdminSettings() {
   const { user, isLoading } = useAuth();
@@ -66,6 +67,11 @@ export default function AdminSettings() {
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
+        <PageBreadcrumbs segments={[
+          { label: 'Administration' },
+          { label: 'Admin Panel' }
+        ]} />
+
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">

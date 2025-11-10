@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission as checkPermission } from '@shared/unified-auth-utils';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Dialog,
   DialogContent,
@@ -355,6 +356,11 @@ export default function CoolerTrackingPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-6">
+      <PageBreadcrumbs segments={[
+        { label: 'Operations' },
+        { label: 'Cooler Tracking' }
+      ]} />
+
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">

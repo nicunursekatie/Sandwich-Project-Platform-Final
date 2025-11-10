@@ -13,6 +13,7 @@ import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format } from 'date-fns';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -505,6 +506,12 @@ export default function EventMapView() {
     <div className="h-screen flex flex-col bg-white">
       {/* Header */}
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+        <PageBreadcrumbs
+          segments={[
+            { label: 'Event Planning', href: '/dashboard?section=event-requests' },
+            { label: 'Event Requests Map' }
+          ]}
+        />
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#007E8C] to-[#005f6b] flex items-center justify-center">
