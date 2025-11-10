@@ -433,7 +433,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}
           <div className="space-y-3">
             {/* Submitted Info */}
@@ -734,7 +734,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>
