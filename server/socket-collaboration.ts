@@ -3,6 +3,7 @@ import { Server as HttpServer } from 'http';
 import { storage } from './storage';
 import { logger } from './utils/production-safe-logger';
 import { z } from 'zod';
+import { AuditLogger } from './audit-logger';
 
 /**
  * Event Collaboration Socket.IO Module
@@ -501,7 +502,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           validated;
 
         const expectedVersionDate = new Date(expectedVersion);
-        
+
         if (isNaN(expectedVersionDate.getTime())) {
           socket.emit('error', {
             message: 'Invalid version format',
@@ -513,6 +514,12 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         const updateData = { [fieldName]: value };
 
         try {
+          // Get original event data before update for audit logging
+          const originalEvent = await storage.getEventRequestById(eventRequestId);
+          if (!originalEvent) {
+            throw new Error('Event not found before update');
+          }
+
           await storage.updateEventRequest(eventRequestId, updateData, expectedVersionDate);
 
           // Get updated event to retrieve new version
@@ -521,16 +528,36 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
             throw new Error('Event not found after update');
           }
 
-          // Create revision entry
+          // Create revision entry in eventEditRevisions table
           await storage.createEventEditRevision({
             eventRequestId,
             fieldName,
-            oldValue: null, // Would need to fetch from previous state
+            oldValue: originalEvent[fieldName as keyof typeof originalEvent] !== undefined
+              ? JSON.stringify(originalEvent[fieldName as keyof typeof originalEvent])
+              : null,
             newValue: JSON.stringify(value),
             changedBy: userId,
             changedByName: userName,
             changeType: 'update',
           });
+
+          // Create audit log entry in auditLogs table for activity history
+          await AuditLogger.logEventRequestChange(
+            eventRequestId.toString(),
+            originalEvent,
+            updatedEvent,
+            {
+              userId: userId,
+              ipAddress: socket.handshake.address,
+              userAgent: socket.handshake.headers['user-agent'],
+              sessionId: socket.id,
+            },
+            {
+              actionType: 'REAL_TIME_UPDATE',
+              operation: 'field_update',
+              fieldName: fieldName,
+            }
+          );
 
           // Broadcast field update to all users
           const updatePayload: FieldUpdatePayload = {
@@ -548,7 +575,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           });
 
           logger.log(
-            `Field updated: ${fieldName} by ${userName} in event ${eventRequestId}`
+            `Field updated: ${fieldName} by ${userName} in event ${eventRequestId} (with audit log)`
           );
         } catch (updateError: any) {
           // Version conflict detected
