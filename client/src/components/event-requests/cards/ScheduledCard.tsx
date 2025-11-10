@@ -513,7 +513,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         return (
           <div className="flex items-center gap-2">
             {icon && <span className="text-gray-500">{icon}</span>}
-            <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+            <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
             <Select value={editingValue} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
@@ -539,7 +539,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2">
           {icon && <span className="text-gray-500">{icon}</span>}
-          <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+          <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
           <Input
             type={type}
             value={editingValue}
@@ -560,7 +560,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     return (
       <div className="flex items-center gap-2 group">
         {icon && <span className="text-gray-500">{icon}</span>}
-        <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+        <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
         <span className="text-base text-gray-900">
           {field === 'eventAddress' && value ? (
             <a
@@ -617,7 +617,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2 group">
           <Package className="w-4 h-4 text-[#FBAD3F]" />
-          <span className="text-base font-medium text-[#236383] min-w-[100px]">Sandwiches:</span>
+          <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Sandwiches:</span>
           {hasNoSandwiches ? (
             <>
               <span className="text-sm text-gray-500 italic">Not specified</span>
@@ -994,7 +994,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
                 <UserPlus className="w-4 h-4 text-[#236383]" />
-                <span className="text-base font-medium text-[#236383] min-w-[100px]">TSP Contact:</span>
+                <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">TSP Contact:</span>
                 <span className="text-base text-[#236383] font-semibold">
                   {request.customTspContact || resolveUserName(request.tspContact || '')}
                 </span>
@@ -1025,7 +1025,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-500" />
-                <span className="text-base font-medium text-gray-600 min-w-[100px]">{dateLabel}:</span>
+                <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
                 <Input
                   type="date"
                   value={editingValue}
@@ -1057,7 +1057,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           ) : (
             <div className="flex items-center gap-2 group">
               <Calendar className="w-4 h-4 text-[#47B3CB]" />
-              <span className="text-base font-medium text-[#236383] min-w-[100px]">{dateLabel}:</span>
+              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
               </span>
@@ -1313,7 +1313,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Building className="w-4 h-4 text-[#236383]" />
-              <span className="text-base font-medium text-[#236383] min-w-[100px]">Recipients:</span>
+              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
             </div>
             {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
@@ -1929,7 +1929,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>
