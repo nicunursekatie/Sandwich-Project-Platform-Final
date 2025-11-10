@@ -37,19 +37,19 @@ export function getEventRequestDefaults(role: string, userId?: string): EventReq
     case USER_ROLES.SUPER_ADMIN:
     case USER_ROLES.ADMIN:
     case USER_ROLES.CORE_TEAM:
-      // Admins and core team see everything, prioritizing new requests
+      // Admins and core team see scheduled events in spreadsheet view (familiar Google Sheets workflow)
       return {
-        defaultTab: 'new',
-        defaultSort: 'created_date_desc',
+        defaultTab: 'scheduled',
+        defaultSort: 'event_date_asc',
         defaultConfirmationFilter: 'all',
         showAssignedFirst: false,
         itemsPerPage: 25,
       };
 
     case USER_ROLES.COMMITTEE_MEMBER:
-      // Committee members focus on in-process events they're working on
+      // Committee members see scheduled events in spreadsheet view (familiar Google Sheets workflow)
       return {
-        defaultTab: 'in_process',
+        defaultTab: 'scheduled',
         defaultSort: 'event_date_asc',
         defaultConfirmationFilter: 'all',
         showAssignedFirst: true,
