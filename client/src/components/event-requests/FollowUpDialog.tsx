@@ -56,7 +56,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[95vw] max-w-2xl">
         <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
           <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
             <Clock className="w-5 h-5 text-[#FBAD3F]" aria-hidden="true" />
