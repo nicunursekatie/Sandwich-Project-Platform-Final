@@ -331,7 +331,7 @@ export class AuditLogger {
 
       // For CREATE operations, skip fields that are null/undefined/empty
       if (isCreate) {
-        if (newValue === null || newValue === undefined || newValue === '' || newValue === false) {
+        if (newValue === null || newValue === undefined || newValue === '') {
           continue;
         }
         // Skip arrays that are empty
