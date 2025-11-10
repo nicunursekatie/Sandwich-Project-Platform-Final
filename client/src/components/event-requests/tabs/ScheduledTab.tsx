@@ -22,21 +22,27 @@ export const ScheduledTab: React.FC = () => {
   const { trackEvent, trackButtonClick } = useAnalytics();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('spreadsheet');
+
+  // Default to card view on mobile (better touch UX), spreadsheet on desktop (familiar workflow)
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>(() => {
+    return isMobile ? 'card' : 'spreadsheet';
+  });
   const [viewStartTime, setViewStartTime] = useState<number>(Date.now());
 
   // State for confirmation checkbox when editing dates
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
 
-  // Track when user first lands on scheduled tab with spreadsheet view
+  // Track when user first lands on scheduled tab
   useEffect(() => {
     trackEvent('scheduled_tab_viewed', {
-      default_view: 'spreadsheet',
+      default_view: isMobile ? 'card' : 'spreadsheet',
       is_default: true,
+      is_mobile: isMobile,
       timestamp: new Date().toISOString(),
     });
     setViewStartTime(Date.now());
   }, [trackEvent]);
+  }, [isMobile]);
 
   // Track view mode changes and time spent in each view
   const handleViewModeChange = (newMode: 'card' | 'spreadsheet') => {
