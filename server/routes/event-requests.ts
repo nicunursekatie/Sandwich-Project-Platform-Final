@@ -3188,23 +3188,25 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       // Extract change metadata from _auditMetadata if available
       const metadata = newData?._auditMetadata || oldData?._auditMetadata;
       if (metadata) {
+        // Always prefer the summary - it's human-readable
         if (metadata.summary) {
           changeDescription = metadata.summary;
-        }
-        if (metadata.changes && Array.isArray(metadata.changes)) {
-          // Build a summary of changes from the metadata
+        } else if (metadata.changes && Array.isArray(metadata.changes)) {
+          // Fallback: Build a user-friendly summary from the metadata changes
+          // Only show friendly names, not raw field data
           const changeDescriptions = metadata.changes
             .slice(0, 3)
-            .map((change: any) => {
-              const fieldName = change.fieldDisplayName || change.fieldName || change.field;
-              const oldVal = change.oldValue === null || change.oldValue === undefined ? 'Not set' : change.oldValue;
-              const newVal = change.newValue === null || change.newValue === undefined ? 'Not set' : change.newValue;
-              return `${fieldName}: ${oldVal} → ${newVal}`;
-            });
+            .map((change: any) => change.friendlyName || change.fieldDisplayName || change.fieldName || change.field);
           if (changeDescriptions.length > 0) {
-            changeDescription = changeDescriptions.join(', ');
-            if (metadata.changes.length > 3) {
-              changeDescription += ` (+${metadata.changes.length - 3} more)`;
+            const count = metadata.changes.length;
+            if (count === 1) {
+              changeDescription = `Updated ${changeDescriptions[0]}`;
+            } else if (count === 2) {
+              changeDescription = `Updated ${changeDescriptions[0]} and ${changeDescriptions[1]}`;
+            } else if (count === 3) {
+              changeDescription = `Updated ${changeDescriptions[0]}, ${changeDescriptions[1]}, and ${changeDescriptions[2]}`;
+            } else {
+              changeDescription = `Updated ${changeDescriptions[0]}, ${changeDescriptions[1]}, ${changeDescriptions[2]}, and ${count - 3} more field${count - 3 === 1 ? '' : 's'}`;
             }
           }
         }
@@ -3269,13 +3271,27 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
               : 'Unknown Contact';
       }
 
+      // Improve user display for system actions
+      let displayUserEmail = user?.email || user?.preferredEmail || '';
+      if (!displayUserEmail && userId) {
+        // Check if this is a system/automated action
+        if (userId === 'google_sheets_sync' || userId === 'system' || userId.toLowerCase().includes('sync')) {
+          displayUserEmail = 'Automated Import';
+        } else {
+          displayUserEmail = userId;
+        }
+      }
+      if (!displayUserEmail) {
+        displayUserEmail = 'System';
+      }
+
       return {
         id: getField(log, 'id', 'id'),
         action: getField(log, 'action', 'action'),
         eventId: recordId,
         timestamp: getField(log, 'timestamp', 'timestamp'),
         userId,
-        userEmail: user?.email || user?.preferredEmail || userId || 'Unknown User',
+        userEmail: displayUserEmail,
         organizationName,
         contactName,
         // CRITICAL FIX: Expose oldData/newData at top level (not buried in details)
