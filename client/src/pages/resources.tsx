@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Search,
   Filter,
@@ -427,6 +428,11 @@ export function Resources() {
       />
 
       <div className="max-w-7xl mx-auto">
+        <PageBreadcrumbs segments={[
+          { label: 'Documentation' },
+          { label: 'Resources' }
+        ]} />
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

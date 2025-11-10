@@ -54,9 +54,10 @@ router.post(
         });
       }
 
-      const appUrl = process.env.REPLIT_DOMAIN
-        ? `https://${process.env.REPLIT_DOMAIN}`
-        : req.headers.origin || 'https://your-app.replit.app';
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN
+          ? `https://${process.env.REPLIT_DOMAIN}`
+          : req.headers.origin || 'https://sandwich-project-platform-final-katielong2316.replit.app');
 
       const smsOptInUrl = `${appUrl}/sms-opt-in`;
 

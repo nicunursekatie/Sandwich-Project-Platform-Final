@@ -81,6 +81,8 @@ router.get('/', async (req, res) => {
         tspContact: eventRequests.tspContact,
         eventStartTime: eventRequests.eventStartTime,
         eventEndTime: eventRequests.eventEndTime,
+        googleSheetRowId: eventRequests.googleSheetRowId,
+        externalId: eventRequests.externalId,
       })
       .from(eventRequests)
       .where(and(...conditions));

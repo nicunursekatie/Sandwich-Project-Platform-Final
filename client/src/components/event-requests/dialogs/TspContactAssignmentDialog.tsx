@@ -189,7 +189,7 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />

@@ -138,6 +138,19 @@ export default function NotificationPreferences() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Default Settings Banner */}
+        <Alert className="mb-6 border-brand-primary-light bg-brand-primary-lighter dark:bg-blue-950/30">
+          <CheckCircle2 className="h-4 w-4 text-brand-primary" />
+          <AlertDescription>
+            <strong className="text-brand-primary-darker dark:text-brand-primary-light">Already configured!</strong>
+            <p className="mt-1">
+              {hasSMSOptIn 
+                ? "When you signed up for SMS, we automatically set you to receive reminders 72 hours before events via text message. You can customize these settings below if you'd like different timing or notification methods."
+                : "Your account is already set to receive email reminders 24 hours before events. Sign up for SMS notifications above to get text reminders, or customize your email preferences below."}
+            </p>
+          </AlertDescription>
+        </Alert>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* SMS Warning */}
@@ -146,7 +159,7 @@ export default function NotificationPreferences() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   You've selected SMS notifications but haven't opted into SMS yet. 
-                  Please enable SMS notifications in the SMS Notifications section below to receive text reminders.
+                  Please enable SMS notifications in the SMS Notifications section above to receive text reminders.
                 </AlertDescription>
               </Alert>
             )}

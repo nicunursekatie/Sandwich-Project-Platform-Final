@@ -65,6 +65,10 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -179,6 +183,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+  const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
+  
+  const { user } = useAuth();
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
   
   // Check if there's any communication/notes content to show
   const hasCommunicationContent = !!(
@@ -576,6 +585,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               >
                 <MessageSquare className="w-4 h-4" aria-hidden="true" />
               </Button>
+              {canSendSMS && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSendSmsDialog(true)}
+                    variant="ghost"
+                    className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
+                    aria-label="Send event details via SMS"
+                    data-testid="button-send-sms-card"
+                  >
+                    <Phone className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSendCorrectionDialog(true)}
+                    variant="ghost"
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
+                    aria-label="Send correction SMS"
+                    data-testid="button-send-correction-card"
+                  >
+                    <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                </>
+              )}
               <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
                 <Edit2 className="w-4 h-4" aria-hidden="true" />
               </Button>
@@ -596,7 +629,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Main Info Section - 3 Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 lg:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
@@ -1842,8 +1875,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAuditLog(!showAuditLog)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAuditLog(!showAuditLog);
+            }}
             className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+            type="button"
           >
             <div className="flex items-center gap-2">
               <History className="w-4 h-4" aria-hidden="true" />
@@ -1866,7 +1903,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>
@@ -1879,6 +1916,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Send Event Details via SMS Dialog */}
+      <SendEventDetailsSMSDialog
+        isOpen={showSendSmsDialog}
+        onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
+
+      {/* Send Correction SMS Dialog */}
+      <SendCorrectionSMSDialog
+        isOpen={showSendCorrectionDialog}
+        onClose={() => setShowSendCorrectionDialog(false)}
+        eventRequest={request}
+      />
     </Card>
   );
 };

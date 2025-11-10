@@ -143,7 +143,7 @@ export function MissingInfoSummaryDialog() {
           Incomplete Events ({eventsWithMissingInfo.length})
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />

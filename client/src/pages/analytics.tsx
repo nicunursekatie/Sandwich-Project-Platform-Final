@@ -6,6 +6,7 @@ import AnalyticsDashboard from '@/components/analytics-dashboard';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { NAV_ITEMS } from '@/nav.config';
 import { useLocation } from 'wouter';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function AnalyticsPage() {
   const { trackView } = useActivityTracker();
@@ -63,6 +64,12 @@ export default function AnalyticsPage() {
 
         {/* Main Content */}
         <div className="flex-1 p-6">
+          <PageBreadcrumbs
+            segments={[
+              { label: 'Analytics & Reports', href: '/dashboard?section=analytics' },
+              { label: 'Analytics' }
+            ]}
+          />
           <AnalyticsDashboard />
         </div>
       </div>

@@ -47,9 +47,10 @@ interface TollFreeVerificationResult {
  */
 export async function sendSMSReminder(
   hostLocation: string,
-  appUrl: string = process.env.REPLIT_DOMAIN
-    ? `https://${process.env.REPLIT_DOMAIN}`
-    : 'https://your-app.replit.app'
+  appUrl: string = process.env.PUBLIC_APP_URL ||
+    (process.env.REPLIT_DOMAIN
+      ? `https://${process.env.REPLIT_DOMAIN}`
+      : 'https://sandwich-project-platform-final-katielong2316.replit.app')
 ): Promise<SMSReminderResult> {
   if (!smsProvider) {
     return {
@@ -214,7 +215,7 @@ export async function sendTestSMS(
     logger.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
 
     const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
-      appUrl || 'https://your-app.replit.app'
+      appUrl || 'https://sandwich-project-platform-final-katielong2316.replit.app'
     }`;
 
     const result = await smsProvider.sendSMS({
@@ -554,7 +555,10 @@ export async function sendTspContactAssignmentSMS(
       : 'TBD';
 
     // Create app URL with event link
-    const appUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app';
+    const appUrl = process.env.PUBLIC_APP_URL ||
+      (process.env.REPLIT_DOMAIN
+        ? `https://${process.env.REPLIT_DOMAIN}`
+        : 'https://sandwich-project-platform-final-katielong2316.replit.app');
     const eventUrl = `${appUrl}/event-requests`;
 
     // Craft message
@@ -683,7 +687,10 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     // Build form data with PascalCase field names (Twilio REST API format)
     const form = new URLSearchParams();
-    const baseUrl = process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app';
+    const baseUrl = process.env.PUBLIC_APP_URL ||
+      (process.env.REPLIT_DOMAIN
+        ? `https://${process.env.REPLIT_DOMAIN}`
+        : 'https://sandwich-project-platform-final-katielong2316.replit.app');
 
     // Required IDs
     form.append('TollfreePhoneNumberSid', phoneNumberSid);

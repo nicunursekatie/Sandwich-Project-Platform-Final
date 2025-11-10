@@ -36,6 +36,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 interface HelpTopic {
   id: string;
@@ -579,6 +580,11 @@ export default function Help({ onLaunchTour }: HelpProps) {
       <div className="container max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
+          <PageBreadcrumbs
+            segments={[
+              { label: 'Help Center' }
+            ]}
+          />
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#236383] to-[#007e8c] flex items-center justify-center shadow-lg">
               <HelpCircle className="w-9 h-9 text-white" />

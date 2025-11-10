@@ -71,6 +71,12 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
+import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
+import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -307,8 +313,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
+  const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
+  const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
+
+  const { user } = useAuth();
+  const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
+
+  // Collaboration hook for comments
+  const collaboration = useEventCollaboration(request.id);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -513,7 +528,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         return (
           <div className="flex items-center gap-2">
             {icon && <span className="text-gray-500">{icon}</span>}
-            <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+            <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
             <Select value={editingValue} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
@@ -539,7 +554,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2">
           {icon && <span className="text-gray-500">{icon}</span>}
-          <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+          <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
           <Input
             type={type}
             value={editingValue}
@@ -560,7 +575,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     return (
       <div className="flex items-center gap-2 group">
         {icon && <span className="text-gray-500">{icon}</span>}
-        <span className="text-base font-medium text-gray-600 min-w-[100px]">{label}:</span>
+        <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
         <span className="text-base text-gray-900">
           {field === 'eventAddress' && value ? (
             <a
@@ -617,7 +632,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2 group">
           <Package className="w-4 h-4 text-[#FBAD3F]" />
-          <span className="text-base font-medium text-[#236383] min-w-[100px]">Sandwiches:</span>
+          <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Sandwiches:</span>
           {hasNoSandwiches ? (
             <>
               <span className="text-sm text-gray-500 italic">Not specified</span>
@@ -994,7 +1009,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
                 <UserPlus className="w-4 h-4 text-[#236383]" />
-                <span className="text-base font-medium text-[#236383] min-w-[100px]">TSP Contact:</span>
+                <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">TSP Contact:</span>
                 <span className="text-base text-[#236383] font-semibold">
                   {request.customTspContact || resolveUserName(request.tspContact || '')}
                 </span>
@@ -1025,7 +1040,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-500" />
-                <span className="text-base font-medium text-gray-600 min-w-[100px]">{dateLabel}:</span>
+                <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
                 <Input
                   type="date"
                   value={editingValue}
@@ -1057,7 +1072,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           ) : (
             <div className="flex items-center gap-2 group">
               <Calendar className="w-4 h-4 text-[#47B3CB]" />
-              <span className="text-base font-medium text-[#236383] min-w-[100px]">{dateLabel}:</span>
+              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
               </span>
@@ -1313,7 +1328,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Building className="w-4 h-4 text-[#236383]" />
-              <span className="text-base font-medium text-[#236383] min-w-[100px]">Recipients:</span>
+              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
             </div>
             {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
@@ -1875,6 +1890,30 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
+          {canSendSMS && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSendSmsDialog(true)}
+                className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                data-testid="button-send-sms-card"
+              >
+                <Phone className="w-4 h-4 mr-1" />
+                Send SMS Details
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSendCorrectionDialog(true)}
+                className="border-orange-600 text-orange-600 hover:bg-orange-100"
+                data-testid="button-send-correction-card"
+              >
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                Send Correction
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="outline" onClick={onReschedule}>
             Reschedule
           </Button>
@@ -1900,9 +1939,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAuditLog(!showAuditLog)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAuditLog(!showAuditLog);
+            }}
             className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
             data-testid="button-toggle-audit-log"
+            type="button"
           >
             <div className="flex items-center gap-2">
               <History className="w-4 h-4" />
@@ -1925,11 +1968,55 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Comments Section */}
+        <div className="border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowComments(!showComments);
+            }}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-comments"
+            type="button"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-base">Comments</span>
+              {collaboration.comments && collaboration.comments.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {collaboration.comments.length}
+                </Badge>
+              )}
+            </div>
+            {showComments ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+
+          {showComments && (
+            <div className="mt-3 max-h-[500px]" data-testid="comments-section">
+              <CommentThread
+                comments={collaboration.comments || []}
+                currentUserId={user?.id || ''}
+                currentUserName={user?.fullName || user?.email || ''}
+                onAddComment={collaboration.addComment}
+                onEditComment={collaboration.updateComment}
+                onDeleteComment={collaboration.deleteComment}
+                isLoading={collaboration.commentsLoading || false}
+              />
+            </div>
+          )}
+        </div>
       </CardContent>
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>
@@ -1942,6 +2029,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Send Event Details via SMS Dialog */}
+      <SendEventDetailsSMSDialog
+        isOpen={showSendSmsDialog}
+        onClose={() => setShowSendSmsDialog(false)}
+        eventRequest={request}
+      />
+
+      {/* Send Correction SMS Dialog */}
+      <SendCorrectionSMSDialog
+        isOpen={showSendCorrectionDialog}
+        onClose={() => setShowSendCorrectionDialog(false)}
+        eventRequest={request}
+      />
     </Card>
   );
 };
