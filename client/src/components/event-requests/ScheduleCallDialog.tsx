@@ -59,7 +59,7 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Phone className="w-5 h-5 text-[#007E8C]" />
