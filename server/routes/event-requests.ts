@@ -3146,7 +3146,14 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       row[camel] !== undefined ? row[camel] : row[snake];
 
     // Transform raw logs to the expected format
-    const enrichedLogs = rawLogs.map((log) => {
+    // Filter out internal tracking entries that aren't useful for end users
+    const enrichedLogs = rawLogs
+      .filter((log) => {
+        const action = String(getField(log, 'action', 'action'));
+        // Skip internal tracking entries that are redundant or not user-facing
+        return action !== 'EVENT_REQUEST_SIGNIFICANT_CHANGE';
+      })
+      .map((log) => {
       const recordId = String(getField(log, 'recordId', 'record_id'));
       const userId = String(getField(log, 'userId', 'user_id'));
 
