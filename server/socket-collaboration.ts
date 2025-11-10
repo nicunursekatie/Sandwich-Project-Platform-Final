@@ -422,7 +422,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
     // ==================== Acquire Field Lock ====================
 
-    socket.on('acquire-lock', async (data) => {
+    socket.on('acquire-lock', async (data, callback) => {
       try {
         const validated = AcquireLockSchema.parse(data);
         const { eventRequestId, fieldName, userId, userName } = validated;
@@ -439,6 +439,14 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
             lockedBy: existingLock.lockedByName,
             expiresAt: existingLock.expiresAt,
           });
+
+          // Send callback response
+          if (callback) {
+            callback({
+              success: false,
+              error: `Field is locked by ${existingLock.lockedByName}`,
+            });
+          }
           return;
         }
 
@@ -452,29 +460,50 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           expiresAt,
         });
 
-        // Broadcast lock acquisition
-        collaboration.to(getLocksRoomName(eventRequestId)).emit('lock-acquired', {
+        const lock = {
           eventRequestId,
           fieldName,
           lockedBy: userId,
           lockedByName: userName,
           expiresAt,
-        });
+        };
+
+        // Broadcast lock acquisition
+        collaboration.to(getLocksRoomName(eventRequestId)).emit('lock-acquired', lock);
+
+        // Send callback response
+        if (callback) {
+          callback({
+            success: true,
+            lock,
+          });
+        }
 
         logger.log(
           `Lock acquired: ${fieldName} by ${userName} in event ${eventRequestId}`
         );
       } catch (error) {
         logger.error('Error acquiring lock:', error);
+
+        const errorMessage = error instanceof Error ? error.message : 'Failed to acquire lock';
+
         socket.emit('error', {
-          message: error instanceof Error ? error.message : 'Failed to acquire lock',
+          message: errorMessage,
         });
+
+        // Send callback response
+        if (callback) {
+          callback({
+            success: false,
+            error: errorMessage,
+          });
+        }
       }
     });
 
     // ==================== Release Field Lock ====================
 
-    socket.on('release-lock', async (data) => {
+    socket.on('release-lock', async (data, callback) => {
       try {
         const validated = ReleaseLockSchema.parse(data);
         const { eventRequestId, fieldName } = validated;
@@ -487,9 +516,26 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           fieldName,
         });
 
+        // Send callback response
+        if (callback) {
+          callback({
+            success: true,
+          });
+        }
+
         logger.log(`Lock released: ${fieldName} in event ${eventRequestId}`);
       } catch (error) {
         logger.error('Error releasing lock:', error);
+
+        const errorMessage = error instanceof Error ? error.message : 'Failed to release lock';
+
+        // Send callback response
+        if (callback) {
+          callback({
+            success: false,
+            error: errorMessage,
+          });
+        }
       }
     });
 
