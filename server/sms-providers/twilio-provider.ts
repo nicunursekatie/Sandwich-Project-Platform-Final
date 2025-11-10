@@ -1,30 +1,84 @@
 /**
  * Twilio SMS Provider
  * Wraps Twilio SDK for the common SMS provider interface
+ * Supports both manual credentials and Replit's managed Twilio connection
  */
 
 import Twilio from 'twilio';
 import { SMSProvider, SMSMessage, SMSResult } from './types';
+import { getTwilioClient, getTwilioFromPhoneNumber, isTwilioConnected } from './replit-twilio-connector';
+import { logger } from '../utils/production-safe-logger';
 
 export class TwilioProvider implements SMSProvider {
   name = 'twilio';
   
   private client: ReturnType<typeof Twilio> | null = null;
   private phoneNumber: string;
+  private useReplitIntegration: boolean;
+  private clientPromise: Promise<ReturnType<typeof Twilio>> | null = null;
+  private phoneNumberPromise: Promise<string> | null = null;
 
-  constructor(accountSid: string, authToken: string, phoneNumber: string) {
+  constructor(accountSid: string, authToken: string, phoneNumber: string, useReplitIntegration = false) {
     this.phoneNumber = phoneNumber;
+    this.useReplitIntegration = useReplitIntegration;
     
-    if (accountSid && authToken) {
+    // If using manual credentials
+    if (!useReplitIntegration && accountSid && authToken) {
       this.client = Twilio(accountSid, authToken);
     }
   }
 
+  /**
+   * Get Twilio client (lazy-loads from Replit integration if enabled)
+   */
+  private async getClient(): Promise<ReturnType<typeof Twilio> | null> {
+    if (this.useReplitIntegration) {
+      // Lazy-load client from Replit integration
+      if (!this.clientPromise) {
+        this.clientPromise = getTwilioClient().catch(error => {
+          logger.error('Failed to get Twilio client from Replit integration:', error);
+          throw error;
+        });
+      }
+      return this.clientPromise;
+    }
+    return this.client;
+  }
+
+  /**
+   * Get phone number (lazy-loads from Replit integration if enabled)
+   */
+  private async getPhoneNumber(): Promise<string> {
+    if (this.useReplitIntegration) {
+      // Lazy-load phone number from Replit integration
+      if (!this.phoneNumberPromise) {
+        this.phoneNumberPromise = getTwilioFromPhoneNumber().catch(error => {
+          logger.error('Failed to get Twilio phone number from Replit integration:', error);
+          return '';
+        });
+      }
+      return this.phoneNumberPromise;
+    }
+    return this.phoneNumber;
+  }
+
   isConfigured(): boolean {
+    if (this.useReplitIntegration) {
+      // For Replit integration, we'll check lazily
+      return true;
+    }
     return !!this.client && !!this.phoneNumber;
   }
 
   validateConfig(): { isValid: boolean; missingItems: string[] } {
+    if (this.useReplitIntegration) {
+      // Replit integration handles validation dynamically
+      return {
+        isValid: true,
+        missingItems: []
+      };
+    }
+
     const missingItems: string[] = [];
     
     if (!process.env.TWILIO_ACCOUNT_SID) missingItems.push('TWILIO_ACCOUNT_SID');
@@ -79,30 +133,34 @@ export class TwilioProvider implements SMSProvider {
   }
 
   async sendSMS(message: SMSMessage): Promise<SMSResult> {
-    if (!this.client) {
-      return {
-        success: false,
-        message: 'Twilio SMS service not configured - missing credentials',
-        error: 'MISSING_CONFIG'
-      };
-    }
-
-    if (!this.phoneNumber) {
-      return {
-        success: false,
-        message: 'Twilio SMS service not configured - missing phone number',
-        error: 'MISSING_PHONE'
-      };
-    }
-
     try {
-      const result = await this.client.messages.create({
+      // Get client and phone number (supports both integration and manual config)
+      const client = await this.getClient();
+      const phoneNumber = await this.getPhoneNumber();
+
+      if (!client) {
+        return {
+          success: false,
+          message: 'Twilio SMS service not configured - missing credentials',
+          error: 'MISSING_CONFIG'
+        };
+      }
+
+      if (!phoneNumber) {
+        return {
+          success: false,
+          message: 'Twilio SMS service not configured - missing phone number',
+          error: 'MISSING_PHONE'
+        };
+      }
+
+      const result = await client.messages.create({
         body: message.body,
-        from: this.phoneNumber,
+        from: phoneNumber,
         to: message.to,
       });
 
-      console.log(`✅ SMS sent via Twilio to ${message.to} (${result.sid})`);
+      logger.log(`✅ SMS sent via Twilio ${this.useReplitIntegration ? '(Replit integration)' : ''} to ${message.to} (${result.sid})`);
 
       return {
         success: true,
@@ -111,7 +169,7 @@ export class TwilioProvider implements SMSProvider {
         sentTo: message.to
       };
     } catch (error) {
-      console.error('Twilio SMS error:', error);
+      logger.error('Twilio SMS error:', error);
       return {
         success: false,
         message: `Twilio error: ${(error as Error).message}`,
