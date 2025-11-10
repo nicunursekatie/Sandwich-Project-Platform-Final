@@ -126,6 +126,121 @@ To measure the success of making spreadsheet view the default and adding the flo
 
 ---
 
+## Granular Spreadsheet Interaction Tracking
+
+These events track specific interactions within the spreadsheet view to understand power user behaviors.
+
+### 9. **Spreadsheet View Loaded** (`spreadsheet_view_loaded`)
+
+**When:** Spreadsheet view component mounts
+**Purpose:** Track spreadsheet view engagement
+
+**Properties:**
+- `total_events`: Number of scheduled events shown
+- `default_date_range`: Current date filter setting
+- `has_custom_column_order`: Boolean indicating custom column ordering
+- `timestamp`: ISO timestamp
+
+**Success Metric:** High view counts indicate feature adoption
+
+---
+
+### 10. **Column Sorted** (`spreadsheet_column_sorted`)
+
+**When:** User clicks column header to sort
+**Purpose:** Understand which columns users sort by most
+
+**Properties:**
+- `field`: Column being sorted (e.g., 'eventDate', 'groupName')
+- `direction`: Sort direction ('asc' or 'desc')
+- `previous_field`: Previously sorted column
+- `previous_direction`: Previous sort direction
+- `timestamp`: ISO timestamp
+
+**Button Click:** `sort_by_{field}_{direction}` (context: 'spreadsheet_view')
+
+**Success Metric:** Frequent sorting = users organizing data to their needs
+
+---
+
+### 11. **Search Used** (`spreadsheet_searched`)
+
+**When:** User types in search box (debounced 500ms)
+**Purpose:** Track search patterns and relevance
+
+**Properties:**
+- `query_length`: Length of search query
+- `results_count`: Number of results after filtering
+- `timestamp`: ISO timestamp
+
+**Success Metric:** Search usage shows users finding specific events quickly
+
+---
+
+### 12. **Date Filter Changed** (`spreadsheet_date_filter_changed`)
+
+**When:** User changes date range filter
+**Purpose:** Understand which timeframes users focus on
+
+**Properties:**
+- `filter`: Date range selected ('thisWeek', 'nextWeek', 'next2Weeks', 'nextMonth', 'all')
+- `events_shown`: Number of events after filtering
+- `timestamp`: ISO timestamp
+
+**Button Click:** `filter_by_{range}` (context: 'spreadsheet_view')
+
+**Success Metric:** Filter usage shows users focusing on specific timeframes
+
+---
+
+### 13. **Inline Edit Started** (`spreadsheet_inline_edit_started`)
+
+**When:** User double-clicks cell to start editing
+**Purpose:** Track inline editing adoption
+
+**Properties:**
+- `field`: Field being edited
+- `event_id`: Event being modified
+- `timestamp`: ISO timestamp
+
+**Success Metric:** Frequent inline edits = power users leveraging quick edit feature
+
+---
+
+### 14. **Inline Edit Saved** (`spreadsheet_inline_edit_saved`)
+
+**When:** User saves inline cell edit
+**Purpose:** Track successful inline editing completion
+
+**Properties:**
+- `field`: Field that was edited
+- `event_id`: Event that was modified
+- `timestamp`: ISO timestamp
+
+**Button Click:** `save_inline_edit_{field}` (context: 'spreadsheet_view')
+
+**Success Metric:** High save rate (vs cancels) = feature is useful
+
+---
+
+### 15. **Column Reordered** (`spreadsheet_column_reordered`)
+
+**When:** User drags column to new position
+**Purpose:** Track column customization
+
+**Properties:**
+- `from_index`: Original column position
+- `to_index`: New column position
+- `column_moved`: Column ID that was moved
+- `is_custom_order`: Boolean indicating if user already had custom order
+- `timestamp`: ISO timestamp
+
+**Button Click:** `reorder_columns` (context: 'spreadsheet_view')
+
+**Success Metric:** Column reordering shows users personalizing their workflow
+
+---
+
 ## Key Questions to Answer
 
 ### Question 1: Are users discovering spreadsheet view?
