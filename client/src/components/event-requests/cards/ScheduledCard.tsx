@@ -75,6 +75,8 @@ import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog'
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -311,6 +313,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
@@ -318,6 +321,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
+
+  // Collaboration hook for comments
+  const collaboration = useEventCollaboration(request.id);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -1958,6 +1964,50 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 eventId={request.id?.toString()}
                 showFilters={false}
                 compact={true}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Comments Section */}
+        <div className="border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowComments(!showComments);
+            }}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-comments"
+            type="button"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-base">Comments</span>
+              {collaboration.comments && collaboration.comments.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {collaboration.comments.length}
+                </Badge>
+              )}
+            </div>
+            {showComments ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+
+          {showComments && (
+            <div className="mt-3 max-h-[500px]" data-testid="comments-section">
+              <CommentThread
+                comments={collaboration.comments || []}
+                currentUserId={user?.id || ''}
+                currentUserName={user?.fullName || user?.email || ''}
+                onAddComment={collaboration.addComment}
+                onEditComment={collaboration.updateComment}
+                onDeleteComment={collaboration.deleteComment}
+                isLoading={collaboration.commentsLoading || false}
               />
             </div>
           )}
