@@ -1812,8 +1812,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <CommentThread
                         comments={collaboration.comments || []}
                         currentUserId={currentUser.id}
+                        currentUserName={currentUser.fullName || currentUser.email}
                         onAddComment={collaboration.addComment}
-                        onUpdateComment={collaboration.updateComment}
+                        onEditComment={collaboration.updateComment}
                         onDeleteComment={collaboration.deleteComment}
                         isLoading={collaboration.commentsLoading || false}
                       />
