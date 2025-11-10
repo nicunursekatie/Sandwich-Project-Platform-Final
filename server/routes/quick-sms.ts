@@ -73,9 +73,23 @@ router.post('/send', async (req, res) => {
     // Build the app URL - ALWAYS use the deployed public URL for SMS
     // SMS messages should point to the published app, not the preview
     const appUrl = process.env.PUBLIC_APP_URL || 'https://sandwich-project-platform-final-katielong2316.replit.app';
-    
+
     // Build the direct link to the app section
-    const directLink = `${appUrl}/${appSection}`;
+    // Most sections have standalone routes (e.g., /event-requests, /collections, /help)
+    // Some sections are only accessible via dashboard query params (check nav.config.ts)
+    let directLink: string;
+
+    // Sections that require dashboard query parameters
+    const dashboardOnlySections = ['chat', 'kudos', 'profile', 'analytics',
+      'grant-metrics', 'user-management', 'onboarding-admin', 'admin',
+      'design-system', 'smart-search-admin'];
+
+    if (dashboardOnlySections.includes(appSection)) {
+      directLink = `${appUrl}/dashboard?section=${appSection}`;
+    } else {
+      // Most sections have standalone routes
+      directLink = `${appUrl}/${appSection}`;
+    }
 
     // Build the message
     let message: string;
