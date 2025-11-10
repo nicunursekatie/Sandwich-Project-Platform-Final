@@ -2647,27 +2647,28 @@ export default function SandwichCollectionLog() {
                           }
 
                           return (
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                               {groupData.map((group: any, index: number) => {
                                 const hasTypes = group.deli || group.pbj;
                                 const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
                                 const colorIndex = index % colors.length;
                                 const borderColor = colors[colorIndex];
-                                const bgColor = `${borderColor}10`;
                                 return (
                                   <div
                                     key={index}
-                                    className="p-2 rounded"
-                                    style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
+                                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm flex flex-col gap-1"
+                                    style={{ borderLeft: `3px solid ${borderColor}` }}
                                   >
-                                    <div className="mb-1 font-semibold text-sm">{group.groupName}</div>
+                                    <div className="text-sm font-semibold text-slate-800 truncate" title={group.groupName}>
+                                      {group.groupName}
+                                    </div>
                                     {hasTypes ? (
-                                      <div className="space-y-0.5 text-base">
-                                        {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
-                                        {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                        {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
+                                        {(group.pbj ?? 0) > 0 && <span>{group.pbj} PB&J</span>}
                                       </div>
                                     ) : (
-                                      <div className="text-base">{group.sandwichCount}</div>
+                                      <div className="text-lg font-semibold text-slate-900">{group.sandwichCount}</div>
                                     )}
                                   </div>
                                 );

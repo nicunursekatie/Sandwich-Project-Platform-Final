@@ -6,21 +6,19 @@ import { eq, and } from 'drizzle-orm';
 import { getUserMetadata } from '../shared/types';
 import { logger } from './utils/production-safe-logger';
 
-// Initialize SMS provider
-let smsProvider: SMSProvider | null = null;
-
-try {
-  const factory = SMSProviderFactory.getInstance();
-  smsProvider = factory.getProvider();
-  
-  if (smsProvider.isConfigured()) {
-    logger.log(`✅ ${smsProvider.name} SMS service initialized`);
-  } else {
-    logger.log(`⚠️ ${smsProvider.name} SMS service not configured - SMS features will be limited`);
+/**
+ * Resolve the SMS provider asynchronously
+ * This ensures we always get the initialized provider instance (with Replit integration if available)
+ * Awaits factory initialization to guarantee connector credentials are loaded
+ */
+async function resolveProvider(): Promise<SMSProvider | null> {
+  try {
+    const factory = SMSProviderFactory.getInstance();
+    return await factory.getProviderAsync();
+  } catch (error) {
+    logger.error('Failed to resolve SMS provider:', error);
+    return null;
   }
-} catch (error) {
-  logger.log('⚠️ SMS service initialization failed:', (error as Error).message);
-  smsProvider = null;
 }
 
 interface SMSReminderResult {
@@ -52,17 +50,19 @@ export async function sendSMSReminder(
       ? `https://${process.env.REPLIT_DOMAIN}`
       : 'https://sandwich-project-platform-final-katielong2316.replit.app')
 ): Promise<SMSReminderResult> {
-  if (!smsProvider) {
+  const provider = await resolveProvider();
+  
+  if (!provider) {
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
-      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+      message: `SMS service not configured - ${provider.name} provider missing configuration`,
     };
   }
 
@@ -112,7 +112,7 @@ export async function sendSMSReminder(
 
         const message = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
 
-        const result = await smsProvider.sendSMS({
+        const result = await provider.sendSMS({
           to: phoneNumber,
           body: message,
         });
@@ -185,17 +185,19 @@ export async function sendTestSMS(
   toPhoneNumber: string,
   appUrl?: string
 ): Promise<SMSReminderResult> {
-  if (!smsProvider) {
+  const provider = await resolveProvider();
+  
+  if (!provider) {
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
-      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+      message: `SMS service not configured - ${provider.name} provider missing configuration`,
     };
   }
 
@@ -218,7 +220,7 @@ export async function sendTestSMS(
       appUrl || 'https://sandwich-project-platform-final-katielong2316.replit.app'
     }`;
 
-    const result = await smsProvider.sendSMS({
+    const result = await provider.sendSMS({
       to: formattedPhone,
       body: testMessage,
     });
@@ -287,25 +289,29 @@ export async function sendConfirmationSMS(
   verificationCode: string,
   retryCount: number = 0
 ): Promise<SMSConfirmationResult> {
+  const provider = await resolveProvider();
+  
   logger.log('📱 Attempting to send confirmation SMS...');
   logger.log('Phone number:', phoneNumber);
   logger.log('Verification code:', verificationCode);
   logger.log('Retry attempt:', retryCount);
-  logger.log('SMS Provider configured:', !!smsProvider);
-  logger.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
+  logger.log('SMS Provider configured:', !!provider);
 
-  if (!smsProvider) {
+  if (!provider) {
     logger.error('❌ SMS provider not initialized');
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
-  if (!process.env.TWILIO_PHONE_NUMBER) {
-    logger.error('❌ TWILIO_PHONE_NUMBER not set');
+
+  // Check if provider is configured using the provider's own validation
+  const validation = provider.validateConfig();
+  if (!validation.isValid) {
+    logger.error(`❌ ${provider.name} provider missing configuration:`, validation.missingItems);
     return {
       success: false,
-      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+      message: `SMS service not configured - ${provider.name} provider missing configuration`,
     };
   }
 
@@ -319,16 +325,16 @@ export async function sendConfirmationSMS(
       };
     }
 
-    const messages = getWelcomeMessages(smsProvider);
+    const messages = getWelcomeMessages(provider);
     const confirmationMessage = messages.confirmation(verificationCode);
 
-    const result = await smsProvider.sendSMS({
+    const result = await provider.sendSMS({
       to: phoneNumber,
       body: confirmationMessage,
     });
 
     if (result.success) {
-      logger.log(`✅ SMS confirmation sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ SMS confirmation sent via ${provider.name} to ${phoneNumber} (${result.messageId})`);
       return {
         success: true,
         message: `Confirmation SMS sent successfully to ${phoneNumber}`,
@@ -349,8 +355,8 @@ export async function sendConfirmationSMS(
     try {
       // Get the Twilio client from the provider
       const { TwilioProvider } = await import('./sms-providers/twilio-provider');
-      const twilioProvider = smsProvider as InstanceType<typeof TwilioProvider>;
-      const twilioClient = twilioProvider.getClient();
+      const twilioProvider = provider as InstanceType<typeof TwilioProvider>;
+      const twilioClient = twilioProvider.getClientSync();
 
       if (!twilioClient) {
         throw new Error('Twilio client not available');
@@ -449,6 +455,8 @@ export async function sendConfirmationSMS(
 export async function sendWelcomeSMS(
   phoneNumber: string
 ): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
   // Redact phone number for logging (show last 4 digits only)
   const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
 
@@ -457,17 +465,17 @@ export async function sendWelcomeSMS(
     logger.log(`🔍 [DEBUG] sendWelcomeSMS called with phone: ${redactedPhone}`);
   }
 
-  if (!smsProvider) {
+  if (!provider) {
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
-      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+      message: `SMS service not configured - ${provider.name} provider missing configuration`,
     };
   }
 
@@ -483,16 +491,16 @@ export async function sendWelcomeSMS(
 
     logger.log(`📱 About to send welcome SMS to: ${redactedPhone}`);
 
-    const messages = getWelcomeMessages(smsProvider);
+    const messages = getWelcomeMessages(provider);
     const welcomeMessage = messages.welcome();
 
-    const result = await smsProvider.sendSMS({
+    const result = await provider.sendSMS({
       to: phoneNumber,
       body: welcomeMessage,
     });
 
     if (result.success) {
-      logger.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${redactedPhone} (${result.messageId})`);
+      logger.log(`✅ Welcome SMS sent via ${provider.name} to ${redactedPhone} (${result.messageId})`);
       return {
         success: true,
         message: `Welcome SMS sent successfully to ${phoneNumber}`,
@@ -522,17 +530,19 @@ export async function sendTspContactAssignmentSMS(
   eventId: number,
   eventDate: Date | string | null
 ): Promise<SMSReminderResult> {
-  if (!smsProvider) {
+  const provider = await resolveProvider();
+  
+  if (!provider) {
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
-      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+      message: `SMS service not configured - ${provider.name} provider missing configuration`,
     };
   }
 
@@ -564,7 +574,7 @@ export async function sendTspContactAssignmentSMS(
     // Craft message
     const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}`;
 
-    const result = await smsProvider.sendSMS({
+    const result = await provider.sendSMS({
       to: phoneNumber,
       body: message,
     });
@@ -628,14 +638,16 @@ export function validateSMSConfig(): {
  * Note: This function is Twilio-specific and only works with Twilio provider
  */
 export async function submitTollFreeVerification(): Promise<TollFreeVerificationResult> {
-  if (!smsProvider || smsProvider.name !== 'twilio') {
+  const provider = await resolveProvider();
+  
+  if (!provider || provider.name !== 'twilio') {
     return {
       success: false,
       message: 'Toll-free verification is only available with Twilio provider',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
       message: 'Twilio SMS service not configured - missing credentials',
@@ -784,14 +796,16 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
  * Note: This function is Twilio-specific and only works with Twilio provider
  */
 export async function checkTollFreeVerificationStatus(verificationSid?: string): Promise<TollFreeVerificationResult> {
-  if (!smsProvider || smsProvider.name !== 'twilio') {
+  const provider = await resolveProvider();
+  
+  if (!provider || provider.name !== 'twilio') {
     return {
       success: false,
       message: 'Toll-free verification status is only available with Twilio provider',
     };
   }
 
-  if (!smsProvider.isConfigured()) {
+  if (!provider.isConfigured()) {
     return {
       success: false,
       message: 'Twilio SMS service not configured - missing credentials',
@@ -879,7 +893,9 @@ export async function sendEventReminderSMS(
   role?: string,
   appUrl?: string
 ): Promise<SMSReminderResult> {
-  if (!smsProvider || !smsProvider.isConfigured()) {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
     return {
       success: false,
       message: 'SMS service not configured',
@@ -897,7 +913,7 @@ export async function sendEventReminderSMS(
     const roleText = role && role !== 'general' ? ` as ${role}` : '';
     const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}. ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
 
-    const result = await smsProvider.sendSMS({
+    const result = await provider.sendSMS({
       to: phoneNumber,
       body: message,
     });

@@ -288,8 +288,27 @@ export class AuditLogger {
     return `${friendlyName} changed: ${oldFormatted} → ${newFormatted}`;
   }
 
+  // List of internal/system fields that should not be shown to end users
+  private static readonly INTERNAL_FIELDS = [
+    'id',
+    'updatedAt',
+    'createdAt',
+    'actionContext',
+    'actionTimestamp',
+    'performedBy',
+    'externalId',
+    'googleSheetRowId',
+    'lastSyncedAt',
+    'createdBy',
+    'duplicateCheckDate',
+    'organizationExists',
+    'duplicateNotes',
+    'geocodedAt',
+    '_auditMetadata',
+  ];
+
   // Compare two objects and identify changes
-  private static identifyChanges(oldData: any, newData: any): FieldChange[] {
+  private static identifyChanges(oldData: any, newData: any, isCreate: boolean = false): FieldChange[] {
     const changes: FieldChange[] = [];
     const allKeys = new Set([
       ...Object.keys(oldData || {}),
@@ -306,8 +325,19 @@ export class AuditLogger {
       }
 
       // Skip internal fields and transient metadata that aren't meaningful to users
-      if (['updatedAt', 'createdAt', 'id', 'actionContext', 'actionTimestamp', 'performedBy'].includes(key)) {
+      if (this.INTERNAL_FIELDS.includes(key)) {
         continue;
+      }
+
+      // For CREATE operations, skip fields that are null/undefined/empty
+      if (isCreate) {
+        if (newValue === null || newValue === undefined || newValue === '') {
+          continue;
+        }
+        // Skip arrays that are empty
+        if (Array.isArray(newValue) && newValue.length === 0) {
+          continue;
+        }
       }
 
       const friendlyName = this.FIELD_MAPPINGS[key] || key;
@@ -523,8 +553,8 @@ export class AuditLogger {
                         (changeContext?.actionType === 'REAL_TIME_UPDATE' ? 'UPDATE' :
                          'EVENT_REQUEST_CHANGE');
 
-      // Identify all field-level changes
-      const changes = this.identifyChanges(oldData, newData);
+      // Identify all field-level changes (pass isCreate to filter appropriately)
+      const changes = this.identifyChanges(oldData, newData, isCreate);
 
       // Generate summary
       let summary = this.generateChangeSummary(changes, changeContext);
@@ -535,7 +565,10 @@ export class AuditLogger {
         const contactName = newData?.firstName && newData?.lastName
           ? `${newData.firstName} ${newData.lastName}`
           : newData?.email || 'Unknown Contact';
-        summary = `Event request created for ${orgName} (${contactName})`;
+        const desiredDate = newData?.desiredEventDate
+          ? ` for ${new Date(newData.desiredEventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+          : '';
+        summary = `Event request submitted by ${contactName} from ${orgName}${desiredDate}`;
       }
 
       // Identify significant changes (status, assignments, dates)
@@ -606,6 +639,7 @@ export class AuditLogger {
 
       // Log using the existing audit system with clean separation of concerns
       // Use appropriate action type (CREATE for new events, UPDATE/EVENT_REQUEST_CHANGE for modifications)
+      // Note: significantChanges are already included in enhancedNewData._auditMetadata
       await this.log(
         actionType,
         'event_requests',
@@ -614,18 +648,6 @@ export class AuditLogger {
         enhancedNewData,
         context
       );
-
-      // Log individual significant changes for better searchability (skip for CREATE)
-      if (!isCreate && significantChanges.length > 0) {
-        await this.log(
-          'EVENT_REQUEST_SIGNIFICANT_CHANGE',
-          'event_requests',
-          recordId,
-          { significantChanges: significantChanges },
-          { summary, totalChanges: changes.length },
-          context
-        );
-      }
 
       console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, action: ${actionType})`);
 
