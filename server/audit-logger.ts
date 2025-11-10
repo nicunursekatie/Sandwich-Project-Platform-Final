@@ -518,7 +518,7 @@ export class AuditLogger {
   ): Promise<void> {
     try {
       // Determine if this is a CREATE or UPDATE operation
-      const isCreate = !oldData || oldData === null;
+      const isCreate = !oldData;
       const actionType = isCreate ? 'CREATE' :
                         (changeContext?.actionType === 'REAL_TIME_UPDATE' ? 'UPDATE' :
                          'EVENT_REQUEST_CHANGE');
