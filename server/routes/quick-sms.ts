@@ -28,14 +28,8 @@ router.post('/send', async (req, res) => {
     }
 
     // Check if recipient has opted in to receive SMS
-    const allUsers = await storage.getAllUsers();
-    const recipientUser = allUsers.find((user) => {
-      const metadata = getUserMetadata(user);
-      const smsConsent = metadata.smsConsent;
-      // Match against stored phone number (normalized)
-      const storedPhone = smsConsent?.phoneNumber?.replace(/[\s\-\(\)]/g, '');
-      return storedPhone === normalizedPhone;
-    });
+    // Use efficient database query instead of loading all users
+    const recipientUser = await storage.findUserByPhoneNumber(normalizedPhone);
 
     if (recipientUser) {
       const metadata = getUserMetadata(recipientUser);
@@ -58,9 +52,9 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    // Get the SMS provider
+    // Get the SMS provider with async initialization (ensures Replit integration credentials are loaded)
     const smsFactory = SMSProviderFactory.getInstance();
-    const smsProvider = smsFactory.getProvider();
+    const smsProvider = await smsFactory.getProviderAsync();
 
     if (!smsProvider || !smsProvider.isConfigured()) {
       logger.error('SMS provider not configured');
@@ -122,6 +116,7 @@ router.post('/send', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.error('Validation error in quick SMS:', error.errors);
       return res.status(400).json({
         success: false,
         message: 'Invalid request data',
@@ -129,10 +124,19 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    logger.error('Error sending quick SMS:', error);
+    // Log detailed error information for debugging
+    logger.error('Error sending quick SMS:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name,
+    });
+
+    // Return user-friendly error with technical details for debugging
     return res.status(500).json({
       success: false,
       message: 'An error occurred while sending the link',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorType: error?.constructor?.name || 'Unknown',
     });
   }
 });

@@ -535,7 +535,7 @@ export function EventRequestAuditLog({
   const getHumanReadableActionName = (action: string): string => {
     const actionMapping: Record<string, string> = {
       'CREATE': 'Created',
-      'UPDATE': 'Updated', 
+      'UPDATE': 'Updated',
       'PRIMARY_CONTACT_COMPLETED': 'Contact Made',
       'EVENT_DETAILS_UPDATED': 'Details Updated',
       'STATUS_CHANGED': 'Status Changed',
@@ -551,13 +551,14 @@ export function EventRequestAuditLog({
       'UNASSIGNED': 'Unassigned',
       'REOPENED': 'Reopened',
       'ARCHIVED': 'Archived',
-      // Add missing action types
-      'EVENT_REQUEST_CHANGE': 'Modified',
-      'EVENT_REQUEST_SIGNIFICANT_CHANGE': 'Major Update',
-      'TSP_CONTACT_ASSIGNED': 'TSP Contact Set',
-      'TSP_CONTACT_REMOVED': 'TSP Contact Removed'
+      // Simplify technical action types
+      'EVENT_REQUEST_CHANGE': 'Updated',
+      'EVENT_REQUEST_SIGNIFICANT_CHANGE': 'Updated',
+      'TSP_CONTACT_ASSIGNED': 'Assignment',
+      'TSP_CONTACT_REMOVED': 'Assignment',
+      'REAL_TIME_UPDATE': 'Updated'
     };
-    
+
     // If not in mapping, clean up the action name
     if (!actionMapping[action]) {
       return action
@@ -569,7 +570,7 @@ export function EventRequestAuditLog({
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
     }
-    
+
     return actionMapping[action];
   };
 
@@ -605,6 +606,12 @@ export function EventRequestAuditLog({
                 const oldValueFormatted = formatValue(change.oldValue, fieldName);
                 const newValueFormatted = formatValue(change.newValue, fieldName);
                 
+                // For cleaner display, check if this is a CREATE operation (no old value or old value is "Not set")
+                const isCreate = change.oldValue === null ||
+                                change.oldValue === undefined ||
+                                oldValueFormatted === 'Not set' ||
+                                oldValueFormatted === '(not set)';
+
                 return (
                   <div key={index} className="flex items-start text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-l-teal-500">
                     <Edit className="h-4 w-4 mr-3 mt-0.5 text-orange-600 flex-shrink-0" />
@@ -613,7 +620,7 @@ export function EventRequestAuditLog({
                         {fieldName}
                       </div>
                       <div className="space-y-1">
-                        {change.oldValue !== null && change.oldValue !== undefined && (
+                        {!isCreate && (
                           <div className="flex items-center text-xs text-gray-600">
                             <span className="font-medium mr-2">Previous:</span>
                             <span className="px-2 py-1 bg-red-50 text-red-700 rounded border border-red-200 line-through">
@@ -623,7 +630,7 @@ export function EventRequestAuditLog({
                         )}
                         <div className="flex items-center text-xs">
                           <span className="font-medium mr-2 text-gray-600">
-                            {change.oldValue !== null && change.oldValue !== undefined ? 'Updated to:' : 'Set to:'}
+                            {isCreate ? 'Set to:' : 'Updated to:'}
                           </span>
                           <span className="px-2 py-1 bg-green-50 text-green-700 rounded border border-green-200 font-medium">
                             {newValueFormatted}
@@ -943,10 +950,42 @@ export function EventRequestAuditLog({
                           </div>
                         </div>
 
-                        {/* Primary description */}
-                        <p className="text-base text-gray-700 mb-3 leading-relaxed">
-                          {log.changeDescription || log.actionDescription}
-                        </p>
+                        {/* Primary description - only show if we have a meaningful one */}
+                        {(() => {
+                          // Filter out technical/raw field descriptions that contain internal field names
+                          const internalFieldPatterns = [
+                            'externalId:',
+                            'googleSheetRowId:',
+                            'createdBy:',
+                            'lastSyncedAt:',
+                            'duplicateCheckDate:',
+                            'organizationExists:',
+                            'geocodedAt:',
+                          ];
+
+                          const description = log.changeDescription;
+
+                          // Don't show if it's empty or contains internal field patterns
+                          if (!description) return null;
+
+                          const hasInternalFields = internalFieldPatterns.some(pattern =>
+                            description.includes(pattern)
+                          );
+
+                          // Match technical/raw dump format: "field: Not set → value, field2: Not set → value2, ..."
+                          const rawDumpRegex = /^(\w+): Not set → [^,]+(, \w+: Not set → [^,]+)*$/;
+                          const looksLikeRawDump = rawDumpRegex.test(description);
+
+                          if (hasInternalFields || looksLikeRawDump) {
+                            return null;
+                          }
+
+                          return (
+                            <p className="text-base text-gray-700 mb-3 leading-relaxed">
+                              {description}
+                            </p>
+                          );
+                        })()}
 
                         {/* Field Changes Display */}
                         {renderFieldChanges(log)}
