@@ -468,8 +468,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const getSandwichTypeDisplay = (event: EventRequest) => {
     const sandwichTypes = parseSandwichTypes(event.sandwichTypes);
     if (sandwichTypes && sandwichTypes.length > 0) {
-      // Only show types, not counts - this is the TYPE column
-      return sandwichTypes.map(st => `${st.type} (${st.quantity})`).join(', ');
+      // Convert type values to friendly labels
+      return sandwichTypes.map(st => {
+        const typeConfig = SANDWICH_TYPES.find(t => t.value === st.type);
+        const label = typeConfig?.label || st.type;
+        return `${label} (${st.quantity})`;
+      }).join(', ');
     }
     // If no sandwich types specified, return empty string (don't show counts here)
     return '';
@@ -683,15 +687,15 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'assignedStaff',
       label: 'Assigned Staff',
-      width: '180px',
+      width: '240px', // Increased width to accommodate multiple staff
       render: (event) => {
         const assigned = [];
-        
+
         // Van driver
         if (event.assignedVanDriverId) {
           assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
         }
-        
+
         // Drivers
         if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
           const driverNames = event.assignedDriverIds
@@ -701,7 +705,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`🚗 ${driverNames.join(', ')}`);
           }
         }
-        
+
         // Speakers
         if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
           const speakerNames = event.assignedSpeakerIds
@@ -711,7 +715,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`🎤 ${speakerNames.join(', ')}`);
           }
         }
-        
+
         // Volunteers
         if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
           const volunteerNames = event.assignedVolunteerIds
@@ -721,8 +725,13 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`👥 ${volunteerNames.join(', ')}`);
           }
         }
-        
-        return assigned.length > 0 ? assigned.join(' | ') : '';
+
+        // Return as an object with fullText for wrapping
+        const fullText = assigned.join(' • '); // Using bullet separator instead of |
+        return {
+          fullText,
+          hasContent: assigned.length > 0
+        };
       },
     },
     // 10. Van booked
@@ -1012,26 +1021,79 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       return <span className="text-sm text-gray-400">-</span>;
     }
     
+    // Special handling for assignedStaff column
+    if (column.id === 'assignedStaff' && typeof renderedContent === 'object' && renderedContent !== null && 'fullText' in renderedContent) {
+      const staffData = renderedContent as { fullText: string; hasContent: boolean };
+      if (!staffData.hasContent || !staffData.fullText) {
+        return <span className="text-sm text-gray-400">-</span>;
+      }
+
+      // Enable wrapping for staff assignments
+      const isTruncated = staffData.fullText.length > 60;
+
+      return (
+        <div className="w-full">
+          {isTruncated ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1 min-w-0 w-full">
+                    <span
+                      className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
+                      title={staffData.fullText}
+                    >
+                      {staffData.fullText}
+                    </span>
+                    <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view all staff" />
+                  </div>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80 max-h-96 overflow-y-auto"
+                side="right"
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-[#236383] mb-2">Assigned Staff</h4>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                    {staffData.fullText || 'No staff assigned'}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="text-sm leading-tight block whitespace-normal break-words">
+              {staffData.fullText}
+            </span>
+          )}
+        </div>
+      );
+    }
+
     // Special handling for allDetails column
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
         return <span className="text-sm text-gray-400">-</span>;
       }
-      
+
       // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
       const isTruncated = detailsData.fullText.length > 80;
-      
+
       return (
         <Popover>
           <PopoverTrigger asChild>
-            <button 
+            <button
               className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
               onClick={(e) => e.stopPropagation()} // Prevent double-click editing
             >
               <div className="flex items-center gap-1 min-w-0 w-full">
-                <span 
-                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0" 
+                <span
+                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
                   title={detailsData.fullText}
                 >
                   {detailsData.fullText}
@@ -1042,7 +1104,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               </div>
             </button>
           </PopoverTrigger>
-          <PopoverContent 
+          <PopoverContent
             className="w-96 max-h-96 overflow-y-auto"
             side="right"
             align="start"
