@@ -13,7 +13,7 @@ import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, BarChart3, Sheet, X, Sparkles } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
   Dialog,
@@ -232,7 +232,7 @@ const EventRequestsManagementContent: React.FC = () => {
         });
       }
     }
-  }, [user?.id]); // Only run once on mount
+  }, [user?.id, trackButtonClick, activeTab, user?.role]);
 
   // Track tab changes
   useEffect(() => {

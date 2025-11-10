@@ -36,7 +36,7 @@ export const ScheduledTab: React.FC = () => {
       timestamp: new Date().toISOString(),
     });
     setViewStartTime(Date.now());
-  }, []);
+  }, [trackEvent]);
 
   // Track view mode changes and time spent in each view
   const handleViewModeChange = (newMode: 'card' | 'spreadsheet') => {
