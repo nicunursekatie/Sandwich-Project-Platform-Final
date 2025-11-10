@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,8 @@ import {
   ChevronDown,
   Plus,
   Trash2,
+  Users,
+  MessageSquare,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -44,6 +46,9 @@ import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector
 import { logger } from '@/lib/logger';
 import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
 import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { PresenceAvatars, FieldLockIndicator, CommentThread } from '@/components/collaboration';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -142,8 +147,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
   const [mlkDayAsked, setMlkDayAsked] = useState(false);
   const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
+  const [showCollaboration, setShowCollaboration] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+
+  // Initialize collaboration hook only for existing events (not in create mode)
+  const collaboration = useEventCollaboration(eventRequest?.id || 0);
+  const isCollaborationEnabled = eventRequest && eventRequest.id;
 
   // Fetch users for TSP contact selection
   const { data: users = [] } = useQuery<any[]>({
@@ -645,13 +656,86 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // For create mode, we can work with null eventRequest
   const isCreateMode = mode === 'create' || !eventRequest;
 
+  // Handle real-time field updates from other users
+  useEffect(() => {
+    if (!isCollaborationEnabled || !collaboration) return;
+
+    const cleanup = collaboration.onFieldUpdate?.((fieldName, value, version) => {
+      logger.log(`[EventSchedulingForm] Field ${fieldName} updated by another user:`, value);
+      
+      // Update formData with the new value from another user
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: value,
+      }));
+
+      // Show toast notification
+      toast({
+        title: 'Field Updated',
+        description: `${fieldName} was updated by another user.`,
+      });
+    });
+
+    return cleanup;
+  }, [isCollaborationEnabled, collaboration, toast]);
+
+  // Field locking handlers
+  const handleFieldFocus = useCallback(async (fieldName: string) => {
+    if (!isCollaborationEnabled || !collaboration) return;
+    
+    try {
+      await collaboration.acquireFieldLock?.(fieldName);
+      logger.log(`[EventSchedulingForm] Acquired lock for field: ${fieldName}`);
+    } catch (error) {
+      const err = error as Error;
+      logger.error(`[EventSchedulingForm] Failed to acquire lock for ${fieldName}:`, err);
+      toast({
+        title: 'Field Locked',
+        description: `This field is currently being edited by another user.`,
+        variant: 'destructive',
+      });
+    }
+  }, [isCollaborationEnabled, collaboration, toast]);
+
+  const handleFieldBlur = useCallback(async (fieldName: string) => {
+    if (!isCollaborationEnabled || !collaboration) return;
+    
+    try {
+      await collaboration.releaseFieldLock?.(fieldName);
+      logger.log(`[EventSchedulingForm] Released lock for field: ${fieldName}`);
+    } catch (error) {
+      const err = error as Error;
+      logger.error(`[EventSchedulingForm] Failed to release lock for ${fieldName}:`, err);
+    }
+  }, [isCollaborationEnabled, collaboration]);
+
+  const isFieldLockedByOther = useCallback((fieldName: string): boolean => {
+    if (!isCollaborationEnabled || !collaboration || !currentUser) return false;
+    return collaboration.isFieldLockedByOther?.(fieldName, currentUser.id) || false;
+  }, [isCollaborationEnabled, collaboration, currentUser]);
+
+  const getFieldLock = useCallback((fieldName: string) => {
+    if (!isCollaborationEnabled || !collaboration) return null;
+    return collaboration.locks?.get(fieldName) || null;
+  }, [isCollaborationEnabled, collaboration]);
+
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#236383]">
-            {isCreateMode ? 'Create New Event' : `${mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} ${eventRequest?.organizationName}`}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold text-[#236383]">
+              {isCreateMode ? 'Create New Event' : `${mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} ${eventRequest?.organizationName}`}
+            </DialogTitle>
+            {isCollaborationEnabled && currentUser && (
+              <div className="flex items-center gap-2" data-testid="presence-avatars-container">
+                <PresenceAvatars 
+                  users={collaboration.presentUsers || []} 
+                  currentUserId={currentUser.id} 
+                />
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -1461,9 +1545,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
           {/* TSP Contact Assignment */}
           <div>
-            <Label htmlFor="tspContact">TSP Contact Assignment</Label>
-            <Select value={formData.tspContact} onValueChange={(value) => setFormData(prev => ({ ...prev, tspContact: value }))}>
-              <SelectTrigger>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="tspContact">TSP Contact Assignment</Label>
+              {isCollaborationEnabled && isFieldLockedByOther('tspContact') && (
+                <FieldLockIndicator 
+                  lockedBy={getFieldLock('tspContact')?.lockedByName || 'Another user'} 
+                  expiresAt={getFieldLock('tspContact')?.expiresAt}
+                  data-testid="field-lock-tsp-contact"
+                />
+              )}
+            </div>
+            <Select 
+              value={formData.tspContact} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, tspContact: value }))}
+              disabled={isCollaborationEnabled && isFieldLockedByOther('tspContact')}
+            >
+              <SelectTrigger
+                onFocus={() => handleFieldFocus('tspContact')}
+                onBlur={() => handleFieldBlur('tspContact')}
+                data-testid="select-tsp-contact"
+              >
                 <SelectValue placeholder="Select TSP contact" />
               </SelectTrigger>
               <SelectContent>
@@ -1597,31 +1698,131 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
               {/* Scheduling Notes */}
               <div className="mb-4">
-                <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
+                  {isCollaborationEnabled && isFieldLockedByOther('schedulingNotes') && (
+                    <FieldLockIndicator 
+                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'} 
+                      expiresAt={getFieldLock('schedulingNotes')?.expiresAt}
+                      data-testid="field-lock-scheduling-notes"
+                    />
+                  )}
+                </div>
                 <p className="text-sm text-gray-500 mb-2">Notes added while the event is being processed</p>
                 <Textarea
                   id="schedulingNotes"
                   value={formData.schedulingNotes}
                   onChange={(e) => setFormData(prev => ({ ...prev, schedulingNotes: e.target.value }))}
+                  onFocus={() => handleFieldFocus('schedulingNotes')}
+                  onBlur={() => handleFieldBlur('schedulingNotes')}
                   placeholder="Add notes about scheduling, coordination, or processing status"
                   className="min-h-[80px]"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('schedulingNotes')}
+                  data-testid="textarea-scheduling-notes"
                 />
               </div>
 
               {/* Planning Notes */}
               <div>
-                <Label htmlFor="planningNotes">Planning Notes</Label>
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="planningNotes">Planning Notes</Label>
+                  {isCollaborationEnabled && isFieldLockedByOther('planningNotes') && (
+                    <FieldLockIndicator 
+                      lockedBy={getFieldLock('planningNotes')?.lockedByName || 'Another user'} 
+                      expiresAt={getFieldLock('planningNotes')?.expiresAt}
+                      data-testid="field-lock-planning-notes"
+                    />
+                  )}
+                </div>
                 <p className="text-sm text-gray-500 mb-2">Notes for when the event is scheduled or being planned</p>
                 <Textarea
                   id="planningNotes"
                   value={formData.planningNotes}
                   onChange={(e) => setFormData(prev => ({ ...prev, planningNotes: e.target.value }))}
+                  onFocus={() => handleFieldFocus('planningNotes')}
+                  onBlur={() => handleFieldBlur('planningNotes')}
                   placeholder="Add planning notes, logistics, or post-scheduling information"
                   className="min-h-[80px]"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('planningNotes')}
+                  data-testid="textarea-planning-notes"
                 />
               </div>
             </div>
           </div>
+
+          {/* Collaboration Section - Only visible for existing events */}
+          {isCollaborationEnabled && (
+            <div className="border rounded-lg border-[#007E8C]/30">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full flex justify-between items-center p-4"
+                onClick={() => setShowCollaboration(!showCollaboration)}
+                data-testid="toggle-collaboration"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[#007E8C]" />
+                  <span className="font-semibold text-[#236383]">
+                    Collaboration & Comments
+                  </span>
+                  {collaboration.comments && collaboration.comments.length > 0 && (
+                    <span className="bg-[#FBAD3F] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {collaboration.comments.length}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showCollaboration ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {showCollaboration && currentUser && (
+                <div className="p-4 border-t bg-[#e6f2f5]/30 space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-md font-semibold text-[#236383] flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Who's Here
+                    </h4>
+                    <div className="bg-white p-3 rounded border border-[#007E8C]/20">
+                      {collaboration.presentUsers && collaboration.presentUsers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {collaboration.presentUsers.map((user) => (
+                            <div
+                              key={user.userId}
+                              className="flex items-center gap-2 bg-[#e6f2f5] px-3 py-1 rounded-full text-sm"
+                              data-testid={`presence-user-${user.userId}`}
+                            >
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                              <span className={user.userId === currentUser.id ? 'font-semibold' : ''}>
+                                {user.userName} {user.userId === currentUser.id && '(You)'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Only you are viewing this event</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-md font-semibold text-[#236383] flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Discussion Thread
+                    </h4>
+                    <div className="bg-white rounded border border-[#007E8C]/20" data-testid="comment-thread-container">
+                      <CommentThread
+                        comments={collaboration.comments || []}
+                        currentUserId={currentUser.id}
+                        onAddComment={collaboration.addComment}
+                        onUpdateComment={collaboration.updateComment}
+                        onDeleteComment={collaboration.deleteComment}
+                        isLoading={collaboration.commentsLoading || false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Completed Event Details Section - Only visible when status is "completed" */}
           {formData.status === 'completed' && (
