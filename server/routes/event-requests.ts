@@ -3054,6 +3054,18 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
   }
 });
 
+// Helper function to convert camelCase/snake_case field names to human-readable format
+const formatFieldName = (fieldName: string): string => {
+  return fieldName
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 // GET /api/event-requests/audit-logs - Fetch audit log entries for event requests
 router.get('/audit-logs', isAuthenticated, async (req, res) => {
   try {
@@ -3203,7 +3215,13 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
           // Only show friendly names, not raw field data
           const changeDescriptions = metadata.changes
             .slice(0, 3)
-            .map((change: any) => change.friendlyName || change.fieldDisplayName || change.fieldName || change.field);
+            .map((change: any) => {
+              const fieldName = change.friendlyName || change.fieldDisplayName || change.fieldName || change.field;
+              // Apply transformation as final fallback if field name looks raw (camelCase or snake_case)
+              return fieldName && (fieldName.includes('_') || /[a-z][A-Z]/.test(fieldName)) 
+                ? formatFieldName(fieldName) 
+                : fieldName;
+            });
           if (changeDescriptions.length > 0) {
             const count = metadata.changes.length;
             if (count === 1) {
