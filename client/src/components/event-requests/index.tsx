@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   EventRequestProvider,
@@ -169,6 +169,9 @@ const EventRequestsManagementContent: React.FC = () => {
   const isMobile = useIsMobile();
   const { trackButtonClick, trackFormSubmit } = useAnalytics();
 
+  // Track initial page load only once
+  const hasLoggedInitialView = useRef(false);
+
   // Feature discovery state
   const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
   const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
@@ -217,9 +220,11 @@ const EventRequestsManagementContent: React.FC = () => {
     }
   }, [user?.id, hasAdminOverviewPermission, activeTab]);
 
-  // Track initial page load with default tab
+  // Track initial page load with default tab (only once)
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoggedInitialView.current) {
+      hasLoggedInitialView.current = true;
+
       trackButtonClick('event_requests_page_loaded', 'event_requests');
 
       // Track which tab user lands on (now defaults to 'scheduled' for key roles)
