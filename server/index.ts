@@ -11,6 +11,7 @@ import { registerRoutes } from './routes';
 import { setupVite, serveStatic, log } from './vite';
 import { initializeDatabase } from './db-init';
 import { setupSocketChat } from './socket-chat';
+import { setupSocketCollaboration } from './socket-collaboration';
 import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
@@ -278,6 +279,10 @@ async function bootstrap() {
           const io = setupSocketChat(httpServer);
           monitorSocketIO(io);
           serverLogger.info('✅ Socket.IO monitoring enabled');
+
+          // Set up Socket.io collaboration namespace for event editing
+          setupSocketCollaboration(httpServer, io);
+          serverLogger.info('✅ Socket.IO collaboration namespace enabled');
 
           // Configure smart delivery service with Socket.IO for real-time notifications
           smartDeliveryService.setSocketIO(io);

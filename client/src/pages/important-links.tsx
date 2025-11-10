@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { logger } from '@/lib/logger';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
@@ -168,6 +169,11 @@ export default function ImportantLinks() {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 p-6">
+      <PageBreadcrumbs segments={[
+        { label: 'Documentation' },
+        { label: 'Quick Tools' }
+      ]} />
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-brand-primary mb-2">
           Important Links

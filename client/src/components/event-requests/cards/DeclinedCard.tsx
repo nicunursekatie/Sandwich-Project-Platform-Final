@@ -406,7 +406,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
 
       {/* Message Composer Dialog */}
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
           </DialogHeader>

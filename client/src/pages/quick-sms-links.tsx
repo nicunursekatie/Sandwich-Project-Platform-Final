@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Send, Check, MessageSquare } from 'lucide-react';
 import { NAV_ITEMS } from '@/nav.config';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function QuickSMSLinks() {
   const { toast } = useToast();
@@ -92,6 +93,11 @@ export default function QuickSMSLinks() {
 
   return (
     <div className="container mx-auto p-6 max-w-3xl">
+      <PageBreadcrumbs segments={[
+        { label: 'Communication' },
+        { label: 'Quick SMS Links' }
+      ]} />
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold" style={{ color: '#236383' }}>

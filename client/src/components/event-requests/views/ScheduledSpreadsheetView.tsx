@@ -16,6 +16,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -40,10 +47,13 @@ import {
   FileText,
   GripVertical,
   Eye,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
+import { SANDWICH_TYPES } from '../constants';
 
 interface Column {
   id: string;
@@ -89,6 +99,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     const saved = localStorage.getItem('scheduledSpreadsheetColumnOrder');
     return saved ? JSON.parse(saved) : null;
   });
+  
+  // Sandwich types dialog state
+  const [showSandwichDialog, setShowSandwichDialog] = useState(false);
+  const [sandwichDialogEventId, setSandwichDialogEventId] = useState<number | null>(null);
+  const [dialogSandwichTypes, setDialogSandwichTypes] = useState<Array<{ type: string; quantity: number }>>([]);
 
   // Track spreadsheet feature usage
   useEffect(() => {
@@ -404,6 +419,49 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     setEditingField(null);
     setEditingValue('');
   };
+  
+  // Sandwich types dialog handlers
+  const openSandwichDialog = (event: EventRequest) => {
+    const existingTypes = parseSandwichTypes(event.sandwichTypes) || [];
+    setDialogSandwichTypes(existingTypes.length > 0 ? existingTypes : [{ type: 'deli', quantity: 0 }]);
+    setSandwichDialogEventId(event.id);
+    setShowSandwichDialog(true);
+  };
+  
+  const closeSandwichDialog = () => {
+    setShowSandwichDialog(false);
+    setSandwichDialogEventId(null);
+    setDialogSandwichTypes([]);
+  };
+  
+  const addSandwichType = () => {
+    setDialogSandwichTypes([...dialogSandwichTypes, { type: 'deli', quantity: 0 }]);
+  };
+  
+  const updateSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    const updated = [...dialogSandwichTypes];
+    updated[index] = { ...updated[index], [field]: value };
+    setDialogSandwichTypes(updated);
+  };
+  
+  const removeSandwichType = (index: number) => {
+    setDialogSandwichTypes(dialogSandwichTypes.filter((_, i) => i !== index));
+  };
+  
+  const saveSandwichTypes = () => {
+    if (!sandwichDialogEventId) return;
+    
+    // Filter out any entries with quantity 0 or invalid types
+    const validTypes = dialogSandwichTypes.filter(st => st.quantity > 0);
+    
+    updateScheduledFieldMutation.mutate({
+      id: sandwichDialogEventId,
+      field: 'sandwichTypes',
+      value: validTypes.length > 0 ? validTypes : null,
+    });
+    
+    closeSandwichDialog();
+  };
 
   const formatDate = (date: string | Date | null | undefined) => {
     if (!date) return '';
@@ -478,8 +536,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const getSandwichTypeDisplay = (event: EventRequest) => {
     const sandwichTypes = parseSandwichTypes(event.sandwichTypes);
     if (sandwichTypes && sandwichTypes.length > 0) {
-      // Only show types, not counts - this is the TYPE column
-      return sandwichTypes.map(st => `${st.type} (${st.quantity})`).join(', ');
+      // Convert type values to friendly labels
+      return sandwichTypes.map(st => {
+        const typeConfig = SANDWICH_TYPES.find(t => t.value === st.type);
+        const label = typeConfig?.label || st.type;
+        return `${label} (${st.quantity})`;
+      }).join(', ');
     }
     // If no sandwich types specified, return empty string (don't show counts here)
     return '';
@@ -698,16 +760,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'assignedStaff',
       label: 'Assigned Staff',
-      width: '180px',
+      width: '240px', // Increased width to accommodate multiple staff
       hideOnMobile: true,
       render: (event) => {
         const assigned = [];
-        
+
         // Van driver
         if (event.assignedVanDriverId) {
           assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
         }
-        
+
         // Drivers
         if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
           const driverNames = event.assignedDriverIds
@@ -717,7 +779,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`🚗 ${driverNames.join(', ')}`);
           }
         }
-        
+
         // Speakers
         if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
           const speakerNames = event.assignedSpeakerIds
@@ -727,7 +789,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`🎤 ${speakerNames.join(', ')}`);
           }
         }
-        
+
         // Volunteers
         if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
           const volunteerNames = event.assignedVolunteerIds
@@ -737,8 +799,13 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             assigned.push(`👥 ${volunteerNames.join(', ')}`);
           }
         }
-        
-        return assigned.length > 0 ? assigned.join(' | ') : '';
+
+        // Return as an object with fullText for wrapping
+        const fullText = assigned.join(' • '); // Using bullet separator instead of |
+        return {
+          fullText,
+          hasContent: assigned.length > 0
+        };
       },
     },
     // 10. Van booked
@@ -904,6 +971,26 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const renderCell = (event: EventRequest, column: Column) => {
     const isEditable = ['eventStartTime', 'eventEndTime', 'pickupTime', 'estimatedSandwiches', 'sandwichType', 'toolkitSent', 'tspContact', 'address', 'notes', 'additionalNotes'].includes(column.id);
     
+    // Special handling for sandwich type - use dialog instead of inline edit
+    if (column.id === 'sandwichType' && !isEditing(event.id, column.id)) {
+      const displayValue = getSandwichTypeDisplay(event);
+      return (
+        <div 
+          className="flex items-center gap-0.5 group min-h-[20px]"
+          onDoubleClick={() => openSandwichDialog(event)}
+        >
+          <span className="text-sm truncate flex-1 leading-tight">{displayValue || '-'}</span>
+          <button
+            onClick={() => openSandwichDialog(event)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            data-testid={`button-edit-sandwich-types-${event.id}`}
+          >
+            <Edit2 className="h-3 w-3 text-[#007E8C]" />
+          </button>
+        </div>
+      );
+    }
+    
     if (isEditing(event.id, column.id)) {
       // Special handling for toolkitSent (boolean)
       if (column.id === 'toolkitSent') {
@@ -931,15 +1018,38 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
       
-      // Special handling for time fields
+      // Special handling for time fields with auto-formatting
       if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(column.id)) {
+        const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const input = e.target.value;
+          // Remove all non-digits
+          const digitsOnly = input.replace(/\D/g, '');
+          
+          // Auto-format as HH:MM while typing
+          if (digitsOnly.length === 0) {
+            setEditingValue('');
+          } else if (digitsOnly.length <= 2) {
+            setEditingValue(digitsOnly);
+          } else if (digitsOnly.length <= 4) {
+            const hours = digitsOnly.slice(0, 2);
+            const minutes = digitsOnly.slice(2);
+            setEditingValue(`${hours}:${minutes}`);
+          } else {
+            // Limit to 4 digits (HHMM)
+            const hours = digitsOnly.slice(0, 2);
+            const minutes = digitsOnly.slice(2, 4);
+            setEditingValue(`${hours}:${minutes}`);
+          }
+        };
+        
         return (
           <div className="flex items-center gap-0.5">
             <Input
-              type="time"
+              type="text"
               value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-7 text-sm px-1.5 py-0.5 w-24"
+              onChange={handleTimeChange}
+              placeholder="HH:MM"
+              className="h-7 text-sm px-1.5 py-0.5 w-20"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') saveEdit();
@@ -1010,26 +1120,79 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       return <span className="text-sm text-gray-400">-</span>;
     }
     
+    // Special handling for assignedStaff column
+    if (column.id === 'assignedStaff' && typeof renderedContent === 'object' && renderedContent !== null && 'fullText' in renderedContent) {
+      const staffData = renderedContent as { fullText: string; hasContent: boolean };
+      if (!staffData.hasContent || !staffData.fullText) {
+        return <span className="text-sm text-gray-400">-</span>;
+      }
+
+      // Enable wrapping for staff assignments
+      const isTruncated = staffData.fullText.length > 60;
+
+      return (
+        <div className="w-full">
+          {isTruncated ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1 min-w-0 w-full">
+                    <span
+                      className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
+                      title={staffData.fullText}
+                    >
+                      {staffData.fullText}
+                    </span>
+                    <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view all staff" />
+                  </div>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80 max-h-96 overflow-y-auto"
+                side="right"
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-[#236383] mb-2">Assigned Staff</h4>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                    {staffData.fullText || 'No staff assigned'}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="text-sm leading-tight block whitespace-normal break-words">
+              {staffData.fullText}
+            </span>
+          )}
+        </div>
+      );
+    }
+
     // Special handling for allDetails column
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
         return <span className="text-sm text-gray-400">-</span>;
       }
-      
+
       // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
       const isTruncated = detailsData.fullText.length > 80;
-      
+
       return (
         <Popover>
           <PopoverTrigger asChild>
-            <button 
+            <button
               className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
               onClick={(e) => e.stopPropagation()} // Prevent double-click editing
             >
               <div className="flex items-center gap-1 min-w-0 w-full">
-                <span 
-                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0" 
+                <span
+                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
                   title={detailsData.fullText}
                 >
                   {detailsData.fullText}
@@ -1040,7 +1203,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               </div>
             </button>
           </PopoverTrigger>
-          <PopoverContent 
+          <PopoverContent
             className="w-96 max-h-96 overflow-y-auto"
             side="right"
             align="start"
@@ -1260,6 +1423,92 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           <span>Drag column headers to reorder columns. Your preference will be saved.</span>
         </div>
       </div>
+
+      {/* Sandwich Types Dialog */}
+      <Dialog open={showSandwichDialog} onOpenChange={setShowSandwichDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Sandwich Types</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {dialogSandwichTypes.map((sandwichType, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1 grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <Select
+                      value={sandwichType.type}
+                      onValueChange={(value) => updateSandwichType(index, 'type', value)}
+                    >
+                      <SelectTrigger className="w-full" data-testid={`select-sandwich-type-${index}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pbj">PB&J</SelectItem>
+                        <SelectItem value="deli">Deli</SelectItem>
+                        <SelectItem value="deli_turkey">Turkey</SelectItem>
+                        <SelectItem value="deli_ham">Ham</SelectItem>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Quantity</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={sandwichType.quantity}
+                      onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                      className="w-full"
+                      data-testid={`input-sandwich-quantity-${index}`}
+                    />
+                  </div>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeSandwichType(index)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
+                  disabled={dialogSandwichTypes.length === 1}
+                  data-testid={`button-remove-sandwich-type-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            <Button
+              variant="outline"
+              onClick={addSandwichType}
+              className="w-full border-dashed border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+              data-testid="button-add-sandwich-type"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Type
+            </Button>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeSandwichDialog}
+              data-testid="button-cancel-sandwich-dialog"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveSandwichTypes}
+              className="bg-[#007E8C] hover:bg-[#236383] text-white"
+              data-testid="button-save-sandwich-types"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

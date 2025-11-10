@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Card,
   CardContent,
@@ -665,6 +666,11 @@ export default function GrantMetrics() {
   return (
     <div className="bg-gradient-to-br from-[#E8F4F8] to-[#F0F9FB] p-6 rounded-lg">
       <div className="max-w-7xl mx-auto">
+        <PageBreadcrumbs segments={[
+          { label: 'Analytics & Reports' },
+          { label: 'Grant Metrics' }
+        ]} />
+
         {/* Header with Filter Controls */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">

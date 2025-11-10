@@ -43,6 +43,9 @@ import {
   eventRequests,
   organizations,
   eventVolunteers,
+  eventCollaborationComments,
+  eventFieldLocks,
+  eventEditRevisions,
   meetingNotes,
   importedExternalIds,
   availabilitySlots,
@@ -133,6 +136,12 @@ import {
   type InsertDashboardDocument,
   type SearchAnalytics,
   type InsertSearchAnalytics,
+  type EventCollaborationComment,
+  type InsertEventCollaborationComment,
+  type EventFieldLock,
+  type InsertEventFieldLock,
+  type EventEditRevision,
+  type InsertEventEditRevision,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -3925,12 +3934,25 @@ export class DatabaseStorage implements IStorage {
 
   async updateEventRequest(
     id: number,
-    updates: Partial<EventRequest>
+    updates: Partial<EventRequest> & { expectedVersion?: Date }
   ): Promise<EventRequest | undefined> {
+    const { expectedVersion, ...updateData } = updates;
+    
+    if (expectedVersion) {
+      const current = await this.getEventRequest(id);
+      if (!current) {
+        throw new Error(`Event request ${id} not found`);
+      }
+      
+      if (current.updatedAt && new Date(current.updatedAt).getTime() !== new Date(expectedVersion).getTime()) {
+        throw new Error('Conflict: Event request has been modified by another user. Please refresh and try again.');
+      }
+    }
+    
     const [result] = await db
       .update(eventRequests)
       .set({
-        ...updates,
+        ...updateData,
         updatedAt: new Date(),
       })
       .where(eq(eventRequests.id, id))
@@ -4010,6 +4032,174 @@ export class DatabaseStorage implements IStorage {
       exists: matches.length > 0,
       matches,
     };
+  }
+
+  // Event Collaboration Comments
+  async getEventCollaborationComments(eventRequestId: number): Promise<EventCollaborationComment[]> {
+    return await db
+      .select()
+      .from(eventCollaborationComments)
+      .where(eq(eventCollaborationComments.eventRequestId, eventRequestId))
+      .orderBy(asc(eventCollaborationComments.createdAt));
+  }
+
+  async createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment> {
+    const [comment] = await db
+      .insert(eventCollaborationComments)
+      .values(data)
+      .returning();
+    return comment;
+  }
+
+  async updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined> {
+    const [comment] = await db
+      .update(eventCollaborationComments)
+      .set({
+        content,
+        editedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(eventCollaborationComments.id, id),
+          eq(eventCollaborationComments.userId, userId)
+        )
+      )
+      .returning();
+    return comment || undefined;
+  }
+
+  async deleteEventCollaborationComment(id: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(eventCollaborationComments)
+      .where(
+        and(
+          eq(eventCollaborationComments.id, id),
+          eq(eventCollaborationComments.userId, userId)
+        )
+      );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Event Field Locks
+  async getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(eventFieldLocks)
+      .where(
+        and(
+          eq(eventFieldLocks.eventRequestId, eventRequestId),
+          gt(eventFieldLocks.expiresAt, now)
+        )
+      )
+      .orderBy(desc(eventFieldLocks.lockedAt));
+  }
+
+  async createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock> {
+    const expiresAt = data.expiresAt || new Date(Date.now() + 5 * 60 * 1000);
+    const [lock] = await db
+      .insert(eventFieldLocks)
+      .values({
+        ...data,
+        expiresAt,
+      })
+      .returning();
+    return lock;
+  }
+
+  async deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean> {
+    const result = await db
+      .delete(eventFieldLocks)
+      .where(
+        and(
+          eq(eventFieldLocks.eventRequestId, eventRequestId),
+          eq(eventFieldLocks.fieldName, fieldName)
+        )
+      );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async cleanupExpiredLocks(): Promise<number> {
+    const now = new Date();
+    const result = await db
+      .delete(eventFieldLocks)
+      .where(lte(eventFieldLocks.expiresAt, now));
+    return result.rowCount ?? 0;
+  }
+
+  // Event Edit Revisions
+  async getEventEditRevisions(
+    eventRequestId: number, 
+    options?: { fieldName?: string; limit?: number }
+  ): Promise<EventEditRevision[]> {
+    let query = db
+      .select()
+      .from(eventEditRevisions)
+      .where(eq(eventEditRevisions.eventRequestId, eventRequestId))
+      .$dynamic();
+
+    if (options?.fieldName) {
+      query = query.where(eq(eventEditRevisions.fieldName, options.fieldName));
+    }
+
+    query = query.orderBy(desc(eventEditRevisions.createdAt));
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    const revisions = await query;
+    
+    return revisions.map(revision => ({
+      ...revision,
+      oldValue: this.parseJsonValue(revision.oldValue),
+      newValue: this.parseJsonValue(revision.newValue),
+    }));
+  }
+
+  async getEventFieldRevisions(
+    eventRequestId: number,
+    fieldName: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<EventEditRevision[]> {
+    const revisions = await db
+      .select()
+      .from(eventEditRevisions)
+      .where(
+        and(
+          eq(eventEditRevisions.eventRequestId, eventRequestId),
+          eq(eventEditRevisions.fieldName, fieldName)
+        )
+      )
+      .orderBy(desc(eventEditRevisions.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return revisions.map(revision => ({
+      ...revision,
+      oldValue: this.parseJsonValue(revision.oldValue),
+      newValue: this.parseJsonValue(revision.newValue),
+    }));
+  }
+
+  private parseJsonValue(value: string | null): any {
+    if (!value) return null;
+    
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  }
+
+  async createEventEditRevision(data: InsertEventEditRevision): Promise<EventEditRevision> {
+    const [revision] = await db
+      .insert(eventEditRevisions)
+      .values(data)
+      .returning();
+    return revision;
   }
 
   // Organization Management Methods
