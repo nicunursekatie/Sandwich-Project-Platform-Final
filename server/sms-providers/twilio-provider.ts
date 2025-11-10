@@ -30,15 +30,29 @@ export class TwilioProvider implements SMSProvider {
 
   /**
    * Get Twilio client (lazy-loads from Replit integration if enabled)
+   * Caches the result onto this.client for subsequent synchronous access
    */
   private async getClient(): Promise<ReturnType<typeof Twilio> | null> {
     if (this.useReplitIntegration) {
+      // Check if already cached from previous async call
+      if (this.client) {
+        return this.client;
+      }
+      
       // Lazy-load client from Replit integration
       if (!this.clientPromise) {
-        this.clientPromise = getTwilioClient().catch(error => {
-          logger.error('Failed to get Twilio client from Replit integration:', error);
-          throw error;
-        });
+        this.clientPromise = getTwilioClient()
+          .then(client => {
+            // Cache the resolved client for synchronous access
+            if (client) {
+              this.client = client;
+            }
+            return client;
+          })
+          .catch(error => {
+            logger.error('Failed to get Twilio client from Replit integration:', error);
+            throw error;
+          });
       }
       return this.clientPromise;
     }
@@ -47,15 +61,29 @@ export class TwilioProvider implements SMSProvider {
 
   /**
    * Get phone number (lazy-loads from Replit integration if enabled)
+   * Caches the result onto this.phoneNumber for subsequent synchronous access
    */
   private async getPhoneNumber(): Promise<string> {
     if (this.useReplitIntegration) {
+      // Check if already cached from previous async call
+      if (this.phoneNumber) {
+        return this.phoneNumber;
+      }
+      
       // Lazy-load phone number from Replit integration
       if (!this.phoneNumberPromise) {
-        this.phoneNumberPromise = getTwilioFromPhoneNumber().catch(error => {
-          logger.error('Failed to get Twilio phone number from Replit integration:', error);
-          return '';
-        });
+        this.phoneNumberPromise = getTwilioFromPhoneNumber()
+          .then(phoneNumber => {
+            // Cache the resolved phone number for synchronous access
+            if (phoneNumber) {
+              this.phoneNumber = phoneNumber;
+            }
+            return phoneNumber;
+          })
+          .catch(error => {
+            logger.error('Failed to get Twilio phone number from Replit integration:', error);
+            return '';
+          });
       }
       return this.phoneNumberPromise;
     }
@@ -101,16 +129,21 @@ export class TwilioProvider implements SMSProvider {
 
   /**
    * Get the Twilio phone number SID for the configured phone number
+   * Works with both manual credentials and Replit integration
    */
   async getPhoneNumberSid(): Promise<string | null> {
-    if (!this.client || !this.phoneNumber) {
-      return null;
-    }
-
     try {
+      // Use async helpers to support Replit integration
+      const client = await this.getClient();
+      const phoneNumber = await this.getPhoneNumber();
+
+      if (!client || !phoneNumber) {
+        return null;
+      }
+
       // Search for the phone number to get its SID
-      const phoneNumbers = await this.client.incomingPhoneNumbers.list({
-        phoneNumber: this.phoneNumber,
+      const phoneNumbers = await client.incomingPhoneNumbers.list({
+        phoneNumber: phoneNumber,
         limit: 1
       });
 
@@ -120,15 +153,17 @@ export class TwilioProvider implements SMSProvider {
 
       return null;
     } catch (error) {
-      console.error('Error fetching phone number SID:', error);
+      logger.error('Error fetching phone number SID:', error);
       return null;
     }
   }
 
   /**
-   * Get the underlying Twilio client (for advanced operations)
+   * Get the underlying Twilio client synchronously (for advanced operations)
+   * Note: This only returns the cached client and won't trigger Replit integration fetch
+   * Use the private async getClient() for full support
    */
-  getClient(): ReturnType<typeof Twilio> | null {
+  getClientSync(): ReturnType<typeof Twilio> | null {
     return this.client;
   }
 

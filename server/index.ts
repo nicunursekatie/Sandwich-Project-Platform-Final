@@ -275,6 +275,16 @@ async function bootstrap() {
         try {
           serverLogger.info('Starting background initialization...');
 
+          // Initialize SMS provider (supports Replit Twilio integration)
+          try {
+            const { SMSProviderFactory } = await import('./sms-providers/provider-factory');
+            await SMSProviderFactory.getInstance().ensureInitialized();
+            serverLogger.info('✅ SMS provider initialized');
+          } catch (error) {
+            serverLogger.error('SMS provider initialization failed:', error);
+            serverLogger.warn('SMS features may not work properly');
+          }
+
           // Set up Socket.io for chat system
           const io = setupSocketChat(httpServer);
           monitorSocketIO(io);

@@ -13,6 +13,7 @@ import { logger } from '../utils/production-safe-logger';
 export class SMSProviderFactory {
   private static instance: SMSProviderFactory;
   private currentProvider: SMSProvider | null = null;
+  private isInitialized: boolean = false;
 
   private constructor() {}
 
@@ -24,13 +25,57 @@ export class SMSProviderFactory {
   }
 
   /**
-   * Get SMS provider based on environment configuration
-   * Always revalidates configuration to support environment variable changes
+   * Asynchronously ensure the provider is initialized
+   * This should be called during server startup or before using the provider
+   */
+  async ensureInitialized(): Promise<void> {
+    if (this.isInitialized && this.currentProvider) {
+      return;
+    }
+
+    const config = await this.loadConfigFromEnv();
+    this.currentProvider = this.createProvider(config);
+    this.isInitialized = true;
+  }
+
+  /**
+   * Get SMS provider (synchronous, returns cached provider)
+   * Call ensureInitialized() during startup to populate the cache
    */
   getProvider(): SMSProvider {
-    // Always reload config to support environment variable changes
-    const config = this.loadConfigFromEnv();
-    return this.createProvider(config);
+    if (!this.currentProvider) {
+      // Fallback: Load synchronously using manual env vars if not initialized
+      // This maintains backward compatibility but won't use Replit integration
+      logger.log('⚠️  SMS provider not initialized, using manual env vars as fallback');
+      const config: SMSProviderConfig = {
+        provider: (process.env.SMS_PROVIDER as 'twilio' | 'phone_gateway') || 'twilio',
+        twilio: {
+          accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+          authToken: process.env.TWILIO_AUTH_TOKEN || '',
+          phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+          useReplitIntegration: false
+        }
+      };
+      this.currentProvider = this.createProvider(config);
+    }
+    return this.currentProvider;
+  }
+
+  /**
+   * Get SMS provider asynchronously (refreshes config)
+   * Use this when you want to ensure you have the latest configuration
+   */
+  async getProviderAsync(): Promise<SMSProvider> {
+    await this.ensureInitialized();
+    return this.currentProvider!;
+  }
+
+  /**
+   * Reset the provider cache (useful for testing)
+   */
+  reset(): void {
+    this.currentProvider = null;
+    this.isInitialized = false;
   }
 
   /**
@@ -66,7 +111,7 @@ export class SMSProviderFactory {
    * Load configuration from environment variables
    * Prioritizes Replit's managed Twilio connection when available
    */
-  private loadConfigFromEnv(): SMSProviderConfig {
+  private async loadConfigFromEnv(): Promise<SMSProviderConfig> {
     // Determine which provider to use based on environment
     const provider = (process.env.SMS_PROVIDER as 'twilio' | 'phone_gateway') || 'twilio';
 
@@ -82,13 +127,10 @@ export class SMSProviderFactory {
         timeout: parseInt(process.env.PHONE_GATEWAY_TIMEOUT || '30000', 10)
       };
     } else if (provider === 'twilio') {
-      // Check if Replit connectors are available
-      const hasReplitConnectors = !!(
-        process.env.REPLIT_CONNECTORS_HOSTNAME && 
-        (process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL)
-      );
+      // Check if Replit Twilio integration is actually connected
+      const isReplitConnected = await isTwilioConnected();
 
-      if (hasReplitConnectors) {
+      if (isReplitConnected) {
         logger.log('🔗 Using Replit Twilio integration');
         config.twilio = {
           accountSid: '', // Will be loaded from Replit integration
@@ -152,12 +194,5 @@ export class SMSProviderFactory {
     }
 
     return status;
-  }
-
-  /**
-   * Reset provider (for testing or config changes)
-   */
-  reset(): void {
-    this.currentProvider = null;
   }
 }
