@@ -28,13 +28,29 @@ router.post('/send', async (req, res) => {
     }
 
     // Check if recipient has opted in to receive SMS
-    const allUsers = await storage.getAllUsers();
+    let allUsers;
+    try {
+      allUsers = await storage.getAllUsers();
+    } catch (dbError) {
+      logger.error('Database error fetching users:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error: Unable to fetch user information. Please try again later.',
+        error: dbError instanceof Error ? dbError.message : 'Unknown database error',
+      });
+    }
+
     const recipientUser = allUsers.find((user) => {
-      const metadata = getUserMetadata(user);
-      const smsConsent = metadata.smsConsent;
-      // Match against stored phone number (normalized)
-      const storedPhone = smsConsent?.phoneNumber?.replace(/[\s\-\(\)]/g, '');
-      return storedPhone === normalizedPhone;
+      try {
+        const metadata = getUserMetadata(user);
+        const smsConsent = metadata.smsConsent;
+        // Match against stored phone number (normalized)
+        const storedPhone = smsConsent?.phoneNumber?.replace(/[\s\-\(\)]/g, '');
+        return storedPhone === normalizedPhone;
+      } catch (metadataError) {
+        logger.error(`Error parsing metadata for user ${user.id}:`, metadataError);
+        return false;
+      }
     });
 
     if (recipientUser) {
@@ -122,6 +138,7 @@ router.post('/send', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.error('Validation error in quick SMS:', error.errors);
       return res.status(400).json({
         success: false,
         message: 'Invalid request data',
@@ -129,10 +146,19 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    logger.error('Error sending quick SMS:', error);
+    // Log detailed error information for debugging
+    logger.error('Error sending quick SMS:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name,
+    });
+
+    // Return user-friendly error with technical details for debugging
     return res.status(500).json({
       success: false,
       message: 'An error occurred while sending the link',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorType: error?.constructor?.name || 'Unknown',
     });
   }
 });
