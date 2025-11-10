@@ -31,6 +31,7 @@ export interface SMSProviderConfig {
     accountSid: string;
     authToken: string;
     phoneNumber: string;
+    useReplitIntegration?: boolean;
   };
   phoneGateway?: {
     gatewayUrl: string;

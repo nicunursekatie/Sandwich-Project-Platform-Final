@@ -1,11 +1,14 @@
 /**
  * SMS Provider Factory
  * Creates and manages SMS providers based on configuration
+ * Prioritizes Replit's managed Twilio connection when available
  */
 
 import { SMSProvider, SMSProviderConfig } from './types';
 import { TwilioProvider } from './twilio-provider';
 import { PhoneGatewayProvider } from './phone-gateway-provider';
+import { isTwilioConnected } from './replit-twilio-connector';
+import { logger } from '../utils/production-safe-logger';
 
 export class SMSProviderFactory {
   private static instance: SMSProviderFactory;
@@ -50,7 +53,8 @@ export class SMSProviderFactory {
         return new TwilioProvider(
           config.twilio?.accountSid || '',
           config.twilio?.authToken || '',
-          config.twilio?.phoneNumber || ''
+          config.twilio?.phoneNumber || '',
+          config.twilio?.useReplitIntegration || false
         );
 
       default:
@@ -60,6 +64,7 @@ export class SMSProviderFactory {
 
   /**
    * Load configuration from environment variables
+   * Prioritizes Replit's managed Twilio connection when available
    */
   private loadConfigFromEnv(): SMSProviderConfig {
     // Determine which provider to use based on environment
@@ -77,11 +82,30 @@ export class SMSProviderFactory {
         timeout: parseInt(process.env.PHONE_GATEWAY_TIMEOUT || '30000', 10)
       };
     } else if (provider === 'twilio') {
-      config.twilio = {
-        accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-        authToken: process.env.TWILIO_AUTH_TOKEN || '',
-        phoneNumber: process.env.TWILIO_PHONE_NUMBER || ''
-      };
+      // Check if Replit connectors are available
+      const hasReplitConnectors = !!(
+        process.env.REPLIT_CONNECTORS_HOSTNAME && 
+        (process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL)
+      );
+
+      if (hasReplitConnectors) {
+        logger.log('🔗 Using Replit Twilio integration');
+        config.twilio = {
+          accountSid: '', // Will be loaded from Replit integration
+          authToken: '',  // Will be loaded from Replit integration
+          phoneNumber: '', // Will be loaded from Replit integration
+          useReplitIntegration: true
+        };
+      } else {
+        // Fall back to manual environment variables
+        logger.log('📝 Using manual Twilio environment variables');
+        config.twilio = {
+          accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+          authToken: process.env.TWILIO_AUTH_TOKEN || '',
+          phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+          useReplitIntegration: false
+        };
+      }
     }
 
     return config;
