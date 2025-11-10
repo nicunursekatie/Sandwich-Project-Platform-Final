@@ -1875,8 +1875,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAuditLog(!showAuditLog)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAuditLog(!showAuditLog);
+            }}
             className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+            type="button"
           >
             <div className="flex items-center gap-2">
               <History className="w-4 h-4" aria-hidden="true" />
