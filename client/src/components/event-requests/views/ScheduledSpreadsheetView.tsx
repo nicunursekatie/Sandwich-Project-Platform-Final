@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   const { updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
   const { resolveUserName } = useEventAssignments();
+  const { trackEvent, trackButtonClick } = useAnalytics();
 
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -84,6 +86,42 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     const saved = localStorage.getItem('scheduledSpreadsheetColumnOrder');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Track spreadsheet feature usage
+  useEffect(() => {
+    trackEvent('spreadsheet_view_loaded', {
+      total_events: scheduledEvents.length,
+      default_date_range: dateRange,
+      has_custom_column_order: !!columnOrder,
+      timestamp: new Date().toISOString(),
+    });
+  }, []);
+
+  // Track search usage
+  useEffect(() => {
+    if (searchQuery) {
+      const timer = setTimeout(() => {
+        trackEvent('spreadsheet_searched', {
+          query_length: searchQuery.length,
+          results_count: filteredEvents.length,
+          timestamp: new Date().toISOString(),
+        });
+      }, 500); // Debounce search tracking
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery]);
+
+  // Track date filter changes
+  useEffect(() => {
+    if (dateRange !== 'next2Weeks') { // Only track when changed from default
+      trackEvent('spreadsheet_date_filter_changed', {
+        filter: dateRange,
+        events_shown: dateFilteredEvents.length,
+        timestamp: new Date().toISOString(),
+      });
+      trackButtonClick(`filter_by_${dateRange}`, 'spreadsheet_view');
+    }
+  }, [dateRange]);
 
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
@@ -251,8 +289,20 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   }, [filteredEvents, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
+    const newDirection = sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc';
+
+    // Track sorting action
+    trackEvent('spreadsheet_column_sorted', {
+      field,
+      direction: newDirection,
+      previous_field: sortField,
+      previous_direction: sortDirection,
+      timestamp: new Date().toISOString(),
+    });
+    trackButtonClick(`sort_by_${field}_${newDirection}`, 'spreadsheet_view');
+
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(newDirection);
     } else {
       setSortField(field);
       setSortDirection('asc');
@@ -271,9 +321,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   };
 
   const startEditing = (eventId: number, field: string, currentValue: any) => {
+    // Track inline editing start
+    trackEvent('spreadsheet_inline_edit_started', {
+      field,
+      event_id: eventId,
+      timestamp: new Date().toISOString(),
+    });
+
     setEditingScheduledId(eventId);
     setEditingField(field);
-    
+
     // Special handling for sandwich types
     if (field === 'sandwichType') {
       const event = eventRequests.find(e => e.id === eventId);
@@ -282,12 +339,20 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return;
       }
     }
-    
+
     setEditingValue(currentValue?.toString() || '');
   };
 
   const saveEdit = () => {
     if (editingScheduledId && editingField) {
+      // Track inline edit save
+      trackEvent('spreadsheet_inline_edit_saved', {
+        field: editingField,
+        event_id: editingScheduledId,
+        timestamp: new Date().toISOString(),
+      });
+      trackButtonClick(`save_inline_edit_${editingField}`, 'spreadsheet_view');
+
       // Map spreadsheet column IDs to actual database field names
       const fieldMap: Record<string, string> = {
         'eventStartTime': 'eventStartTime',
@@ -303,14 +368,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       };
 
       const dbField = fieldMap[editingField] || editingField;
-      
+
       // Handle boolean fields
       if (dbField === 'toolkitSent') {
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: { toolkitSent: editingValue === 'Yes' || editingValue === 'true' },
         });
-      } 
+      }
       // Handle sandwich types
       else if (dbField === 'sandwichTypes') {
         const parsedTypes = parseSandwichTypeEditValue(editingValue);
@@ -319,7 +384,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           field: dbField,
           value: parsedTypes,
         });
-      } 
+      }
       else {
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
@@ -788,7 +853,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     const newOrder = [...currentOrder];
     const [removed] = newOrder.splice(draggedColumnIndex, 1);
     newOrder.splice(dropIndex, 0, removed);
-    
+
+    // Track column reordering
+    trackEvent('spreadsheet_column_reordered', {
+      from_index: draggedColumnIndex,
+      to_index: dropIndex,
+      column_moved: removed,
+      is_custom_order: !!columnOrder,
+      timestamp: new Date().toISOString(),
+    });
+    trackButtonClick('reorder_columns', 'spreadsheet_view');
+
     setColumnOrder(newOrder);
     localStorage.setItem('scheduledSpreadsheetColumnOrder', JSON.stringify(newOrder));
     setDraggedColumnIndex(null);
