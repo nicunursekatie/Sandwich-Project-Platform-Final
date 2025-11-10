@@ -972,10 +972,9 @@ export function EventRequestAuditLog({
                             description.includes(pattern)
                           );
 
-                          // Don't show if it looks like raw field dump (contains " → " and "Not set")
-                          const looksLikeRawDump = description.includes(' → ') &&
-                                                   description.includes('Not set') &&
-                                                   description.includes(',');
+                          // Match technical/raw dump format: "field: Not set → value, field2: Not set → value2, ..."
+                          const rawDumpRegex = /^(\w+): Not set → [^,]+(, \w+: Not set → [^,]+)*$/;
+                          const looksLikeRawDump = rawDumpRegex.test(description);
 
                           if (hasInternalFields || looksLikeRawDump) {
                             return null;
