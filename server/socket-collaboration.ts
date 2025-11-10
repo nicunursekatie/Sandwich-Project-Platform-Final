@@ -517,7 +517,8 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           // Get original event data before update for audit logging
           const originalEvent = await storage.getEventRequestById(eventRequestId);
           if (!originalEvent) {
-            throw new Error('Event not found before update');
+            socket.emit('error', { message: 'Event not found' });
+            return;
           }
 
           await storage.updateEventRequest(eventRequestId, updateData, expectedVersionDate);
