@@ -187,12 +187,20 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     'driver_1756853842645_3rhyj78ot', // kenig.ka@gmail.com
   ];
 
-  // Admin email addresses that can submit for Dunwoody (counts as Stephanie/Marcy)
+  // Admin email addresses and names that can submit for Dunwoody (counts as Stephanie/Marcy)
   const adminEmails = [
     'katielong2316@gmail.com',
     'katie@thesandwichproject.org',
     'christine@thesandwichproject.org',
     'kenig.ka@gmail.com',
+  ];
+
+  // Admin names to check (in case submittedBy has just the name, not email)
+  const adminNames = [
+    'katie',
+    'christine',
+    'katie long',
+    'christine',
   ];
 
   // Check for Lisa Hiles
@@ -219,14 +227,43 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
       submitter.includes(email.toLowerCase())
     );
 
-    return isStephanieOrMarcy || isAdminSubmission || isAdminByEmail;
+    // Check if submitted by an admin account (by name in submittedBy field)
+    const isAdminByName = adminNames.some(name =>
+      submitter.includes(name.toLowerCase())
+    );
+
+    // Debug log for each submission check
+    const matchResult = isStephanieOrMarcy || isAdminSubmission || isAdminByEmail || isAdminByName;
+    logger.log(`Checking submission - submittedBy: "${sub.submittedBy}", createdBy: "${createdBy}"`, {
+      isStephanieOrMarcy,
+      isAdminSubmission,
+      isAdminByEmail,
+      isAdminByName,
+      matchResult,
+    });
+
+    return matchResult;
   });
 
-  return {
+  const result = {
     lisaHiles: lisaSubmission,
     stephanieOrMarcy: stephanieOrMarcySubmission,
     complete: lisaSubmission && stephanieOrMarcySubmission,
   };
+
+  // Debug logging
+  logger.log(`Dunwoody status check for ${location}:`, {
+    totalSubmissions: dunwoodySubmissions.length,
+    lisaHiles: lisaSubmission,
+    stephanieOrMarcy: stephanieOrMarcySubmission,
+    complete: result.complete,
+    submitters: dunwoodySubmissions.map(sub => ({
+      submittedBy: sub.submittedBy,
+      createdBy: sub.createdBy,
+    })),
+  });
+
+  return result;
 }
 
 /**
