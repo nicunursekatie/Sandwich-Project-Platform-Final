@@ -3,6 +3,7 @@ import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ interface Column {
   label: string;
   width?: string;
   sortable?: boolean;
+  hideOnMobile?: boolean;
   render?: (event: EventRequest) => React.ReactNode | string | { fullText: string; hasContent: boolean };
 }
 
@@ -75,6 +77,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const { updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
   const { resolveUserName } = useEventAssignments();
   const { trackEvent, trackButtonClick } = useAnalytics();
+  const isMobile = useIsMobile();
 
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -631,6 +634,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'eventEndTime',
       label: 'End Time',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => formatTime(event.eventEndTime),
     },
     {
@@ -638,6 +642,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       label: 'Pickup Time',
       width: '100px',
       sortable: true,
+      hideOnMobile: true,
       render: (event) => formatTime(event.pickupTime),
     },
     // 6. Sandwiches # and type
@@ -658,6 +663,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'sandwichType',
       label: 'Type',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => getSandwichTypeDisplay(event),
     },
     // 7. Assigned staff (TSP Contact)
@@ -665,6 +671,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'tspContact',
       label: 'TSP Contact',
       width: '140px',
+      hideOnMobile: true,
       render: (event) => {
         const contacts = [];
         if (event.tspContact) contacts.push(resolveUserName(event.tspContact));
@@ -678,6 +685,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'volunteersNeeded',
       label: 'Staff Needed',
       width: '140px',
+      hideOnMobile: true,
       render: (event) => {
         const needs = [];
         if (event.volunteersNeeded && event.volunteersNeeded > 0) needs.push(`${event.volunteersNeeded} vol`);
@@ -691,6 +699,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'assignedStaff',
       label: 'Assigned Staff',
       width: '180px',
+      hideOnMobile: true,
       render: (event) => {
         const assigned = [];
         
@@ -737,6 +746,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'vanBooked',
       label: 'Van Booked?',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
     },
     // 11. Contact name, #, and email for organization
@@ -744,18 +754,21 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'contactName',
       label: 'Contact Name',
       width: '140px',
+      hideOnMobile: true,
       render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
     },
     {
       id: 'phone',
       label: 'Contact #',
       width: '120px',
+      hideOnMobile: true,
       render: (event) => event.phone || '',
     },
     {
       id: 'email',
       label: 'Email',
       width: '180px',
+      hideOnMobile: true,
       render: (event) => event.email || event.updatedEmail || '',
     },
     // 12. The rest (all details, etc.)
@@ -763,6 +776,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'allDetails',
       label: 'ALL DETAILS',
       width: '150px',
+      hideOnMobile: true,
       render: (event) => {
         const details = [];
         if (event.message) details.push(event.message);
@@ -777,30 +791,35 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'toolkitSent',
       label: 'Toolkit Sent',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => event.toolkitSent ? 'Yes' : 'No',
     },
     {
       id: 'finalSandwiches',
       label: 'Final # Made',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => event.actualSandwichCount?.toString() || '',
     },
     {
       id: 'notes',
       label: 'Notes',
       width: '150px',
+      hideOnMobile: true,
       render: (event) => event.planningNotes || '',
     },
     {
       id: 'additionalNotes',
       label: 'Add\'l Notes',
       width: '150px',
+      hideOnMobile: true,
       render: (event) => event.schedulingNotes || '',
     },
     {
       id: 'socialPost',
       label: 'Social Post',
       width: '100px',
+      hideOnMobile: true,
       render: (event) => {
         if (event.socialMediaPostCompleted) return '✓ Done';
         if (event.socialMediaPostRequested) return 'Req';
@@ -811,25 +830,30 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {
+    // First, filter columns based on mobile vs desktop
+    const visibleColumns = isMobile
+      ? defaultColumns.filter(col => !col.hideOnMobile)
+      : defaultColumns;
+
     // Reorder columns if saved order exists and matches current column count
-    if (columnOrder && columnOrder.length === defaultColumns.length) {
-      const columnMap = new Map(defaultColumns.map(col => [col.id, col]));
+    if (columnOrder && columnOrder.length === visibleColumns.length) {
+      const columnMap = new Map(visibleColumns.map(col => [col.id, col]));
       const orderedColumns = columnOrder.map(id => columnMap.get(id)).filter(Boolean) as Column[];
       // If all columns are present, return ordered columns
-      if (orderedColumns.length === defaultColumns.length) {
+      if (orderedColumns.length === visibleColumns.length) {
         return orderedColumns;
       }
     }
-    
+
     // If saved order is outdated or doesn't exist, use default order
     // Clear outdated saved order
-    if (columnOrder && columnOrder.length !== defaultColumns.length) {
+    if (columnOrder && columnOrder.length !== visibleColumns.length) {
       localStorage.removeItem('scheduledSpreadsheetColumnOrder');
       setColumnOrder(null);
     }
-    
-    return defaultColumns;
-  }, [columnOrder, defaultColumns]);
+
+    return visibleColumns;
+  }, [columnOrder, defaultColumns, isMobile]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedColumnIndex(index);
@@ -897,11 +921,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <SelectItem value="No">No</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-5 w-5 p-0">
-              <Save className="h-3 w-3" />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
             </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-5 w-5 p-0">
-              <X className="h-3 w-3" />
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
             </Button>
           </div>
         );
@@ -922,11 +946,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 if (e.key === 'Escape') cancelEdit();
               }}
             />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-5 w-5 p-0">
-              <Save className="h-3 w-3" />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
             </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-5 w-5 p-0">
-              <X className="h-3 w-3" />
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
             </Button>
           </div>
         );
@@ -1070,9 +1094,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
-            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
+            title="Edit this field"
           >
-            <Edit2 className="h-3 w-3 text-[#007E8C]" />
+            <Edit2 className="h-6 w-6 md:h-3 md:w-3 text-[#007E8C]" />
           </button>
         )}
       </div>
@@ -1182,16 +1207,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                                 handleSort(columnSortField);
                               }
                             }}
-                            className="hover:bg-[#236383] rounded p-0.5 ml-0.5"
+                            className="hover:bg-[#236383] rounded p-1 md:p-0.5 ml-0.5 touch-manipulation"
+                            title={`Sort by ${column.label}`}
                           >
                             {isActive ? (
                               sortDirection === 'asc' ? (
-                                <ArrowUp className="h-2.5 w-2.5 text-white" />
+                                <ArrowUp className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
                               ) : (
-                                <ArrowDown className="h-2.5 w-2.5 text-white" />
+                                <ArrowDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
                               )
                             ) : (
-                              <ArrowUpDown className="h-2.5 w-2.5 text-white/70" />
+                              <ArrowUpDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white/70" />
                             )}
                           </button>
                         );
