@@ -689,11 +689,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     } catch (error) {
       const err = error as Error;
       logger.error(`[EventSchedulingForm] Failed to acquire lock for ${fieldName}:`, err);
-      toast({
-        title: 'Field Locked',
-        description: `This field is currently being edited by another user.`,
-        variant: 'destructive',
-      });
+      
+      // Only show "locked by another user" toast if it's actually a lock conflict
+      // Connection errors and timeouts should not be presented as lock conflicts
+      const isLockConflict = err.message?.includes('locked by') || err.message?.includes('Field is locked');
+      
+      if (isLockConflict) {
+        toast({
+          title: 'Field Locked',
+          description: err.message || 'This field is currently being edited by another user.',
+          variant: 'destructive',
+        });
+      } else {
+        // Connection or timeout error - log but don't show disruptive toast
+        logger.warn(`[EventSchedulingForm] Lock acquisition failed (connection issue): ${err.message}`);
+      }
     }
   }, [isCollaborationEnabled, collaboration, toast]);
 
