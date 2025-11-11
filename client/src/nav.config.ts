@@ -251,7 +251,7 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'admin-overview',
     label: 'Admin Overview',
     icon: BarChart3,
-    href: 'event-requests?tab=admin_overview',
+    href: 'dashboard?section=event-requests&tab=admin_overview',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
     group: 'event-planning',
     parentId: 'event-requests',

@@ -203,11 +203,13 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     'christine',
   ];
 
-  // Check for Lisa Hiles
+  // Check for Lisa Hiles (check for "lisa" OR "hiles" since createdByName might not have full name)
   const lisaSubmission = dunwoodySubmissions.some(
-    (sub) =>
-      sub.submittedBy?.toLowerCase().includes('lisa') &&
-      sub.submittedBy?.toLowerCase().includes('hiles')
+    (sub) => {
+      const submitter = sub.submittedBy?.toLowerCase() || '';
+      // Match if contains "lisa" OR contains "hiles" (or both)
+      return submitter.includes('lisa') || submitter.includes('hiles');
+    }
   );
 
   // Check for Stephanie or Marcy OR admin accounts
@@ -232,15 +234,19 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
       submitter.includes(name.toLowerCase())
     );
 
-    // Debug log for each submission check
+    // Debug log for each submission check (wrapped in try-catch to prevent errors)
     const matchResult = isStephanieOrMarcy || isAdminSubmission || isAdminByEmail || isAdminByName;
-    logger.log(`Checking submission - submittedBy: "${sub.submittedBy}", createdBy: "${createdBy}"`, {
-      isStephanieOrMarcy,
-      isAdminSubmission,
-      isAdminByEmail,
-      isAdminByName,
-      matchResult,
-    });
+    try {
+      logger.log(`Checking submission - submittedBy: "${sub?.submittedBy || 'N/A'}", createdBy: "${createdBy || 'N/A'}"`, {
+        isStephanieOrMarcy,
+        isAdminSubmission,
+        isAdminByEmail,
+        isAdminByName,
+        matchResult,
+      });
+    } catch (logError) {
+      // Silently ignore logging errors
+    }
 
     return matchResult;
   });
