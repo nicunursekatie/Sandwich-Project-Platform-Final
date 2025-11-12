@@ -2116,6 +2116,27 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
+    // Allow toolkitSentDate to be either a Date object or a string that can be converted to a Date
+    toolkitSentDate: z
+      .union([
+        z.date(),
+        z.string().transform((str) => {
+          if (!str || str === '') return null;
+          try {
+            // Handle YYYY-MM-DD format from HTML5 date inputs
+            if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              return new Date(str + 'T12:00:00.000Z');
+            }
+            return new Date(str);
+          } catch (e) {
+            return null;
+          }
+        }),
+        z.null(),
+        z.literal(''),
+      ])
+      .nullable()
+      .optional(),
     // Make all the new event planning fields optional and nullable
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
