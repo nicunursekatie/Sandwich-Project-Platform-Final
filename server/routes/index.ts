@@ -12,6 +12,7 @@ import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
+import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
 import eventMapRouter from './event-map';
 import importCollectionsRouter from './import-collections';
@@ -398,6 +399,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createStandardMiddleware(),
     eventCollaborationRouter
   );
+  
+  // Contact Attempts Migration routes - migrate legacy unresponsiveNotes to contactAttemptsLog
+  const migrateContactAttemptsRouter = createMigrateContactAttemptsRoutes(deps.storage);
+  router.use(
+    '/api/migrate-contact-attempts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    migrateContactAttemptsRouter
+  );
+  router.use('/api/migrate-contact-attempts', createErrorHandler('migrate-contact-attempts'));
   
   // Shared error handler for both event-requests and event-collaboration routes
   router.use('/api/event-requests', createErrorHandler('event-requests'));

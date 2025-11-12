@@ -30,9 +30,8 @@ interface LogContactAttemptDialogProps {
     contactAttempts: number;
     lastContactAttempt: string;
     contactMethod: string;
-    unresponsiveNotes: string;
     contactOutcome: string;
-    contactAttemptsLog?: Array<{
+    contactAttemptsLog: Array<{
       attemptNumber: number;
       timestamp: string;
       method: string;
@@ -41,6 +40,8 @@ interface LogContactAttemptDialogProps {
       createdBy: string;
       createdByName?: string;
     }>;
+    // Legacy field - kept for backward compatibility but no longer written to
+    unresponsiveNotes?: string;
   }) => Promise<void>;
 }
 
@@ -105,24 +106,7 @@ export default function LogContactAttemptDialog({
       // Use custom date/time or current time
       const contactDate = customDateTime ? new Date(customDateTime) : new Date();
 
-      // Build the notes with structured information
-      const timestamp = contactDate.toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      });
-
-      const methodLabel = CONTACT_METHODS.find(m => m.value === contactMethod)?.label || contactMethod;
-      const outcomeLabel = CONTACT_OUTCOMES.find(o => o.value === contactOutcome)?.label || contactOutcome;
-
-      const attemptLog = `[${timestamp}] Attempt #${attemptNumber} - ${methodLabel}: ${outcomeLabel}${notes ? `\n${notes}` : ''}`;
-
-      // Append to existing unresponsive notes or create new (legacy format for backward compatibility)
-      const existingNotes = eventRequest.unresponsiveNotes || '';
-      const updatedNotes = existingNotes
-        ? `${existingNotes}\n\n${attemptLog}`
-        : attemptLog;
-
-      // Build structured contact attempt log
+      // Build structured contact attempt log (new format only)
       const existingLog = eventRequest.contactAttemptsLog || [];
       const newAttempt = {
         attemptNumber,
@@ -141,11 +125,12 @@ export default function LogContactAttemptDialog({
         contactAttempts: attemptNumber,
         lastContactAttempt: contactDate.toISOString(),
         contactMethod,
-        unresponsiveNotes: updatedNotes,
         contactOutcome,
         contactAttemptsLog: updatedLog,
+        // No longer writing to unresponsiveNotes - using structured format only
       });
 
+      const methodLabel = CONTACT_METHODS.find(m => m.value === contactMethod)?.label || contactMethod;
       toast({
         title: 'Contact attempt logged',
         description: `Logged attempt #${attemptNumber} via ${methodLabel}`,
