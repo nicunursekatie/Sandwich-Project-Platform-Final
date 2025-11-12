@@ -242,6 +242,13 @@ export default function GrantMetrics() {
       eventsToAnalyze.map((e: any) => e.organizationName).filter(Boolean)
     );
 
+    // DEBUG: Log unique org count
+    logger.log('=== UNIQUE ORGS DEBUG ===');
+    logger.log('Completed events total:', completedEvents.length);
+    logger.log('Events to analyze:', eventsToAnalyze.length);
+    logger.log('Unique organizations count:', uniqueOrgs.size);
+    logger.log('First 10 orgs:', Array.from(uniqueOrgs).slice(0, 10));
+
     // Calculate events with social media posts
     const socialMediaPosts = eventsToAnalyze.filter(
       (e: any) => e.socialMediaPostCompleted
