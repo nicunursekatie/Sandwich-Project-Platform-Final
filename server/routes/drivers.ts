@@ -67,7 +67,7 @@ export function createDriversRouter(deps: RouterDependencies) {
           driver.name || '',
           driver.email || '',
           driver.phone || '',
-          agreement?.agreementAccepted ? 'Yes' : 'No',
+          driver.emailAgreementSent ? 'Yes' : 'No',
           agreement?.submittedAt ? new Date(agreement.submittedAt).toISOString().split('T')[0] : '',
           driver.vanApproved ? 'Yes' : 'No',
           driver.vehicleType === 'van' ? 'Yes' : 'No',
