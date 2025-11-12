@@ -506,7 +506,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
       // Toolkit information
       toolkitStatus: formData.toolkitStatus || null,
-      toolkitSentDate: formData.toolkitSentDate || null,
+      toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
     };
 
     // Handle sandwich data based on mode
