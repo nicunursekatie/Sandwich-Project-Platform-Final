@@ -67,44 +67,48 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
         </Badge>
       </CardHeader>
       
-      <CardContent className="pt-0 space-y-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Phone className="h-4 w-4" />
+      <CardContent className="pt-0 space-y-4">
+        {driver.area && (
+          <div className="bg-brand-primary-lighter dark:bg-brand-primary-darker/20 border border-brand-primary/30 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-brand-primary" />
+              <span className="text-base font-semibold text-brand-primary-darker dark:text-brand-primary-light">
+                {driver.area}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300">
+          <Phone className="h-5 w-5" />
           <a href={`tel:${driver.phone}`} className="hover:text-brand-primary">
             {driver.phone}
           </a>
         </div>
-        
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Mail className="h-4 w-4" />
+
+        <div className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300">
+          <Mail className="h-5 w-5" />
           <a href={`mailto:${driver.email}`} className="hover:text-brand-primary truncate">
             {driver.email}
           </a>
         </div>
-        
+
         {driver.vehicleType && (
-          <div className="flex items-center gap-2 text-sm">
-            <Car className="h-4 w-4 text-gray-400" />
+          <div className="flex items-center gap-2 text-base">
+            <Car className="h-5 w-5 text-gray-400" />
             <span className="font-medium">{driver.vehicleType}</span>
           </div>
         )}
-        
+
         {driver.zone && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300">
+            <MapPin className="h-5 w-5" />
             <span><strong>Zone:</strong> {driver.zone}</span>
           </div>
         )}
 
-        {driver.area && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="h-4 w-4" />
-            <span><strong>Area:</strong> {driver.area}</span>
-          </div>
-        )}
-        
         {driver.licenseNumber && (
-          <div className="text-xs text-gray-500">
+          <div className="text-sm text-gray-500">
             DL# on file
           </div>
         )}
