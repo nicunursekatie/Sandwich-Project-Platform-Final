@@ -348,7 +348,7 @@ export default function DriversManagement() {
                     </div>
                     <div>
                       <Label htmlFor="hostLocation">Driver Location</Label>
-                      <select
+                      <Input
                         id="hostLocation"
                         value={newDriver.hostLocation}
                         onChange={(e) =>
@@ -357,15 +357,14 @@ export default function DriversManagement() {
                             hostLocation: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border rounded-md"
-                      >
-                        <option value="">Select driver location</option>
+                        placeholder="Enter driver location (e.g., Alpharetta, Roswell, North Atlanta)"
+                        list="host-locations"
+                      />
+                      <datalist id="host-locations">
                         {hosts.map((host) => (
-                          <option key={host.id} value={host.name}>
-                            {host.name}
-                          </option>
+                          <option key={host.id} value={host.name} />
                         ))}
-                      </select>
+                      </datalist>
                     </div>
                     <div>
                       <Label htmlFor="availability">Availability Notes</Label>
@@ -678,7 +677,7 @@ export default function DriversManagement() {
               </div>
               <div>
                 <Label htmlFor="edit-hostLocation">Driver Location</Label>
-                <select
+                <Input
                   id="edit-hostLocation"
                   value={editingDriver.hostLocation || ''}
                   onChange={(e) =>
@@ -687,15 +686,14 @@ export default function DriversManagement() {
                       hostLocation: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="">Select driver location</option>
+                  placeholder="Enter driver location (e.g., Alpharetta, Roswell, North Atlanta)"
+                  list="edit-host-locations"
+                />
+                <datalist id="edit-host-locations">
                   {hosts.map((host) => (
-                    <option key={host.id} value={host.name}>
-                      {host.name}
-                    </option>
+                    <option key={host.id} value={host.name} />
                   ))}
-                </select>
+                </datalist>
               </div>
               <div>
                 <Label htmlFor="edit-availability">Availability Notes</Label>
