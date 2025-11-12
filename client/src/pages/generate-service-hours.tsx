@@ -259,7 +259,11 @@ export default function GenerateServiceHours() {
               <div className="flex justify-between items-center">
                 <span className="font-semibold">Total Hours:</span>
                 <span className="text-2xl font-bold text-primary">
-                  {calculateTotalHours().toFixed(1)}
+                  {calculateTotalHours(
+                    serviceEntries.filter(
+                      (entry) => entry.date && entry.hours && entry.description
+                    )
+                  ).toFixed(1)}
                 </span>
               </div>
             </div>
