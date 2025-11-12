@@ -107,6 +107,7 @@ const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
 const Resources = lazyWithRetry(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
+const AutoFormFiller = lazyWithRetry(() => import('@/pages/auto-form-filler').then(m => ({ default: m.AutoFormFiller })));
 const EventRequestAuditLog = lazyWithRetry(() => import('@/components/event-request-audit-log').then(m => ({ default: m.EventRequestAuditLog })));
 const HistoricalImport = lazyWithRetry(() => import('@/pages/historical-import'));
 const MyAvailability = lazyWithRetry(() => import('@/pages/my-availability'));
@@ -296,6 +297,8 @@ export default function Dashboard({
         return <ImportantDocuments />;
       case 'resources':
         return <Resources />;
+      case 'auto-form-filler':
+        return <AutoFormFiller />;
       case 'projects':
         logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;

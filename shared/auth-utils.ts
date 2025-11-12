@@ -268,6 +268,7 @@ export const PERMISSIONS = {
   NAV_QUICK_SMS_LINKS: 'NAV_QUICK_SMS_LINKS', // Access to Quick SMS Links tab
   NAV_EXPENSES: 'NAV_EXPENSES', // Access to Expenses & Receipts tab
   NAV_RESOURCES: 'NAV_RESOURCES', // Access to Resources tab
+  NAV_AUTO_FORM_FILLER: 'NAV_AUTO_FORM_FILLER', // Access to Auto Form Filler tab
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management

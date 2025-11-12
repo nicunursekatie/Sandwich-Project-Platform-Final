@@ -354,6 +354,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'documentation',
   },
   {
+    id: 'auto-form-filler',
+    label: 'Auto Form Filler',
+    icon: Sparkles,
+    href: 'auto-form-filler',
+    permission: PERMISSIONS.NAV_AUTO_FORM_FILLER,
+    group: 'documentation',
+  },
+  {
     id: 'wishlist',
     label: 'Amazon Wishlist',
     icon: Gift,
