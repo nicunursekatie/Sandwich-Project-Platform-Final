@@ -831,9 +831,9 @@ export default function DriversManagement() {
                             <Car className="w-8 h-8 text-blue-500" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 space-y-3">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">
+                            <h3 className="text-base font-semibold text-gray-900 truncate">
                               {driver.name}
                             </h3>
                             <Badge variant="secondary">
@@ -878,34 +878,40 @@ export default function DriversManagement() {
                                 </Badge>
                               )}
                           </div>
-                          <div className="flex items-center gap-4 mt-1">
+
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
+                            <div className="bg-brand-primary-lighter dark:bg-brand-primary-darker/20 border border-brand-primary/30 rounded-lg px-3 py-2 inline-flex items-center gap-2">
+                              <span className="text-lg">📍</span>
+                              <span className="text-sm font-semibold text-brand-primary-darker dark:text-brand-primary-light">
+                                {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-4">
                             {driver.phone && (
-                              <div className="flex items-center text-xs text-gray-500">
-                                <Phone className="w-3 h-3 mr-1" />
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Phone className="w-4 h-4 mr-1.5" />
                                 {driver.phone}
                               </div>
                             )}
                             {driver.email && (
-                              <div className="flex items-center text-xs text-gray-500">
-                                <Mail className="w-3 h-3 mr-1" />
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Mail className="w-4 h-4 mr-1.5" />
                                 {driver.email}
                               </div>
                             )}
                           </div>
-                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              📍 Location: {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
-                            </div>
-                          )}
+
                           {driver.availability && (
-                            <div className="text-xs text-gray-500">
+                            <div className="text-sm text-gray-600">
                               Availability: {driver.availability}
                             </div>
                           )}
                           {driver.vanApproved && (
                             <Badge
                               variant="default"
-                              className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border mt-1"
+                              className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border"
                             >
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Van Approved
@@ -963,9 +969,9 @@ export default function DriversManagement() {
                         <div className="flex-shrink-0">
                           <Car className="w-8 h-8 text-gray-400" />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 space-y-3">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-medium text-gray-500 truncate">
+                            <h3 className="text-base font-semibold text-gray-500 truncate">
                               {driver.name}
                             </h3>
                             <Badge variant="outline">
@@ -1001,16 +1007,26 @@ export default function DriversManagement() {
                                 </Badge>
                               )}
                           </div>
-                          <div className="flex items-center gap-4 mt-1">
+
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
+                            <div className="bg-gray-100 dark:bg-gray-800/20 border border-gray-300 rounded-lg px-3 py-2 inline-flex items-center gap-2">
+                              <span className="text-lg">📍</span>
+                              <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-4">
                             {driver.phone && (
-                              <div className="flex items-center text-xs text-gray-400">
-                                <Phone className="w-3 h-3 mr-1" />
+                              <div className="flex items-center text-sm text-gray-400">
+                                <Phone className="w-4 h-4 mr-1.5" />
                                 {driver.phone}
                               </div>
                             )}
                             {driver.email && (
-                              <div className="flex items-center text-xs text-gray-400">
-                                <Mail className="w-3 h-3 mr-1" />
+                              <div className="flex items-center text-sm text-gray-400">
+                                <Mail className="w-4 h-4 mr-1.5" />
                                 {driver.email}
                               </div>
                             )}
