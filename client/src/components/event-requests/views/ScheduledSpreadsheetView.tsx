@@ -64,7 +64,7 @@ interface Column {
   render?: (event: EventRequest) => React.ReactNode | string | { fullText: string; hasContent: boolean };
 }
 
-type SortField = 'eventDate' | 'groupName' | 'eventStartTime' | 'pickupTime' | 'estimatedSandwiches';
+type SortField = 'eventDate' | 'groupName' | 'eventStartTime' | 'pickupTime' | 'estimatedSandwiches' | 'tspContact';
 type SortDirection = 'asc' | 'desc';
 
 interface ScheduledSpreadsheetViewProps {
@@ -253,6 +253,19 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         case 'estimatedSandwiches':
           aValue = a.estimatedSandwichCount || 0;
           bValue = b.estimatedSandwichCount || 0;
+          break;
+        case 'tspContact':
+          // Sort by TSP contact name
+          const getContactName = (event: EventRequest) => {
+            const contacts = [];
+            if (event.tspContact) contacts.push(resolveUserName(event.tspContact));
+            if (event.tspContactAssigned) contacts.push(resolveUserName(event.tspContactAssigned));
+            if (event.customTspContact) contacts.push(event.customTspContact);
+            const filtered = contacts.filter(c => c && c !== 'Not assigned');
+            return filtered.length > 0 ? filtered[0] : '';
+          };
+          aValue = getContactName(a);
+          bValue = getContactName(b);
           break;
         default:
           return 0;
@@ -698,6 +711,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       id: 'tspContact',
       label: 'TSP Contact',
       width: '140px',
+      sortable: true,
       hideOnMobile: true,
       render: (event) => {
         const contacts = [];
