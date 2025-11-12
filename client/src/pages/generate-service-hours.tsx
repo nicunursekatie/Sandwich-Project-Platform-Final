@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, FileDown, Loader2 } from 'lucide-react';
-import { apiRequest } from '@/lib/api';
+import { apiRequest } from '@/lib/queryClient';
 
 interface ServiceEntry {
   date: string;
@@ -52,8 +52,8 @@ export default function GenerateServiceHours() {
     setServiceEntries(updated);
   };
 
-  const calculateTotalHours = () => {
-    return serviceEntries.reduce((total, entry) => {
+  const calculateTotalHours = (entries: ServiceEntry[] = serviceEntries) => {
+    return entries.reduce((total, entry) => {
       const hours = parseFloat(entry.hours) || 0;
       return total + hours;
     }, 0);
@@ -76,12 +76,7 @@ export default function GenerateServiceHours() {
     },
     onSuccess: (data) => {
       // Create a blob from the base64 data
-      const byteCharacters = atob(data.pdf);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
+      const byteArray = Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0));
       const blob = new Blob([byteArray], { type: 'application/pdf' });
 
       // Download the PDF
@@ -137,9 +132,7 @@ export default function GenerateServiceHours() {
       (entry) => entry.date && entry.hours && entry.description
     );
 
-    const totalHours = validEntries.reduce((total, entry) => {
-      return total + (parseFloat(entry.hours) || 0);
-    }, 0);
+    const totalHours = calculateTotalHours(validEntries);
 
     generatePdfMutation.mutate({
       volunteerName,

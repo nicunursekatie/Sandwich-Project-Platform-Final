@@ -1,17 +1,20 @@
 import { Router } from 'express';
 import { ServiceHoursPDFGenerator } from '../services/service-hours-pdf-generator';
-import { authenticateUser } from '../middleware/auth';
-import { hasPermission } from '../middleware/permissions';
-import { PERMISSIONS } from '@shared/auth-utils';
+import { isAuthenticated } from '../auth';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { z } from 'zod';
-import { logger } from '../logger';
+import { logger } from '../middleware/logger';
 
 const router = Router();
 
 const serviceEntrySchema = z.object({
-  date: z.string(),
-  hours: z.string(),
-  description: z.string(),
+  date: z.string()
+    .min(1, 'Date is required')
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  hours: z.string()
+    .min(1, 'Hours are required')
+    .regex(/^\d+(\.\d+)?$/, 'Hours must be a valid number'),
+  description: z.string().min(1, 'Description is required'),
 });
 
 const serviceHoursRequestSchema = z.object({
@@ -20,11 +23,19 @@ const serviceHoursRequestSchema = z.object({
   approverName: z.string().default('Katie Long'),
   approverContact: z.string().default(''),
   totalHours: z.number().min(0),
+}).refine((data) => {
+  const calculatedTotal = data.serviceEntries.reduce((sum, entry) => {
+    return sum + (parseFloat(entry.hours) || 0);
+  }, 0);
+  return Math.abs(calculatedTotal - data.totalHours) < 0.01; // Allow small floating point differences
+}, {
+  message: 'Total hours must match the sum of individual entry hours',
+  path: ['totalHours'],
 });
 
 router.post(
   '/generate-service-hours-pdf',
-  authenticateUser,
+  isAuthenticated,
   hasPermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
   async (req, res) => {
     try {
