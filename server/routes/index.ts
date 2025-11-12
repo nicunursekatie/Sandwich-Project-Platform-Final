@@ -65,6 +65,7 @@ import featureFlagsRouter from './feature-flags';
 import activitiesRouter from './activities';
 import expensesRouter from './expenses';
 import objectsRouter from './objects';
+import serviceHoursRouter from './service-hours';
 
 // Import centralized middleware
 import {
@@ -418,6 +419,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     expensesRouter
   );
   router.use('/api/expenses', createErrorHandler('expenses'));
+
+  // Service hours PDF generation
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    serviceHoursRouter
+  );
+  router.use('/api', createErrorHandler('service-hours'));
 
   // Me routes - user-specific endpoints
   router.use(
