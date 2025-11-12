@@ -17,6 +17,9 @@ interface ServiceHoursData {
 }
 
 export class ServiceHoursPDFGenerator {
+  private static readonly MAX_DESCRIPTION_LENGTH = 28;
+  private static readonly TRUNCATE_AT = 25;
+
   static async generatePDF(data: ServiceHoursData): Promise<Buffer> {
     // Load the existing PDF template
     const templatePath = path.join(
@@ -24,6 +27,10 @@ export class ServiceHoursPDFGenerator {
       'attached_assets',
       'TSP COMMUNITY SERVICE HOURS (1) (1) (1).pdf'
     );
+
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`PDF template file not found at path: ${templatePath}. Please ensure the template exists.`);
+    }
 
     const existingPdfBytes = fs.readFileSync(templatePath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -60,6 +67,7 @@ export class ServiceHoursPDFGenerator {
     const formatDate = (dateStr: string) => {
       if (!dateStr) return '';
       const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
       return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
     };
 
@@ -69,14 +77,12 @@ export class ServiceHoursPDFGenerator {
       const isLeftColumn = i % 2 === 0;
       const colX = isLeftColumn ? leftColX : rightColX;
 
-      // If right column, don't move Y down yet
-      if (isLeftColumn && i > 0) {
-        currentY -= rowHeight;
-      } else if (!isLeftColumn) {
+      // Move Y down only when starting a new row (after both columns are filled)
+      if (i > 0 && i % 2 === 0) {
         currentY -= rowHeight;
       }
 
-      // Stop if we run out of space (6 rows maximum)
+      // Stop if we run out of space (12 entries maximum: 6 rows × 2 columns)
       if (i >= 12) break;
 
       // Draw date
@@ -99,8 +105,8 @@ export class ServiceHoursPDFGenerator {
 
       // Draw description (truncate if too long)
       let description = entry.description;
-      if (description.length > 28) {
-        description = description.substring(0, 25) + '...';
+      if (description.length > this.MAX_DESCRIPTION_LENGTH) {
+        description = description.substring(0, this.TRUNCATE_AT) + '...';
       }
       firstPage.drawText(description, {
         x: colX.description,
