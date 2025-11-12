@@ -69,9 +69,10 @@ type SortDirection = 'asc' | 'desc';
 
 interface ScheduledSpreadsheetViewProps {
   onEventDateClick?: (event: EventRequest) => void;
+  openAssignmentDialog?: (eventId: number, type: 'drivers' | 'speakers' | 'volunteers') => void;
 }
 
-export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick }) => {
+export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick, openAssignmentDialog }) => {
   const {
     eventRequests,
     editingScheduledId,
@@ -724,7 +725,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'assignedStaff',
       label: 'Assigned Staff',
-      width: '240px', // Increased width to accommodate multiple staff
+      width: '320px', // Increased width for buttons
       hideOnMobile: true,
       render: (event) => {
         const assigned = [];
@@ -764,12 +765,57 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           }
         }
 
-        // Return as an object with fullText for wrapping
-        const fullText = assigned.join(' • '); // Using bullet separator instead of |
-        return {
-          fullText,
-          hasContent: assigned.length > 0
-        };
+        // Render component with assignment buttons
+        return (
+          <div className="space-y-1.5">
+            {assigned.length > 0 && (
+              <div className="text-sm">{assigned.join(' • ')}</div>
+            )}
+            {openAssignmentDialog && (
+              <div className="flex gap-1 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog(event.id, 'drivers');
+                  }}
+                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
+                  title="Assign drivers"
+                >
+                  <Car className="w-3 h-3 mr-1" />
+                  Drivers
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog(event.id, 'speakers');
+                  }}
+                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
+                  title="Assign speakers"
+                >
+                  <Megaphone className="w-3 h-3 mr-1" />
+                  Speakers
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog(event.id, 'volunteers');
+                  }}
+                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
+                  title="Assign volunteers"
+                >
+                  <Users className="w-3 h-3 mr-1" />
+                  Volunteers
+                </Button>
+              </div>
+            )}
+          </div>
+        );
       },
     },
     // 10. Van booked
