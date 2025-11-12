@@ -427,7 +427,7 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createStandardMiddleware(),
     serviceHoursRouter
   );
-  router.use('/api', createErrorHandler('service-hours'));
+  router.use('/api/generate-service-hours-pdf', createErrorHandler('service-hours'));
 
   // Me routes - user-specific endpoints
   router.use(

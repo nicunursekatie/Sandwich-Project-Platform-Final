@@ -74,7 +74,7 @@ export default function GenerateServiceHours() {
       );
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Create a blob from the base64 data
       const byteArray = Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0));
       const blob = new Blob([byteArray], { type: 'application/pdf' });
@@ -83,7 +83,7 @@ export default function GenerateServiceHours() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${volunteerName.replace(/\s+/g, '_')}_Service_Hours.pdf`;
+      link.download = `${variables.volunteerName.replace(/\s+/g, '_')}_Service_Hours.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
