@@ -190,9 +190,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
   
   // Check if there's any communication/notes content to show
+  // Safely check if contactAttemptsLog is an array with items
+  const hasContactAttempts = Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0;
   const hasCommunicationContent = !!(
-    (request.contactAttemptsLog && request.contactAttemptsLog.length > 0) ||
-    (request.unresponsiveNotes && (!request.contactAttemptsLog || request.contactAttemptsLog.length === 0)) ||
+    hasContactAttempts ||
+    (request.unresponsiveNotes && !hasContactAttempts) ||
     request.followUpNotes ||
     request.distributionNotes ||
     request.duplicateNotes ||

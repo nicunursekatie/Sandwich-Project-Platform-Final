@@ -63,41 +63,86 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
   // Build combined activity items from contact attempts and notes
   const activityItems = useMemo(() => {
-    const items: Array<{
-      type: 'contact' | 'note' | 'message' | 'initial';
-      icon: React.ReactNode;
-      title: string;
-      content: string;
-      date?: Date;
-      badge?: string;
-      attemptNumber?: number;
-      createdBy?: string;
-      canEdit?: boolean;
-      canDelete?: boolean;
-    }> = [];
+    try {
+      const items: Array<{
+        type: 'contact' | 'note' | 'message' | 'initial';
+        icon: React.ReactNode;
+        title: string;
+        content: string;
+        date?: Date;
+        badge?: string;
+        attemptNumber?: number;
+        createdBy?: string;
+        canEdit?: boolean;
+        canDelete?: boolean;
+      }> = [];
 
-    if (!eventRequest) return items;
+      if (!eventRequest) return items;
 
     // Note: Initial request message is displayed in the "Notes & Requirements" section
     // of the card, so we don't duplicate it here
 
     // Add structured contact attempts from new contactAttemptsLog
-    if (eventRequest.contactAttemptsLog && Array.isArray(eventRequest.contactAttemptsLog)) {
-      eventRequest.contactAttemptsLog.forEach((attempt) => {
+    // Ensure contactAttemptsLog is an array (handle case where it might be null, undefined, or a string)
+    let contactAttemptsArray: Array<{
+      attemptNumber?: number;
+      timestamp?: string;
+      method?: string;
+      outcome?: string;
+      notes?: string;
+      createdBy?: string;
+      createdByName?: string;
+    }> = [];
+    
+    if (eventRequest.contactAttemptsLog) {
+      if (Array.isArray(eventRequest.contactAttemptsLog)) {
+        contactAttemptsArray = eventRequest.contactAttemptsLog;
+      } else if (typeof eventRequest.contactAttemptsLog === 'string') {
+        // Handle case where it might be a JSON string
+        try {
+          contactAttemptsArray = JSON.parse(eventRequest.contactAttemptsLog);
+        } catch (e) {
+          console.error('Failed to parse contactAttemptsLog:', e);
+        }
+      }
+    }
+    
+    if (contactAttemptsArray && contactAttemptsArray.length > 0) {
+      contactAttemptsArray.forEach((attempt) => {
+        // Skip invalid attempts
+        if (!attempt || typeof attempt !== 'object') {
+          return;
+        }
+        
         const methodIcons = {
           phone: <Phone className="h-4 w-4" />,
           email: <Mail className="h-4 w-4" />,
           both: <MessageSquare className="h-4 w-4" />,
         };
 
-        const canModify = user?.id === attempt.createdBy;
+        const canModify = user?.id && attempt.createdBy && user.id === attempt.createdBy;
+
+        // Parse timestamp safely
+        let parsedDate: Date | undefined;
+        if (attempt.timestamp) {
+          try {
+            parsedDate = new Date(attempt.timestamp);
+            // Check if date is valid
+            if (isNaN(parsedDate.getTime())) {
+              parsedDate = undefined;
+            }
+          } catch (e) {
+            console.error('Failed to parse timestamp:', attempt.timestamp, e);
+            parsedDate = undefined;
+          }
+        }
 
         items.push({
           type: 'contact',
           icon: methodIcons[attempt.method as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />,
-          title: `Contact Attempt #${attempt.attemptNumber}`,
-          content: attempt.notes || attempt.outcome,
-          date: new Date(attempt.timestamp),
+          title: `Contact Attempt #${attempt.attemptNumber || '?'}`,
+          content: attempt.notes || attempt.outcome || 'No details',
+          date: parsedDate,
           badge: `by ${attempt.createdByName || 'Unknown'}`,
           attemptNumber: attempt.attemptNumber,
           createdBy: attempt.createdBy,
@@ -108,7 +153,9 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     }
 
     // Legacy: Parse old unresponsiveNotes if present and no new structured log exists
-    if (eventRequest.unresponsiveNotes && (!eventRequest.contactAttemptsLog || eventRequest.contactAttemptsLog.length === 0)) {
+    // Check if we have any structured attempts
+    const hasStructuredAttempts = contactAttemptsArray && contactAttemptsArray.length > 0;
+    if (eventRequest.unresponsiveNotes && !hasStructuredAttempts) {
       // Try to parse individual attempts from legacy format
       // Format examples:
       // - "Attempt #1 - Email: Successfully contacted - Got response..."
@@ -289,16 +336,23 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     });
 
-    // Sort by date (most recent first), putting items without dates at the top
-    return items.sort((a, b) => {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return -1;
-      if (!b.date) return 1;
-      return b.date.getTime() - a.date.getTime();
-    });
+      // Sort by date (most recent first), putting items without dates at the top
+      return items.sort((a, b) => {
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return -1;
+        if (!b.date) return 1;
+        return b.date.getTime() - a.date.getTime();
+      });
+    } catch (error) {
+      console.error('Error building activity items:', error);
+      // Return empty array on error to prevent crashes
+      return [];
+    }
   }, [eventRequest, messages, user]);
 
-  const totalCount = activityItems.length;
+  // Ensure activityItems is always an array
+  const safeActivityItems = Array.isArray(activityItems) ? activityItems : [];
+  const totalCount = safeActivityItems.length;
 
   if (isLoading) {
     return (
@@ -344,7 +398,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
       <div style={{ maxHeight }} className="overflow-y-auto pr-4">
         <div className="space-y-3 pb-4">
-          {activityItems.map((item, index) => (
+          {safeActivityItems.map((item, index) => (
             <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <div className="space-y-2">
                 {/* Activity Header */}
