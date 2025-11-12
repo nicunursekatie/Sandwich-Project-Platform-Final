@@ -412,6 +412,14 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },
+  {
+    id: 'generate-service-hours',
+    label: 'Service Hours Form',
+    icon: FileText,
+    href: 'generate-service-hours',
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    group: 'admin',
+  },
 
   // HELP - Always at the bottom (standard UX pattern)
   {

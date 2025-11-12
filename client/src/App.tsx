@@ -85,6 +85,7 @@ function Router() {
   // Lazy-loaded components
   const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
+  const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -273,6 +274,11 @@ function Router() {
         </Route>
         <Route path="/expenses">
           {() => <Dashboard initialSection="expenses" />}
+        </Route>
+        <Route path="/generate-service-hours">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <GenerateServiceHours />
+          </Suspense>
         </Route>
         <Route path="/historical-import">
           {() => <Dashboard initialSection="historical-import" />}
