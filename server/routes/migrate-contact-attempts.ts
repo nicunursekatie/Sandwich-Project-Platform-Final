@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { isAuthenticated, requirePermission } from '../auth';
+import { isAuthenticated } from '../auth';
+import { requirePermission } from '../middleware/auth';
 import { IStorage } from '../database-storage';
 import logger from '../utils/logger';
 
