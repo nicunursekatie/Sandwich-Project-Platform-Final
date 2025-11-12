@@ -209,12 +209,14 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
   if (totalCount === 0) {
     return (
-      <div className="text-center py-8">
-        <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">No communication or notes yet</p>
-        <p className="text-xs text-gray-400 mt-1">
-          Contact attempts and notes will appear here
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-slate-400" />
+          <span>No communication or notes yet</span>
+        </div>
+        <span className="text-xs text-slate-400">
+          Log your first contact attempt or note to see updates here.
+        </span>
       </div>
     );
   }
