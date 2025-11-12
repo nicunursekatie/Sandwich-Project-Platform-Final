@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { ServiceHoursPDFGenerator } from '../services/service-hours-pdf-generator';
 import { isAuthenticated } from '../auth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { requirePermission } from '../middleware/auth';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { z } from 'zod';
 import { logger } from '../middleware/logger';
 
@@ -36,7 +37,7 @@ const serviceHoursRequestSchema = z.object({
 router.post(
   '/generate-service-hours-pdf',
   isAuthenticated,
-  hasPermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
+  requirePermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
   async (req, res) => {
     try {
       // Validate request body
