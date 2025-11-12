@@ -1612,7 +1612,7 @@ export default function GrantMetrics() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#47B3CB]/10 to-white rounded-lg border border-[#47B3CB]/30">
                 <Building2 className="w-12 h-12 mx-auto mb-3 text-[#47B3CB]" />
                 <div className="text-4xl font-black text-[#47B3CB] mb-2">
@@ -1643,17 +1643,6 @@ export default function GrantMetrics() {
                 <p className="font-medium text-gray-900">Event Organizations</p>
                 <p className="text-sm text-gray-600 mt-2">
                   Unique organizations with completed events
-                </p>
-              </div>
-
-              <div className="text-center p-6 bg-gradient-to-br from-[#FBAD3F]/10 to-white rounded-lg border border-[#FBAD3F]/30">
-                <Shield className="w-12 h-12 mx-auto mb-3 text-[#FBAD3F]" />
-                <div className="text-4xl font-black text-[#FBAD3F] mb-2">
-                  {recipientMetrics.contractSignedPercentage}%
-                </div>
-                <p className="font-medium text-gray-900">Contracts Signed</p>
-                <p className="text-sm text-gray-600 mt-2">
-                  {recipientMetrics.contractsSigned} of {recipientMetrics.total} partners
                 </p>
               </div>
             </div>
