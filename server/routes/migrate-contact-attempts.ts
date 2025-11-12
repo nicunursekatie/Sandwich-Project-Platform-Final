@@ -29,16 +29,22 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
         for (const request of eventRequests) {
           try {
             // Skip if no unresponsiveNotes or already has contactAttemptsLog
-            if (!request.unresponsiveNotes || 
-                (request.contactAttemptsLog && Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0)) {
+            if (
+              !request.unresponsiveNotes ||
+              (request.contactAttemptsLog &&
+                Array.isArray(request.contactAttemptsLog) &&
+                request.contactAttemptsLog.length > 0)
+            ) {
               skippedCount++;
               continue;
             }
 
             const legacyText = request.unresponsiveNotes.trim();
-            
+
             // Parse legacy format into structured format
-            const attemptBlocks = legacyText.split(/\n\n+/).filter(block => block.trim().length > 0);
+            const attemptBlocks = legacyText
+              .split(/\n\n+/)
+              .filter((block) => block.trim().length > 0);
             const migratedAttempts: Array<{
               attemptNumber: number;
               timestamp: string;
@@ -53,27 +59,29 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
             if (attemptBlocks.length > 1 || legacyText.includes('Attempt #')) {
               attemptBlocks.forEach((block) => {
                 const blockTrimmed = block.trim();
-                
+
                 // Match pattern: [optional date] Attempt #number - Method: content
-                const attemptMatch = blockTrimmed.match(/(?:\[([^\]]+)\]\s*)?Attempt\s*#(\d+)\s*-\s*([^:]+):\s*(.+)/is);
-                
+                const attemptMatch = blockTrimmed.match(
+                  /(?:\[([^\]]+)\]\s*)?Attempt\s*#(\d+)\s*-\s*([^:]+):\s*(.+)/is
+                );
+
                 if (attemptMatch) {
                   const dateStr = attemptMatch[1]; // Date from [Nov 7, 2025, 4:21 PM]
                   const attemptNumber = parseInt(attemptMatch[2]);
                   const method = attemptMatch[3].trim(); // "Email", "Phone", etc.
                   const content = attemptMatch[4].trim();
-                  
+
                   // Parse outcome and notes (content may have " - " separator)
                   let outcome = content;
                   let notes: string | undefined;
-                  
+
                   // Try to split by " - " but be careful not to split dates or other content
                   const dashIndex = content.indexOf(' - ');
                   if (dashIndex > 0 && dashIndex < content.length - 3) {
                     outcome = content.substring(0, dashIndex).trim();
                     notes = content.substring(dashIndex + 3).trim();
                   }
-                  
+
                   // Parse date
                   let parsedDate: Date;
                   if (dateStr) {
@@ -88,7 +96,7 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
                   } else {
                     parsedDate = new Date(); // Fallback to current date
                   }
-                  
+
                   // Normalize method to standard values
                   const methodLower = method.toLowerCase();
                   let normalizedMethod = 'unknown';
@@ -99,24 +107,43 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
                   } else if (methodLower.includes('both')) {
                     normalizedMethod = 'both';
                   }
-                  
+
                   // Normalize outcome to standard values
                   const outcomeLower = outcome.toLowerCase();
                   let normalizedOutcome = 'other';
-                  if (outcomeLower.includes('successfully') || outcomeLower.includes('got response')) {
+                  if (
+                    outcomeLower.includes('successfully') ||
+                    outcomeLower.includes('got response')
+                  ) {
                     normalizedOutcome = 'successful';
-                  } else if (outcomeLower.includes('no answer') || outcomeLower.includes('no response')) {
+                  } else if (
+                    outcomeLower.includes('no answer') ||
+                    outcomeLower.includes('no response')
+                  ) {
                     normalizedOutcome = 'no_answer';
-                  } else if (outcomeLower.includes('left') || outcomeLower.includes('voicemail') || outcomeLower.includes('message')) {
+                  } else if (
+                    outcomeLower.includes('left') ||
+                    outcomeLower.includes('voicemail') ||
+                    outcomeLower.includes('message')
+                  ) {
                     normalizedOutcome = 'left_message';
-                  } else if (outcomeLower.includes('wrong') || outcomeLower.includes('disconnected')) {
+                  } else if (
+                    outcomeLower.includes('wrong') ||
+                    outcomeLower.includes('disconnected')
+                  ) {
                     normalizedOutcome = 'wrong_number';
-                  } else if (outcomeLower.includes('bounced') || outcomeLower.includes('failed')) {
+                  } else if (
+                    outcomeLower.includes('bounced') ||
+                    outcomeLower.includes('failed')
+                  ) {
                     normalizedOutcome = 'email_bounced';
-                  } else if (outcomeLower.includes('callback') || outcomeLower.includes('follow-up')) {
+                  } else if (
+                    outcomeLower.includes('callback') ||
+                    outcomeLower.includes('follow-up')
+                  ) {
                     normalizedOutcome = 'requested_callback';
                   }
-                  
+
                   migratedAttempts.push({
                     attemptNumber,
                     timestamp: parsedDate.toISOString(),
@@ -138,10 +165,14 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
                 // unresponsiveNotes: null, // Uncomment to clear legacy data after migration
               });
               migratedCount++;
-              logger.log(`Migrated ${migratedAttempts.length} attempts for event request ${request.id}`);
+              logger.log(
+                `Migrated ${migratedAttempts.length} attempts for event request ${request.id}`
+              );
             } else {
               skippedCount++;
-              logger.log(`Skipped event request ${request.id} - could not parse attempts`);
+              logger.log(
+                `Skipped event request ${request.id} - could not parse attempts`
+              );
             }
           } catch (error) {
             errorCount++;
@@ -149,7 +180,9 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
           }
         }
 
-        logger.log(`Migration complete: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`);
+        logger.log(
+          `Migration complete: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`
+        );
 
         res.json({
           success: true,
@@ -207,15 +240,18 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
           });
         }
 
-        const canMigrateCount = preview.filter(p => p.canMigrate).length;
+        const canMigrateCount = preview.filter((p) => p.canMigrate).length;
 
         res.json({
           preview,
           summary: {
             total: preview.length,
             canMigrate: canMigrateCount,
-            alreadyMigrated: preview.filter(p => p.hasContactAttemptsLog).length,
-            noData: preview.filter(p => !p.hasUnresponsiveNotes && !p.hasContactAttemptsLog).length,
+            alreadyMigrated: preview.filter((p) => p.hasContactAttemptsLog)
+              .length,
+            noData: preview.filter(
+              (p) => !p.hasUnresponsiveNotes && !p.hasContactAttemptsLog
+            ).length,
           },
         });
       } catch (error) {
@@ -231,4 +267,3 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
 
   return router;
 }
-
