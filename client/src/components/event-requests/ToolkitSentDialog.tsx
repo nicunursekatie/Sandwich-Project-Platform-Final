@@ -152,16 +152,33 @@ const ToolkitSentDialog = ({
             <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-4 border-t border-[#007E8C]/10">
               <div className="flex flex-wrap gap-2">
               {!emailSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEmailComposer(true)}
-                  className="flex items-center space-x-2 border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/5"
-                  data-testid="button-send-toolkit-email"
-                >
-                  <Mail className="w-4 h-4" aria-hidden="true" />
-                  <span>Send Toolkit Email</span>
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const recipient = eventRequest.email;
+                      const subject = encodeURIComponent(`${eventRequest.organizationName} - Sandwich Making Event`);
+                      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}`;
+                      window.open(gmailUrl, '_blank');
+                    }}
+                    className="flex items-center space-x-2 border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/5"
+                    data-testid="button-compose-gmail"
+                  >
+                    <Mail className="w-4 h-4" aria-hidden="true" />
+                    <span>Compose in Gmail</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowEmailComposer(true)}
+                    className="flex items-center space-x-2 border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/5"
+                    data-testid="button-send-toolkit-email"
+                  >
+                    <Mail className="w-4 h-4" aria-hidden="true" />
+                    <span>Send Toolkit Email</span>
+                  </Button>
+                </>
               )}
 
                 {eventRequest?.phone && (
