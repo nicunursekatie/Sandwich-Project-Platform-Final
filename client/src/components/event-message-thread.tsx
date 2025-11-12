@@ -107,30 +107,132 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     }
 
-    // Legacy: Add old unresponsiveNotes if present and no new structured log exists
+    // Legacy: Parse old unresponsiveNotes if present and no new structured log exists
     if (eventRequest.unresponsiveNotes && (!eventRequest.contactAttemptsLog || eventRequest.contactAttemptsLog.length === 0)) {
-      // Try to extract date from content like "[Nov 3, 2025, 3:35 PM] Attempt #1..."
-      const dateMatch = eventRequest.unresponsiveNotes.match(/\[(.*?)\]/);
-      let parsedDate: Date | undefined;
-      let contentWithoutDate = eventRequest.unresponsiveNotes;
+      // Try to parse individual attempts from legacy format
+      // Format examples:
+      // - "Attempt #1 - Email: Successfully contacted - Got response..."
+      // - "[Nov 7, 2025, 4:21 PM] Attempt #2 - Phone: Successfully contacted..."
+      // - Multiple attempts separated by double newlines
+      const legacyText = eventRequest.unresponsiveNotes.trim();
+      
+      // First, try to split by double newlines to get separate attempts
+      const attemptBlocks = legacyText.split(/\n\n+/).filter(block => block.trim().length > 0);
+      
+      // If we have multiple blocks or can find "Attempt #" patterns, parse individually
+      if (attemptBlocks.length > 1 || legacyText.includes('Attempt #')) {
+        attemptBlocks.forEach((block) => {
+          const blockTrimmed = block.trim();
+          
+          // Match pattern: [optional date] Attempt #number - Method: content
+          const attemptMatch = blockTrimmed.match(/(?:\[([^\]]+)\]\s*)?Attempt\s*#(\d+)\s*-\s*([^:]+):\s*(.+)/is);
+          
+          if (attemptMatch) {
+            const dateStr = attemptMatch[1]; // Date from [Nov 7, 2025, 4:21 PM]
+            const attemptNumber = parseInt(attemptMatch[2]);
+            const method = attemptMatch[3].trim(); // "Email", "Phone", etc.
+            const content = attemptMatch[4].trim();
+            
+            // Parse outcome and notes (content may have " - " separator)
+            let outcome = content;
+            let notes: string | undefined;
+            
+            // Try to split by " - " but be careful not to split dates or other content
+            const dashIndex = content.indexOf(' - ');
+            if (dashIndex > 0 && dashIndex < content.length - 3) {
+              outcome = content.substring(0, dashIndex).trim();
+              notes = content.substring(dashIndex + 3).trim();
+            }
+            
+            // Parse date
+            let parsedDate: Date | undefined;
+            if (dateStr) {
+              try {
+                parsedDate = new Date(dateStr);
+                if (isNaN(parsedDate.getTime())) {
+                  parsedDate = undefined;
+                }
+              } catch (e) {
+                // Date parsing failed
+              }
+            }
+            
+            // Determine method icon
+            const methodLower = method.toLowerCase();
+            let methodIcon: React.ReactNode;
+            if (methodLower.includes('phone')) {
+              methodIcon = <Phone className="h-4 w-4" />;
+            } else if (methodLower.includes('email')) {
+              methodIcon = <Mail className="h-4 w-4" />;
+            } else {
+              methodIcon = <MessageSquare className="h-4 w-4" />;
+            }
+            
+            items.push({
+              type: 'contact',
+              icon: methodIcon,
+              title: `Contact Attempt #${attemptNumber}`,
+              content: notes || outcome,
+              date: parsedDate,
+              badge: 'Legacy Entry',
+              attemptNumber,
+              canEdit: false,
+              canDelete: false,
+            });
+          } else {
+            // If this block doesn't match the pattern, try to extract date if present
+            const dateMatch = blockTrimmed.match(/\[([^\]]+)\]/);
+            let parsedDate: Date | undefined;
+            let contentWithoutDate = blockTrimmed;
 
-      if (dateMatch) {
-        try {
-          parsedDate = new Date(dateMatch[1]);
-          // Remove the date portion from content
-          contentWithoutDate = eventRequest.unresponsiveNotes.replace(/\[.*?\]\s*/, '');
-        } catch (e) {
-          // If date parsing fails, keep original content
+            if (dateMatch) {
+              try {
+                parsedDate = new Date(dateMatch[1]);
+                if (!isNaN(parsedDate.getTime())) {
+                  contentWithoutDate = blockTrimmed.replace(/\[.*?\]\s*/, '').trim();
+                }
+              } catch (e) {
+                // Date parsing failed
+              }
+            }
+
+            // Only add if there's meaningful content
+            if (contentWithoutDate.length > 0) {
+              items.push({
+                type: 'note',
+                icon: <PhoneOff className="h-4 w-4" />,
+                title: 'Contact Note (Legacy)',
+                content: contentWithoutDate,
+                date: parsedDate,
+              });
+            }
+          }
+        });
+      } else {
+        // If we can't parse individual attempts, show as a single legacy entry
+        const dateMatch = eventRequest.unresponsiveNotes.match(/\[([^\]]+)\]/);
+        let parsedDate: Date | undefined;
+        let contentWithoutDate = eventRequest.unresponsiveNotes;
+
+        if (dateMatch) {
+          try {
+            parsedDate = new Date(dateMatch[1]);
+            if (!isNaN(parsedDate.getTime())) {
+              contentWithoutDate = eventRequest.unresponsiveNotes.replace(/\[.*?\]\s*/, '').trim();
+            }
+          } catch (e) {
+            // Date parsing failed, keep original content
+          }
         }
-      }
 
-      items.push({
-        type: 'note',
-        icon: <PhoneOff className="h-4 w-4" />,
-        title: 'Contact Attempts Logged (Legacy)',
-        content: contentWithoutDate,
-        date: parsedDate,
-      });
+        items.push({
+          type: 'note',
+          icon: <PhoneOff className="h-4 w-4" />,
+          title: 'Contact Attempts Logged (Legacy)',
+          content: contentWithoutDate,
+          date: parsedDate,
+        });
+      }
     }
 
     // Note: Planning notes, scheduling notes, and other notes are displayed in the 

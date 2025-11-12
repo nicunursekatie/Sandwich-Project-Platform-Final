@@ -402,6 +402,7 @@ export const ScheduledTab: React.FC = () => {
               }
             }, 150);
           }}
+          openAssignmentDialog={openAssignmentDialog}
         />
       ) : scheduledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
