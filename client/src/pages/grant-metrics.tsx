@@ -1633,9 +1633,9 @@ export default function GrantMetrics() {
                 <div className="text-4xl font-black text-[#236383] mb-2">
                   {eventMetrics.uniqueOrganizations}
                 </div>
-                <p className="font-medium text-gray-900">Group Event Partners</p>
+                <p className="font-medium text-gray-900">Event Organizations</p>
                 <p className="text-sm text-gray-600 mt-2">
-                  Unique organizations hosted events
+                  Unique organizations with completed events
                 </p>
               </div>
 
