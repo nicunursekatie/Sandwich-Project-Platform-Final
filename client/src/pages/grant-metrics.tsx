@@ -61,7 +61,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import { calculateTotalSandwiches, calculateGroupSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
 
 export default function GrantMetrics() {
@@ -348,8 +348,8 @@ export default function GrantMetrics() {
 
     const individualEvents = collectionsToAnalyze.filter((c: any) => c.individualSandwiches > 0).length;
     const groupEvents = collectionsToAnalyze.filter((c: any) => {
-      const groups = Array.isArray(c.groupCollections) ? c.groupCollections : [];
-      return (c.group1Count && c.group1Count > 0) || (c.group2Count && c.group2Count > 0) || groups.length > 0;
+      const groupSandwiches = calculateGroupSandwiches(c);
+      return groupSandwiches > 0;
     }).length;
 
     const totalEvents = collectionsToAnalyze.length;
