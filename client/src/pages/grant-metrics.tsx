@@ -87,11 +87,11 @@ export default function GrantMetrics() {
     );
   }, [trackView]);
 
-  // Fetch collections data
+  // Fetch collections data - use high limit to ensure we get all records
   const { data: collectionsData } = useQuery({
     queryKey: ['/api/sandwich-collections'],
     queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?page=1&limit=5000', {
+      const response = await fetch('/api/sandwich-collections?page=1&limit=10000', {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch collections');
@@ -101,6 +101,13 @@ export default function GrantMetrics() {
   });
 
   const collections = collectionsData?.collections || [];
+  const totalCollectionsInDB = collectionsData?.pagination?.total || 0;
+
+  // WARNING: Check if we're hitting the limit
+  if (collections.length >= 10000) {
+    logger.warn('⚠️ HITTING API LIMIT: Received 10,000 collections but there may be more in the database!');
+    logger.warn('Total in DB:', totalCollectionsInDB);
+  }
 
   if (typeof window !== "undefined") {
     (window as any).__collections = collections;
@@ -598,17 +605,37 @@ export default function GrantMetrics() {
     )
   ).sort((a: any, b: any) => b - a);
 
-  // Debug peak month calculation
-  logger.log('=== PEAK MONTH DEBUG ===');
-  logger.log('Peak Month:', metrics.peakMonth);
-  logger.log('All Monthly Totals:', metrics.monthlyData);
+  // Debug 2025 data calculation
+  logger.log('=== 2025 DATA DEBUG ===');
+  logger.log('Total collections received from API:', collections.length);
+  logger.log('Total collections in database (from pagination):', totalCollectionsInDB);
+  if (collections.length < totalCollectionsInDB) {
+    logger.warn('⚠️ WARNING: Not all collections loaded! Missing', totalCollectionsInDB - collections.length, 'records');
+  }
 
-  const november2023Collections = collections.filter((c: any) =>
-    c.collectionDate && c.collectionDate.startsWith('2023-11')
+  const year2025Collections = collections.filter((c: any) =>
+    c.collectionDate && c.collectionDate.startsWith('2025')
   );
 
-  logger.log('November 2023 Collections Count:', november2023Collections.length);
-  logger.log('ALL November 2023 Collections:', november2023Collections.map((c: any) => ({
+  logger.log('2025 Collections Count:', year2025Collections.length);
+  logger.log('2025 Year Total from yearTotals:', metrics.yearTotals[2025]);
+
+  const manual2025Total = year2025Collections.reduce((sum: number, c: any) =>
+    sum + calculateTotalSandwiches(c), 0
+  );
+  logger.log('2025 Manually Calculated Total:', manual2025Total);
+
+  // Check for duplicate IDs in 2025 data
+  const allIds = collections.map((c: any) => c.id);
+  const duplicateIds = allIds.filter((id: any, index: number) => allIds.indexOf(id) !== index);
+  logger.log('Duplicate IDs in ALL collections:', duplicateIds.length > 0 ? duplicateIds : 'None');
+
+  const year2025Ids = year2025Collections.map((c: any) => c.id);
+  const duplicate2025Ids = year2025Ids.filter((id: any, index: number) => year2025Ids.indexOf(id) !== index);
+  logger.log('Duplicate IDs in 2025:', duplicate2025Ids.length > 0 ? duplicate2025Ids : 'None');
+
+  // Sample some 2025 records to check calculation
+  logger.log('Sample 2025 Collections (first 5):', year2025Collections.slice(0, 5).map((c: any) => ({
     id: c.id,
     date: c.collectionDate,
     individual: c.individualSandwiches,
@@ -618,16 +645,6 @@ export default function GrantMetrics() {
     calculated: calculateTotalSandwiches(c),
     hostName: c.hostName,
   })));
-
-  const november2023Total = november2023Collections.reduce((sum: number, c: any) =>
-    sum + calculateTotalSandwiches(c), 0
-  );
-  logger.log('November 2023 Manually Calculated Total:', november2023Total);
-
-  // Check for duplicate IDs
-  const novemberIds = november2023Collections.map((c: any) => c.id);
-  const duplicateIds = novemberIds.filter((id: any, index: number) => novemberIds.indexOf(id) !== index);
-  logger.log('Duplicate IDs in November 2023:', duplicateIds.length > 0 ? duplicateIds : 'None');
   logger.log('=======================');
 
   // Prepare year-over-year chart data - ONLY COMPLETE YEARS
