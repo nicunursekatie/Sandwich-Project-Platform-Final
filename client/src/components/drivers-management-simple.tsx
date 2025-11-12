@@ -896,11 +896,11 @@ export default function DriversManagement() {
                           {/* Contact Info - Styled Cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {driver.phone && (
-                              <div className="bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+                              <div className="bg-blue-50 rounded-lg px-3 py-2.5 border border-blue-200">
                                 <div className="flex items-center gap-2">
-                                  <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                  <Phone className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                   <div className="min-w-0">
-                                    <div className="text-xs text-gray-500 font-medium">Phone</div>
+                                    <div className="text-xs text-blue-700 font-medium">Phone</div>
                                     <a href={`tel:${driver.phone}`} className="text-sm font-semibold text-gray-900 hover:text-brand-primary">
                                       {driver.phone}
                                     </a>
@@ -909,11 +909,11 @@ export default function DriversManagement() {
                               </div>
                             )}
                             {driver.email && (
-                              <div className="bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+                              <div className="bg-blue-50 rounded-lg px-3 py-2.5 border border-blue-200">
                                 <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                  <Mail className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                   <div className="min-w-0 overflow-hidden">
-                                    <div className="text-xs text-gray-500 font-medium">Email</div>
+                                    <div className="text-xs text-blue-700 font-medium">Email</div>
                                     <a href={`mailto:${driver.email}`} className="text-sm font-semibold text-gray-900 hover:text-brand-primary truncate block">
                                       {driver.email}
                                     </a>
@@ -1042,12 +1042,12 @@ export default function DriversManagement() {
                           {/* Contact Info - Styled Cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {driver.phone && (
-                              <div className="bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+                              <div className="bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-300">
                                 <div className="flex items-center gap-2">
-                                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                  <Phone className="w-4 h-4 text-slate-600 flex-shrink-0" />
                                   <div className="min-w-0">
-                                    <div className="text-xs text-gray-500 font-medium">Phone</div>
-                                    <a href={`tel:${driver.phone}`} className="text-sm font-semibold text-gray-600 hover:text-gray-900">
+                                    <div className="text-xs text-slate-600 font-medium">Phone</div>
+                                    <a href={`tel:${driver.phone}`} className="text-sm font-semibold text-slate-700 hover:text-gray-900">
                                       {driver.phone}
                                     </a>
                                   </div>
@@ -1055,12 +1055,12 @@ export default function DriversManagement() {
                               </div>
                             )}
                             {driver.email && (
-                              <div className="bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+                              <div className="bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-300">
                                 <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                  <Mail className="w-4 h-4 text-slate-600 flex-shrink-0" />
                                   <div className="min-w-0 overflow-hidden">
-                                    <div className="text-xs text-gray-500 font-medium">Email</div>
-                                    <a href={`mailto:${driver.email}`} className="text-sm font-semibold text-gray-600 hover:text-gray-900 truncate block">
+                                    <div className="text-xs text-slate-600 font-medium">Email</div>
+                                    <a href={`mailto:${driver.email}`} className="text-sm font-semibold text-slate-700 hover:text-gray-900 truncate block">
                                       {driver.email}
                                     </a>
                                   </div>
@@ -1071,12 +1071,12 @@ export default function DriversManagement() {
 
                           {/* Availability */}
                           {driver.availability && (
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                            <div className="bg-slate-100 border border-slate-300 rounded-lg px-3 py-2">
                               <div className="flex items-start gap-2">
-                                <Clock className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                <Clock className="w-4 h-4 text-slate-600 mt-0.5 flex-shrink-0" />
                                 <div>
-                                  <div className="text-xs font-medium text-gray-600">Availability</div>
-                                  <div className="text-sm text-gray-700">{driver.availability}</div>
+                                  <div className="text-xs font-medium text-slate-700">Availability</div>
+                                  <div className="text-sm text-slate-800">{driver.availability}</div>
                                 </div>
                               </div>
                             </div>
