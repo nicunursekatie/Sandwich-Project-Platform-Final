@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { isAuthenticated, requirePermission } from '../auth';
 import { IStorage } from '../database-storage';
-import { logger } from '../logger';
+import logger from '../utils/logger';
 
 /**
  * Migration endpoint to convert legacy unresponsiveNotes to structured contactAttemptsLog
