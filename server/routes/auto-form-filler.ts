@@ -3,7 +3,6 @@ import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import multer from 'multer';
-import path from 'path';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -29,9 +28,6 @@ interface AuthenticatedRequest extends Request {
 
 // Create auto-form-filler router
 const autoFormFillerRouter = Router();
-
-// Apply standard middleware (authentication, logging, sanitization)
-autoFormFillerRouter.use(createStandardMiddleware());
 
 // Error handling for this module
 const errorHandler = createErrorHandler('auto-form-filler');
@@ -65,7 +61,6 @@ const upload = multer({
 // POST /api/auto-form-filler/process - Process form filling
 autoFormFillerRouter.post(
   '/process',
-  isAuthenticated,
   upload.single('file'),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -101,7 +96,7 @@ autoFormFillerRouter.post(
         extractedData: {
           // Mock data for demonstration
           organizationName: 'The Sandwich Project',
-          contactName: `${user.firstName} ${user.lastName}`,
+          contactName: [user.firstName, user.lastName].filter(Boolean).join(' '),
           email: user.email,
           date: new Date().toISOString().split('T')[0],
         },
@@ -112,7 +107,7 @@ autoFormFillerRouter.post(
       return res.json(result);
     } catch (error) {
       logger.error('Error processing form:', error);
-      return errorHandler(error, req, res);
+      errorHandler(error, req, res, () => {});
     }
   }
 );
@@ -120,7 +115,6 @@ autoFormFillerRouter.post(
 // GET /api/auto-form-filler/supported-types - Get list of supported form types
 autoFormFillerRouter.get(
   '/supported-types',
-  isAuthenticated,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = getUser(req);
@@ -164,7 +158,7 @@ autoFormFillerRouter.get(
       return res.json(supportedTypes);
     } catch (error) {
       logger.error('Error fetching supported types:', error);
-      return errorHandler(error, req, res);
+      errorHandler(error, req, res, () => {});
     }
   }
 );
