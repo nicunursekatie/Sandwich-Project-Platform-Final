@@ -135,7 +135,13 @@ export function NotesTab({
     priority: 'medium' as 'low' | 'medium' | 'high',
     dueDate: '',
     deleteNoteAfterConvert: false,
+    createMultipleTasks: false,
   });
+  const [detectedTaskLines, setDetectedTaskLines] = useState<string[]>([]);
+  const [individualTaskSettings, setIndividualTaskSettings] = useState<Array<{
+    priority: 'low' | 'medium' | 'high';
+    dueDate: string;
+  }>>([]);
 
   // Use the notes hook with current filters
   const {
@@ -351,46 +357,127 @@ export function NotesTab({
     const readableContent = extractReadableContent(note.content, note.type);
     const project = allProjects.find(p => p.id === note.projectId);
 
+    // Detect if content has multiple actionable lines (bullet points, numbered lists, or separate lines)
+    const lines = readableContent
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        // Remove bullet points, numbers, checkboxes, etc.
+        const cleaned = line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/^\[[ x]\]\s*/i, '').trim();
+        // Keep lines that have substantial content (more than just a few characters)
+        return cleaned.length > 3;
+      });
+
+    const hasMultipleLines = lines.length > 1;
+
+    setDetectedTaskLines(lines);
+
+    // Initialize individual settings for each task line
+    if (hasMultipleLines) {
+      setIndividualTaskSettings(lines.map(() => ({
+        priority: 'medium' as const,
+        dueDate: '',
+      })));
+    }
+
     setTaskFormData({
-      title: `Follow-up: ${project?.title || 'Task from Note'}`,
+      title: hasMultipleLines ? `Tasks from: ${project?.title || 'Note'}` : `Follow-up: ${project?.title || 'Task from Note'}`,
       description: readableContent,
       priority: 'medium',
       dueDate: '',
       deleteNoteAfterConvert: false,
+      createMultipleTasks: hasMultipleLines,
     });
 
     setShowConvertToTaskDialog(true);
   };
 
   const confirmConvertToTask = async () => {
-    if (!noteToConvert || !taskFormData.title.trim()) {
+    if (!noteToConvert) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide a task title.',
+        description: 'Note information is missing.',
         variant: 'destructive',
       });
       return;
     }
 
-    try {
-      // Create task using API
-      const response = await fetch(`/api/projects/${noteToConvert.projectId}/tasks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: taskFormData.title,
-          description: taskFormData.description,
-          priority: taskFormData.priority,
-          status: 'pending',
-          dueDate: taskFormData.dueDate || undefined,
-        }),
-        credentials: 'include',
-      });
+    // Validate based on mode
+    if (taskFormData.createMultipleTasks) {
+      if (detectedTaskLines.length === 0) {
+        toast({
+          title: 'No Tasks Detected',
+          description: 'Could not detect any task lines from the note content.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!taskFormData.title.trim()) {
+        toast({
+          title: 'Missing Information',
+          description: 'Please provide a task title.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to create task');
+    try {
+      let createdCount = 0;
+
+      if (taskFormData.createMultipleTasks) {
+        // Create multiple tasks - one for each line with individual settings
+        const createPromises = detectedTaskLines.map(async (line, index) => {
+          const cleanedLine = line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/^\[[ x]\]\s*/i, '').trim();
+          const settings = individualTaskSettings[index] || { priority: 'medium', dueDate: '' };
+
+          const response = await fetch(`/api/projects/${noteToConvert.projectId}/tasks`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: cleanedLine,
+              description: `Created from meeting note (line ${index + 1})`,
+              priority: settings.priority,
+              status: 'pending',
+              dueDate: settings.dueDate || undefined,
+            }),
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to create task for line ${index + 1}`);
+          }
+
+          return response.json();
+        });
+
+        await Promise.all(createPromises);
+        createdCount = detectedTaskLines.length;
+      } else {
+        // Create single task
+        const response = await fetch(`/api/projects/${noteToConvert.projectId}/tasks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: taskFormData.title,
+            description: taskFormData.description,
+            priority: taskFormData.priority,
+            status: 'pending',
+            dueDate: taskFormData.dueDate || undefined,
+          }),
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create task');
+        }
+
+        createdCount = 1;
       }
 
       // Optionally delete the note
@@ -399,8 +486,8 @@ export function NotesTab({
       }
 
       toast({
-        title: 'Task Created',
-        description: 'Meeting note has been converted to a task successfully.',
+        title: createdCount > 1 ? 'Tasks Created' : 'Task Created',
+        description: `Successfully created ${createdCount} task${createdCount > 1 ? 's' : ''} from meeting note.`,
       });
 
       // Refresh data
@@ -409,12 +496,15 @@ export function NotesTab({
       // Close dialog and reset
       setShowConvertToTaskDialog(false);
       setNoteToConvert(null);
+      setDetectedTaskLines([]);
+      setIndividualTaskSettings([]);
       setTaskFormData({
         title: '',
         description: '',
         priority: 'medium',
         dueDate: '',
         deleteNoteAfterConvert: false,
+        createMultipleTasks: false,
       });
     } catch (error) {
       logger.error('Failed to convert note to task:', error);
@@ -480,15 +570,27 @@ export function NotesTab({
   };
 
   const handleUseInAgenda = (note: MeetingNote) => {
-    if (handleSendToAgenda) {
-      // Pass both projectId and note content so the discussion/decision points
-      // from past meetings are copied into the project's agenda fields
-      handleSendToAgenda(note.projectId, note.content);
+    if (!handleSendToAgenda) return;
+    
+    // Check if the project still exists (hasn't been archived or deleted)
+    const projectExists = allProjects.some(p => p.id === note.projectId);
+    
+    if (!projectExists) {
       toast({
-        title: 'Added to Agenda',
-        description: `Note for "${note.projectTitle}" has been added to agenda planning with past discussion content.`,
+        title: 'Project Not Found',
+        description: `The project "${note.projectTitle || 'Unknown'}" has been archived or deleted and cannot be added to the agenda.`,
+        variant: 'destructive',
       });
+      return;
     }
+    
+    // Pass both projectId and note content so the discussion/decision points
+    // from past meetings are copied into the project's agenda fields
+    handleSendToAgenda(note.projectId, note.content);
+    toast({
+      title: 'Added to Agenda',
+      description: `Note for "${note.projectTitle}" has been added to agenda planning with past discussion content.`,
+    });
   };
 
   const getTypeColor = (type: string) => {
@@ -924,19 +1026,24 @@ export function NotesTab({
                       </div>
                     </div>
                     
-                    {handleSendToAgenda && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUseInAgenda(note)}
-                        className="text-teal-600 border-teal-200 hover:bg-teal-50 text-xs sm:text-sm whitespace-nowrap"
-                        data-testid={`button-use-in-agenda-${note.id}`}
-                      >
-                        <ArrowRight className="w-4 h-4 sm:mr-1" />
-                        <span className="hidden xs:inline">Use in Next Agenda</span>
-                        <span className="xs:hidden">Next Agenda</span>
-                      </Button>
-                    )}
+                    {handleSendToAgenda && (() => {
+                      const projectExists = allProjects.some(p => p.id === note.projectId);
+                      return (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUseInAgenda(note)}
+                          disabled={!projectExists}
+                          className="text-teal-600 border-teal-200 hover:bg-teal-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm whitespace-nowrap"
+                          data-testid={`button-use-in-agenda-${note.id}`}
+                          title={!projectExists ? 'Project has been archived or deleted' : undefined}
+                        >
+                          <ArrowRight className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden xs:inline">Use in Next Agenda</span>
+                          <span className="xs:hidden">Next Agenda</span>
+                        </Button>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -1160,28 +1267,106 @@ export function NotesTab({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="task-title">Task Title *</Label>
-              <Input
-                id="task-title"
-                value={taskFormData.title}
-                onChange={(e) => setTaskFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter task title..."
-                data-testid="input-task-title"
-              />
-            </div>
+            {/* Multi-task detection */}
+            {detectedTaskLines.length > 1 && (
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Checkbox
+                    id="create-multiple"
+                    checked={taskFormData.createMultipleTasks}
+                    onCheckedChange={(checked) =>
+                      setTaskFormData(prev => ({ ...prev, createMultipleTasks: checked as boolean }))
+                    }
+                    data-testid="checkbox-create-multiple-tasks"
+                  />
+                  <Label htmlFor="create-multiple" className="text-sm font-medium cursor-pointer">
+                    Create {detectedTaskLines.length} separate tasks (one per line)
+                  </Label>
+                </div>
+                {taskFormData.createMultipleTasks && (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-xs text-gray-600 mb-2">Configure each task individually:</p>
+                    <div className="max-h-96 overflow-y-auto space-y-3">
+                      {detectedTaskLines.map((line, index) => {
+                        const cleanedLine = line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/^\[[ x]\]\s*/i, '').trim();
+                        const settings = individualTaskSettings[index] || { priority: 'medium', dueDate: '' };
+                        return (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-teal-100 space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="text-teal-600 font-bold text-sm mt-0.5">{index + 1}.</span>
+                              <p className="text-sm text-gray-700 flex-1">{cleanedLine}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 ml-5">
+                              <div>
+                                <Label htmlFor={`task-${index}-priority`} className="text-xs">Priority</Label>
+                                <Select
+                                  value={settings.priority}
+                                  onValueChange={(value: 'low' | 'medium' | 'high') => {
+                                    const newSettings = [...individualTaskSettings];
+                                    newSettings[index] = { ...settings, priority: value };
+                                    setIndividualTaskSettings(newSettings);
+                                  }}
+                                >
+                                  <SelectTrigger id={`task-${index}-priority`} className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor={`task-${index}-due-date`} className="text-xs">Due Date</Label>
+                                <Input
+                                  id={`task-${index}-due-date`}
+                                  type="date"
+                                  className="h-8 text-xs"
+                                  value={settings.dueDate}
+                                  onChange={(e) => {
+                                    const newSettings = [...individualTaskSettings];
+                                    newSettings[index] = { ...settings, dueDate: e.target.value };
+                                    setIndividualTaskSettings(newSettings);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-            <div>
-              <Label htmlFor="task-description">Task Description</Label>
-              <Textarea
-                id="task-description"
-                value={taskFormData.description}
-                onChange={(e) => setTaskFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Task description from note..."
-                rows={6}
-                data-testid="input-task-description"
-              />
-            </div>
+            {!taskFormData.createMultipleTasks && (
+              <>
+                <div>
+                  <Label htmlFor="task-title">Task Title *</Label>
+                  <Input
+                    id="task-title"
+                    value={taskFormData.title}
+                    onChange={(e) => setTaskFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter task title..."
+                    data-testid="input-task-title"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="task-description">Task Description</Label>
+                  <Textarea
+                    id="task-description"
+                    value={taskFormData.description}
+                    onChange={(e) => setTaskFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Task description from note..."
+                    rows={6}
+                    data-testid="input-task-description"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
