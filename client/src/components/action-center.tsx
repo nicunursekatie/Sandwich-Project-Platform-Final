@@ -928,10 +928,6 @@ export default function ActionCenter() {
       open={isMissingDriversModalOpen}
       onOpenChange={setIsMissingDriversModalOpen}
       events={missingDriversEvents}
-      onAssignDrivers={(eventId) => {
-        // Navigate to event requests with the specific event
-        setLocation(`/event-requests?eventId=${eventId}&assign=drivers`);
-      }}
     />
 
     <MissingSpeakersModal
@@ -939,8 +935,8 @@ export default function ActionCenter() {
       onOpenChange={setIsMissingSpeakersModalOpen}
       events={missingSpeakersEvents}
       onAssignSpeakers={(eventId) => {
-        // Navigate to event requests with the specific event
-        setLocation(`/event-requests?eventId=${eventId}&assign=speakers`);
+        // Navigate to event requests - user can find and assign from there
+        setLocation('/event-requests');
       }}
     />
     </TooltipProvider>
