@@ -941,7 +941,22 @@ export default function EnhancedMeetingDashboard() {
                       .filter((id): id is string => Boolean(id))
                   : [];
               setEditProjectOwnerIds(normalizedIds);
+
               if (editingProject) {
+                // Verify the project still exists before attempting update
+                const projectExists = allProjects.some(p => p.id === editingProject);
+
+                if (!projectExists) {
+                  logger.error('❌ Project ID', editingProject, 'not found in current project list');
+                  toast({
+                    title: 'Project Not Found',
+                    description: 'This project may have been archived or deleted. Please refresh the page.',
+                    variant: 'destructive',
+                  });
+                  setShowEditOwnerDialog(false);
+                  return;
+                }
+
                 logger.log('🔄 Calling mutation with projectId:', editingProject);
                 updateProjectOwnerMutation.mutate({
                   projectId: editingProject,
