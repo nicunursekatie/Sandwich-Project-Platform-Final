@@ -132,25 +132,25 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   return (
     <div className="space-y-4">
       {!request.eventStartTime && (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-sm font-medium">Event Start Time</label>
           <Input
             type="time"
             value={tempStartTime}
             onChange={(e) => setTempStartTime(e.target.value)}
-            className="w-full"
+            className="w-full h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
             placeholder="Select start time"
           />
         </div>
       )}
       {!request.eventEndTime && (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-sm font-medium">Event End Time</label>
           <Input
             type="time"
             value={tempEndTime}
             onChange={(e) => setTempEndTime(e.target.value)}
-            className="w-full"
+            className="w-full h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
             placeholder="Select end time"
           />
         </div>
@@ -1107,7 +1107,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-32 text-base text-gray-900 bg-white"
+                        className="h-10 min-w-[140px] text-base text-gray-900 bg-white border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
@@ -1152,7 +1152,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-32 text-base text-gray-900 bg-white"
+                        className="h-10 min-w-[140px] text-base text-gray-900 bg-white border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
@@ -1220,7 +1220,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           type="time"
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-32 text-base text-gray-900 bg-white"
+                          className="h-10 min-w-[140px] text-base text-gray-900 bg-white border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                           autoFocus
                         />
                         <Button size="sm" onClick={saveEdit}>
