@@ -563,13 +563,8 @@ export default function SandwichCollectionLog() {
 
         filteredCollections.forEach((collection: any) => {
           individualTotal += collection.individualSandwiches || 0;
-          // Calculate group total
-          if (collection.groupCollections) {
-            collection.groupCollections.forEach((group: any) => {
-              const count = group.count || group.sandwichCount || 0;
-              groupTotal += count;
-            });
-          }
+          // Calculate group total using the standardized function that handles both JSONB and legacy formats
+          groupTotal += calculateGroupTotal(collection);
           if (collection.collectionDate) {
             dates.push(collection.collectionDate);
           }
@@ -690,36 +685,13 @@ export default function SandwichCollectionLog() {
 
     collectionsData.forEach((collection) => {
       individualTotal += collection.individualSandwiches || 0;
-      const collectionGroupCount = calculateGroupTotal(collection);
-      groupTotal += collectionGroupCount;
-      
-      // DEBUG: Log collections with significant group counts
-      if (collectionGroupCount > 1000) {
-        logger.log('🔍 Collection with large group count:', {
-          id: collection.id,
-          date: collection.collectionDate,
-          host: collection.hostName,
-          groupCount: collectionGroupCount,
-          group1Count: (collection as any).group1Count,
-          group2Count: (collection as any).group2Count,
-          groupCollections: collection.groupCollections
-        });
-      }
-      
+      groupTotal += calculateGroupTotal(collection);
       if (collection.collectionDate) {
         dates.push(collection.collectionDate);
       }
       if (collection.hostName) {
         hostNames.add(collection.hostName);
       }
-    });
-    
-    // DEBUG: Log final totals
-    logger.log('📊 FILTERED STATS CALCULATION:', {
-      collections: collectionsData.length,
-      individualTotal,
-      groupTotal,
-      grandTotal: individualTotal + groupTotal
     });
 
     // Calculate date range
