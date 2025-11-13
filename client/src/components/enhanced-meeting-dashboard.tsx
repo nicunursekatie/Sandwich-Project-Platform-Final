@@ -929,6 +929,10 @@ export default function EnhancedMeetingDashboard() {
           <ProjectAssigneeSelector
             value={editProjectOwner}
             onChange={(value, userIds) => {
+              logger.log('🔍 Owner change - editingProject:', editingProject);
+              logger.log('🔍 Owner change - value:', value);
+              logger.log('🔍 Owner change - userIds:', userIds);
+
               setEditProjectOwner(value);
               const normalizedIds =
                 userIds && userIds.length > 0
@@ -938,11 +942,14 @@ export default function EnhancedMeetingDashboard() {
                   : [];
               setEditProjectOwnerIds(normalizedIds);
               if (editingProject) {
+                logger.log('🔄 Calling mutation with projectId:', editingProject);
                 updateProjectOwnerMutation.mutate({
                   projectId: editingProject,
                   assigneeName: value,
                   assigneeIds: normalizedIds,
                 });
+              } else {
+                logger.error('❌ editingProject is null/undefined!');
               }
               setShowEditOwnerDialog(false);
             }}

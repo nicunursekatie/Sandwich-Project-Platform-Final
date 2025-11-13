@@ -145,11 +145,19 @@ export class ProjectService implements IProjectService {
     updates,
     user,
   }: ProjectUpdateData): Promise<Project | null> {
+    logger.info(`[ProjectService.updateProject] Attempting to update project ${id}`);
+
     // Get existing project for permission checks
     const existingProject = await this.storage.getProject(id);
     if (!existingProject) {
+      logger.error(`[ProjectService.updateProject] Project ${id} not found in storage`);
       return null;
     }
+
+    logger.info(`[ProjectService.updateProject] Found project ${id}:`, {
+      title: existingProject.title,
+      currentOwner: existingProject.assigneeName,
+    });
 
     // Check if this is an agenda update (special permissions)
     const isAgendaUpdate =

@@ -443,6 +443,7 @@ export class DatabaseStorage implements IStorage {
       originalUpdatedAt: project.updatedAt,
       archivedBy: userId,
       archivedByName: userName,
+      googleSheetRowId: project.googleSheetRowId || null, // Preserve Google Sheet row ID to prevent re-import
     };
 
     // Insert into archived table
