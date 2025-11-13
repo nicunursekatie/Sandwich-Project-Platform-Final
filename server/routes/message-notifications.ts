@@ -161,19 +161,23 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         unreadCounts.groups = 0;
       }
 
-      // Get unread kudos count from email system
+      // Get unread kudos count from messaging system (messages + kudosTracking tables)
       try {
         const kudosCount = await db
-          .select({ count: sql<number>`COUNT(*)::int` })
-          .from(emailMessages)
+          .select({ count: sql<number>`COUNT(DISTINCT ${messages.id})::int` })
+          .from(messages)
+          .innerJoin(
+            messageRecipients,
+            eq(messageRecipients.messageId, messages.id)
+          )
+          .innerJoin(kudosTracking, eq(kudosTracking.messageId, messages.id))
           .where(
             and(
-              eq(emailMessages.recipientId, userId),
-              eq(emailMessages.isRead, false),
-              eq(emailMessages.isDraft, false),
-              eq(emailMessages.isTrashed, false),
-              eq(emailMessages.isArchived, false),
-              sql`${emailMessages.subject} LIKE '%Kudos%' OR ${emailMessages.content} LIKE '%kudos%'`
+              eq(messageRecipients.recipientId, userId),
+              eq(messageRecipients.read, false),
+              eq(messageRecipients.contextAccessRevoked, false),
+              isNull(messages.deletedAt),
+              sql`${messages.senderId} != ${userId}` // Don't count own kudos
             )
           );
 

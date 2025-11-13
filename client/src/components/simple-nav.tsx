@@ -134,6 +134,8 @@ export default function SimpleNav({
           return gmailUnreadCount;
         case 'chat':
           return totalUnread;
+        case 'kudos':
+          return unreadCounts.kudos || 0;
         case 'suggestions':
           return unreadCounts.suggestions || 0;
         case 'event-reminders':

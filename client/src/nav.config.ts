@@ -118,6 +118,13 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'communication',
   },
   {
+    id: 'kudos',
+    label: 'Kudos',
+    icon: Trophy,
+    href: 'kudos',
+    group: 'communication',
+  },
+  {
     id: 'suggestions',
     label: 'Suggestions',
     icon: Lightbulb,
