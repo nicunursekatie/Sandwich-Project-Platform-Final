@@ -137,13 +137,16 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
           }
         }
 
+        // Format user name for display
+        const userName = attempt.createdByName || attempt.createdBy || 'Unknown User';
+        
         items.push({
           type: 'contact',
           icon: methodIcons[attempt.method as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />,
           title: `Contact Attempt #${attempt.attemptNumber || '?'}`,
           content: attempt.notes || attempt.outcome || 'No details',
           date: parsedDate,
-          badge: `by ${attempt.createdByName || 'Unknown'}`,
+          badge: `by ${userName}`, // Display user name prominently in badge
           attemptNumber: attempt.attemptNumber,
           createdBy: attempt.createdBy,
           canEdit: canModify,
@@ -402,13 +405,18 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
             <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <div className="space-y-2">
                 {/* Activity Header */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="text-[#236383] dark:text-[#47B3CB]">
                     {item.icon}
                   </div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {item.title}
                   </p>
+                  {item.type === 'contact' && item.badge && (
+                    <Badge variant="default" className="text-xs bg-[#236383] text-white">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Activity Content */}
@@ -425,7 +433,8 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                         {format(item.date, 'MMM d, yyyy h:mm a')}
                       </Badge>
                     )}
-                    {item.badge && (
+                    {/* Only show badge here if it's not a contact attempt (contact attempts show badge in header) */}
+                    {item.badge && item.type !== 'contact' && (
                       <Badge variant="outline" className="text-xs">
                         {item.badge}
                       </Badge>
