@@ -279,10 +279,33 @@ export function NotesTab({
   const handleUpdateNote = () => {
     if (!noteToEdit || !editFormData.content.trim()) return;
 
+    // Check if the original note was JSON-structured
+    let updatedContent = editFormData.content.trim();
+    try {
+      const originalParsed = JSON.parse(noteToEdit.content);
+      // If original was JSON-structured, reconstruct it with updated content
+      if (originalParsed.projectTitle || originalParsed.title) {
+        const updatedParsed = { ...originalParsed };
+        
+        // Update the relevant field based on note type
+        if (editFormData.type === 'discussion') {
+          updatedParsed.discussionPoints = editFormData.content.trim();
+        } else if (editFormData.type === 'meeting') {
+          updatedParsed.decisionItems = editFormData.content.trim();
+        }
+        
+        // Reconstruct JSON string
+        updatedContent = JSON.stringify(updatedParsed);
+      }
+    } catch (error) {
+      // Original wasn't JSON, use content as-is
+      updatedContent = editFormData.content.trim();
+    }
+
     updateNoteMutation.mutate({
       id: noteToEdit.id,
       updates: {
-        content: editFormData.content.trim(),
+        content: updatedContent,
         type: editFormData.type,
         status: editFormData.status,
       },
