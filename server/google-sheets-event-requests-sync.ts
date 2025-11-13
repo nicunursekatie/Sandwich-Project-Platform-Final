@@ -716,7 +716,7 @@ export class EventRequestsGoogleSheetsService {
           const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
           row.externalId = `auto-${hash}`;
           
-          logger.log(`📝 Generated STABLE external_id for row: ${row.externalId} - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
+          // Debug: Generated STABLE external_id for row: ${row.externalId}
         }
 
         const externalIdTrimmed = row.externalId.trim();
@@ -736,7 +736,7 @@ export class EventRequestsGoogleSheetsService {
           );
         }
         // Prepare data for Drizzle insertion using external_id for conflict detection
-        logger.log(`✨ PROCESSING: external_id: ${row.externalId} - ${row.organizationName} - ${row.contactName}`);
+        // Debug: Processing row with external_id: ${row.externalId}
 
         // Ensure dates are valid before saving to database
         const sanitizedData = {
@@ -759,10 +759,6 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // DEBUG: Log the exact external_id we're checking
-          logger.log(`🔍 DEBUG: Checking for external_id: "${externalIdTrimmed}"`);
-          logger.log(`🔍 DEBUG: external_id length: ${externalIdTrimmed.length}, type: ${typeof externalIdTrimmed}`);
-          
           // Check if record exists BEFORE upsert
           const existingRecord = await db
             .select({ 
@@ -775,17 +771,7 @@ export class EventRequestsGoogleSheetsService {
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
 
-          logger.log(`🔍 DEBUG: Query returned ${existingRecord.length} matches`);
-          if (existingRecord.length > 0) {
-            logger.log(`🔍 DEBUG: Matched record:`, {
-              id: existingRecord[0].id,
-              externalId: existingRecord[0].externalId,
-              org: existingRecord[0].organizationName,
-              status: existingRecord[0].status
-            });
-          } else {
-            logger.log(`🔍 DEBUG: No existing record found - this should be an INSERT`);
-          }
+          // Debug: Query returned ${existingRecord.length} matches
 
           const recordExisted = existingRecord && existingRecord.length > 0;
 
@@ -804,7 +790,7 @@ export class EventRequestsGoogleSheetsService {
 
           if (result && result.length > 0) {
             // If result has data, it means INSERT succeeded (new record)
-            logger.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+            // Debug: INSERTED new record: ID ${result[0].id}
             
             // Add audit logging for Google Sheets sync import
             await AuditLogger.logEventRequestChange(
@@ -824,7 +810,7 @@ export class EventRequestsGoogleSheetsService {
           } else {
             // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
             if (recordExisted) {
-              logger.log(`⏭️ SKIPPED existing record (no changes): external_id: ${externalIdTrimmed} - ${row.organizationName}`);
+              // Debug: SKIPPED existing record (no changes)
               updatedCount++; // Track as "updated" (but really just skipped) for stats
             }
           }
