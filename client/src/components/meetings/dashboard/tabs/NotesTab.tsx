@@ -224,10 +224,52 @@ export function NotesTab({
     });
   };
 
+  // Extract readable content from structured JSON notes
+  const extractReadableContent = (content: string, noteType: 'discussion' | 'meeting'): string => {
+    try {
+      // Try to parse as JSON for structured notes
+      const parsed = JSON.parse(content);
+      
+      // For structured notes from agenda planning
+      if (parsed.projectTitle || parsed.title) {
+        // Return the relevant content based on note type
+        if (noteType === 'discussion' && parsed.discussionPoints) {
+          return parsed.discussionPoints;
+        } else if (noteType === 'meeting' && parsed.decisionItems) {
+          return parsed.decisionItems;
+        }
+        
+        // Fallback: format key content fields in a readable way
+        const parts: string[] = [];
+        if (parsed.discussionPoints) {
+          parts.push(`Discussion Points:\n${parsed.discussionPoints}`);
+        }
+        if (parsed.decisionItems) {
+          parts.push(`Decision Items:\n${parsed.decisionItems}`);
+        }
+        if (parsed.content) {
+          parts.push(parsed.content);
+        }
+        
+        if (parts.length > 0) {
+          return parts.join('\n\n');
+        }
+      }
+      
+      // If it's JSON but not our structured format, return as-is
+      return content;
+    } catch (error) {
+      // If it's not JSON, return as plain text
+      return content;
+    }
+  };
+
   const handleEditNote = (note: MeetingNote) => {
     setNoteToEdit(note);
+    // Extract readable content from JSON if applicable
+    const readableContent = extractReadableContent(note.content, note.type);
     setEditFormData({
-      content: note.content,
+      content: readableContent,
       type: note.type,
       status: note.status,
     });
