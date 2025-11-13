@@ -18,7 +18,7 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { trackClick, trackView, trackEvent, trackButtonClick } = useAnalytics();
+  const { trackEvent, trackButtonClick } = useAnalytics();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
@@ -60,12 +60,6 @@ export const ScheduledTab: React.FC = () => {
       to: newMode,
       tab: 'scheduled',
       timestamp: new Date().toISOString(),
-    });
-
-    trackClick('scheduled_tab_view_mode_toggle', {
-      view_mode: newMode,
-      previous_mode: viewMode,
-      source: 'toggle_button',
     });
 
     trackButtonClick(`switch_to_${newMode}_view`, 'event_requests_scheduled_tab');
