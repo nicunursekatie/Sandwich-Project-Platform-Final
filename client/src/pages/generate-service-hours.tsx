@@ -24,6 +24,7 @@ export default function GenerateServiceHours() {
   const { toast } = useToast();
   const [volunteerName, setVolunteerName] = useState('');
   const [approverName, setApproverName] = useState('Katie Long');
+  const [approverSignature, setApproverSignature] = useState('');
   const [approverContact, setApproverContact] = useState('');
   const [serviceEntries, setServiceEntries] = useState<ServiceEntry[]>([
     { date: '', hours: '', description: '' },
@@ -64,6 +65,7 @@ export default function GenerateServiceHours() {
       volunteerName: string;
       serviceEntries: ServiceEntry[];
       approverName: string;
+      approverSignature: string;
       approverContact: string;
       totalHours: number;
     }) => {
@@ -138,6 +140,7 @@ export default function GenerateServiceHours() {
       volunteerName,
       serviceEntries: validEntries,
       approverName,
+      approverSignature,
       approverContact,
       totalHours,
     });
@@ -272,27 +275,43 @@ export default function GenerateServiceHours() {
           {/* TSP Approval Section */}
           <div className="space-y-4 border-t pt-6">
             <Label className="text-lg">TSP Approval Information</Label>
+            <p className="text-sm text-muted-foreground">
+              This section will be filled in by The Sandwich Project. The volunteer signature line will be left blank for the volunteer to sign.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="approverName">Approver Name</Label>
+                <Label htmlFor="approverName">Approver Print Name</Label>
                 <Input
                   id="approverName"
                   value={approverName}
                   onChange={(e) => setApproverName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder="Your printed name"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="approverContact">Contact Number</Label>
+                <Label htmlFor="approverSignature">Approver Signature</Label>
                 <Input
-                  id="approverContact"
-                  value={approverContact}
-                  onChange={(e) => setApproverContact(e.target.value)}
-                  placeholder="(555) 123-4567"
-                  className="mt-1"
+                  id="approverSignature"
+                  value={approverSignature}
+                  onChange={(e) => setApproverSignature(e.target.value)}
+                  placeholder="Type your signature"
+                  className="mt-1 font-serif italic"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Type your name as you would sign it
+                </p>
               </div>
+            </div>
+            <div>
+              <Label htmlFor="approverContact">Contact Number</Label>
+              <Input
+                id="approverContact"
+                value={approverContact}
+                onChange={(e) => setApproverContact(e.target.value)}
+                placeholder="(555) 123-4567"
+                className="mt-1"
+              />
             </div>
           </div>
 

@@ -12,6 +12,7 @@ interface ServiceHoursData {
   volunteerName: string;
   serviceEntries: ServiceEntry[];
   approverName: string;
+  approverSignature: string;
   approverContact: string;
   totalHours: number;
 }
@@ -126,8 +127,19 @@ export class ServiceHoursPDFGenerator {
       color: rgb(0, 0, 0),
     });
 
-    // Current date for volunteer signature
+    // Current date for TSP approval
     const currentDate = new Date().toLocaleDateString('en-US');
+
+    // TSP Approval - Signature (on the signature line)
+    if (data.approverSignature) {
+      firstPage.drawText(data.approverSignature, {
+        x: 90,
+        y: height - 373,
+        size: 12,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+    }
 
     // TSP Approval - Print Name
     firstPage.drawText(data.approverName, {
