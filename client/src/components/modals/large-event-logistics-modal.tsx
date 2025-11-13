@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
+import { parseCollectionDate } from '@/lib/analytics-utils';
 
 interface LargeEventLogisticsModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export default function LargeEventLogisticsModal({
 }: LargeEventLogisticsModalProps) {
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return 'Not set';
-    const d = new Date(date);
+    const d = typeof date === 'string' ? parseCollectionDate(date) : date;
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -34,7 +35,7 @@ export default function LargeEventLogisticsModal({
 
   const getDayOfWeek = (date: Date | string | null | undefined) => {
     if (!date) return null;
-    const d = new Date(date);
+    const d = typeof date === 'string' ? parseCollectionDate(date) : date;
     return d.toLocaleDateString('en-US', { weekday: 'long' });
   };
 
