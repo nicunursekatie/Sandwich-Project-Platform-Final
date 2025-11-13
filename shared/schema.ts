@@ -255,6 +255,7 @@ export const archivedProjects = pgTable('archived_projects', {
   archivedAt: timestamp('archived_at').notNull().defaultNow(),
   archivedBy: varchar('archived_by'),
   archivedByName: varchar('archived_by_name'),
+  googleSheetRowId: text('google_sheet_row_id'), // Preserve Google Sheet row ID to prevent re-import
 });
 
 export const projectTasks = pgTable('project_tasks', {
