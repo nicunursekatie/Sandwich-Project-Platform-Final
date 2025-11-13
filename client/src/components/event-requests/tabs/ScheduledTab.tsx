@@ -18,9 +18,8 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { trackClick, trackView } = useAnalytics();
+  const { trackClick, trackView, trackEvent, trackButtonClick } = useAnalytics();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
-  const { trackEvent, trackButtonClick } = useAnalytics();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
 
