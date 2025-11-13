@@ -107,6 +107,7 @@ const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
 const Resources = lazyWithRetry(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
+const AutoFormFiller = lazyWithRetry(() => import('@/pages/auto-form-filler').then(m => ({ default: m.AutoFormFiller })));
 const EventRequestAuditLog = lazyWithRetry(() => import('@/components/event-request-audit-log').then(m => ({ default: m.EventRequestAuditLog })));
 const HistoricalImport = lazyWithRetry(() => import('@/pages/historical-import'));
 const MyAvailability = lazyWithRetry(() => import('@/pages/my-availability'));
@@ -119,6 +120,7 @@ const ExpensesPage = lazyWithRetry(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-showcase'));
 const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
+const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -296,6 +298,8 @@ export default function Dashboard({
         return <ImportantDocuments />;
       case 'resources':
         return <Resources />;
+      case 'auto-form-filler':
+        return <AutoFormFiller />;
       case 'projects':
         logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;
@@ -500,6 +504,8 @@ export default function Dashboard({
         return <DesignSystemShowcase />;
       case 'smart-search-admin':
         return <SmartSearchAdmin />;
+      case 'generate-service-hours':
+        return <GenerateServiceHours />;
       default:
         // Handle project detail pages
         if (projectId) {
