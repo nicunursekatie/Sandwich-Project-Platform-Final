@@ -160,7 +160,7 @@ export class GoogleSheetsSyncService {
             if ((rowIndexStr && !p.googleSheetRowId) || (!rowIndexStr && p.googleSheetRowId)) {
               const titleMatch = p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
               if (titleMatch) {
-                logger.log(`⚠️  SUSPICIOUS: Title matches archived project "${row.project}" but row IDs mismatch (sheet row: ${rowIndexStr}, archived row: ${p.googleSheetRowId}) - investigating further`);
+                logger.log(`⚠️  SUSPICIOUS: Title matches archived project "${row.project}" but row IDs mismatch (sheet row: ${rowIndexStr}, archived row: ${p.googleSheetRowId}) - treating as archived to prevent recreation with new ID`);
                 // For safety, if we see a title match with mismatched row IDs, treat it as archived
                 // This prevents recreating the same project with a new ID
                 return true;
