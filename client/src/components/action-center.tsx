@@ -34,12 +34,14 @@ import {
   parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import { REGULAR_THURSDAY_CAPACITY, SPECIAL_PLACEMENT_HIGH_THRESHOLD } from '@/lib/sandwich-utils';
+import { calculatePlacementTotals } from '@/lib/week-planning-utils';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
 import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
 import MissingDriversModal from '@/components/modals/missing-drivers-modal';
 import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
-import WeekOutlookModal from '@/components/WeekOutlookModal';
+import WeekOutlookModal from '@/components/modals/week-outlook-modal';
 
 interface ActionItem {
   id: string;
@@ -460,34 +462,13 @@ export default function ActionCenter() {
       });
 
       // Break down by day to identify regular distribution (Wednesday) vs special placement
-      let wednesdayTotal = 0;
-      let specialPlacementTotal = 0;
-
-      plannedCollectionsThisWeek.forEach((c) => {
-        const date = parseCollectionDate(c.collectionDate);
-        const groupTotal = (Array.isArray(c.groupCollections) ? c.groupCollections : [])
-          .reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
-
-        if (date.getDay() === 3) { // Wednesday
-          wednesdayTotal += groupTotal;
-        } else {
-          specialPlacementTotal += groupTotal;
-        }
-      });
-
-      scheduledThisWeek.forEach((event) => {
-        const eventDate = new Date(event.desiredEventDate);
-        const eventTotal = event.estimatedSandwichCount || 0;
-
-        if (eventDate.getDay() === 3) { // Wednesday
-          wednesdayTotal += eventTotal;
-        } else {
-          specialPlacementTotal += eventTotal;
-        }
-      });
+      const { wednesdayTotal, specialPlacementTotal } = calculatePlacementTotals(
+        plannedCollectionsThisWeek,
+        scheduledThisWeek,
+        today
+      );
 
       const totalPlanned = wednesdayTotal + specialPlacementTotal;
-      const regularCapacity = 8000; // Assume Thursday distribution can handle ~8000
 
       // Show this insight if we have meaningful group events planned
       if (totalPlanned > 0) {
@@ -495,19 +476,19 @@ export default function ActionCenter() {
         const dayName = weekdays[dayOfWeek];
 
         // Determine priority based on placement challenges
-        let priority: 'high' | 'medium' | 'low' = 'medium';
+        let priority: 'high' | 'medium' | 'low';
         let impact = '';
         let action = '';
 
-        if (wednesdayTotal > regularCapacity && specialPlacementTotal > 0) {
+        if (wednesdayTotal > REGULAR_THURSDAY_CAPACITY && specialPlacementTotal > 0) {
           priority = 'high';
-          impact = `${(wednesdayTotal - regularCapacity).toLocaleString()} over Thursday capacity + ${specialPlacementTotal.toLocaleString()} needing special placement`;
+          impact = `${(wednesdayTotal - REGULAR_THURSDAY_CAPACITY).toLocaleString()} over Thursday capacity + ${specialPlacementTotal.toLocaleString()} needing special placement`;
           action = 'Review placement capacity - High volume alert';
-        } else if (wednesdayTotal > regularCapacity) {
+        } else if (wednesdayTotal > REGULAR_THURSDAY_CAPACITY) {
           priority = 'high';
-          impact = `${(wednesdayTotal - regularCapacity).toLocaleString()} sandwiches over regular Thursday distribution capacity`;
+          impact = `${(wednesdayTotal - REGULAR_THURSDAY_CAPACITY).toLocaleString()} sandwiches over regular Thursday distribution capacity`;
           action = 'Plan additional distribution locations or times';
-        } else if (specialPlacementTotal > 1000) {
+        } else if (specialPlacementTotal > SPECIAL_PLACEMENT_HIGH_THRESHOLD) {
           priority = 'medium';
           impact = `${specialPlacementTotal.toLocaleString()} sandwiches need placement outside regular Thursday distribution`;
           action = 'Coordinate recipient placement for non-Wednesday events';
@@ -521,10 +502,12 @@ export default function ActionCenter() {
           action = 'View week outlook - all events aligned with regular distribution';
         }
 
-        // Add context about recruitment
-        const percentOfWeekly = totalPlanned / avgWeekly;
-        if (percentOfWeekly > 0.8) {
-          impact += ` (${Math.round(percentOfWeekly * 100)}% of weekly goal)`;
+        // Add context about recruitment (guard against division by zero)
+        if (avgWeekly > 0) {
+          const percentOfWeekly = totalPlanned / avgWeekly;
+          if (percentOfWeekly > 0.8) {
+            impact += ` (${Math.round(percentOfWeekly * 100)}% of weekly goal)`;
+          }
         }
 
         actions.push({
