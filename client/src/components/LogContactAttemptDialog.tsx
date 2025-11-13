@@ -108,6 +108,20 @@ export default function LogContactAttemptDialog({
 
       // Build structured contact attempt log (new format only)
       const existingLog = eventRequest.contactAttemptsLog || [];
+      // Build user name with proper fallback logic
+      let createdByName: string | undefined;
+      if (user?.displayName) {
+        createdByName = user.displayName;
+      } else if (user?.firstName && user?.lastName) {
+        createdByName = `${user.firstName} ${user.lastName}`.trim();
+      } else if (user?.email) {
+        createdByName = user.email;
+      } else if (user?.id) {
+        createdByName = `User ${user.id}`;
+      } else {
+        createdByName = 'Unknown User';
+      }
+      
       const newAttempt = {
         attemptNumber,
         timestamp: contactDate.toISOString(),
@@ -115,9 +129,7 @@ export default function LogContactAttemptDialog({
         outcome: contactOutcome,
         notes: notes || undefined,
         createdBy: user?.id || 'unknown',
-        createdByName: user?.displayName || user?.firstName && user?.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user?.email || undefined,
+        createdByName,
       };
       const updatedLog = [...existingLog, newAttempt];
 
