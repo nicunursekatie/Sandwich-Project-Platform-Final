@@ -41,8 +41,7 @@ SELECT
   ap.archived_at,
   CASE
     WHEN p.created_at > ap.archived_at THEN '🚨 LIKELY DUPLICATE - Active created after archive'
-    WHEN LOWER(TRIM(p.title)) = LOWER(TRIM(ap.title)) THEN '⚠️ POSSIBLE DUPLICATE - Title match'
-    ELSE '✅ Different projects'
+    ELSE '⚠️ POSSIBLE DUPLICATE - Title match'
   END as analysis
 FROM archived_projects ap
 INNER JOIN projects p ON LOWER(TRIM(p.title)) = LOWER(TRIM(ap.title))
