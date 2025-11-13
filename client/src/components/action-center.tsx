@@ -37,6 +37,8 @@ import { logger } from '@/lib/logger';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
 import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
+import MissingDriversModal from '@/components/modals/missing-drivers-modal';
+import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
 
 interface ActionItem {
   id: string;
@@ -62,6 +64,12 @@ export default function ActionCenter() {
 
   const [isGrowthOpportunitiesModalOpen, setIsGrowthOpportunitiesModalOpen] = useState(false);
   const [growthOpportunities, setGrowthOpportunities] = useState<Array<{ org: string; eventCount: number; avgSize: number }>>([]);
+
+  const [isMissingDriversModalOpen, setIsMissingDriversModalOpen] = useState(false);
+  const [missingDriversEvents, setMissingDriversEvents] = useState<EventRequest[]>([]);
+
+  const [isMissingSpeakersModalOpen, setIsMissingSpeakersModalOpen] = useState(false);
+  const [missingSpeakersEvents, setMissingSpeakersEvents] = useState<EventRequest[]>([]);
 
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
@@ -513,18 +521,10 @@ export default function ActionCenter() {
     // CATEGORY 3: GROWTH OPPORTUNITIES
     // ============================================================
 
-    // Compare current month to same month last year
-    const lastYearMonth = currentMonth;
-    const lastYear = currentYear - 1;
-
+    // Compare current month to current year's monthly average (more meaningful than YoY)
     const currentMonthCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    });
-
-    const lastYearSameMonthCollections = collections.filter((c) => {
-      const date = parseCollectionDate(c.collectionDate);
-      return date.getMonth() === lastYearMonth && date.getFullYear() === lastYear;
     });
 
     const currentMonthTotal = currentMonthCollections.reduce(
@@ -532,27 +532,39 @@ export default function ActionCenter() {
       0
     );
 
-    const lastYearSameMonthTotal = lastYearSameMonthCollections.reduce(
-      (sum, c) => sum + calculateTotalSandwiches(c),
-      0
-    );
+    // Calculate this year's average monthly total (excluding current month if incomplete)
+    const currentYearMonths = new Map<number, number>();
+    collections.forEach((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      if (date.getFullYear() === currentYear) {
+        const month = date.getMonth();
+        const current = currentYearMonths.get(month) || 0;
+        currentYearMonths.set(month, current + calculateTotalSandwiches(c));
+      }
+    });
 
-    // Only flag if we have data from last year and we're significantly behind
-    if (lastYearSameMonthTotal > 0) {
-      const yearOverYearGap = lastYearSameMonthTotal - currentMonthTotal;
-      const percentBehind = (yearOverYearGap / lastYearSameMonthTotal) * 100;
+    // Get completed months only (months before current month)
+    const completedMonths = Array.from(currentYearMonths.entries())
+      .filter(([month]) => month < currentMonth)
+      .map(([, total]) => total);
 
-      if (yearOverYearGap > 1000 && percentBehind > 15) {
+    if (completedMonths.length > 0) {
+      const yearToDateMonthlyAvg = completedMonths.reduce((sum, total) => sum + total, 0) / completedMonths.length;
+      const gapVsYearAvg = yearToDateMonthlyAvg - currentMonthTotal;
+      const percentBelowAvg = (gapVsYearAvg / yearToDateMonthlyAvg) * 100;
+
+      // Only flag if significantly below this year's average (indicates unusual decline)
+      if (gapVsYearAvg > 2000 && percentBelowAvg > 20) {
         const monthName = today.toLocaleDateString('en-US', { month: 'long' });
         actions.push({
-          id: 'year-over-year-decline',
+          id: 'month-below-year-average',
           priority: 'medium',
           category: 'planning',
-          title: `${monthName} Tracking Behind Last Year`,
-          description: `${Math.round(percentBehind)}% below ${monthName} ${lastYear} (${yearOverYearGap.toLocaleString()} fewer sandwiches)`,
-          impact: `Identifying growth opportunities could restore momentum`,
-          action: `Review what worked well in ${monthName} ${lastYear} and replicate those strategies`,
-          data: { currentMonthTotal, lastYearSameMonthTotal, gap: yearOverYearGap, percentBehind },
+          title: `${monthName} Below ${currentYear} Average`,
+          description: `${Math.round(percentBelowAvg)}% below year-to-date monthly average (${gapVsYearAvg.toLocaleString()} fewer sandwiches)`,
+          impact: `Current month tracking below typical ${currentYear} performance`,
+          action: `Increase recruitment and event scheduling for remainder of ${monthName}`,
+          data: { currentMonthTotal, yearToDateMonthlyAvg, gap: gapVsYearAvg, percentBelowAvg },
         });
       }
     }
@@ -847,15 +859,17 @@ export default function ActionCenter() {
                       } else if (item.id === 'growth-opportunities' && item.data?.organizations) {
                         setGrowthOpportunities(item.data.organizations);
                         setIsGrowthOpportunitiesModalOpen(true);
-                      } else if (item.id === 'missing-drivers' || item.id === 'missing-speakers') {
-                        // Navigate to event requests page
+                      } else if (item.id === 'missing-drivers' && item.data?.events) {
+                        // Open missing drivers modal
+                        setMissingDriversEvents(item.data.events);
+                        setIsMissingDriversModalOpen(true);
+                      } else if (item.id === 'missing-speakers' && item.data?.events) {
+                        // Open missing speakers modal
+                        setMissingSpeakersEvents(item.data.events);
+                        setIsMissingSpeakersModalOpen(true);
+                      } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'early-week-planning' || item.id === 'month-below-year-average') {
+                        // Navigate to event requests to add new events / increase recruitment
                         setLocation('/event-requests');
-                      } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'early-week-planning') {
-                        // Navigate to event requests to add new events
-                        setLocation('/event-requests');
-                      } else if (item.id === 'year-over-year-decline') {
-                        // Navigate to analytics dashboard
-                        setLocation('/analytics');
                       }
                     }}
                   >
@@ -902,6 +916,26 @@ export default function ActionCenter() {
       open={isGrowthOpportunitiesModalOpen}
       onOpenChange={setIsGrowthOpportunitiesModalOpen}
       opportunities={growthOpportunities}
+    />
+
+    <MissingDriversModal
+      open={isMissingDriversModalOpen}
+      onOpenChange={setIsMissingDriversModalOpen}
+      events={missingDriversEvents}
+      onAssignDrivers={(eventId) => {
+        // Navigate to event requests with the specific event
+        setLocation(`/event-requests?eventId=${eventId}&assign=drivers`);
+      }}
+    />
+
+    <MissingSpeakersModal
+      open={isMissingSpeakersModalOpen}
+      onOpenChange={setIsMissingSpeakersModalOpen}
+      events={missingSpeakersEvents}
+      onAssignSpeakers={(eventId) => {
+        // Navigate to event requests with the specific event
+        setLocation(`/event-requests?eventId=${eventId}&assign=speakers`);
+      }}
     />
     </TooltipProvider>
   );
