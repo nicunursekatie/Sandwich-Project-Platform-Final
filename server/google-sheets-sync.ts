@@ -121,29 +121,49 @@ export class GoogleSheetsSyncService {
       for (const row of sheetRows) {
         if (!row.project) continue; // Skip empty rows
 
+        // Normalize row index to string for consistent comparison
+        const rowIndexStr = row.rowIndex?.toString() || null;
+
         // Try to find existing project by title or sheet row ID
         const existingProject = existingProjects.find(
           (p) =>
-            p.googleSheetRowId === row.rowIndex?.toString() ||
+            (p.googleSheetRowId && p.googleSheetRowId === rowIndexStr) ||
             p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
         );
 
         // Check if this project was previously archived - if so, skip entirely (don't create OR update)
         // Compare using googleSheetRowId (most reliable) or title (fallback)
+        // Use strict string comparison and handle null/undefined cases
         const wasArchived = archivedProjects.find(
-          (p) =>
-            (p.googleSheetRowId && p.googleSheetRowId === row.rowIndex?.toString()) ||
-            (!p.googleSheetRowId && p.title.toLowerCase().trim() === row.project.toLowerCase().trim())
+          (p) => {
+            // First try matching by googleSheetRowId if both exist
+            if (rowIndexStr && p.googleSheetRowId) {
+              const match = p.googleSheetRowId.toString() === rowIndexStr;
+              if (match) {
+                logger.log(`🔍 Found archived project by row ID: "${row.project}" (row ${rowIndexStr}, archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+            }
+            // Fallback to title matching if no row ID match
+            if (!rowIndexStr || !p.googleSheetRowId) {
+              const titleMatch = p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
+              if (titleMatch) {
+                logger.log(`🔍 Found archived project by title: "${row.project}" (archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+            }
+            return false;
+          }
         );
 
         if (wasArchived) {
           if (existingProject) {
             // Project was archived but still exists in projects table - this shouldn't happen but handle it
-            logger.log(`⚠️  Found archived project "${row.project}" (row ${row.rowIndex}, ID: ${existingProject.id}) still in projects table - skipping sync to prevent un-archiving`);
+            logger.log(`⚠️  Found archived project "${row.project}" (row ${rowIndexStr}, active ID: ${existingProject.id}, archived ID: ${wasArchived.originalProjectId}) still in projects table - skipping sync to prevent un-archiving`);
             continue;
           } else {
             // Project was archived and doesn't exist - skip creating it
-            logger.log(`⏭️  Skipping archived project "${row.project}" (row ${row.rowIndex}) - previously archived, not re-creating`);
+            logger.log(`⏭️  Skipping archived project "${row.project}" (row ${rowIndexStr}, archived ID: ${wasArchived.originalProjectId}) - previously archived, not re-creating`);
             continue;
           }
         }
