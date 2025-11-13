@@ -643,31 +643,33 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <div className="space-y-3">
             {/* Times Row with Add Times button */}
             <div className="flex items-start justify-between gap-4">
-              <div className="grid grid-cols-3 gap-2 text-sm flex-1">
+              <div className="grid grid-cols-3 gap-3 text-sm flex-1">
                 {/* Start Time */}
                 <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold">Start</div>
+                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
                   {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       <Input
                         type="time"
                         value={addingAllTimes ? tempStartTime : editingValue}
                         onChange={(e) => addingAllTimes ? setTempStartTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
                       />
                       {!addingAllTimes && (
-                        <div className="flex gap-1">
-                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                            <Save className="w-3 h-3" aria-hidden="true" />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                            Save
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                            <X className="w-3 h-3" aria-hidden="true" />
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                            Cancel
                           </Button>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
                       {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
                     </div>
                   )}
@@ -675,28 +677,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
                 {/* End Time */}
                 <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold">End</div>
+                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
                   {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       <Input
                         type="time"
                         value={addingAllTimes ? tempEndTime : editingValue}
                         onChange={(e) => addingAllTimes ? setTempEndTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
                       />
                       {!addingAllTimes && (
-                        <div className="flex gap-1">
-                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                            <Save className="w-3 h-3" aria-hidden="true" />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                            Save
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                            <X className="w-3 h-3" aria-hidden="true" />
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                            Cancel
                           </Button>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
                       {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
                     </div>
                   )}
@@ -704,29 +708,31 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
                 {/* Pickup Time */}
                 <div>
-                  <div className="text-gray-700 text-sm uppercase font-semibold">Pickup</div>
+                  <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
                   {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       {addingAllTimes ? (
                         <Input
                           type="time"
                           value={tempPickupTime}
                           onChange={(e) => setTempPickupTime(e.target.value)}
-                          className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                          className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
                         />
                       ) : (
                         <>
                           <DateTimePicker
                             value={editingValue}
                             onChange={setEditingValue}
-                            className="h-7 text-xs border-[#007E8C]/20"
+                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 min-w-[200px]"
                           />
-                          <div className="flex gap-1">
-                            <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                              <Save className="w-3 h-3" aria-hidden="true" />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Save
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                              <X className="w-3 h-3" aria-hidden="true" />
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Cancel
                             </Button>
                           </div>
                         </>
@@ -747,7 +753,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-2 h-7 text-xs"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm"
                       onClick={() => {
                         // Initialize temp values with existing times
                         setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
@@ -757,7 +763,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       }}
                       title="Set all time fields at once"
                     >
-                      <Clock className="w-3 h-3" aria-hidden="true" />
+                      <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
+                      Add Times
                     </Button>
                   ) : (
                     <div className="flex gap-1">
@@ -789,11 +796,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             setAddingAllTimes(false);
                           }
                         }}
-                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap"
+                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap h-9 px-4 text-sm"
                         disabled={updateFieldsMutation.isPending}
                         aria-label="Save all times"
                       >
-                        <Save className="w-3 h-3 mr-1" aria-hidden="true" />
+                        <Save className="w-4 h-4 mr-2" aria-hidden="true" />
                         {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
                       </Button>
                       <Button
@@ -805,10 +812,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           setTempEndTime('');
                           setTempPickupTime('');
                         }}
-                        className="text-gray-600 hover:bg-gray-100"
+                        className="text-gray-600 hover:bg-gray-100 h-9 px-4 text-sm"
                         aria-label="Cancel"
                       >
-                        <X className="w-3 h-3" aria-hidden="true" />
+                        <X className="w-4 h-4 mr-2" aria-hidden="true" />
+                        Cancel
                       </Button>
                     </div>
                   )}
