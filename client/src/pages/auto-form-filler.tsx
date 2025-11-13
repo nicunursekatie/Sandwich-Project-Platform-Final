@@ -10,11 +10,21 @@ import {
   Info,
 } from 'lucide-react';
 
+interface FormResult {
+  success?: boolean;
+  formType?: string;
+  fileName?: string;
+  extractedData?: Record<string, string>;
+  filledFormUrl?: string | null;
+  message?: string;
+  error?: string;
+}
+
 export function AutoFormFiller() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formType, setFormType] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<FormResult | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -43,7 +53,16 @@ export function AutoFormFiller() {
         const data = await response.json();
         setResult(data);
       } else {
-        throw new Error('Failed to process form');
+        let errorMessage = 'Failed to process form';
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors and use the default message
+        }
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error processing form:', error);
