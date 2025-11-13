@@ -573,86 +573,87 @@ export default function MonthlyComparisonAnalytics() {
         </div>
 
         {/* Primary Impact Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-          <div className="bg-white p-4 rounded-lg border border-green-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ People Fed</div>
-            <div className="text-3xl font-bold text-brand-primary">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
+          <div className="bg-white p-4 rounded-lg border border-green-200 border-l-4 min-w-0 overflow-hidden">
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">People Fed</div>
+            <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-gray-500 mt-1 text-[14px]">Sandwiches collected</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Sandwiches collected</p>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-brand-primary-border border-l-4">
-            <div className="text-sm text-gray-600 mb-3">✓ Wed/Thu vs Off-Day Split</div>
+          <div className="bg-white p-4 rounded-lg border border-brand-primary-border border-l-4 min-w-0 overflow-hidden">
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 truncate">Wed/Thu vs Off-Day Split</div>
             
             <div className="space-y-3">
               {/* Wed/Thu Row */}
-              <div className="flex items-center justify-between bg-brand-primary-lighter rounded-lg p-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-brand-primary-lighter0 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">Wed/Thu</span>
+              <div className="flex items-center justify-between bg-brand-primary-lighter rounded-lg p-3 min-w-0 gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-shrink">
+                  <div className="w-3 h-3 bg-brand-primary-lighter0 rounded-full flex-shrink-0"></div>
+                  <span className="text-sm font-medium text-gray-700 truncate">Wed/Thu</span>
                 </div>
-                <div className="text-xl font-bold text-brand-primary">
+                <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
                   {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()}
                 </div>
               </div>
               
               {/* Other Days Row */}
-              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">Other days</span>
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 min-w-0 gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-shrink">
+                  <div className="w-3 h-3 bg-gray-500 rounded-full flex-shrink-0"></div>
+                  <span className="text-sm font-medium text-gray-700 truncate">Other days</span>
                 </div>
-                <div className="text-xl font-bold text-brand-primary">
+                <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
                   {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()}
                 </div>
               </div>
             </div>
             
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-gray-800">
+            <div className="mt-3 pt-3 border-t border-gray-200 min-w-0 overflow-hidden">
+              <div className="text-center min-w-0">
+                <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Total Distribution</div>
+                <div className="text-base md:text-lg font-semibold text-gray-800 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                   {(selectedMonthAnalysis.wedThuSandwiches + selectedMonthAnalysis.otherDaysSandwiches).toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-500">Total Collection Day Distribution</div>
+                <div className="text-xs text-gray-500 truncate mt-1">Collection days</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ Collection Sites</div>
-            <div className="text-3xl font-bold text-brand-primary">
+          <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4 min-w-0 overflow-hidden">
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Collection Sites</div>
+            <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
-            <p className="text-gray-500 mt-1 text-[14px]">{selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts recording data</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">{selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts recording data</p>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ Avg per Collection</div>
-            <div className="text-3xl font-bold text-brand-primary">
+          <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4 min-w-0 overflow-hidden">
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Avg per Collection</div>
+            <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
             </div>
-            <p className="text-gray-500 mt-1 text-[14px]">Efficiency metric</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Efficiency metric</p>
           </div>
 
           {selectedMonthAnalysis.rolling3MonthAvg && (
-            <div className="bg-white p-4 rounded-lg border border-indigo-200 border-l-4">
-              <div className="text-sm text-gray-600 mb-1">3-Month Trend</div>
-              <div className="text-3xl font-bold text-brand-primary">
+            <div className="bg-white p-4 rounded-lg border border-indigo-200 border-l-4 min-w-0 overflow-hidden">
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">3-Month Trend</div>
+              <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                 {selectedMonthAnalysis.rolling3MonthAvg.toLocaleString()}
               </div>
-              <p className="text-gray-500 mt-1 text-[14px]">Rolling average</p>
+              <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Rolling average</p>
             </div>
           )}
         </div>
 
         {/* Context Card */}
-        <div className="bg-white/50 p-4 rounded-lg border border-gray-200">
-          <div className="flex items-start gap-3">
-            <Activity className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-gray-700 text-[16px]">
-                <span className="font-medium text-[16px]">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
+        <div className="bg-white/50 p-4 rounded-lg border border-gray-200 min-w-0 overflow-hidden">
+          <div className="flex items-start gap-3 min-w-0">
+            <Activity className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-700 text-sm sm:text-base break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                <span className="font-medium">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
                 {' '}
                 {selectedMonthAnalysis.comparisonChange !== null ? (
                   <>
@@ -780,32 +781,32 @@ export default function MonthlyComparisonAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
-                  <div className="text-sm text-brand-primary-muted mb-1">Total Sandwiches</div>
-                  <div className="text-2xl font-bold text-brand-primary-darker">
+                <div className="p-4 bg-brand-primary-lighter rounded-lg border border-brand-primary-border min-w-0 overflow-hidden">
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Total Sandwiches</div>
+                  <div className="text-xl md:text-2xl font-bold text-brand-primary-darker break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
                   </div>
-                  <div className="text-brand-primary-muted mt-1 text-[16px]">
+                  <div className="text-brand-primary-muted mt-1 text-sm sm:text-base truncate">
                     From {selectedMonthAnalysis.selectedMonthData.totalCollections} collections
                   </div>
                 </div>
 
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="mb-1 text-[#47B3CB] font-bold text-[15px]">Individual Collections</div>
-                  <div className="text-2xl font-bold text-green-900">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200 min-w-0 overflow-hidden">
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Individual Collections</div>
+                  <div className="text-xl md:text-2xl font-bold text-green-900 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
                   </div>
-                  <div className="text-green-600 mt-1 text-[16px]">
+                  <div className="text-green-600 mt-1 text-sm sm:text-base truncate">
                     {((selectedMonthAnalysis.selectedMonthData.individualCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total
                   </div>
                 </div>
 
-                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <div className="text-sm text-purple-600 mb-1">Group Events</div>
-                  <div className="text-2xl font-bold text-purple-900">
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 min-w-0 overflow-hidden">
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Group Events</div>
+                  <div className="text-xl md:text-2xl font-bold text-purple-900 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
                   </div>
-                  <div className="text-xs text-purple-600 mt-1">
+                  <div className="text-xs text-purple-600 mt-1 truncate">
                     {selectedMonthAnalysis.selectedMonthData.groupEventCount} events ({((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total)
                   </div>
                 </div>
@@ -1013,29 +1014,31 @@ export default function MonthlyComparisonAnalytics() {
 
                       return (
                         <>
-                          <div className="text-center p-3 bg-gray-50 rounded">
-                            <div className="text-2xl font-bold text-brand-primary">
+                          <div className="text-center p-3 bg-gray-50 rounded min-w-0 overflow-hidden">
+                            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Holiday Factors</div>
+                            <div className="text-xl md:text-2xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                               {highImpactCount + mediumImpactCount}
                             </div>
-                            <p className="text-sm text-gray-600">Holiday factors identified</p>
+                            <p className="text-sm text-gray-600 truncate mt-1">Identified</p>
                           </div>
 
                           {jewishHolidayCount > 0 && (
-                            <div className="text-center p-3 bg-purple-50 border border-purple-200 rounded">
-                              <div className="text-lg font-bold text-purple-700">
+                            <div className="text-center p-3 bg-purple-50 border border-purple-200 rounded min-w-0 overflow-hidden">
+                              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Jewish Holidays</div>
+                              <div className="text-base md:text-lg font-bold text-purple-700 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                                 {jewishHolidayCount}
                               </div>
-                              <p className="text-sm text-purple-600">Jewish holidays</p>
-                              <p className="text-xs text-purple-500 mt-1">Significant community impact</p>
+                              <p className="text-xs text-purple-600 truncate mt-1">Significant community impact</p>
                             </div>
                           )}
 
-                          <div className="text-center p-3 bg-gray-50 rounded">
-                            <div className="text-2xl font-bold text-brand-primary">
+                          <div className="text-center p-3 bg-gray-50 rounded min-w-0 overflow-hidden">
+                            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Lowest Week</div>
+                            <div className="text-xl md:text-2xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                               {selectedMonthAnalysis.selectedMonthData.weeklyDistribution.reduce((min, current, index) =>
                                 selectedMonthAnalysis.selectedMonthData.weeklyDistribution[min] > current ? index : min, 0) + 1}
                             </div>
-                            <p className="text-sm text-gray-600">Lowest performing week</p>
+                            <p className="text-sm text-gray-600 truncate mt-1">Performing week</p>
                           </div>
 
                           {highImpactCount > 0 && (
