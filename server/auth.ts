@@ -1054,13 +1054,8 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         });
       }
 
-      logger.log(
-        `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
-      );
-      const permCount = Array.isArray(freshUser.permissions) ? freshUser.permissions.length : 0;
-      logger.log(
-        `✅ req.user set with ${permCount} permissions`
-      );
+      // Authentication successful - logging only errors and warnings
+      // Debug: logger.log(`✅ Authentication successful for ${freshUser.email} (${freshUser.role})`)
     } else {
       logger.log(`❌ User not found or inactive: ${req.session.user.email}`);
       // User not found in database or inactive, clear invalid session
