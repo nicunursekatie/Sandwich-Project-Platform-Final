@@ -58,6 +58,7 @@ import {
   Lightbulb,
   Users,
   AlertCircle,
+  ListTodo,
 } from 'lucide-react';
 import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
 import type { ToastActionElement } from '@/components/ui/toast';
@@ -110,8 +111,10 @@ export function NotesTab({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showConvertToTaskDialog, setShowConvertToTaskDialog] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<MeetingNote | null>(null);
   const [noteToDelete, setNoteToDelete] = useState<MeetingNote | null>(null);
+  const [noteToConvert, setNoteToConvert] = useState<MeetingNote | null>(null);
   
   // Form states
   const [createFormData, setCreateFormData] = useState({
@@ -125,6 +128,13 @@ export function NotesTab({
     content: '',
     type: 'discussion' as 'discussion' | 'meeting',
     status: 'active' as 'active' | 'archived',
+  });
+  const [taskFormData, setTaskFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    dueDate: '',
+    deleteNoteAfterConvert: false,
   });
 
   // Use the notes hook with current filters
@@ -332,6 +342,88 @@ export function NotesTab({
         setSelectedNoteIds(prev => prev.filter(id => id !== noteToDelete.id));
       }
     });
+  };
+
+  const handleConvertToTask = (note: MeetingNote) => {
+    setNoteToConvert(note);
+
+    // Pre-populate form with note content
+    const readableContent = extractReadableContent(note.content, note.type);
+    const project = allProjects.find(p => p.id === note.projectId);
+
+    setTaskFormData({
+      title: `Follow-up: ${project?.title || 'Task from Note'}`,
+      description: readableContent,
+      priority: 'medium',
+      dueDate: '',
+      deleteNoteAfterConvert: false,
+    });
+
+    setShowConvertToTaskDialog(true);
+  };
+
+  const confirmConvertToTask = async () => {
+    if (!noteToConvert || !taskFormData.title.trim()) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please provide a task title.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Create task using API
+      const response = await fetch(`/api/projects/${noteToConvert.projectId}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: taskFormData.title,
+          description: taskFormData.description,
+          priority: taskFormData.priority,
+          status: 'pending',
+          dueDate: taskFormData.dueDate || undefined,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+
+      // Optionally delete the note
+      if (taskFormData.deleteNoteAfterConvert) {
+        await deleteNoteMutation.mutateAsync(noteToConvert.id);
+      }
+
+      toast({
+        title: 'Task Created',
+        description: 'Meeting note has been converted to a task successfully.',
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+
+      // Close dialog and reset
+      setShowConvertToTaskDialog(false);
+      setNoteToConvert(null);
+      setTaskFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        dueDate: '',
+        deleteNoteAfterConvert: false,
+      });
+    } catch (error) {
+      logger.error('Failed to convert note to task:', error);
+      toast({
+        title: 'Conversion Failed',
+        description: error instanceof Error ? error.message : 'Failed to convert note to task',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleBulkStatusChange = (status: 'active' | 'archived') => {
@@ -785,6 +877,16 @@ export function NotesTab({
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => handleConvertToTask(note)}
+                        className="text-teal-600 border-teal-200 hover:bg-teal-50"
+                        data-testid={`button-convert-to-task-${note.id}`}
+                        title="Convert to Task"
+                      >
+                        <ListTodo className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleEditNote(note)}
                         data-testid={`button-edit-note-${note.id}`}
                       >
@@ -1043,6 +1145,110 @@ export function NotesTab({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Convert to Task Dialog */}
+      <Dialog open={showConvertToTaskDialog} onOpenChange={setShowConvertToTaskDialog}>
+        <DialogContent className="sm:max-w-lg" data-testid="dialog-convert-to-task">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="w-5 h-5 text-teal-600" />
+              Convert Note to Task
+            </DialogTitle>
+            <DialogDescription>
+              Create a task from this meeting note. The note content will be used as the task description.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="task-title">Task Title *</Label>
+              <Input
+                id="task-title"
+                value={taskFormData.title}
+                onChange={(e) => setTaskFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter task title..."
+                data-testid="input-task-title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="task-description">Task Description</Label>
+              <Textarea
+                id="task-description"
+                value={taskFormData.description}
+                onChange={(e) => setTaskFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Task description from note..."
+                rows={6}
+                data-testid="input-task-description"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="task-priority">Priority</Label>
+                <Select
+                  value={taskFormData.priority}
+                  onValueChange={(value: 'low' | 'medium' | 'high') =>
+                    setTaskFormData(prev => ({ ...prev, priority: value }))
+                  }
+                >
+                  <SelectTrigger id="task-priority" data-testid="select-task-priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="task-due-date">Due Date</Label>
+                <Input
+                  id="task-due-date"
+                  type="date"
+                  value={taskFormData.dueDate}
+                  onChange={(e) => setTaskFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  data-testid="input-task-due-date"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Checkbox
+                id="delete-note"
+                checked={taskFormData.deleteNoteAfterConvert}
+                onCheckedChange={(checked) =>
+                  setTaskFormData(prev => ({ ...prev, deleteNoteAfterConvert: checked as boolean }))
+                }
+                data-testid="checkbox-delete-note-after-convert"
+              />
+              <Label htmlFor="delete-note" className="text-sm font-normal cursor-pointer">
+                Delete note after creating task
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConvertToTaskDialog(false)}
+              data-testid="button-cancel-convert-to-task"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmConvertToTask}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+              data-testid="button-confirm-convert-to-task"
+            >
+              <ListTodo className="w-4 h-4 mr-2" />
+              Create Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

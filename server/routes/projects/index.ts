@@ -189,8 +189,20 @@ export default function createProjectRoutes(options: {
         const updates = req.body;
         const user = getUser(req);
 
+        logger.info(`[PATCH /api/projects/${id}] Request received`, {
+          projectId: id,
+          updates: updates,
+          userId: user?.id,
+          userEmail: user?.email,
+        });
+
         if (!user) {
           return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        if (isNaN(id)) {
+          logger.error(`[PATCH /api/projects/${id}] Invalid project ID`);
+          return res.status(400).json({ message: 'Invalid project ID' });
         }
 
         const updatedProject = await projectService.updateProject({
@@ -200,12 +212,14 @@ export default function createProjectRoutes(options: {
         });
 
         if (!updatedProject) {
+          logger.error(`[PATCH /api/projects/${id}] Project not found in database`);
           return res.status(404).json({ message: 'Project not found' });
         }
 
+        logger.info(`[PATCH /api/projects/${id}] Successfully updated`);
         res.json(updatedProject);
       } catch (error) {
-        logger.error('Failed to update project', error);
+        logger.error(`[PATCH /api/projects/${id}] Failed to update project`, error);
 
         const message =
           error instanceof Error ? error.message : 'Failed to update project';
