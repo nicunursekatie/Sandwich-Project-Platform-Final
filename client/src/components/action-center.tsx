@@ -34,6 +34,8 @@ import {
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
+import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
+import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
 
 interface ActionItem {
   id: string;
@@ -47,9 +49,16 @@ interface ActionItem {
 }
 
 export default function ActionCenter() {
-  // State for large event logistics modal
+  // State for modals
   const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
   const [selectedLargeEvents, setSelectedLargeEvents] = useState<EventRequest[]>([]);
+
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
+  const [followUpEvents, setFollowUpEvents] = useState<EventRequest[]>([]);
+  const [followUpType, setFollowUpType] = useState<'1day' | '1month'>('1day');
+
+  const [isGrowthOpportunitiesModalOpen, setIsGrowthOpportunitiesModalOpen] = useState(false);
+  const [growthOpportunities, setGrowthOpportunities] = useState<Array<{ org: string; eventCount: number; avgSize: number }>>([]);
 
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
@@ -210,43 +219,9 @@ export default function ActionCenter() {
     //   });
     // }
 
-    // Find inactive hosts (haven't collected in 30+ days)
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const recentHostNames = new Set(
-      collections
-        .filter((c) => {
-          const date = parseCollectionDate(c.collectionDate);
-          return date >= thirtyDaysAgo;
-        })
-        .map((c) => c.hostName)
-    );
-
-    const olderCollections = collections.filter((c) => {
-      const date = parseCollectionDate(c.collectionDate);
-      return date < thirtyDaysAgo;
-    });
-
-    const inactiveHosts = new Set<string>();
-    olderCollections.forEach((c) => {
-      if (c.hostName && !recentHostNames.has(c.hostName)) {
-        inactiveHosts.add(c.hostName);
-      }
-    });
-
-    if (inactiveHosts.size > 0 && inactiveHosts.size <= 10) {
-      actions.push({
-        id: 'inactive-hosts',
-        priority: 'medium',
-        category: 'volunteer-recruitment',
-        title: `${inactiveHosts.size} Host${inactiveHosts.size !== 1 ? 's' : ''} Inactive for 30+ Days`,
-        description: `Previously active collection hosts haven't reported recently`,
-        impact: `Re-engaging ${inactiveHosts.size} hosts could add ${Math.round((inactiveHosts.size * avgWeekly) / recentHostNames.size / 4)} sandwiches/week`,
-        action: `Reach out to check in: ${Array.from(inactiveHosts).slice(0, 3).join(', ')}${inactiveHosts.size > 3 ? ` and ${inactiveHosts.size - 3} more` : ''}`,
-        data: { hosts: Array.from(inactiveHosts) },
-      });
-    }
+    // REMOVED: Inactive hosts tracking
+    // We avoid comparing/contrasting hosts to prevent creating unwanted competition
+    // or making volunteers feel judged about their contribution levels
 
     // ============================================================
     // CATEGORY 2: PLANNING & LOGISTICS
@@ -854,9 +829,30 @@ export default function ActionCenter() {
                     className="w-full"
                     size="lg"
                     onClick={() => {
+                      // Handle different action item types
                       if (item.id === 'large-events-support' && item.data?.events) {
                         setSelectedLargeEvents(item.data.events);
                         setIsLogisticsModalOpen(true);
+                      } else if (item.id === 'followup-1day-needed' && item.data?.events) {
+                        setFollowUpEvents(item.data.events);
+                        setFollowUpType('1day');
+                        setIsFollowUpModalOpen(true);
+                      } else if (item.id === 'followup-1month-needed' && item.data?.events) {
+                        setFollowUpEvents(item.data.events);
+                        setFollowUpType('1month');
+                        setIsFollowUpModalOpen(true);
+                      } else if (item.id === 'growth-opportunities' && item.data?.organizations) {
+                        setGrowthOpportunities(item.data.organizations);
+                        setIsGrowthOpportunitiesModalOpen(true);
+                      } else if (item.id === 'missing-drivers' || item.id === 'missing-speakers') {
+                        // Navigate to event requests page
+                        window.location.href = '/event-requests';
+                      } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'early-week-planning') {
+                        // Navigate to event requests to add new events
+                        window.location.href = '/event-requests';
+                      } else if (item.id === 'year-over-year-decline') {
+                        // Navigate to analytics dashboard
+                        window.location.href = '/analytics';
                       }
                     }}
                   >
@@ -885,11 +881,24 @@ export default function ActionCenter() {
       </div>
     </div>
 
-    {/* Large Event Logistics Modal */}
+    {/* Modals */}
     <LargeEventLogisticsModal
       open={isLogisticsModalOpen}
       onOpenChange={setIsLogisticsModalOpen}
       events={selectedLargeEvents}
+    />
+
+    <FollowUpEventsModal
+      open={isFollowUpModalOpen}
+      onOpenChange={setIsFollowUpModalOpen}
+      events={followUpEvents}
+      followUpType={followUpType}
+    />
+
+    <GrowthOpportunitiesModal
+      open={isGrowthOpportunitiesModalOpen}
+      onOpenChange={setIsGrowthOpportunitiesModalOpen}
+      opportunities={growthOpportunities}
     />
     </TooltipProvider>
   );

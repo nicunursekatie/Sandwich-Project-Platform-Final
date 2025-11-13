@@ -187,6 +187,24 @@ const initialResources = [
     url: 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
     isPinnedGlobal: false,
   },
+  {
+    title: 'Auto Form Filler',
+    description:
+      'AI-powered tool to automatically fill out TSP forms by uploading documents. Supports Service Hours Forms, Event Requests, Volunteer Applications, and more.',
+    type: 'link' as const,
+    category: 'forms_templates',
+    url: '/dashboard?section=auto-form-filler',
+    isPinnedGlobal: false,
+  },
+  {
+    title: 'Service Hours Form Generator',
+    description:
+      'Quickly generate filled Community Service Hours verification forms for volunteers with automatic PDF creation.',
+    type: 'link' as const,
+    category: 'forms_templates',
+    url: '/dashboard?section=generate-service-hours',
+    isPinnedGlobal: false,
+  },
 ];
 
 // Initial tags

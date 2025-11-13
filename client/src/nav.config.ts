@@ -118,13 +118,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'communication',
   },
   {
-    id: 'kudos',
-    label: 'Kudos',
-    icon: Trophy,
-    href: 'kudos',
-    group: 'communication',
-  },
-  {
     id: 'suggestions',
     label: 'Suggestions',
     icon: Lightbulb,
@@ -358,6 +351,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Link,
     href: 'important-links',
     permission: PERMISSIONS.NAV_IMPORTANT_LINKS,
+    group: 'documentation',
+  },
+  {
+    id: 'auto-form-filler',
+    label: 'Auto Form Filler',
+    icon: Sparkles,
+    href: 'auto-form-filler',
+    permission: PERMISSIONS.NAV_AUTO_FORM_FILLER,
     group: 'documentation',
   },
   {
