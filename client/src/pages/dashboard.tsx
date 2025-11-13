@@ -47,7 +47,7 @@ import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
-import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
+import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
@@ -538,8 +538,8 @@ export default function Dashboard({
 
   return (
     <>
-      {/* Login Kudos Notifier */}
-      <KudosLoginNotifier />
+      {/* Real-Time Kudos Notifier */}
+      <RealTimeKudosNotifier />
       <SMSAnnouncementModal />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
