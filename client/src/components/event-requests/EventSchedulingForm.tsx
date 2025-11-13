@@ -823,11 +823,27 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     />
                   </div>
                   <div>
+                    <Label htmlFor="previouslyHosted">Previously Hosted?</Label>
+                    <Select
+                      value={formData.previouslyHosted || 'i_dont_know'}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, previouslyHosted: value }))}
+                    >
+                      <SelectTrigger id="previouslyHosted">
+                        <SelectValue placeholder="Select hosting history" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes - Hosted Before</SelectItem>
+                        <SelectItem value="no">No - First Time</SelectItem>
+                        <SelectItem value="i_dont_know">I Don't Know</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label htmlFor="organizationCategory">Organization Category</Label>
                     <Select
                       value={formData.organizationCategory || ''}
-                      onValueChange={(value) => setFormData(prev => ({ 
-                        ...prev, 
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
                         organizationCategory: value,
                         // Clear school classification if category changes to non-school
                         schoolClassification: value === 'school' ? prev.schoolClassification : ''
