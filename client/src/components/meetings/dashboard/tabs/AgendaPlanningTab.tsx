@@ -917,6 +917,11 @@ export function AgendaPlanningTab({
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => {
+                                        console.log('📝 Editing project owner:', {
+                                          id: project.id,
+                                          title: project.title,
+                                          currentOwner: project.assigneeName,
+                                        });
                                         setEditingProject(project.id);
                                         setEditProjectOwner(
                                           project.assigneeName || ''
