@@ -1285,7 +1285,9 @@ export function NotesTab({
                 </div>
                 {taskFormData.createMultipleTasks && (
                   <div className="mt-3 space-y-3">
-                    <p className="text-xs text-gray-600 mb-2">Configure each task individually:</p>
+                    <p className="text-xs text-gray-600 mb-2">
+                      Configure each task individually (click X to remove tasks you don't want):
+                    </p>
                     <div className="max-h-96 overflow-y-auto space-y-3">
                       {detectedTaskLines.map((line, index) => {
                         const cleanedLine = line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/^\[[ x]\]\s*/i, '').trim();
@@ -1295,6 +1297,29 @@ export function NotesTab({
                             <div className="flex items-start gap-2">
                               <span className="text-teal-600 font-bold text-sm mt-0.5">{index + 1}.</span>
                               <p className="text-sm text-gray-700 flex-1">{cleanedLine}</p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  // Remove this task from the arrays
+                                  const newLines = detectedTaskLines.filter((_, i) => i !== index);
+                                  const newSettings = individualTaskSettings.filter((_, i) => i !== index);
+                                  setDetectedTaskLines(newLines);
+                                  setIndividualTaskSettings(newSettings);
+
+                                  // If no tasks left, switch back to single task mode
+                                  if (newLines.length === 0) {
+                                    setTaskFormData(prev => ({ ...prev, createMultipleTasks: false }));
+                                  } else if (newLines.length === 1) {
+                                    // If only one task left, offer to switch to single task mode
+                                    setTaskFormData(prev => ({ ...prev, createMultipleTasks: false, title: newLines[0], description: '' }));
+                                  }
+                                }}
+                                data-testid={`button-remove-task-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
                             <div className="grid grid-cols-2 gap-2 ml-5">
                               <div>
