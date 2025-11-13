@@ -563,13 +563,8 @@ export default function SandwichCollectionLog() {
 
         filteredCollections.forEach((collection: any) => {
           individualTotal += collection.individualSandwiches || 0;
-          // Calculate group total
-          if (collection.groupCollections) {
-            collection.groupCollections.forEach((group: any) => {
-              const count = group.count || group.sandwichCount || 0;
-              groupTotal += count;
-            });
-          }
+          // Calculate group total using standardized function (handles both JSONB and legacy fields)
+          groupTotal += calculateGroupSandwiches(collection);
           if (collection.collectionDate) {
             dates.push(collection.collectionDate);
           }
