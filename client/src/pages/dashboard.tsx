@@ -120,6 +120,7 @@ const ExpensesPage = lazyWithRetry(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-showcase'));
 const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
+const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -503,6 +504,8 @@ export default function Dashboard({
         return <DesignSystemShowcase />;
       case 'smart-search-admin':
         return <SmartSearchAdmin />;
+      case 'generate-service-hours':
+        return <GenerateServiceHours />;
       default:
         // Handle project detail pages
         if (projectId) {
