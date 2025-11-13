@@ -128,7 +128,7 @@ export class GoogleSheetsSyncService {
             p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
         );
 
-        // Check if this project was previously archived - if so, skip re-creating it
+        // Check if this project was previously archived - if so, skip entirely (don't create OR update)
         // Compare using googleSheetRowId (most reliable) or title (fallback)
         const wasArchived = archivedProjects.find(
           (p) =>
@@ -136,9 +136,16 @@ export class GoogleSheetsSyncService {
             (!p.googleSheetRowId && p.title.toLowerCase().trim() === row.project.toLowerCase().trim())
         );
 
-        if (wasArchived && !existingProject) {
-          logger.log(`⏭️  Skipping archived project "${row.project}" (row ${row.rowIndex}) - previously archived, not re-creating`);
-          continue;
+        if (wasArchived) {
+          if (existingProject) {
+            // Project was archived but still exists in projects table - this shouldn't happen but handle it
+            logger.log(`⚠️  Found archived project "${row.project}" (row ${row.rowIndex}, ID: ${existingProject.id}) still in projects table - skipping sync to prevent un-archiving`);
+            continue;
+          } else {
+            // Project was archived and doesn't exist - skip creating it
+            logger.log(`⏭️  Skipping archived project "${row.project}" (row ${row.rowIndex}) - previously archived, not re-creating`);
+            continue;
+          }
         }
 
         const projectData = this.sheetRowToProject(row);

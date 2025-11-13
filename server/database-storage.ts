@@ -399,8 +399,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<boolean> {
-    const result = await db.delete(projects).where(eq(projects.id, id));
-    return (result.rowCount ?? 0) > 0;
+    try {
+      // First, delete related data (tasks, comments, assignments, etc.) to avoid foreign key constraints
+      // Delete project tasks
+      await db.delete(projectTasks).where(eq(projectTasks.projectId, id));
+      logger.info(`[Database] Deleted related tasks for project ${id}`);
+
+      // Delete project comments
+      await db.delete(projectComments).where(eq(projectComments.projectId, id));
+      logger.info(`[Database] Deleted related comments for project ${id}`);
+
+      // Delete project assignments
+      await db.delete(projectAssignments).where(eq(projectAssignments.projectId, id));
+      logger.info(`[Database] Deleted related assignments for project ${id}`);
+
+      // Now delete the project itself
+      const result = await db.delete(projects).where(eq(projects.id, id));
+      const deleted = (result.rowCount ?? 0) > 0;
+      
+      if (!deleted) {
+        logger.error(`[Database] Delete query returned 0 rows affected for project ${id} - project may not exist`);
+        return false;
+      }
+
+      logger.info(`[Database] Successfully deleted project ${id} from projects table`);
+      return true;
+    } catch (error: any) {
+      logger.error(`[Database] Error deleting project ${id}:`, error);
+      // Check if it's a foreign key constraint violation
+      if (error?.code === '23503' || error?.message?.includes('foreign key') || error?.message?.includes('violates foreign key constraint')) {
+        logger.error(`[Database] Foreign key constraint violation when deleting project ${id} - related data may still exist`);
+        throw new Error(`Cannot delete project ${id}: it is still referenced by other records. Error: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   // Archive functionality for completed projects
@@ -410,49 +442,70 @@ export class DatabaseStorage implements IStorage {
     userName?: string
   ): Promise<boolean> {
     const project = await this.getProject(id);
-    if (!project) return false;
+    if (!project) {
+      logger.error(`[Database] Cannot archive project ${id}: project not found`);
+      return false;
+    }
 
-    // Create archived version
-    const archiveData = {
-      originalProjectId: project.id,
-      title: project.title,
-      description: project.description,
-      priority: project.priority,
-      category: project.category,
-      assigneeId: project.assigneeId,
-      assigneeName: project.assigneeName,
-      assigneeIds: project.assigneeIds,
-      assigneeNames: project.assigneeNames,
-      dueDate: project.dueDate,
-      startDate: project.startDate,
-      completionDate: project.completionDate || new Date().toISOString(),
-      progressPercentage: 100,
-      notes: project.notes,
-      requirements: project.requirements,
-      deliverables: project.deliverables,
-      resources: project.resources,
-      blockers: project.blockers,
-      tags: project.tags,
-      estimatedHours: project.estimatedHours,
-      actualHours: project.actualHours,
-      budget: project.budget,
-      createdBy: project.createdBy,
-      createdByName: project.createdByName,
-      createdAt: project.createdAt || new Date(), // Ensure we have a valid timestamp
-      originalCreatedAt: project.createdAt,
-      originalUpdatedAt: project.updatedAt,
-      archivedBy: userId,
-      archivedByName: userName,
-      googleSheetRowId: project.googleSheetRowId || null, // Preserve Google Sheet row ID to prevent re-import
-    };
+    try {
+      // Create archived version
+      const archiveData = {
+        originalProjectId: project.id,
+        title: project.title,
+        description: project.description,
+        priority: project.priority,
+        category: project.category,
+        assigneeId: project.assigneeId,
+        assigneeName: project.assigneeName,
+        assigneeIds: project.assigneeIds,
+        assigneeNames: project.assigneeNames,
+        dueDate: project.dueDate,
+        startDate: project.startDate,
+        completionDate: project.completionDate || new Date().toISOString(),
+        progressPercentage: 100,
+        notes: project.notes,
+        requirements: project.requirements,
+        deliverables: project.deliverables,
+        resources: project.resources,
+        blockers: project.blockers,
+        tags: project.tags,
+        estimatedHours: project.estimatedHours,
+        actualHours: project.actualHours,
+        budget: project.budget,
+        createdBy: project.createdBy,
+        createdByName: project.createdByName,
+        createdAt: project.createdAt || new Date(), // Ensure we have a valid timestamp
+        originalCreatedAt: project.createdAt,
+        originalUpdatedAt: project.updatedAt,
+        archivedBy: userId,
+        archivedByName: userName,
+        googleSheetRowId: project.googleSheetRowId || null, // Preserve Google Sheet row ID to prevent re-import
+      };
 
-    // Insert into archived table
-    await db.insert(archivedProjects).values(archiveData);
+      // Insert into archived table
+      await db.insert(archivedProjects).values(archiveData);
+      logger.info(`[Database] Archived project ${id} "${project.title}" to archived_projects table`);
 
-    // Delete from active projects
-    await this.deleteProject(id);
+      // Delete from active projects
+      const deleteResult = await this.deleteProject(id);
+      if (!deleteResult) {
+        logger.error(`[Database] Failed to delete project ${id} after archiving - project may still exist in projects table`);
+        throw new Error(`Failed to delete project ${id} after archiving`);
+      }
+      logger.info(`[Database] Deleted project ${id} "${project.title}" from projects table`);
 
-    return true;
+      // Verify deletion
+      const verifyProject = await this.getProject(id);
+      if (verifyProject) {
+        logger.error(`[Database] CRITICAL: Project ${id} still exists in projects table after deletion attempt!`);
+        throw new Error(`Project ${id} was not deleted from projects table`);
+      }
+
+      return true;
+    } catch (error) {
+      logger.error(`[Database] Error archiving project ${id}:`, error);
+      throw error;
+    }
   }
 
   async getArchivedProjects(): Promise<any[]> {

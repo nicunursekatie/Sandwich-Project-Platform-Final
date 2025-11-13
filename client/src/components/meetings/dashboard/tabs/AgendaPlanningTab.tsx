@@ -267,11 +267,35 @@ export function AgendaPlanningTab({
     mutationFn: async (id: number) => {
       return await apiRequest('POST', `/api/projects/${id}/archive`);
     },
-    onSuccess: () => {
-      // Invalidate both active and archived project queries
+    onSuccess: (_, archivedProjectId) => {
+      // Remove from local state immediately
+      setProjectAgendaStatus((prev) => {
+        const updated = { ...prev };
+        delete updated[archivedProjectId];
+        return updated;
+      });
+      setMinimizedProjects((prev) => {
+        const updated = new Set(prev);
+        updated.delete(archivedProjectId);
+        return updated;
+      });
+      setSelectedProjectIds((prev) => prev.filter(id => id !== archivedProjectId));
+      // Clear local text for archived project
+      setLocalProjectText((prev) => {
+        const updated = { ...prev };
+        delete updated[archivedProjectId];
+        return updated;
+      });
+      
+      // Invalidate both active and archived project queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects/archived'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
+      
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['/api/projects'] });
+      queryClient.refetchQueries({ queryKey: ['/api/projects/for-review'] });
+      
       toast({
         title: 'Project archived successfully!',
         description: 'The project has been moved to the archive and removed from active projects.',
