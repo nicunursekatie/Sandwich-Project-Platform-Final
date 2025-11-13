@@ -24,6 +24,7 @@ import { SmartSearchService } from '../services/smart-search.service';
 import storageRouter from './storage';
 import documentsRouter from './documents';
 import resourcesRouter from './resources';
+import autoFormFillerRouter from './auto-form-filler';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import meRouter from './me';
@@ -336,6 +337,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     resourcesRouter
   );
   router.use('/api/resources', createErrorHandler('resources'));
+
+  router.use(
+    '/api/auto-form-filler',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    autoFormFillerRouter
+  );
+  router.use('/api/auto-form-filler', createErrorHandler('auto-form-filler'));
 
   router.use(
     '/api/versioning',
