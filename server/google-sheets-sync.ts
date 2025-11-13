@@ -129,14 +129,15 @@ export class GoogleSheetsSyncService {
         );
 
         // Check if this project was previously archived - if so, skip re-creating it
+        // Compare using googleSheetRowId (most reliable) or title (fallback)
         const wasArchived = archivedProjects.find(
           (p) =>
-            p.originalProjectId?.toString() === row.rowIndex?.toString() ||
-            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
+            (p.googleSheetRowId && p.googleSheetRowId === row.rowIndex?.toString()) ||
+            (!p.googleSheetRowId && p.title.toLowerCase().trim() === row.project.toLowerCase().trim())
         );
 
         if (wasArchived && !existingProject) {
-          logger.log(`⏭️  Skipping archived project "${row.project}" - previously archived, not re-creating`);
+          logger.log(`⏭️  Skipping archived project "${row.project}" (row ${row.rowIndex}) - previously archived, not re-creating`);
           continue;
         }
 
