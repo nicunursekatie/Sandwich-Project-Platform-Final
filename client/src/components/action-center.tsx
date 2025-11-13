@@ -570,32 +570,38 @@ export default function ActionCenter() {
     }
 
     // Find organizations with repeat events that could go larger
-    const completedEventsLastYear = (eventRequests || []).filter((event) => {
+    // Look at past 2 years of completed events (not just last year)
+    const twoYearsAgo = currentYear - 2;
+    const recentCompletedEvents = (eventRequests || []).filter((event) => {
       if (event.status !== 'completed') return false;
       if (!event.desiredEventDate) return false;
 
       const eventDate = new Date(event.desiredEventDate);
-      return eventDate.getFullYear() === lastYear;
+      const eventYear = eventDate.getFullYear();
+      return eventYear >= twoYearsAgo && eventYear <= currentYear;
     });
 
-    const orgEventCounts = new Map<string, { count: number; avgSize: number }>();
+    const orgEventCounts = new Map<string, { count: number; avgSize: number; totalSandwiches: number }>();
 
-    completedEventsLastYear.forEach((event) => {
+    recentCompletedEvents.forEach((event) => {
       if (!event.organizationName) return;
-      const current = orgEventCounts.get(event.organizationName) || { count: 0, avgSize: 0 };
+      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const current = orgEventCounts.get(event.organizationName) || { count: 0, avgSize: 0, totalSandwiches: 0 };
       current.count += 1;
-      current.avgSize += (event.actualSandwichCount || event.estimatedSandwichCount || 0);
+      current.totalSandwiches += sandwichCount;
       orgEventCounts.set(event.organizationName, current);
     });
 
-    // Find repeat organizations (2+ events) with small-medium events (< 300 sandwiches avg)
+    // Find repeat organizations (3+ events) with small-medium events (< 350 sandwiches avg)
+    // These are proven partners who might be ready to scale up
     const growthOpportunityOrgs: Array<{ org: string; eventCount: number; avgSize: number }> = [];
 
     orgEventCounts.forEach((data, org) => {
-      if (data.count >= 2) {
-        const avgSize = data.avgSize / data.count;
-        if (avgSize > 0 && avgSize < 300) {
-          growthOpportunityOrgs.push({ org, eventCount: data.count, avgSize: Math.round(avgSize) });
+      if (data.count >= 3) {
+        const avgSize = Math.round(data.totalSandwiches / data.count);
+        // Focus on partners doing 50-350 sandwiches on average (proven but could grow)
+        if (avgSize >= 50 && avgSize < 350) {
+          growthOpportunityOrgs.push({ org, eventCount: data.count, avgSize });
         }
       }
     });
