@@ -34,11 +34,14 @@ import {
   parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import { REGULAR_THURSDAY_CAPACITY, SPECIAL_PLACEMENT_HIGH_THRESHOLD } from '@/lib/sandwich-utils';
+import { calculatePlacementTotals } from '@/lib/week-planning-utils';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
 import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
 import MissingDriversModal from '@/components/modals/missing-drivers-modal';
 import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
+import WeekOutlookModal from '@/components/modals/week-outlook-modal';
 
 interface ActionItem {
   id: string;
@@ -70,6 +73,8 @@ export default function ActionCenter() {
 
   const [isMissingSpeakersModalOpen, setIsMissingSpeakersModalOpen] = useState(false);
   const [missingSpeakersEvents, setMissingSpeakersEvents] = useState<EventRequest[]>([]);
+
+  const [isWeekOutlookModalOpen, setIsWeekOutlookModalOpen] = useState(false);
 
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
@@ -442,17 +447,11 @@ export default function ActionCenter() {
     const isEarlyWeek = dayOfWeek === 3 || dayOfWeek === 4; // Wed, Thu
 
     if (isEarlyWeek && !alreadyFlaggedThisWeek) {
-      // Early week: Show planned group collections to help prioritize individual recruitment
+      // Early week: Show planned group collections with focus on placement capacity
       const plannedCollectionsThisWeek = currentWeekCollections.filter((c) => {
         const date = parseCollectionDate(c.collectionDate);
         return date > today;
       });
-
-      const plannedGroupTotal = plannedCollectionsThisWeek.reduce((sum, c) => {
-        // Count group collections only (exclude individual)
-        const groupTotal = (Array.isArray(c.groupCollections) ? c.groupCollections : []).reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
-        return sum + groupTotal;
-      }, 0);
 
       // Get scheduled events for this week
       const scheduledThisWeek = (eventRequests || []).filter((event) => {
@@ -462,36 +461,69 @@ export default function ActionCenter() {
         return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
       });
 
-      const scheduledEventTotal = scheduledThisWeek.reduce(
-        (sum, event) => sum + (event.estimatedSandwichCount || 0),
-        0
+      // Break down by day to identify regular distribution (Wednesday) vs special placement
+      const { wednesdayTotal, specialPlacementTotal } = calculatePlacementTotals(
+        plannedCollectionsThisWeek,
+        scheduledThisWeek,
+        today
       );
 
-      const totalPlanned = plannedGroupTotal + scheduledEventTotal;
-      const needFromIndividual = Math.max(0, Math.round(avgWeekly - currentWeekTotal - totalPlanned));
+      const totalPlanned = wednesdayTotal + specialPlacementTotal;
 
-      // Show this insight if we have meaningful data
-      if (totalPlanned > 0 || needFromIndividual > 0) {
+      // Show this insight if we have meaningful group events planned
+      if (totalPlanned > 0) {
         const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayName = weekdays[dayOfWeek];
 
+        // Determine priority based on placement challenges
+        let priority: 'high' | 'medium' | 'low';
+        let impact = '';
+        let action = '';
+
+        if (wednesdayTotal > REGULAR_THURSDAY_CAPACITY && specialPlacementTotal > 0) {
+          priority = 'high';
+          impact = `${(wednesdayTotal - REGULAR_THURSDAY_CAPACITY).toLocaleString()} over Thursday capacity + ${specialPlacementTotal.toLocaleString()} needing special placement`;
+          action = 'Review placement capacity - High volume alert';
+        } else if (wednesdayTotal > REGULAR_THURSDAY_CAPACITY) {
+          priority = 'high';
+          impact = `${(wednesdayTotal - REGULAR_THURSDAY_CAPACITY).toLocaleString()} sandwiches over regular Thursday distribution capacity`;
+          action = 'Plan additional distribution locations or times';
+        } else if (specialPlacementTotal > SPECIAL_PLACEMENT_HIGH_THRESHOLD) {
+          priority = 'medium';
+          impact = `${specialPlacementTotal.toLocaleString()} sandwiches need placement outside regular Thursday distribution`;
+          action = 'Coordinate recipient placement for non-Wednesday events';
+        } else if (specialPlacementTotal > 0) {
+          priority = 'low';
+          impact = `${totalPlanned.toLocaleString()} sandwiches from group events (${specialPlacementTotal.toLocaleString()} need special placement)`;
+          action = 'View week outlook and plan distribution';
+        } else {
+          priority = 'low';
+          impact = `${wednesdayTotal.toLocaleString()} sandwiches from Wednesday events → Thursday distribution`;
+          action = 'View week outlook - all events aligned with regular distribution';
+        }
+
+        // Add context about recruitment (guard against division by zero)
+        if (avgWeekly > 0) {
+          const percentOfWeekly = totalPlanned / avgWeekly;
+          if (percentOfWeekly > 0.8) {
+            impact += ` (${Math.round(percentOfWeekly * 100)}% of weekly goal)`;
+          }
+        }
+
         actions.push({
           id: 'early-week-planning',
-          priority: needFromIndividual > 2000 ? 'high' : 'medium',
+          priority,
           category: 'planning',
           title: `Week Outlook (${dayName})`,
           description: `${totalPlanned.toLocaleString()} sandwiches from ${plannedCollectionsThisWeek.length + scheduledThisWeek.length} planned group collections/events`,
-          impact: `Need ~${needFromIndividual.toLocaleString()} from individual collections to reach weekly average (${Math.round(avgWeekly).toLocaleString()})`,
-          action: needFromIndividual > 2000
-            ? 'High individual recruitment priority this week'
-            : 'Moderate individual recruitment needed this week',
+          impact,
+          action,
           data: {
             currentWeekTotal,
-            plannedGroupTotal,
-            scheduledEventTotal,
+            wednesdayTotal,
+            specialPlacementTotal,
             totalPlanned,
             avgWeekly,
-            needFromIndividual,
             plannedCollectionsCount: plannedCollectionsThisWeek.length,
             scheduledEventCount: scheduledThisWeek.length
           },
@@ -873,9 +905,15 @@ export default function ActionCenter() {
                         // Open missing speakers modal
                         setMissingSpeakersEvents(item.data.events);
                         setIsMissingSpeakersModalOpen(true);
-                      } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'early-week-planning' || item.id === 'month-below-year-average') {
+                      } else if (item.id === 'early-week-planning') {
+                        // Open Week Outlook Modal
+                        setIsWeekOutlookModalOpen(true);
+                      } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'month-below-year-average') {
                         // Navigate to event requests to add new events / increase recruitment
                         setLocation('/event-requests');
+                      } else if (item.id === 'year-over-year-decline') {
+                        // Navigate to analytics dashboard
+                        setLocation('/analytics');
                       }
                     }}
                   >
@@ -938,6 +976,11 @@ export default function ActionCenter() {
         // Navigate to event requests - user can find and assign from there
         setLocation('/event-requests');
       }}
+    />
+
+    <WeekOutlookModal
+      isOpen={isWeekOutlookModalOpen}
+      onClose={() => setIsWeekOutlookModalOpen(false)}
     />
     </TooltipProvider>
   );
