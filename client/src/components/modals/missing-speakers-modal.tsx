@@ -40,6 +40,13 @@ export default function MissingSpeakersModal({
     return needed - assigned;
   };
 
+  // Sort events by date (earliest first)
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.scheduledEventDate || a.desiredEventDate || 0).getTime();
+    const dateB = new Date(b.scheduledEventDate || b.desiredEventDate || 0).getTime();
+    return dateA - dateB;
+  });
+
   const totalSpeakersNeeded = events.reduce((sum, event) => sum + getSpeakersNeeded(event), 0);
 
   return (
@@ -57,7 +64,7 @@ export default function MissingSpeakersModal({
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
-            {events.map((event) => {
+            {sortedEvents.map((event) => {
               const speakersNeeded = getSpeakersNeeded(event);
               const assignedCount = (event.assignedSpeakerIds || []).length;
               const totalNeeded = event.speakersNeeded || 0;

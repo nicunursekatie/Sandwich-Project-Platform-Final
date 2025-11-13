@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Calendar, Car, AlertCircle, X } from 'lucide-react';
 import {
   Dialog,
@@ -9,20 +10,66 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
+import { AssignmentDialog } from '@/components/event-requests/dialogs/AssignmentDialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface MissingDriversModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   events: EventRequest[];
-  onAssignDrivers?: (eventId: number) => void;
 }
 
 export default function MissingDriversModal({
   open,
   onOpenChange,
   events,
-  onAssignDrivers,
 }: MissingDriversModalProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventRequest | null>(null);
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+
+  // Mutation to assign drivers
+  const assignDriversMutation = useMutation({
+    mutationFn: async ({ eventId, driverIds }: { eventId: number; driverIds: string[] }) => {
+      const response = await fetch(`/api/event-requests/${eventId}/assign-drivers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driverIds }),
+      });
+      if (!response.ok) throw new Error('Failed to assign drivers');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      toast({
+        title: 'Success',
+        description: 'Drivers assigned successfully',
+      });
+      setAssignmentDialogOpen(false);
+      setSelectedDrivers([]);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to assign drivers',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleAssignDrivers = (driverIds: string[]) => {
+    if (selectedEvent) {
+      assignDriversMutation.mutate({
+        eventId: selectedEvent.id,
+        driverIds,
+      });
+    }
+  };
+
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return 'Not set';
     const d = new Date(date);
@@ -39,6 +86,13 @@ export default function MissingDriversModal({
     const assigned = (event.assignedDriverIds || []).length;
     return needed - assigned;
   };
+
+  // Sort events by date (earliest first)
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.scheduledEventDate || a.desiredEventDate || 0).getTime();
+    const dateB = new Date(b.scheduledEventDate || b.desiredEventDate || 0).getTime();
+    return dateA - dateB;
+  });
 
   const totalDriversNeeded = events.reduce((sum, event) => sum + getDriversNeeded(event), 0);
 
@@ -57,7 +111,7 @@ export default function MissingDriversModal({
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
-            {events.map((event) => {
+            {sortedEvents.map((event) => {
               const driversNeeded = getDriversNeeded(event);
               const assignedCount = (event.assignedDriverIds || []).length;
               const totalNeeded = event.driversNeeded || 0;
@@ -109,20 +163,19 @@ export default function MissingDriversModal({
                         <p className="text-sm text-amber-700">
                           <strong>{driversNeeded}</strong> more driver{driversNeeded !== 1 ? 's' : ''} needed
                         </p>
-                        {onAssignDrivers && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAssignDrivers(event.id);
-                              onOpenChange(false);
-                            }}
-                            className="bg-brand-primary hover:bg-brand-primary/90"
-                          >
-                            <Car className="w-4 h-4 mr-1" />
-                            Assign Drivers
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEvent(event);
+                            setSelectedDrivers(event.assignedDriverIds || []);
+                            setAssignmentDialogOpen(true);
+                          }}
+                          className="bg-brand-primary hover:bg-brand-primary/90"
+                        >
+                          <Car className="w-4 h-4 mr-1" />
+                          Assign Drivers
+                        </Button>
                       </div>
                     </div>
 
@@ -171,6 +224,22 @@ export default function MissingDriversModal({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Assignment Dialog */}
+      {selectedEvent && (
+        <AssignmentDialog
+          isOpen={assignmentDialogOpen}
+          onClose={() => {
+            setAssignmentDialogOpen(false);
+            setSelectedEvent(null);
+            setSelectedDrivers([]);
+          }}
+          assignmentType="driver"
+          selectedAssignees={selectedDrivers}
+          setSelectedAssignees={setSelectedDrivers}
+          onAssign={handleAssignDrivers}
+        />
+      )}
     </Dialog>
   );
 }
