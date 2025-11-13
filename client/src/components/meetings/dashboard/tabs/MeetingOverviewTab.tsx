@@ -277,26 +277,15 @@ export function MeetingOverviewTab({
 
                   <div className="space-y-2">
                     <button
-                      onClick={() => setSelectedMeeting(meeting)}
+                      onClick={() => {
+                        setSelectedMeeting(meeting);
+                        setShowMeetingDetailsDialog(true);
+                      }}
                       data-testid={`button-view-agenda-${meeting.id}`}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300 rounded-lg font-medium transition-all duration-200 text-sm"
                     >
                       <FileText className="w-4 h-4" />
                       View Agenda Details
-                    </button>
-
-                    <button
-                      onClick={() => handleCompileAgenda(meeting)}
-                      disabled={isCompiling}
-                      data-testid={`button-compile-${meeting.id}`}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed text-sm"
-                    >
-                      {isCompiling ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <Cog className="w-4 h-4" />
-                      )}
-                      Compile Weekly Agenda
                     </button>
                   </div>
                 </CardContent>

@@ -234,6 +234,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
       assigneeName: string;
       assigneeIds?: string[];
     }) => {
+      logger.log('🔄 Updating project owner:', { projectId, assigneeName, assigneeIds });
       return await apiRequest('PATCH', `/api/projects/${projectId}`, {
         assigneeName,
         assigneeIds,
@@ -241,15 +242,24 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
       toast({
         title: 'Project Owner Updated',
         description: 'Project owner has been updated successfully.',
       });
     },
     onError: (error: Error) => {
+      logger.error('❌ Failed to update project owner:', error);
+      let errorMessage = error.message || 'Failed to update project owner.';
+
+      // Provide more helpful error messages
+      if (errorMessage.includes('DATA_LOADING_ERROR') || errorMessage.includes('404')) {
+        errorMessage = 'Project not found. It may have been deleted or not yet synced to the database.';
+      }
+
       toast({
         title: 'Update Failed',
-        description: error.message || 'Failed to update project owner.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
