@@ -5,6 +5,13 @@ import { logger } from '@/lib/logger';
  * Ensures consistent JSON string storage and safe parsing
  */
 
+/**
+ * Distribution capacity constants
+ * These values are used for planning and capacity alerts
+ */
+export const REGULAR_THURSDAY_CAPACITY = 8000; // Thursday distribution capacity
+export const SPECIAL_PLACEMENT_HIGH_THRESHOLD = 1000; // Significant special placement volume
+
 export interface SandwichType {
   type: string;
   quantity: number;
