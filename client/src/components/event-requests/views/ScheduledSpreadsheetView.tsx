@@ -779,57 +779,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           }
         }
 
-        // Render component with assignment buttons
-        return (
-          <div className="space-y-1.5">
-            {assigned.length > 0 && (
-              <div className="text-sm">{assigned.join(' • ')}</div>
-            )}
-            {openAssignmentDialog && (
-              <div className="flex gap-1 flex-wrap">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openAssignmentDialog(event.id, 'drivers');
-                  }}
-                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
-                  title="Assign drivers"
-                >
-                  <Car className="w-3 h-3 mr-1" />
-                  Drivers
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openAssignmentDialog(event.id, 'speakers');
-                  }}
-                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
-                  title="Assign speakers"
-                >
-                  <Megaphone className="w-3 h-3 mr-1" />
-                  Speakers
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openAssignmentDialog(event.id, 'volunteers');
-                  }}
-                  className="h-6 px-2 text-xs hover:bg-[#47B3CB]/20"
-                  title="Assign volunteers"
-                >
-                  <Users className="w-3 h-3 mr-1" />
-                  Volunteers
-                </Button>
-              </div>
-            )}
-          </div>
-        );
+        // Return the fullText format expected by the rendering logic
+        const fullText = assigned.join(' • ');
+        return {
+          fullText,
+          hasContent: assigned.length > 0
+        };
       },
     },
     // 10. Van booked
