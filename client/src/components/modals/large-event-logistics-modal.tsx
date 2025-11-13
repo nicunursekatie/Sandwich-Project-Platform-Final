@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
+import { parseCollectionDate } from '@/lib/analytics-utils';
 
 interface LargeEventLogisticsModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export default function LargeEventLogisticsModal({
 }: LargeEventLogisticsModalProps) {
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return 'Not set';
-    const d = new Date(date);
+    const d = typeof date === 'string' ? parseCollectionDate(date) : date;
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -34,14 +35,21 @@ export default function LargeEventLogisticsModal({
 
   const getDayOfWeek = (date: Date | string | null | undefined) => {
     if (!date) return null;
-    const d = new Date(date);
+    const d = typeof date === 'string' ? parseCollectionDate(date) : date;
     return d.toLocaleDateString('en-US', { weekday: 'long' });
   };
 
-  const needsSandwichOrder = (event: EventRequest) => {
+  const getEventScale = (event: EventRequest) => {
+    const count = event.estimatedSandwichCount || 0;
+    if (count >= 1000) return 'very-large';
+    if (count >= 500) return 'large';
+    return 'medium';
+  };
+
+  const needsPlacement = (event: EventRequest) => {
     const dayOfWeek = getDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
     if (!dayOfWeek) return null; // Unknown - no valid date
-    return dayOfWeek !== 'Tuesday' && dayOfWeek !== 'Wednesday';
+    return dayOfWeek !== 'Wednesday' && dayOfWeek !== 'Thursday';
   };
 
   return (
@@ -60,7 +68,8 @@ export default function LargeEventLogisticsModal({
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-6">
             {events.map((event) => {
-              const needsOrder = needsSandwichOrder(event);
+              const eventScale = getEventScale(event);
+              const requiresPlacement = needsPlacement(event);
 
               return (
                 <Card key={event.id} className="border-2 border-amber-200">
@@ -135,67 +144,157 @@ export default function LargeEventLogisticsModal({
                     <div className="border-t pt-4 mt-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Logistics Requirements</h4>
                       <div className="space-y-3">
-                        {/* Speaker Needed */}
-                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                          <Megaphone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="font-medium text-blue-900">Speaker Required</p>
-                            <p className="text-sm text-blue-700">
-                              Large events typically need a speaker to present TSP mission.
-                              <span className="font-semibold"> Ideally Juliet</span> should be assigned.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Van Needed */}
-                        <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                          <Truck className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="font-medium text-purple-900">Van Likely Needed</p>
-                            <p className="text-sm text-purple-700">
-                              With {event.estimatedSandwichCount?.toLocaleString()} sandwiches,
-                              the van will likely be required for transportation.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Sandwich Order */}
-                        {needsOrder === true && (
-                          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                            <Package className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                        {/* Speaker Status */}
+                        {event.speakersNeeded && event.speakersNeeded > 0 ? (
+                          event.assignedSpeakerIds && event.assignedSpeakerIds.length >= event.speakersNeeded ? (
+                            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                              <Megaphone className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="font-medium text-green-900">✓ Speaker Assigned</p>
+                                <p className="text-sm text-green-700">
+                                  {event.assignedSpeakerIds.length} speaker{event.assignedSpeakerIds.length !== 1 ? 's' : ''} assigned for this event.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                              <Megaphone className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="font-medium text-amber-900">⚠️ Speaker Assignment Needed</p>
+                                <p className="text-sm text-amber-700">
+                                  Need {event.speakersNeeded} speaker{event.speakersNeeded !== 1 ? 's' : ''} for this event.
+                                  {event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0
+                                    ? ` ${event.assignedSpeakerIds.length} assigned, ${event.speakersNeeded - event.assignedSpeakerIds.length} still needed.`
+                                    : ' Ideally Juliet should be assigned.'}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        ) : (
+                          <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                            <Megaphone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                              <p className="font-medium text-amber-900">Large Sandwich Order Required</p>
-                              <p className="text-sm text-amber-700">
-                                Event is on {getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}
-                                (not Tuesday/Wednesday). Need to place order for{' '}
-                                {event.estimatedSandwichCount?.toLocaleString()} sandwiches well in advance.
+                              <p className="font-medium text-blue-900">Speaker Recommended</p>
+                              <p className="text-sm text-blue-700">
+                                Large events typically benefit from a speaker to present TSP mission. Consider adding speaker requirement.
                               </p>
                             </div>
                           </div>
                         )}
 
-                        {needsOrder === false && (
+                        {/* Driver/Van Status */}
+                        {event.driversNeeded && event.driversNeeded > 0 ? (
+                          event.assignedDriverIds && event.assignedDriverIds.length >= event.driversNeeded ? (
+                            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                              <Truck className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="font-medium text-green-900">✓ Driver(s) Assigned</p>
+                                <p className="text-sm text-green-700">
+                                  {event.assignedDriverIds.length} driver{event.assignedDriverIds.length !== 1 ? 's' : ''} assigned for transportation.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                              <Truck className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="font-medium text-amber-900">⚠️ Driver Assignment Needed</p>
+                                <p className="text-sm text-amber-700">
+                                  Need {event.driversNeeded} driver{event.driversNeeded !== 1 ? 's' : ''} for this event.
+                                  {event.assignedDriverIds && event.assignedDriverIds.length > 0
+                                    ? ` ${event.assignedDriverIds.length} assigned, ${event.driversNeeded - event.assignedDriverIds.length} still needed.`
+                                    : ' Van likely required for transportation.'}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        ) : (
+                          <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                            <Truck className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-medium text-purple-900">Van/Driver Likely Needed</p>
+                              <p className="text-sm text-purple-700">
+                                With {event.estimatedSandwichCount?.toLocaleString()} sandwiches,
+                                transportation will likely be required. Consider adding driver requirement.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sandwich Placement */}
+                        {requiresPlacement === true && (
+                          <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border-2 border-red-200">
+                            <Package className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-medium text-red-900">⚠️ Recipient Organization Placement Required</p>
+                              <p className="text-sm text-red-700">
+                                Event is on <strong>{getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}</strong> (not Wednesday/Thursday).
+                                These {event.estimatedSandwichCount?.toLocaleString()} sandwiches <strong>cannot be absorbed into regular
+                                Wednesday collection/Thursday distribution workflow</strong>. Must coordinate placement with a recipient
+                                organization in advance.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {requiresPlacement === false && (
                           <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
                             <Package className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                              <p className="font-medium text-green-900">Regular Collection Day</p>
+                              <p className="font-medium text-green-900">Regular Collection Day - No Special Placement Needed</p>
                               <p className="text-sm text-green-700">
-                                Event is on {getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}.
-                                Can potentially use regular Tuesday/Wednesday collection sandwiches, but verify capacity
-                                for {event.estimatedSandwichCount?.toLocaleString()} sandwiches.
+                                Event is on <strong>{getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}</strong>.
+                                These {event.estimatedSandwichCount?.toLocaleString()} sandwiches can be absorbed into the regular
+                                Wednesday collection/Thursday distribution workflow. Verify capacity with regular recipients.
                               </p>
                             </div>
                           </div>
                         )}
 
-                        {needsOrder === null && (
+                        {requiresPlacement === null && (
                           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <Package className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">Event Date Needed</p>
                               <p className="text-sm text-gray-700">
-                                Set an event date to determine sandwich order requirements. Events on non-collection days
-                                (not Tuesday/Wednesday) will need a large order placed in advance.
+                                Set an event date to determine sandwich placement requirements. Events on non-collection days
+                                (not Wednesday/Thursday) will need coordination with a recipient organization.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Supplies & Ingredients Communication */}
+                        {event.status === 'scheduled' ? (
+                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                            <Package className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-medium text-green-900">✓ Supplies Communication Complete</p>
+                              <p className="text-sm text-green-700">
+                                Event is scheduled. Organization has been briefed on purchasing supplies (bread, meats, condiments, bags, gloves)
+                                and venue setup requirements for {event.estimatedSandwichCount?.toLocaleString()} sandwiches.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                            <Package className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-medium text-amber-900">⚠️ Supplies Communication Needed</p>
+                              <p className="text-sm text-amber-700">
+                                {eventScale === 'very-large' ? (
+                                  <>
+                                    <strong>Very Large Event ({event.estimatedSandwichCount?.toLocaleString()} sandwiches):</strong> Organization
+                                    must purchase supplies (bread, meats, condiments, bags, gloves). Communicate requirements for adequate
+                                    storage/prep space and table/counter space at venue.
+                                  </>
+                                ) : (
+                                  <>
+                                    <strong>Large Event ({event.estimatedSandwichCount?.toLocaleString()} sandwiches):</strong> Ensure contact
+                                    understands they must purchase supplies (bread, meats, condiments, bags, gloves) and confirm venue has
+                                    adequate table/counter space for sandwich-making stations.
+                                  </>
+                                )}
                               </p>
                             </div>
                           </div>
