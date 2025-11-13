@@ -24,6 +24,12 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, 'client'),
+  optimizeDeps: {
+    // Force React to be pre-bundled and deduplicated
+    include: ['react', 'react-dom', 'react/jsx-runtime'],
+    // Ensure React is always treated as a singleton
+    exclude: [],
+  },
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
@@ -35,18 +41,26 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Manual chunk splitting for better caching
-        manualChunks: {
-          // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'wouter'],
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-          ],
-          'query-vendor': ['@tanstack/react-query'],
+        manualChunks: (id) => {
+          // Don't split React - keep it in the main bundle to avoid initialization issues
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return undefined; // Keep React in the main bundle
+          }
+          
+          // Split other vendors
+          if (id.includes('node_modules')) {
+            if (id.includes('@radix-ui')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
+            }
+            if (id.includes('wouter')) {
+              return 'router-vendor';
+            }
+            // Put other large vendor libraries in a separate chunk
+            return 'vendor';
+          }
         },
         // Add content hash to filenames for cache busting
         entryFileNames: 'assets/[name].[hash].js',
