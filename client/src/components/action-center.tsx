@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import {
   Card,
   CardContent,
@@ -49,6 +50,8 @@ interface ActionItem {
 }
 
 export default function ActionCenter() {
+  const [, setLocation] = useLocation();
+
   // State for modals
   const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
   const [selectedLargeEvents, setSelectedLargeEvents] = useState<EventRequest[]>([]);
@@ -846,13 +849,13 @@ export default function ActionCenter() {
                         setIsGrowthOpportunitiesModalOpen(true);
                       } else if (item.id === 'missing-drivers' || item.id === 'missing-speakers') {
                         // Navigate to event requests page
-                        window.location.href = '/event-requests';
+                        setLocation('/event-requests');
                       } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'early-week-planning') {
                         // Navigate to event requests to add new events
-                        window.location.href = '/event-requests';
+                        setLocation('/event-requests');
                       } else if (item.id === 'year-over-year-decline') {
                         // Navigate to analytics dashboard
-                        window.location.href = '/analytics';
+                        setLocation('/analytics');
                       }
                     }}
                   >
