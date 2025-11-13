@@ -267,7 +267,11 @@ export function AgendaPlanningTab({
     mutationFn: async (id: number) => {
       return await apiRequest('POST', `/api/projects/${id}/archive`);
     },
-    onSuccess: (_, archivedProjectId) => {
+    onSuccess: (response: any, archivedProjectId) => {
+      // Get project title before removing from state (for better toast message)
+      const archivedProject = allProjects.find(p => p.id === archivedProjectId);
+      const projectTitle = archivedProject?.title || `Project #${archivedProjectId}`;
+      
       // Remove from local state immediately
       setProjectAgendaStatus((prev) => {
         const updated = { ...prev };
@@ -296,17 +300,29 @@ export function AgendaPlanningTab({
       queryClient.refetchQueries({ queryKey: ['/api/projects'] });
       queryClient.refetchQueries({ queryKey: ['/api/projects/for-review'] });
       
+      // Success toast with project details
       toast({
-        title: 'Project archived successfully!',
-        description: 'The project has been moved to the archive and removed from active projects.',
+        title: '✅ Project archived successfully!',
+        description: `"${projectTitle}" has been moved to the archive and removed from active projects. It should disappear from this list now.`,
+        duration: 5000, // Show for 5 seconds
       });
+      
+      // Log to console for debugging
+      logger.log(`[Archive] Successfully archived project ${archivedProjectId} "${projectTitle}"`);
     },
-    onError: (error: any) => {
-      logger.error('Archive project error:', error);
+    onError: (error: any, archivedProjectId) => {
+      const archivedProject = allProjects.find(p => p.id === archivedProjectId);
+      const projectTitle = archivedProject?.title || `Project #${archivedProjectId}`;
+      
+      logger.error(`[Archive] Failed to archive project ${archivedProjectId} "${projectTitle}":`, error);
+      
+      // Detailed error toast
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to archive project.',
+        title: '❌ Archive failed',
+        description: `Failed to archive "${projectTitle}". Error: ${errorMessage}. Check server logs for details.`,
         variant: 'destructive',
+        duration: 7000, // Show longer for errors
       });
     },
   });
@@ -1002,15 +1018,20 @@ export function AgendaPlanningTab({
                                   variant="ghost"
                                   onClick={() => {
                                     if (window.confirm(`Are you sure you want to archive "${project.title}"? You can view archived projects later.`)) {
+                                      logger.log(`[Archive] Starting archive for project ${project.id} "${project.title}"`);
                                       archiveProjectMutation.mutate(project.id);
                                     }
                                   }}
                                   disabled={archiveProjectMutation.isPending}
                                   data-testid={`button-archive-project-${project.id}`}
-                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                                  title="Archive project"
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                                  title={archiveProjectMutation.isPending ? "Archiving..." : "Archive project"}
                                 >
-                                  <Archive className="w-4 h-4" />
+                                  {archiveProjectMutation.isPending ? (
+                                    <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <Archive className="w-4 h-4" />
+                                  )}
                                 </Button>
                                 <Button
                                   size="sm"
