@@ -690,13 +690,36 @@ export default function SandwichCollectionLog() {
 
     collectionsData.forEach((collection) => {
       individualTotal += collection.individualSandwiches || 0;
-      groupTotal += calculateGroupTotal(collection);
+      const collectionGroupCount = calculateGroupTotal(collection);
+      groupTotal += collectionGroupCount;
+      
+      // DEBUG: Log collections with significant group counts
+      if (collectionGroupCount > 1000) {
+        logger.log('🔍 Collection with large group count:', {
+          id: collection.id,
+          date: collection.collectionDate,
+          host: collection.hostName,
+          groupCount: collectionGroupCount,
+          group1Count: (collection as any).group1Count,
+          group2Count: (collection as any).group2Count,
+          groupCollections: collection.groupCollections
+        });
+      }
+      
       if (collection.collectionDate) {
         dates.push(collection.collectionDate);
       }
       if (collection.hostName) {
         hostNames.add(collection.hostName);
       }
+    });
+    
+    // DEBUG: Log final totals
+    logger.log('📊 FILTERED STATS CALCULATION:', {
+      collections: collectionsData.length,
+      individualTotal,
+      groupTotal,
+      grandTotal: individualTotal + groupTotal
     });
 
     // Calculate date range
