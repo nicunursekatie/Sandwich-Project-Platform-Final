@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { parseCollectionDate } from '@/lib/analytics-utils';
+import { REGULAR_THURSDAY_CAPACITY, SPECIAL_PLACEMENT_HIGH_THRESHOLD } from '@/lib/sandwich-utils';
+import { getWeekStart } from '@/lib/week-planning-utils';
 
 interface SandwichCollection {
   id: number;
@@ -39,19 +41,20 @@ interface WeekOutlookModalProps {
   initialWeekStart?: Date;
 }
 
+/**
+ * WeekOutlookModal displays a modal with a week-by-week outlook of sandwich collections and event requests.
+ * The week is defined as Friday to Thursday, to align with business requirements.
+ * It aggregates sandwich counts, distinguishes between regular distribution and special placements,
+ * and uses capacity thresholds to indicate status.
+ *
+ * @param {WeekOutlookModalProps} props - The modal props.
+ * @param {boolean} props.isOpen - Whether the modal is open.
+ * @param {() => void} props.onClose - Function to close the modal.
+ * @param {Date} [props.initialWeekStart] - Optional initial week start date.
+ */
 export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: WeekOutlookModalProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  // Calculate initial week start (Friday to Thursday format)
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    const dayOfWeek = d.getDay();
-    const daysFromFriday = (dayOfWeek + 2) % 7;
-    d.setDate(d.getDate() - daysFromFriday);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
 
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     initialWeekStart ? getWeekStart(initialWeekStart) : getWeekStart(today)
@@ -99,7 +102,7 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
         const collectionDate = parseCollectionDate(c.collectionDate);
         return (
           collectionDate.toDateString() === date.toDateString() &&
-          collectionDate >= today
+          collectionDate > today
         );
       });
 
@@ -193,21 +196,19 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
   const placementStatus = () => {
     if (weekTotal === 0) return { status: 'none', message: 'No group events planned this week' };
 
-    // Assume regular Thursday distribution can handle around 8,000 sandwiches
-    const regularCapacity = 8000;
-    const regularOverage = Math.max(0, regularDistributionTotal - regularCapacity);
+    const regularOverage = Math.max(0, regularDistributionTotal - REGULAR_THURSDAY_CAPACITY);
 
-    if (regularDistributionTotal > regularCapacity && specialPlacementTotal > 0) {
+    if (regularDistributionTotal > REGULAR_THURSDAY_CAPACITY && specialPlacementTotal > 0) {
       return {
         status: 'critical',
         message: `High volume: ${regularOverage.toLocaleString()} sandwiches over Thursday capacity AND ${specialPlacementTotal.toLocaleString()} needing special placement`,
       };
-    } else if (regularDistributionTotal > regularCapacity) {
+    } else if (regularDistributionTotal > REGULAR_THURSDAY_CAPACITY) {
       return {
         status: 'warning',
         message: `${regularOverage.toLocaleString()} sandwiches over Thursday capacity - need additional distribution`,
       };
-    } else if (specialPlacementTotal > 1000) {
+    } else if (specialPlacementTotal > SPECIAL_PLACEMENT_HIGH_THRESHOLD) {
       return {
         status: 'warning',
         message: `${specialPlacementTotal.toLocaleString()} sandwiches need special placement outside Thursday distribution`,
@@ -445,13 +446,13 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">Planning Tips</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                {regularDistributionTotal > 8000 && (
+                {regularDistributionTotal > REGULAR_THURSDAY_CAPACITY && (
                   <li>• Consider splitting Wednesday collections or adding distribution locations for Thursday</li>
                 )}
                 {specialPlacementTotal > 0 && (
                   <li>• Coordinate with recipients for non-Thursday delivery: {specialPlacementTotal.toLocaleString()} sandwiches need placement</li>
                 )}
-                {weekTotal > weeklyAverage * 0.8 && (
+                {weeklyAverage > 0 && weekTotal > weeklyAverage * 0.8 && (
                   <li>• Group events meeting ~{Math.round((weekTotal / weeklyAverage) * 100)}% of weekly goal - focus less on individual recruitment</li>
                 )}
                 {regularDistributionTotal > 0 && specialPlacementTotal === 0 && (
