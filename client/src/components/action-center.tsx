@@ -151,64 +151,64 @@ export default function ActionCenter() {
     // CATEGORY 1: FOLLOW-UP & ENGAGEMENT
     // ============================================================
 
-    // Find completed events needing 1-day follow-up
-    const completedEventsNeeding1Day = (eventRequests || []).filter((event) => {
-      if (event.status !== 'completed') return false;
-      if (!event.desiredEventDate) return false;
-      if (event.followUpOneDayCompleted) return false;
+    // DISABLED: Find completed events needing 1-day follow-up
+    // const completedEventsNeeding1Day = (eventRequests || []).filter((event) => {
+    //   if (event.status !== 'completed') return false;
+    //   if (!event.desiredEventDate) return false;
+    //   if (event.followUpOneDayCompleted) return false;
 
-      const eventDate = new Date(event.desiredEventDate);
-      const oneDayAgo = new Date(today);
-      oneDayAgo.setDate(today.getDate() - 1);
+    //   const eventDate = new Date(event.desiredEventDate);
+    //   const oneDayAgo = new Date(today);
+    //   oneDayAgo.setDate(today.getDate() - 1);
 
-      // Flag events from yesterday or earlier that need 1-day follow-up
-      return eventDate <= oneDayAgo;
-    });
+    //   // Flag events from yesterday or earlier that need 1-day follow-up
+    //   return eventDate <= oneDayAgo;
+    // });
 
-    if (completedEventsNeeding1Day.length > 0) {
-      const estimatedRetention = Math.round(completedEventsNeeding1Day.length * 0.75); // 75% retention with follow-up
-      const totalEventSandwiches = completedEventsNeeding1Day.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+    // if (completedEventsNeeding1Day.length > 0) {
+    //   const estimatedRetention = Math.round(completedEventsNeeding1Day.length * 0.75); // 75% retention with follow-up
+    //   const totalEventSandwiches = completedEventsNeeding1Day.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
 
-      actions.push({
-        id: 'followup-1day-needed',
-        priority: 'high',
-        category: 'recognition',
-        title: `${completedEventsNeeding1Day.length} Event${completedEventsNeeding1Day.length !== 1 ? 's' : ''} Need 1-Day Follow-Up`,
-        description: `Completed events waiting for immediate post-event feedback`,
-        impact: `Follow-up could retain ${estimatedRetention} of ${completedEventsNeeding1Day.length} hosts (75% retention rate) → potential ${Math.round(totalEventSandwiches * 0.75).toLocaleString()} sandwiches in repeat events`,
-        action: `Contact ${completedEventsNeeding1Day.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Day.length > 3 ? ` and ${completedEventsNeeding1Day.length - 3} more` : ''}`,
-        data: { events: completedEventsNeeding1Day },
-      });
-    }
+    //   actions.push({
+    //     id: 'followup-1day-needed',
+    //     priority: 'high',
+    //     category: 'recognition',
+    //     title: `${completedEventsNeeding1Day.length} Event${completedEventsNeeding1Day.length !== 1 ? 's' : ''} Need 1-Day Follow-Up`,
+    //     description: `Completed events waiting for immediate post-event feedback`,
+    //     impact: `Follow-up could retain ${estimatedRetention} of ${completedEventsNeeding1Day.length} hosts (75% retention rate) → potential ${Math.round(totalEventSandwiches * 0.75).toLocaleString()} sandwiches in repeat events`,
+    //     action: `Contact ${completedEventsNeeding1Day.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Day.length > 3 ? ` and ${completedEventsNeeding1Day.length - 3} more` : ''}`,
+    //     data: { events: completedEventsNeeding1Day },
+    //   });
+    // }
 
-    // Find completed events needing 1-month follow-up (events 30+ days ago)
-    const oneMonthAgo = new Date(today);
-    oneMonthAgo.setDate(today.getDate() - 30);
+    // DISABLED: Find completed events needing 1-month follow-up (events 30+ days ago)
+    // const oneMonthAgo = new Date(today);
+    // oneMonthAgo.setDate(today.getDate() - 30);
 
-    const completedEventsNeeding1Month = (eventRequests || []).filter((event) => {
-      if (event.status !== 'completed') return false;
-      if (!event.desiredEventDate) return false;
-      if (event.followUpOneMonthCompleted) return false;
+    // const completedEventsNeeding1Month = (eventRequests || []).filter((event) => {
+    //   if (event.status !== 'completed') return false;
+    //   if (!event.desiredEventDate) return false;
+    //   if (event.followUpOneMonthCompleted) return false;
 
-      const eventDate = new Date(event.desiredEventDate);
-      return eventDate <= oneMonthAgo;
-    });
+    //   const eventDate = new Date(event.desiredEventDate);
+    //   return eventDate <= oneMonthAgo;
+    // });
 
-    if (completedEventsNeeding1Month.length > 0) {
-      const potentialRepeatEvents = Math.round(completedEventsNeeding1Month.length * 0.60); // 60% repeat rate with good follow-up
-      const totalEventSandwiches = completedEventsNeeding1Month.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+    // if (completedEventsNeeding1Month.length > 0) {
+    //   const potentialRepeatEvents = Math.round(completedEventsNeeding1Month.length * 0.60); // 60% repeat rate with good follow-up
+    //   const totalEventSandwiches = completedEventsNeeding1Month.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
 
-      actions.push({
-        id: 'followup-1month-needed',
-        priority: 'medium',
-        category: 'recognition',
-        title: `${completedEventsNeeding1Month.length} Event${completedEventsNeeding1Month.length !== 1 ? 's' : ''} Need 1-Month Follow-Up`,
-        description: `Events from 30+ days ago waiting for long-term feedback`,
-        impact: `Could secure ${potentialRepeatEvents} repeat events (60% conversion) → estimated ${Math.round(totalEventSandwiches * 0.60).toLocaleString()} sandwiches annually`,
-        action: `Schedule follow-up calls with ${completedEventsNeeding1Month.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Month.length > 3 ? ` and ${completedEventsNeeding1Month.length - 3} more` : ''}`,
-        data: { events: completedEventsNeeding1Month },
-      });
-    }
+    //   actions.push({
+    //     id: 'followup-1month-needed',
+    //     priority: 'medium',
+    //     category: 'recognition',
+    //     title: `${completedEventsNeeding1Month.length} Event${completedEventsNeeding1Month.length !== 1 ? 's' : ''} Need 1-Month Follow-Up`,
+    //     description: `Events from 30+ days ago waiting for long-term feedback`,
+    //     impact: `Could secure ${potentialRepeatEvents} repeat events (60% conversion) → estimated ${Math.round(totalEventSandwiches * 0.60).toLocaleString()} sandwiches annually`,
+    //     action: `Schedule follow-up calls with ${completedEventsNeeding1Month.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Month.length > 3 ? ` and ${completedEventsNeeding1Month.length - 3} more` : ''}`,
+    //     data: { events: completedEventsNeeding1Month },
+    //   });
+    // }
 
     // Find inactive hosts (haven't collected in 30+ days)
     const thirtyDaysAgo = new Date(today);
