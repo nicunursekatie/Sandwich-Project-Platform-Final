@@ -304,6 +304,9 @@ export class GoogleSheetsSyncService {
       const allProjects = await this.storage.getAllProjects();
       const dbProjects = allProjects.filter((p) => p.googleSheetRowId);
       
+      // Get archived projects to prevent re-creating archived projects
+      const archivedProjects = await this.storage.getArchivedProjects();
+      
       // Read from Google Sheets
       const sheetRows = await sheetsService.readSheet();
       
@@ -411,6 +414,34 @@ export class GoogleSheetsSyncService {
             });
           }
         } else {
+          // Check if this project was previously archived - if so, skip it to prevent un-archiving
+          const rowIndexStr = sheetRow.rowIndex?.toString() || null;
+          const wasArchived = archivedProjects.find((p) => {
+            // If sheet row has googleSheetRowId, ONLY match by googleSheetRowId
+            if (rowIndexStr) {
+              if (p.googleSheetRowId && p.googleSheetRowId.toString() === rowIndexStr) {
+                logger.log(`🔍 [bidirectionalSync] Found archived project by row ID: "${sheetRow.project}" (row ${rowIndexStr}, archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+              return false;
+            }
+            // If sheet row has NO googleSheetRowId (legacy case), fall back to title matching
+            if (!rowIndexStr && !p.googleSheetRowId) {
+              const titleMatch = p.title.toLowerCase().trim() === sheetRow.project.toLowerCase().trim();
+              if (titleMatch) {
+                logger.log(`⚠️  [bidirectionalSync] Found archived project by title only: "${sheetRow.project}" (archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+            }
+            return false;
+          });
+
+          if (wasArchived) {
+            // Project was archived - don't recreate it!
+            logger.log(`⏭️  [bidirectionalSync] Skipping archived project "${sheetRow.project}" (row ${rowIndexStr}, archived ID: ${wasArchived.originalProjectId}) - previously archived, not re-creating`);
+            continue;
+          }
+
           // New project from sheet - create in database
           logger.log(`➕ Creating new project from sheet: "${sheetRow.project}"`);
           const projectData = this.sheetRowToProject(sheetRow);
