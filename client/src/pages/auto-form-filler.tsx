@@ -246,7 +246,12 @@ export function AutoFormFiller() {
                 {/* Download Button */}
                 <button
                   onClick={handleDownload}
-                  className="bg-[#007E8C] text-white px-6 py-3 rounded-lg hover:bg-[#236383] transition-colors flex items-center justify-center gap-2 w-full"
+                  disabled={!result?.filledFormUrl}
+                  className={`px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 w-full ${
+                    !result?.filledFormUrl
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#007E8C] text-white hover:bg-[#236383]'
+                  }`}
                 >
                   <Download className="w-5 h-5" />
                   Download Filled Form
