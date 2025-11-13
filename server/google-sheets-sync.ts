@@ -124,45 +124,42 @@ export class GoogleSheetsSyncService {
         // Normalize row index to string for consistent comparison
         const rowIndexStr = row.rowIndex?.toString() || null;
 
-        // Try to find existing project by title or sheet row ID
+        // Try to find existing project by sheet row ID (primary) or title (only if no row ID)
+        // CRITICAL: Don't use title matching if googleSheetRowIds are different - they're different projects!
         const existingProject = existingProjects.find(
-          (p) =>
-            (p.googleSheetRowId && p.googleSheetRowId === rowIndexStr) ||
-            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
+          (p) => {
+            // If sheet row has a googleSheetRowId, ONLY match by googleSheetRowId
+            if (rowIndexStr) {
+              return p.googleSheetRowId === rowIndexStr;
+            }
+            // If sheet row has NO googleSheetRowId (legacy), fall back to title matching
+            return p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
+          }
         );
 
         // Check if this project was previously archived - if so, skip entirely (don't create OR update)
-        // CRITICAL FIX: Use googleSheetRowId as primary match, only fall back to title matching with strict validation
+        // CRITICAL FIX: Match by googleSheetRowId if available, otherwise fall back to title matching
         const wasArchived = archivedProjects.find(
           (p) => {
-            // Primary match: googleSheetRowId (most reliable)
-            if (rowIndexStr && p.googleSheetRowId) {
-              const match = p.googleSheetRowId.toString() === rowIndexStr;
-              if (match) {
+            // If sheet row has googleSheetRowId, ONLY match by googleSheetRowId
+            // This ensures we don't block legitimate new projects that happen to have duplicate titles
+            if (rowIndexStr) {
+              // Only match if archived project has the SAME googleSheetRowId
+              if (p.googleSheetRowId && p.googleSheetRowId.toString() === rowIndexStr) {
                 logger.log(`🔍 Found archived project by row ID: "${row.project}" (row ${rowIndexStr}, archived project ID: ${p.originalProjectId})`);
                 return true;
               }
+              // If sheet row has googleSheetRowId but archived project doesn't (or they're different),
+              // this is a DIFFERENT project, even if titles match - don't block it!
+              return false;
             }
 
-            // Fallback: Title matching ONLY if NEITHER has googleSheetRowId
-            // This prevents false positives when one project has been re-imported with a new row ID
+            // If sheet row has NO googleSheetRowId (legacy case), fall back to title matching
+            // This only applies to old sheet rows from before googleSheetRowId was implemented
             if (!rowIndexStr && !p.googleSheetRowId) {
               const titleMatch = p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
               if (titleMatch) {
-                logger.log(`⚠️  Found archived project by title only (no row IDs): "${row.project}" (archived project ID: ${p.originalProjectId}) - this is less reliable`);
-                return true;
-              }
-            }
-
-            // IMPORTANT: If row has googleSheetRowId but archived project doesn't, OR vice versa,
-            // we can't reliably match by title alone because it might be a duplicate.
-            // Log a warning but DON'T match to prevent recreating archived projects with new IDs.
-            if ((rowIndexStr && !p.googleSheetRowId) || (!rowIndexStr && p.googleSheetRowId)) {
-              const titleMatch = p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
-              if (titleMatch) {
-                logger.log(`⚠️  SUSPICIOUS: Title matches archived project "${row.project}" but row IDs mismatch (sheet row: ${rowIndexStr}, archived row: ${p.googleSheetRowId}) - treating as archived to prevent recreation with new ID`);
-                // For safety, if we see a title match with mismatched row IDs, treat it as archived
-                // This prevents recreating the same project with a new ID
+                logger.log(`⚠️  Found archived project by title only (no row IDs): "${row.project}" (archived project ID: ${p.originalProjectId}) - legacy matching`);
                 return true;
               }
             }
