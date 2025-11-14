@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS impact_reports (
   notes TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  -- Note: updated_at must be manually set in application code when updating records
 );
 
 -- Create indexes for faster queries
@@ -54,7 +55,7 @@ ON impact_reports(report_period, report_type);
 
 -- Add comments
 COMMENT ON TABLE impact_reports IS 'AI-generated impact reports for stakeholder communication';
-COMMENT ON COLUMN impact_reports.generated_by IS 'Source of generation: "ai" (manual), "ai-cron" (scheduled), or user ID';
+COMMENT ON COLUMN impact_reports.generated_by IS 'Source of generation: "ai" (AI-generated, user-initiated), "ai-cron" (AI-generated, scheduled), or user ID (manually created)';
 COMMENT ON COLUMN impact_reports.metrics IS 'Key metrics: {eventsCompleted, sandwichesDistributed, peopleServed, etc.}';
 COMMENT ON COLUMN impact_reports.highlights IS 'Array of highlight objects with title and description';
 COMMENT ON COLUMN impact_reports.trends IS 'Array of trend objects identified by AI';
