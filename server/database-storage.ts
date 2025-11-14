@@ -400,7 +400,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProject(id: number): Promise<boolean> {
     try {
-      // First, delete related data (tasks, comments, assignments, etc.) to avoid foreign key constraints
+      // First, delete related data (tasks, comments, assignments, meeting notes, etc.) to avoid foreign key constraints
       // Delete project tasks
       await db.delete(projectTasks).where(eq(projectTasks.projectId, id));
       logger.info(`[Database] Deleted related tasks for project ${id}`);
@@ -412,6 +412,10 @@ export class DatabaseStorage implements IStorage {
       // Delete project assignments
       await db.delete(projectAssignments).where(eq(projectAssignments.projectId, id));
       logger.info(`[Database] Deleted related assignments for project ${id}`);
+
+      // Delete meeting notes (CRITICAL FIX: prevent orphaned meeting notes)
+      await db.delete(meetingNotes).where(eq(meetingNotes.projectId, id));
+      logger.info(`[Database] Deleted related meeting notes for project ${id}`);
 
       // Now delete the project itself
       const result = await db.delete(projects).where(eq(projects.id, id));

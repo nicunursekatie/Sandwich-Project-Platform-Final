@@ -21,12 +21,7 @@ if (databaseUrl) {
   const sql = neon(databaseUrl);
   db = drizzle(sql, { 
     schema,
-    logger: {
-      logQuery: (query: string, params: unknown[]) => {
-        logger.log(`[DRIZZLE SQL] ${query}`);
-        logger.log(`[DRIZZLE PARAMS] ${JSON.stringify(params)}`);
-      }
-    }
+    logger: false
   }) as DB;
 } else {
   // Fallback to SQLite for local development
