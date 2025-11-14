@@ -1,9 +1,14 @@
 import OpenAI from 'openai';
 import { db } from '../../db';
 import { eventRequests, sandwichCollections } from '../../../shared/schema';
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
+
+// Validate OpenAI API key is configured
+if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for predictions');
+}
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -90,11 +95,14 @@ export async function predictMonthlySandwichNeeds(
     // 5. Combine statistical baseline with AI insights
     let predictedSandwiches = aiPrediction.predictedSandwichCount || Math.round(avgSandwiches);
 
-    // Apply seasonal adjustments
+    // Apply seasonal adjustments based on historical patterns
+    // These factors account for known fluctuations in demand throughout the year
     const targetMonthIndex = targetMonth - 1;
     const seasonalFactors: Record<number, number> = {
-      0: 1.1, // January (MLK Day)
-      11: 0.9, // December (holidays)
+      0: 1.1,  // January - Increased demand due to MLK Day service events
+      11: 0.9, // December - Decreased activity during holiday season
+      // Note: Additional seasonal factors can be added as patterns emerge
+      // e.g., summer months, back-to-school periods, etc.
     };
     if (seasonalFactors[targetMonthIndex]) {
       predictedSandwiches = Math.round(predictedSandwiches * seasonalFactors[targetMonthIndex]);
