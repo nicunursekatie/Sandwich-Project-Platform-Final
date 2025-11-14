@@ -30,6 +30,27 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Unregister service workers (temporary - remove after deployment) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister().then((success) => {
+              if (success) {
+                console.log('[SW Cleanup] Service worker unregistered:', registration.scope);
+              }
+            });
+          }
+          // Clear all caches
+          caches.keys().then((cacheNames) => {
+            cacheNames.forEach((cacheName) => {
+              caches.delete(cacheName);
+              console.log('[SW Cleanup] Cache deleted:', cacheName);
+            });
+          });
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>

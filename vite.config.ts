@@ -42,18 +42,29 @@ export default defineConfig({
       output: {
         // Manual chunk splitting for better caching
         manualChunks: (id) => {
-          // Don't split React or Radix UI - keep them in the main bundle to avoid initialization issues
+          // CRITICAL: Don't split React, React-DOM, or Radix UI - keep them in the main bundle
+          // React must be in the main bundle to prevent initialization issues
           // Radix UI components depend on React internals and break when loaded in separate chunks
+          // Check for React first to prevent it from being caught by other conditions
           if (
             id.includes('node_modules/react/') || 
             id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react/jsx-runtime') ||
             id.includes('@radix-ui')
           ) {
             return undefined; // Keep React and Radix UI in the main bundle
           }
           
-          // Split other vendors
+          // Split other vendors (but NOT React or Radix UI)
           if (id.includes('node_modules')) {
+            // Double-check: never split React-related packages
+            if (
+              id.includes('react') || 
+              id.includes('@radix-ui')
+            ) {
+              return undefined; // Safety check - keep in main bundle
+            }
+            
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
@@ -63,6 +74,8 @@ export default defineConfig({
             // Put other large vendor libraries in a separate chunk
             return 'vendor';
           }
+          
+          return undefined;
         },
         // Add content hash to filenames for cache busting
         entryFileNames: 'assets/[name].[hash].js',
