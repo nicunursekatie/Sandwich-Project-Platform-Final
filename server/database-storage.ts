@@ -310,10 +310,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProject(id: number): Promise<Project | undefined> {
+    logger.info(`[Database.getProject] Querying for project ID: ${id}`);
     const [project] = await db
       .select()
       .from(projects)
       .where(eq(projects.id, id));
+
+    if (project) {
+      logger.info(`[Database.getProject] Found project ${id}: "${project.title}"`);
+    } else {
+      logger.error(`[Database.getProject] Project ${id} NOT FOUND in database`);
+    }
+
     return project || undefined;
   }
 
