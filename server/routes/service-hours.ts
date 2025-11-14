@@ -22,6 +22,7 @@ const serviceHoursRequestSchema = z.object({
   volunteerName: z.string().min(1, 'Volunteer name is required'),
   serviceEntries: z.array(serviceEntrySchema).min(1, 'At least one service entry is required'),
   approverName: z.string().default('Katie Long'),
+  approverSignature: z.string().default(''),
   approverContact: z.string().default(''),
   totalHours: z.number().min(0),
 }).refine((data) => {

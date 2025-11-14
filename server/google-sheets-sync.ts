@@ -124,34 +124,46 @@ export class GoogleSheetsSyncService {
         // Normalize row index to string for consistent comparison
         const rowIndexStr = row.rowIndex?.toString() || null;
 
-        // Try to find existing project by title or sheet row ID
+        // Try to find existing project by sheet row ID (primary) or title (only if no row ID)
+        // CRITICAL: Don't use title matching if googleSheetRowIds are different - they're different projects!
         const existingProject = existingProjects.find(
-          (p) =>
-            (p.googleSheetRowId && p.googleSheetRowId === rowIndexStr) ||
-            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
+          (p) => {
+            // If sheet row has a googleSheetRowId, ONLY match by googleSheetRowId
+            if (rowIndexStr) {
+              return p.googleSheetRowId === rowIndexStr;
+            }
+            // If sheet row has NO googleSheetRowId (legacy), fall back to title matching
+            return p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
+          }
         );
 
         // Check if this project was previously archived - if so, skip entirely (don't create OR update)
-        // Compare using googleSheetRowId (most reliable) or title (fallback)
-        // Use strict string comparison and handle null/undefined cases
+        // CRITICAL FIX: Match by googleSheetRowId if available, otherwise fall back to title matching
         const wasArchived = archivedProjects.find(
           (p) => {
-            // First try matching by googleSheetRowId if both exist
-            if (rowIndexStr && p.googleSheetRowId) {
-              const match = p.googleSheetRowId.toString() === rowIndexStr;
-              if (match) {
+            // If sheet row has googleSheetRowId, ONLY match by googleSheetRowId
+            // This ensures we don't block legitimate new projects that happen to have duplicate titles
+            if (rowIndexStr) {
+              // Only match if archived project has the SAME googleSheetRowId
+              if (p.googleSheetRowId && p.googleSheetRowId.toString() === rowIndexStr) {
                 logger.log(`🔍 Found archived project by row ID: "${row.project}" (row ${rowIndexStr}, archived project ID: ${p.originalProjectId})`);
                 return true;
               }
+              // If sheet row has googleSheetRowId but archived project doesn't (or they're different),
+              // this is a DIFFERENT project, even if titles match - don't block it!
+              return false;
             }
-            // Fallback to title matching if no row ID match
-            if (!rowIndexStr || !p.googleSheetRowId) {
+
+            // If sheet row has NO googleSheetRowId (legacy case), fall back to title matching
+            // This only applies to old sheet rows from before googleSheetRowId was implemented
+            if (!rowIndexStr && !p.googleSheetRowId) {
               const titleMatch = p.title.toLowerCase().trim() === row.project.toLowerCase().trim();
               if (titleMatch) {
-                logger.log(`🔍 Found archived project by title: "${row.project}" (archived project ID: ${p.originalProjectId})`);
+                logger.log(`⚠️  Found archived project by title only (no row IDs): "${row.project}" (archived project ID: ${p.originalProjectId}) - legacy matching`);
                 return true;
               }
             }
+
             return false;
           }
         );
@@ -292,6 +304,9 @@ export class GoogleSheetsSyncService {
       const allProjects = await this.storage.getAllProjects();
       const dbProjects = allProjects.filter((p) => p.googleSheetRowId);
       
+      // Get archived projects to prevent re-creating archived projects
+      const archivedProjects = await this.storage.getArchivedProjects();
+      
       // Read from Google Sheets
       const sheetRows = await sheetsService.readSheet();
       
@@ -399,6 +414,34 @@ export class GoogleSheetsSyncService {
             });
           }
         } else {
+          // Check if this project was previously archived - if so, skip it to prevent un-archiving
+          const rowIndexStr = sheetRow.rowIndex?.toString() || null;
+          const wasArchived = archivedProjects.find((p) => {
+            // If sheet row has googleSheetRowId, ONLY match by googleSheetRowId
+            if (rowIndexStr) {
+              if (p.googleSheetRowId && p.googleSheetRowId.toString() === rowIndexStr) {
+                logger.log(`🔍 [bidirectionalSync] Found archived project by row ID: "${sheetRow.project}" (row ${rowIndexStr}, archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+              return false;
+            }
+            // If sheet row has NO googleSheetRowId (legacy case), fall back to title matching
+            if (!rowIndexStr && !p.googleSheetRowId) {
+              const titleMatch = p.title.toLowerCase().trim() === sheetRow.project.toLowerCase().trim();
+              if (titleMatch) {
+                logger.log(`⚠️  [bidirectionalSync] Found archived project by title only: "${sheetRow.project}" (archived project ID: ${p.originalProjectId})`);
+                return true;
+              }
+            }
+            return false;
+          });
+
+          if (wasArchived) {
+            // Project was archived - don't recreate it!
+            logger.log(`⏭️  [bidirectionalSync] Skipping archived project "${sheetRow.project}" (row ${rowIndexStr}, archived ID: ${wasArchived.originalProjectId}) - previously archived, not re-creating`);
+            continue;
+          }
+
           // New project from sheet - create in database
           logger.log(`➕ Creating new project from sheet: "${sheetRow.project}"`);
           const projectData = this.sheetRowToProject(sheetRow);
