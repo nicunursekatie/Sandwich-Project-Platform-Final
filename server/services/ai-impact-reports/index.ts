@@ -13,7 +13,7 @@ const openai = new OpenAI({
 // Report generation result
 export interface ImpactReportGenerationResult {
   title: string;
-  executive summary: string;
+  executiveSummary: string;
   content: string; // Markdown format
   metrics: {
     eventsCompleted: number;
@@ -334,7 +334,7 @@ export async function saveImpactReport(
   reportType: 'monthly' | 'quarterly' | 'annual' | 'custom',
   generatedBy: string = 'ai'
 ): Promise<number> {
-  const reportPeriod = formatReportPeriod(startDate, reportType);
+  const reportPeriod = formatReportPeriod(startDate, reportType, endDate);
 
   const [inserted] = await db.insert(impactReports).values({
     reportType,
@@ -364,7 +364,7 @@ export async function saveImpactReport(
 /**
  * Format report period string
  */
-function formatReportPeriod(startDate: Date, reportType: string): string {
+function formatReportPeriod(startDate: Date, reportType: string, endDate?: Date): string {
   if (reportType === 'monthly') {
     return `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
   } else if (reportType === 'quarterly') {
@@ -373,6 +373,7 @@ function formatReportPeriod(startDate: Date, reportType: string): string {
   } else if (reportType === 'annual') {
     return `${startDate.getFullYear()}`;
   } else {
-    return `${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}`;
+    const end = endDate || startDate;
+    return `${startDate.toISOString().split('T')[0]}_${end.toISOString().split('T')[0]}`;
   }
 }
