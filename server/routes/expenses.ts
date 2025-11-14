@@ -447,19 +447,10 @@ expensesRouter.post('/process-receipt', receiptUpload.single('receipt'), async (
     });
 
     // Upload receipt to object storage first
-    const receiptFile = await fs.readFile(req.file.path);
-    const uploadResult = await objectStorageService.uploadFile(
-      receiptFile,
-      req.file.filename,
-      'receipts',
-      req.file.mimetype
+    const receiptUrl = await objectStorageService.uploadLocalFile(
+      req.file.path,
+      `receipts/${Date.now()}-${req.file.originalname}`
     );
-
-    if (!uploadResult.success || !uploadResult.url) {
-      logger.error('Failed to upload receipt to storage', { error: uploadResult.error });
-      await safeDeleteFile(req.file.path, 'receipt processing - upload failed');
-      return res.status(500).json({ error: 'Failed to upload receipt' });
-    }
 
     // Clean up temporary file
     await safeDeleteFile(req.file.path, 'receipt processing - cleanup after upload');
@@ -470,7 +461,7 @@ expensesRouter.post('/process-receipt', receiptUpload.single('receipt'), async (
     // Call AI receipt processing service
     const { processReceiptImage } = await import('../services/ai-receipt-processor');
     const extractedData = await processReceiptImage({
-      imageUrl: uploadResult.url,
+      imageUrl: receiptUrl,
       contextHint,
     });
 
@@ -484,8 +475,8 @@ expensesRouter.post('/process-receipt', receiptUpload.single('receipt'), async (
     // Return extracted data plus the receipt URL
     res.json({
       ...extractedData,
-      receiptUrl: uploadResult.url,
-      receiptFileName: req.file.filename,
+      receiptUrl: receiptUrl,
+      receiptFileName: req.file.originalname,
       receiptFileSize: req.file.size,
     });
 
