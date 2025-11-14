@@ -42,16 +42,18 @@ export default defineConfig({
       output: {
         // Manual chunk splitting for better caching
         manualChunks: (id) => {
-          // Don't split React - keep it in the main bundle to avoid initialization issues
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return undefined; // Keep React in the main bundle
+          // Don't split React or Radix UI - keep them in the main bundle to avoid initialization issues
+          // Radix UI components depend on React internals and break when loaded in separate chunks
+          if (
+            id.includes('node_modules/react/') || 
+            id.includes('node_modules/react-dom/') ||
+            id.includes('@radix-ui')
+          ) {
+            return undefined; // Keep React and Radix UI in the main bundle
           }
           
           // Split other vendors
           if (id.includes('node_modules')) {
-            if (id.includes('@radix-ui')) {
-              return 'ui-vendor';
-            }
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
