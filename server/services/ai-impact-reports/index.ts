@@ -354,6 +354,41 @@ export async function saveImpactReport(
 ): Promise<number> {
   const reportPeriod = formatReportPeriod(startDate, reportType, endDate);
 
+  // Check if a report already exists for this period/type
+  const existingReport = await db.query.impactReports.findFirst({
+    where: and(
+      eq(impactReports.reportPeriod, reportPeriod),
+      eq(impactReports.reportType, reportType)
+    ),
+  });
+
+  if (existingReport) {
+    logger.info('Report already exists for this period, updating instead', {
+      reportId: existingReport.id,
+      reportPeriod,
+      reportType,
+    });
+
+    // Update existing report instead of creating a new one
+    await db.update(impactReports)
+      .set({
+        title: report.title,
+        executiveSummary: report.executiveSummary,
+        content: report.content,
+        metrics: report.metrics as any,
+        highlights: report.highlights as any,
+        trends: report.trends as any,
+        generatedBy,
+        aiModel: 'gpt-4o',
+        regenerationCount: (existingReport.regenerationCount || 0) + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(impactReports.id, existingReport.id));
+
+    return existingReport.id;
+  }
+
+  // Create new report
   const [inserted] = await db.insert(impactReports).values({
     reportType,
     reportPeriod,

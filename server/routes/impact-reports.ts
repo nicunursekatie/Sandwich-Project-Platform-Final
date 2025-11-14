@@ -119,6 +119,16 @@ impactReportsRouter.patch('/:id/publish', async (req: AuthenticatedRequest, res:
       return res.status(400).json({ error: 'Invalid report ID' });
     }
 
+    // Check if report exists before updating
+    const existingReport = await db.query.impactReports.findFirst({
+      where: eq(impactReports.id, reportId),
+    });
+
+    if (!existingReport) {
+      return res.status(404).json({ error: 'Impact report not found' });
+    }
+
+    // Update report status
     await db.update(impactReports)
       .set({
         status: 'published',
@@ -127,6 +137,7 @@ impactReportsRouter.patch('/:id/publish', async (req: AuthenticatedRequest, res:
       })
       .where(eq(impactReports.id, reportId));
 
+    // Fetch updated report
     const report = await db.query.impactReports.findFirst({
       where: eq(impactReports.id, reportId),
     });
