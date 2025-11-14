@@ -481,18 +481,23 @@ export function NotesTab({
         createdCount = 1;
       }
 
-      // Optionally delete the note
-      if (taskFormData.deleteNoteAfterConvert) {
-        await deleteNoteMutation.mutateAsync(noteToConvert.id);
-      }
+      // Auto-archive the note after converting to tasks
+      // Update note status to 'archived' instead of deleting
+      await updateNoteMutation.mutateAsync({
+        id: noteToConvert.id,
+        updates: {
+          status: 'archived',
+        },
+      });
 
       toast({
-        title: createdCount > 1 ? 'Tasks Created' : 'Task Created',
-        description: `Successfully created ${createdCount} task${createdCount > 1 ? 's' : ''} from meeting note.`,
+        title: createdCount > 1 ? 'Tasks Created & Note Archived' : 'Task Created & Note Archived',
+        description: `Successfully created ${createdCount} task${createdCount > 1 ? 's' : ''} from meeting note. The note has been archived.`,
       });
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks/from-meeting-notes'] });
 
       // Close dialog and reset
       setShowConvertToTaskDialog(false);
