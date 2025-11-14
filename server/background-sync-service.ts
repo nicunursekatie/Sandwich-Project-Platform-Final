@@ -63,7 +63,8 @@ export class BackgroundSyncService {
   }
 
   /**
-   * Perform sync for both projects and event requests
+   * Perform sync for event requests only
+   * Projects are no longer synced to Google Sheets - managed entirely in-app
    * Uses database coordination to ensure only one instance syncs at a time
    */
   private async performSync() {
@@ -91,8 +92,9 @@ export class BackgroundSyncService {
       logger.log('📊 Starting automated background sync...');
 
       try {
-        // Sync Projects from Google Sheets
-        await this.syncProjects();
+        // DISABLED: Projects sync from Google Sheets
+        // Projects are now managed entirely within the app to prevent sync conflicts
+        // await this.syncProjects();
 
         // Sync Event Requests from Google Sheets
         await this.syncEventRequests();
