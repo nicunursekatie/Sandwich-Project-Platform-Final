@@ -14,6 +14,7 @@ import { EmailNotificationService } from './email-notification-service';
 import { sendEventReminderSMS } from '../sms-service';
 import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import type { EventNotificationPreferences } from '@shared/types';
+import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -370,6 +371,53 @@ async function sendVolunteerReminders(): Promise<{
 }
 
 /**
+ * Generate monthly impact report
+ */
+async function generateMonthlyImpactReport(): Promise<{
+  reportGenerated: boolean;
+  reportId?: number;
+  error?: string;
+  timestamp: Date;
+}> {
+  const now = new Date();
+
+  try {
+    // Generate report for the previous month
+    const lastMonth = new Date(now);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    const startDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+    const endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+
+    cronLogger.info('Generating monthly impact report', {
+      month: lastMonth.getMonth() + 1,
+      year: lastMonth.getFullYear(),
+    });
+
+    const report = await generateImpactReport(startDate, endDate, 'monthly');
+    const reportId = await saveImpactReport(report, startDate, endDate, 'monthly', 'ai-cron');
+
+    cronLogger.info('Monthly impact report generated successfully', {
+      reportId,
+      period: `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`,
+    });
+
+    return {
+      reportGenerated: true,
+      reportId,
+      timestamp: now,
+    };
+  } catch (error) {
+    cronLogger.error('Failed to generate monthly impact report', error);
+    return {
+      reportGenerated: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: now,
+    };
+  }
+}
+
+/**
  * Initialize all cron jobs
  */
 export function initializeCronJobs() {
@@ -444,10 +492,47 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Monthly impact report generation - runs on the 1st of each month at 9:00 AM
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 9 1 * *' = At 9:00 AM on the 1st day of every month
+  const impactReportJob = cron.schedule('0 9 1 * *', async () => {
+    cronLogger.info('Running monthly impact report generation...');
+    try {
+      const result = await generateMonthlyImpactReport();
+      if (result.reportGenerated) {
+        cronLogger.info('Monthly impact report generated successfully', {
+          reportId: result.reportId,
+          timestamp: result.timestamp,
+        });
+      } else {
+        cronLogger.error('Monthly impact report generation failed', {
+          error: result.error,
+          timestamp: result.timestamp,
+        });
+      }
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running impact report generation cron job',
+        undefined,
+        { jobType: 'impact-report-generation' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Monthly impact report job scheduled successfully', {
+    schedule: '1st of each month at 9:00 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
     volunteerReminderJob,
+    impactReportJob,
   };
 }
 
@@ -458,5 +543,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   cronLogger.info('Stopping all scheduled jobs...');
   jobs.hostScraperJob.stop();
   jobs.volunteerReminderJob.stop();
+  jobs.impactReportJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

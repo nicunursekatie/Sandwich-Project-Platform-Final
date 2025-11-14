@@ -429,6 +429,84 @@ expensesRouter.post('/:id/receipt', receiptUpload.single('receipt'), async (req:
   }
 });
 
+// POST /api/expenses/process-receipt - Process receipt image with AI to extract data
+expensesRouter.post('/process-receipt', receiptUpload.single('receipt'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Receipt image is required' });
+    }
+
+    logger.info('Processing receipt with AI', {
+      userId: req.user.id,
+      fileName: req.file.filename,
+      fileSize: req.file.size
+    });
+
+    // Upload receipt to object storage first
+    const receiptFile = await fs.readFile(req.file.path);
+    const uploadResult = await objectStorageService.uploadFile(
+      receiptFile,
+      req.file.filename,
+      'receipts',
+      req.file.mimetype
+    );
+
+    if (!uploadResult.success || !uploadResult.url) {
+      logger.error('Failed to upload receipt to storage', { error: uploadResult.error });
+      await safeDeleteFile(req.file.path, 'receipt processing - upload failed');
+      return res.status(500).json({ error: 'Failed to upload receipt' });
+    }
+
+    // Clean up temporary file
+    await safeDeleteFile(req.file.path, 'receipt processing - cleanup after upload');
+
+    // Get context hint from request body if provided
+    const contextHint = req.body.contextHint || undefined;
+
+    // Call AI receipt processing service
+    const { processReceiptImage } = await import('../services/ai-receipt-processor');
+    const extractedData = await processReceiptImage({
+      imageUrl: uploadResult.url,
+      contextHint,
+    });
+
+    logger.info('AI receipt processing completed', {
+      userId: req.user.id,
+      vendor: extractedData.vendor,
+      amount: extractedData.totalAmount,
+      confidence: extractedData.confidence
+    });
+
+    // Return extracted data plus the receipt URL
+    res.json({
+      ...extractedData,
+      receiptUrl: uploadResult.url,
+      receiptFileName: req.file.filename,
+      receiptFileSize: req.file.size,
+    });
+
+  } catch (error) {
+    logger.error('Error processing receipt with AI', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?.id
+    });
+
+    // Clean up uploaded file if it exists
+    if (req.file?.path) {
+      await safeDeleteFile(req.file.path, 'receipt processing - cleanup after error');
+    }
+
+    res.status(500).json({
+      error: 'Failed to process receipt',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+  }
+});
+
 // DELETE /api/expenses/:id - Delete an expense
 expensesRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
