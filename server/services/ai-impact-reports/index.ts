@@ -1,9 +1,21 @@
 import OpenAI from 'openai';
 import { db } from '../../db';
-import { eventRequests, sandwichCollections, volunteers, expenses, impactReports } from '../../../shared/schema';
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { 
+  eventRequests, 
+  sandwichCollections, 
+  expenses, 
+  impactReports,
+  type EventRequest,
+  type Expense 
+} from '../../../shared/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
+
+// Validate OpenAI API key is configured
+if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for impact report generation');
+}
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -58,8 +70,8 @@ export async function generateImpactReport(
     // 2. Build context for AI
     const dataContext = buildDataContext(data);
 
-    // 3. Generate report with AI
-    const report = await generateReportWithAI(dataContext, startDate, endDate, reportType);
+    // 3. Generate report with AI (passing metrics directly to avoid fragile string parsing)
+    const report = await generateReportWithAI(dataContext, startDate, endDate, reportType, data.metrics);
 
     const duration = Date.now() - startTime;
     logger.info('AI impact report generation completed', {
@@ -114,7 +126,14 @@ async function gatherReportData(startDate: Date, endDate: Date) {
 
   // Calculate totals
   const totalSandwiches = collections.reduce((sum, c) => sum + (c.sandwichCount || 0), 0);
-  const totalExpenses = expensesList.reduce((sum, e) => sum + parseFloat(e.amount?.toString() || '0'), 0);
+  const totalExpenses = expensesList.reduce((sum, e) => {
+    if (typeof e.amount === 'number' && !isNaN(e.amount)) {
+      return sum + e.amount;
+    } else {
+      logger.warn('Invalid expense amount encountered', { amount: e.amount, expense: e });
+      return sum;
+    }
+  }, 0);
 
   const uniqueOrganizations = new Set(events.map(e => e.organizationName).filter(Boolean));
   const uniqueVolunteers = new Set([
@@ -175,7 +194,7 @@ function buildDataContext(data: any): string {
       .slice(0, 5);
 
     context.push(`## Notable Events:`);
-    topEvents.forEach((e: any) => {
+    topEvents.forEach((e: EventRequest) => {
       const sandwiches = e.actualSandwichCount || e.estimatedSandwichCount || 0;
       context.push(`- ${e.organizationName || 'Unknown'}: ${sandwiches} sandwiches`);
     });
@@ -186,9 +205,9 @@ function buildDataContext(data: any): string {
   if (data.expenses.length > 0) {
     context.push(`# Expense Breakdown`);
     const byCategory: Record<string, number> = {};
-    data.expenses.forEach((e: any) => {
+    data.expenses.forEach((e: Expense) => {
       const cat = e.category || 'other';
-      const amount = parseFloat(e.amount?.toString() || '0');
+      const amount = typeof e.amount === 'string' ? parseFloat(e.amount) : e.amount;
       byCategory[cat] = (byCategory[cat] || 0) + amount;
     });
 
@@ -208,7 +227,14 @@ async function generateReportWithAI(
   dataContext: string,
   startDate: Date,
   endDate: Date,
-  reportType: string
+  reportType: string,
+  metrics: {
+    eventsCompleted: number;
+    sandwichesDistributed: number;
+    organizationsServed: number;
+    volunteersEngaged: number;
+    expensesTotal: number;
+  }
 ): Promise<ImpactReportGenerationResult> {
   const periodLabel = formatPeriodLabel(startDate, endDate, reportType);
 
@@ -279,27 +305,19 @@ Return JSON with this structure:
 
   const result = parseJsonStrict<any>(responseContent);
 
-  // Extract metrics from data context (we already calculated these)
-  const metricsMatch = dataContext.match(/Events Completed: (\d+)/);
-  const sandwichesMatch = dataContext.match(/Sandwiches Distributed: ([\d,]+)/);
-  const orgsMatch = dataContext.match(/Organizations Served: (\d+)/);
-  const volunteersMatch = dataContext.match(/Volunteers Engaged: (\d+)/);
-  const expensesMatch = dataContext.match(/Total Expenses: \$([\d,.]+)/);
-
-  const metrics = {
-    eventsCompleted: metricsMatch ? parseInt(metricsMatch[1]) : 0,
-    sandwichesDistributed: sandwichesMatch ? parseInt(sandwichesMatch[1].replace(/,/g, '')) : 0,
-    peopleServed: sandwichesMatch ? parseInt(sandwichesMatch[1].replace(/,/g, '')) : 0, // Estimate 1:1
-    volunteersEngaged: volunteersMatch ? parseInt(volunteersMatch[1]) : 0,
-    organizationsServed: orgsMatch ? parseInt(orgsMatch[1]) : 0,
-    expensesTotal: expensesMatch ? parseFloat(expensesMatch[1].replace(/,/g, '')) : 0,
-  };
-
+  // Use the metrics passed in directly (already calculated in gatherReportData)
   return {
     title: result.title,
     executiveSummary: result.executiveSummary,
     content: result.content,
-    metrics,
+    metrics: {
+      eventsCompleted: metrics.eventsCompleted,
+      sandwichesDistributed: metrics.sandwichesDistributed,
+      peopleServed: metrics.sandwichesDistributed, // Estimate 1:1
+      volunteersEngaged: metrics.volunteersEngaged,
+      organizationsServed: metrics.organizationsServed,
+      expensesTotal: metrics.expensesTotal,
+    },
     highlights: result.highlights || [],
     trends: result.trends || [],
   };

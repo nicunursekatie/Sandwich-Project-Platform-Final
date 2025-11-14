@@ -46,6 +46,11 @@ impactReportsRouter.post('/generate', async (req: AuthenticatedRequest, res: Res
       return res.status(400).json({ error: 'Start date and end date are required' });
     }
 
+    const allowedReportTypes = ['monthly', 'quarterly', 'annual', 'custom'];
+    if (reportType && !allowedReportTypes.includes(reportType)) {
+      return res.status(400).json({ error: `Invalid reportType. Must be one of: ${allowedReportTypes.join(', ')}` });
+    }
+
     logger.info('Generating impact report', {
       userId: req.user.id,
       startDate,
