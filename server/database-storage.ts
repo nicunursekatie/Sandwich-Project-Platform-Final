@@ -378,21 +378,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
-      // Drizzle doesn't auto-convert camelCase to snake_case in dynamic .set() objects
-      // We need to manually map field names to database column names
-      const toSnakeCase = (str: string): string => {
-        return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      // Drizzle requires camelCase field names (matching the schema), not snake_case
+      // Add updatedAt timestamp
+      const dbUpdate: Record<string, any> = {
+        ...updateData,
+        updatedAt: new Date()
       };
-
-      const dbUpdate: Record<string, any> = { updated_at: new Date() };
-
-      for (const [key, value] of Object.entries(updateData)) {
-        if (value !== undefined && key !== 'id') {
-          // Convert camelCase to snake_case for database columns
-          const dbColumnName = toSnakeCase(key);
-          dbUpdate[dbColumnName] = value;
-        }
-      }
 
       logger.info(`[Database.updateProject] Prepared update for project ${id}:`, {
         originalData: updateData,
@@ -400,9 +391,9 @@ export class DatabaseStorage implements IStorage {
         fieldCount: Object.keys(dbUpdate).length
       });
 
-      // Guard against empty updates (only updated_at field)
-      if (Object.keys(dbUpdate).length <= 1) {
-        logger.warn(`[Database.updateProject] No fields to update for project ${id} (only updated_at). Skipping update.`);
+      // Guard against empty updates
+      if (Object.keys(updateData).length === 0) {
+        logger.warn(`[Database.updateProject] No fields to update for project ${id}. Skipping update.`);
         // Just return the current project without updating
         return currentProject;
       }
