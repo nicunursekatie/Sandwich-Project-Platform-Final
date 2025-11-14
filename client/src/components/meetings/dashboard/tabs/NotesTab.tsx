@@ -59,6 +59,7 @@ import {
   Users,
   AlertCircle,
   ListTodo,
+  X,
 } from 'lucide-react';
 import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
 import type { ToastActionElement } from '@/components/ui/toast';

@@ -509,6 +509,8 @@ export class ProjectService implements IProjectService {
   }
 
   sanitizeProjectUpdates(updates: any): any {
+    logger.info('[sanitizeProjectUpdates] Input updates:', updates);
+
     // Filter out fields that shouldn't be updated directly
     const {
       id,
@@ -522,15 +524,17 @@ export class ProjectService implements IProjectService {
       created_by_name,
       ...validUpdates
     } = updates;
-    
+
+    logger.info('[sanitizeProjectUpdates] After filtering system fields:', validUpdates);
+
     // Convert date strings to Date objects for timestamp fields
     // These fields are timestamp type in the database
     const timestampFields = [
       'lastSyncedAt',
-      'lastPulledFromSheetAt', 
+      'lastPulledFromSheetAt',
       'lastPushedToSheetAt'
     ];
-    
+
     for (const field of timestampFields) {
       if (validUpdates[field] !== undefined && validUpdates[field] !== null) {
         if (typeof validUpdates[field] === 'string' && validUpdates[field]) {
@@ -538,7 +542,7 @@ export class ProjectService implements IProjectService {
             // Handle both ISO strings and common date formats
             const dateValue = validUpdates[field];
             let parsedDate;
-            
+
             // Check if it's already a valid ISO string
             if (dateValue.includes('T') || dateValue.includes('Z')) {
               parsedDate = new Date(dateValue);
@@ -556,7 +560,7 @@ export class ProjectService implements IProjectService {
             } else {
               parsedDate = new Date(dateValue);
             }
-            
+
             // Only set if the date is valid
             if (!isNaN(parsedDate.getTime())) {
               validUpdates[field] = parsedDate;
@@ -577,10 +581,17 @@ export class ProjectService implements IProjectService {
         }
       }
     }
-    
+
     // Note: These fields are stored as text/string in the database, so don't convert them
     // dueDate, startDate, completionDate, lastDiscussedDate - all remain as strings
-    
+
+    logger.info('[sanitizeProjectUpdates] Final valid updates:', validUpdates);
+
+    // Guard against empty updates - this prevents SQL syntax errors
+    if (Object.keys(validUpdates).length === 0) {
+      logger.warn('[sanitizeProjectUpdates] No valid fields to update! This will cause a SQL error.');
+    }
+
     return validUpdates;
   }
 

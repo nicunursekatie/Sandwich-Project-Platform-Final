@@ -382,9 +382,9 @@ export class DatabaseStorage implements IStorage {
       const toSnakeCase = (str: string): string => {
         return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       };
-      
+
       const dbUpdate: Record<string, any> = { updated_at: new Date() };
-      
+
       for (const [key, value] of Object.entries(updateData)) {
         if (value !== undefined && key !== 'id') {
           // Convert camelCase to snake_case for database columns
@@ -392,13 +392,26 @@ export class DatabaseStorage implements IStorage {
           dbUpdate[dbColumnName] = value;
         }
       }
-      
+
+      logger.info(`[Database.updateProject] Prepared update for project ${id}:`, {
+        originalData: updateData,
+        dbUpdate: dbUpdate,
+        fieldCount: Object.keys(dbUpdate).length
+      });
+
+      // Guard against empty updates (only updated_at field)
+      if (Object.keys(dbUpdate).length <= 1) {
+        logger.warn(`[Database.updateProject] No fields to update for project ${id} (only updated_at). Skipping update.`);
+        // Just return the current project without updating
+        return currentProject;
+      }
+
       const [project] = await db
         .update(projects)
         .set(dbUpdate)
         .where(eq(projects.id, id))
         .returning();
-        
+
       return project || undefined;
     } catch (error) {
       logger.error(`[Database] Failed to update project ${id}:`, error);
