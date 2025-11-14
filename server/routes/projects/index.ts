@@ -189,6 +189,11 @@ export default function createProjectRoutes(options: {
         const updates = req.body;
         const user = getUser(req);
 
+        console.log(`\n========== PATCH /api/projects/${id} ==========`);
+        console.log('Request body (updates):', JSON.stringify(updates, null, 2));
+        console.log('User:', user?.email);
+        console.log('='.repeat(50) + '\n');
+
         logger.info(`[PATCH /api/projects/${id}] Request received`, {
           projectId: id,
           updates: updates,
