@@ -19,16 +19,17 @@ export function usePWA() {
     setIsStandalone(isInStandaloneMode);
     setIsInstalled(isInStandaloneMode);
 
-    // Register service worker
+    // Unregister service worker (disabled to prevent caching issues)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered:', registration);
-        })
-        .catch((error) => {
-          console.error('[PWA] Service Worker registration failed:', error);
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().then((success) => {
+            if (success) {
+              console.log('[PWA] Service Worker unregistered successfully');
+            }
+          });
         });
+      });
     }
 
     // Listen for beforeinstallprompt event
