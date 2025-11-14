@@ -1144,7 +1144,7 @@ export default function GroupCatalog({
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
                                     {org.department && (
-                                      <h4 className="text-base font-semibold text-gray-800 leading-tight">
+                                      <h4 className="text-lg font-semibold text-gray-800 leading-tight">
                                         {org.department}
                                       </h4>
                                     )}
