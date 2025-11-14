@@ -3,6 +3,11 @@ import type { EventRequest } from '@shared/schema';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
+// Validate OpenAI API key is configured
+if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for event categorization');
+}
+
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,

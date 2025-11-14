@@ -105,7 +105,15 @@ export async function predictMonthlySandwichNeeds(
       // e.g., summer months, back-to-school periods, etc.
     };
     if (seasonalFactors[targetMonthIndex]) {
-      predictedSandwiches = Math.round(predictedSandwiches * seasonalFactors[targetMonthIndex]);
+      const beforeAdjustment = predictedSandwiches;
+      const factor = seasonalFactors[targetMonthIndex];
+      predictedSandwiches = Math.round(predictedSandwiches * factor);
+      
+      logger.warn(
+        `[AI Prediction] Applying hardcoded seasonal adjustment for month ${targetMonth} (factor: ${factor}). ` +
+        `Predicted sandwiches before: ${beforeAdjustment}, after: ${predictedSandwiches}. ` +
+        `Please verify that this adjustment aligns with actual historical data.`
+      );
     }
 
     // Calculate confidence interval (±20%)
