@@ -86,6 +86,11 @@ impactReportsRouter.get('/:id', async (req: AuthenticatedRequest, res: Response)
     }
 
     const reportId = parseInt(req.params.id);
+
+    if (isNaN(reportId)) {
+      return res.status(400).json({ error: 'Invalid report ID' });
+    }
+
     const report = await db.query.impactReports.findFirst({
       where: eq(impactReports.id, reportId),
     });
@@ -109,6 +114,10 @@ impactReportsRouter.patch('/:id/publish', async (req: AuthenticatedRequest, res:
     }
 
     const reportId = parseInt(req.params.id);
+
+    if (isNaN(reportId)) {
+      return res.status(400).json({ error: 'Invalid report ID' });
+    }
 
     await db.update(impactReports)
       .set({
