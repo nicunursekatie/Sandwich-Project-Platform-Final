@@ -154,12 +154,24 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
       queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
     },
-    onError: (error: Error) => {
-      toast({
-        title: 'Update Failed',
-        description: error.message || 'Failed to update project discussion notes.',
-        variant: 'destructive',
-      });
+    onError: (error: Error, variables) => {
+      // If 404, the project was probably archived - force refresh the project list
+      if (error.message.includes('404') || error.message.includes('DATA_LOADING_ERROR')) {
+        logger.error(`Project ${variables.projectId} not found - forcing refresh of project list`);
+        queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        toast({
+          title: 'Project Not Found',
+          description: 'This project may have been archived. The project list has been refreshed.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Update Failed',
+          description: error.message || 'Failed to update project discussion notes.',
+          variant: 'destructive',
+        });
+      }
     },
   });
 
