@@ -3458,8 +3458,8 @@ export const impactReports = pgTable('impact_reports', {
     organizationsServed: number;
     hoursVolunteered?: number;
     expensesTotal?: number;
-    // Additional custom metrics with type safety
-    [key: string]: number | string | boolean | null | undefined;
+    // Additional custom metrics stored in the customMetrics property below
+    customMetrics?: { [key: string]: number | string | boolean | null | undefined };
   }>(),
 
   // Highlights and trends identified by AI
