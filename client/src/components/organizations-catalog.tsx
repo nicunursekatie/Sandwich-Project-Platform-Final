@@ -820,7 +820,7 @@ export default function GroupCatalog({
                           className="w-6 h-6"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-xl font-bold text-gray-900 truncate">
+                        <h2 className="text-xl font-bold text-gray-900 break-words">
                           {group.groupName}
                         </h2>
                         {(() => {
@@ -869,7 +869,7 @@ export default function GroupCatalog({
                             <div className="mb-3 pb-2 border-b border-purple-300">
                               <div className="flex items-center space-x-2">
                                 <Building className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-base font-semibold text-purple-900 truncate">
+                                <h3 className="text-base font-semibold text-purple-900 break-words">
                                   {deptName}
                                 </h3>
                                 <Badge className="bg-purple-200 text-purple-800 text-sm font-semibold">
@@ -907,7 +907,7 @@ export default function GroupCatalog({
                                     {org.department && org.department !== 'General' && (
                                       <div className="flex items-center space-x-2 mb-2">
                                         <Building className="w-5 h-5 text-purple-600" />
-                                        <h4 className="text-base font-semibold text-gray-800 truncate">
+                                        <h4 className="text-base font-semibold text-gray-800 break-words">
                                           {org.department}
                                         </h4>
                                       </div>
@@ -1134,7 +1134,7 @@ export default function GroupCatalog({
                                   className="w-4 h-4 flex-shrink-0"
                                   style={{ color: '#236383' }}
                                 />
-                                <h3 className="text-lg font-bold text-gray-900 truncate">
+                                <h3 className="text-lg font-bold text-gray-900 break-words">
                                   {group.groupName}
                                 </h3>
                               </div>
