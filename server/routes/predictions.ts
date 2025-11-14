@@ -22,8 +22,15 @@ predictionsRouter.get('/month/:year/:month', async (req: AuthenticatedRequest, r
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month);
 
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      return res.status(400).json({ error: 'Invalid year or month' });
+    if (
+      isNaN(year) ||
+      isNaN(month) ||
+      year < 2020 ||
+      year > 2100 ||
+      month < 1 ||
+      month > 12
+    ) {
+      return res.status(400).json({ error: 'Invalid year or month. Year must be between 2020 and 2100, month must be between 1 and 12.' });
     }
 
     logger.info('Generating prediction', { userId: req.user.id, year, month });
