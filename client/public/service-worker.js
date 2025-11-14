@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tsp-v1.1.0';
-const RUNTIME_CACHE = 'tsp-runtime-v1.1.0';
+const CACHE_NAME = 'tsp-v1.1.1';
+const RUNTIME_CACHE = 'tsp-runtime-v1.1.1';
 
 // Assets to cache on install (only files guaranteed to exist in production)
 const PRECACHE_URLS = [
@@ -9,7 +9,7 @@ const PRECACHE_URLS = [
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker v1.1.0] Installing with network-first strategy for JS chunks');
+  console.log('[Service Worker v1.1.1] Installing with network-first strategy for JS chunks');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
