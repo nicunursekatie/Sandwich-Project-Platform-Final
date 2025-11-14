@@ -514,14 +514,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const getSandwichTypeDisplay = (event: EventRequest) => {
     const sandwichTypes = parseSandwichTypes(event.sandwichTypes);
     if (sandwichTypes && sandwichTypes.length > 0) {
-      // Convert type values to friendly labels
+      // Convert type values to friendly labels (without quantities - those are in a separate column)
       return sandwichTypes.map(st => {
         const typeConfig = SANDWICH_TYPES.find(t => t.value === st.type);
         const label = typeConfig?.label || st.type;
-        return `${label} (${st.quantity})`;
+        return label;
       }).join(', ');
     }
-    // If no sandwich types specified, return empty string (don't show counts here)
+    // If no sandwich types specified, return empty string
     return '';
   };
 

@@ -184,29 +184,39 @@ export class BackgroundSyncService {
   /**
    * Auto-transition scheduled events to completed if their date has passed
    * Events only transition the night after they end, not on the day of the event
-   * 
+   *
+   * IMPORTANT: Events must be in 'scheduled' status for at least 24 hours before auto-completing
+   * This prevents auto-completion of newly scheduled events with typo'd past dates
+   *
    * Uses direct database query to avoid storage layer mismatches
    */
   private async autoTransitionPastEvents() {
     try {
       syncLogger.info('Starting auto-transition of past events');
-      
+
       // Calculate cutoff date: events should transition at start of day AFTER they occur
       // If event is Sept 30, it transitions Oct 1 at 00:00 (start of next day)
       // Use UTC to ensure timezone consistency with database
       const now = new Date();
       const cutoffDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      
+
+      // Calculate 24-hour grace period to prevent auto-completing newly scheduled events with wrong dates
+      const gracePeriodCutoff = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24 hours ago
+
       syncLogger.debug('Auto-transition cutoff calculation', {
         now: now.toISOString(),
         cutoffDate: cutoffDate.toISOString(),
+        gracePeriodCutoff: gracePeriodCutoff.toISOString(),
         cutoffUTC: `${cutoffDate.getUTCFullYear()}-${String(cutoffDate.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getUTCDate()).padStart(2, '0')}`,
-        explanation: 'Events with date < cutoffDate (strictly before today) will be transitioned to completed'
+        explanation: 'Events with date < cutoffDate AND scheduledAt < gracePeriodCutoff (24h ago) will be transitioned to completed'
       });
-      
+
       // Use direct database query to ensure we get authoritative data
-      // WHERE logic: Prefer scheduledEventDate when present, fallback to desiredEventDate
-      // This prevents premature completion of rescheduled events with old desiredEventDate
+      // WHERE logic:
+      // 1. Must be in 'scheduled' status
+      // 2. Event date must be in the past (Prefer scheduledEventDate, fallback to desiredEventDate)
+      // 3. Must have been scheduled at least 24 hours ago (scheduledAt < gracePeriodCutoff)
+      //    This prevents auto-completing events with typo'd dates that were just scheduled
       // Use strict lt (<) not lte (<=) to prevent same-day transitions
       const transitionedEvents = await db
         .update(eventRequests)
@@ -220,6 +230,11 @@ export class BackgroundSyncService {
             or(
               and(isNotNull(eventRequests.scheduledEventDate), lt(eventRequests.scheduledEventDate, cutoffDate)),
               and(isNull(eventRequests.scheduledEventDate), lt(eventRequests.desiredEventDate, cutoffDate))
+            ),
+            // Grace period: only auto-complete if scheduled at least 24 hours ago
+            or(
+              and(isNotNull(eventRequests.scheduledAt), lt(eventRequests.scheduledAt, gracePeriodCutoff)),
+              isNull(eventRequests.scheduledAt) // Handle legacy events without scheduledAt timestamp
             )
           )
         )

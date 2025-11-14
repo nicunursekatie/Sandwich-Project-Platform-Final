@@ -763,8 +763,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       }}
                       title="Set all time fields at once"
                     >
-                      <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
-                      Add Times
+                      <Clock className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   ) : (
                     <div className="flex gap-1">
