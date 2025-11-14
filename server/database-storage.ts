@@ -5,6 +5,7 @@ import {
   projectTasks,
   projectComments,
   projectAssignments,
+  projectDocuments,
   taskCompletions,
   messages,
   messageLikes,
@@ -424,6 +425,10 @@ export class DatabaseStorage implements IStorage {
       // Delete meeting notes (CRITICAL FIX: prevent orphaned meeting notes)
       await db.delete(meetingNotes).where(eq(meetingNotes.projectId, id));
       logger.info(`[Database] Deleted related meeting notes for project ${id}`);
+
+      // Delete project documents (CRITICAL FIX: prevent foreign key constraint violations on archive)
+      await db.delete(projectDocuments).where(eq(projectDocuments.projectId, id));
+      logger.info(`[Database] Deleted related documents for project ${id}`);
 
       // Now delete the project itself
       const result = await db.delete(projects).where(eq(projects.id, id));
