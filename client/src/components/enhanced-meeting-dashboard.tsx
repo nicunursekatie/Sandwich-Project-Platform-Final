@@ -49,7 +49,7 @@ import { AddProjectDialog } from './meetings/dashboard/dialogs/AddProjectDialog'
 import { MeetingDetailsDialog } from './meetings/dashboard/dialogs/MeetingDetailsDialog';
 import { MeetingOverviewTab } from './meetings/dashboard/tabs/MeetingOverviewTab';
 import { AgendaPlanningTab } from './meetings/dashboard/tabs/AgendaPlanningTab';
-import { NotesTab } from './meetings/dashboard/tabs/NotesTab';
+import { TasksFromNotesTab } from './meetings/dashboard/tabs/TasksFromNotesTab';
 import { NotesHistoryTab } from './meetings/dashboard/tabs/NotesHistoryTab';
 import { getCategoryIcon } from './meetings/dashboard/utils/categories';
 import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
@@ -871,10 +871,8 @@ export default function EnhancedMeetingDashboard() {
         />
       )}
       {activeTab === 'notes' && (
-        <NotesTab
-          selectedMeeting={selectedMeeting}
-          meetings={safeMeetings}
-          allProjects={activeProjects}
+        <TasksFromNotesTab
+          allProjects={allProjects}
           handleSendToAgenda={handleSendToAgenda}
           queryClient={baseQueryClient}
           toast={toast}
