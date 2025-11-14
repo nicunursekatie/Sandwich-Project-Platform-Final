@@ -479,7 +479,11 @@ export default function EnhancedMeetingDashboard() {
 
   // Calculate agenda summary (only for non-completed projects)
   const activeProjects = Array.isArray(allProjects)
-    ? allProjects.filter((project: Project) => project.status !== 'completed')
+    ? allProjects.filter((project: Project) => 
+        project.status !== 'completed' && 
+        project.status !== 'archived' && 
+        project.status !== 'done'
+      )
     : [];
   const agendaSummary = {
     agendaCount: Object.entries(projectAgendaStatus).filter(
@@ -843,7 +847,7 @@ export default function EnhancedMeetingDashboard() {
           setNewTaskDescription={setNewTaskDescription}
           uploadedFiles={uploadedFiles}
           setUploadedFiles={setUploadedFiles}
-          allProjects={allProjects}
+          allProjects={activeProjects}
           agendaItems={agendaItems}
           agendaSummary={agendaSummary}
           handleTextChange={handleTextChange}
@@ -870,7 +874,7 @@ export default function EnhancedMeetingDashboard() {
         <NotesTab
           selectedMeeting={selectedMeeting}
           meetings={safeMeetings}
-          allProjects={allProjects}
+          allProjects={activeProjects}
           handleSendToAgenda={handleSendToAgenda}
           queryClient={baseQueryClient}
           toast={toast}
