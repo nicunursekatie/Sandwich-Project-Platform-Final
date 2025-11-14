@@ -8,7 +8,7 @@ import {
   type EventRequest,
   type Expense 
 } from '../../../shared/schema';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, lt } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
@@ -104,7 +104,7 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     where: and(
       eq(eventRequests.status, 'completed'),
       gte(eventRequests.scheduledEventDate, startDate),
-      lte(eventRequests.scheduledEventDate, endDate)
+      lt(eventRequests.scheduledEventDate, endDate)
     ),
   });
 
@@ -112,7 +112,7 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   const collections = await db.query.sandwichCollections.findMany({
     where: and(
       gte(sandwichCollections.collectionDate, startDate),
-      lte(sandwichCollections.collectionDate, endDate)
+      lt(sandwichCollections.collectionDate, endDate)
     ),
   });
 
@@ -120,7 +120,7 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   const expensesList = await db.query.expenses.findMany({
     where: and(
       gte(expenses.purchaseDate, startDate),
-      lte(expenses.purchaseDate, endDate)
+      lt(expenses.purchaseDate, endDate)
     ),
   });
 
@@ -313,7 +313,10 @@ Return JSON with this structure:
     metrics: {
       eventsCompleted: metrics.eventsCompleted,
       sandwichesDistributed: metrics.sandwichesDistributed,
-      peopleServed: metrics.sandwichesDistributed, // Estimate 1:1
+      // Note: peopleServed is estimated as 1:1 with sandwichesDistributed
+      // This is an approximation since actual people served data is not tracked
+      // In reality, some people may receive multiple sandwiches, and some sandwiches may go unused
+      peopleServed: metrics.sandwichesDistributed,
       volunteersEngaged: metrics.volunteersEngaged,
       organizationsServed: metrics.organizationsServed,
       expensesTotal: metrics.expensesTotal,
