@@ -15,6 +15,8 @@ import {
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { EmailNotificationService } from '../services/email-notification-service';
+// REFACTOR: Import new assignment service for dual-write
+import { teamBoardAssignmentService } from '../services/assignments';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -34,7 +36,7 @@ const createItemSchema = insertTeamBoardItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
-    type: z.enum(['task', 'note', 'idea', 'reminder']).optional(),
+    type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
   });
 
 const updateItemSchema = z.object({
@@ -140,12 +142,37 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    logger.info('Successfully fetched team board items', { 
-      count: items.length,
-      userId: req.user.id 
-    });
+    // REFACTOR: Include assignments from normalized table for each item
+    try {
+      const itemsWithAssignments = await Promise.all(
+        sortedItems.map(async (item) => {
+          try {
+            const assignments = await teamBoardAssignmentService.getItemAssignments(item.id);
+            return {
+              ...item,
+              assignments,
+            };
+          } catch (err) {
+            logger.error(`Failed to fetch assignments for team board item ${item.id}`, err);
+            return item;
+          }
+        })
+      );
 
-    res.json(sortedItems);
+      logger.info('Successfully fetched team board items with assignments', {
+        count: items.length,
+        userId: req.user.id
+      });
+
+      res.json(itemsWithAssignments);
+    } catch (assignmentError) {
+      logger.error('Failed to fetch team board assignments, returning items without assignments', assignmentError);
+      logger.info('Successfully fetched team board items', {
+        count: items.length,
+        userId: req.user.id
+      });
+      res.json(sortedItems);
+    }
   } catch (error) {
     logger.error('Failed to fetch team board items', error);
     res.status(500).json({ 
@@ -265,6 +292,29 @@ teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) =
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // REFACTOR: Dual-write to team_board_assignments table
+    if (updateData.assignedTo !== undefined) {
+      try {
+        // Build assignments from assignedTo and assignedToNames
+        const assignedTo = updateData.assignedTo || [];
+        const assignedToNames = updateData.assignedToNames || [];
+
+        const assignments = assignedTo.map((userId: string, index: number) => ({
+          userId,
+          userName: assignedToNames[index] || 'Unknown',
+        }));
+
+        await teamBoardAssignmentService.replaceItemAssignments(
+          itemId,
+          assignments
+        );
+        logger.info(`Synced ${assignments.length} team board assignments for item ${itemId}`);
+      } catch (syncError) {
+        logger.error('Failed to sync team board assignments:', syncError);
+        // Don't fail the item update if assignment sync fails
+      }
     }
 
     // Check if assignment changed and send email notifications to newly assigned users
@@ -539,5 +589,116 @@ teamBoardRouter.delete('/comments/:commentId', async (req: AuthenticatedRequest,
     });
   }
 });
+
+// POST /:id/assignments - Add assignment to team board item
+teamBoardRouter.post(
+  '/:id/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      const { userId, userName } = req.body;
+
+      if (!userId || !userName) {
+        return res.status(400).json({
+          error: 'Missing required fields: userId and userName are required'
+        });
+      }
+
+      const assignment = await teamBoardAssignmentService.addAssignment(
+        itemId,
+        userId
+      );
+
+      logger.info('Successfully added team board assignment', {
+        itemId,
+        userId,
+        addedBy: req.user.id
+      });
+
+      res.status(201).json(assignment);
+    } catch (error) {
+      logger.error('Failed to add team board assignment', error);
+      res.status(500).json({ error: 'Failed to add team board assignment' });
+    }
+  }
+);
+
+// DELETE /:id/assignments/:userId - Remove assignment from team board item
+teamBoardRouter.delete(
+  '/:id/assignments/:userId',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      const { userId } = req.params;
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const success = await teamBoardAssignmentService.removeAssignment(itemId, userId);
+
+      if (!success) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      logger.info('Successfully removed team board assignment', {
+        itemId,
+        userId,
+        removedBy: req.user.id
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Failed to remove team board assignment', error);
+      res.status(500).json({ error: 'Failed to remove team board assignment' });
+    }
+  }
+);
+
+// GET /:id/assignments - Get all assignments for a team board item
+teamBoardRouter.get(
+  '/:id/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      const assignments = await teamBoardAssignmentService.getItemAssignments(itemId);
+
+      logger.info('Successfully fetched team board assignments', {
+        itemId,
+        count: assignments.length
+      });
+
+      res.json(assignments);
+    } catch (error) {
+      logger.error('Failed to fetch team board assignments', error);
+      res.status(500).json({ error: 'Failed to fetch team board assignments' });
+    }
+  }
+);
 
 export default teamBoardRouter;

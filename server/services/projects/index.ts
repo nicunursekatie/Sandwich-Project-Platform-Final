@@ -15,6 +15,8 @@ import { logger } from '../../utils/production-safe-logger';
 import { NotificationService } from '../../notification-service';
 import { db } from '../../db';
 import { inArray } from 'drizzle-orm';
+// REFACTOR: Import new assignment service for dual-write
+import { projectAssignmentService } from '../assignments';
 
 // Types
 export type Project = typeof projects.$inferSelect;
@@ -137,7 +139,17 @@ export class ProjectService implements IProjectService {
         : user.email,
     });
 
-    return this.storage.createProject(projectData);
+    const createdProject = await this.storage.createProject(projectData);
+
+    // REFACTOR: Dual-write to project_assignments table
+    try {
+      await this.syncProjectAssignments(createdProject, user.id);
+    } catch (error) {
+      logger.error('Failed to sync project assignments on create', error);
+      // Don't fail the whole operation if assignment sync fails
+    }
+
+    return createdProject;
   }
 
   async updateProject({
@@ -238,6 +250,16 @@ export class ProjectService implements IProjectService {
     // Handle Google Sheets sync for support people updates
     if (updates.supportPeople !== undefined && updatedProject) {
       this.triggerGoogleSheetsSync();
+    }
+
+    // REFACTOR: Dual-write to project_assignments table
+    if (updatedProject) {
+      try {
+        await this.syncProjectAssignments(updatedProject, user.id);
+      } catch (error) {
+        logger.error('Failed to sync project assignments on update', error);
+        // Don't fail the whole operation if assignment sync fails
+      }
     }
 
     return updatedProject || null;
@@ -593,6 +615,78 @@ export class ProjectService implements IProjectService {
     }
 
     return validUpdates;
+  }
+
+  /**
+   * REFACTOR: Sync project assignments to the new project_assignments table
+   * This is called after creating or updating a project to maintain dual-write
+   */
+  private async syncProjectAssignments(project: Project, addedBy: string): Promise<void> {
+    // Build assignment list from project data
+    const assignments: Array<{ userId: string; userName: string; role: 'owner' | 'support' }> = [];
+
+    // Add owner if present (from ownerId or fallback to assigneeId)
+    const ownerId = project.ownerId || project.assigneeId;
+    const ownerName = project.ownerName || project.assigneeName;
+    if (ownerId) {
+      assignments.push({
+        userId: String(ownerId),
+        userName: ownerName || 'Unknown',
+        role: 'owner',
+      });
+    }
+
+    // Add additional owners from assigneeIds (if not already added as ownerId)
+    if (project.assigneeIds && Array.isArray(project.assigneeIds)) {
+      const assigneeNames = project.assigneeNames
+        ? (typeof project.assigneeNames === 'string'
+            ? project.assigneeNames.split(',').map((n: string) => n.trim())
+            : project.assigneeNames)
+        : [];
+
+      (project.assigneeIds as any[]).forEach((userId: any, index: number) => {
+        const userIdStr = String(userId);
+        // Don't add if already added as owner
+        if (userIdStr !== String(ownerId)) {
+          assignments.push({
+            userId: userIdStr,
+            userName: assigneeNames[index] || 'Unknown',
+            role: 'owner',
+          });
+        }
+      });
+    }
+
+    // Add support people from supportPeopleIds
+    if (project.supportPeopleIds && Array.isArray(project.supportPeopleIds)) {
+      const supportNames = project.supportPeople
+        ? (typeof project.supportPeople === 'string'
+            ? project.supportPeople.split(',').map((n: string) => n.trim())
+            : [])
+        : [];
+
+      (project.supportPeopleIds as any[]).forEach((userId: any, index: number) => {
+        assignments.push({
+          userId: String(userId),
+          userName: supportNames[index] || 'Unknown',
+          role: 'support',
+        });
+      });
+    }
+
+    // Replace all assignments atomically
+    if (assignments.length > 0) {
+      await projectAssignmentService.replaceProjectAssignments(
+        project.id,
+        assignments,
+        addedBy
+      );
+      logger.info(`Synced ${assignments.length} assignments for project ${project.id}`);
+    } else {
+      // No assignments - clear the table
+      await projectAssignmentService.replaceProjectAssignments(project.id, [], addedBy);
+      logger.info(`Cleared assignments for project ${project.id}`);
+    }
   }
 
   private triggerGoogleSheetsSync(): void {

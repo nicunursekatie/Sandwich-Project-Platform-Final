@@ -19,6 +19,8 @@ import {
   getUserId,
 } from '../../types';
 import { RouterDependencies } from '../../types/router-deps';
+// REFACTOR: Import meeting-project service for new endpoints
+import { meetingProjectService } from '../../services/assignments';
 
 // Factory function to create meetings routes with dependencies
 export default function createMeetingsRouter(deps: RouterDependencies): Router {
@@ -603,7 +605,19 @@ meetingsRouter.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
 
-    res.json(meetingsService.mapMeetingToResponse(meeting));
+    const meetingResponse = meetingsService.mapMeetingToResponse(meeting);
+
+    // REFACTOR: Include projects from normalized meeting_projects table
+    try {
+      const projects = await meetingProjectService.getMeetingProjects(meetingId);
+      res.json({
+        ...meetingResponse,
+        projects,
+      });
+    } catch (projectError) {
+      logger.error('Failed to fetch meeting projects, returning meeting without projects', projectError);
+      res.json(meetingResponse);
+    }
   } catch (error) {
     logger.error('Failed to fetch meeting', error);
     res.status(500).json({ message: 'Failed to fetch meeting' });
@@ -689,6 +703,155 @@ meetingsRouter.delete('/:id', async (req, res) => {
   } catch (error) {
     logger.error('Failed to delete meeting', error);
     res.status(500).json({ message: 'Failed to delete meeting' });
+  }
+});
+
+// POST /:meetingId/projects/:projectId - Add project to meeting
+meetingsRouter.post('/:meetingId/projects/:projectId', async (req, res) => {
+  try {
+    const userId = getUserId(req as any);
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const meetingId = parseInt(req.params.meetingId, 10);
+    const projectId = parseInt(req.params.projectId, 10);
+
+    if (isNaN(meetingId) || isNaN(projectId)) {
+      return res.status(400).json({ message: 'Invalid meeting or project ID' });
+    }
+
+    const {
+      discussionPoints,
+      questionsToAddress,
+      status,
+      includeInAgenda,
+      agendaOrder,
+      section,
+    } = req.body;
+
+    const meetingProject = await meetingProjectService.addProjectToMeeting({
+      meetingId,
+      projectId,
+      discussionPoints,
+      questionsToAddress,
+      status,
+      includeInAgenda,
+      agendaOrder,
+      section,
+      addedBy: userId,
+    });
+
+    logger.info('Successfully added project to meeting', {
+      meetingId,
+      projectId,
+      addedBy: userId,
+    });
+
+    res.status(201).json(meetingProject);
+  } catch (error) {
+    logger.error('Failed to add project to meeting', error);
+    res.status(500).json({ message: 'Failed to add project to meeting' });
+  }
+});
+
+// PATCH /:meetingId/projects/:projectId - Update meeting-project relationship
+meetingsRouter.patch('/:meetingId/projects/:projectId', async (req, res) => {
+  try {
+    const userId = getUserId(req as any);
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const meetingId = parseInt(req.params.meetingId, 10);
+    const projectId = parseInt(req.params.projectId, 10);
+
+    if (isNaN(meetingId) || isNaN(projectId)) {
+      return res.status(400).json({ message: 'Invalid meeting or project ID' });
+    }
+
+    const updates = req.body;
+
+    const updatedMeetingProject = await meetingProjectService.updateMeetingProject(
+      meetingId,
+      projectId,
+      updates
+    );
+
+    if (!updatedMeetingProject) {
+      return res.status(404).json({ message: 'Meeting-project relationship not found' });
+    }
+
+    logger.info('Successfully updated meeting-project relationship', {
+      meetingId,
+      projectId,
+      updatedBy: userId,
+    });
+
+    res.json(updatedMeetingProject);
+  } catch (error) {
+    logger.error('Failed to update meeting-project relationship', error);
+    res.status(500).json({ message: 'Failed to update meeting-project relationship' });
+  }
+});
+
+// DELETE /:meetingId/projects/:projectId - Remove project from meeting
+meetingsRouter.delete('/:meetingId/projects/:projectId', async (req, res) => {
+  try {
+    const userId = getUserId(req as any);
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const meetingId = parseInt(req.params.meetingId, 10);
+    const projectId = parseInt(req.params.projectId, 10);
+
+    if (isNaN(meetingId) || isNaN(projectId)) {
+      return res.status(400).json({ message: 'Invalid meeting or project ID' });
+    }
+
+    const success = await meetingProjectService.removeProjectFromMeeting(
+      meetingId,
+      projectId
+    );
+
+    if (!success) {
+      return res.status(404).json({ message: 'Meeting-project relationship not found' });
+    }
+
+    logger.info('Successfully removed project from meeting', {
+      meetingId,
+      projectId,
+      removedBy: userId,
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Failed to remove project from meeting', error);
+    res.status(500).json({ message: 'Failed to remove project from meeting' });
+  }
+});
+
+// GET /:meetingId/projects - Get all projects in a meeting
+meetingsRouter.get('/:meetingId/projects', async (req, res) => {
+  try {
+    const meetingId = parseInt(req.params.meetingId, 10);
+
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ message: 'Invalid meeting ID' });
+    }
+
+    const projects = await meetingProjectService.getMeetingProjects(meetingId);
+
+    logger.info('Successfully fetched meeting projects', {
+      meetingId,
+      count: projects.length,
+    });
+
+    res.json(projects);
+  } catch (error) {
+    logger.error('Failed to fetch meeting projects', error);
+    res.status(500).json({ message: 'Failed to fetch meeting projects' });
   }
 });
 
