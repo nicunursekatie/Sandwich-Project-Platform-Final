@@ -68,6 +68,8 @@ import activitiesRouter from './activities';
 import expensesRouter from './expenses';
 import objectsRouter from './objects';
 import serviceHoursRouter from './service-hours';
+import { impactReportsRouter } from './impact-reports';
+import { predictionsRouter } from './predictions';
 
 // Import centralized middleware
 import {
@@ -439,6 +441,24 @@ export function createMainRoutes(deps: RouterDependencies) {
     expensesRouter
   );
   router.use('/api/expenses', createErrorHandler('expenses'));
+
+  // Impact Reports routes - AI-generated impact reports
+  router.use(
+    '/api/impact-reports',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    impactReportsRouter
+  );
+  router.use('/api/impact-reports', createErrorHandler('impact-reports'));
+
+  // Predictions routes - AI-powered predictive analytics
+  router.use(
+    '/api/predictions',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    predictionsRouter
+  );
+  router.use('/api/predictions', createErrorHandler('predictions'));
 
   // Service hours PDF generation
   router.use(
