@@ -3641,6 +3641,7 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
       autoCategories: categorization as any, // Cast to any to satisfy type checking
       categorizedAt: new Date(),
       categorizedBy: 'ai',
+      updatedAt: new Date(),
     });
 
     // Log activity
