@@ -5,6 +5,8 @@ import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
 import { taskService } from '../../services/tasks/index';
 import { logger } from '../../utils/production-safe-logger';
+// REFACTOR: Import new assignment service for dual-write
+import { taskAssignmentService } from '../../services/assignments';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -69,6 +71,31 @@ tasksRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
         task.title,
         storage
       );
+    }
+
+    // REFACTOR: Dual-write to task_assignments table
+    if (updates.assigneeIds !== undefined) {
+      try {
+        // Build assignments from assigneeIds and assigneeNames
+        const assigneeIds = updates.assigneeIds || [];
+        const assigneeNames = updates.assigneeNames || [];
+
+        const assignments = assigneeIds.map((userId: string, index: number) => ({
+          userId,
+          userName: assigneeNames[index] || 'Unknown',
+          role: 'assignee' as const,
+        }));
+
+        await taskAssignmentService.replaceTaskAssignments(
+          taskId,
+          assignments,
+          user.id
+        );
+        logger.log(`Synced ${assignments.length} task assignments for task ${taskId}`);
+      } catch (syncError) {
+        logger.error('Failed to sync task assignments:', syncError);
+        // Don't fail the task update if assignment sync fails
+      }
     }
 
     logger.log(`Task ${taskId} updated successfully`);
