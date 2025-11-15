@@ -6,8 +6,8 @@ import {
 import { createErrorHandler, projectFilesUpload } from '../../middleware';
 import { logger } from '../../middleware/logger';
 import type { IStorage } from '../../storage';
-// REFACTOR: Import assignment service for new endpoints
-import { projectAssignmentService } from '../../services/assignments';
+// REFACTOR: Import assignment services for new endpoints
+import { projectAssignmentService, taskAssignmentService } from '../../services/assignments';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -328,7 +328,17 @@ export default function createProjectRoutes(options: {
           return res.status(404).json({ message: 'Project not found' });
         }
 
-        res.json(project);
+        // REFACTOR: Include assignments from normalized table
+        try {
+          const assignments = await projectAssignmentService.getProjectAssignments(id);
+          res.json({
+            ...project,
+            assignments,
+          });
+        } catch (assignmentError) {
+          logger.error('Failed to fetch project assignments, returning project without assignments', assignmentError);
+          res.json(project);
+        }
       } catch (error) {
         logger.error('Failed to fetch project', error);
         res.status(500).json({ message: 'Failed to fetch project' });
@@ -347,7 +357,28 @@ export default function createProjectRoutes(options: {
         }
 
         const tasks = await projectService.getProjectTasks(projectId);
-        res.json(tasks);
+
+        // REFACTOR: Include assignments from normalized table for each task
+        try {
+          const tasksWithAssignments = await Promise.all(
+            tasks.map(async (task) => {
+              try {
+                const assignments = await taskAssignmentService.getTaskAssignments(task.id);
+                return {
+                  ...task,
+                  assignments,
+                };
+              } catch (err) {
+                logger.error(`Failed to fetch assignments for task ${task.id}`, err);
+                return task;
+              }
+            })
+          );
+          res.json(tasksWithAssignments);
+        } catch (assignmentError) {
+          logger.error('Failed to fetch task assignments, returning tasks without assignments', assignmentError);
+          res.json(tasks);
+        }
       } catch (error) {
         logger.error('Failed to fetch project tasks', error);
         res.status(500).json({ message: 'Failed to fetch tasks' });
