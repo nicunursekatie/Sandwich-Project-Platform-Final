@@ -386,13 +386,17 @@ async function generateMonthlyImpactReport(): Promise<{
     const lastMonth = new Date(now);
     lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-    const startDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
-    // Use the first millisecond of the next month as an exclusive upper bound to avoid timezone and precision edge cases
-    const endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 1, 0, 0, 0, 0);
+    // Use UTC to avoid timezone edge cases
+    // startDate: First moment of the month (00:00:00.000 on day 1)
+    const startDate = new Date(Date.UTC(lastMonth.getUTCFullYear(), lastMonth.getUTCMonth(), 1, 0, 0, 0, 0));
+    // endDate: First moment of the next month (exclusive upper bound)
+    const endDate = new Date(Date.UTC(lastMonth.getUTCFullYear(), lastMonth.getUTCMonth() + 1, 1, 0, 0, 0, 0));
 
     cronLogger.info('Generating monthly impact report', {
-      month: lastMonth.getMonth() + 1,
-      year: lastMonth.getFullYear(),
+      month: lastMonth.getUTCMonth() + 1,
+      year: lastMonth.getUTCFullYear(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
     });
 
     const report = await generateImpactReport(startDate, endDate, 'monthly');
