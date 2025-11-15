@@ -3637,8 +3637,17 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
     });
 
     // Update the event request with categorization
+    // The categorization object structure matches the schema definition exactly
     await storage.updateEventRequest(eventId, {
-      autoCategories: categorization as any, // Cast to any to satisfy type checking
+      autoCategories: {
+        eventType: categorization.eventType,
+        eventSize: categorization.eventSize,
+        specialNeeds: categorization.specialNeeds,
+        targetAudience: categorization.targetAudience,
+        confidence: categorization.confidence,
+        reasoning: categorization.reasoning,
+        suggestedTags: categorization.suggestedTags,
+      },
       categorizedAt: new Date(),
       categorizedBy: 'ai',
       updatedAt: new Date(),
