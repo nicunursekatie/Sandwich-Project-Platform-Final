@@ -5,15 +5,23 @@ import { and, eq, gte, lte } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
-// Validate OpenAI API key is configured
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for predictions');
-}
+// Lazy-initialize OpenAI client to avoid crashing app if API key is not configured
+let openai: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAIClient(): OpenAI {
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for predictions');
+  }
+
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+
+  return openai;
+}
 
 export interface PredictionResult {
   predictedSandwichCount: number;
@@ -139,7 +147,8 @@ async function generateAIPrediction(
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
 
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {

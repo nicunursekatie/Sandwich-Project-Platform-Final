@@ -2,15 +2,23 @@ import OpenAI from 'openai';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
-// Validate OpenAI API key is configured
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for receipt processing');
-}
+// Lazy-initialize OpenAI client to avoid crashing app if API key is not configured
+let openai: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAIClient(): OpenAI {
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for receipt processing');
+  }
+
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+
+  return openai;
+}
 
 // Receipt processing result
 export interface ReceiptProcessingResult {
@@ -119,7 +127,8 @@ Return your analysis as a JSON object with this structure:
     }
 
     // Call OpenAI Vision API
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o', // Vision-capable model
       messages: [
         {
