@@ -142,12 +142,17 @@ export const NotificationActionButton: FC<NotificationActionButtonProps> = ({
         disabled={mutation.isPending || status === 'success'}
         variant={buttonVariant}
         size="sm"
-        className="gap-2"
+        className="gap-1 sm:gap-2 text-xs sm:text-sm"
+        aria-label={`${actionText} notification action`}
+        aria-busy={mutation.isPending}
+        aria-live="polite"
       >
-        {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-        {status === 'success' && <CheckCircle2 className="h-4 w-4" />}
-        {status === 'error' && <AlertCircle className="h-4 w-4" />}
-        {status === 'success' ? 'Done!' : actionText}
+        {mutation.isPending && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />}
+        {status === 'success' && <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />}
+        {status === 'error' && <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />}
+        <span className="truncate max-w-[120px] sm:max-w-none">
+          {status === 'success' ? 'Done!' : actionText}
+        </span>
       </Button>
 
       {/* Confirmation Dialog */}
