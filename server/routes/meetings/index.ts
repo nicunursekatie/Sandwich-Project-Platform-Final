@@ -605,7 +605,19 @@ meetingsRouter.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
 
-    res.json(meetingsService.mapMeetingToResponse(meeting));
+    const meetingResponse = meetingsService.mapMeetingToResponse(meeting);
+
+    // REFACTOR: Include projects from normalized meeting_projects table
+    try {
+      const projects = await meetingProjectService.getMeetingProjects(meetingId);
+      res.json({
+        ...meetingResponse,
+        projects,
+      });
+    } catch (projectError) {
+      logger.error('Failed to fetch meeting projects, returning meeting without projects', projectError);
+      res.json(meetingResponse);
+    }
   } catch (error) {
     logger.error('Failed to fetch meeting', error);
     res.status(500).json({ message: 'Failed to fetch meeting' });
