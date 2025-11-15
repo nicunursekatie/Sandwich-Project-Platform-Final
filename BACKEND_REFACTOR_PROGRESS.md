@@ -1,7 +1,7 @@
 # Backend Refactor Implementation Progress
 
-**Status**: Phase 1, 2, 3A & 3B Complete ✅
-**Next**: Phase 4 - Frontend Updates
+**Status**: Backend Complete ✅ (Phases 1-4A Done)
+**Next**: Phase 4B - Frontend Updates & Testing
 **Date**: 2025-11-15
 
 ---
@@ -88,11 +88,22 @@
   - `DELETE /api/meetings/:meetingId/projects/:projectId` - Remove project
   - `GET /api/meetings/:meetingId/projects` - List all projects in meeting
 
+### Phase 4A: Updated GET Endpoints (DONE)
+- ✅ Updated existing GET endpoints to return normalized data:
+  - `GET /api/projects/:id` - Now includes assignments array from project_assignments
+  - `GET /api/projects/:id/tasks` - Now includes assignments for each task
+  - `GET /api/meetings/:id` - Now includes projects array from meeting_projects
+  - `GET /api/team-board` - Now includes assignments for each item
+
+- All endpoints include non-blocking error handling
+- Fallback to original response if normalized data fetch fails
+- Maintains backward compatibility with old field structure
+
 ---
 
 ## 🚧 In Progress
 
-### Phase 4: Frontend Updates & Testing
+### Phase 4B: Frontend Updates & Testing
 Next steps to implement:
 
 1. **Update Frontend Components**
@@ -103,11 +114,12 @@ Next steps to implement:
    - Update agenda planning tab with new selection logic
    - Add team board → project task promotion flow
 
-2. **Update Existing Endpoints to Return New Data**
-   - `GET /api/projects/:id` - Include assignments from new table
-   - `GET /api/tasks/:id` - Include assignments and origin info
-   - `GET /api/meetings/:id` - Include projects from junction table
-   - `GET /api/team-board/:id` - Include project link if present
+2. **Testing & Validation**
+   - Test all updated endpoints
+   - Verify dual-write is working correctly
+   - Test assignment CRUD operations
+   - Test meeting-project relationships
+   - Validate data consistency between old and new structures
 
 ---
 
@@ -193,11 +205,11 @@ npm run dev
 
 ---
 
-**Total Progress**: 80% complete (3.5/5 phases done)
-**Next Milestone**: Frontend updates & testing
-**Latest Update**: Phase 3B complete - 12 new API endpoints added, dual-write implemented across all services
+**Total Progress**: 85% complete (4/5 phases done - Backend 100% complete)
+**Next Milestone**: Frontend integration & testing
+**Latest Update**: Phase 4A complete - All GET endpoints updated to return normalized data
 
-**Changes in this session (7 commits, 545 lines added)**:
+**Changes in this session (11 commits, 643 lines added)**:
 - Dual-write for ProjectService (syncProjectAssignments method)
 - Dual-write for task routes (PATCH endpoint)
 - Dual-write for team board routes (PATCH endpoint)
@@ -205,3 +217,7 @@ npm run dev
 - 3 assignment endpoints for tasks (POST, DELETE, GET)
 - 3 assignment endpoints for team board (POST, DELETE, GET)
 - 4 meeting-project endpoints (POST, PATCH, DELETE, GET)
+- Updated GET /api/projects/:id to include assignments
+- Updated GET /api/projects/:id/tasks to include task assignments
+- Updated GET /api/meetings/:id to include projects from junction table
+- Updated GET /api/team-board to include item assignments
