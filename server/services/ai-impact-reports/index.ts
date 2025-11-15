@@ -347,12 +347,12 @@ function formatPeriodLabel(startDate: Date, endDate: Date, reportType: string): 
     'July', 'August', 'September', 'October', 'November', 'December'];
 
   if (reportType === 'monthly') {
-    return `${monthNames[startDate.getMonth()]} ${startDate.getFullYear()}`;
+    return `${monthNames[startDate.getUTCMonth()]} ${startDate.getUTCFullYear()}`;
   } else if (reportType === 'quarterly') {
-    const quarter = Math.floor(startDate.getMonth() / 3) + 1;
-    return `Q${quarter} ${startDate.getFullYear()}`;
+    const quarter = Math.floor(startDate.getUTCMonth() / 3) + 1;
+    return `Q${quarter} ${startDate.getUTCFullYear()}`;
   } else if (reportType === 'annual') {
-    return `${startDate.getFullYear()}`;
+    return `${startDate.getUTCFullYear()}`;
   } else {
     return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
   }
@@ -435,12 +435,12 @@ export async function saveImpactReport(
  */
 function formatReportPeriod(startDate: Date, reportType: string, endDate?: Date): string {
   if (reportType === 'monthly') {
-    return `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    return `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}`;
   } else if (reportType === 'quarterly') {
-    const quarter = Math.floor(startDate.getMonth() / 3) + 1;
-    return `${startDate.getFullYear()}-Q${quarter}`;
+    const quarter = Math.floor(startDate.getUTCMonth() / 3) + 1;
+    return `${startDate.getUTCFullYear()}-Q${quarter}`;
   } else if (reportType === 'annual') {
-    return `${startDate.getFullYear()}`;
+    return `${startDate.getUTCFullYear()}`;
   } else {
     const end = endDate || startDate;
     return `${startDate.toISOString().split('T')[0]}_${end.toISOString().split('T')[0]}`;
