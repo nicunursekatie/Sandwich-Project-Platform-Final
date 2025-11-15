@@ -387,23 +387,25 @@ export class MeetingProjectService implements IMeetingProjectService {
     try {
       const results: MeetingProject[] = [];
 
-      // Process each update
-      for (const { projectId, agendaOrder } of orders) {
-        const [updated] = await db
-          .update(meetingProjects)
-          .set({ agendaOrder })
-          .where(
-            and(
-              eq(meetingProjects.meetingId, meetingId),
-              eq(meetingProjects.projectId, projectId)
+      // Use a transaction to batch the updates
+      await db.transaction(async (trx) => {
+        for (const { projectId, agendaOrder } of orders) {
+          const [updated] = await trx
+            .update(meetingProjects)
+            .set({ agendaOrder })
+            .where(
+              and(
+                eq(meetingProjects.meetingId, meetingId),
+                eq(meetingProjects.projectId, projectId)
+              )
             )
-          )
-          .returning();
+            .returning();
 
-        if (updated) {
-          results.push(updated);
+          if (updated) {
+            results.push(updated);
+          }
         }
-      }
+      });
 
       logger.info(`Updated agenda orders for ${results.length} projects in meeting ${meetingId}`);
       return results;
