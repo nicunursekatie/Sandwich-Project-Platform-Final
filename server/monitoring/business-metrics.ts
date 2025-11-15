@@ -145,17 +145,21 @@ export function trackAuthAttempt(method: 'local' | 'openid' | 'api_key', status:
 /**
  * Update active sessions count
  * Call this periodically to update the gauge
+ * Note: sessionStore parameter is no longer used but kept for API compatibility
  */
-export async function updateActiveSessionsCount(sessionStore: any): Promise<void> {
+export async function updateActiveSessionsCount(_sessionStore?: any): Promise<void> {
   try {
-    // Count active sessions from session store
-    const count = await new Promise<number>((resolve, reject) => {
-      sessionStore.length((err: any, length: number) => {
-        if (err) reject(err);
-        else resolve(length || 0);
-      });
-    });
-
+    // Import db here to avoid circular dependency issues
+    const { db } = await import('../db');
+    const { sql } = await import('drizzle-orm');
+    
+    // Query the sessions table directly using Drizzle
+    // Count only unexpired sessions (active sessions)
+    const result = await db.execute(
+      sql`SELECT COUNT(*) as count FROM sessions WHERE expire > NOW()`
+    );
+    
+    const count = parseInt((result.rows[0] as any).count, 10) || 0;
     activeSessions.set(count);
     logger.debug('Updated active sessions count', { count });
   } catch (error: any) {
