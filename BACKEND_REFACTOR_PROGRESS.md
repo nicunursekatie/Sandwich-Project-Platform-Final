@@ -1,7 +1,7 @@
 # Backend Refactor Implementation Progress
 
-**Status**: Phase 1, 2 & 3A Complete ✅
-**Next**: Phase 3B - Dual-Write Updates & API Endpoints
+**Status**: Phase 1, 2, 3A & 3B Complete ✅
+**Next**: Phase 4 - Frontend Updates
 **Date**: 2025-11-15
 
 ---
@@ -48,28 +48,62 @@
 - Pre/post-meeting workflow support (discussion points → summaries/decisions)
 - Agenda ordering and status tracking
 
+### Phase 3B: Dual-Write Updates & API (DONE)
+- ✅ Updated `ProjectService` with dual-write to `project_assignments` table
+  - Added `syncProjectAssignments()` helper method
+  - Extracts assignments from ownerId, assigneeIds, supportPeopleIds
+  - Called after createProject() and updateProject()
+  - Non-blocking error handling
+
+- ✅ Updated task routes with dual-write to `task_assignments` table
+  - Added dual-write in PATCH /:id endpoint
+  - Syncs assigneeIds/assigneeNames to normalized table
+  - Uses taskAssignmentService.replaceTaskAssignments()
+
+- ✅ Updated team board routes with dual-write to `team_board_assignments` table
+  - Added dual-write in PATCH /:id endpoint
+  - Syncs assignedTo/assignedToNames arrays
+  - Uses teamBoardAssignmentService.replaceItemAssignments()
+
+- ✅ Added **12 new API endpoints**:
+
+**Project Assignments**:
+  - `POST /api/projects/:id/assignments` - Add owner/support assignment
+  - `DELETE /api/projects/:id/assignments/:userId` - Remove assignment
+  - `GET /api/projects/:id/assignments` - List all assignments
+
+**Task Assignments**:
+  - `POST /api/tasks/:taskId/assignments` - Add assignee/reviewer
+  - `DELETE /api/tasks/:taskId/assignments/:userId` - Remove assignment
+  - `GET /api/tasks/:taskId/assignments` - List all assignments
+
+**Team Board Assignments**:
+  - `POST /api/team-board/:id/assignments` - Add user assignment
+  - `DELETE /api/team-board/:id/assignments/:userId` - Remove assignment
+  - `GET /api/team-board/:id/assignments` - List all assignments
+
+**Meeting-Project Relationships**:
+  - `POST /api/meetings/:meetingId/projects/:projectId` - Add project to meeting
+  - `PATCH /api/meetings/:meetingId/projects/:projectId` - Update discussion/summary
+  - `DELETE /api/meetings/:meetingId/projects/:projectId` - Remove project
+  - `GET /api/meetings/:meetingId/projects` - List all projects in meeting
+
 ---
 
 ## 🚧 In Progress
 
-### Phase 3B: Dual-Write Updates & API
+### Phase 4: Frontend Updates & Testing
 Next steps to implement:
 
-1. **Update Existing Services (Dual-Write)**
-   - `ProjectService`: Write to both old fields AND new `project_assignments` table
-   - `TaskService`: Write to both old fields AND new `task_assignments` table
-   - `TeamBoardService`: Write to both old fields AND new `team_board_assignments` table
-   - `MeetingNoteService`: Add conversion tracking
+1. **Update Frontend Components**
+   - Update assignment selectors to use new role-based system (owner vs support)
+   - Update meeting dashboard to show projects from junction table
+   - Add note → task conversion UI with tracking
+   - Add origin badges to tasks (showing where they came from)
+   - Update agenda planning tab with new selection logic
+   - Add team board → project task promotion flow
 
-2. **New API Endpoints**
-   - `POST /api/projects/:id/assignments` - Add assignment
-   - `DELETE /api/projects/:id/assignments/:userId` - Remove assignment
-   - `POST /api/meetings/:meetingId/projects/:projectId` - Add project to meeting
-   - `PATCH /api/meetings/:meetingId/projects/:projectId` - Update discussion/status
-   - `POST /api/meeting-notes/:noteId/convert-to-task` - Convert note to task
-   - `POST /api/team-board/:itemId/promote-to-project-task` - Promote to project task
-
-3. **Update Existing Endpoints**
+2. **Update Existing Endpoints to Return New Data**
    - `GET /api/projects/:id` - Include assignments from new table
    - `GET /api/tasks/:id` - Include assignments and origin info
    - `GET /api/meetings/:id` - Include projects from junction table
@@ -89,25 +123,27 @@ Next steps to implement:
 - **Schema Updated**: ✅ schema.ts matches database
 - **Types Exported**: ✅ All new types available
 - **Assignment Services Created**: ✅ All 4 services complete
-- **Existing Services Updated**: ❌ Not started yet (dual-write)
-- **API Routes Updated**: ❌ Not started yet
+- **Existing Services Updated**: ✅ Dual-write implemented (3/3)
+- **API Routes Updated**: ✅ 12 new endpoints added
 
 ---
 
 ## 🎯 Next Session Tasks
 
-**Priority 1: Update Existing Services (Dual-Write)**
-Modify to dual-write (old + new):
-- `/server/services/projects/index.ts`
-- `/server/services/tasks/index.ts`
-- `/server/routes/team-board.ts`
+**Priority 1: Update Existing GET Endpoints**
+Modify to return new normalized data:
+- `/server/routes/projects/index.ts` - Include assignments from project_assignments
+- `/server/routes/tasks/index.ts` - Include assignments and origin tracking
+- `/server/routes/meetings/index.ts` - Include projects from meeting_projects
+- `/server/routes/team-board.ts` - Include project link and assignments
 
-**Priority 4: Add API Routes**
-Add new endpoints to:
-- `/server/routes/projects/index.ts`
-- `/server/routes/tasks/index.ts`
-- `/server/routes/meetings/index.ts`
-- `/server/routes/team-board.ts`
+**Priority 2: Frontend Component Updates**
+Update React components to use new API:
+- Assignment selectors (owner vs support roles)
+- Meeting dashboard (projects from junction table)
+- Task origin badges
+- Note → task conversion UI
+- Agenda planning tab
 
 ---
 
@@ -157,6 +193,15 @@ npm run dev
 
 ---
 
-**Total Progress**: 55% complete (2.5/5 phases done)
-**Next Milestone**: Dual-write services operational
-**Latest Update**: Assignment services complete - 4 new services created with 1,298 lines of code
+**Total Progress**: 80% complete (3.5/5 phases done)
+**Next Milestone**: Frontend updates & testing
+**Latest Update**: Phase 3B complete - 12 new API endpoints added, dual-write implemented across all services
+
+**Changes in this session (7 commits, 545 lines added)**:
+- Dual-write for ProjectService (syncProjectAssignments method)
+- Dual-write for task routes (PATCH endpoint)
+- Dual-write for team board routes (PATCH endpoint)
+- 3 assignment endpoints for projects (POST, DELETE, GET)
+- 3 assignment endpoints for tasks (POST, DELETE, GET)
+- 3 assignment endpoints for team board (POST, DELETE, GET)
+- 4 meeting-project endpoints (POST, PATCH, DELETE, GET)
