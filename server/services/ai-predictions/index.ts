@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { db } from '../../db';
 import { eventRequests, sandwichCollections } from '../../../shared/schema';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, lt } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
@@ -48,7 +48,7 @@ export async function predictMonthlySandwichNeeds(
   try {
     logger.info('Generating prediction', { targetYear, targetMonth });
 
-    // 1. Get historical data (last 12 months)
+    // 1. Get historical data (12 months before target month, excluding target month)
     const endDate = new Date(targetYear, targetMonth - 1, 1);
     const startDate = new Date(endDate);
     startDate.setMonth(startDate.getMonth() - 12);
@@ -57,7 +57,7 @@ export async function predictMonthlySandwichNeeds(
       where: and(
         eq(eventRequests.status, 'completed'),
         gte(eventRequests.scheduledEventDate, startDate),
-        lte(eventRequests.scheduledEventDate, endDate)
+        lt(eventRequests.scheduledEventDate, endDate)
       ),
     });
 
