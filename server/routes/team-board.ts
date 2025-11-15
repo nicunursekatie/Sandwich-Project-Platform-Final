@@ -565,4 +565,115 @@ teamBoardRouter.delete('/comments/:commentId', async (req: AuthenticatedRequest,
   }
 });
 
+// POST /:id/assignments - Add assignment to team board item
+teamBoardRouter.post(
+  '/:id/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      const { userId, userName } = req.body;
+
+      if (!userId || !userName) {
+        return res.status(400).json({
+          error: 'Missing required fields: userId and userName are required'
+        });
+      }
+
+      const assignment = await teamBoardAssignmentService.addAssignment(
+        itemId,
+        userId
+      );
+
+      logger.info('Successfully added team board assignment', {
+        itemId,
+        userId,
+        addedBy: req.user.id
+      });
+
+      res.status(201).json(assignment);
+    } catch (error) {
+      logger.error('Failed to add team board assignment', error);
+      res.status(500).json({ error: 'Failed to add team board assignment' });
+    }
+  }
+);
+
+// DELETE /:id/assignments/:userId - Remove assignment from team board item
+teamBoardRouter.delete(
+  '/:id/assignments/:userId',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      const { userId } = req.params;
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const success = await teamBoardAssignmentService.removeAssignment(itemId, userId);
+
+      if (!success) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      logger.info('Successfully removed team board assignment', {
+        itemId,
+        userId,
+        removedBy: req.user.id
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Failed to remove team board assignment', error);
+      res.status(500).json({ error: 'Failed to remove team board assignment' });
+    }
+  }
+);
+
+// GET /:id/assignments - Get all assignments for a team board item
+teamBoardRouter.get(
+  '/:id/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      const assignments = await teamBoardAssignmentService.getItemAssignments(itemId);
+
+      logger.info('Successfully fetched team board assignments', {
+        itemId,
+        count: assignments.length
+      });
+
+      res.json(assignments);
+    } catch (error) {
+      logger.error('Failed to fetch team board assignments', error);
+      res.status(500).json({ error: 'Failed to fetch team board assignments' });
+    }
+  }
+);
+
 export default teamBoardRouter;
