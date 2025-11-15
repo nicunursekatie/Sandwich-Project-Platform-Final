@@ -198,7 +198,7 @@ export default function EventMapView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'this_month' | 'upcoming'>('all');
+  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'next_week' | 'week_after' | 'two_weeks' | 'this_month' | 'upcoming'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -344,10 +344,29 @@ export default function EventMapView() {
         if (eventDate < now) return false;
 
         if (upcomingFilter === 'this_week') {
-          // This week = next 7 days
+          // This week = next 7 days from today
           const weekFromNow = new Date(now);
           weekFromNow.setDate(now.getDate() + 7);
           return eventDate >= now && eventDate <= weekFromNow;
+        } else if (upcomingFilter === 'next_week') {
+          // Next week = days 8-14 from today
+          const nextWeekStart = new Date(now);
+          nextWeekStart.setDate(now.getDate() + 8);
+          const nextWeekEnd = new Date(now);
+          nextWeekEnd.setDate(now.getDate() + 14);
+          return eventDate >= nextWeekStart && eventDate <= nextWeekEnd;
+        } else if (upcomingFilter === 'week_after') {
+          // Week after next = days 15-21 from today
+          const weekAfterStart = new Date(now);
+          weekAfterStart.setDate(now.getDate() + 15);
+          const weekAfterEnd = new Date(now);
+          weekAfterEnd.setDate(now.getDate() + 21);
+          return eventDate >= weekAfterStart && eventDate <= weekAfterEnd;
+        } else if (upcomingFilter === 'two_weeks') {
+          // Next 2 weeks = next 14 days from today
+          const twoWeeksFromNow = new Date(now);
+          twoWeeksFromNow.setDate(now.getDate() + 14);
+          return eventDate >= now && eventDate <= twoWeeksFromNow;
         } else if (upcomingFilter === 'this_month') {
           // This month = next 30 days
           const monthFromNow = new Date(now);
@@ -641,6 +660,9 @@ export default function EventMapView() {
             <SelectContent>
               <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="this_week">This Week (Next 7 Days)</SelectItem>
+              <SelectItem value="next_week">Next Week (Days 8-14)</SelectItem>
+              <SelectItem value="week_after">Week After Next (Days 15-21)</SelectItem>
+              <SelectItem value="two_weeks">Next 2 Weeks (14 Days)</SelectItem>
               <SelectItem value="this_month">This Month (Next 30 Days)</SelectItem>
               <SelectItem value="upcoming">All Upcoming Events</SelectItem>
             </SelectContent>
