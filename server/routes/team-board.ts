@@ -15,6 +15,8 @@ import {
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { EmailNotificationService } from '../services/email-notification-service';
+// REFACTOR: Import new assignment service for dual-write
+import { teamBoardAssignmentService } from '../services/assignments';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -265,6 +267,29 @@ teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) =
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // REFACTOR: Dual-write to team_board_assignments table
+    if (updateData.assignedTo !== undefined) {
+      try {
+        // Build assignments from assignedTo and assignedToNames
+        const assignedTo = updateData.assignedTo || [];
+        const assignedToNames = updateData.assignedToNames || [];
+
+        const assignments = assignedTo.map((userId: string, index: number) => ({
+          userId,
+          userName: assignedToNames[index] || 'Unknown',
+        }));
+
+        await teamBoardAssignmentService.replaceItemAssignments(
+          itemId,
+          assignments
+        );
+        logger.info(`Synced ${assignments.length} team board assignments for item ${itemId}`);
+      } catch (syncError) {
+        logger.error('Failed to sync team board assignments:', syncError);
+        // Don't fail the item update if assignment sync fails
+      }
     }
 
     // Check if assignment changed and send email notifications to newly assigned users
