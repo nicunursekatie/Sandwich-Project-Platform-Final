@@ -36,7 +36,7 @@ const createItemSchema = insertTeamBoardItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
-    type: z.enum(['task', 'note', 'idea', 'reminder']).optional(),
+    type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
   });
 
 const updateItemSchema = z.object({
