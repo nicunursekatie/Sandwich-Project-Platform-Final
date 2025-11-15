@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TasksFromNotesTab } from './TasksFromNotesTab';
 import {
   Select,
   SelectContent,
@@ -104,10 +105,11 @@ export function NotesTab({
     type: 'all',
     status: 'active',
   });
+  const [viewMode, setViewMode] = useState<'notes' | 'tasks'>('notes'); // Toggle between notes and tasks view
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNoteIds, setSelectedNoteIds] = useState<number[]>([]);
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
-  
+
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -773,6 +775,28 @@ export function NotesTab({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Toggle between Notes and Tasks view */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'notes' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('notes')}
+              className={viewMode === 'notes' ? 'bg-white shadow-sm' : ''}
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Notes
+            </Button>
+            <Button
+              variant={viewMode === 'tasks' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('tasks')}
+              className={viewMode === 'tasks' ? 'bg-white shadow-sm' : ''}
+            >
+              <ListTodo className="w-4 h-4 mr-1" />
+              Tasks
+            </Button>
+          </div>
+
           <Button
             onClick={() => setShowCreateDialog(true)}
             className="bg-teal-600 hover:bg-teal-700 text-white"
@@ -784,8 +808,18 @@ export function NotesTab({
         </div>
       </div>
 
-      {/* Filters Row */}
-      <div className="flex flex-wrap gap-4">
+      {/* Conditional rendering based on view mode */}
+      {viewMode === 'tasks' ? (
+        <TasksFromNotesTab
+          allProjects={allProjects}
+          handleSendToAgenda={handleSendToAgenda}
+          queryClient={queryClient}
+          toast={toast}
+        />
+      ) : (
+        <>
+          {/* Filters Row */}
+          <div className="flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <Label htmlFor="project-filter" className="text-sm font-medium">
             Project:
@@ -1057,6 +1091,8 @@ export function NotesTab({
           </>
         )}
       </div>
+        </>
+      )}
 
       {/* Create Note Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

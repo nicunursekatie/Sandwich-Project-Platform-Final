@@ -361,15 +361,24 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         'notes': 'planningNotes',
         'additionalNotes': 'schedulingNotes',
         'sandwichType': 'sandwichTypes',
+        'eventDate': 'scheduledEventDate',
+        'groupName': 'organizationName',
+        'vanBooked': 'vanDriverNeeded',
+        'contactName': 'firstName', // Will need special handling for first/last
+        'phone': 'phone',
+        'email': 'email',
+        'finalSandwiches': 'actualSandwichCount',
+        'socialPost': 'socialMediaPostRequested',
+        'volunteersNeeded': 'volunteersNeeded', // This is handled specially - combined field
       };
 
       const dbField = fieldMap[editingField] || editingField;
 
       // Handle boolean fields
-      if (dbField === 'toolkitSent') {
+      if (dbField === 'toolkitSent' || dbField === 'vanDriverNeeded') {
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
-          data: { toolkitSent: editingValue === 'Yes' || editingValue === 'true' },
+          data: { [dbField]: editingValue === 'Yes' || editingValue === 'true' },
         });
       }
       // Handle sandwich types
@@ -379,6 +388,70 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           id: editingScheduledId,
           field: dbField,
           value: parsedTypes,
+        });
+      }
+      // Handle contact name (firstName/lastName combined)
+      else if (editingField === 'contactName') {
+        const nameParts = editingValue.trim().split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { firstName, lastName },
+        });
+      }
+      // Handle volunteersNeeded (Staff Needed) - parse combined format "2 vol, 1 driver, 1 speaker"
+      else if (editingField === 'volunteersNeeded') {
+        const parts = editingValue.split(',').map(p => p.trim().toLowerCase());
+        let volunteers = 0;
+        let drivers = 0;
+        let speakers = 0;
+
+        parts.forEach(part => {
+          const numMatch = part.match(/(\d+)/);
+          const num = numMatch ? parseInt(numMatch[1], 10) : 0;
+
+          if (part.includes('vol')) volunteers = num;
+          else if (part.includes('driv')) drivers = num;
+          else if (part.includes('speak')) speakers = num;
+        });
+
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: {
+            volunteersNeeded: volunteers,
+            driversNeeded: drivers,
+            speakersNeeded: speakers,
+          },
+        });
+      }
+      // Handle numeric fields
+      else if (['estimatedSandwichCount', 'actualSandwichCount'].includes(dbField)) {
+        const numValue = parseInt(editingValue, 10);
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: dbField,
+          value: isNaN(numValue) ? null : numValue,
+        });
+      }
+      // Handle date fields
+      else if (dbField === 'scheduledEventDate') {
+        // Parse date input (expecting format like "9/3/2025" or "2025-09-03")
+        let dateValue = editingValue;
+        if (editingValue.includes('/')) {
+          // Convert M/D/YYYY to YYYY-MM-DD
+          const parts = editingValue.split('/');
+          if (parts.length === 3) {
+            const month = parts[0].padStart(2, '0');
+            const day = parts[1].padStart(2, '0');
+            const year = parts[2];
+            dateValue = `${year}-${month}-${day}`;
+          }
+        }
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: dbField,
+          value: dateValue,
         });
       }
       else {
@@ -948,7 +1021,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   };
 
   const renderCell = (event: EventRequest, column: Column) => {
-    const isEditable = ['eventStartTime', 'eventEndTime', 'pickupTime', 'estimatedSandwiches', 'sandwichType', 'toolkitSent', 'tspContact', 'address', 'notes', 'additionalNotes'].includes(column.id);
+    const isEditable = [
+      'eventStartTime', 'eventEndTime', 'pickupTime',
+      'estimatedSandwiches', 'sandwichType', 'toolkitSent',
+      'tspContact', 'address', 'notes', 'additionalNotes',
+      'eventDate', 'groupName', 'vanBooked', 'contactName',
+      'phone', 'email', 'finalSandwiches', 'socialPost',
+      'volunteersNeeded' // This is the combined "Staff Needed" column
+    ].includes(column.id);
     
     // Special handling for sandwich type - use dialog instead of inline edit
     if (column.id === 'sandwichType' && !isEditing(event.id, column.id)) {
@@ -971,8 +1051,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     }
     
     if (isEditing(event.id, column.id)) {
-      // Special handling for toolkitSent (boolean)
-      if (column.id === 'toolkitSent') {
+      // Special handling for boolean fields (toolkitSent, vanBooked)
+      if (column.id === 'toolkitSent' || column.id === 'vanBooked') {
         return (
           <div className="flex items-center gap-0.5">
             <Select
@@ -997,13 +1077,38 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
       
+      // Special handling for date fields
+      if (column.id === 'eventDate') {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              type="date"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-7 text-sm px-1.5 py-0.5 w-32"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+          </div>
+        );
+      }
+
       // Special handling for time fields with auto-formatting
       if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(column.id)) {
         const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           const input = e.target.value;
           // Remove all non-digits
           const digitsOnly = input.replace(/\D/g, '');
-          
+
           // Auto-format as HH:MM while typing
           if (digitsOnly.length === 0) {
             setEditingValue('');
@@ -1020,7 +1125,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             setEditingValue(`${hours}:${minutes}`);
           }
         };
-        
+
         return (
           <div className="flex items-center gap-0.5">
             <Input
@@ -1044,7 +1149,58 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           </div>
         );
       }
-      
+
+      // Special handling for volunteersNeeded (Staff Needed) - text input for format "2 vol, 1 driver, 1 speaker"
+      if (column.id === 'volunteersNeeded') {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              placeholder="e.g., 2 vol, 1 driver"
+              className="h-7 text-sm px-1.5 py-0.5 w-36"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+          </div>
+        );
+      }
+
+      // Special handling for numeric fields
+      if (['estimatedSandwiches', 'finalSandwiches'].includes(column.id)) {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              type="number"
+              min="0"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-7 text-sm px-1.5 py-0.5 w-20"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+          </div>
+        );
+      }
+
       return (
         <div className="flex items-center gap-0.5">
           <Input
@@ -1069,34 +1225,63 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
     const renderedContent = column.render ? column.render(event) : '';
     
-    // Special handling for eventDate column (make it clickable)
+    // Special handling for eventDate column (make it clickable and editable)
     if (column.id === 'eventDate') {
       const dateText = typeof renderedContent === 'string' ? renderedContent : String(renderedContent);
       return (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleEventDateClick(event);
-          }}
-          className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer w-full text-left"
-          title="Click to view event details in card view"
-        >
-          {dateText}
-        </button>
+        <div className="flex items-center gap-0.5 group min-h-[20px]">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEventDateClick(event);
+            }}
+            className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer flex-1 text-left"
+            title="Click to view event details in card view"
+          >
+            {dateText}
+          </button>
+          <button
+            onClick={() => startEditing(event.id, column.id, getRawValue())}
+            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
+            title="Edit event date"
+          >
+            <Edit2 className="h-6 w-6 md:h-3 md:w-3 text-[#007E8C]" />
+          </button>
+        </div>
       );
     }
     
-    // Special handling for address column (returns JSX with link)
+    // Special handling for address column (returns JSX with link and make it editable)
     if (column.id === 'address') {
       if (React.isValidElement(renderedContent)) {
         return (
-          <div className="flex items-center gap-0.5 min-h-[20px] overflow-hidden">
-            {renderedContent}
+          <div className="flex items-center gap-0.5 group min-h-[20px] overflow-hidden">
+            <div className="flex-1 min-w-0">
+              {renderedContent}
+            </div>
+            <button
+              onClick={() => startEditing(event.id, column.id, getRawValue())}
+              className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
+              title="Edit address"
+            >
+              <Edit2 className="h-6 w-6 md:h-3 md:w-3 text-[#007E8C]" />
+            </button>
           </div>
         );
       }
-      // Fallback if no address
-      return <span className="text-sm text-gray-400">-</span>;
+      // Fallback if no address - still show edit button
+      return (
+        <div className="flex items-center gap-0.5 group min-h-[20px]">
+          <span className="text-sm text-gray-400 flex-1">-</span>
+          <button
+            onClick={() => startEditing(event.id, column.id, getRawValue())}
+            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
+            title="Edit address"
+          >
+            <Edit2 className="h-6 w-6 md:h-3 md:w-3 text-[#007E8C]" />
+          </button>
+        </div>
+      );
     }
     
     // Special handling for assignedStaff column
@@ -1204,6 +1389,15 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // Get the raw value for editing (not the formatted display)
     const getRawValue = () => {
       switch (column.id) {
+        case 'eventDate':
+          // Convert to YYYY-MM-DD format for date input
+          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          if (!eventDate) return '';
+          const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            return dateStr.split('T')[0].split(' ')[0];
+          }
+          return '';
         case 'eventStartTime':
           return event.eventStartTime || '';
         case 'eventEndTime':
@@ -1212,8 +1406,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           return event.pickupTime || '';
         case 'estimatedSandwiches':
           return event.estimatedSandwichCount?.toString() || '';
+        case 'finalSandwiches':
+          return event.actualSandwichCount?.toString() || '';
         case 'toolkitSent':
           return event.toolkitSent ? 'Yes' : 'No';
+        case 'vanBooked':
+          return event.vanDriverNeeded ? 'Yes' : 'No';
         case 'tspContact':
           return event.tspContact || event.tspContactAssigned || '';
         case 'address':
@@ -1222,6 +1420,23 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           return event.planningNotes || '';
         case 'additionalNotes':
           return event.schedulingNotes || '';
+        case 'groupName':
+          return event.organizationName || '';
+        case 'contactName':
+          return `${event.firstName || ''} ${event.lastName || ''}`.trim();
+        case 'phone':
+          return event.phone || '';
+        case 'email':
+          return event.email || event.updatedEmail || '';
+        case 'volunteersNeeded':
+          // Return combined format for editing: "2 vol, 1 driver, 1 speaker"
+          const parts = [];
+          if (event.volunteersNeeded && event.volunteersNeeded > 0) parts.push(`${event.volunteersNeeded} vol`);
+          if (event.driversNeeded && event.driversNeeded > 0) parts.push(`${event.driversNeeded} driver`);
+          if (event.speakersNeeded && event.speakersNeeded > 0) parts.push(`${event.speakersNeeded} speaker`);
+          return parts.join(', ') || '';
+        case 'socialPost':
+          return event.socialMediaPostRequested ? 'Requested' : '';
         default:
           return content;
       }
