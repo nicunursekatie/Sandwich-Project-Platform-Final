@@ -1,26 +1,34 @@
 import OpenAI from 'openai';
 import { db } from '../../db';
-import { 
-  eventRequests, 
-  sandwichCollections, 
-  expenses, 
+import {
+  eventRequests,
+  sandwichCollections,
+  expenses,
   impactReports,
   type EventRequest,
-  type Expense 
+  type Expense
 } from '../../../shared/schema';
 import { and, eq, gte, lt } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 
-// Validate OpenAI API key is configured
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for impact report generation');
-}
+// Lazy-initialize OpenAI client to avoid crashing app if API key is not configured
+let openai: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAIClient(): OpenAI {
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required for impact report generation');
+  }
+
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+
+  return openai;
+}
 
 // Report generation result
 export interface ImpactReportGenerationResult {
@@ -208,7 +216,11 @@ function buildDataContext(data: any): string {
     data.expenses.forEach((e: Expense) => {
       const cat = e.category || 'other';
       const amount = typeof e.amount === 'string' ? parseFloat(e.amount) : e.amount;
-      byCategory[cat] = (byCategory[cat] || 0) + amount;
+      if (typeof amount === 'number' && !isNaN(amount)) {
+        byCategory[cat] = (byCategory[cat] || 0) + amount;
+      } else {
+        logger.warn('Invalid expense amount in breakdown', { amount: e.amount, expense: e });
+      }
     });
 
     Object.entries(byCategory).forEach(([cat, total]) => {
@@ -238,7 +250,8 @@ async function generateReportWithAI(
 ): Promise<ImpactReportGenerationResult> {
   const periodLabel = formatPeriodLabel(startDate, endDate, reportType);
 
-  const completion = await openai.chat.completions.create({
+  const client = getOpenAIClient();
+  const completion = await client.chat.completions.create({
     model: 'gpt-4o',
     messages: [
       {

@@ -404,7 +404,7 @@ async function generateMonthlyImpactReport(): Promise<{
 
     cronLogger.info('Monthly impact report generated successfully', {
       reportId,
-      period: `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`,
+      period: `${lastMonth.getUTCFullYear()}-${String(lastMonth.getUTCMonth() + 1).padStart(2, '0')}`,
     });
 
     return {
