@@ -92,29 +92,9 @@ export async function predictMonthlySandwichNeeds(
     // 4. Use AI for insights
     const aiPrediction = await generateAIPrediction(monthlyData, targetYear, targetMonth, avgSandwiches, trend);
 
-    // 5. Combine statistical baseline with AI insights
-    let predictedSandwiches = aiPrediction.predictedSandwichCount || Math.round(avgSandwiches);
-
-    // Apply seasonal adjustments based on historical patterns
-    // These factors account for known fluctuations in demand throughout the year
-    const targetMonthIndex = targetMonth - 1;
-    const seasonalFactors: Record<number, number> = {
-      0: 1.1,  // January - Increased demand due to MLK Day service events
-      11: 0.9, // December - Decreased activity during holiday season
-      // Note: Additional seasonal factors can be added as patterns emerge
-      // e.g., summer months, back-to-school periods, etc.
-    };
-    if (seasonalFactors[targetMonthIndex]) {
-      const beforeAdjustment = predictedSandwiches;
-      const factor = seasonalFactors[targetMonthIndex];
-      predictedSandwiches = Math.round(predictedSandwiches * factor);
-      
-      logger.warn(
-        `[AI Prediction] Applying hardcoded seasonal adjustment for month ${targetMonth} (factor: ${factor}). ` +
-        `Predicted sandwiches before: ${beforeAdjustment}, after: ${predictedSandwiches}. ` +
-        `Please verify that this adjustment aligns with actual historical data.`
-      );
-    }
+    // 5. Use AI prediction directly (AI already considers seasonality in its analysis)
+    // The AI prompt explicitly asks it to account for seasonal patterns, holidays, etc.
+    const predictedSandwiches = aiPrediction.predictedSandwichCount || Math.round(avgSandwiches);
 
     // Calculate confidence interval (±20%)
     const confidenceLow = Math.round(predictedSandwiches * 0.8);

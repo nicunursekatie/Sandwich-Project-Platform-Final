@@ -134,6 +134,7 @@ impactReportsRouter.patch('/:id/publish', async (req: AuthenticatedRequest, res:
         status: 'published',
         publishedAt: new Date(),
         publishedBy: req.user.id,
+        updatedAt: new Date(),
       })
       .where(eq(impactReports.id, reportId));
 
