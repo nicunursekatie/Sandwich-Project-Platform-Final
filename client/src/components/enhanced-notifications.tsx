@@ -109,6 +109,13 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   // Connect to Socket.IO for real-time notification updates
   const { connected: socketConnected } = useNotificationSocket();
 
+  // Keyboard navigation support
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isOpen]);
+
   if (!user) return null;
 
   // Query for notification counts
@@ -132,20 +139,72 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     },
   });
 
-  // Mark notification as read mutation
+  // Mark notification as read mutation with optimistic update
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: number) =>
       apiRequest('PATCH', `/api/notifications/${notificationId}/read`),
+    onMutate: async (notificationId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/notifications'] });
+
+      // Snapshot previous value
+      const previousNotifications = queryClient.getQueryData(['/api/notifications', currentTab, filters]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/notifications', currentTab, filters], (old: any) => {
+        if (!old) return old;
+        return old.map((notif: Notification) =>
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
+        );
+      });
+
+      // Return context with previous value
+      return { previousNotifications };
+    },
+    onError: (err, notificationId, context: any) => {
+      // Rollback on error
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(
+          ['/api/notifications', currentTab, filters],
+          context.previousNotifications
+        );
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
     },
   });
 
-  // Archive notification mutation
+  // Archive notification mutation with optimistic update
   const archiveNotificationMutation = useMutation({
     mutationFn: (notificationId: number) =>
       apiRequest('PATCH', `/api/notifications/${notificationId}/archive`),
+    onMutate: async (notificationId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/notifications'] });
+
+      // Snapshot previous value
+      const previousNotifications = queryClient.getQueryData(['/api/notifications', currentTab, filters]);
+
+      // Optimistically remove from list
+      queryClient.setQueryData(['/api/notifications', currentTab, filters], (old: any) => {
+        if (!old) return old;
+        return old.filter((notif: Notification) => notif.id !== notificationId);
+      });
+
+      // Return context with previous value
+      return { previousNotifications };
+    },
+    onError: (err, notificationId, context: any) => {
+      // Rollback on error
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(
+          ['/api/notifications', currentTab, filters],
+          context.previousNotifications
+        );
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
@@ -193,24 +252,31 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
           size="sm"
           className="relative h-9 w-9 p-0"
           data-testid="button-notifications-enhanced"
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-4 w-4" aria-hidden="true" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
               data-testid="badge-notification-count"
+              aria-label={`${unreadCount} unread notifications`}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      
-      <DropdownMenuContent 
-        align="end" 
-        className="w-80 max-h-96"
+
+      <DropdownMenuContent
+        align="end"
+        className="w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] sm:max-h-96"
         data-testid="dropdown-notifications-enhanced"
+        role="menu"
+        aria-label="Notification center"
+        onKeyDown={handleKeyDown}
       >
         <div className="flex items-center justify-between p-4 pb-2">
           <h4 className="font-semibold text-sm">Notifications</h4>
@@ -229,7 +295,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => markAllAsReadMutation.mutate()}
-                className="text-xs h-7 px-2"
+                className="text-xs h-7 px-2 hidden sm:inline-flex"
                 data-testid="button-mark-all-read"
               >
                 Mark all read
@@ -287,15 +353,25 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {notifications.map((notification: Notification) => (
+                  {notifications.map((notification: Notification, index: number) => (
                     <div
                       key={notification.id}
                       className={cn(
-                        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors",
+                        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out",
+                        "animate-in fade-in slide-in-from-right-2",
                         !notification.isRead && "bg-brand-primary-lighter/50"
                       )}
+                      style={{ animationDelay: `${index * 50}ms` }}
                       onClick={() => handleNotificationClick(notification)}
                       data-testid={`notification-${notification.id}`}
+                      role="menuitem"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getCategoryIcon(notification.category)}

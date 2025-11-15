@@ -7,6 +7,8 @@ import {
   eventRequests,
   projectTasks,
   projects,
+  messages,
+  emailMessages,
 } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
 import { logger } from '../../utils/production-safe-logger';
@@ -276,6 +278,158 @@ async function handleProjectAction(
   };
 }
 
+// Action handler for messages (in-app chat messages)
+async function handleMessageAction(
+  messageId: number,
+  actionType: string,
+  userId: string,
+  actionData?: any
+) {
+  logger.info(`Handling message action: ${actionType} for message ${messageId}`);
+
+  const [message] = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, messageId));
+
+  if (!message) {
+    throw new Error('Message not found');
+  }
+
+  let result: any = {};
+
+  switch (actionType) {
+    case 'mark_read':
+    case 'read':
+      result = await db
+        .update(messages)
+        .set({
+          read: true,
+          updatedAt: new Date()
+        })
+        .where(eq(messages.id, messageId))
+        .returning();
+      break;
+
+    case 'reply':
+      // For reply action, just return message details
+      // The actual reply will be handled by the messaging system
+      result = { message, redirectTo: `/messages?reply=${messageId}` };
+      break;
+
+    default:
+      throw new Error(`Unknown action type: ${actionType}`);
+  }
+
+  return {
+    success: true,
+    message: result,
+    redirectTo: result.redirectTo,
+    message: `Message ${actionType} successful`
+  };
+}
+
+// Action handler for email messages
+async function handleEmailMessageAction(
+  emailId: number,
+  actionType: string,
+  userId: string,
+  actionData?: any
+) {
+  logger.info(`Handling email message action: ${actionType} for email ${emailId}`);
+
+  const [email] = await db
+    .select()
+    .from(emailMessages)
+    .where(eq(emailMessages.id, emailId));
+
+  if (!email) {
+    throw new Error('Email message not found');
+  }
+
+  // Verify user is sender or recipient
+  if (email.senderId !== userId && email.recipientId !== userId) {
+    throw new Error('Not authorized to perform this action');
+  }
+
+  let result: any = {};
+
+  switch (actionType) {
+    case 'mark_read':
+    case 'read':
+      result = await db
+        .update(emailMessages)
+        .set({
+          isRead: true,
+          readAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(emailMessages.id, emailId))
+        .returning();
+      break;
+
+    case 'archive':
+      result = await db
+        .update(emailMessages)
+        .set({
+          isArchived: true,
+          updatedAt: new Date()
+        })
+        .where(eq(emailMessages.id, emailId))
+        .returning();
+      break;
+
+    case 'mark_spam':
+    case 'spam':
+      result = await db
+        .update(emailMessages)
+        .set({
+          isTrashed: true,
+          updatedAt: new Date()
+        })
+        .where(eq(emailMessages.id, emailId))
+        .returning();
+      break;
+
+    case 'star':
+      result = await db
+        .update(emailMessages)
+        .set({
+          isStarred: true,
+          updatedAt: new Date()
+        })
+        .where(eq(emailMessages.id, emailId))
+        .returning();
+      break;
+
+    case 'unstar':
+      result = await db
+        .update(emailMessages)
+        .set({
+          isStarred: false,
+          updatedAt: new Date()
+        })
+        .where(eq(emailMessages.id, emailId))
+        .returning();
+      break;
+
+    case 'reply':
+      // For reply action, return email details and redirect URL
+      result = { email, redirectTo: `/email?reply=${emailId}` };
+      break;
+
+    default:
+      throw new Error(`Unknown action type: ${actionType}`);
+  }
+
+  return {
+    success: true,
+    email: result,
+    redirectTo: result.redirectTo,
+    message: `Email ${actionType} successful`
+  };
+}
+
 // Execute action from notification
 actionsRouter.post('/:id/actions/:actionType', async (req, res) => {
   try {
@@ -352,6 +506,30 @@ actionsRouter.post('/:id/actions/:actionType', async (req, res) => {
             throw new Error('No related project ID');
           }
           actionResult = await handleProjectAction(
+            notification.relatedId,
+            actionType,
+            userId,
+            actionData
+          );
+          break;
+
+        case 'message':
+          if (!notification.relatedId) {
+            throw new Error('No related message ID');
+          }
+          actionResult = await handleMessageAction(
+            notification.relatedId,
+            actionType,
+            userId,
+            actionData
+          );
+          break;
+
+        case 'email_message':
+          if (!notification.relatedId) {
+            throw new Error('No related email message ID');
+          }
+          actionResult = await handleEmailMessageAction(
             notification.relatedId,
             actionType,
             userId,
@@ -458,6 +636,225 @@ actionsRouter.get('/:id/action-history', async (req, res) => {
   } catch (error) {
     logger.error('Error fetching action history:', error);
     res.status(500).json({ error: 'Failed to fetch action history' });
+  }
+});
+
+// Undo a notification action
+actionsRouter.post('/:id/actions/:actionHistoryId/undo', async (req, res) => {
+  try {
+    const { id, actionHistoryId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    logger.info(`Undo request: notification ${id}, actionHistory ${actionHistoryId}, user ${userId}`);
+
+    // Fetch the action history record
+    const [actionHistory] = await db
+      .select()
+      .from(notificationActionHistory)
+      .where(eq(notificationActionHistory.id, parseInt(actionHistoryId)));
+
+    if (!actionHistory) {
+      return res.status(404).json({ error: 'Action history not found' });
+    }
+
+    // Verify action belongs to user
+    if (actionHistory.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden: Not your action' });
+    }
+
+    // Check if already undone
+    if (actionHistory.undoneAt) {
+      return res.status(400).json({ error: 'Action already undone' });
+    }
+
+    // Check if action was successful
+    if (actionHistory.actionStatus !== 'success') {
+      return res.status(400).json({ error: 'Can only undo successful actions' });
+    }
+
+    // Perform undo based on related type and action
+    let undoResult: any;
+    const { relatedType, relatedId, actionType } = actionHistory;
+
+    try {
+      switch (relatedType) {
+        case 'event_request':
+          if (!relatedId) throw new Error('No related event request ID');
+
+          // Reverse the action
+          if (actionType === 'approve' || actionType === 'accept') {
+            // Revert to previous status (would need to store in metadata)
+            undoResult = await db
+              .update(eventRequests)
+              .set({ status: 'new', updatedAt: new Date() })
+              .where(eq(eventRequests.id, relatedId))
+              .returning();
+          } else if (actionType === 'decline' || actionType === 'reject') {
+            undoResult = await db
+              .update(eventRequests)
+              .set({ status: 'new', updatedAt: new Date() })
+              .where(eq(eventRequests.id, relatedId))
+              .returning();
+          } else if (actionType === 'mark_toolkit_sent') {
+            undoResult = await db
+              .update(eventRequests)
+              .set({
+                toolkitSent: false,
+                toolkitStatus: null,
+                updatedAt: new Date()
+              })
+              .where(eq(eventRequests.id, relatedId))
+              .returning();
+          }
+          break;
+
+        case 'task':
+          if (!relatedId) throw new Error('No related task ID');
+
+          if (actionType === 'mark_complete' || actionType === 'complete') {
+            undoResult = await db
+              .update(projectTasks)
+              .set({
+                status: 'pending',
+                completedAt: null,
+                updatedAt: new Date()
+              })
+              .where(eq(projectTasks.id, relatedId))
+              .returning();
+          } else if (actionType === 'start') {
+            undoResult = await db
+              .update(projectTasks)
+              .set({
+                status: 'pending',
+                updatedAt: new Date()
+              })
+              .where(eq(projectTasks.id, relatedId))
+              .returning();
+          }
+          break;
+
+        case 'project':
+          if (!relatedId) throw new Error('No related project ID');
+
+          if (actionType === 'mark_complete' || actionType === 'complete') {
+            undoResult = await db
+              .update(projects)
+              .set({
+                status: 'in_progress',
+                updatedAt: new Date()
+              })
+              .where(eq(projects.id, relatedId))
+              .returning();
+          } else if (actionType === 'start') {
+            undoResult = await db
+              .update(projects)
+              .set({
+                status: 'waiting',
+                updatedAt: new Date()
+              })
+              .where(eq(projects.id, relatedId))
+              .returning();
+          }
+          break;
+
+        case 'message':
+          if (!relatedId) throw new Error('No related message ID');
+
+          if (actionType === 'mark_read' || actionType === 'read') {
+            undoResult = await db
+              .update(messages)
+              .set({
+                read: false,
+                updatedAt: new Date()
+              })
+              .where(eq(messages.id, relatedId))
+              .returning();
+          }
+          break;
+
+        case 'email_message':
+          if (!relatedId) throw new Error('No related email message ID');
+
+          if (actionType === 'mark_read' || actionType === 'read') {
+            undoResult = await db
+              .update(emailMessages)
+              .set({
+                isRead: false,
+                readAt: null,
+                updatedAt: new Date()
+              })
+              .where(eq(emailMessages.id, relatedId))
+              .returning();
+          } else if (actionType === 'archive') {
+            undoResult = await db
+              .update(emailMessages)
+              .set({
+                isArchived: false,
+                updatedAt: new Date()
+              })
+              .where(eq(emailMessages.id, relatedId))
+              .returning();
+          } else if (actionType === 'star') {
+            undoResult = await db
+              .update(emailMessages)
+              .set({
+                isStarred: false,
+                updatedAt: new Date()
+              })
+              .where(eq(emailMessages.id, relatedId))
+              .returning();
+          }
+          break;
+
+        default:
+          throw new Error(`Undo not supported for relatedType: ${relatedType}`);
+      }
+
+      // Mark action as undone
+      await db
+        .update(notificationActionHistory)
+        .set({
+          undoneAt: new Date(),
+          undoneBy: userId,
+        })
+        .where(eq(notificationActionHistory.id, actionHistory.id));
+
+      logger.info(`Action undone successfully: ${actionType} on ${relatedType} ${relatedId}`);
+
+      // Emit Socket.IO event
+      const io = getSocketInstance();
+      if (io) {
+        io.to(`notifications:${userId}`).emit('notification-action-undone', {
+          notificationId: parseInt(id),
+          actionHistoryId: actionHistory.id,
+          actionType,
+          userId,
+          result: undoResult,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Action undone successfully',
+        result: undoResult,
+      });
+    } catch (error: any) {
+      logger.error(`Undo failed for action ${actionHistoryId}:`, error);
+      res.status(500).json({
+        error: 'Failed to undo action',
+        message: error.message,
+      });
+    }
+  } catch (error: any) {
+    logger.error('Error undoing action:', error);
+    res.status(500).json({
+      error: 'Failed to process undo request',
+      message: error.message,
+    });
   }
 });
 
