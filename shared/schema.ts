@@ -218,6 +218,9 @@ export const projects = pgTable('projects', {
   risklevel: varchar('risklevel'),
   stakeholders: text('stakeholders'),
   milestones: text('milestones'),
+  // NEW REFACTOR FIELDS - Primary owner
+  ownerId: text('owner_id'), // Primary owner (single person ultimately responsible)
+  ownerName: text('owner_name'), // Display name of primary owner
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -277,6 +280,12 @@ export const projectTasks = pgTable('project_tasks', {
   // Additional database columns to prevent deletion during migrations
   completedBy: text('completed_by'),
   completedByName: text('completed_by_name'),
+  // NEW REFACTOR FIELDS - Origin tracking
+  originType: text('origin_type').notNull().default('manual'), // 'manual' | 'converted_from_note' | 'team_board'
+  sourceNoteId: integer('source_note_id'), // If converted from note, references the source meeting note
+  sourceMeetingId: integer('source_meeting_id'), // If created in a meeting context
+  sourceTeamBoardId: integer('source_team_board_id'), // If promoted from team board
+  selectedForAgenda: boolean('selected_for_agenda').notNull().default(false), // Whether to include in agenda
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -305,14 +314,97 @@ export const taskCompletions = pgTable(
   })
 );
 
-// User-project assignments for visibility control
+// ============================================================================
+// NEW REFACTOR TABLES - Multi-assignee with role-based assignments
+// ============================================================================
+
+// Project assignments - tracks owners and support people for projects
 export const projectAssignments = pgTable('project_assignments', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull(), // References users.id
-  role: text('role').notNull().default('member'), // 'owner', 'member', 'viewer'
-  assignedAt: timestamp('assigned_at').notNull().defaultNow(),
-});
+  userName: text('user_name').notNull(), // Denormalized for performance
+  role: text('role').notNull(), // 'owner' | 'support'
+  addedAt: timestamp('added_at').notNull().defaultNow(),
+  addedBy: varchar('added_by'), // Who assigned this person
+}, (table) => ({
+  uniqueAssignment: unique().on(table.projectId, table.userId),
+  projectIdx: index('idx_project_assignments_project').on(table.projectId),
+  userIdx: index('idx_project_assignments_user').on(table.userId),
+  roleIdx: index('idx_project_assignments_role').on(table.role),
+}));
+
+// Task assignments - tracks assignees for project tasks
+export const taskAssignments = pgTable('task_assignments', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id')
+    .notNull()
+    .references(() => projectTasks.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  role: text('role').notNull().default('assignee'), // 'assignee' | 'reviewer'
+  addedAt: timestamp('added_at').notNull().defaultNow(),
+  addedBy: varchar('added_by'),
+}, (table) => ({
+  uniqueAssignment: unique().on(table.taskId, table.userId),
+  taskIdx: index('idx_task_assignments_task').on(table.taskId),
+  userIdx: index('idx_task_assignments_user').on(table.userId),
+}));
+
+// Team board assignments - tracks assignees for team board items
+export const teamBoardAssignments = pgTable('team_board_assignments', {
+  id: serial('id').primaryKey(),
+  itemId: integer('item_id')
+    .notNull()
+    .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  addedAt: timestamp('added_at').notNull().defaultNow(),
+}, (table) => ({
+  uniqueAssignment: unique().on(table.itemId, table.userId),
+  itemIdx: index('idx_team_board_assignments_item').on(table.itemId),
+  userIdx: index('idx_team_board_assignments_user').on(table.userId),
+}));
+
+// Meeting-project junction - tracks which projects are in which meetings
+export const meetingProjects = pgTable('meeting_projects', {
+  id: serial('id').primaryKey(),
+  meetingId: integer('meeting_id')
+    .notNull()
+    .references(() => meetings.id, { onDelete: 'cascade' }),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+
+  // Pre-meeting planning
+  discussionPoints: text('discussion_points'),
+  questionsToAddress: text('questions_to_address'),
+
+  // Post-meeting outcomes
+  discussionSummary: text('discussion_summary'),
+  decisionsReached: text('decisions_reached'),
+
+  // Status and agenda control
+  status: text('status').notNull().default('planned'), // 'planned' | 'discussed' | 'tabled' | 'deferred'
+  includeInAgenda: boolean('include_in_agenda').notNull().default(true),
+
+  // Ordering and categorization
+  agendaOrder: integer('agenda_order'),
+  section: text('section'), // 'urgent' | 'old_business' | 'new_business' | 'housekeeping'
+
+  // Audit trail
+  addedAt: timestamp('added_at').notNull().defaultNow(),
+  addedBy: varchar('added_by'),
+  discussedAt: timestamp('discussed_at'),
+}, (table) => ({
+  uniqueMeetingProject: unique().on(table.meetingId, table.projectId),
+  meetingIdx: index('idx_meeting_projects_meeting').on(table.meetingId),
+  projectIdx: index('idx_meeting_projects_project').on(table.projectId),
+  statusIdx: index('idx_meeting_projects_status').on(table.status),
+  includeIdx: index('idx_meeting_projects_include').on(table.includeInAgenda),
+}));
 
 // Committees table for organizing committee information
 export const committees = pgTable('committees', {
@@ -1591,12 +1683,16 @@ export type InsertWishlistSuggestion = z.infer<
 export const teamBoardItems = pgTable('team_board_items', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(), // The actual task/note/idea - can be anything
-  type: varchar('type').default('note'), // 'task', 'note', 'idea', 'reminder' - optional categorization
+  type: varchar('type').default('task'), // 'task', 'note', 'idea' (removed 'reminder')
   createdBy: varchar('created_by').notNull(), // User ID who posted it
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
   assignedToNames: text('assigned_to_names').array(), // Array of display names - supports multiple assignees
   status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
+  // NEW REFACTOR FIELDS - Project linking and promotion tracking
+  projectId: integer('project_id'), // Optional link to a project for context
+  promotedToTaskId: integer('promoted_to_task_id'), // If promoted to project task
+  promotedAt: timestamp('promoted_at'), // When promoted to project task
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
 });
@@ -1697,6 +1793,19 @@ export const eventRequests = pgTable(
     department: varchar('department'),
     organizationCategory: varchar('organization_category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
+
+    // AI-generated categorization (optional, auto-populated)
+    autoCategories: jsonb('auto_categories').$type<{
+      eventType: 'corporate' | 'school' | 'nonprofit' | 'community' | 'religious' | 'government' | 'other';
+      eventSize: 'small' | 'medium' | 'large' | 'extra_large';
+      specialNeeds: string[];
+      targetAudience: string;
+      confidence: number;
+      reasoning: string;
+      suggestedTags?: string[];
+    }>(),
+    categorizedAt: timestamp('categorized_at'), // When AI categorization was performed
+    categorizedBy: varchar('categorized_by'), // 'ai' or user ID if manually overridden
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
@@ -2587,13 +2696,17 @@ export type InsertEventVolunteer = z.infer<typeof insertEventVolunteerSchema>;
 // Meeting notes table for agenda planning and note management
 export const meetingNotes = pgTable('meeting_notes', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  meetingId: integer('meeting_id'),
-  type: text('type').notNull(), // 'discussion' | 'meeting'
+  meetingId: integer('meeting_id').notNull(), // REFACTOR: Made required (notes always belong to a meeting)
+  projectId: integer('project_id'), // REFACTOR: Made optional (notes don't always need a project)
+  type: text('type').notNull(), // 'discussion' | 'meeting' | 'general'
   content: text('content').notNull(),
-  status: text('status').notNull().default('active'), // 'active' | 'used' | 'archived'
+  status: text('status').notNull().default('active'), // 'active' | 'converted' | 'archived'
   createdBy: varchar('created_by'), // User ID who created the note
   createdByName: varchar('created_by_name'), // User name for display
+  // NEW REFACTOR FIELDS - Conversion tracking
+  convertedToTaskId: integer('converted_to_task_id'), // If converted to task, references that task
+  convertedAt: timestamp('converted_at'), // When converted to task
+  selectedForAgenda: boolean('selected_for_agenda').notNull().default(false), // Include in agenda
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -3421,6 +3534,96 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
 
 /**
+ * Impact Reports - AI-generated monthly/quarterly/annual impact reports
+ * Automatically summarizes activities, metrics, and achievements for stakeholders
+ */
+export const impactReports = pgTable('impact_reports', {
+  id: serial('id').primaryKey(),
+  reportType: varchar('report_type', { length: 50 }).notNull(), // 'monthly', 'quarterly', 'annual', 'custom'
+  reportPeriod: varchar('report_period', { length: 50 }).notNull(), // e.g., '2025-01', '2025-Q1', '2025'
+  startDate: timestamp('start_date').notNull(), // Start of reporting period
+  endDate: timestamp('end_date').notNull(), // End of reporting period
+
+  // Report content (generated by AI)
+  title: text('title').notNull(), // e.g., "January 2025 Impact Report"
+  executiveSummary: text('executive_summary').notNull(), // High-level overview
+  content: text('content').notNull(), // Full report content (markdown format)
+
+  // Key metrics (for quick access without parsing content)
+  metrics: jsonb('metrics').$type<{
+    eventsCompleted: number;
+    sandwichesDistributed: number;
+    peopleServed: number;
+    volunteersEngaged: number;
+    organizationsServed: number;
+    hoursVolunteered?: number;
+    expensesTotal?: number;
+    // Additional custom metrics stored in the customMetrics property below
+    customMetrics?: { [key: string]: number | string | boolean | null | undefined };
+  }>(),
+
+  // Highlights and trends identified by AI
+  highlights: jsonb('highlights').$type<Array<{
+    title: string;
+    description: string;
+    metric?: string;
+  }>>(),
+
+  trends: jsonb('trends').$type<Array<{
+    category: string; // 'growth', 'decline', 'seasonal', 'emerging'
+    description: string;
+    dataPoints?: any;
+  }>>(),
+
+  // Generation metadata
+  generatedAt: timestamp('generated_at').defaultNow().notNull(),
+  generatedBy: varchar('generated_by'), // 'ai' or user ID if manually created
+  aiModel: varchar('ai_model', { length: 100 }), // e.g., 'gpt-4o'
+  generationPrompt: text('generation_prompt'), // Prompt used for AI generation
+  regenerationCount: integer('regeneration_count').default(0), // Number of times regenerated
+
+  // Publishing and sharing
+  status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft', 'published', 'archived'
+  publishedAt: timestamp('published_at'),
+  publishedBy: varchar('published_by'), // User ID who published
+
+  // Export tracking
+  pdfUrl: text('pdf_url'), // URL to generated PDF version
+  pdfGeneratedAt: timestamp('pdf_generated_at'),
+
+  // Metadata
+  tags: text('tags').array(), // Custom tags for categorization
+  notes: text('notes'), // Internal notes about the report
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_impact_reports_period').on(table.reportPeriod),
+  index('idx_impact_reports_type').on(table.reportType),
+  index('idx_impact_reports_status').on(table.status),
+  index('idx_impact_reports_start_date').on(table.startDate),
+  unique('unique_report_period_type').on(table.reportPeriod, table.reportType),
+]);
+
+export const insertImpactReportSchema = createInsertSchema(impactReports, {
+  reportType: z.enum(['monthly', 'quarterly', 'annual', 'custom']),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+  title: z.string().min(1, "Title is required"),
+  executiveSummary: z.string().min(1, "Executive summary is required"),
+  content: z.string().min(1, "Content is required"),
+}).omit({
+  id: true,
+  generatedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateImpactReportSchema = insertImpactReportSchema.partial();
+
+export type ImpactReport = typeof impactReports.$inferSelect;
+export type InsertImpactReport = z.infer<typeof insertImpactReportSchema>;
+export type UpdateImpactReport = z.infer<typeof updateImpactReportSchema>;
+
+/**
  * Search Analytics - Track SmartSearch usage for learning and improvement
  * Enables ML-powered search result optimization and user behavior analysis
  */
@@ -3471,3 +3674,43 @@ export const insertDismissedAnnouncementSchema = createInsertSchema(dismissedAnn
 
 export type DismissedAnnouncement = typeof dismissedAnnouncements.$inferSelect;
 export type InsertDismissedAnnouncement = z.infer<typeof insertDismissedAnnouncementSchema>;
+
+// ============================================================================
+// NEW REFACTOR TYPES - Assignment and meeting-project junction tables
+// ============================================================================
+
+// Project Assignments
+export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type ProjectAssignment = typeof projectAssignments.$inferSelect;
+export type InsertProjectAssignment = z.infer<typeof insertProjectAssignmentSchema>;
+
+// Task Assignments
+export const insertTaskAssignmentSchema = createInsertSchema(taskAssignments).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type TaskAssignment = typeof taskAssignments.$inferSelect;
+export type InsertTaskAssignment = z.infer<typeof insertTaskAssignmentSchema>;
+
+// Team Board Assignments
+export const insertTeamBoardAssignmentSchema = createInsertSchema(teamBoardAssignments).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type TeamBoardAssignment = typeof teamBoardAssignments.$inferSelect;
+export type InsertTeamBoardAssignment = z.infer<typeof insertTeamBoardAssignmentSchema>;
+
+// Meeting Projects
+export const insertMeetingProjectSchema = createInsertSchema(meetingProjects).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type MeetingProject = typeof meetingProjects.$inferSelect;
+export type InsertMeetingProject = z.infer<typeof insertMeetingProjectSchema>;

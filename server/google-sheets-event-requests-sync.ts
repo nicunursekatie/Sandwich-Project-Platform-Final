@@ -131,12 +131,6 @@ export class EventRequestsGoogleSheetsService {
           );
           return null;
         }
-
-        logger.log(
-          `✅ Converted Excel serial number "${dateValue}" (${fieldName}) to:`,
-          date.toISOString(),
-          `(${date.toLocaleDateString()})`
-        );
         
         return date;
       } else {
@@ -149,11 +143,6 @@ export class EventRequestsGoogleSheetsService {
           );
           return null;
         }
-
-        logger.log(
-          `✅ Parsed ${fieldName} "${dateValue}" to:`,
-          date.toISOString()
-        );
         
         return date;
       }
@@ -257,7 +246,6 @@ export class EventRequestsGoogleSheetsService {
           row.status.trim() &&
           row.status.trim().toLowerCase() !== 'new'
         ) {
-          logger.log(`📊 Using sheet status: "${row.status.trim()}" for new import: ${row.organizationName}`);
           return row.status.trim();
         }
 
@@ -269,7 +257,6 @@ export class EventRequestsGoogleSheetsService {
             today.setHours(0, 0, 0, 0);
 
             if (!isNaN(eventDate.getTime()) && eventDate < today) {
-              logger.log(`📊 Assigning 'completed' status for past event: ${row.organizationName} (${eventDate.toLocaleDateString()})`);
               return 'completed'; // Past events are marked as completed
             }
           } catch (error) {
@@ -280,7 +267,6 @@ export class EventRequestsGoogleSheetsService {
           }
         }
 
-        logger.log(`📊 Assigning default 'new' status for: ${row.organizationName}`);
         return 'new'; // Default for future events or unclear dates
       })(),
       message: row.message,
@@ -388,51 +374,26 @@ export class EventRequestsGoogleSheetsService {
     row: EventRequestSheetRow,
     eventRequestData: Partial<EventRequest>
   ): Promise<EventRequest | undefined> {
-    logger.log(`\n🔍 DUPLICATE DETECTION START for: ${row.organizationName} - ${row.contactName}`);
-    logger.log(`   📧 Email: ${row.email}`);
-    logger.log(`   📅 Event Date (raw): ${row.desiredEventDate}`);
-    logger.log(`   📅 Event Date (parsed): ${eventRequestData.desiredEventDate?.toISOString() || 'NULL'}`);
-    logger.log(`   📝 Row Index: ${row.rowIndex}`);
-    
     const existingRequests = await this.storage.getAllEventRequests();
-    logger.log(`   🗃️ Total existing records to check: ${existingRequests.length}`);
     
     const nameParts = row.contactName.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
     // PRIORITY 1: Google Sheets Row ID (most stable identifier)
-    logger.log(`\n🏆 PRIORITY 1: GoogleSheetRowId matching...`);
     if (row.rowIndex) {
-      logger.log(`   🔍 Looking for googleSheetRowId = '${row.rowIndex.toString()}'`);
       const rowIdMatch = existingRequests.find((r) => {
-        const hasMatch = r.googleSheetRowId === row.rowIndex?.toString();
-        if (hasMatch) {
-          logger.log(`   ✅ Found match by GoogleSheetRowId: ${r.id} - ${r.organizationName}`);
-        }
-        return hasMatch;
+        return r.googleSheetRowId === row.rowIndex?.toString();
       });
       if (rowIdMatch) {
-        logger.log(`✅ MATCH FOUND (GoogleSheetRowId): Row ${row.rowIndex} for ${row.organizationName}`);
-        logger.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return rowIdMatch;
-      } else {
-        logger.log(`   ❌ No existing records found with googleSheetRowId = '${row.rowIndex}'`);
-        const recordsWithRowIds = existingRequests.filter(r => r.googleSheetRowId).length;
-        logger.log(`   📊 Total existing records with googleSheetRowId: ${recordsWithRowIds}`);
       }
-    } else {
-      logger.log(`   ⚠️ No row.rowIndex provided`);
     }
 
     // PRIORITY 2: Submission timestamp + email + desiredEventDate combination (very stable, prevents merging different events)
-    logger.log(`\n🥈 PRIORITY 2: Submission timestamp + email + event date matching...`);
     if (row.submittedOn && row.email && eventRequestData.createdAt && eventRequestData.desiredEventDate) {
-      logger.log(`   🔍 Looking for: email='${row.email}', submittedOn='${row.submittedOn}', eventDate='${eventRequestData.desiredEventDate.toISOString()}'`);
-      
-      const submissionTimeMatch = existingRequests.find((r, index) => {
+      const submissionTimeMatch = existingRequests.find((r) => {
         if (!r.email || !r.createdAt || !r.desiredEventDate) {
-          if (index < 5) logger.log(`   ⚠️ Record ${r.id}: Missing required fields (email=${!!r.email}, createdAt=${!!r.createdAt}, desiredEventDate=${!!r.desiredEventDate})`);
           return false;
         }
         
@@ -453,14 +414,7 @@ export class EventRequestsGoogleSheetsService {
         const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
         const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
         
-        if (emailMatch && index < 3) {
-          logger.log(`   🔍 Record ${r.id}: email match, timeDiff=${Math.round(timeDiff/1000)}s (max ${Math.round(maxTimeDiff/1000)}s), eventDateMatch=${eventDateMatch}`);
-          logger.log(`      Existing: ${existingDate.toISOString()} → ${existingEventDate.toISOString()}`);
-          logger.log(`      Sheet:    ${sheetDate.toISOString()} → ${sheetEventDate.toISOString()}`);
-        }
-        
         if (emailMatch && timeMatch && eventDateMatch) {
-          logger.log(`✅ MATCH FOUND (SubmissionTime+Email+EventDate): ${row.email} submitted ${sheetDate.toLocaleDateString()} for event on ${sheetEventDate.toLocaleDateString()} - ${row.organizationName}`);
           return true;
         }
         
@@ -468,25 +422,14 @@ export class EventRequestsGoogleSheetsService {
       });
       
       if (submissionTimeMatch) {
-        logger.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return submissionTimeMatch;
-      } else {
-        logger.log(`   ❌ No matches found with exact submission time + email + event date`);
       }
-    } else {
-      logger.log(`   ⚠️ Missing required data for Priority 2 matching`);
-      logger.log(`      submittedOn: ${!!row.submittedOn}, email: ${!!row.email}`);
-      logger.log(`      createdAt: ${!!eventRequestData.createdAt}, desiredEventDate: ${!!eventRequestData.desiredEventDate}`);
     }
 
     // PRIORITY 3: Exact email match with event date validation (same person, same org, same event)
-    logger.log(`\n🥉 PRIORITY 3: Email + event date + organization similarity matching...`);
     if (row.email && eventRequestData.desiredEventDate) {
-      logger.log(`   🔍 Looking for: email='${row.email}', eventDate='${eventRequestData.desiredEventDate.toISOString()}'`);
-      
-      const emailOnlyMatch = existingRequests.find((r, index) => {
+      const emailOnlyMatch = existingRequests.find((r) => {
         if (!r.email || !r.desiredEventDate) {
-          if (index < 5) logger.log(`   ⚠️ Record ${r.id}: Missing required fields (email=${!!r.email}, desiredEventDate=${!!r.desiredEventDate})`);
           return false;
         }
         
@@ -498,16 +441,7 @@ export class EventRequestsGoogleSheetsService {
         const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
         const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
         
-        if (emailMatch && index < 3) {
-          logger.log(`   🔍 Record ${r.id} (${r.organizationName}): email match, eventDateMatch=${eventDateMatch}`);
-          logger.log(`      Existing event date: ${existingEventDate.toISOString()}`);
-          logger.log(`      Sheet event date:    ${sheetEventDate.toISOString()}`);
-        }
-        
         if (!eventDateMatch) {
-          if (emailMatch && index < 3) {
-            logger.log(`   ❌ Record ${r.id}: Different event dates - keeping separate`);
-          }
           return false; // Different events - must be kept separate
         }
         
@@ -519,14 +453,7 @@ export class EventRequestsGoogleSheetsService {
           row.department || ''
         );
         
-        if (emailMatch && eventDateMatch) {
-          logger.log(`   🔍 Record ${r.id}: email + event date match, org similarity=${(orgSimilarity * 100).toFixed(1)}%`);
-          logger.log(`      Existing org: "${r.organizationName}" + dept: "${r.department || ''}"`);
-          logger.log(`      Sheet org:    "${row.organizationName}" + dept: "${row.department || ''}"`);
-        }
-        
         if (orgSimilarity > 0.6) { // 60% similarity threshold
-          logger.log(`✅ MATCH FOUND (Email+EventDate+OrgSimilarity): ${row.email} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
           return true;
         }
         
@@ -534,14 +461,8 @@ export class EventRequestsGoogleSheetsService {
       });
       
       if (emailOnlyMatch) {
-        logger.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return emailOnlyMatch;
-      } else {
-        logger.log(`   ❌ No matches found with email + event date + sufficient org similarity`);
       }
-    } else {
-      logger.log(`   ⚠️ Missing required data for Priority 3 matching`);
-      logger.log(`      email: ${!!row.email}, desiredEventDate: ${!!eventRequestData.desiredEventDate}`);
     }
 
     // PRIORITY 4: Fallback fuzzy matching for organization name changes (with event date validation)
@@ -579,31 +500,16 @@ export class EventRequestsGoogleSheetsService {
         row.department || ''
       );
 
-      // Log debug info for suspicious matches
-      if (row.organizationName?.toLowerCase().includes('marietta') ||
-          row.organizationName?.toLowerCase().includes('franklin') ||
-          row.organizationName?.toLowerCase().includes('cherokee')) {
-        logger.log(`🔍 Fuzzy matching ${row.organizationName} (Event: ${sheetEventDate.toLocaleDateString()}):`);
-        logger.log(`  Event date match: ${eventDateMatch} (${existingEventDate.toLocaleDateString()} vs ${sheetEventDate.toLocaleDateString()})`);
-        logger.log(`  Email match: ${emailMatch} (${row.email} vs ${r.email})`);
-        logger.log(`  Name match: ${fullNameMatch} (${firstName} ${lastName} vs ${r.firstName} ${r.lastName})`);
-        logger.log(`  Phone match: ${phoneMatch}`);
-        logger.log(`  Org similarity: ${(orgSimilarity * 100).toFixed(1)}% ("${r.organizationName}" + "${r.department || ''}" vs "${row.organizationName}" + "${r.department || ''}")`);
-      }
-
       // Match criteria (any of these strong combinations) - all require same event date
       if (emailMatch && orgSimilarity > 0.5) {
-        logger.log(`✅ MATCH FOUND (Email+EventDate+FuzzyOrg): ${row.email} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
         return true;
       }
       
       if (phoneMatch && orgSimilarity > 0.7) {
-        logger.log(`✅ MATCH FOUND (Phone+EventDate+FuzzyOrg): ${row.phone} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
         return true;
       }
       
       if (fullNameMatch && orgSimilarity > 0.8) {
-        logger.log(`✅ MATCH FOUND (FullName+EventDate+FuzzyOrg): ${firstName} ${lastName} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
         return true;
       }
 
@@ -611,13 +517,10 @@ export class EventRequestsGoogleSheetsService {
     });
 
     if (fuzzyMatch) {
-      logger.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
       return fuzzyMatch;
-    } else {
-      logger.log(`   ❌ No matches found with fuzzy matching criteria`);
-      logger.log(`🔍 DUPLICATE DETECTION END: NO MATCH FOUND - WILL CREATE NEW RECORD\n`);
-      return undefined;
     }
+    
+    return undefined;
   }
 
   /**
@@ -697,8 +600,7 @@ export class EventRequestsGoogleSheetsService {
       let updatedCount = 0;
       let skippedNoExternalId = 0;
 
-      logger.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
-      logger.log(`✨ INSERT-ONLY MODE: Will insert new records, skip existing ones (preserves manual edits)`);
+      logger.log(`Starting Google Sheets sync: Processing ${sheetRows.length} rows`);
 
       for (const row of sheetRows) {
         // UPDATED: External ID is now optional - generate one if missing
@@ -715,28 +617,12 @@ export class EventRequestsGoogleSheetsService {
           // Create a stable hash-like identifier (no timestamp!)
           const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
           row.externalId = `auto-${hash}`;
-          
-          // Debug: Generated STABLE external_id for row: ${row.externalId}
         }
 
         const externalIdTrimmed = row.externalId.trim();
 
         // Convert row to event request data
         const eventRequestData = this.sheetRowToEventRequest(row);
-
-        // Log info about event date if available
-        const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (eventDate && eventDate < today) {
-          const daysSinceEvent = Math.floor((today.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-          logger.warn(
-            `⚠️ Importing past event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName || 'Unknown Org'}`
-          );
-        }
-        // Prepare data for Drizzle insertion using external_id for conflict detection
-        // Debug: Processing row with external_id: ${row.externalId}
 
         // Ensure dates are valid before saving to database
         const sanitizedData = {
@@ -771,8 +657,6 @@ export class EventRequestsGoogleSheetsService {
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
 
-          // Debug: Query returned ${existingRecord.length} matches
-
           const recordExisted = existingRecord && existingRecord.length > 0;
 
           // Use INSERT ON CONFLICT DO NOTHING - once imported, never touched again
@@ -790,8 +674,6 @@ export class EventRequestsGoogleSheetsService {
 
           if (result && result.length > 0) {
             // If result has data, it means INSERT succeeded (new record)
-            // Debug: INSERTED new record: ID ${result[0].id}
-            
             // Add audit logging for Google Sheets sync import
             await AuditLogger.logEventRequestChange(
               result[0].id.toString(),
@@ -810,7 +692,6 @@ export class EventRequestsGoogleSheetsService {
           } else {
             // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
             if (recordExisted) {
-              // Debug: SKIPPED existing record (no changes)
               updatedCount++; // Track as "updated" (but really just skipped) for stats
             }
           }
@@ -821,8 +702,7 @@ export class EventRequestsGoogleSheetsService {
         }
       }
 
-      logger.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${updatedCount} existing records skipped (manual edits preserved)`);
-      logger.log(`✅ INSERT-ONLY SUCCESS: Total ${createdCount + updatedCount} records processed`);
+      logger.log(`Sync complete: ${createdCount} created, ${updatedCount} skipped`);
 
       return {
         success: true,
@@ -1009,7 +889,6 @@ export class EventRequestsGoogleSheetsService {
     });
 
     const headers = headerResponse.data.values?.[0] || [];
-    logger.log('📋 Actual sheet headers:', headers);
 
     // Build header to index mapping (case-insensitive)
     const headerMap = new Map<string, number>();
@@ -1017,7 +896,6 @@ export class EventRequestsGoogleSheetsService {
       if (header && header.trim()) {
         const normalizedHeader = header.trim().toLowerCase();
         headerMap.set(normalizedHeader, index);
-        logger.log(`📋 Header mapping: "${header}" (${normalizedHeader}) → column ${index}`);
       }
     });
 
@@ -1026,11 +904,9 @@ export class EventRequestsGoogleSheetsService {
       for (const header of possibleHeaders) {
         const index = headerMap.get(header.toLowerCase());
         if (index !== undefined) {
-          logger.log(`✅ Found header "${header}" at column ${index}`);
           return index;
         }
       }
-      logger.warn(`⚠️ Header not found for: ${possibleHeaders.join(', ')}`);
       return -1;
     };
 
@@ -1050,8 +926,6 @@ export class EventRequestsGoogleSheetsService {
       message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
       status: getColumnIndex(['status', 'current status', 'state', 'event status']),
     };
-
-    logger.log('📋 Column mapping results:', columnMapping);
 
     // Check if we failed to detect most headers - might need fallback to fixed positions
     const mappedColumnsCount = Object.values(columnMapping).filter(idx => idx >= 0).length;
@@ -1085,27 +959,12 @@ export class EventRequestsGoogleSheetsService {
     });
 
     const rows = response.data.values || [];
-    logger.log(`📊 Reading ${rows.length} rows from Google Sheets`);
-    if (rows.length > 0) {
-      logger.log('📋 First data row (raw values):', rows[0]);
-      logger.log('📋 First row field mapping:');
-      logger.log(`  Col ${columnMapping.name}: ${rows[0][columnMapping.name]}`);
-      logger.log(`  Col ${columnMapping.email}: ${rows[0][columnMapping.email]}`);
-      logger.log(`  Col ${columnMapping.phone}: ${rows[0][columnMapping.phone]}`);
-      logger.log(`  Col ${columnMapping.message}: ${rows[0][columnMapping.message]}`);
-      logger.log(`  Col ${columnMapping.desiredEventDate}: ${rows[0][columnMapping.desiredEventDate]}`);
-      if (rows.length > 1) {
-        logger.log('📋 Second data row:', rows[1]);
-      }
-    }
+    logger.log(`Reading ${rows.length} rows from Google Sheets`);
 
     return rows.map((row: string[], index: number) => {
       // ACTUALLY USE the dynamic column mapping computed above!
       const getFieldValue = (colIndex: number, defaultValue = '') => {
         if (colIndex < 0) {
-          if (index === 0) { // Only warn once for missing columns
-            logger.warn(`⚠️ Column not found in sheet, using default: "${defaultValue}"`);
-          }
           return defaultValue;
         }
 
@@ -1122,9 +981,6 @@ export class EventRequestsGoogleSheetsService {
           } else {
             // Clean normal phone numbers
             value = value.replace(/[^\d\s\-\(\)\+\.]/g, '').trim();
-            if (value !== originalValue && index < 3) {
-              logger.log(`📱 Cleaned phone: "${originalValue}" → "${value}"`);
-            }
           }
         }
 
@@ -1154,26 +1010,10 @@ export class EventRequestsGoogleSheetsService {
         contactName = `${firstName} ${lastName}`.trim();
       }
 
-      // Extract values with detailed logging for debugging
+      // Extract values
       const phoneValue = getFieldValue(columnMapping.phone);
       const messageValue = getFieldValue(columnMapping.message);
       const dateValue = getFieldValue(columnMapping.desiredEventDate);
-
-      // Log potential issues with field extraction
-      if (index < 5 && (phoneValue || messageValue)) {
-        logger.log(`🔍 Field extraction for row ${index + 2}:`);
-        logger.log(`  Phone column [${columnMapping.phone}]: "${phoneValue}"`);
-        logger.log(`  Message column [${columnMapping.message}]: "${messageValue}"`);
-        logger.log(`  Date column [${columnMapping.desiredEventDate}]: "${dateValue}"`);
-
-        // Check if values seem to be in wrong columns
-        if (phoneValue && phoneValue.length > 20 && !phoneValue.match(/^[\d\s\-\(\)\+]+$/)) {
-          logger.warn(`⚠️ Phone field contains non-phone data: "${phoneValue.substring(0, 50)}..."`);
-        }
-        if (messageValue && messageValue.match(/^[\d\s\-\(\)\+]+$/) && messageValue.length < 20) {
-          logger.warn(`⚠️ Message field might contain phone number: "${messageValue}"`);
-        }
-      }
 
       const result = {
         externalId: getFieldValue(columnMapping.externalId),
@@ -1201,25 +1041,6 @@ export class EventRequestsGoogleSheetsService {
         notes: getFieldValue(columnMapping.previouslyHosted), // Use same as previouslyHosted for notes
         rowIndex: index + 2, // Data starts from row 2 (index 0 = row 2)
       };
-
-      // Log the first few rows for debugging
-      if (index < 3) {
-        logger.log(`🔍 DYNAMIC Row ${index + 2} mapping (using header detection):`);
-        logger.log(`  externalId[${columnMapping.externalId}]: "${result.externalId}"`);
-        if (columnMapping.name >= 0) {
-          logger.log(`  name[${columnMapping.name}]: "${contactName}" → firstName: "${firstName}", lastName: "${lastName}"`);
-        } else {
-          logger.log(`  firstName[${columnMapping.firstName}]: "${firstName}"`);
-          logger.log(`  lastName[${columnMapping.lastName}]: "${lastName}"`);
-        }
-        logger.log(`  email[${columnMapping.email}]: "${result.email}"`);
-        logger.log(`  organization[${columnMapping.organizationName}]: "${result.organizationName}"`);
-        logger.log(`  department[${columnMapping.department}]: "${result.department}"`);
-        logger.log(`  previouslyHosted[${columnMapping.previouslyHosted}]: "${result.previouslyHosted}"`);
-        logger.log(`  message[${columnMapping.message}]: "${result.message?.substring(0, 50)}..."`);
-        logger.log(`  desiredEventDate[${columnMapping.desiredEventDate}]: "${result.desiredEventDate}"`);
-        logger.log(`  status[${columnMapping.status}]: "${result.status}"`);
-      }
 
       return result;
     });

@@ -6,6 +6,8 @@ import {
 import { createErrorHandler, projectFilesUpload } from '../../middleware';
 import { logger } from '../../middleware/logger';
 import type { IStorage } from '../../storage';
+// REFACTOR: Import assignment services for new endpoints
+import { projectAssignmentService, taskAssignmentService } from '../../services/assignments';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -326,7 +328,17 @@ export default function createProjectRoutes(options: {
           return res.status(404).json({ message: 'Project not found' });
         }
 
-        res.json(project);
+        // REFACTOR: Include assignments from normalized table
+        try {
+          const assignments = await projectAssignmentService.getProjectAssignments(id);
+          res.json({
+            ...project,
+            assignments,
+          });
+        } catch (assignmentError) {
+          logger.error('Failed to fetch project assignments, returning project without assignments', assignmentError);
+          res.json(project);
+        }
       } catch (error) {
         logger.error('Failed to fetch project', error);
         res.status(500).json({ message: 'Failed to fetch project' });
@@ -345,7 +357,28 @@ export default function createProjectRoutes(options: {
         }
 
         const tasks = await projectService.getProjectTasks(projectId);
-        res.json(tasks);
+
+        // REFACTOR: Include assignments from normalized table for each task
+        try {
+          const tasksWithAssignments = await Promise.all(
+            tasks.map(async (task) => {
+              try {
+                const assignments = await taskAssignmentService.getTaskAssignments(task.id);
+                return {
+                  ...task,
+                  assignments,
+                };
+              } catch (err) {
+                logger.error(`Failed to fetch assignments for task ${task.id}`, err);
+                return task;
+              }
+            })
+          );
+          res.json(tasksWithAssignments);
+        } catch (assignmentError) {
+          logger.error('Failed to fetch task assignments, returning tasks without assignments', assignmentError);
+          res.json(tasks);
+        }
       } catch (error) {
         logger.error('Failed to fetch project tasks', error);
         res.status(500).json({ message: 'Failed to fetch tasks' });
@@ -447,6 +480,127 @@ export default function createProjectRoutes(options: {
       } catch (error) {
         logger.error('Failed to fetch project files', error);
         res.status(500).json({ message: 'Failed to fetch files' });
+      }
+    }
+  );
+
+  // POST /:id/assignments - Add assignment to project
+  projectsRouter.post(
+    '/:id/assignments',
+    isAuthenticated,
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const projectId = parseInt(req.params.id);
+        const user = getUser(req);
+
+        if (!user) {
+          return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        if (isNaN(projectId)) {
+          return res.status(400).json({ message: 'Invalid project ID' });
+        }
+
+        const { userId, userName, role } = req.body;
+
+        if (!userId || !userName || !role) {
+          return res.status(400).json({
+            message: 'Missing required fields: userId, userName, and role are required'
+          });
+        }
+
+        if (role !== 'owner' && role !== 'support') {
+          return res.status(400).json({
+            message: 'Invalid role. Must be either "owner" or "support"'
+          });
+        }
+
+        const assignment = await projectAssignmentService.addAssignment(
+          projectId,
+          userId,
+          role,
+          user.id
+        );
+
+        logger.info('Successfully added project assignment', {
+          projectId,
+          userId,
+          role,
+          addedBy: user.id
+        });
+
+        res.status(201).json(assignment);
+      } catch (error) {
+        logger.error('Failed to add project assignment', error);
+        res.status(500).json({ message: 'Failed to add project assignment' });
+      }
+    }
+  );
+
+  // DELETE /:id/assignments/:userId - Remove assignment from project
+  projectsRouter.delete(
+    '/:id/assignments/:userId',
+    isAuthenticated,
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const projectId = parseInt(req.params.id);
+        const { userId } = req.params;
+        const user = getUser(req);
+
+        if (!user) {
+          return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        if (isNaN(projectId)) {
+          return res.status(400).json({ message: 'Invalid project ID' });
+        }
+
+        if (!userId) {
+          return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        const success = await projectAssignmentService.removeAssignment(projectId, userId);
+
+        if (!success) {
+          return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        logger.info('Successfully removed project assignment', {
+          projectId,
+          userId,
+          removedBy: user.id
+        });
+
+        res.status(204).send();
+      } catch (error) {
+        logger.error('Failed to remove project assignment', error);
+        res.status(500).json({ message: 'Failed to remove project assignment' });
+      }
+    }
+  );
+
+  // GET /:id/assignments - Get all assignments for a project
+  projectsRouter.get(
+    '/:id/assignments',
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const projectId = parseInt(req.params.id);
+
+        if (isNaN(projectId)) {
+          return res.status(400).json({ message: 'Invalid project ID' });
+        }
+
+        const assignments = await projectAssignmentService.getProjectAssignments(projectId);
+
+        logger.info('Successfully fetched project assignments', {
+          projectId,
+          count: assignments.length
+        });
+
+        res.json(assignments);
+      } catch (error) {
+        logger.error('Failed to fetch project assignments', error);
+        res.status(500).json({ message: 'Failed to fetch project assignments' });
       }
     }
   );

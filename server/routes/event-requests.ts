@@ -3604,6 +3604,75 @@ router.post('/:id/ai-intake-assist', isAuthenticated, async (req, res) => {
   }
 });
 
+// AI Event Categorization - Automatically categorize event based on organization and details
+router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Get the event request
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Import and call AI categorization service
+    const { categorizeEventRequest } = await import('../services/ai-event-categorization');
+    const categorization = await categorizeEventRequest({
+      organizationName: eventRequest.organizationName || '',
+      organizationCategory: eventRequest.organizationCategory || undefined,
+      description: eventRequest.message || undefined,
+      estimatedSandwichCount: eventRequest.estimatedSandwichCount || undefined,
+      eventType: eventRequest.organizationCategory || undefined,
+      location: eventRequest.eventAddress || undefined,
+      deliveryDestination: eventRequest.deliveryDestination || undefined,
+    });
+
+    // Update the event request with categorization
+    // The categorization object structure matches the schema definition exactly
+    await storage.updateEventRequest(eventId, {
+      autoCategories: {
+        eventType: categorization.eventType,
+        eventSize: categorization.eventSize,
+        specialNeeds: categorization.specialNeeds,
+        targetAudience: categorization.targetAudience,
+        confidence: categorization.confidence,
+        reasoning: categorization.reasoning,
+        suggestedTags: categorization.suggestedTags,
+      },
+      categorizedAt: new Date(),
+      categorizedBy: 'ai',
+      updatedAt: new Date(),
+    });
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI categorization for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName, eventType: categorization.eventType }
+    );
+
+    res.json(categorization);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error generating AI categorization:', error);
+    res.status(500).json({
+      error: 'Failed to generate AI categorization',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
 // Schedule a follow-up call
 router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
   try {

@@ -5,6 +5,8 @@ import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
 import { taskService } from '../../services/tasks/index';
 import { logger } from '../../utils/production-safe-logger';
+// REFACTOR: Import new assignment service for dual-write
+import { taskAssignmentService } from '../../services/assignments';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -69,6 +71,31 @@ tasksRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
         task.title,
         storage
       );
+    }
+
+    // REFACTOR: Dual-write to task_assignments table
+    if (updates.assigneeIds !== undefined) {
+      try {
+        // Build assignments from assigneeIds and assigneeNames
+        const assigneeIds = updates.assigneeIds || [];
+        const assigneeNames = updates.assigneeNames || [];
+
+        const assignments = assigneeIds.map((userId: string, index: number) => ({
+          userId,
+          userName: assigneeNames[index] || 'Unknown',
+          role: 'assignee' as const,
+        }));
+
+        await taskAssignmentService.replaceTaskAssignments(
+          taskId,
+          assignments,
+          user.id
+        );
+        logger.log(`Synced ${assignments.length} task assignments for task ${taskId}`);
+      } catch (syncError) {
+        logger.error('Failed to sync task assignments:', syncError);
+        // Don't fail the task update if assignment sync fails
+      }
     }
 
     logger.log(`Task ${taskId} updated successfully`);
@@ -243,6 +270,126 @@ tasksRouter.get(
       logger.error('Error fetching completions:', error);
       logger.error('Failed to fetch task completions', error);
       res.status(500).json({ error: 'Failed to fetch completions' });
+    }
+  }
+);
+
+// POST /:taskId/assignments - Add assignment to task
+tasksRouter.post(
+  '/:taskId/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const user = getUser(req);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (isNaN(taskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      const { userId, userName, role } = req.body;
+
+      if (!userId || !userName) {
+        return res.status(400).json({
+          error: 'Missing required fields: userId and userName are required'
+        });
+      }
+
+      const assignmentRole = role || 'assignee';
+      if (assignmentRole !== 'assignee' && assignmentRole !== 'reviewer') {
+        return res.status(400).json({
+          error: 'Invalid role. Must be either "assignee" or "reviewer"'
+        });
+      }
+
+      const assignment = await taskAssignmentService.addAssignment(
+        taskId,
+        userId,
+        assignmentRole,
+        user.id
+      );
+
+      logger.log('Successfully added task assignment', {
+        taskId,
+        userId,
+        role: assignmentRole,
+        addedBy: user.id
+      });
+
+      res.status(201).json(assignment);
+    } catch (error) {
+      logger.error('Failed to add task assignment:', error);
+      res.status(500).json({ error: 'Failed to add task assignment' });
+    }
+  }
+);
+
+// DELETE /:taskId/assignments/:userId - Remove assignment from task
+tasksRouter.delete(
+  '/:taskId/assignments/:userId',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const { userId } = req.params;
+      const user = getUser(req);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (isNaN(taskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const success = await taskAssignmentService.removeAssignment(taskId, userId);
+
+      if (!success) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      logger.log('Successfully removed task assignment', {
+        taskId,
+        userId,
+        removedBy: user.id
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Failed to remove task assignment:', error);
+      res.status(500).json({ error: 'Failed to remove task assignment' });
+    }
+  }
+);
+
+// GET /:taskId/assignments - Get all assignments for a task
+tasksRouter.get(
+  '/:taskId/assignments',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+
+      if (isNaN(taskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      const assignments = await taskAssignmentService.getTaskAssignments(taskId);
+
+      logger.log('Successfully fetched task assignments', {
+        taskId,
+        count: assignments.length
+      });
+
+      res.json(assignments);
+    } catch (error) {
+      logger.error('Failed to fetch task assignments:', error);
+      res.status(500).json({ error: 'Failed to fetch task assignments' });
     }
   }
 );
