@@ -142,12 +142,37 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    logger.info('Successfully fetched team board items', { 
-      count: items.length,
-      userId: req.user.id 
-    });
+    // REFACTOR: Include assignments from normalized table for each item
+    try {
+      const itemsWithAssignments = await Promise.all(
+        sortedItems.map(async (item) => {
+          try {
+            const assignments = await teamBoardAssignmentService.getItemAssignments(item.id);
+            return {
+              ...item,
+              assignments,
+            };
+          } catch (err) {
+            logger.error(`Failed to fetch assignments for team board item ${item.id}`, err);
+            return item;
+          }
+        })
+      );
 
-    res.json(sortedItems);
+      logger.info('Successfully fetched team board items with assignments', {
+        count: items.length,
+        userId: req.user.id
+      });
+
+      res.json(itemsWithAssignments);
+    } catch (assignmentError) {
+      logger.error('Failed to fetch team board assignments, returning items without assignments', assignmentError);
+      logger.info('Successfully fetched team board items', {
+        count: items.length,
+        userId: req.user.id
+      });
+      res.json(sortedItems);
+    }
   } catch (error) {
     logger.error('Failed to fetch team board items', error);
     res.status(500).json({ 
