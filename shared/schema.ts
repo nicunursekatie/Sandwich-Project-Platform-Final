@@ -690,7 +690,7 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   group2Name: text('group2_name'), // Name of second group (nullable) - LEGACY, use groupCollections
   group2Count: integer('group2_count'), // Count for second group (nullable) - LEGACY, use groupCollections
   // New JSON column for unlimited groups
-  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number, deli?: number, turkey?: number, ham?: number, pbj?: number}
+  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, department?: string, count: number, deli?: number, turkey?: number, ham?: number, pbj?: number}
   createdBy: text('created_by'), // User ID who created this entry
   createdByName: text('created_by_name'), // Display name of creator
   submittedAt: timestamp('submitted_at').notNull().defaultNow(), // When form was submitted
@@ -1227,6 +1227,7 @@ export const insertSandwichCollectionSchema = createInsertSchema(
       .array(
         z.object({
           name: z.string().trim().min(1).max(120),
+          department: z.string().trim().max(120).optional(), // Optional department field for admin editing
           count: z.number().int().min(0),
           deli: z.number().int().min(0).optional(),
           turkey: z.number().int().min(0).optional(),
