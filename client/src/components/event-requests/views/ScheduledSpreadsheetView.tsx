@@ -100,7 +100,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     const saved = localStorage.getItem('scheduledSpreadsheetColumnOrder');
     return saved ? JSON.parse(saved) : null;
   });
-  
+
+  // Column width state
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    // Load saved column widths from localStorage
+    const saved = localStorage.getItem('scheduledSpreadsheetColumnWidths');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [resizingColumn, setResizingColumn] = useState<{ id: string; startX: number; startWidth: number } | null>(null);
+
   // Sandwich types dialog state
   const [showSandwichDialog, setShowSandwichDialog] = useState(false);
   const [sandwichDialogEventId, setSandwichDialogEventId] = useState<number | null>(null);
@@ -1016,6 +1025,72 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     setDraggedColumnIndex(null);
   };
 
+  // Column resizing handlers
+  const handleResizeStart = (e: React.MouseEvent, columnId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const column = columns.find(col => col.id === columnId);
+    if (!column) return;
+
+    const currentWidth = columnWidths[columnId] || parseInt(column.width?.replace('px', '') || '150');
+
+    setResizingColumn({
+      id: columnId,
+      startX: e.clientX,
+      startWidth: currentWidth,
+    });
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!resizingColumn) return;
+
+    const deltaX = e.clientX - resizingColumn.startX;
+    const newWidth = Math.max(80, resizingColumn.startWidth + deltaX); // Min width 80px
+
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizingColumn.id]: newWidth,
+    }));
+  };
+
+  const handleResizeEnd = () => {
+    if (!resizingColumn) return;
+
+    // Save to localStorage
+    const widthsToSave = {
+      ...columnWidths,
+      [resizingColumn.id]: columnWidths[resizingColumn.id],
+    };
+    localStorage.setItem('scheduledSpreadsheetColumnWidths', JSON.stringify(widthsToSave));
+
+    // Track resize event
+    trackEvent('spreadsheet_column_resized', {
+      column_id: resizingColumn.id,
+      new_width: columnWidths[resizingColumn.id],
+      timestamp: new Date().toISOString(),
+    });
+
+    setResizingColumn(null);
+  };
+
+  // Add/remove mouse event listeners for resizing
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [resizingColumn, columnWidths]);
+
   const isEditing = (eventId: number, field: string) => {
     return editingScheduledId === eventId && editingField === field;
   };
@@ -1537,51 +1612,61 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           <table className="w-full border-collapse">
             <thead className="bg-[#007E8C] border-b-2 border-[#236383] sticky top-0 z-10">
               <tr>
-                {columns.map((column, index) => (
-                  <th
-                    key={column.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`px-1.5 py-1 text-left text-sm font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
-                      draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
-                    }`}
-                    style={{ width: column.width, minWidth: column.width }}
-                    title="Drag to reorder columns"
-                  >
-                    <div className="flex items-center gap-1">
-                      <GripVertical className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                      <span className="flex-1">{column.label}</span>
-                      {column.sortable && (() => {
-                        const columnSortField = getSortFieldForColumn(column.id);
-                        const isActive = columnSortField && sortField === columnSortField;
-                        return (
-                          <button
-                            onClick={() => {
-                              if (columnSortField) {
-                                handleSort(columnSortField);
-                              }
-                            }}
-                            className="hover:bg-[#236383] rounded p-1 md:p-0.5 ml-0.5 touch-manipulation"
-                            title={`Sort by ${column.label}`}
-                          >
-                            {isActive ? (
-                              sortDirection === 'asc' ? (
-                                <ArrowUp className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
+                {columns.map((column, index) => {
+                  const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
+                  return (
+                    <th
+                      key={column.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`px-1.5 py-1 text-left text-sm font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group relative ${
+                        draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
+                      }`}
+                      style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px` }}
+                      title="Drag to reorder columns"
+                    >
+                      <div className="flex items-center gap-1">
+                        <GripVertical className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        <span className="flex-1">{column.label}</span>
+                        {column.sortable && (() => {
+                          const columnSortField = getSortFieldForColumn(column.id);
+                          const isActive = columnSortField && sortField === columnSortField;
+                          return (
+                            <button
+                              onClick={() => {
+                                if (columnSortField) {
+                                  handleSort(columnSortField);
+                                }
+                              }}
+                              className="hover:bg-[#236383] rounded p-1 md:p-0.5 ml-0.5 touch-manipulation"
+                              title={`Sort by ${column.label}`}
+                            >
+                              {isActive ? (
+                                sortDirection === 'asc' ? (
+                                  <ArrowUp className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
+                                ) : (
+                                  <ArrowDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
+                                )
                               ) : (
-                                <ArrowDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white/70" />
-                            )}
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </th>
-                ))}
+                                <ArrowUpDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white/70" />
+                              )}
+                            </button>
+                          );
+                        })()}
+                      </div>
+                      {/* Resize Handle */}
+                      <div
+                        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-white/30 active:bg-white/50"
+                        onMouseDown={(e) => handleResizeStart(e, column.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        title="Drag to resize column"
+                      />
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -1590,15 +1675,18 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                   key={event.id}
                   className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-8`}
                 >
-                  {columns.map((column) => (
-                    <td
-                      key={column.id}
-                      className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
-                      style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
-                    >
-                      {renderCell(event, column)}
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
+                    return (
+                      <td
+                        key={column.id}
+                        className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
+                        style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
+                      >
+                        {renderCell(event, column)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
