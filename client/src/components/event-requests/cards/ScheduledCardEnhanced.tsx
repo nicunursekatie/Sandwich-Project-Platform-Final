@@ -435,7 +435,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.department && (
                 <>
                   <span className="text-[#236383]/60">•</span>
-                  <span className="text-lg text-[#236383]/70 font-medium">
+                  <span className="text-xl text-[#236383]/70 font-medium">
                     {request.department}
                   </span>
                 </>
