@@ -17,8 +17,9 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 - "corp" (Company - indigo badge) for organizations of unspecified company size
 - "religious" (Religious Organization - violet badge) for religious organizations that aren't specifically churches
 - "nonprofit" (Nonprofit - rose badge) for nonprofit organizations
+- "government" (Government - slate badge) for government organizations
 
-Complete category list: corp, small_medium_corp, large_corp, church_faith, religious, nonprofit, school, neighborhood, club, and other. **Locations**: `shared/schema.ts`, `client/src/components/organizations-catalog.tsx`.
+Complete category list: corp, small_medium_corp, large_corp, church_faith, religious, nonprofit, government, school, neighborhood, club, and other. **Locations**: `shared/schema.ts`, `client/src/components/organizations-catalog.tsx`.
 
 **Session Count Metrics Error Fixed (Nov 15, 2025)**: Fixed recurring error "sessionStore.length is not a function" that was failing every minute. The monitoring system was trying to call `.length()` on the `connect-pg-simple` session store, but this method doesn't exist. Solution: Replaced with direct SQL query `SELECT COUNT(*) FROM sessions WHERE expire > NOW()` using Drizzle to count only active (unexpired) sessions. Session metrics now update successfully every 60 seconds. **Location**: `server/monitoring/business-metrics.ts`.
 
