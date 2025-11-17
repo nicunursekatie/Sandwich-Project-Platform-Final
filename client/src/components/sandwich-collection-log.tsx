@@ -246,7 +246,7 @@ export default function SandwichCollectionLog() {
     individualPbj: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; count?: number; sandwichCount?: number; deli?: number; pbj?: number; hasTypeBreakdown?: boolean }>
+    Array<{ id: string; groupName: string; department?: string; count?: number; sandwichCount?: number; deli?: number; pbj?: number; hasTypeBreakdown?: boolean }>
   >([]);
   const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
   
@@ -1826,7 +1826,7 @@ export default function SandwichCollectionLog() {
 
   const updateEditGroupCollection = (
     id: string,
-    field: 'groupName' | 'sandwichCount',
+    field: 'groupName' | 'department' | 'sandwichCount',
     value: string | number
   ) => {
     setEditGroupCollections(
@@ -3528,20 +3528,35 @@ export default function SandwichCollectionLog() {
               <div className="space-y-3 mt-2">
                 {editGroupCollections.map((group) => (
                   <div key={group.id} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex gap-3 items-center">
-                      <Input
-                        placeholder="Group name"
-                        value={group.groupName || ''}
-                        onChange={(e) =>
-                          updateEditGroupCollection(
-                            group.id,
-                            'groupName',
-                            e.target.value
-                          )
-                        }
-                        className="flex-1"
-                        required
-                      />
+                    <div className="flex gap-3 items-start flex-wrap">
+                      <div className="flex-1 min-w-[200px] space-y-2">
+                        <Input
+                          placeholder="Group/Organization name"
+                          value={group.groupName || ''}
+                          onChange={(e) =>
+                            updateEditGroupCollection(
+                              group.id,
+                              'groupName',
+                              e.target.value
+                            )
+                          }
+                          className="w-full"
+                          required
+                        />
+                        <Input
+                          placeholder="Department (optional)"
+                          value={group.department || ''}
+                          onChange={(e) =>
+                            updateEditGroupCollection(
+                              group.id,
+                              'department',
+                              e.target.value
+                            )
+                          }
+                          className="w-full text-sm"
+                          title="Optional department field - helps split organization names for catalog"
+                        />
+                      </div>
                       {!group.hasTypeBreakdown && (
                         <Input
                           type="number"
