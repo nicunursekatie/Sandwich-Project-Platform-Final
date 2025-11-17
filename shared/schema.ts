@@ -1813,7 +1813,7 @@ export const eventRequests = pgTable(
     // Organization information
     organizationName: varchar('organization_name'), // Made optional for manual entries
     department: varchar('department'),
-    organizationCategory: varchar('organization_category'), // 'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'school', 'neighborhood', 'club', 'other'
+    organizationCategory: varchar('organization_category'), // 'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'school', 'neighborhood', 'club', 'greek_life', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
 
     // AI-generated categorization (optional, auto-populated)
