@@ -8,29 +8,48 @@
  * - Meeting-project relationships
  */
 
-export {
+import {
   ProjectAssignmentService,
   type IProjectAssignmentService,
   type AssignmentUser,
 } from './project-assignment-service';
 
-export {
+import {
   TaskAssignmentService,
   type ITaskAssignmentService,
   type TaskAssignmentUser,
 } from './task-assignment-service';
 
-export {
+import {
   TeamBoardAssignmentService,
   type ITeamBoardAssignmentService,
   type TeamBoardAssignmentUser,
 } from './team-board-assignment-service';
 
-export {
+import {
   MeetingProjectService,
   type IMeetingProjectService,
   type MeetingProjectData,
 } from './meeting-project-service';
+
+// Re-export types and classes
+export type {
+  IProjectAssignmentService,
+  AssignmentUser,
+  ITaskAssignmentService,
+  TaskAssignmentUser,
+  ITeamBoardAssignmentService,
+  TeamBoardAssignmentUser,
+  IMeetingProjectService,
+  MeetingProjectData,
+};
+
+export {
+  ProjectAssignmentService,
+  TaskAssignmentService,
+  TeamBoardAssignmentService,
+  MeetingProjectService,
+};
 
 // Create singleton instances for easy import
 export const projectAssignmentService = new ProjectAssignmentService();
