@@ -935,13 +935,27 @@ export function EventRequestAuditLog({
                       <div className="flex-1 min-w-0">
                         {/* Header */}
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {log.organizationName} - {log.contactName}
-                          </h3>
-                          <div className="flex items-center text-sm text-gray-500 space-x-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-medium text-gray-900">
+                              {log.organizationName} - {log.contactName}
+                            </h3>
+                            {log.eventId && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs text-teal-700 border-teal-300 bg-teal-50">
+                                  Event #{log.eventId}
+                                </Badge>
+                                {log.statusChange && (
+                                  <Badge variant="outline" className="text-xs text-purple-700 border-purple-300 bg-purple-50">
+                                    {log.statusChange}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500 space-x-4 flex-shrink-0">
                             <div className="flex items-center">
                               <User className="h-4 w-4 mr-1" />
-                              <span>{log.userEmail}</span>
+                              <span>{userNameCache[log.userId] || log.userEmail}</span>
                             </div>
                             <div className="flex items-center">
                               <Calendar className="h-4 w-4 mr-1" />
