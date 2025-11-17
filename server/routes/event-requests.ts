@@ -1750,6 +1750,33 @@ router.put(
             comprehensiveDataProcessed: true,
           };
         }
+
+        // Add contact log entry when moved to in_process (toolkit sent)
+        if (updatedEventRequest.status === 'in_process' && originalEvent.status !== 'in_process') {
+          const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
+            ? updatedEventRequest.contactAttemptsLog
+            : [];
+          const nextAttemptNumber = existingLog.length > 0
+            ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
+            : 1;
+
+          const toolkitDate = updatedEventRequest.toolkitSentDate || new Date();
+          const toolkitLogEntry = {
+            attemptNumber: nextAttemptNumber,
+            timestamp: toolkitDate.toISOString(),
+            method: 'email',
+            outcome: 'Toolkit Sent',
+            notes: `Event moved to In Process${updatedEventRequest.toolkitSent ? ' - Toolkit sent' : ''}`,
+            createdBy: req.user?.id || 'system',
+            createdByName: req.user?.firstName && req.user?.lastName
+              ? `${req.user.firstName} ${req.user.lastName}`
+              : req.user?.email || 'System',
+          };
+
+          await storage.updateEventRequest(id, {
+            contactAttemptsLog: [...existingLog, toolkitLogEntry],
+          });
+        }
       }
 
       // Check for unresponsive marking
@@ -2497,6 +2524,30 @@ router.patch(
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
       }
+
+      // Add contact attempt log entry for toolkit sent
+      const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
+        ? updatedEventRequest.contactAttemptsLog
+        : [];
+      const nextAttemptNumber = existingLog.length > 0
+        ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
+        : 1;
+
+      const toolkitLogEntry = {
+        attemptNumber: nextAttemptNumber,
+        timestamp: sentDate.toISOString(),
+        method: 'email',
+        outcome: 'Toolkit Sent',
+        notes: `Toolkit sent and event moved to In Process`,
+        createdBy: req.user?.id || 'system',
+        createdByName: req.user?.firstName && req.user?.lastName
+          ? `${req.user.firstName} ${req.user.lastName}`
+          : req.user?.email || 'System',
+      };
+
+      await storage.updateEventRequest(id, {
+        contactAttemptsLog: [...existingLog, toolkitLogEntry],
+      });
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
