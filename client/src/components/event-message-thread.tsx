@@ -137,8 +137,14 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
           }
         }
 
-        // Format user name for display
-        const userName = attempt.createdByName || attempt.createdBy || 'Unknown User';
+        // Format user name for display - skip "Legacy Migration" badge
+        const userName = attempt.createdByName || attempt.createdBy;
+        // Only show badge if we have a real user name (not "Legacy Migration" or system)
+        const shouldShowBadge = userName && 
+          userName !== 'Legacy Migration' && 
+          userName !== 'system' && 
+          userName !== 'unknown' &&
+          attempt.createdBy !== 'system';
         
         items.push({
           type: 'contact',
@@ -146,7 +152,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
           title: `Contact Attempt #${attempt.attemptNumber || '?'}`,
           content: attempt.notes || attempt.outcome || 'No details',
           date: parsedDate,
-          badge: `by ${userName}`, // Display user name prominently in badge
+          badge: shouldShowBadge ? `by ${userName}` : undefined, // Only show badge for real users
           attemptNumber: attempt.attemptNumber,
           createdBy: attempt.createdBy,
           canEdit: canModify,
