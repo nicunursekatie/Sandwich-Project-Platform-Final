@@ -85,6 +85,8 @@ const getCategoryLabel = (category: string | null | undefined): string => {
   const labels: Record<string, string> = {
     school: 'School',
     church_faith: 'Church/Faith',
+    religious: 'Religious Organization',
+    nonprofit: 'Nonprofit',
     club: 'Club',
     neighborhood: 'Neighborhood',
     corp: 'Company',
@@ -101,6 +103,8 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
   const colors: Record<string, string> = {
     school: 'bg-blue-100 text-blue-700',
     church_faith: 'bg-purple-100 text-purple-700',
+    religious: 'bg-violet-100 text-violet-700',
+    nonprofit: 'bg-rose-100 text-rose-700',
     club: 'bg-green-100 text-green-700',
     neighborhood: 'bg-yellow-100 text-yellow-700',
     corp: 'bg-indigo-100 text-indigo-700',
@@ -655,8 +659,11 @@ export default function GroupCatalog({
               options: [
                 { value: 'school', label: 'School', count: allOrganizations.filter(o => o.category === 'school').length },
                 { value: 'church_faith', label: 'Church/Faith', count: allOrganizations.filter(o => o.category === 'church_faith').length },
+                { value: 'religious', label: 'Religious Organization', count: allOrganizations.filter(o => o.category === 'religious').length },
+                { value: 'nonprofit', label: 'Nonprofit', count: allOrganizations.filter(o => o.category === 'nonprofit').length },
                 { value: 'club', label: 'Club', count: allOrganizations.filter(o => o.category === 'club').length },
                 { value: 'neighborhood', label: 'Neighborhood', count: allOrganizations.filter(o => o.category === 'neighborhood').length },
+                { value: 'corp', label: 'Company', count: allOrganizations.filter(o => o.category === 'corp').length },
                 { value: 'large_corp', label: 'Corporation', count: allOrganizations.filter(o => o.category === 'large_corp').length },
                 { value: 'small_medium_corp', label: 'Small Business', count: allOrganizations.filter(o => o.category === 'small_medium_corp').length },
                 { value: 'other', label: 'Other', count: allOrganizations.filter(o => o.category === 'other').length },
