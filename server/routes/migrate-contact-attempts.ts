@@ -152,7 +152,8 @@ export function createMigrateContactAttemptsRoutes(storage: IStorage) {
                     outcome: normalizedOutcome,
                     notes: notes || undefined,
                     createdBy: 'system',
-                    createdByName: 'Legacy Migration',
+                    // Don't set createdByName for migrated entries - display logic will skip badge
+                    createdByName: undefined,
                   });
                 }
               });
