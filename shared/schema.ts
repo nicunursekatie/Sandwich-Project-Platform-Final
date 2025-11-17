@@ -1370,9 +1370,6 @@ export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({
 export const insertProjectCommentSchema = createInsertSchema(
   projectComments
 ).omit({ id: true, createdAt: true });
-export const insertProjectAssignmentSchema = createInsertSchema(
-  projectAssignments
-).omit({ id: true, assignedAt: true });
 export const insertTaskCompletionSchema = createInsertSchema(
   taskCompletions
 ).omit({ id: true, completedAt: true });
@@ -1453,10 +1450,6 @@ export type ProjectTask = typeof projectTasks.$inferSelect;
 export type InsertProjectTask = z.infer<typeof insertProjectTaskSchema>;
 export type ProjectComment = typeof projectComments.$inferSelect;
 export type InsertProjectComment = z.infer<typeof insertProjectCommentSchema>;
-export type ProjectAssignment = typeof projectAssignments.$inferSelect;
-export type InsertProjectAssignment = z.infer<
-  typeof insertProjectAssignmentSchema
->;
 export type TaskCompletion = typeof taskCompletions.$inferSelect;
 export type InsertTaskCompletion = z.infer<typeof insertTaskCompletionSchema>;
 
