@@ -853,12 +853,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="small_medium_corp">Small/Medium Corporation</SelectItem>
-                        <SelectItem value="large_corp">Large Corporation</SelectItem>
-                        <SelectItem value="church_faith">Church/Faith Group</SelectItem>
                         <SelectItem value="school">School</SelectItem>
-                        <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                        <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                        <SelectItem value="religious">Religious Organization</SelectItem>
+                        <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                        <SelectItem value="government">Government</SelectItem>
+                        <SelectItem value="hospital">Hospital</SelectItem>
+                        <SelectItem value="political">Political Organization</SelectItem>
                         <SelectItem value="club">Club</SelectItem>
+                        <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                        <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
+                        <SelectItem value="cultural">Cultural Organization</SelectItem>
+                        <SelectItem value="corp">Company</SelectItem>
+                        <SelectItem value="large_corp">Large Corporation</SelectItem>
+                        <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
