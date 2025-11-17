@@ -14,6 +14,7 @@ export interface EventRequestSheetRow {
   email: string;
   phone: string;
   department: string;
+  eventLocation: string;
   desiredEventDate: string;
   status: string;
   message: string;
@@ -920,6 +921,7 @@ export class EventRequestsGoogleSheetsService {
       email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
       organizationName: getColumnIndex(['grouporganization name', 'grouporganization', 'group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
       department: getColumnIndex(['departmentteam', 'department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
+      eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
       previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
@@ -1013,7 +1015,20 @@ export class EventRequestsGoogleSheetsService {
       // Extract values
       const phoneValue = getFieldValue(columnMapping.phone);
       const messageValue = getFieldValue(columnMapping.message);
+      const eventLocationValue = getFieldValue(columnMapping.eventLocation);
       const dateValue = getFieldValue(columnMapping.desiredEventDate);
+
+      // Combine message with event location if event location exists
+      const combinedMessage = (() => {
+        const parts = [];
+        if (messageValue && messageValue.trim()) {
+          parts.push(messageValue.trim());
+        }
+        if (eventLocationValue && eventLocationValue.trim()) {
+          parts.push(`Event Location: ${eventLocationValue.trim()}`);
+        }
+        return parts.join('\n\n');
+      })();
 
       const result = {
         externalId: getFieldValue(columnMapping.externalId),
@@ -1021,7 +1036,8 @@ export class EventRequestsGoogleSheetsService {
         contactName: contactName || 'Unknown Contact',
         email: getFieldValue(columnMapping.email),
         organizationName: getFieldValue(columnMapping.organizationName),
-        message: messageValue,
+        eventLocation: eventLocationValue,
+        message: combinedMessage,
         phone: phoneValue || '', // Will default to '' if not found
         desiredEventDate: dateValue,
         department: getFieldValue(columnMapping.department),
