@@ -29,7 +29,8 @@ import {
   ChevronDown,
   ChevronUp,
   UserPlus,
-  Copy
+  Copy,
+  Heart
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -564,6 +565,31 @@ export default function TeamBoard() {
     },
   });
 
+  // Like/Unlike item mutations
+  const toggleLikeMutation = useMutation({
+    mutationFn: async ({ itemId, isLiked }: { itemId: number; isLiked: boolean }) => {
+      if (isLiked) {
+        return await apiRequest('DELETE', `/api/team-board/items/${itemId}/like`);
+      } else {
+        return await apiRequest('POST', `/api/team-board/items/${itemId}/like`);
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/team-board/items/${variables.itemId}/likes`] });
+      if (!variables.isLiked) {
+        // Track the like action for onboarding challenge
+        track('like_team_board_post');
+      }
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update like',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemContent.trim()) return;
@@ -729,6 +755,32 @@ export default function TeamBoard() {
   const claimedItems = filteredItems.filter(item => item.status === 'claimed');
   const doneItems = filteredItems.filter(item => item.status === 'done');
 
+  // Like Button Component
+  const LikeButton = ({ itemId }: { itemId: number }) => {
+    const { data: likesData } = useQuery({
+      queryKey: [`/api/team-board/items/${itemId}/likes`],
+      queryFn: async () => {
+        return await apiRequest('GET', `/api/team-board/items/${itemId}/likes`);
+      },
+    });
+
+    const isLiked = likesData?.userHasLiked || false;
+    const likeCount = likesData?.likes || 0;
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => toggleLikeMutation.mutate({ itemId, isLiked })}
+        className={`h-7 px-2 gap-1 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-400 hover:text-red-500'}`}
+        data-testid={`button-like-${itemId}`}
+      >
+        <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-current' : ''}`} />
+        {likeCount > 0 && <span className="text-xs">{likeCount}</span>}
+      </Button>
+    );
+  };
+
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
       <PageBreadcrumbs segments={[
@@ -873,6 +925,7 @@ export default function TeamBoard() {
                         {item.type}
                       </Badge>
                       <div className="flex items-center gap-1">
+                        <LikeButton itemId={item.id} />
                         <CreateMultipleTasksDialog sourceItem={item} />
                         <Button
                           variant="ghost"
@@ -1010,6 +1063,7 @@ export default function TeamBoard() {
                         {item.type}
                       </Badge>
                       <div className="flex items-center gap-1">
+                        <LikeButton itemId={item.id} />
                         <CreateMultipleTasksDialog sourceItem={item} />
                         <Button
                           variant="ghost"
@@ -1128,6 +1182,7 @@ export default function TeamBoard() {
                         {item.type}
                       </Badge>
                       <div className="flex items-center gap-1">
+                        <LikeButton itemId={item.id} />
                         <CreateMultipleTasksDialog sourceItem={item} />
                         <Button
                           variant="ghost"

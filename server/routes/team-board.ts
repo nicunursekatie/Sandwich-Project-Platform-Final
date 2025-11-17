@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { eq, desc, inArray, count } from 'drizzle-orm';
+import { eq, desc, inArray, count, and } from 'drizzle-orm';
 import { db } from '../db';
-import { 
-  teamBoardItems, 
+import {
+  teamBoardItems,
   insertTeamBoardItemSchema,
   type TeamBoardItem,
   type InsertTeamBoardItem,
@@ -11,6 +11,10 @@ import {
   insertTeamBoardCommentSchema,
   type TeamBoardComment,
   type InsertTeamBoardComment,
+  teamBoardItemLikes,
+  insertTeamBoardItemLikeSchema,
+  type TeamBoardItemLike,
+  type InsertTeamBoardItemLike,
   users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
@@ -697,6 +701,131 @@ teamBoardRouter.get(
     } catch (error) {
       logger.error('Failed to fetch team board assignments', error);
       res.status(500).json({ error: 'Failed to fetch team board assignments' });
+    }
+  }
+);
+
+// ==========================================
+// Like/Unlike Team Board Items
+// ==========================================
+
+// POST /api/team-board/items/:id/like - Like a team board item
+teamBoardRouter.post(
+  '/items/:id/like',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Check if item exists
+      const item = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+
+      if (item.length === 0) {
+        return res.status(404).json({ error: 'Team board item not found' });
+      }
+
+      // Insert like (will fail silently if already liked due to unique constraint)
+      try {
+        await db.insert(teamBoardItemLikes).values({
+          itemId,
+          userId,
+        });
+
+        logger.info('User liked team board item', { userId, itemId });
+      } catch (error: any) {
+        // Check if it's a duplicate key error (already liked)
+        if (error.code === '23505') {
+          // Already liked, just return success
+          logger.debug('User already liked this item', { userId, itemId });
+        } else {
+          throw error;
+        }
+      }
+
+      // Get updated like count
+      const [likeCount] = await db
+        .select({ count: count() })
+        .from(teamBoardItemLikes)
+        .where(eq(teamBoardItemLikes.itemId, itemId));
+
+      res.json({ success: true, likeCount: likeCount?.count || 0 });
+    } catch (error) {
+      logger.error('Failed to like team board item', error);
+      res.status(500).json({ error: 'Failed to like item' });
+    }
+  }
+);
+
+// DELETE /api/team-board/items/:id/like - Unlike a team board item
+teamBoardRouter.delete(
+  '/items/:id/like',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Delete the like
+      await db
+        .delete(teamBoardItemLikes)
+        .where(
+          and(
+            eq(teamBoardItemLikes.itemId, itemId),
+            eq(teamBoardItemLikes.userId, userId)
+          )
+        );
+
+      logger.info('User unliked team board item', { userId, itemId });
+
+      // Get updated like count
+      const [likeCount] = await db
+        .select({ count: count() })
+        .from(teamBoardItemLikes)
+        .where(eq(teamBoardItemLikes.itemId, itemId));
+
+      res.json({ success: true, likeCount: likeCount?.count || 0 });
+    } catch (error) {
+      logger.error('Failed to unlike team board item', error);
+      res.status(500).json({ error: 'Failed to unlike item' });
+    }
+  }
+);
+
+// GET /api/team-board/items/:id/likes - Get likes for an item
+teamBoardRouter.get(
+  '/items/:id/likes',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+
+      const likes = await db
+        .select()
+        .from(teamBoardItemLikes)
+        .where(eq(teamBoardItemLikes.itemId, itemId));
+
+      const userHasLiked = req.user?.id
+        ? likes.some(like => like.userId === req.user?.id)
+        : false;
+
+      res.json({
+        likes: likes.length,
+        userHasLiked,
+        likedBy: likes.map(like => like.userId),
+      });
+    } catch (error) {
+      logger.error('Failed to fetch likes for team board item', error);
+      res.status(500).json({ error: 'Failed to fetch likes' });
     }
   }
 );
