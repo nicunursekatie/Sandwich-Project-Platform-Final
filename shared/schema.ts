@@ -1712,6 +1712,24 @@ export const teamBoardComments = pgTable('team_board_comments', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Team Board Item Likes - track who liked which team board items
+export const teamBoardItemLikes = pgTable(
+  'team_board_item_likes',
+  {
+    id: serial('id').primaryKey(),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueLike: uniqueIndex('unique_team_board_item_like').on(table.itemId, table.userId),
+    itemIdx: index('idx_team_board_item_likes_item').on(table.itemId),
+    userIdx: index('idx_team_board_item_likes_user').on(table.userId),
+  })
+);
+
 export const insertTeamBoardCommentSchema = createInsertSchema(
   teamBoardComments
 ).omit({
@@ -1723,6 +1741,16 @@ export type TeamBoardComment = typeof teamBoardComments.$inferSelect;
 export type InsertTeamBoardComment = z.infer<
   typeof insertTeamBoardCommentSchema
 >;
+
+export const insertTeamBoardItemLikeSchema = createInsertSchema(
+  teamBoardItemLikes
+).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TeamBoardItemLike = typeof teamBoardItemLikes.$inferSelect;
+export type InsertTeamBoardItemLike = z.infer<typeof insertTeamBoardItemLikeSchema>;
 
 // Cooler Types table for defining types of coolers
 export const coolerTypes = pgTable('cooler_types', {
