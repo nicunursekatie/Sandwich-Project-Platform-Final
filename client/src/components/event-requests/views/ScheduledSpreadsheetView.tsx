@@ -1235,7 +1235,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               e.stopPropagation();
               handleEventDateClick(event);
             }}
-            className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer flex-1 text-left"
+            className="text-base font-medium text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer flex-1 text-left"
             title="Click to view event details in card view"
           >
             {dateText}
@@ -1272,7 +1272,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       // Fallback if no address - still show edit button
       return (
         <div className="flex items-center gap-0.5 group min-h-[20px]">
-          <span className="text-sm text-gray-400 flex-1">-</span>
+          <span className="text-base text-gray-400 flex-1">-</span>
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
@@ -1288,7 +1288,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'assignedStaff' && typeof renderedContent === 'object' && renderedContent !== null && 'fullText' in renderedContent) {
       const staffData = renderedContent as { fullText: string; hasContent: boolean };
       if (!staffData.hasContent || !staffData.fullText) {
-        return <span className="text-sm text-gray-400">-</span>;
+        return <span className="text-base text-gray-400">-</span>;
       }
 
       // Enable wrapping for staff assignments
@@ -1305,7 +1305,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 >
                   <div className="flex items-center gap-1 min-w-0 w-full">
                     <span
-                      className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
+                      className="text-base font-medium leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
                       title={staffData.fullText}
                     >
                       {staffData.fullText}
@@ -1329,7 +1329,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="text-sm leading-tight block whitespace-normal break-words">
+            <span className="text-base font-medium leading-tight block whitespace-normal break-words">
               {staffData.fullText}
             </span>
           )}
@@ -1341,7 +1341,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
-        return <span className="text-sm text-gray-400">-</span>;
+        return <span className="text-base text-gray-400">-</span>;
       }
 
       // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
@@ -1356,7 +1356,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             >
               <div className="flex items-center gap-1 min-w-0 w-full">
                 <span
-                  className="text-sm leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
+                  className="text-base font-medium leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
                   title={detailsData.fullText}
                 >
                   {detailsData.fullText}
@@ -1447,7 +1447,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         className="flex items-center gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className="text-sm truncate flex-1 leading-tight">{content || '-'}</span>
+        <span className="text-base font-medium truncate flex-1 leading-tight">{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
