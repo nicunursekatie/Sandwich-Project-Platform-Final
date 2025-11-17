@@ -1038,7 +1038,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           className="flex items-center gap-0.5 group min-h-[20px]"
           onDoubleClick={() => openSandwichDialog(event)}
         >
-          <span className="text-sm truncate flex-1 leading-tight">{displayValue || '-'}</span>
+          <span className="text-base truncate flex-1 leading-tight font-medium">{displayValue || '-'}</span>
           <button
             onClick={() => openSandwichDialog(event)}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
@@ -1545,7 +1545,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`px-1.5 py-1 text-left text-xs font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
+                    className={`px-1.5 py-1 text-left text-sm font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group ${
                       draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
                     }`}
                     style={{ width: column.width, minWidth: column.width }}
@@ -1593,7 +1593,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                   {columns.map((column) => (
                     <td
                       key={column.id}
-                      className="px-1.5 py-1 border-r border-gray-200 text-sm leading-tight overflow-hidden"
+                      className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
                       style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
                     >
                       {renderCell(event, column)}

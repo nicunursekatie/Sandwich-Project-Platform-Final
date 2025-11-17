@@ -488,7 +488,7 @@ export const ScheduledTab: React.FC = () => {
             });
             setViewMode(newMode);
           }}
-          className="fixed bottom-8 right-8 z-50 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
+          className="fixed bottom-24 right-8 z-50 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
           title={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
           aria-label={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
         >
