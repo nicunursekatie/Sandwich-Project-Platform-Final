@@ -81,7 +81,9 @@ export function EventRequestAuditLog({
   compact = false,
 }: EventRequestAuditLogProps) {
   const { user: currentUser } = useAuth();
-  const [timeFilter, setTimeFilter] = useState('24');
+  // If viewing a specific event, show all history by default (use a large number like 8760 = 1 year)
+  // If viewing general audit log, show last 24 hours
+  const [timeFilter, setTimeFilter] = useState(eventId ? '8760' : '24');
   const [actionFilter, setActionFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
