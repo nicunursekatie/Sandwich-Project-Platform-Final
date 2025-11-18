@@ -474,23 +474,34 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {/* Event Date - First in left column */}
             {headerContent.eventDate}
             {/* Contact Attempts Info */}
-            {(request.contactAttempts || request.lastContactAttempt) && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-amber-800">
-                  <Phone className="w-4 h-4" />
-                  {request.contactAttempts && request.contactAttempts > 0 && (
-                    <span className="text-sm font-medium">
-                      Contact attempts: {request.contactAttempts}
-                    </span>
-                  )}
-                  {request.lastContactAttempt && (
-                    <span className="text-xs">
-                      (Last: {new Date(request.lastContactAttempt).toLocaleDateString()})
-                    </span>
-                  )}
-                </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                {(request.contactAttempts || request.lastContactAttempt) && (
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <Phone className="w-4 h-4" />
+                    {request.contactAttempts && request.contactAttempts > 0 && (
+                      <span className="text-sm font-medium">
+                        Contact attempts: {request.contactAttempts}
+                      </span>
+                    )}
+                    {request.lastContactAttempt && (
+                      <span className="text-xs">
+                        (Last: {new Date(request.lastContactAttempt).toLocaleDateString()})
+                      </span>
+                    )}
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogContact}
+                  className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
+                >
+                  <Phone className="w-3 h-3" />
+                  Log Contact
+                </Button>
               </div>
-            )}
+            </div>
 
             {/* Scheduled Call Info */}
             {request.scheduledCallDate && (

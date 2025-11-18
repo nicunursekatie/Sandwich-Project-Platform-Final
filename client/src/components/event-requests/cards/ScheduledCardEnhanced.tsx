@@ -1802,20 +1802,31 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCommunicationNotes(!showCommunicationNotes)}
-              className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto mb-0"
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#236383]" />
-                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
-                  Communication & Notes
-                </h3>
-              </div>
-              {showCommunicationNotes ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
-            </Button>
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCommunicationNotes(!showCommunicationNotes)}
+                className="flex-1 justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#236383]" />
+                  <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
+                    Communication & Notes
+                  </h3>
+                </div>
+                {showCommunicationNotes ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onLogContact}
+                className="ml-2 h-7 text-xs flex items-center gap-1 border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
+              >
+                <Phone className="w-3 h-3" />
+                Log Contact
+              </Button>
+            </div>
             {showCommunicationNotes && (
               <div className="overflow-y-auto mt-3" style={{ maxHeight: '300px' }}>
                 <EventMessageThread
