@@ -3,7 +3,7 @@ import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2 } from 'lucide-react';
+import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, User, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import type { EventRequest } from '@shared/schema';
@@ -418,12 +418,17 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {item.title}
                   </p>
-                  {item.type === 'contact' && item.badge && (
-                    <Badge variant="default" className="text-xs bg-[#236383] text-white">
-                      {item.badge}
-                    </Badge>
-                  )}
                 </div>
+
+                {/* User Attribution - Prominent display for contact attempts */}
+                {item.type === 'contact' && item.badge && (
+                  <div className="ml-6 flex items-center gap-2 px-3 py-2 bg-[#236383]/10 dark:bg-[#47B3CB]/10 border-l-3 border-l-[#236383] dark:border-l-[#47B3CB] rounded-r-md">
+                    <User className="h-4 w-4 text-[#236383] dark:text-[#47B3CB] flex-shrink-0" />
+                    <span className="text-sm font-medium text-[#236383] dark:text-[#47B3CB]">
+                      {item.badge}
+                    </span>
+                  </div>
+                )}
 
                 {/* Activity Content */}
                 <div className="ml-6">
