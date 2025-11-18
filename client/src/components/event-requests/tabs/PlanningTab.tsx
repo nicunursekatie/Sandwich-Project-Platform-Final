@@ -68,13 +68,14 @@ export function PlanningTab({
              ['scheduled', 'in_process'].includes(e.status?.toLowerCase() || '');
     }).length;
 
-    // Overdue follow-ups (scheduled call dates in the past)
-    const overdueFollowUpEvents = eventRequests.filter(e => {
-      if (!e.scheduledCallDate) return false;
-      const callDate = new Date(e.scheduledCallDate);
-      return isPast(callDate) && ['new', 'in_process'].includes(e.status?.toLowerCase() || '');
+    // Long in-process events (in_process status > 2 weeks)
+    const longInProcessEvents = eventRequests.filter(e => {
+      if (e.status?.toLowerCase() !== 'in_process') return false;
+      if (!e.createdAt) return false;
+      const created = new Date(e.createdAt);
+      return differenceInDays(now, created) > 14;
     });
-    const overdueFollowUps = overdueFollowUpEvents.length;
+    const longInProcess = longInProcessEvents.length;
 
     // Stale requests (new status > 7 days old)
     const staleRequestEvents = eventRequests.filter(e => {
@@ -93,19 +94,21 @@ export function PlanningTab({
     });
     const missingInfo = missingInfoEvents.length;
 
-    // Unassigned events (no TSP contact) - next 30 days only
+    // Unassigned events (no TSP contact) - includes all unassigned, but prioritizes next 30 days
     const unassignedEvents = eventRequests.filter(e => {
       const status = e.status?.toLowerCase() || '';
-      const eventDate = e.scheduledEventDate ? new Date(e.scheduledEventDate) :
-                       e.desiredEventDate ? new Date(e.desiredEventDate) : null;
       return ['new', 'in_process'].includes(status) &&
              !e.tspContact &&
-             !e.customTspContact &&
-             eventDate &&
-             isFuture(eventDate) &&
-             eventDate <= next30Days;
+             !e.customTspContact;
     });
     const unassigned = unassignedEvents.length;
+
+    // Unassigned events within next 30 days (for operational summary context)
+    const unassignedNext30Days = unassignedEvents.filter(e => {
+      const eventDate = e.scheduledEventDate ? new Date(e.scheduledEventDate) :
+                       e.desiredEventDate ? new Date(e.desiredEventDate) : null;
+      return eventDate && isFuture(eventDate) && eventDate <= next30Days;
+    }).length;
 
     // Total estimated sandwiches - next 30 days only
     const totalSandwiches = eventRequests
@@ -121,27 +124,27 @@ export function PlanningTab({
       })
       .reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
 
-    // Events needing attention (stale, missing info, or overdue)
+    // Events needing attention (stale, missing info, or long in-process)
     const needsAttention = eventRequests.filter(e => {
       const status = e.status?.toLowerCase() || '';
-      
+
       // Stale new requests
       if (status === 'new' && e.createdAt) {
         const created = new Date(e.createdAt);
         if (differenceInDays(now, created) > 7) return true;
       }
-      
+
       // Missing critical info
       if (['scheduled', 'in_process'].includes(status)) {
         if (!e.eventAddress || !e.scheduledEventDate || !e.estimatedSandwichCount) return true;
       }
-      
-      // Overdue follow-up
-      if (e.scheduledCallDate) {
-        const callDate = new Date(e.scheduledCallDate);
-        if (isPast(callDate) && ['new', 'in_process'].includes(status)) return true;
+
+      // Long in-process events
+      if (status === 'in_process' && e.createdAt) {
+        const created = new Date(e.createdAt);
+        if (differenceInDays(now, created) > 14) return true;
       }
-      
+
       return false;
     }).length;
 
@@ -149,14 +152,15 @@ export function PlanningTab({
       upcoming7Days,
       upcoming14Days,
       upcoming30Days,
-      overdueFollowUps,
-      overdueFollowUpEvents,
+      longInProcess,
+      longInProcessEvents,
       staleRequests,
       staleRequestEvents,
       missingInfo,
       missingInfoEvents,
       unassigned,
       unassignedEvents,
+      unassignedNext30Days,
       totalSandwiches,
       needsAttention,
     };
@@ -215,15 +219,15 @@ export function PlanningTab({
         </h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="premium-card-flat p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{metrics.upcoming7Days}</div>
+            <div className="text-2xl font-bold" style={{ color: '#007E8C' }}>{metrics.upcoming7Days}</div>
             <div className="text-sm text-slate-600 mt-1">Next 7 Days</div>
           </div>
           <div className="premium-card-flat p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{metrics.upcoming14Days}</div>
+            <div className="text-2xl font-bold" style={{ color: '#007E8C' }}>{metrics.upcoming14Days}</div>
             <div className="text-sm text-slate-600 mt-1">Next 14 Days</div>
           </div>
           <div className="premium-card-flat p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{metrics.upcoming30Days}</div>
+            <div className="text-2xl font-bold" style={{ color: '#007E8C' }}>{metrics.upcoming30Days}</div>
             <div className="text-sm text-slate-600 mt-1">Next 30 Days</div>
           </div>
         </div>
@@ -236,38 +240,41 @@ export function PlanningTab({
           Needs Attention
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className={`premium-card-flat p-4 ${metrics.needsAttention > 0 ? 'border-l-4 border-orange-500' : ''}`}>
+          <div className={`premium-card-flat p-4 ${metrics.needsAttention > 0 ? 'border-l-4' : ''}`} style={metrics.needsAttention > 0 ? { borderColor: '#FBAD3F' } : {}}>
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className={`w-4 h-4 ${metrics.needsAttention > 0 ? 'text-orange-500' : 'text-slate-400'}`} />
+              <AlertCircle className="w-4 h-4" style={{ color: metrics.needsAttention > 0 ? '#FBAD3F' : '#94a3b8' }} />
               <div className="text-sm font-medium text-slate-600">Total Issues</div>
             </div>
-            <div className={`text-2xl font-bold ${metrics.needsAttention > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+            <div className="text-2xl font-bold" style={{ color: metrics.needsAttention > 0 ? '#FBAD3F' : '#94a3b8' }}>
               {metrics.needsAttention}
             </div>
           </div>
           <button
             onClick={() => setShowOverdueModal(true)}
-            disabled={metrics.overdueFollowUps === 0}
-            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.overdueFollowUps > 0 ? 'border-l-4 border-red-500 cursor-pointer' : 'cursor-default'}`}
+            disabled={metrics.longInProcess === 0}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.longInProcess > 0 ? 'border-l-4 cursor-pointer' : 'cursor-default'}`}
+            style={metrics.longInProcess > 0 ? { borderColor: '#A31C41' } : {}}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Clock className={`w-4 h-4 ${metrics.overdueFollowUps > 0 ? 'text-red-500' : 'text-slate-400'}`} />
-              <div className="text-sm font-medium text-slate-600">Overdue Follow-ups</div>
+              <Clock className="w-4 h-4" style={{ color: metrics.longInProcess > 0 ? '#A31C41' : '#94a3b8' }} />
+              <div className="text-sm font-medium text-slate-600">Long In-Process</div>
             </div>
-            <div className={`text-2xl font-bold ${metrics.overdueFollowUps > 0 ? 'text-red-600' : 'text-slate-400'}`}>
-              {metrics.overdueFollowUps}
+            <div className="text-2xl font-bold" style={{ color: metrics.longInProcess > 0 ? '#A31C41' : '#94a3b8' }}>
+              {metrics.longInProcess}
             </div>
+            <div className="text-xs text-slate-500 mt-1">&gt; 2 weeks</div>
           </button>
           <button
             onClick={() => setShowStaleModal(true)}
             disabled={metrics.staleRequests === 0}
-            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.staleRequests > 0 ? 'border-l-4 border-yellow-500 cursor-pointer' : 'cursor-default'}`}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.staleRequests > 0 ? 'border-l-4 cursor-pointer' : 'cursor-default'}`}
+            style={metrics.staleRequests > 0 ? { borderColor: '#FBAD3F' } : {}}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Info className={`w-4 h-4 ${metrics.staleRequests > 0 ? 'text-yellow-500' : 'text-slate-400'}`} />
+              <Info className="w-4 h-4" style={{ color: metrics.staleRequests > 0 ? '#FBAD3F' : '#94a3b8' }} />
               <div className="text-sm font-medium text-slate-600">Stale Requests</div>
             </div>
-            <div className={`text-2xl font-bold ${metrics.staleRequests > 0 ? 'text-yellow-600' : 'text-slate-400'}`}>
+            <div className="text-2xl font-bold" style={{ color: metrics.staleRequests > 0 ? '#FBAD3F' : '#94a3b8' }}>
               {metrics.staleRequests}
             </div>
             <div className="text-xs text-slate-500 mt-1">New &gt; 7 days</div>
@@ -275,13 +282,14 @@ export function PlanningTab({
           <button
             onClick={() => setShowMissingInfoModal(true)}
             disabled={metrics.missingInfo === 0}
-            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.missingInfo > 0 ? 'border-l-4 border-amber-500 cursor-pointer' : 'cursor-default'}`}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.missingInfo > 0 ? 'border-l-4 cursor-pointer' : 'cursor-default'}`}
+            style={metrics.missingInfo > 0 ? { borderColor: '#FBAD3F' } : {}}
           >
             <div className="flex items-center gap-2 mb-2">
-              <XCircle className={`w-4 h-4 ${metrics.missingInfo > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
+              <XCircle className="w-4 h-4" style={{ color: metrics.missingInfo > 0 ? '#FBAD3F' : '#94a3b8' }} />
               <div className="text-sm font-medium text-slate-600">Missing Info</div>
             </div>
-            <div className={`text-2xl font-bold ${metrics.missingInfo > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            <div className="text-2xl font-bold" style={{ color: metrics.missingInfo > 0 ? '#FBAD3F' : '#94a3b8' }}>
               {metrics.missingInfo}
             </div>
             <div className="text-xs text-slate-500 mt-1">Address/Date/Count</div>
@@ -314,7 +322,11 @@ export function PlanningTab({
             >
               <div>
                 <span className="text-sm text-slate-600">Unassigned Events</span>
-                <p className="text-xs text-slate-400 mt-0.5">Click to view details</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {metrics.unassignedNext30Days > 0
+                    ? `${metrics.unassignedNext30Days} in next 30 days • Click to view all ${metrics.unassigned}`
+                    : 'Click to view details'}
+                </p>
               </div>
               <Badge variant={metrics.unassigned > 0 ? 'destructive' : 'outline'}>
                 {metrics.unassigned}
@@ -330,28 +342,43 @@ export function PlanningTab({
           </h3>
           <div className="space-y-2">
             {metrics.unassigned > 0 && (
-              <div className="p-3 premium-card-flat border-l-4 border-blue-500">
+              <button
+                onClick={() => setShowUnassignedModal(true)}
+                className="w-full p-3 premium-card-flat border-l-4 hover:shadow-md transition-shadow text-left"
+                style={{ borderColor: '#47B3CB' }}
+              >
                 <div className="text-sm font-medium text-slate-900">
                   {metrics.unassigned} event{metrics.unassigned !== 1 ? 's' : ''} need TSP contact assignment
                 </div>
-              </div>
+                <div className="text-xs text-slate-500 mt-1">Click to view and assign</div>
+              </button>
             )}
-            {metrics.overdueFollowUps > 0 && (
-              <div className="p-3 premium-card-flat border-l-4 border-red-500">
+            {metrics.longInProcess > 0 && (
+              <button
+                onClick={() => setShowOverdueModal(true)}
+                className="w-full p-3 premium-card-flat border-l-4 hover:shadow-md transition-shadow text-left"
+                style={{ borderColor: '#A31C41' }}
+              >
                 <div className="text-sm font-medium text-slate-900">
-                  {metrics.overdueFollowUps} scheduled follow-up{metrics.overdueFollowUps !== 1 ? 's' : ''} overdue
+                  {metrics.longInProcess} event{metrics.longInProcess !== 1 ? 's' : ''} stuck in process for over 2 weeks
                 </div>
-              </div>
+                <div className="text-xs text-slate-500 mt-1">Click to view and update status</div>
+              </button>
             )}
             {metrics.missingInfo > 0 && (
-              <div className="p-3 premium-card-flat border-l-4 border-amber-500">
+              <button
+                onClick={() => setShowMissingInfoModal(true)}
+                className="w-full p-3 premium-card-flat border-l-4 hover:shadow-md transition-shadow text-left"
+                style={{ borderColor: '#FBAD3F' }}
+              >
                 <div className="text-sm font-medium text-slate-900">
                   {metrics.missingInfo} event{metrics.missingInfo !== 1 ? 's' : ''} missing critical information
                 </div>
-              </div>
+                <div className="text-xs text-slate-500 mt-1">Click to view details and fix</div>
+              </button>
             )}
             {metrics.needsAttention === 0 && (
-              <div className="p-3 premium-card-flat border-l-4 border-green-500">
+              <div className="p-3 premium-card-flat border-l-4" style={{ borderColor: '#47B3CB' }}>
                 <div className="text-sm font-medium text-slate-900">
                   All events are up to date! 🎉
                 </div>
@@ -477,12 +504,13 @@ export function PlanningTab({
               Unassigned Events ({metrics.unassigned})
             </DialogTitle>
             <DialogDescription>
-              Events in the next 30 days that need TSP contact assignment
+              All new and in-process events that need TSP contact assignment
+              {metrics.unassignedNext30Days > 0 && ` • ${metrics.unassignedNext30Days} in next 30 days`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-4">
             {metrics.unassignedEvents.map((event) => (
-              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-blue-500">
+              <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#47B3CB' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
@@ -523,29 +551,29 @@ export function PlanningTab({
         </DialogContent>
       </Dialog>
 
-      {/* Overdue Follow-ups Modal */}
+      {/* Long In-Process Modal */}
       <Dialog open={showOverdueModal} onOpenChange={setShowOverdueModal}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#A31C41' }}>
               <Clock className="w-5 h-5" />
-              Overdue Follow-ups ({metrics.overdueFollowUps})
+              Long In-Process Events ({metrics.longInProcess})
             </DialogTitle>
             <DialogDescription>
-              Events with scheduled call dates that have passed
+              Events that have been in "In Process" status for more than 2 weeks
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-4">
-            {metrics.overdueFollowUpEvents.map((event) => (
-              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-red-500">
+            {metrics.longInProcessEvents.map((event) => (
+              <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#A31C41' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
-                      {event.scheduledCallDate && (
-                        <div className="flex items-center gap-1 text-red-600">
+                      {event.createdAt && (
+                        <div className="flex items-center gap-1" style={{ color: '#A31C41' }}>
                           <Clock className="w-3 h-3" />
-                          Follow-up due: {format(new Date(event.scheduledCallDate), 'MMM d, yyyy')}
+                          In process for: {differenceInDays(new Date(), new Date(event.createdAt))} days
                         </div>
                       )}
                       {event.desiredEventDate && (() => {
@@ -582,7 +610,7 @@ export function PlanningTab({
       <Dialog open={showStaleModal} onOpenChange={setShowStaleModal}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-yellow-600 flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#FBAD3F' }}>
               <Info className="w-5 h-5" />
               Stale Requests ({metrics.staleRequests})
             </DialogTitle>
@@ -592,13 +620,13 @@ export function PlanningTab({
           </DialogHeader>
           <div className="space-y-3 mt-4">
             {metrics.staleRequestEvents.map((event) => (
-              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-yellow-500">
+              <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#FBAD3F' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
                       {event.createdAt && (
-                        <div className="flex items-center gap-1 text-yellow-600">
+                        <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
                           <Clock className="w-3 h-3" />
                           Submitted: {format(new Date(event.createdAt), 'MMM d, yyyy')} ({differenceInDays(new Date(), new Date(event.createdAt))} days ago)
                         </div>
@@ -637,7 +665,7 @@ export function PlanningTab({
       <Dialog open={showMissingInfoModal} onOpenChange={setShowMissingInfoModal}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-amber-600 flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#FBAD3F' }}>
               <XCircle className="w-5 h-5" />
               Missing Information ({metrics.missingInfo})
             </DialogTitle>
@@ -653,12 +681,12 @@ export function PlanningTab({
               if (!event.estimatedSandwichCount) missing.push('Sandwich Count');
 
               return (
-                <div key={event.id} className="premium-card-flat p-4 border-l-4 border-amber-500">
+                <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#FBAD3F' }}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
                       <div className="text-sm text-slate-600 mt-1 space-y-1">
-                        <div className="flex items-center gap-1 text-amber-600">
+                        <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
                           <XCircle className="w-3 h-3" />
                           Missing: {missing.join(', ')}
                         </div>
