@@ -1411,8 +1411,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {driverNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-[#236383]">
-                    <Car className="w-7 h-7 inline mr-2 text-[#007E8C]" />
+                  <span className="text-base font-semibold text-[#236383]">
+                    <Car className="w-4 h-4 inline mr-2 text-[#007E8C]" />
                     Drivers ({driverAssigned}/{driverNeeded})
                   </span>
                   {canEdit && (
@@ -1428,7 +1428,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {request.assignedVanDriverId && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-900 border-blue-300 text-xl px-4 py-2.5 font-semibold">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-900 border-blue-300 text-sm px-3 py-1.5 font-medium">
                       {resolveUserName(request.assignedVanDriverId)} (Van)
                       {canEdit && (
                         <Button
@@ -1453,7 +1453,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={driverId}
                         variant="secondary"
-                        className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
+                        className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-sm px-3 py-1.5 font-medium"
                       >
                         {displayName}
                         {canEdit && (
@@ -1470,8 +1470,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     );
                   })}
                   {driverAssigned === 0 && (
-                    <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium text-lg">
-                      <Car className="w-4 h-4 mr-1" />
+                    <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium text-sm">
+                      <Car className="w-3 h-3 mr-1" />
                       No drivers assigned
                     </Badge>
                   )}
@@ -1483,8 +1483,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {speakerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-[#236383]">
-                    <Megaphone className="w-7 h-7 inline mr-2 text-[#FBAD3F]" />
+                  <span className="text-base font-semibold text-[#236383]">
+                    <Megaphone className="w-4 h-4 inline mr-2 text-[#FBAD3F]" />
                     Speakers ({speakerAssigned}/{speakerNeeded})
                   </span>
                   {canEdit && (
@@ -1509,7 +1509,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={speakerId}
                           variant="secondary"
-                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-sm px-3 py-1.5 font-medium"
                         >
                           {displayName}
                           {canEdit && (
@@ -1529,8 +1529,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {speakerAssigned === 0 && (
-                    <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#FBAD3F] border-[#FBAD3F]/40 font-medium text-lg">
-                      <Megaphone className="w-4 h-4 mr-1" />
+                    <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#FBAD3F] border-[#FBAD3F]/40 font-medium text-sm">
+                      <Megaphone className="w-3 h-3 mr-1" />
                       No speakers assigned
                     </Badge>
                   )}
@@ -1542,8 +1542,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {volunteerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-[#236383]">
-                    <Users className="w-7 h-7 inline mr-2 text-[#47B3CB]" />
+                  <span className="text-base font-semibold text-[#236383]">
+                    <Users className="w-4 h-4 inline mr-2 text-[#47B3CB]" />
                     Volunteers ({volunteerAssigned}/{volunteerNeeded})
                   </span>
                   {canEdit && (
@@ -1568,7 +1568,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={volunteerId}
                           variant="secondary"
-                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-sm px-3 py-1.5 font-medium"
                         >
                           {displayName}
                           {canEdit && (
@@ -1588,8 +1588,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {volunteerAssigned === 0 && (
-                    <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#47B3CB] border-[#47B3CB]/40 font-medium text-lg">
-                      <Users className="w-4 h-4 mr-1" />
+                    <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#47B3CB] border-[#47B3CB]/40 font-medium text-sm">
+                      <Users className="w-3 h-3 mr-1" />
                       No volunteers assigned
                     </Badge>
                   )}
