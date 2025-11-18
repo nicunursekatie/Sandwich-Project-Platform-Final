@@ -1850,6 +1850,11 @@ export const eventRequests = pgTable(
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
 
+    // Postponement tracking (for 'postponed' status)
+    postponementReason: text('postponement_reason'), // Reason why event was postponed
+    tentativeNewDate: timestamp('tentative_new_date'), // Tentative new date for the event (optional)
+    postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
+
     // Follow-up tracking fields
     followUpMethod: varchar('follow_up_method'), // 'email', 'call'
     updatedEmail: varchar('updated_email'), // Email address collected during follow-up call
