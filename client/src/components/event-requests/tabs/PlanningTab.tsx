@@ -487,12 +487,23 @@ export function PlanningTab({
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
-                      {event.desiredEventDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
-                        </div>
-                      )}
+                      {event.desiredEventDate && (() => {
+                        try {
+                          const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')
+                            ? event.desiredEventDate + 'T00:00:00'
+                            : event.desiredEventDate;
+                          const date = new Date(dateStr);
+                          if (isNaN(date.getTime())) return null;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {format(date, 'MMM d, yyyy')}
+                            </div>
+                          );
+                        } catch (e) {
+                          return null;
+                        }
+                      })()}
                       {event.eventAddress && (
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
@@ -537,12 +548,23 @@ export function PlanningTab({
                           Follow-up due: {format(new Date(event.scheduledCallDate), 'MMM d, yyyy')}
                         </div>
                       )}
-                      {event.desiredEventDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          Event date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
-                        </div>
-                      )}
+                      {event.desiredEventDate && (() => {
+                        try {
+                          const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')
+                            ? event.desiredEventDate + 'T00:00:00'
+                            : event.desiredEventDate;
+                          const date = new Date(dateStr);
+                          if (isNaN(date.getTime())) return null;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Event date: {format(date, 'MMM d, yyyy')}
+                            </div>
+                          );
+                        } catch (e) {
+                          return null;
+                        }
+                      })()}
                     </div>
                   </div>
                   <Badge variant="outline">{event.status}</Badge>
@@ -581,12 +603,23 @@ export function PlanningTab({
                           Submitted: {format(new Date(event.createdAt), 'MMM d, yyyy')} ({differenceInDays(new Date(), new Date(event.createdAt))} days ago)
                         </div>
                       )}
-                      {event.desiredEventDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          Desired date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
-                        </div>
-                      )}
+                      {event.desiredEventDate && (() => {
+                        try {
+                          const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')
+                            ? event.desiredEventDate + 'T00:00:00'
+                            : event.desiredEventDate;
+                          const date = new Date(dateStr);
+                          if (isNaN(date.getTime())) return null;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Desired date: {format(date, 'MMM d, yyyy')}
+                            </div>
+                          );
+                        } catch (e) {
+                          return null;
+                        }
+                      })()}
                     </div>
                   </div>
                   <Badge variant="outline">{event.status}</Badge>
@@ -629,12 +662,23 @@ export function PlanningTab({
                           <XCircle className="w-3 h-3" />
                           Missing: {missing.join(', ')}
                         </div>
-                        {event.desiredEventDate && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Desired date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
-                          </div>
-                        )}
+                        {event.desiredEventDate && (() => {
+                          try {
+                            const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')
+                              ? event.desiredEventDate + 'T00:00:00'
+                              : event.desiredEventDate;
+                            const date = new Date(dateStr);
+                            if (isNaN(date.getTime())) return null;
+                            return (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Desired date: {format(date, 'MMM d, yyyy')}
+                              </div>
+                            );
+                          } catch (e) {
+                            return null;
+                          }
+                        })()}
                       </div>
                     </div>
                     <Badge variant="outline">{event.status}</Badge>
