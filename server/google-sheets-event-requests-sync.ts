@@ -920,15 +920,25 @@ export class EventRequestsGoogleSheetsService {
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
       lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
       email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
-      organizationName: getColumnIndex(['grouporganization name', 'grouporganization', 'group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
-      department: getColumnIndex(['departmentteam', 'department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
-      eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location']),
+      organizationName: getColumnIndex(['group/organization name', 'group organization name', 'grouporganization name', 'grouporganization', 'organization', 'group', 'organization name', 'company', 'org name', 'group / organization name', 'group/organization', 'org']),
+      department: getColumnIndex(['department/team if applicable', 'department/team', 'department team', 'departmentteam', 'department', 'team', 'dept', 'division', 'department / team']),
+      eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location', 'where will the event take place?', 'event address']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
       previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
       message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
       status: getColumnIndex(['status', 'current status', 'state', 'event status']),
     };
+
+    // Log detected headers and column mapping for debugging
+    logger.log('📋 Detected sheet headers:', headers);
+    logger.log('📋 Column mapping result:', {
+      organizationName: columnMapping.organizationName >= 0 ? `Found at column ${columnMapping.organizationName}` : 'NOT FOUND',
+      eventLocation: columnMapping.eventLocation >= 0 ? `Found at column ${columnMapping.eventLocation}` : 'NOT FOUND',
+      email: columnMapping.email >= 0 ? `Found at column ${columnMapping.email}` : 'NOT FOUND',
+      name: columnMapping.name >= 0 ? `Found at column ${columnMapping.name}` : 'NOT FOUND',
+      department: columnMapping.department >= 0 ? `Found at column ${columnMapping.department}` : 'NOT FOUND',
+    });
 
     // Check if we failed to detect most headers - might need fallback to fixed positions
     const mappedColumnsCount = Object.values(columnMapping).filter(idx => idx >= 0).length;
