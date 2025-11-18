@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
@@ -23,14 +23,6 @@ export const useEventFilters = () => {
     queryKey: ['/api/event-requests/all-volunteers'],
     enabled: true,
   });
-
-  // Debug: Log volunteer data on load
-  useEffect(() => {
-    console.log('[Event Volunteers Loaded]', {
-      count: eventVolunteers.length,
-      sample: eventVolunteers.slice(0, 5)
-    });
-  }, [eventVolunteers]);
 
   // Fetch users to get TSP contact names
   const { data: users = [] } = useQuery<any[]>({
@@ -103,34 +95,16 @@ export const useEventFilters = () => {
     // Get all volunteers for this event
     const eventVolunteersList = eventVolunteers.filter(v => v.eventRequestId === request.id);
 
-    if (searchLower.includes('kim')) {
-      console.log('[Volunteer Search Debug - Kim]', {
-        eventId: request.id,
-        orgName: request.organizationName,
-        searchQuery: searchLower,
-        eventVolunteersCount: eventVolunteersList.length,
-        volunteers: eventVolunteersList.map(v => ({
-          volunteerUserId: v.volunteerUserId,
-          volunteerName: v.volunteerName,
-          volunteerEmail: v.volunteerEmail,
-          resolvedName: v.volunteerUserId ? getTspContactName(v.volunteerUserId) : v.volunteerName,
-          role: v.role
-        }))
-      });
-    }
-
     // Check registered volunteers (with user IDs)
     for (const volunteer of eventVolunteersList) {
       if (volunteer.volunteerUserId) {
         const volunteerName = getTspContactName(volunteer.volunteerUserId);
         if (volunteerName.toLowerCase().includes(searchLower)) {
-          console.log('[Volunteer Match Found]', { eventId: request.id, volunteerName, searchLower });
           return true;
         }
       }
       // Check non-registered volunteers
       if (volunteer.volunteerName && volunteer.volunteerName.toLowerCase().includes(searchLower)) {
-        console.log('[Volunteer Match Found (non-registered)]', { eventId: request.id, volunteerName: volunteer.volunteerName, searchLower });
         return true;
       }
       if (volunteer.volunteerEmail && volunteer.volunteerEmail.toLowerCase().includes(searchLower)) {
@@ -188,24 +162,6 @@ export const useEventFilters = () => {
           additionalContact1Name.toLowerCase().includes(searchLower) ||
           additionalContact2Name.toLowerCase().includes(searchLower) ||
           customTspContact.toLowerCase().includes(searchLower);
-
-        if (searchLower.includes('kim')) {
-          console.log('[TSP Search Debug - Kim]', {
-            eventId: request.id,
-            orgName: request.organizationName,
-            searchQuery: searchLower,
-            tspContact: request.tspContact,
-            tspContactAssigned: request.tspContactAssigned,
-            tspContactName,
-            'tspContactName.toLowerCase()': tspContactName.toLowerCase(),
-            additionalContact1: request.additionalContact1,
-            additionalContact1Name,
-            additionalContact2: request.additionalContact2,
-            additionalContact2Name,
-            customTspContact,
-            matchesTspContact
-          });
-        }
 
         // Check volunteers (drivers, speakers, general)
         const matchesVolunteer = eventHasVolunteerMatch(request, searchLower);

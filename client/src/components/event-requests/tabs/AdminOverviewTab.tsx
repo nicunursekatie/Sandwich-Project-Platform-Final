@@ -33,8 +33,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
   const [includeCompleted, setIncludeCompleted] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [eventSortBy, setEventSortBy] = useState<'status' | 'date' | 'organization'>('status');
-  const [eventSortDirection, setEventSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [eventSortBy, setEventSortBy] = useState<'status' | 'date' | 'organization'>('date');
+  const [eventSortDirection, setEventSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Fetch users to get proper names
   const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<any[]>({
@@ -375,9 +375,9 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                 // Toggle direction if already sorting by date
                                 setEventSortDirection(eventSortDirection === 'asc' ? 'desc' : 'asc');
                               } else {
-                                // Set to date sort with descending (farthest first) as default to match current behavior
+                                // Set to date sort with ascending (most upcoming first) as default
                                 setEventSortBy('date');
-                                setEventSortDirection('desc');
+                                setEventSortDirection('asc');
                               }
                             }}
                             className="text-xs h-7 flex items-center gap-1"
@@ -408,12 +408,12 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                             const dateB = b.scheduledEventDate ? new Date(b.scheduledEventDate).getTime() : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
 
                             if (eventSortBy === 'status') {
-                              // Sort by status first, then date
+                              // Sort by status first, then date (most upcoming first)
                               const statusOrder = { new: 0, in_process: 1, scheduled: 2, completed: 3, declined: 4, postponed: 5, cancelled: 6, contact_completed: 7 };
                               const statusA = statusOrder[a.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
                               const statusB = statusOrder[b.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
                               if (statusA !== statusB) return statusA - statusB;
-                              return dateB - dateA;
+                              return dateA - dateB; // Most upcoming first
                             } else if (eventSortBy === 'date') {
                               // Sort by date direction (asc = upcoming first, desc = farthest first)
                               return eventSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
