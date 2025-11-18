@@ -87,9 +87,7 @@ export const useEventFilters = () => {
     const user = users.find(u => u.id === userId);
     if (!user) return '';
     const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-    const result = fullName || user.email || user.name || '';
-    console.log('[getTspContactName]', { userId, user, fullName, result });
-    return result;
+    return fullName || user.email || user.name || '';
   };
 
   // Helper function to check if event has a volunteer matching the search
@@ -97,16 +95,34 @@ export const useEventFilters = () => {
     // Get all volunteers for this event
     const eventVolunteersList = eventVolunteers.filter(v => v.eventRequestId === request.id);
 
+    if (searchLower.includes('kim')) {
+      console.log('[Volunteer Search Debug - Kim]', {
+        eventId: request.id,
+        orgName: request.organizationName,
+        searchQuery: searchLower,
+        eventVolunteersCount: eventVolunteersList.length,
+        volunteers: eventVolunteersList.map(v => ({
+          volunteerUserId: v.volunteerUserId,
+          volunteerName: v.volunteerName,
+          volunteerEmail: v.volunteerEmail,
+          resolvedName: v.volunteerUserId ? getTspContactName(v.volunteerUserId) : v.volunteerName,
+          role: v.role
+        }))
+      });
+    }
+
     // Check registered volunteers (with user IDs)
     for (const volunteer of eventVolunteersList) {
       if (volunteer.volunteerUserId) {
         const volunteerName = getTspContactName(volunteer.volunteerUserId);
         if (volunteerName.toLowerCase().includes(searchLower)) {
+          console.log('[Volunteer Match Found]', { eventId: request.id, volunteerName, searchLower });
           return true;
         }
       }
       // Check non-registered volunteers
       if (volunteer.volunteerName && volunteer.volunteerName.toLowerCase().includes(searchLower)) {
+        console.log('[Volunteer Match Found (non-registered)]', { eventId: request.id, volunteerName: volunteer.volunteerName, searchLower });
         return true;
       }
       if (volunteer.volunteerEmail && volunteer.volunteerEmail.toLowerCase().includes(searchLower)) {
@@ -165,20 +181,21 @@ export const useEventFilters = () => {
           additionalContact2Name.toLowerCase().includes(searchLower) ||
           customTspContact.toLowerCase().includes(searchLower);
 
-        if (searchLower === 'kim ross') {
-          console.log('[TSP Search Debug]', {
+        if (searchLower.includes('kim')) {
+          console.log('[TSP Search Debug - Kim]', {
             eventId: request.id,
             orgName: request.organizationName,
+            searchQuery: searchLower,
             tspContact: request.tspContact,
             tspContactAssigned: request.tspContactAssigned,
             tspContactName,
+            'tspContactName.toLowerCase()': tspContactName.toLowerCase(),
             additionalContact1: request.additionalContact1,
             additionalContact1Name,
             additionalContact2: request.additionalContact2,
             additionalContact2Name,
             customTspContact,
-            matchesTspContact,
-            searchLower
+            matchesTspContact
           });
         }
 
