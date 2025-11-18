@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -105,21 +105,21 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-800 border-red-300',
 };
 
-// Custom cluster icon - branded with TSP colors
+// Custom cluster icon - branded with TSP colors (for nearby grouped events)
 const createClusterCustomIcon = (cluster: any) => {
   const count = cluster.getChildCount();
-  
+
   // Size based on count
   let size = 'medium';
   if (count < 10) size = 'small';
   else if (count >= 50) size = 'large';
-  
+
   const sizeClasses = {
     small: 'w-10 h-10 text-sm',
     medium: 'w-14 h-14 text-base',
     large: 'w-20 h-20 text-xl'
   };
-  
+
   return L.divIcon({
     html: `<div class="${sizeClasses[size]} rounded-full bg-gradient-to-br from-[#236383] to-[#007E8C] text-white font-bold flex items-center justify-center shadow-lg border-4 border-white">
       ${count}
@@ -128,6 +128,152 @@ const createClusterCustomIcon = (cluster: any) => {
     iconSize: L.point(40, 40, true),
   });
 };
+
+// Custom icon for multiple events at the EXACT same location (stacked)
+const createStackedLocationIcon = (count: number) => {
+  return new L.DivIcon({
+    html: `<div class="relative">
+      <div class="w-8 h-8 rounded-full bg-[#FBAD3F] text-white font-bold flex items-center justify-center shadow-lg border-3 border-white absolute" style="top: -2px; left: -2px; z-index: 1;">
+        ${count}
+      </div>
+      <div class="w-8 h-8 rounded-full bg-[#FBAD3F] opacity-50 absolute" style="top: 2px; left: 2px; z-index: 0;"></div>
+    </div>`,
+    className: 'stacked-marker',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+};
+
+// Custom marker component for events at the same location
+function LocationMarker({
+  events,
+  latitude,
+  longitude,
+  onEventSelect
+}: {
+  events: EventMapData[];
+  latitude: string;
+  longitude: string;
+  onEventSelect: (event: EventMapData) => void;
+}) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(map.getZoom());
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const handleZoom = () => setZoom(map.getZoom());
+    map.on('zoom', handleZoom);
+    return () => { map.off('zoom', handleZoom); };
+  }, [map]);
+
+  // Collapse when zooming out
+  useEffect(() => {
+    if (zoom < 14 && expanded) {
+      setExpanded(false);
+    }
+  }, [zoom, expanded]);
+
+  const lat = parseFloat(latitude);
+  const lng = parseFloat(longitude);
+
+  // Single event - show detailed label when zoomed in
+  if (events.length === 1) {
+    const event = events[0];
+    const showLabel = zoom >= 14;
+
+    if (showLabel) {
+      return (
+        <Marker
+          position={[lat, lng]}
+          icon={new L.DivIcon({
+            html: `<div class="bg-white rounded-lg shadow-lg border-2 px-3 py-2 min-w-[180px]" style="border-color: ${event.status === 'scheduled' ? '#236383' : '#FBAD3F'}">
+              <div class="font-semibold text-xs text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
+              <div class="text-xs text-gray-600">${event.desiredEventDate || event.scheduledEventDate ? format(new Date(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
+              ${event.estimatedSandwichCount ? `<div class="text-xs text-gray-500">${event.estimatedSandwichCount} sandwiches</div>` : ''}
+            </div>`,
+            className: 'custom-label-marker',
+            iconSize: [180, 60],
+            iconAnchor: [90, 30]
+          })}
+          eventHandlers={{
+            click: () => onEventSelect(event)
+          }}
+        >
+          <Popup>
+            <EnhancedPopupContent event={event} />
+          </Popup>
+        </Marker>
+      );
+    }
+
+    return (
+      <Marker
+        position={[lat, lng]}
+        icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+        eventHandlers={{
+          click: () => onEventSelect(event)
+        }}
+      >
+        <Popup>
+          <EnhancedPopupContent event={event} />
+        </Popup>
+      </Marker>
+    );
+  }
+
+  // Multiple events at same location
+  if (!expanded) {
+    return (
+      <Marker
+        position={[lat, lng]}
+        icon={createStackedLocationIcon(events.length)}
+        eventHandlers={{
+          click: () => setExpanded(true)
+        }}
+      >
+        <Popup>
+          <div className="p-2">
+            <h3 className="font-semibold mb-2">{events.length} Events at this Location</h3>
+            <p className="text-sm text-gray-600 mb-2">Click marker to expand</p>
+            {events.map((event, idx) => (
+              <div key={event.id} className="text-xs mb-1">
+                {idx + 1}. {event.organizationName}
+              </div>
+            ))}
+          </div>
+        </Popup>
+      </Marker>
+    );
+  }
+
+  // Expanded - show individual markers in a circle
+  const radius = 0.0003; // ~30 meters
+  return (
+    <>
+      {events.map((event, idx) => {
+        const angle = (idx / events.length) * 2 * Math.PI;
+        const offsetLat = lat + radius * Math.cos(angle);
+        const offsetLng = lng + radius * Math.sin(angle);
+
+        return (
+          <Marker
+            key={event.id}
+            position={[offsetLat, offsetLng]}
+            icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+            eventHandlers={{
+              click: () => onEventSelect(event)
+            }}
+          >
+            <Popup>
+              <EnhancedPopupContent event={event} />
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
+  );
+}
 
 // Component to auto-fit map bounds (excludes geographic outliers)
 function MapBounds({ events }: { events: EventMapData[] }) {
@@ -274,10 +420,25 @@ export default function EventMapView() {
     },
   });
 
-  // Filter events with coordinates
+  // Filter events with coordinates and group by exact location
   const eventsWithCoordinates = useMemo(() => {
     return events.filter(e => e.latitude && e.longitude);
   }, [events]);
+
+  // Group events by exact coordinates
+  const eventsByLocation = useMemo(() => {
+    const grouped = new Map<string, EventMapData[]>();
+
+    eventsWithCoordinates.forEach(event => {
+      const key = `${event.latitude},${event.longitude}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(event);
+    });
+
+    return grouped;
+  }, [eventsWithCoordinates]);
 
   // Filter events without coordinates
   const eventsNeedingGeocode = useMemo(() => {
@@ -697,37 +858,33 @@ export default function EventMapView() {
                   spiderfyDistanceMultiplier={1.5}
                   maxClusterRadius={60}
                 >
-                  {filteredEvents.map((event) => (
-                    <Marker
-                      key={event.id}
-                      position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                      icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
-                      eventHandlers={{
-                        click: () => setSelectedEvent(event),
-                      }}
-                    >
-                      <Popup>
-                        <EnhancedPopupContent event={event} />
-                      </Popup>
-                    </Marker>
-                  ))}
+                  {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
+                    const [lat, lng] = locationKey.split(',');
+                    return (
+                      <LocationMarker
+                        key={locationKey}
+                        events={eventsAtLocation}
+                        latitude={lat}
+                        longitude={lng}
+                        onEventSelect={setSelectedEvent}
+                      />
+                    );
+                  })}
                 </MarkerClusterGroup>
               ) : (
                 <>
-                  {filteredEvents.map((event) => (
-                    <Marker
-                      key={event.id}
-                      position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                      icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
-                      eventHandlers={{
-                        click: () => setSelectedEvent(event),
-                      }}
-                    >
-                      <Popup>
-                        <EnhancedPopupContent event={event} />
-                      </Popup>
-                    </Marker>
-                  ))}
+                  {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
+                    const [lat, lng] = locationKey.split(',');
+                    return (
+                      <LocationMarker
+                        key={locationKey}
+                        events={eventsAtLocation}
+                        latitude={lat}
+                        longitude={lng}
+                        onEventSelect={setSelectedEvent}
+                      />
+                    );
+                  })}
                 </>
               )}
             </MapContainer>
