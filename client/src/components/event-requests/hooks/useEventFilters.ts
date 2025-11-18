@@ -92,7 +92,7 @@ export const useEventFilters = () => {
 
   // Helper function to check if event has a volunteer matching the search
   const eventHasVolunteerMatch = (request: EventRequest, searchLower: string): boolean => {
-    // Get all volunteers for this event
+    // Get all volunteers for this event from eventVolunteers table
     const eventVolunteersList = eventVolunteers.filter(v => v.eventRequestId === request.id);
 
     // Check registered volunteers (with user IDs)
@@ -111,6 +111,49 @@ export const useEventFilters = () => {
         return true;
       }
     }
+
+    // Also check legacy assignedSpeakerIds array
+    if (request.assignedSpeakerIds && Array.isArray(request.assignedSpeakerIds)) {
+      for (const speakerId of request.assignedSpeakerIds) {
+        const speakerName = getTspContactName(speakerId);
+        if (speakerName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        // Also check if it's a direct name string
+        if (typeof speakerId === 'string' && speakerId.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+      }
+    }
+
+    // Check assignedVolunteerIds array
+    if (request.assignedVolunteerIds && Array.isArray(request.assignedVolunteerIds)) {
+      for (const volunteerId of request.assignedVolunteerIds) {
+        const volunteerName = getTspContactName(volunteerId);
+        if (volunteerName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        // Also check if it's a direct name string
+        if (typeof volunteerId === 'string' && volunteerId.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+      }
+    }
+
+    // Check assignedDriverIds array
+    if (request.assignedDriverIds && Array.isArray(request.assignedDriverIds)) {
+      for (const driverId of request.assignedDriverIds) {
+        const driverName = getTspContactName(driverId);
+        if (driverName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        // Also check if it's a direct name string
+        if (typeof driverId === 'string' && driverId.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+      }
+    }
+
     return false;
   };
 
