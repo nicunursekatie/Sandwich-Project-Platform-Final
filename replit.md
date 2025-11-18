@@ -11,6 +11,10 @@ Analytics Philosophy: NEVER compare or rank hosts against each other. The Sandwi
 Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
 
 ### Recent Technical Fixes
+**Contact Attempt User Attribution Enhanced (Nov 18, 2025)**: Improved the visibility of user attribution in contact attempt displays within the Communication & Notes section of event cards. Previously, user names were shown in a small badge that was easy to miss. Solution: Created a prominent subtitle section below contact attempt titles with user icon, larger text (text-sm), medium font weight, distinctive background color (#236383 at 10% opacity), and 3px left border accent. User attribution is now immediately obvious at a glance. **Location**: `client/src/components/event-message-thread.tsx`.
+
+**Marcy Louza Added as Van Driver (Nov 18, 2025)**: Added Marcy Louza (marcy@thesandwichproject.org) to the drivers table with van driver capabilities. Set vehicleType to 'van', vanApproved to true, and isActive to true. She is now available for van driver assignment in event scheduling. **Location**: `drivers` table, ID 457.
+
 **Migration Error Fixed (Nov 17, 2025)**: Fixed recurring migration error "cannot insert multiple commands into a prepared statement" on every server startup. The Neon serverless driver cannot execute multiple SQL statements in a single prepared statement, but migration files lacked statement-breakpoint markers. Solution: Removed incompatible SQL migration files from the `migrations/` directory since the project uses Drizzle push mode for schema changes. Server now starts cleanly with "✅ All migrations already applied". **Location**: `migrations/` directory.
 
 **Organization Categories Added (Nov 17, 2025)**: Added new organization categories to better classify different types of organizations:
