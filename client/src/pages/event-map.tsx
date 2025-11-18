@@ -145,17 +145,106 @@ const createStackedLocationIcon = (count: number) => {
   });
 };
 
+// Enhanced popup content component (needs to be defined before LocationMarker uses it)
+const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; navigate: any }) => {
+  const contactName = [event.firstName, event.lastName].filter(Boolean).join(' ');
+  const getEventDate = (evt: EventMapData) => {
+    const date = evt.scheduledEventDate || evt.desiredEventDate;
+    return date ? format(new Date(date), 'MMM dd, yyyy') : 'No date set';
+  };
+
+  return (
+    <div className="p-2 min-w-[280px] max-w-[320px]">
+      <h3 className="font-semibold text-base mb-1">
+        {event.organizationName || 'Unknown Organization'}
+      </h3>
+      {event.department && (
+        <p className="text-sm text-gray-600 mb-2">{event.department}</p>
+      )}
+
+      <div className="space-y-1.5 text-sm mb-3">
+        {contactName && (
+          <div className="flex items-center gap-2">
+            <User className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700">{contactName}</span>
+          </div>
+        )}
+
+        {event.email && (
+          <div className="flex items-center gap-2">
+            <Mail className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700 text-xs truncate">{event.email}</span>
+          </div>
+        )}
+
+        {event.phone && (
+          <div className="flex items-center gap-2">
+            <Phone className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700">{event.phone}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
+          <span className="text-gray-700">{getEventDate(event)}</span>
+        </div>
+
+        {event.estimatedSandwichCount && (
+          <div className="flex items-center gap-2">
+            <Package className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700">~{event.estimatedSandwichCount} sandwiches</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
+          <span className="text-xs text-gray-600 line-clamp-2">{event.eventAddress}</span>
+        </div>
+      </div>
+
+      <div className="space-y-2 pt-2 border-t border-gray-200">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Event #{event.id}</span>
+          {event.googleSheetRowId && (
+            <span>Sheet Row: {event.googleSheetRowId}</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
+            {event.status.replace('_', ' ').toUpperCase()}
+          </Badge>
+          <a
+            href="/event-requests"
+            className="ml-auto text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/event-requests');
+            }}
+            data-testid="link-view-edit-event"
+          >
+            View/Edit
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Custom marker component for events at the same location
 function LocationMarker({
   events,
   latitude,
   longitude,
-  onEventSelect
+  onEventSelect,
+  navigate
 }: {
   events: EventMapData[];
   latitude: string;
   longitude: string;
   onEventSelect: (event: EventMapData) => void;
+  navigate: any;
 }) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
@@ -201,7 +290,7 @@ function LocationMarker({
           }}
         >
           <Popup>
-            <EnhancedPopupContent event={event} />
+            <EnhancedPopupContent event={event} navigate={navigate} />
           </Popup>
         </Marker>
       );
@@ -216,7 +305,7 @@ function LocationMarker({
         }}
       >
         <Popup>
-          <EnhancedPopupContent event={event} />
+          <EnhancedPopupContent event={event} navigate={navigate} />
         </Popup>
       </Marker>
     );
@@ -266,7 +355,7 @@ function LocationMarker({
             }}
           >
             <Popup>
-              <EnhancedPopupContent event={event} />
+              <EnhancedPopupContent event={event} navigate={navigate} />
             </Popup>
           </Marker>
         );
@@ -581,96 +670,6 @@ export default function EventMapView() {
     return [avgLat, avgLng];
   }, [filteredEvents]);
 
-  // Get event date
-  const getEventDate = (event: EventMapData) => {
-    const date = event.scheduledEventDate || event.desiredEventDate;
-    return date ? format(new Date(date), 'MMM dd, yyyy') : 'No date set';
-  };
-
-  // Enhanced popup content component
-  const EnhancedPopupContent = ({ event }: { event: EventMapData }) => {
-    const contactName = [event.firstName, event.lastName].filter(Boolean).join(' ');
-    const navigate = setLocation;
-    
-    return (
-      <div className="p-2 min-w-[280px] max-w-[320px]">
-        <h3 className="font-semibold text-base mb-1">
-          {event.organizationName || 'Unknown Organization'}
-        </h3>
-        {event.department && (
-          <p className="text-sm text-gray-600 mb-2">{event.department}</p>
-        )}
-        
-        <div className="space-y-1.5 text-sm mb-3">
-          {contactName && (
-            <div className="flex items-center gap-2">
-              <User className="w-3 h-3 text-gray-500 flex-shrink-0" />
-              <span className="text-gray-700">{contactName}</span>
-            </div>
-          )}
-          
-          {event.email && (
-            <div className="flex items-center gap-2">
-              <Mail className="w-3 h-3 text-gray-500 flex-shrink-0" />
-              <span className="text-gray-700 text-xs truncate">{event.email}</span>
-            </div>
-          )}
-          
-          {event.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="w-3 h-3 text-gray-500 flex-shrink-0" />
-              <span className="text-gray-700">{event.phone}</span>
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2">
-            <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-gray-700">{getEventDate(event)}</span>
-          </div>
-          
-          {event.estimatedSandwichCount && (
-            <div className="flex items-center gap-2">
-              <Package className="w-3 h-3 text-gray-500 flex-shrink-0" />
-              <span className="text-gray-700">~{event.estimatedSandwichCount} sandwiches</span>
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2">
-            <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-xs text-gray-600 line-clamp-2">{event.eventAddress}</span>
-          </div>
-        </div>
-        
-        <div className="space-y-2 pt-2 border-t border-gray-200">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Event #{event.id}</span>
-            {event.googleSheetRowId && (
-              <span>Sheet Row: {event.googleSheetRowId}</span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
-              {event.status.replace('_', ' ').toUpperCase()}
-            </Badge>
-            <a 
-              href="/event-requests" 
-              className="ml-auto text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/event-requests');
-              }}
-              data-testid="link-view-edit-event"
-            >
-              View/Edit
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -867,6 +866,7 @@ export default function EventMapView() {
                         latitude={lat}
                         longitude={lng}
                         onEventSelect={setSelectedEvent}
+                        navigate={setLocation}
                       />
                     );
                   })}
@@ -882,6 +882,7 @@ export default function EventMapView() {
                         latitude={lat}
                         longitude={lng}
                         onEventSelect={setSelectedEvent}
+                        navigate={setLocation}
                       />
                     );
                   })}
