@@ -188,14 +188,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showCommunicationNotes, setShowCommunicationNotes] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
-  
+
   // Check if there's any communication/notes content to show
   // Safely check if contactAttemptsLog is an array with items
   const hasContactAttempts = Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0;
@@ -207,7 +206,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     request.duplicateNotes ||
     request.socialMediaPostNotes
   );
-  
+
   // Default to collapsed when there's no content
   const [showCommunicationNotes, setShowCommunicationNotes] = useState(hasCommunicationContent);
   const [addingAllTimes, setAddingAllTimes] = useState(false);
