@@ -372,6 +372,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         'sandwichType': 'sandwichTypes',
         'eventDate': 'scheduledEventDate',
         'groupName': 'organizationName',
+        'department': 'department',
         'vanBooked': 'vanDriverNeeded',
         'contactName': 'firstName', // Will need special handling for first/last
         'phone': 'phone',
@@ -384,10 +385,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       const dbField = fieldMap[editingField] || editingField;
 
       // Handle boolean fields
-      if (dbField === 'toolkitSent' || dbField === 'vanDriverNeeded') {
+      if (dbField === 'toolkitSent' || dbField === 'vanDriverNeeded' || dbField === 'socialMediaPostRequested') {
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
-          data: { [dbField]: editingValue === 'Yes' || editingValue === 'true' },
+          data: { [dbField]: editingValue === 'Yes' || editingValue === 'true' || editingValue === 'Requested' },
         });
       }
       // Handle sandwich types
@@ -710,17 +711,23 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return day ? day.substring(0, 3) : ''; // Abbreviate to 3 letters
       },
     },
-    // 3. Group/department
+    // 3. Group name
     {
       id: 'groupName',
-      label: 'Group/Dept',
-      width: '180px',
+      label: 'Group',
+      width: '150px',
       sortable: true,
       render: (event) => {
-        const org = event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A';
-        const dept = event.department ? ` (${event.department})` : '';
-        return org + dept;
+        return event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A';
       },
+    },
+    // 3b. Department
+    {
+      id: 'department',
+      label: 'Dept',
+      width: '100px',
+      hideOnMobile: true,
+      render: (event) => event.department || '',
     },
     // 4. Location (with Google map link)
     {
@@ -1100,9 +1107,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       'eventStartTime', 'eventEndTime', 'pickupTime',
       'estimatedSandwiches', 'sandwichType', 'toolkitSent',
       'tspContact', 'address', 'notes', 'additionalNotes',
-      'eventDate', 'groupName', 'vanBooked', 'contactName',
-      'phone', 'email', 'finalSandwiches', 'socialPost',
-      'volunteersNeeded' // This is the combined "Staff Needed" column
+      'eventDate', 'groupName', 'department', 'vanBooked', 
+      'contactName', 'phone', 'email', 'finalSandwiches', 
+      'socialPost', 'volunteersNeeded' // This is the combined "Staff Needed" column
     ].includes(column.id);
     
     // Special handling for sandwich type - use dialog instead of inline edit
@@ -1126,8 +1133,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     }
     
     if (isEditing(event.id, column.id)) {
-      // Special handling for boolean fields (toolkitSent, vanBooked)
-      if (column.id === 'toolkitSent' || column.id === 'vanBooked') {
+      // Special handling for boolean fields (toolkitSent, vanBooked, socialPost)
+      if (column.id === 'toolkitSent' || column.id === 'vanBooked' || column.id === 'socialPost') {
         return (
           <div className="flex items-center gap-0.5">
             <Select
@@ -1138,8 +1145,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Yes">Yes</SelectItem>
-                <SelectItem value="No">No</SelectItem>
+                {column.id === 'socialPost' ? (
+                  <>
+                    <SelectItem value="Requested">Requested</SelectItem>
+                    <SelectItem value="">No</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
             <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
@@ -1497,6 +1513,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           return event.schedulingNotes || '';
         case 'groupName':
           return event.organizationName || '';
+        case 'department':
+          return event.department || '';
         case 'contactName':
           return `${event.firstName || ''} ${event.lastName || ''}`.trim();
         case 'phone':
