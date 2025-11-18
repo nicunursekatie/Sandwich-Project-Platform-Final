@@ -2042,7 +2042,7 @@ export const organizations = pgTable(
     domains: text('domains').array(), // Array of email domains associated with this org
 
     // Organization categorization
-    category: varchar('category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
+    category: varchar('category'), // 'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'school', 'neighborhood', 'club', 'greek_life', 'cultural', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only when category is 'school')
     isReligious: boolean('is_religious').default(false), // Whether the organization has religious affiliation (can be true for schools, churches, etc.)
 

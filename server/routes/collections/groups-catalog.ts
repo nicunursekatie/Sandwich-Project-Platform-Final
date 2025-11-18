@@ -894,6 +894,77 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
     }
   );
 
+  // POST /api/organizations/upsert - Create or update organization category
+  router.post('/upsert', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { name, category, schoolClassification, isReligious } = req.body;
+
+      // Validation
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ message: 'Organization name is required' });
+      }
+
+      if (!category || typeof category !== 'string') {
+        return res.status(400).json({ message: 'Category is required' });
+      }
+
+      const validCategories = [
+        'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious',
+        'nonprofit', 'government', 'hospital', 'political', 'school',
+        'neighborhood', 'club', 'greek_life', 'cultural', 'other'
+      ];
+
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ message: 'Invalid category' });
+      }
+
+      // Get all organizations to find matching one
+      const allOrganizations = await storage.getAllOrganizations();
+      const canonicalSearchName = canonicalizeOrgName(name);
+
+      // Find existing organization by canonical name matching
+      let existingOrg = null;
+      for (const org of allOrganizations) {
+        const canonicalOrgName = canonicalizeOrgName(org.name);
+        if (organizationNamesMatch(canonicalOrgName, canonicalSearchName)) {
+          // Prefer organization-level entries (without department)
+          if (!existingOrg || (!org.department && existingOrg.department)) {
+            existingOrg = org;
+          }
+        }
+      }
+
+      let result;
+
+      if (existingOrg) {
+        // Update existing organization
+        result = await storage.updateOrganization(existingOrg.id, {
+          category,
+          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          isReligious: isReligious || false,
+        });
+
+        logger.log(`Updated organization category: ${name} (ID: ${existingOrg.id}) -> ${category}`);
+      } else {
+        // Create new organization
+        result = await storage.createOrganization({
+          name,
+          category,
+          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          isReligious: isReligious || false,
+          totalEvents: 0,
+        });
+
+        logger.log(`Created new organization: ${name} with category ${category}`);
+      }
+
+      res.json(result);
+    } catch (error) {
+      logger.error('Error upserting organization:', error);
+      res.status(500).json({ message: 'Failed to upsert organization' });
+    }
+  });
+
   return router;
 }
 
