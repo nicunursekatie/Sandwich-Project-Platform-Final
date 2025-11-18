@@ -58,6 +58,20 @@ export const useEventAssignments = () => {
     if (!userIdOrName) return 'Not assigned';
 
     try {
+      // Handle custom- prefixed IDs FIRST (format: custom-timestamp-Name)
+      // Example: custom-1763183106406-Chef-Hank => Chef Hank
+      if (userIdOrName.startsWith('custom-')) {
+        // Extract the name part after the second dash
+        const parts = userIdOrName.split('-');
+        if (parts.length >= 3) {
+          // Join all parts after the timestamp, replacing dashes with spaces
+          const name = parts.slice(2).join(' ');
+          return name;
+        }
+        // Fallback if format is unexpected
+        return userIdOrName.replace('custom-', '').replace(/-/g, ' ');
+      }
+
       // Handle host-contact- prefixed IDs FIRST (before checking if data is loaded)
       // This is critical for driver assignments
       if (userIdOrName.startsWith('host-contact-')) {

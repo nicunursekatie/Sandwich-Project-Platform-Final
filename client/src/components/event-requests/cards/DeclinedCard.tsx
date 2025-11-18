@@ -30,6 +30,11 @@ import {
 } from '@/components/ui/dialog';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
+import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 
 interface DeclinedCardProps {
@@ -248,6 +253,9 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   resolveUserName,
 }) => {
   const [showMessageDialog, setShowMessageDialog] = React.useState(false);
+  const [showComments, setShowComments] = React.useState(false);
+  const { user } = useAuth();
+  const collaboration = useEventCollaboration(request.id);
   const dateInfo = formatEventDate(request.desiredEventDate || '');
 
   return (
@@ -321,8 +329,40 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">Communication & Notes</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+              className="w-full justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto mb-2"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-600" />
+                <h3 className="text-sm font-semibold">Team Comments</h3>
+                {collaboration.comments && collaboration.comments.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {collaboration.comments.length}
+                  </Badge>
+                )}
+              </div>
+              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px]">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-3 mt-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-700">Contact Log & Messages</h3>
               <Button
                 size="sm"
                 variant="outline"
