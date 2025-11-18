@@ -31,6 +31,7 @@ import {
   ChevronUp,
   Sparkles,
   MapPin,
+  FileText,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
