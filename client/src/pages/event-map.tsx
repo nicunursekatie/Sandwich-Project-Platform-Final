@@ -433,7 +433,7 @@ export default function EventMapView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'next_week' | 'week_after' | 'two_weeks' | 'this_month' | 'upcoming'>('all');
+  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'next_week' | 'week_after' | 'two_weeks' | 'this_month' | 'upcoming'>('this_week');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -771,6 +771,21 @@ export default function EventMapView() {
               className="pl-10"
             />
           </div>
+          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <Clock className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="this_week">This Week (Next 7 Days)</SelectItem>
+              <SelectItem value="next_week">Next Week (Days 8-14)</SelectItem>
+              <SelectItem value="week_after">Week After Next (Days 15-21)</SelectItem>
+              <SelectItem value="two_weeks">Next 2 Weeks (14 Days)</SelectItem>
+              <SelectItem value="this_month">This Month (Next 30 Days)</SelectItem>
+              <SelectItem value="upcoming">All Upcoming Events</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full md:w-48">
               <Users className="w-4 h-4 mr-2" />
@@ -810,21 +825,6 @@ export default function EventMapView() {
               <SelectItem value="in_process">In Process</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <Clock className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="this_week">This Week (Next 7 Days)</SelectItem>
-              <SelectItem value="next_week">Next Week (Days 8-14)</SelectItem>
-              <SelectItem value="week_after">Week After Next (Days 15-21)</SelectItem>
-              <SelectItem value="two_weeks">Next 2 Weeks (14 Days)</SelectItem>
-              <SelectItem value="this_month">This Month (Next 30 Days)</SelectItem>
-              <SelectItem value="upcoming">All Upcoming Events</SelectItem>
             </SelectContent>
           </Select>
         </div>
