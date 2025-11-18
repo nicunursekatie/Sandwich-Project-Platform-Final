@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 export const useEventFilters = () => {
   const {
     eventRequests,
-    searchQuery,
+    debouncedSearchQuery,
     statusFilter,
     myAssignmentsStatusFilter,
     confirmationFilter,
@@ -189,10 +189,10 @@ export const useEventFilters = () => {
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = eventRequests.filter((request: EventRequest) => {
       // Search matching
-      let matchesSearch = searchQuery === '';
+      let matchesSearch = debouncedSearchQuery === '';
 
       if (!matchesSearch) {
-        const searchLower = searchQuery.toLowerCase();
+        const searchLower = debouncedSearchQuery.toLowerCase();
 
         // Check TSP contacts
         const tspContactName = getTspContactName(request.tspContact || request.tspContactAssigned);
@@ -218,7 +218,7 @@ export const useEventFilters = () => {
           (request.lastName && request.lastName.toLowerCase().includes(searchLower)) ||
           (request.email && request.email.toLowerCase().includes(searchLower)) ||
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
-          dateMatchesSearch(request.desiredEventDate, searchQuery) ||
+          dateMatchesSearch(request.desiredEventDate, debouncedSearchQuery) ||
           matchesTspContact ||
           matchesVolunteer;
       }
@@ -276,7 +276,7 @@ export const useEventFilters = () => {
     });
 
     return filtered;
-  }, [eventRequests, searchQuery, statusFilter, sortBy, eventVolunteers, users]);
+  }, [eventRequests, debouncedSearchQuery, statusFilter, sortBy, eventVolunteers, users]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedRequests.length / itemsPerPage);
@@ -300,11 +300,11 @@ export const useEventFilters = () => {
           // Regular status filtering
           matchesStatus = request.status === status;
         }
-        
-        let matchesSearch = searchQuery === '';
+
+        let matchesSearch = debouncedSearchQuery === '';
 
         if (!matchesSearch) {
-          const searchLower = searchQuery.toLowerCase();
+          const searchLower = debouncedSearchQuery.toLowerCase();
 
           // Check TSP contacts
           const tspContactName = getTspContactName(request.tspContact || request.tspContactAssigned);
@@ -336,7 +336,7 @@ export const useEventFilters = () => {
               .toLowerCase()
               .includes(searchLower)) ||
             (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
-            dateMatchesSearch(request.desiredEventDate, searchQuery) ||
+            dateMatchesSearch(request.desiredEventDate, debouncedSearchQuery) ||
             matchesTspContact ||
             matchesVolunteer;
         }
