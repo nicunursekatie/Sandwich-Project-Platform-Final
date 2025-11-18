@@ -236,6 +236,7 @@ export class EventRequestsGoogleSheetsService {
       email: row.email,
       phone: row.phone,
       department: row.department,
+      eventAddress: row.eventLocation,
       desiredEventDate: this.parseExcelDate(row.desiredEventDate, 'desired event date'),
       status: (() => {
         // CRITICAL FIX: Only assign status for NEW imports, never for existing records
