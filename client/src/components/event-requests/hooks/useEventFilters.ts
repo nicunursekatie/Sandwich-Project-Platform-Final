@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
@@ -23,6 +23,14 @@ export const useEventFilters = () => {
     queryKey: ['/api/event-requests/all-volunteers'],
     enabled: true,
   });
+
+  // Debug: Log volunteer data on load
+  useEffect(() => {
+    console.log('[Event Volunteers Loaded]', {
+      count: eventVolunteers.length,
+      sample: eventVolunteers.slice(0, 5)
+    });
+  }, [eventVolunteers]);
 
   // Fetch users to get TSP contact names
   const { data: users = [] } = useQuery<any[]>({
