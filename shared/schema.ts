@@ -8,6 +8,7 @@ import {
   varchar,
   jsonb,
   index,
+  uniqueIndex,
   decimal,
   unique,
   primaryKey,
