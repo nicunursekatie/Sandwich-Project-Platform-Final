@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,12 @@ import {
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import type { UserForPermissions } from '@shared/types';
 
 interface OrganizationContact {
   organizationName: string;
@@ -154,6 +160,19 @@ export default function GroupCatalog({
   const [showContactDetailsModal, setShowContactDetailsModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState<OrganizationContact | null>(null);
 
+  // Edit category dialog state
+  const [showEditCategoryDialog, setShowEditCategoryDialog] = useState(false);
+  const [editingOrganization, setEditingOrganization] = useState<OrganizationContact | null>(null);
+  const [editCategory, setEditCategory] = useState('');
+  const [editSchoolClassification, setEditSchoolClassification] = useState('');
+  const [editIsReligious, setEditIsReligious] = useState(false);
+
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Check if user has permission to edit categories
+  const canEditCategories = user && hasPermission(user as UserForPermissions, PERMISSIONS.ADMIN_PANEL_ACCESS);
+
   // Fetch groups data
   const {
     data: groupsResponse,
@@ -171,6 +190,57 @@ export default function GroupCatalog({
     },
     // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
   });
+
+  // Mutation for updating organization category
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (data: { name: string; category: string; schoolClassification?: string; isReligious?: boolean }) => {
+      return apiRequest('POST', '/api/groups-catalog/upsert', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Organization category updated successfully',
+      });
+      // Invalidate and refetch groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      setShowEditCategoryDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update organization category',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Handler to open edit category dialog
+  const handleEditCategory = (org: OrganizationContact) => {
+    setEditingOrganization(org);
+    setEditCategory(org.category || '');
+    setEditSchoolClassification(org.schoolClassification || '');
+    setEditIsReligious(org.isReligious || false);
+    setShowEditCategoryDialog(true);
+  };
+
+  // Handler to save category changes
+  const handleSaveCategory = () => {
+    if (!editingOrganization || !editCategory) {
+      toast({
+        title: 'Error',
+        description: 'Please select a category',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateCategoryMutation.mutate({
+      name: editingOrganization.organizationName,
+      category: editCategory,
+      schoolClassification: editCategory === 'school' ? editSchoolClassification : undefined,
+      isReligious: editIsReligious,
+    });
+  };
 
   // Function to fetch complete event details
   const fetchEventDetails = async (organization: OrganizationContact) => {
@@ -980,18 +1050,31 @@ export default function GroupCatalog({
                                   {/* Status and Metrics */}
                                   <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
                                     <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <Badge
                                           className={getStatusBadgeColor(org.status)}
                                           variant="outline"
                                         >
                                           {getStatusText(org.status)}
                                         </Badge>
-                                        {org.category && (
-                                          <Badge className={getCategoryBadgeColor(org.category)}>
-                                            {getCategoryLabel(org.category)}
-                                          </Badge>
-                                        )}
+                                        <div className="flex items-center gap-1">
+                                          {org.category && (
+                                            <Badge className={getCategoryBadgeColor(org.category)}>
+                                              {getCategoryLabel(org.category)}
+                                            </Badge>
+                                          )}
+                                          {canEditCategories && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0 hover:bg-orange-200"
+                                              onClick={() => handleEditCategory(org)}
+                                              data-testid={`button-edit-category-${org.organizationName}`}
+                                            >
+                                              <Edit className="h-3 w-3 text-orange-700" />
+                                            </Button>
+                                          )}
+                                        </div>
                                       </div>
                                       <span className="text-gray-600 font-medium">
                                         {org.totalRequests} {org.totalRequests === 1 ? 'request' : 'requests'}
@@ -1865,6 +1948,91 @@ export default function GroupCatalog({
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={showEditCategoryDialog} onOpenChange={setShowEditCategoryDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Organization Category</DialogTitle>
+            <DialogDescription>
+              Update the category for {editingOrganization?.organizationName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Organization Category</Label>
+              <Select
+                value={editCategory}
+                onValueChange={(value) => {
+                  setEditCategory(value);
+                  // Clear school classification if category changes to non-school
+                  if (value !== 'school') {
+                    setEditSchoolClassification('');
+                  }
+                }}
+              >
+                <SelectTrigger id="edit-category" data-testid="select-edit-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="school">School</SelectItem>
+                  <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                  <SelectItem value="religious">Religious Organization</SelectItem>
+                  <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                  <SelectItem value="government">Government</SelectItem>
+                  <SelectItem value="hospital">Hospital</SelectItem>
+                  <SelectItem value="political">Political Organization</SelectItem>
+                  <SelectItem value="club">Club</SelectItem>
+                  <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                  <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
+                  <SelectItem value="cultural">Cultural Organization</SelectItem>
+                  <SelectItem value="corp">Company</SelectItem>
+                  <SelectItem value="large_corp">Large Corporation</SelectItem>
+                  <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* School Classification - only shown when category is 'school' */}
+            {editCategory === 'school' && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-school-classification">School Classification</Label>
+                <Select
+                  value={editSchoolClassification}
+                  onValueChange={setEditSchoolClassification}
+                >
+                  <SelectTrigger id="edit-school-classification" data-testid="select-edit-school-classification">
+                    <SelectValue placeholder="Select school type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="charter">Charter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditCategoryDialog(false)}
+                data-testid="button-cancel-edit-category"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveCategory}
+                disabled={updateCategoryMutation.isPending || !editCategory}
+                data-testid="button-save-category"
+              >
+                {updateCategoryMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
