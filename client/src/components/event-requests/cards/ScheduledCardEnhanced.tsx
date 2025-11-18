@@ -69,6 +69,8 @@ import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog'
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -185,9 +187,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
-  
+  const [showComments, setShowComments] = useState(false);
+  const [showCommunicationNotes, setShowCommunicationNotes] = useState(false);
+
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
+
+  // Collaboration hook for comments
+  const collaboration = useEventCollaboration(request.id);
   
   // Check if there's any communication/notes content to show
   // Safely check if contactAttemptsLog is an array with items
@@ -1806,7 +1813,41 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
+            {/* Team Comments Section */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+              className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-2 h-auto mb-2"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#236383]" />
+                <h3 className="text-sm uppercase font-bold tracking-wide">Team Comments</h3>
+                {collaboration.comments && collaboration.comments.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {collaboration.comments.length}
+                  </Badge>
+                )}
+              </div>
+              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px] mb-4">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+
+            {/* Contact Log & Messages Section */}
+            <div className="flex items-center justify-between mb-2 mt-4 pt-4 border-t border-[#236383]/20">
               <Button
                 variant="ghost"
                 size="sm"
@@ -1814,9 +1855,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 className="flex-1 justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto"
               >
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-[#236383]" />
+                  <FileText className="w-4 h-4 text-[#236383]" />
                   <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
-                    Communication & Notes
+                    Contact Log & Messages
                   </h3>
                 </div>
                 {showCommunicationNotes ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}

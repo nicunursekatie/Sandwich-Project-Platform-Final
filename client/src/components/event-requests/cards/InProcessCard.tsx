@@ -53,6 +53,9 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
+import { useAuth } from '@/hooks/useAuth';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -406,6 +409,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const { user } = useAuth();
+
+  // Collaboration hook for comments
+  const collaboration = useEventCollaboration(request.id);
+
   const headerContent = CardHeader({
     request,
     resolveUserName,
@@ -586,12 +595,47 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+              className="w-full justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto mb-2"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-600" />
+                <h3 className="text-sm font-semibold">Team Comments</h3>
+                {collaboration.comments && collaboration.comments.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {collaboration.comments.length}
+                  </Badge>
+                )}
+              </div>
+              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px]">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Log & Messages</h3>
+              <EventMessageThread
+                eventId={request.id.toString()}
+                eventRequest={request}
+                eventTitle={`${request.organizationName} event`}
+                maxHeight="300px"
+              />
+            </div>
           </div>
         )}
 
@@ -673,17 +717,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           )}
 
           <div className="flex-1" />
-
-          {/* Message - always visible */}
-          <Button
-            size="sm"
-            onClick={() => setShowMessageDialog(true)}
-            variant="ghost"
-            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-            aria-label="Message about this event"
-          >
-            <MessageSquare className="w-4 h-4" aria-hidden="true" />
-          </Button>
 
           {canEdit && (
             <Button size="sm" variant="ghost" onClick={onEdit}>

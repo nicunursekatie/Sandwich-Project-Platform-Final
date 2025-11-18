@@ -45,6 +45,8 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
+import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { CommentThread } from '@/components/collaboration';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -377,8 +379,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showConfirmToggle, setShowConfirmToggle] = useState(false);
   const [pendingConfirmValue, setPendingConfirmValue] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Collaboration hook for comments
+  const collaboration = useEventCollaboration(request.id);
 
   // Mutation for toggling date confirmation
   const toggleConfirmMutation = useMutation({
@@ -588,12 +594,47 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+              className="w-full justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto mb-2"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-600" />
+                <h3 className="text-sm font-semibold">Team Comments</h3>
+                {collaboration.comments && collaboration.comments.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {collaboration.comments.length}
+                  </Badge>
+                )}
+              </div>
+              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px]">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Log & Messages</h3>
+              <EventMessageThread
+                eventId={request.id.toString()}
+                eventRequest={request}
+                eventTitle={`${request.organizationName} event`}
+                maxHeight="300px"
+              />
+            </div>
           </div>
         )}
 
@@ -669,17 +710,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </Button>
 
           <div className="flex-1" />
-
-          {/* Message - always visible */}
-          <Button
-            size="sm"
-            onClick={() => setShowMessageDialog(true)}
-            variant="ghost"
-            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-            aria-label="Message about this event"
-          >
-            <MessageSquare className="w-4 h-4" aria-hidden="true" />
-          </Button>
 
           {/* Edit/Delete */}
           {canEdit && (
