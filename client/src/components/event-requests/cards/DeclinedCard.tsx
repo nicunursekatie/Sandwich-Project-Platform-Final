@@ -321,6 +321,18 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">Communication & Notes</h3>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onLogContact}
+                className="h-7 text-xs flex items-center gap-1"
+              >
+                <Phone className="w-3 h-3" />
+                Log Contact
+              </Button>
+            </div>
             <EventMessageThread
               eventId={request.id.toString()}
               eventRequest={request}

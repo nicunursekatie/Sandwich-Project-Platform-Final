@@ -470,19 +470,30 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     </Badge>
                   )}
                 </div>
-                {(request.contactAttempts || request.lastContactAttempt) && (
-                  <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
+                <div className="flex items-center justify-between mt-2">
+                  {(request.contactAttempts || request.lastContactAttempt) && (
+                    <div className="text-sm text-gray-600 flex items-center gap-2">
+                      <Phone className="w-3 h-3" />
+                      {request.contactAttempts && request.contactAttempts > 0 && (
+                        <span>Contact attempts: {request.contactAttempts}</span>
+                      )}
+                      {request.lastContactAttempt && (
+                        <span className="text-xs">
+                          (Last: {formatDistanceToNow(new Date(request.lastContactAttempt), { addSuffix: true })})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onLogContact}
+                    className="h-7 text-xs flex items-center gap-1"
+                  >
                     <Phone className="w-3 h-3" />
-                    {request.contactAttempts && request.contactAttempts > 0 && (
-                      <span>Contact attempts: {request.contactAttempts}</span>
-                    )}
-                    {request.lastContactAttempt && (
-                      <span className="text-xs">
-                        (Last: {formatDistanceToNow(new Date(request.lastContactAttempt), { addSuffix: true })})
-                      </span>
-                    )}
-                  </div>
-                )}
+                    Log Contact
+                  </Button>
+                </div>
               </div>
             </div>
 

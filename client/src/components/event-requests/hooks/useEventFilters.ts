@@ -18,10 +18,16 @@ export const useEventFilters = () => {
 
   const { user } = useAuth();
 
-  // Fetch event volunteers data
+  // Fetch event volunteers data for all events (needed for search)
   const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
-    queryKey: ['/api/event-requests/my-volunteers'],
-    enabled: !!user?.id,
+    queryKey: ['/api/event-volunteers'],
+    enabled: true,
+  });
+
+  // Fetch users to get TSP contact names
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+    enabled: true,
   });
 
   // Helper function to check if current user is assigned to an event
@@ -75,6 +81,39 @@ export const useEventFilters = () => {
     return eventRequests.filter(isUserAssignedToEvent);
   }, [eventRequests, eventVolunteers, user?.id]);
 
+  // Helper function to get TSP contact name from user ID
+  const getTspContactName = (userId: string | null | undefined): string => {
+    if (!userId) return '';
+    const user = users.find(u => u.id === userId);
+    if (!user) return '';
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return fullName || user.email || user.name || '';
+  };
+
+  // Helper function to check if event has a volunteer matching the search
+  const eventHasVolunteerMatch = (request: EventRequest, searchLower: string): boolean => {
+    // Get all volunteers for this event
+    const eventVolunteersList = eventVolunteers.filter(v => v.eventRequestId === request.id);
+
+    // Check registered volunteers (with user IDs)
+    for (const volunteer of eventVolunteersList) {
+      if (volunteer.volunteerUserId) {
+        const volunteerName = getTspContactName(volunteer.volunteerUserId);
+        if (volunteerName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+      }
+      // Check non-registered volunteers
+      if (volunteer.volunteerName && volunteer.volunteerName.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+      if (volunteer.volunteerEmail && volunteer.volunteerEmail.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Helper function to check if a date matches the search query
   const dateMatchesSearch = (dateValue: string | Date | null | undefined, searchQuery: string): boolean => {
     if (!dateValue || !searchQuery) return false;
@@ -106,17 +145,40 @@ export const useEventFilters = () => {
   // Filter and sort event requests
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = eventRequests.filter((request: EventRequest) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        (request.organizationName && request.organizationName
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())) ||
-        (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (request.firstName && request.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (request.lastName && request.lastName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (request.email && request.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        dateMatchesSearch(request.desiredEventDate, searchQuery);
+      // Search matching
+      let matchesSearch = searchQuery === '';
+
+      if (!matchesSearch) {
+        const searchLower = searchQuery.toLowerCase();
+
+        // Check TSP contacts
+        const tspContactName = getTspContactName(request.tspContact || request.tspContactAssigned);
+        const additionalContact1Name = getTspContactName(request.additionalContact1);
+        const additionalContact2Name = getTspContactName(request.additionalContact2);
+        const customTspContact = request.customTspContact || '';
+
+        const matchesTspContact =
+          tspContactName.toLowerCase().includes(searchLower) ||
+          additionalContact1Name.toLowerCase().includes(searchLower) ||
+          additionalContact2Name.toLowerCase().includes(searchLower) ||
+          customTspContact.toLowerCase().includes(searchLower);
+
+        // Check volunteers (drivers, speakers, general)
+        const matchesVolunteer = eventHasVolunteerMatch(request, searchLower);
+
+        matchesSearch =
+          (request.organizationName && request.organizationName
+            .toLowerCase()
+            .includes(searchLower)) ||
+          (request.department && request.department.toLowerCase().includes(searchLower)) ||
+          (request.firstName && request.firstName.toLowerCase().includes(searchLower)) ||
+          (request.lastName && request.lastName.toLowerCase().includes(searchLower)) ||
+          (request.email && request.email.toLowerCase().includes(searchLower)) ||
+          (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
+          dateMatchesSearch(request.desiredEventDate, searchQuery) ||
+          matchesTspContact ||
+          matchesVolunteer;
+      }
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
@@ -171,7 +233,7 @@ export const useEventFilters = () => {
     });
 
     return filtered;
-  }, [eventRequests, searchQuery, statusFilter, sortBy]);
+  }, [eventRequests, searchQuery, statusFilter, sortBy, eventVolunteers, users]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedRequests.length / itemsPerPage);
@@ -196,23 +258,45 @@ export const useEventFilters = () => {
           matchesStatus = request.status === status;
         }
         
-        const matchesSearch =
-          searchQuery === '' ||
-          (request.organizationName && request.organizationName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-          (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (request.firstName && request.firstName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-          (request.lastName && request.lastName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-          (request.email && request.email
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-          (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          dateMatchesSearch(request.desiredEventDate, searchQuery);
+        let matchesSearch = searchQuery === '';
+
+        if (!matchesSearch) {
+          const searchLower = searchQuery.toLowerCase();
+
+          // Check TSP contacts
+          const tspContactName = getTspContactName(request.tspContact || request.tspContactAssigned);
+          const additionalContact1Name = getTspContactName(request.additionalContact1);
+          const additionalContact2Name = getTspContactName(request.additionalContact2);
+          const customTspContact = request.customTspContact || '';
+
+          const matchesTspContact =
+            tspContactName.toLowerCase().includes(searchLower) ||
+            additionalContact1Name.toLowerCase().includes(searchLower) ||
+            additionalContact2Name.toLowerCase().includes(searchLower) ||
+            customTspContact.toLowerCase().includes(searchLower);
+
+          // Check volunteers (drivers, speakers, general)
+          const matchesVolunteer = eventHasVolunteerMatch(request, searchLower);
+
+          matchesSearch =
+            (request.organizationName && request.organizationName
+              .toLowerCase()
+              .includes(searchLower)) ||
+            (request.department && request.department.toLowerCase().includes(searchLower)) ||
+            (request.firstName && request.firstName
+              .toLowerCase()
+              .includes(searchLower)) ||
+            (request.lastName && request.lastName
+              .toLowerCase()
+              .includes(searchLower)) ||
+            (request.email && request.email
+              .toLowerCase()
+              .includes(searchLower)) ||
+            (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
+            dateMatchesSearch(request.desiredEventDate, searchQuery) ||
+            matchesTspContact ||
+            matchesVolunteer;
+        }
 
         // Completed events are always considered confirmed
         const isEventConfirmed = request.status === 'completed' || request.isConfirmed;
