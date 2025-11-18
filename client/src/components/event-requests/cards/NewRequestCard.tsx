@@ -175,10 +175,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 
   return (
     <div className="flex items-start justify-between mb-4">
-      <div className="flex items-start space-x-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-2xl font-bold text-[#236383]">
+      <div className="flex items-start space-x-3 min-w-0 flex-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-xl sm:text-2xl font-bold text-[#236383] break-words min-w-0">
               {request.organizationName}
               {request.department && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
@@ -189,7 +189,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
               onClick={handleConfirmToggleClick}
-              className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+              className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
                 request.isConfirmed
                   ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
                   : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
@@ -199,7 +199,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
             </Badge>
             {isInProcessStale && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Needs follow-up
               </Badge>
@@ -273,20 +273,20 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
 }) => {
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <div className="space-y-1 min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm">
-            <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-base">
+            <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="font-medium text-base break-words min-w-0">
               {request.firstName} {request.lastName}
             </span>
           </div>
           {request.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+              <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <a
                 href={`mailto:${request.email}`}
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
               >
                 {request.email}
               </a>
@@ -294,38 +294,38 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="w-4 h-4 text-gray-400" />
+              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
               >
                 {request.phone}
               </a>
             </div>
           )}
           {request.eventAddress && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words min-w-0"
               >
                 {request.eventAddress}
               </a>
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 flex-shrink-0">
           {request.phone && onCall && (
             <Button
               size="sm"
               variant="outline"
               onClick={onCall}
-              className="text-sm"
+              className="text-sm h-8"
             >
-              <Phone className="w-3 h-3 mr-1" />
+              <Phone className="w-4 h-4 mr-1" />
               Call
             </Button>
           )}
@@ -334,9 +334,9 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-sm"
+              className="text-sm h-8"
             >
-              <Mail className="w-3 h-3 mr-1" />
+              <Mail className="w-4 h-4 mr-1" />
               Email
             </Button>
           )}
@@ -548,13 +548,13 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm"
                 style={{ backgroundColor: '#FFF4E6', borderColor: '#FBAD3F' }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-[#E5901A]" />
-                    <span className="font-semibold text-[#D68319]">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <UserPlus className="w-4 h-4 text-[#E5901A] flex-shrink-0" />
+                    <span className="font-semibold text-[#D68319] whitespace-nowrap">
                       TSP Contact:
                     </span>
-                    <span className="font-medium text-[#C7761A]">
+                    <span className="font-medium text-[#C7761A] break-words min-w-0">
                       {request.tspContact
                         ? getUserDisplayName(request.tspContact)
                         : request.customTspContact}
@@ -565,7 +565,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={onEditTspContact}
-                      className="h-6 px-2 text-[#D68319] hover:bg-[#FBAD3F]/20"
+                      className="h-7 px-2 text-[#D68319] hover:bg-[#FBAD3F]/20 flex-shrink-0"
                       data-testid="button-edit-tsp-contact"
                     >
                       <Edit className="w-3 h-3" />
@@ -598,14 +598,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
           {/* TSP Contact Assignment - only show if not already assigned */}
           {!(request.tspContact || request.customTspContact) && (
             <Button
               size="sm"
               variant="outline"
               onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
             >
               <UserPlus className="w-4 h-4 mr-1" />
               Assign TSP Contact
@@ -618,7 +618,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onAiSuggest}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
               data-testid="button-ai-suggest-date"
             >
               <Sparkles className="w-4 h-4 mr-1" />
@@ -632,7 +632,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onAiIntakeAssist}
-              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
+              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
               data-testid="button-ai-intake-assist"
             >
               <Sparkles className="w-4 h-4 mr-1" />
@@ -644,7 +644,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="default"
             onClick={onToolkit}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white text-base"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
           >
             <Package className="w-4 h-4 mr-1" />
             Send Toolkit
@@ -653,7 +653,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onScheduleCall}
-            className="text-base"
+            className="h-8"
           >
             <Phone className="w-4 h-4 mr-1" />
             Schedule Call
@@ -662,7 +662,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
@@ -683,7 +683,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
           {/* Edit/Delete */}
           {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit}>
+            <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
               <Edit className="w-4 h-4" />
             </Button>
           )}
@@ -693,7 +693,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 h-8"
                   data-testid="button-delete-request"
                 >
                   <Trash2 className="w-4 h-4" />
