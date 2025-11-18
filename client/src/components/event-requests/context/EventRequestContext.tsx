@@ -418,9 +418,13 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     }
   }, [roleDefaults.defaultTab, roleDefaults.defaultConfirmationFilter, roleDefaults.defaultSort, roleDefaults.itemsPerPage, initialTab]);
 
-  // Synchronize statusFilter with activeTab
+  // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
-    setStatusFilter(activeTab);
+    // Only sync statusFilter for tabs that correspond to status values
+    if (['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(activeTab)) {
+      setStatusFilter(activeTab);
+    }
+    // For admin_overview and planning tabs, don't change statusFilter
   }, [activeTab]);
 
   // Auto-sort by appropriate default for each tab (only when tab changes)
@@ -446,7 +450,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
