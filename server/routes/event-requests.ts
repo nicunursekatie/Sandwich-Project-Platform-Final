@@ -3962,6 +3962,78 @@ router.patch('/:id/mlk-day', isAuthenticated, requirePermission('EVENT_REQUESTS_
   }
 });
 
+// Mark event as postponed
+router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { postponementReason, tentativeNewDate, postponementNotes } = req.body;
+
+    // Validate required field
+    if (!postponementReason) {
+      return res.status(400).json({ message: 'Postponement reason is required' });
+    }
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Prepare update data with proper snake_case database column names
+    const updateData: any = {
+      status: 'postponed',
+      postponement_reason: postponementReason,
+      postponement_notes: postponementNotes || null,
+      statusChangedAt: new Date(),
+    };
+
+    // Add tentative new date if provided
+    if (tentativeNewDate) {
+      updateData.tentative_new_date = new Date(tentativeNewDate);
+    }
+
+    // Update the event request
+    const updatedEventRequest = await storage.updateEventRequest(id, updateData);
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Log the change
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_STATUS_CHANGE',
+      `Marked event request as postponed: ${id}`,
+      { 
+        postponementReason,
+        tentativeNewDate: tentativeNewDate || null,
+        organizationName: originalEvent.organizationName 
+      }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error postponing event:', error);
+    res.status(500).json({ 
+      message: 'Failed to postpone event',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Send event details via SMS to selected users
 router.post('/:id/send-details-sms', isAuthenticated, requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
   try {

@@ -58,7 +58,9 @@ import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
+import { PostponementDialog } from './dialogs/PostponementDialog';
 import { logger } from '@/lib/logger';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 
@@ -116,6 +118,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
     setShowAiIntakeAssistantDialog,
+    showPostponementDialog,
+    setShowPostponementDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -146,6 +150,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,
     setAiIntakeAssistantEventRequest,
+    postponementEventRequest,
+    setPostponementEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -294,6 +300,36 @@ const EventRequestsManagementContent: React.FC = () => {
       id: selectedEventRequest.id,
       scheduledCallDate: combinedDateTime,
     });
+  };
+
+  // Handle postponement
+  const handlePostpone = async (eventId: number, data: {
+    postponementReason: string;
+    tentativeNewDate?: string;
+    postponementNotes?: string;
+  }) => {
+    try {
+      trackButtonClick('postpone_event', 'event_requests');
+      
+      // Use apiRequest for proper mutation pattern
+      await apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
+      
+      // Invalidate query cache to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      toast({
+        title: 'Event postponed',
+        description: 'The event has been marked as postponed.',
+      });
+    } catch (error) {
+      logger.error('Error postponing event:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to postpone event',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Handle floating button click to switch to scheduled + spreadsheet view
@@ -658,6 +694,19 @@ const EventRequestsManagementContent: React.FC = () => {
               setSelectedEventRequest(aiIntakeAssistantEventRequest);
               setIsEditing(true);
             }}
+          />
+        )}
+
+        {/* Postponement Dialog */}
+        {postponementEventRequest && (
+          <PostponementDialog
+            isOpen={showPostponementDialog}
+            onClose={() => {
+              setShowPostponementDialog(false);
+              setPostponementEventRequest(null);
+            }}
+            request={postponementEventRequest}
+            onPostpone={handlePostpone}
           />
         )}
 
