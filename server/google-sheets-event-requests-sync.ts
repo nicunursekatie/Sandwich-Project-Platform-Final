@@ -920,8 +920,8 @@ export class EventRequestsGoogleSheetsService {
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
       lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
       email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
-      organizationName: getColumnIndex(['group/organization name', 'group organization name', 'grouporganization name', 'grouporganization', 'organization', 'group', 'organization name', 'company', 'org name', 'group / organization name', 'group/organization', 'org']),
-      department: getColumnIndex(['department/team if applicable', 'department/team', 'department team', 'departmentteam', 'department', 'team', 'dept', 'division', 'department / team']),
+      organizationName: getColumnIndex(['grouporganization name  department', 'grouporganization name', 'group/organization name', 'group organization name', 'grouporganization', 'organization', 'group', 'organization name', 'company', 'org name', 'group / organization name', 'group/organization', 'org']),
+      department: getColumnIndex(['grouporganization name  department', 'department/team if applicable', 'department/team', 'department team', 'departmentteam', 'department', 'team', 'dept', 'division', 'department / team']),
       eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location', 'where will the event take place?', 'event address']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
