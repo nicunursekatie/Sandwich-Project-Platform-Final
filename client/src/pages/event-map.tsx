@@ -258,7 +258,7 @@ function LocationMarker({
 
   // Collapse when zooming out
   useEffect(() => {
-    if (zoom < 14 && expanded) {
+    if (zoom < 12 && expanded) {
       setExpanded(false);
     }
   }, [zoom, expanded]);
@@ -269,7 +269,7 @@ function LocationMarker({
   // Single event - show detailed label when zoomed in
   if (events.length === 1) {
     const event = events[0];
-    const showLabel = zoom >= 14;
+    const showLabel = zoom >= 12;
 
     if (showLabel) {
       return (
