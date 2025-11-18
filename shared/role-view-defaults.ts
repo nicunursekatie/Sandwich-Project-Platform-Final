@@ -41,7 +41,7 @@ export function getEventRequestDefaults(role: string, userId?: string): EventReq
       return {
         defaultTab: 'scheduled',
         defaultSort: 'event_date_asc',
-        defaultConfirmationFilter: 'all',
+        defaultConfirmationFilter: 'confirmed',
         showAssignedFirst: false,
         itemsPerPage: 25,
       };
@@ -51,7 +51,7 @@ export function getEventRequestDefaults(role: string, userId?: string): EventReq
       return {
         defaultTab: 'scheduled',
         defaultSort: 'event_date_asc',
-        defaultConfirmationFilter: 'all',
+        defaultConfirmationFilter: 'confirmed',
         showAssignedFirst: true,
         itemsPerPage: 25,
       };
@@ -102,7 +102,7 @@ export function getEventRequestDefaults(role: string, userId?: string): EventReq
       return {
         defaultTab: 'scheduled',
         defaultSort: 'event_date_asc',
-        defaultConfirmationFilter: 'all',
+        defaultConfirmationFilter: 'confirmed',
         showAssignedFirst: false,
         itemsPerPage: 25,
       };
@@ -112,7 +112,7 @@ export function getEventRequestDefaults(role: string, userId?: string): EventReq
       return {
         defaultTab: 'scheduled',
         defaultSort: 'event_date_asc',
-        defaultConfirmationFilter: 'all',
+        defaultConfirmationFilter: 'confirmed',
         showAssignedFirst: false,
         itemsPerPage: 10,
       };

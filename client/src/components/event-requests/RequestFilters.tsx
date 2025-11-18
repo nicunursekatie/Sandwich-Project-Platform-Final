@@ -207,6 +207,19 @@ export default function RequestFilters({
           />
         </div>
         <Select
+          value={confirmationFilter}
+          onValueChange={(value: any) => onConfirmationFilterChange(value)}
+        >
+          <SelectTrigger className="w-full md:w-44">
+            <SelectValue placeholder="Filter by..." />
+          </SelectTrigger>
+          <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+            <SelectItem value="all">All Events</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="requested">Requested</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={sortBy}
           onValueChange={(value: any) => onSortByChange(value)}
         >
@@ -238,19 +251,6 @@ export default function RequestFilters({
               <span className="hidden md:inline">Organization Z-A</span>
               <span className="md:hidden">Org Z-A</span>
             </SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={confirmationFilter}
-          onValueChange={(value: any) => onConfirmationFilterChange(value)}
-        >
-          <SelectTrigger className="w-full md:w-44">
-            <SelectValue placeholder="Filter by..." />
-          </SelectTrigger>
-          <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-            <SelectItem value="all">All Events</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="requested">Requested</SelectItem>
           </SelectContent>
         </Select>
       </div>
