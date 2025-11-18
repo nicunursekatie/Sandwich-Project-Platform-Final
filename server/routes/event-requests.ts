@@ -772,6 +772,7 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // First, update the basic fields
       const updatedEventRequest = await storage.updateEventRequest(id, {
         contactedAt: new Date(),
         completedByUserId: req.user?.id,
@@ -781,6 +782,32 @@ router.patch(
         hasRefrigeration: validatedData.hasRefrigeration,
         contactCompletionNotes: validatedData.notes,
         status: 'contact_completed',
+      });
+
+      // Then, atomically append to contactAttemptsLog using SQL to avoid race conditions
+      // This ensures concurrent contact attempts don't overwrite each other
+      const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
+        ? updatedEventRequest.contactAttemptsLog
+        : [];
+      const nextAttemptNumber = existingLog.length > 0
+        ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
+        : 1;
+
+      const contactLogEntry = {
+        attemptNumber: nextAttemptNumber,
+        timestamp: new Date().toISOString(),
+        method: validatedData.communicationMethod,
+        outcome: 'Got response',
+        notes: validatedData.notes || 'Contact completed',
+        createdBy: req.user?.id || 'system',
+        createdByName: req.user?.firstName && req.user?.lastName
+          ? `${req.user.firstName} ${req.user.lastName}`
+          : req.user?.email || 'System',
+      };
+
+      // Update with the appended log entry (now using fresh data from previous update)
+      await storage.updateEventRequest(id, {
+        contactAttemptsLog: [...existingLog, contactLogEntry],
       });
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
@@ -975,11 +1002,37 @@ router.post(
           : notes;
       }
 
+      // First, update the basic follow-up fields
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
       }
+
+      // Then, atomically append to contactAttemptsLog using fresh data to avoid race conditions
+      const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
+        ? updatedEventRequest.contactAttemptsLog
+        : [];
+      const nextAttemptNumber = existingLog.length > 0
+        ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
+        : 1;
+
+      const followUpLogEntry = {
+        attemptNumber: nextAttemptNumber,
+        timestamp: new Date().toISOString(),
+        method: method,
+        outcome: method === 'call' ? 'Completed call' : 'Sent email',
+        notes: notes || `Follow-up ${method} completed`,
+        createdBy: req.user?.id || 'system',
+        createdByName: req.user?.firstName && req.user?.lastName
+          ? `${req.user.firstName} ${req.user.lastName}`
+          : req.user?.email || 'System',
+      };
+
+      // Update with the appended log entry (now using fresh data from previous update)
+      await storage.updateEventRequest(id, {
+        contactAttemptsLog: [...existingLog, followUpLogEntry],
+      });
 
       // Enhanced audit logging with detailed field changes AND follow-up context
       await AuditLogger.logEventRequestChange(
