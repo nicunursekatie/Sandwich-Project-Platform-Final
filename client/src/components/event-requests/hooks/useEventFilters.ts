@@ -87,7 +87,9 @@ export const useEventFilters = () => {
     const user = users.find(u => u.id === userId);
     if (!user) return '';
     const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-    return fullName || user.email || user.name || '';
+    const result = fullName || user.email || user.name || '';
+    console.log('[getTspContactName]', { userId, user, fullName, result });
+    return result;
   };
 
   // Helper function to check if event has a volunteer matching the search
@@ -162,6 +164,23 @@ export const useEventFilters = () => {
           additionalContact1Name.toLowerCase().includes(searchLower) ||
           additionalContact2Name.toLowerCase().includes(searchLower) ||
           customTspContact.toLowerCase().includes(searchLower);
+
+        if (searchLower === 'kim ross') {
+          console.log('[TSP Search Debug]', {
+            eventId: request.id,
+            orgName: request.organizationName,
+            tspContact: request.tspContact,
+            tspContactAssigned: request.tspContactAssigned,
+            tspContactName,
+            additionalContact1: request.additionalContact1,
+            additionalContact1Name,
+            additionalContact2: request.additionalContact2,
+            additionalContact2Name,
+            customTspContact,
+            matchesTspContact,
+            searchLower
+          });
+        }
 
         // Check volunteers (drivers, speakers, general)
         const matchesVolunteer = eventHasVolunteerMatch(request, searchLower);
