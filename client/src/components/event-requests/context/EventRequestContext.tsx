@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
+import { logger } from '@/lib/logger';
+import { useLocation } from 'wouter';
 
 interface EventRequestContextType {
   // Event requests data
@@ -185,6 +187,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 }) => {
   // Get current user for assignment checking
   const { user } = useAuth();
+  const [location] = useLocation();
 
   // Get role-based defaults for this user
   const roleDefaults = useMemo(() => {
@@ -226,13 +229,38 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    const validTabs = ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
+    if (initialTab && validTabs.includes(initialTab)) {
+      logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
     } else if (!initialTab) {
-      // Reset to 'new' when initialTab is cleared/null
-      setActiveTab('new');
+      // Reset to 'new' when initialTab is cleared/null (but only if we're not already on a valid tab)
+      if (!validTabs.includes(activeTab)) {
+        logger.log('[EventRequestContext] Resetting activeTab to new (initialTab is null)');
+        setActiveTab('new');
+      }
     }
   }, [initialTab]);
+
+  // Also listen to URL changes directly in case the component doesn't remount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get('tab');
+    const sectionFromUrl = urlParams.get('section');
+    const validTabs = ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
+    
+    // Only update if we're on the event-requests section and there's a valid tab in the URL
+    if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
+      logger.log('[EventRequestContext] URL changed, updating activeTab from URL:', tabFromUrl, 'current activeTab:', activeTab);
+      if (activeTab !== tabFromUrl) {
+        setActiveTab(tabFromUrl);
+      }
+    } else if (sectionFromUrl === 'event-requests' && !tabFromUrl && !validTabs.includes(activeTab)) {
+      // If we're on event-requests but no tab in URL and current tab is invalid, default to 'new'
+      logger.log('[EventRequestContext] No tab in URL, defaulting to new');
+      setActiveTab('new');
+    }
+  }, [location, activeTab]);
   const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
   const [confirmationFilter, setConfirmationFilter] = useState<'all' | 'confirmed' | 'requested'>(roleDefaults.defaultConfirmationFilter);
   const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>(roleDefaults.defaultSort);
