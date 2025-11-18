@@ -136,10 +136,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 
   return (
     <div className="flex items-start justify-between mb-4">
-      <div className="flex items-start space-x-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg text-[#1A2332]">
+      <div className="flex items-start space-x-3 min-w-0 flex-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-lg text-[#1A2332] break-words min-w-0">
               {request.organizationName}
               {request.department && (
                 <span className="text-gray-600 ml-1">
@@ -147,12 +147,12 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-sm whitespace-nowrap">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
             {isInProcessStale && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Needs follow-up
               </Badge>
@@ -343,30 +343,30 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
           <Button
             size="sm"
             variant="default"
             onClick={onReactivate}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
           >
             <RefreshCw className="w-4 h-4 mr-1" />
             Reactivate Request
           </Button>
 
-          <Button size="sm" variant="outline" onClick={onView}>
+          <Button size="sm" variant="outline" onClick={onView} className="h-8">
             <Eye className="w-4 h-4 mr-1" />
             View Details
           </Button>
 
           {request.phone && (
-            <Button size="sm" variant="outline" onClick={onCall}>
+            <Button size="sm" variant="outline" onClick={onCall} className="h-8">
               <Phone className="w-4 h-4 mr-1" />
               Call
             </Button>
           )}
 
-          <Button size="sm" variant="outline" onClick={onContact}>
+          <Button size="sm" variant="outline" onClick={onContact} className="h-8">
             <Mail className="w-4 h-4 mr-1" />
             Email
           </Button>
@@ -375,7 +375,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
           >
             <FileText className="w-4 h-4 mr-1" />
             Log Contact
@@ -387,7 +387,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
             size="sm"
             onClick={() => setShowMessageDialog(true)}
             variant="ghost"
-            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
             aria-label="Message about this event"
           >
             <MessageSquare className="w-4 h-4" aria-hidden="true" />
@@ -399,7 +399,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 h-8"
                   data-testid="button-delete-request"
                 >
                   <Trash2 className="w-4 h-4" />
