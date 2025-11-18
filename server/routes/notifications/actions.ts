@@ -323,7 +323,7 @@ async function handleMessageAction(
 
   return {
     success: true,
-    message: result,
+    result: result,
     redirectTo: result.redirectTo,
     message: `Message ${actionType} successful`
   };
