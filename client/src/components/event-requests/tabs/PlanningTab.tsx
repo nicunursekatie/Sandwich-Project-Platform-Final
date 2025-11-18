@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { format, differenceInDays, isPast, isFuture, addDays } from 'date-fns';
+import { useLocation } from 'wouter';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import {
@@ -33,12 +34,42 @@ interface PlanningTabProps {
 export function PlanningTab({
   eventRequests
 }: PlanningTabProps) {
+  const [, setLocation] = useLocation();
   const [showSandwichModal, setShowSandwichModal] = React.useState(false);
   const [showStaffingModal, setShowStaffingModal] = React.useState(false);
   const [showUnassignedModal, setShowUnassignedModal] = React.useState(false);
   const [showOverdueModal, setShowOverdueModal] = React.useState(false);
   const [showStaleModal, setShowStaleModal] = React.useState(false);
   const [showMissingInfoModal, setShowMissingInfoModal] = React.useState(false);
+
+  const handleEventClick = (eventId: number, status: string) => {
+    setShowUnassignedModal(false);
+    setShowOverdueModal(false);
+    setShowStaleModal(false);
+    setShowMissingInfoModal(false);
+
+    // Navigate to the appropriate tab based on event status
+    const tabMap: Record<string, string> = {
+      'new': 'new',
+      'in_process': 'in_process',
+      'scheduled': 'scheduled',
+      'completed': 'completed',
+      'declined': 'declined',
+      'postponed': 'declined',
+      'cancelled': 'declined',
+    };
+
+    const tab = tabMap[status.toLowerCase()] || 'new';
+    setLocation(`/?section=event-requests&tab=${tab}`);
+
+    // Scroll to the event card after a brief delay to allow tab switch
+    setTimeout(() => {
+      const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
+      if (eventCard) {
+        eventCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
 
   // Calculate time-based metrics
   const metrics = useMemo(() => {
@@ -513,8 +544,27 @@ export function PlanningTab({
               <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#47B3CB' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <button
+                      onClick={() => handleEventClick(event.id, event.status || 'new')}
+                      className="font-semibold text-slate-900 hover:underline text-left"
+                      style={{ color: '#236383' }}
+                    >
+                      {event.organizationName}
+                    </button>
+                    {event.department && (
+                      <div className="text-xs text-slate-500 mb-1">{event.department}</div>
+                    )}
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
+                      {(event.firstName || event.lastName) && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          Contact: {event.firstName} {event.lastName}
+                          {event.phone && ` • ${event.phone}`}
+                        </div>
+                      )}
+                      {event.email && (
+                        <div className="text-xs">✉️ {event.email}</div>
+                      )}
                       {event.desiredEventDate && (() => {
                         try {
                           const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')
@@ -525,7 +575,7 @@ export function PlanningTab({
                           return (
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {format(date, 'MMM d, yyyy')}
+                              {format(date, 'EEEE, MMM d, yyyy')}
                             </div>
                           );
                         } catch (e) {
@@ -536,6 +586,13 @@ export function PlanningTab({
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
                           {event.eventAddress}
+                        </div>
+                      )}
+                      {event.estimatedAttendees && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          Est. {event.estimatedAttendees} attendees
+                          {event.estimatedSandwichCount && ` • ${event.estimatedSandwichCount} sandwiches`}
                         </div>
                       )}
                     </div>
@@ -568,7 +625,13 @@ export function PlanningTab({
               <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#A31C41' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <button
+                      onClick={() => handleEventClick(event.id, event.status || 'in_process')}
+                      className="font-semibold hover:underline text-left"
+                      style={{ color: '#236383' }}
+                    >
+                      {event.organizationName}
+                    </button>
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
                       {event.createdAt && (
                         <div className="flex items-center gap-1" style={{ color: '#A31C41' }}>
@@ -623,7 +686,13 @@ export function PlanningTab({
               <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#FBAD3F' }}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <button
+                      onClick={() => handleEventClick(event.id, event.status || 'new')}
+                      className="font-semibold hover:underline text-left"
+                      style={{ color: '#236383' }}
+                    >
+                      {event.organizationName}
+                    </button>
                     <div className="text-sm text-slate-600 mt-1 space-y-1">
                       {event.createdAt && (
                         <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
@@ -684,7 +753,13 @@ export function PlanningTab({
                 <div key={event.id} className="premium-card-flat p-4 border-l-4" style={{ borderColor: '#FBAD3F' }}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                      <button
+                        onClick={() => handleEventClick(event.id, event.status || 'in_process')}
+                        className="font-semibold hover:underline text-left"
+                        style={{ color: '#236383' }}
+                      >
+                        {event.organizationName}
+                      </button>
                       <div className="text-sm text-slate-600 mt-1 space-y-1">
                         <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
                           <XCircle className="w-3 h-3" />
