@@ -11,6 +11,7 @@ import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
+import { PlanningTab } from './tabs/PlanningTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
@@ -269,6 +270,13 @@ const EventRequestsManagementContent: React.FC = () => {
       tabs.admin_overview = <AdminOverviewTab eventRequests={eventRequests} />;
     }
 
+    // Add planning tab for users with admin overview permission (same permission)
+    if (user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
+        user?.permissions?.includes('view_admin_overview') ||
+        user?.role === 'super_admin') {
+      tabs.planning = <PlanningTab eventRequests={eventRequests} />;
+    }
+
     return tabs;
   }, [eventRequests, user?.role, user?.permissions]);
 
@@ -371,22 +379,6 @@ const EventRequestsManagementContent: React.FC = () => {
               >
                 <Plus className="w-4 h-4" />
                 {isMobile ? 'Add Event' : 'Add Manual Event Request'}
-              </button>
-              <button
-                onClick={() => setShowSandwichPlanningModal(true)}
-                className="premium-btn-outline"
-                data-testid="button-sandwich-planning"
-              >
-                <span className="text-lg">🥪</span>
-                <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
-              </button>
-              <button
-                onClick={() => setShowStaffingPlanningModal(true)}
-                className="premium-btn-outline"
-                data-testid="button-staffing-planning"
-              >
-                <Users className="w-4 h-4" />
-                <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
               </button>
               <MissingInfoSummaryDialog />
               <ToolkitSentPendingDialog />

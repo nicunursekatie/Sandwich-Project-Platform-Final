@@ -9,6 +9,7 @@ import SpreadsheetAnalyticsDashboard from '@/components/spreadsheet-analytics-da
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import type { UserForPermissions } from '@shared/types';
 import {
   Card,
   CardDescription,
@@ -16,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function AdminSettings() {
@@ -24,7 +25,7 @@ export default function AdminSettings() {
   const { trackView, trackClick } = useActivityTracker();
 
   useEffect(() => {
-    if (user && hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS)) {
+    if (user && hasPermission(user as UserForPermissions, PERMISSIONS.ADMIN_PANEL_ACCESS)) {
       trackView(
         'Admin',
         'Admin',
@@ -35,7 +36,7 @@ export default function AdminSettings() {
   }, [user, trackView]);
 
   // Check for admin panel access permission
-  if (!isLoading && (!user || !hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS))) {
+  if (!isLoading && (!user || !hasPermission(user as UserForPermissions, PERMISSIONS.ADMIN_PANEL_ACCESS))) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white p-8">
         <Card className="w-full max-w-md text-center shadow-lg">
@@ -45,7 +46,7 @@ export default function AdminSettings() {
             </div>
             <CardTitle className="text-xl font-sub-heading text-gray-900">Access Restricted</CardTitle>
             <CardDescription className="text-base text-gray-600 leading-relaxed">
-              You don't have permission to access admin settings. Contact an
+              You don&apos;t have permission to access admin settings. Contact an
               administrator if you need access.
             </CardDescription>
           </CardHeader>
