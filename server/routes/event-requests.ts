@@ -772,43 +772,53 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // First, update the basic fields
-      const updatedEventRequest = await storage.updateEventRequest(id, {
-        contactedAt: new Date(),
-        completedByUserId: req.user?.id,
-        communicationMethod: validatedData.communicationMethod,
-        eventAddress: validatedData.eventAddress,
-        estimatedSandwichCount: validatedData.estimatedSandwichCount,
-        hasRefrigeration: validatedData.hasRefrigeration,
-        contactCompletionNotes: validatedData.notes,
-        status: 'contact_completed',
-      });
+      // Build the contact log entry template (attempt number will be calculated in SQL)
+      const timestamp = new Date().toISOString();
+      const userName = req.user?.firstName && req.user?.lastName
+        ? `${req.user.firstName} ${req.user.lastName}`
+        : req.user?.email || 'System';
 
-      // Then, atomically append to contactAttemptsLog using SQL to avoid race conditions
-      // This ensures concurrent contact attempts don't overwrite each other
-      const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
-        ? updatedEventRequest.contactAttemptsLog
-        : [];
-      const nextAttemptNumber = existingLog.length > 0
-        ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
-        : 1;
+      // Atomically append to contactAttemptsLog using raw SQL with row-level locking
+      // The CTE uses FOR UPDATE to lock the row before reading, preventing race conditions
+      await db.execute(
+        sql`WITH current_log AS (
+              SELECT 
+                COALESCE(
+                  (SELECT MAX((entry->>'attemptNumber')::int) 
+                   FROM jsonb_array_elements(COALESCE(contact_attempts_log, '[]'::jsonb)) AS entry),
+                  0
+                ) + 1 AS next_attempt_number
+              FROM event_requests
+              WHERE id = ${id}
+              FOR UPDATE
+            )
+            UPDATE event_requests 
+            SET contact_attempts_log = COALESCE(contact_attempts_log, '[]'::jsonb) || 
+                jsonb_build_array(
+                  jsonb_build_object(
+                    'attemptNumber', (SELECT next_attempt_number FROM current_log),
+                    'timestamp', ${timestamp},
+                    'method', ${validatedData.communicationMethod},
+                    'outcome', 'Got response',
+                    'notes', ${validatedData.notes || 'Contact completed'},
+                    'createdBy', ${req.user?.id || 'system'},
+                    'createdByName', ${userName}
+                  )
+                ),
+                contacted_at = ${new Date()},
+                completed_by_user_id = ${req.user?.id},
+                communication_method = ${validatedData.communicationMethod},
+                event_address = COALESCE(${validatedData.eventAddress}, event_address),
+                estimated_sandwich_count = COALESCE(${validatedData.estimatedSandwichCount}, estimated_sandwich_count),
+                has_refrigeration = CASE WHEN ${validatedData.hasRefrigeration !== undefined} THEN ${validatedData.hasRefrigeration} ELSE has_refrigeration END,
+                contact_completion_notes = COALESCE(${validatedData.notes}, contact_completion_notes),
+                status = 'contact_completed',
+                updated_at = NOW()
+            WHERE id = ${id}`
+      );
 
-      const contactLogEntry = {
-        attemptNumber: nextAttemptNumber,
-        timestamp: new Date().toISOString(),
-        method: validatedData.communicationMethod,
-        outcome: 'Got response',
-        notes: validatedData.notes || 'Contact completed',
-        createdBy: req.user?.id || 'system',
-        createdByName: req.user?.firstName && req.user?.lastName
-          ? `${req.user.firstName} ${req.user.lastName}`
-          : req.user?.email || 'System',
-      };
-
-      // Update with the appended log entry (now using fresh data from previous update)
-      await storage.updateEventRequest(id, {
-        contactAttemptsLog: [...existingLog, contactLogEntry],
-      });
+      // Fetch the updated event request for response and audit logging
+      const updatedEventRequest = await storage.getEventRequestById(id);
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
@@ -1002,37 +1012,71 @@ router.post(
           : notes;
       }
 
-      // First, update the basic follow-up fields
-      const updatedEventRequest = await storage.updateEventRequest(id, updates);
+      // Build the follow-up log entry template (attempt number will be calculated in SQL)
+      const timestamp = new Date().toISOString();
+      const userName = req.user?.firstName && req.user?.lastName
+        ? `${req.user.firstName} ${req.user.lastName}`
+        : req.user?.email || 'System';
+      const outcome = method === 'call' ? 'Completed call' : 'Sent email';
+
+      // Build dynamic SET clauses for optional fields (only update if provided to avoid NULL overwrites)
+      const optionalUpdates: any[] = [];
+      if (updates.desiredEventDate !== undefined && updates.desiredEventDate !== null) {
+        optionalUpdates.push(sql`desired_event_date = ${updates.desiredEventDate}`);
+      }
+      if (method === 'call' && updatedEmail) {
+        optionalUpdates.push(sql`email = ${updatedEmail}`);
+        optionalUpdates.push(sql`updated_email = ${updatedEmail}`);
+      }
+      if (updates.followUpNotes !== undefined && updates.followUpNotes !== null) {
+        optionalUpdates.push(sql`follow_up_notes = ${updates.followUpNotes}`);
+      }
+
+      // Atomically update all fields including contact attempt log with row-level locking
+      // The CTE uses FOR UPDATE to lock the row before reading, preventing race conditions
+      const optionalSetClause = optionalUpdates.length > 0 
+        ? sql`, ${sql.join(optionalUpdates, sql`, `)}`
+        : sql``;
+
+      await db.execute(
+        sql`WITH current_log AS (
+              SELECT 
+                COALESCE(
+                  (SELECT MAX((entry->>'attemptNumber')::int) 
+                   FROM jsonb_array_elements(COALESCE(contact_attempts_log, '[]'::jsonb)) AS entry),
+                  0
+                ) + 1 AS next_attempt_number
+              FROM event_requests
+              WHERE id = ${id}
+              FOR UPDATE
+            )
+            UPDATE event_requests 
+            SET contact_attempts_log = COALESCE(contact_attempts_log, '[]'::jsonb) || 
+                jsonb_build_array(
+                  jsonb_build_object(
+                    'attemptNumber', (SELECT next_attempt_number FROM current_log),
+                    'timestamp', ${timestamp},
+                    'method', ${method},
+                    'outcome', ${outcome},
+                    'notes', ${notes || `Follow-up ${method} completed`},
+                    'createdBy', ${req.user?.id || 'system'},
+                    'createdByName', ${userName}
+                  )
+                ),
+                follow_up_method = ${method},
+                follow_up_date = NOW(),
+                status = 'in_process',
+                updated_at = NOW()
+                ${optionalSetClause}
+            WHERE id = ${id}`
+      );
+
+      // Fetch the updated event request for response and audit logging
+      const updatedEventRequest = await storage.getEventRequestById(id);
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
       }
-
-      // Then, atomically append to contactAttemptsLog using fresh data to avoid race conditions
-      const existingLog = Array.isArray(updatedEventRequest.contactAttemptsLog)
-        ? updatedEventRequest.contactAttemptsLog
-        : [];
-      const nextAttemptNumber = existingLog.length > 0
-        ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
-        : 1;
-
-      const followUpLogEntry = {
-        attemptNumber: nextAttemptNumber,
-        timestamp: new Date().toISOString(),
-        method: method,
-        outcome: method === 'call' ? 'Completed call' : 'Sent email',
-        notes: notes || `Follow-up ${method} completed`,
-        createdBy: req.user?.id || 'system',
-        createdByName: req.user?.firstName && req.user?.lastName
-          ? `${req.user.firstName} ${req.user.lastName}`
-          : req.user?.email || 'System',
-      };
-
-      // Update with the appended log entry (now using fresh data from previous update)
-      await storage.updateEventRequest(id, {
-        contactAttemptsLog: [...existingLog, followUpLogEntry],
-      });
 
       // Enhanced audit logging with detailed field changes AND follow-up context
       await AuditLogger.logEventRequestChange(
