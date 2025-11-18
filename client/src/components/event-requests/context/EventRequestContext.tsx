@@ -18,6 +18,7 @@ interface EventRequestContextType {
   setActiveTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  debouncedSearchQuery: string;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
   myAssignmentsStatusFilter: string[];
@@ -225,6 +226,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   };
   const [activeTab, setActiveTab] = useState(getDefaultTab());
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Update activeTab when initialTab prop changes (for navigation)
@@ -479,10 +481,19 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     }
   }, [activeTab]);
 
+  // Debounce search query to improve performance (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, sortBy]);
+  }, [debouncedSearchQuery, statusFilter, sortBy]);
 
   // Track if we've already handled the initial event to prevent reopening
   const [hasHandledInitialEvent, setHasHandledInitialEvent] = useState(false);
@@ -534,6 +545,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setActiveTab,
     searchQuery,
     setSearchQuery,
+    debouncedSearchQuery,
     statusFilter,
     setStatusFilter,
     myAssignmentsStatusFilter,
