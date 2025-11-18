@@ -2608,6 +2608,17 @@ router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
   }
 });
 
+// Get all event volunteers (for admin search/filtering)
+router.get('/all-volunteers', isAuthenticated, async (req, res) => {
+  try {
+    const allVolunteers = await storage.getAllEventVolunteers();
+    res.json(allVolunteers);
+  } catch (error) {
+    logger.error('Error fetching all event volunteers:', error);
+    res.status(500).json({ error: 'Failed to fetch all event volunteers' });
+  }
+});
+
 // Get all volunteer signups for the current user
 router.get('/my-volunteers', isAuthenticated, async (req, res) => {
   try {

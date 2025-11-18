@@ -20,7 +20,7 @@ export const useEventFilters = () => {
 
   // Fetch event volunteers data for all events (needed for search)
   const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
-    queryKey: ['/api/event-volunteers'],
+    queryKey: ['/api/event-requests/all-volunteers'],
     enabled: true,
   });
 
