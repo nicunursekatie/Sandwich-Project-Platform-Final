@@ -1037,7 +1037,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Floating Action Button for Spreadsheet View - Only show when NOT on scheduled tab */}
         {activeTab !== 'scheduled' && (
-          <div className="fixed bottom-6 right-6 z-50">
+          <div className="fixed bottom-24 sm:bottom-6 right-6 z-50">
             <button
               onClick={handleSwitchToSpreadsheet}
               className="h-16 w-16 rounded-full shadow-2xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
