@@ -303,6 +303,19 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               </a>
             </div>
           )}
+          {request.eventAddress && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
+              >
+                {request.eventAddress}
+              </a>
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           {request.phone && onCall && (
