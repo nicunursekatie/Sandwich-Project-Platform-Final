@@ -674,21 +674,21 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           <div className="flex-1" />
 
+          {/* Message - always visible */}
+          <Button
+            size="sm"
+            onClick={() => setShowMessageDialog(true)}
+            variant="ghost"
+            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+            aria-label="Message about this event"
+          >
+            <MessageSquare className="w-4 h-4" aria-hidden="true" />
+          </Button>
+
           {canEdit && (
-            <>
-              <Button
-                size="sm"
-                onClick={() => setShowMessageDialog(true)}
-                variant="ghost"
-                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-                aria-label="Message about this event"
-              >
-                <MessageSquare className="w-4 h-4" aria-hidden="true" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onEdit}>
-                <Edit className="w-4 h-4" />
-              </Button>
-            </>
+            <Button size="sm" variant="ghost" onClick={onEdit}>
+              <Edit className="w-4 h-4" />
+            </Button>
           )}
           {canDelete && (
             <ConfirmationDialog

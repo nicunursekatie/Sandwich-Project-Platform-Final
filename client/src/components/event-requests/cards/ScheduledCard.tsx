@@ -953,45 +953,49 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Quick Actions */}
-          {canEdit && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => setShowMessageDialog(true)}
-                variant="ghost"
-                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-                aria-label="Message about this event"
-              >
-                <MessageSquare className="w-4 h-4" aria-hidden="true" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onEdit}
-                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <ConfirmationDialog
-                trigger={
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
-                    data-testid="button-delete-request"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                }
-                title="Delete Scheduled Event"
-                description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
-                confirmText="Delete Event"
-                cancelText="Cancel"
-                onConfirm={onDelete}
-                variant="destructive"
-              />
-            </div>
-          )}
+          <div className="flex gap-2">
+            {/* Message - always visible */}
+            <Button
+              size="sm"
+              onClick={() => setShowMessageDialog(true)}
+              variant="ghost"
+              className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+              aria-label="Message about this event"
+            >
+              <MessageSquare className="w-4 h-4" aria-hidden="true" />
+            </Button>
+
+            {canEdit && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onEdit}
+                  className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <ConfirmationDialog
+                  trigger={
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
+                      data-testid="button-delete-request"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  }
+                  title="Delete Scheduled Event"
+                  description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
+                  confirmText="Delete Event"
+                  cancelText="Cancel"
+                  onConfirm={onDelete}
+                  variant="destructive"
+                />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Contact Information Section */}
