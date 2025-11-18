@@ -225,6 +225,156 @@ async function sendVolunteerReminders(): Promise<{
         }
       }
 
+      // Process legacy speaker/driver/volunteer assignments
+      const legacyAssignments: Array<{ userId: string; role: string }> = [];
+
+      // Collect speakers from assignedSpeakerIds
+      if (event.assignedSpeakerIds && Array.isArray(event.assignedSpeakerIds)) {
+        for (const speakerId of event.assignedSpeakerIds) {
+          if (speakerId) legacyAssignments.push({ userId: speakerId, role: 'speaker' });
+        }
+      }
+
+      // Collect drivers from assignedDriverIds
+      if (event.assignedDriverIds && Array.isArray(event.assignedDriverIds)) {
+        for (const driverId of event.assignedDriverIds) {
+          if (driverId) legacyAssignments.push({ userId: driverId, role: 'driver' });
+        }
+      }
+
+      // Collect volunteers from assignedVolunteerIds
+      if (event.assignedVolunteerIds && Array.isArray(event.assignedVolunteerIds)) {
+        for (const volunteerId of event.assignedVolunteerIds) {
+          if (volunteerId) legacyAssignments.push({ userId: volunteerId, role: 'volunteer' });
+        }
+      }
+
+      // Process legacy assignments
+      for (const assignment of legacyAssignments) {
+        volunteersProcessed++;
+
+        try {
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, assignment.userId))
+            .limit(1);
+
+          if (!user) continue;
+
+          const volunteerEmail = user.preferredEmail || user.email;
+          const volunteerName = user.displayName || user.firstName || 'Volunteer';
+          const volunteerPhone = getUserPhoneNumber(user);
+          const preferences = getEventNotificationPreferences(user) || {
+            primaryReminderEnabled: true,
+            primaryReminderHours: 24,
+            primaryReminderType: 'email',
+            secondaryReminderEnabled: false,
+            secondaryReminderHours: 1,
+            secondaryReminderType: 'email',
+          };
+
+          // Check primary reminder
+          if (
+            preferences.primaryReminderEnabled &&
+            hoursUntilEvent >= (preferences.primaryReminderHours - 1) &&
+            hoursUntilEvent <= (preferences.primaryReminderHours + 1)
+          ) {
+            // Send email reminder
+            if (
+              (preferences.primaryReminderType === 'email' || preferences.primaryReminderType === 'both') &&
+              volunteerEmail
+            ) {
+              const emailSent = await EmailNotificationService.sendVolunteerReminderNotification(
+                volunteerEmail,
+                volunteerName,
+                event.id,
+                event.organizationName || 'Unknown Organization',
+                event.scheduledEventDate!,
+                assignment.role
+              );
+
+              if (emailSent) {
+                remindersSent++;
+                cronLogger.info(`Sent primary email reminder to legacy ${assignment.role} ${volunteerEmail} for event ${event.id}`);
+              }
+            }
+
+            // Send SMS reminder
+            if (
+              (preferences.primaryReminderType === 'sms' || preferences.primaryReminderType === 'both') &&
+              volunteerPhone
+            ) {
+              const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              const smsSent = await sendEventReminderSMS(
+                volunteerPhone,
+                volunteerName,
+                event.organizationName || 'Unknown Organization',
+                event.scheduledEventDate,
+                assignment.role,
+                `${appUrl}/dashboard?section=event-requests`
+              );
+
+              if (smsSent.success) {
+                remindersSent++;
+                cronLogger.info(`Sent primary SMS reminder to legacy ${assignment.role} ${volunteerPhone} for event ${event.id}`);
+              }
+            }
+          }
+
+          // Check secondary reminder
+          if (
+            preferences.secondaryReminderEnabled &&
+            hoursUntilEvent >= (preferences.secondaryReminderHours - 1) &&
+            hoursUntilEvent <= (preferences.secondaryReminderHours + 1)
+          ) {
+            // Send email reminder
+            if (
+              (preferences.secondaryReminderType === 'email' || preferences.secondaryReminderType === 'both') &&
+              volunteerEmail
+            ) {
+              const emailSent = await EmailNotificationService.sendVolunteerReminderNotification(
+                volunteerEmail,
+                volunteerName,
+                event.id,
+                event.organizationName || 'Unknown Organization',
+                event.scheduledEventDate!,
+                assignment.role
+              );
+
+              if (emailSent) {
+                remindersSent++;
+                cronLogger.info(`Sent secondary email reminder to legacy ${assignment.role} ${volunteerEmail} for event ${event.id}`);
+              }
+            }
+
+            // Send SMS reminder
+            if (
+              (preferences.secondaryReminderType === 'sms' || preferences.secondaryReminderType === 'both') &&
+              volunteerPhone
+            ) {
+              const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              const smsSent = await sendEventReminderSMS(
+                volunteerPhone,
+                volunteerName,
+                event.organizationName || 'Unknown Organization',
+                event.scheduledEventDate,
+                assignment.role,
+                `${appUrl}/dashboard?section=event-requests`
+              );
+
+              if (smsSent.success) {
+                remindersSent++;
+                cronLogger.info(`Sent secondary SMS reminder to legacy ${assignment.role} ${volunteerPhone} for event ${event.id}`);
+              }
+            }
+          }
+        } catch (error) {
+          errors++;
+          cronLogger.error(`Error sending reminder for legacy ${assignment.role} ${assignment.userId}:`, error);
+        }
+      }
+
       // Process TSP contact reminders
       try {
         const tspContactIds: string[] = [];
