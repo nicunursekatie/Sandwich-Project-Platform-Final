@@ -77,31 +77,20 @@ export const useEventAssignments = () => {
       if (userIdOrName.startsWith('host-contact-')) {
         const contactId = userIdOrName.replace('host-contact-', '');
         const numericContactId = parseInt(contactId);
-        
-        logger.log('🔍 RESOLVING HOST CONTACT:', { 
-          userIdOrName, 
-          contactId, 
-          numericContactId,
-          hostsWithContactsLoaded: !!hostsWithContacts,
-          hostsWithContactsCount: hostsWithContacts?.length || 0
-        });
-        
+
         // Check if hostsWithContacts is loaded and not empty
         if (hostsWithContacts && hostsWithContacts.length > 0) {
           // Find the contact in hostsWithContacts
           for (const host of hostsWithContacts) {
-            logger.log('🔍 Checking host:', host.name, 'contacts:', host.contacts?.length || 0);
             const contact = host.contacts?.find((c: any) => c.id === numericContactId);
             if (contact) {
               const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email;
-              logger.log('✅ FOUND HOST CONTACT:', contactName);
               return contactName || `Contact #${contactId}`;
             }
           }
         }
-        
+
         // If hostsWithContacts not loaded yet, show loading state instead of raw ID
-        logger.warn(`❌ Host contact data not loaded or contact not found: ${userIdOrName}`);
         return 'Loading...';
       }
 
@@ -151,14 +140,12 @@ export const useEventAssignments = () => {
         // First try drivers - ensure driver object exists and has required fields
         const driver = drivers.find((d) => d && (d.id === numericId || d.id?.toString() === userIdOrName));
         if (driver && driver.name) {
-          logger.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
           return driver.name;
         }
-        
+
         // Then try volunteers (speakers are volunteers) - ensure volunteer object exists
         const volunteer = volunteers.find((v) => v && (v.id === numericId || v.id?.toString() === userIdOrName));
         if (volunteer && volunteer.name) {
-          logger.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
           return volunteer.name;
         }
         
