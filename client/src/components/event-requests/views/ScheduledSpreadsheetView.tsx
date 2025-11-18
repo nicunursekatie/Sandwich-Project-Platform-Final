@@ -115,6 +115,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const [sandwichDialogEventId, setSandwichDialogEventId] = useState<number | null>(null);
   const [dialogSandwichTypes, setDialogSandwichTypes] = useState<Array<{ type: string; quantity: number }>>([]);
 
+  // Time editing state for AM/PM
+  const [timePeriod, setTimePeriod] = useState<'AM' | 'PM'>('AM');
+
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
     return eventRequests.filter(req => req.status === 'scheduled');
@@ -345,6 +348,51 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       }
     }
 
+    // Special handling for time fields - parse to 12-hour format with AM/PM
+    if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(field)) {
+      const timeStr = currentValue?.toString() || '';
+      if (timeStr) {
+        // Check if already in 12-hour format with AM/PM
+        if (timeStr.includes('AM') || timeStr.includes('PM') || timeStr.includes('am') || timeStr.includes('pm')) {
+          const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)$/i);
+          if (match) {
+            setEditingValue(`${match[1]}:${match[2]}`);
+            setTimePeriod(match[3].toUpperCase() as 'AM' | 'PM');
+            return;
+          }
+        }
+        // Parse 24-hour format to 12-hour
+        const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+        if (match) {
+          const hours24 = parseInt(match[1], 10);
+          const minutes = match[2];
+          let hours12 = hours24;
+          let period: 'AM' | 'PM' = 'AM';
+          
+          if (hours24 === 0) {
+            hours12 = 12;
+            period = 'AM';
+          } else if (hours24 < 12) {
+            hours12 = hours24;
+            period = 'AM';
+          } else if (hours24 === 12) {
+            hours12 = 12;
+            period = 'PM';
+          } else {
+            hours12 = hours24 - 12;
+            period = 'PM';
+          }
+          
+          setEditingValue(`${hours12}:${minutes}`);
+          setTimePeriod(period);
+          return;
+        }
+      }
+      setEditingValue('');
+      setTimePeriod('AM');
+      return;
+    }
+
     setEditingValue(currentValue?.toString() || '');
   };
 
@@ -479,6 +527,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     setEditingScheduledId(null);
     setEditingField(null);
     setEditingValue('');
+    setTimePeriod('AM');
   };
   
   // Sandwich types dialog handlers
@@ -1193,28 +1242,65 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
 
-      // Special handling for time fields with auto-formatting
+      // Special handling for time fields with auto-formatting and AM/PM selector
       if (['eventStartTime', 'eventEndTime', 'pickupTime'].includes(column.id)) {
         const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           const input = e.target.value;
           // Remove all non-digits
           const digitsOnly = input.replace(/\D/g, '');
 
-          // Auto-format as HH:MM while typing
+          // Auto-format as HH:MM while typing (12-hour format)
           if (digitsOnly.length === 0) {
             setEditingValue('');
           } else if (digitsOnly.length <= 2) {
-            setEditingValue(digitsOnly);
+            // Just hours
+            const hours = parseInt(digitsOnly, 10);
+            if (hours > 12) {
+              // If > 12, treat as single digit hour
+              setEditingValue(digitsOnly.slice(0, 1));
+            } else {
+              setEditingValue(digitsOnly);
+            }
           } else if (digitsOnly.length <= 4) {
             const hours = digitsOnly.slice(0, 2);
             const minutes = digitsOnly.slice(2);
-            setEditingValue(`${hours}:${minutes}`);
+            const hoursNum = parseInt(hours, 10);
+            // Validate hours (1-12)
+            if (hoursNum > 12) {
+              // If hours > 12, use first digit as hour
+              setEditingValue(`${digitsOnly.slice(0, 1)}:${digitsOnly.slice(1, 3)}`);
+            } else {
+              setEditingValue(`${hours}:${minutes}`);
+            }
           } else {
             // Limit to 4 digits (HHMM)
             const hours = digitsOnly.slice(0, 2);
             const minutes = digitsOnly.slice(2, 4);
-            setEditingValue(`${hours}:${minutes}`);
+            const hoursNum = parseInt(hours, 10);
+            if (hoursNum > 12) {
+              setEditingValue(`${digitsOnly.slice(0, 1)}:${digitsOnly.slice(1, 3)}`);
+            } else {
+              setEditingValue(`${hours}:${minutes}`);
+            }
           }
+        };
+
+        // Convert 12-hour format to 24-hour format for saving
+        const convertTo24Hour = (time12: string, period: 'AM' | 'PM'): string => {
+          if (!time12) return '';
+          const match = time12.match(/^(\d{1,2}):(\d{2})$/);
+          if (!match) return time12;
+          
+          let hours = parseInt(match[1], 10);
+          const minutes = match[2];
+          
+          if (period === 'AM') {
+            if (hours === 12) hours = 0;
+          } else { // PM
+            if (hours !== 12) hours += 12;
+          }
+          
+          return `${hours.toString().padStart(2, '0')}:${minutes}`;
         };
 
         return (
@@ -1223,15 +1309,35 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               type="text"
               value={editingValue}
               onChange={handleTimeChange}
-              placeholder="HH:MM"
-              className="h-7 text-sm px-1.5 py-0.5 w-20"
+              placeholder="H:MM"
+              className="h-7 text-sm px-1.5 py-0.5 w-16"
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Enter') {
+                  const time24 = convertTo24Hour(editingValue, timePeriod);
+                  setEditingValue(time24);
+                  saveEdit();
+                }
                 if (e.key === 'Escape') cancelEdit();
               }}
             />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+            <Select
+              value={timePeriod}
+              onValueChange={(value) => setTimePeriod(value as 'AM' | 'PM')}
+            >
+              <SelectTrigger className="h-7 text-sm w-14 px-1.5 py-0.5">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AM">AM</SelectItem>
+                <SelectItem value="PM">PM</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="ghost" onClick={() => {
+              const time24 = convertTo24Hour(editingValue, timePeriod);
+              setEditingValue(time24);
+              saveEdit();
+            }} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
               <Save className="h-6 w-6 md:h-3 md:w-3" />
             </Button>
             <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
