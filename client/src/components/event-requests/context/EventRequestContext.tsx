@@ -212,14 +212,25 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [activeTab, setActiveTab] = useState(initialTab || roleDefaults.defaultTab);
+  // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
+  const getDefaultTab = () => {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+      return initialTab;
+    }
+    // Default to 'new' for event requests when no tab is specified
+    return 'new';
+  };
+  const [activeTab, setActiveTab] = useState(getDefaultTab());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    if (initialTab) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
+    } else if (!initialTab) {
+      // Reset to 'new' when initialTab is cleared/null
+      setActiveTab('new');
     }
   }, [initialTab]);
   const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
