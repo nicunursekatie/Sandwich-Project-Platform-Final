@@ -28,7 +28,7 @@ export default function SimpleNav({
 }) {
   try {
     const { user } = useAuth();
-    const [location] = useLocation();
+    const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
 
     // State for collapsible sections
@@ -90,15 +90,18 @@ export default function SimpleNav({
     };
 
     const isActive = (href: string) => {
+      // Extract base section from href (remove query params)
+      const baseHref = href.split('?')[0];
+      
       if (activeSection) {
-        if (href === 'dashboard')
+        if (baseHref === 'dashboard')
           return activeSection === 'dashboard' || activeSection === '';
-        return activeSection === href;
+        return activeSection === baseHref;
       }
 
-      if (href === 'dashboard')
+      if (baseHref === 'dashboard')
         return location === '/' || location === '/dashboard';
-      return location === `/${href}`;
+      return location === `/${baseHref}`;
     };
 
     // Group items for visual separation
@@ -213,7 +216,19 @@ export default function SimpleNav({
                 e.preventDefault();
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
-                onSectionChange(item.href);
+                
+                // Handle hrefs with query parameters
+                if (item.href.includes('?')) {
+                  const [baseSection, queryString] = item.href.split('?');
+                  logger.log('Navigation with query params:', { baseSection, queryString });
+                  
+                  // Navigate using Wouter's setLocation to keep router in sync
+                  // The Dashboard will pick up the section and tab from URL params
+                  const newUrl = `/dashboard?section=${baseSection}&${queryString}`;
+                  setLocation(newUrl);
+                } else {
+                  onSectionChange(item.href);
+                }
               }}
               title={isCollapsed ? item.label : undefined}
               data-nav-id={item.id}
