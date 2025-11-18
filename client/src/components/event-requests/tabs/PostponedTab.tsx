@@ -5,7 +5,7 @@ import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { DeclinedCard } from '../cards/DeclinedCard';
+import { PostponedCard } from '../cards/PostponedCard';
 
 export const PostponedTab: React.FC = () => {
   const { toast } = useToast();
@@ -55,7 +55,7 @@ export const PostponedTab: React.FC = () => {
         </div>
       ) : (
         postponedRequests.map((request) => (
-          <DeclinedCard
+          <PostponedCard
             key={request.id}
             request={request}
             resolveUserName={resolveUserName}
