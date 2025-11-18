@@ -337,34 +337,32 @@ export const ScheduledTab: React.FC = () => {
 
   return (
     <>
-      {/* View Toggle */}
-      {scheduledRequests.length > 0 && (
-        <div className="flex items-center justify-between mb-4 px-4">
-          <div className="text-sm text-gray-600">
-            {scheduledRequests.length} scheduled event{scheduledRequests.length !== 1 ? 's' : ''}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'card' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleViewModeChange('card')}
-              className="flex items-center gap-2"
-            >
-              <LayoutGrid className="h-4 w-4" />
-              Card View
-            </Button>
-            <Button
-              variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleViewModeChange('spreadsheet')}
-              className="flex items-center gap-2"
-            >
-              <Table2 className="h-4 w-4" />
-              Spreadsheet View
-            </Button>
-          </div>
+      {/* View Toggle - Always visible on scheduled tab */}
+      <div className="flex items-center justify-between mb-4 px-4">
+        <div className="text-sm text-gray-600">
+          {scheduledRequests.length} scheduled event{scheduledRequests.length !== 1 ? 's' : ''}
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'card' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleViewModeChange('card')}
+            className="flex items-center gap-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Card View
+          </Button>
+          <Button
+            variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleViewModeChange('spreadsheet')}
+            className="flex items-center gap-2"
+          >
+            <Table2 className="h-4 w-4" />
+            Spreadsheet View
+          </Button>
+        </div>
+      </div>
 
       {viewMode === 'spreadsheet' ? (
         <ScheduledSpreadsheetView
