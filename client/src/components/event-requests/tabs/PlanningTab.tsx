@@ -30,11 +30,15 @@ interface PlanningTabProps {
   eventRequests: EventRequest[];
 }
 
-export function PlanningTab({ 
+export function PlanningTab({
   eventRequests
 }: PlanningTabProps) {
   const [showSandwichModal, setShowSandwichModal] = React.useState(false);
   const [showStaffingModal, setShowStaffingModal] = React.useState(false);
+  const [showUnassignedModal, setShowUnassignedModal] = React.useState(false);
+  const [showOverdueModal, setShowOverdueModal] = React.useState(false);
+  const [showStaleModal, setShowStaleModal] = React.useState(false);
+  const [showMissingInfoModal, setShowMissingInfoModal] = React.useState(false);
 
   // Calculate time-based metrics
   const metrics = useMemo(() => {
@@ -65,38 +69,55 @@ export function PlanningTab({
     }).length;
 
     // Overdue follow-ups (scheduled call dates in the past)
-    const overdueFollowUps = eventRequests.filter(e => {
+    const overdueFollowUpEvents = eventRequests.filter(e => {
       if (!e.scheduledCallDate) return false;
       const callDate = new Date(e.scheduledCallDate);
       return isPast(callDate) && ['new', 'in_process'].includes(e.status?.toLowerCase() || '');
-    }).length;
+    });
+    const overdueFollowUps = overdueFollowUpEvents.length;
 
     // Stale requests (new status > 7 days old)
-    const staleRequests = eventRequests.filter(e => {
+    const staleRequestEvents = eventRequests.filter(e => {
       if (e.status?.toLowerCase() !== 'new') return false;
       if (!e.createdAt) return false;
       const created = new Date(e.createdAt);
       return differenceInDays(now, created) > 7;
-    }).length;
+    });
+    const staleRequests = staleRequestEvents.length;
 
     // Events missing critical info
-    const missingInfo = eventRequests.filter(e => {
+    const missingInfoEvents = eventRequests.filter(e => {
       const status = e.status?.toLowerCase() || '';
       if (!['scheduled', 'in_process'].includes(status)) return false;
       return !e.eventAddress || !e.scheduledEventDate || !e.estimatedSandwichCount;
-    }).length;
+    });
+    const missingInfo = missingInfoEvents.length;
 
-    // Unassigned events (no TSP contact)
-    const unassigned = eventRequests.filter(e => {
+    // Unassigned events (no TSP contact) - next 30 days only
+    const unassignedEvents = eventRequests.filter(e => {
       const status = e.status?.toLowerCase() || '';
-      return ['new', 'in_process'].includes(status) && !e.tspContact && !e.customTspContact;
-    }).length;
+      const eventDate = e.scheduledEventDate ? new Date(e.scheduledEventDate) :
+                       e.desiredEventDate ? new Date(e.desiredEventDate) : null;
+      return ['new', 'in_process'].includes(status) &&
+             !e.tspContact &&
+             !e.customTspContact &&
+             eventDate &&
+             isFuture(eventDate) &&
+             eventDate <= next30Days;
+    });
+    const unassigned = unassignedEvents.length;
 
-    // Total estimated sandwiches
+    // Total estimated sandwiches - next 30 days only
     const totalSandwiches = eventRequests
       .filter(e => {
         const status = e.status?.toLowerCase() || '';
-        return ['scheduled', 'in_process'].includes(status) && e.estimatedSandwichCount;
+        const eventDate = e.scheduledEventDate ? new Date(e.scheduledEventDate) :
+                         e.desiredEventDate ? new Date(e.desiredEventDate) : null;
+        return ['scheduled', 'in_process'].includes(status) &&
+               e.estimatedSandwichCount &&
+               eventDate &&
+               isFuture(eventDate) &&
+               eventDate <= next30Days;
       })
       .reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
 
@@ -129,9 +150,13 @@ export function PlanningTab({
       upcoming14Days,
       upcoming30Days,
       overdueFollowUps,
+      overdueFollowUpEvents,
       staleRequests,
+      staleRequestEvents,
       missingInfo,
+      missingInfoEvents,
       unassigned,
+      unassignedEvents,
       totalSandwiches,
       needsAttention,
     };
@@ -220,7 +245,11 @@ export function PlanningTab({
               {metrics.needsAttention}
             </div>
           </div>
-          <div className={`premium-card-flat p-4 ${metrics.overdueFollowUps > 0 ? 'border-l-4 border-red-500' : ''}`}>
+          <button
+            onClick={() => setShowOverdueModal(true)}
+            disabled={metrics.overdueFollowUps === 0}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.overdueFollowUps > 0 ? 'border-l-4 border-red-500 cursor-pointer' : 'cursor-default'}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <Clock className={`w-4 h-4 ${metrics.overdueFollowUps > 0 ? 'text-red-500' : 'text-slate-400'}`} />
               <div className="text-sm font-medium text-slate-600">Overdue Follow-ups</div>
@@ -228,8 +257,12 @@ export function PlanningTab({
             <div className={`text-2xl font-bold ${metrics.overdueFollowUps > 0 ? 'text-red-600' : 'text-slate-400'}`}>
               {metrics.overdueFollowUps}
             </div>
-          </div>
-          <div className={`premium-card-flat p-4 ${metrics.staleRequests > 0 ? 'border-l-4 border-yellow-500' : ''}`}>
+          </button>
+          <button
+            onClick={() => setShowStaleModal(true)}
+            disabled={metrics.staleRequests === 0}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.staleRequests > 0 ? 'border-l-4 border-yellow-500 cursor-pointer' : 'cursor-default'}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <Info className={`w-4 h-4 ${metrics.staleRequests > 0 ? 'text-yellow-500' : 'text-slate-400'}`} />
               <div className="text-sm font-medium text-slate-600">Stale Requests</div>
@@ -238,8 +271,12 @@ export function PlanningTab({
               {metrics.staleRequests}
             </div>
             <div className="text-xs text-slate-500 mt-1">New &gt; 7 days</div>
-          </div>
-          <div className={`premium-card-flat p-4 ${metrics.missingInfo > 0 ? 'border-l-4 border-amber-500' : ''}`}>
+          </button>
+          <button
+            onClick={() => setShowMissingInfoModal(true)}
+            disabled={metrics.missingInfo === 0}
+            className={`premium-card-flat p-4 text-left hover:shadow-md transition-shadow ${metrics.missingInfo > 0 ? 'border-l-4 border-amber-500 cursor-pointer' : 'cursor-default'}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <XCircle className={`w-4 h-4 ${metrics.missingInfo > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
               <div className="text-sm font-medium text-slate-600">Missing Info</div>
@@ -248,30 +285,41 @@ export function PlanningTab({
               {metrics.missingInfo}
             </div>
             <div className="text-xs text-slate-500 mt-1">Address/Date/Count</div>
-          </div>
+          </button>
         </div>
       </div>
 
       {/* Operational Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="premium-card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-slate-900 mb-2 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-brand-primary" />
             Operational Summary
           </h3>
+          <p className="text-xs text-slate-500 mb-4">Next 30 days • {format(new Date(), 'MMM d')} - {format(addDays(new Date(), 30), 'MMM d, yyyy')}</p>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 premium-card-flat">
-              <span className="text-sm text-slate-600">Total Estimated Sandwiches</span>
+              <div>
+                <span className="text-sm text-slate-600">Total Estimated Sandwiches</span>
+                <p className="text-xs text-slate-400 mt-0.5">Scheduled & in-process events</p>
+              </div>
               <span className="text-lg font-bold text-brand-primary">
                 {metrics.totalSandwiches.toLocaleString()}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 premium-card-flat">
-              <span className="text-sm text-slate-600">Unassigned Events</span>
+            <button
+              onClick={() => setShowUnassignedModal(true)}
+              className="w-full flex items-center justify-between p-3 premium-card-flat hover:shadow-md transition-shadow cursor-pointer text-left"
+              disabled={metrics.unassigned === 0}
+            >
+              <div>
+                <span className="text-sm text-slate-600">Unassigned Events</span>
+                <p className="text-xs text-slate-400 mt-0.5">Click to view details</p>
+              </div>
               <Badge variant={metrics.unassigned > 0 ? 'destructive' : 'outline'}>
                 {metrics.unassigned}
               </Badge>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -416,6 +464,187 @@ export function PlanningTab({
             >
               Close Staffing Planning
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unassigned Events Modal */}
+      <Dialog open={showUnassignedModal} onOpenChange={setShowUnassignedModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-brand-primary flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Unassigned Events ({metrics.unassigned})
+            </DialogTitle>
+            <DialogDescription>
+              Events in the next 30 days that need TSP contact assignment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {metrics.unassignedEvents.map((event) => (
+              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-blue-500">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <div className="text-sm text-slate-600 mt-1 space-y-1">
+                      {event.desiredEventDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
+                        </div>
+                      )}
+                      {event.eventAddress && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.eventAddress}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline">{event.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end mt-6 pt-4 border-t">
+            <Button onClick={() => setShowUnassignedModal(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Overdue Follow-ups Modal */}
+      <Dialog open={showOverdueModal} onOpenChange={setShowOverdueModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Overdue Follow-ups ({metrics.overdueFollowUps})
+            </DialogTitle>
+            <DialogDescription>
+              Events with scheduled call dates that have passed
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {metrics.overdueFollowUpEvents.map((event) => (
+              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-red-500">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <div className="text-sm text-slate-600 mt-1 space-y-1">
+                      {event.scheduledCallDate && (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <Clock className="w-3 h-3" />
+                          Follow-up due: {format(new Date(event.scheduledCallDate), 'MMM d, yyyy')}
+                        </div>
+                      )}
+                      {event.desiredEventDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Event date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline">{event.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end mt-6 pt-4 border-t">
+            <Button onClick={() => setShowOverdueModal(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stale Requests Modal */}
+      <Dialog open={showStaleModal} onOpenChange={setShowStaleModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-yellow-600 flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              Stale Requests ({metrics.staleRequests})
+            </DialogTitle>
+            <DialogDescription>
+              New requests that are more than 7 days old
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {metrics.staleRequestEvents.map((event) => (
+              <div key={event.id} className="premium-card-flat p-4 border-l-4 border-yellow-500">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                    <div className="text-sm text-slate-600 mt-1 space-y-1">
+                      {event.createdAt && (
+                        <div className="flex items-center gap-1 text-yellow-600">
+                          <Clock className="w-3 h-3" />
+                          Submitted: {format(new Date(event.createdAt), 'MMM d, yyyy')} ({differenceInDays(new Date(), new Date(event.createdAt))} days ago)
+                        </div>
+                      )}
+                      {event.desiredEventDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Desired date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline">{event.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end mt-6 pt-4 border-t">
+            <Button onClick={() => setShowStaleModal(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Missing Info Modal */}
+      <Dialog open={showMissingInfoModal} onOpenChange={setShowMissingInfoModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-amber-600 flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              Missing Information ({metrics.missingInfo})
+            </DialogTitle>
+            <DialogDescription>
+              Scheduled or in-process events missing address, date, or sandwich count
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {metrics.missingInfoEvents.map((event) => {
+              const missing = [];
+              if (!event.eventAddress) missing.push('Address');
+              if (!event.scheduledEventDate) missing.push('Event Date');
+              if (!event.estimatedSandwichCount) missing.push('Sandwich Count');
+
+              return (
+                <div key={event.id} className="premium-card-flat p-4 border-l-4 border-amber-500">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900">{event.organizationName}</h4>
+                      <div className="text-sm text-slate-600 mt-1 space-y-1">
+                        <div className="flex items-center gap-1 text-amber-600">
+                          <XCircle className="w-3 h-3" />
+                          Missing: {missing.join(', ')}
+                        </div>
+                        {event.desiredEventDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Desired date: {format(new Date(event.desiredEventDate + 'T00:00:00'), 'MMM d, yyyy')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant="outline">{event.status}</Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-end mt-6 pt-4 border-t">
+            <Button onClick={() => setShowMissingInfoModal(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>

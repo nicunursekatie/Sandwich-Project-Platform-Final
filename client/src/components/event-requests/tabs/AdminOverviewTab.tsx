@@ -449,7 +449,11 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                       <Calendar className="w-4 h-4" />
                                       {(() => {
                                         try {
-                                          const date = new Date(eventDate + 'T00:00:00');
+                                          // Handle both date strings and timestamps
+                                          const dateStr = typeof eventDate === 'string' && !eventDate.includes('T')
+                                            ? eventDate + 'T00:00:00'
+                                            : eventDate;
+                                          const date = new Date(dateStr);
                                           return isNaN(date.getTime()) ? 'Invalid date' : format(date, 'MMM d, yyyy');
                                         } catch (e) {
                                           return 'Invalid date';
