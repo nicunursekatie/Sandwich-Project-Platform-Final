@@ -13,7 +13,17 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 ### Recent Technical Fixes
 **Migration Error Fixed (Nov 17, 2025)**: Fixed recurring migration error "cannot insert multiple commands into a prepared statement" on every server startup. The Neon serverless driver cannot execute multiple SQL statements in a single prepared statement, but migration files lacked statement-breakpoint markers. Solution: Removed incompatible SQL migration files from the `migrations/` directory since the project uses Drizzle push mode for schema changes. Server now starts cleanly with "✅ All migrations already applied". **Location**: `migrations/` directory.
 
-**Organization Category Added (Nov 17, 2025)**: Added new "corp" category for organizations of unspecified company size. This displays as "Company" badge (indigo color) in the groups catalog. Categories now include: corp, small_medium_corp, large_corp, church_faith, school, neighborhood, club, and other. **Locations**: `shared/schema.ts`, `client/src/components/organizations-catalog.tsx`.
+**Organization Categories Added (Nov 17, 2025)**: Added new organization categories to better classify different types of organizations:
+- "corp" (Company - indigo badge) for organizations of unspecified company size
+- "religious" (Religious Organization - violet badge) for religious organizations that aren't specifically churches
+- "nonprofit" (Nonprofit - rose badge) for nonprofit organizations
+- "government" (Government - slate badge) for government organizations
+- "hospital" (Hospital - cyan badge) for hospitals and medical facilities
+- "political" (Political Organization - fuchsia badge) for political organizations, campaigns, and PACs
+- "greek_life" (Fraternity/Sorority - pink badge) for fraternities and sororities
+- "cultural" (Cultural Organization - amber badge) for cultural organizations and centers
+
+Complete category list: corp, small_medium_corp, large_corp, church_faith, religious, nonprofit, government, hospital, political, school, neighborhood, club, greek_life, cultural, and other. **Locations**: `shared/schema.ts`, `client/src/components/organizations-catalog.tsx`.
 
 **Session Count Metrics Error Fixed (Nov 15, 2025)**: Fixed recurring error "sessionStore.length is not a function" that was failing every minute. The monitoring system was trying to call `.length()` on the `connect-pg-simple` session store, but this method doesn't exist. Solution: Replaced with direct SQL query `SELECT COUNT(*) FROM sessions WHERE expire > NOW()` using Drizzle to count only active (unexpired) sessions. Session metrics now update successfully every 60 seconds. **Location**: `server/monitoring/business-metrics.ts`.
 
