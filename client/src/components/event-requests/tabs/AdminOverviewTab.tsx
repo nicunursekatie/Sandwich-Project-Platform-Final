@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, MapPin } from 'lucide-react';
+import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, MapPin, ArrowUp, ArrowDown } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -34,6 +34,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const [includeCompleted, setIncludeCompleted] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [eventSortBy, setEventSortBy] = useState<'status' | 'date' | 'organization'>('status');
+  const [eventSortDirection, setEventSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Fetch users to get proper names
   const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<any[]>({
@@ -369,10 +370,26 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                           <Button
                             variant={eventSortBy === 'date' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setEventSortBy('date')}
-                            className="text-xs h-7"
+                            onClick={() => {
+                              if (eventSortBy === 'date') {
+                                // Toggle direction if already sorting by date
+                                setEventSortDirection(eventSortDirection === 'asc' ? 'desc' : 'asc');
+                              } else {
+                                // Set to date sort with descending (farthest first) as default to match current behavior
+                                setEventSortBy('date');
+                                setEventSortDirection('desc');
+                              }
+                            }}
+                            className="text-xs h-7 flex items-center gap-1"
                           >
                             Date
+                            {eventSortBy === 'date' && (
+                              eventSortDirection === 'asc' ? (
+                                <ArrowUp className="w-3 h-3" />
+                              ) : (
+                                <ArrowDown className="w-3 h-3" />
+                              )
+                            )}
                           </Button>
                           <Button
                             variant={eventSortBy === 'organization' ? 'default' : 'outline'}
@@ -398,7 +415,8 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                               if (statusA !== statusB) return statusA - statusB;
                               return dateB - dateA;
                             } else if (eventSortBy === 'date') {
-                              return dateB - dateA;
+                              // Sort by date direction (asc = upcoming first, desc = farthest first)
+                              return eventSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
                             } else {
                               return (a.organizationName || '').localeCompare(b.organizationName || '');
                             }
