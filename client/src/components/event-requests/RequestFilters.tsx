@@ -21,6 +21,7 @@ import {
   Star,
   Pause,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -74,6 +75,7 @@ interface RequestFiltersProps {
     declined: ReactNode;
     my_assignments: ReactNode;
     admin_overview?: ReactNode;
+    planning?: ReactNode;
   };
 
   // Pagination info
@@ -127,6 +129,16 @@ export default function RequestFilters({
       label: 'Admin Overview',
       shortLabel: 'Admin',
       icon: BarChart3,
+    });
+  }
+
+  // Add planning tab if user has permission
+  if (hasAdminOverviewPermission && children.planning) {
+    tabConfig.push({
+      value: 'planning',
+      label: 'Planning',
+      shortLabel: 'Planning',
+      icon: ClipboardList,
     });
   }
 
