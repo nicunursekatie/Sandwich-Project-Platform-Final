@@ -1681,16 +1681,17 @@ export default function SandwichCollectionLog() {
           const groupData: any = {
             id: `edit-${index + 1}`,
             groupName: group.name,
+            department: group.department || '', // Preserve department field
             sandwichCount: group.count,
             hasTypeBreakdown: hasTypeData, // Track if this group has type breakdown
           };
-          
+
           // Include type breakdown if available
           if (hasTypeData) {
             groupData.deli = group.deli || 0;
             groupData.pbj = group.pbj || 0;
           }
-          
+
           groupList.push(groupData);
         }
       });
@@ -1758,13 +1759,18 @@ export default function SandwichCollectionLog() {
         name: group.groupName,
         count: group.sandwichCount,
       };
-      
+
+      // Include department if present
+      if (group.department && group.department.trim()) {
+        groupData.department = group.department.trim();
+      }
+
       // Only include type breakdown if this group has it enabled
       if (group.hasTypeBreakdown && (group.deli || group.pbj)) {
         groupData.deli = group.deli || 0;
         groupData.pbj = group.pbj || 0;
       }
-      
+
       return groupData;
     });
 
