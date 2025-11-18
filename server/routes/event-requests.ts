@@ -778,11 +778,46 @@ router.patch(
         ? `${req.user.firstName} ${req.user.lastName}`
         : req.user?.email || 'System';
 
-      // Atomically append to contactAttemptsLog using raw SQL with row-level locking
-      // The CTE uses FOR UPDATE to lock the row before reading, preventing race conditions
+      // Build dynamic SET clauses - only update fields that are actually provided
+      const setFields = [
+        sql`contact_attempts_log = COALESCE(er.contact_attempts_log, '[]'::jsonb) || 
+            jsonb_build_array(
+              jsonb_build_object(
+                'attemptNumber', locked.next_attempt_number,
+                'timestamp', ${timestamp},
+                'method', ${validatedData.communicationMethod},
+                'outcome', 'Got response',
+                'notes', ${validatedData.notes || 'Contact completed'},
+                'createdBy', ${req.user?.id || 'system'},
+                'createdByName', ${userName}
+              )
+            )`,
+        sql`contacted_at = ${new Date()}`,
+        sql`completed_by_user_id = ${req.user?.id}`,
+        sql`communication_method = ${validatedData.communicationMethod}`,
+        sql`status = 'contact_completed'`,
+        sql`updated_at = NOW()`,
+      ];
+
+      // Only add optional field updates if they're provided
+      if (validatedData.eventAddress !== undefined) {
+        setFields.push(sql`event_address = ${validatedData.eventAddress}`);
+      }
+      if (validatedData.estimatedSandwichCount !== undefined) {
+        setFields.push(sql`estimated_sandwich_count = ${validatedData.estimatedSandwichCount}`);
+      }
+      if (validatedData.hasRefrigeration !== undefined) {
+        setFields.push(sql`has_refrigeration = ${validatedData.hasRefrigeration}`);
+      }
+      if (validatedData.notes !== undefined) {
+        setFields.push(sql`contact_completion_notes = ${validatedData.notes}`);
+      }
+
+      // Atomically update with row-level locking using CTE to prevent race conditions
       await db.execute(
-        sql`WITH current_log AS (
+        sql`WITH locked AS (
               SELECT 
+                id,
                 COALESCE(
                   (SELECT MAX((entry->>'attemptNumber')::int) 
                    FROM jsonb_array_elements(COALESCE(contact_attempts_log, '[]'::jsonb)) AS entry),
@@ -792,29 +827,10 @@ router.patch(
               WHERE id = ${id}
               FOR UPDATE
             )
-            UPDATE event_requests 
-            SET contact_attempts_log = COALESCE(contact_attempts_log, '[]'::jsonb) || 
-                jsonb_build_array(
-                  jsonb_build_object(
-                    'attemptNumber', (SELECT next_attempt_number FROM current_log),
-                    'timestamp', ${timestamp},
-                    'method', ${validatedData.communicationMethod},
-                    'outcome', 'Got response',
-                    'notes', ${validatedData.notes || 'Contact completed'},
-                    'createdBy', ${req.user?.id || 'system'},
-                    'createdByName', ${userName}
-                  )
-                ),
-                contacted_at = ${new Date()},
-                completed_by_user_id = ${req.user?.id},
-                communication_method = ${validatedData.communicationMethod},
-                event_address = COALESCE(${validatedData.eventAddress}, event_address),
-                estimated_sandwich_count = COALESCE(${validatedData.estimatedSandwichCount}, estimated_sandwich_count),
-                has_refrigeration = CASE WHEN ${validatedData.hasRefrigeration !== undefined} THEN ${validatedData.hasRefrigeration} ELSE has_refrigeration END,
-                contact_completion_notes = COALESCE(${validatedData.notes}, contact_completion_notes),
-                status = 'contact_completed',
-                updated_at = NOW()
-            WHERE id = ${id}`
+            UPDATE event_requests er
+            SET ${sql.join(setFields, sql`, `)}
+            FROM locked
+            WHERE er.id = locked.id`
       );
 
       // Fetch the updated event request for response and audit logging
@@ -1019,28 +1035,43 @@ router.post(
         : req.user?.email || 'System';
       const outcome = method === 'call' ? 'Completed call' : 'Sent email';
 
-      // Build dynamic SET clauses for optional fields (only update if provided to avoid NULL overwrites)
-      const optionalUpdates: any[] = [];
+      // Build dynamic SET clauses - only update fields that are actually provided
+      const setFields = [
+        sql`contact_attempts_log = COALESCE(er.contact_attempts_log, '[]'::jsonb) || 
+            jsonb_build_array(
+              jsonb_build_object(
+                'attemptNumber', locked.next_attempt_number,
+                'timestamp', ${timestamp},
+                'method', ${method},
+                'outcome', ${outcome},
+                'notes', ${notes || `Follow-up ${method} completed`},
+                'createdBy', ${req.user?.id || 'system'},
+                'createdByName', ${userName}
+              )
+            )`,
+        sql`follow_up_method = ${method}`,
+        sql`follow_up_date = NOW()`,
+        sql`status = 'in_process'`,
+        sql`updated_at = NOW()`,
+      ];
+
+      // Only add optional field updates if they're provided
       if (updates.desiredEventDate !== undefined && updates.desiredEventDate !== null) {
-        optionalUpdates.push(sql`desired_event_date = ${updates.desiredEventDate}`);
+        setFields.push(sql`desired_event_date = ${updates.desiredEventDate}`);
       }
       if (method === 'call' && updatedEmail) {
-        optionalUpdates.push(sql`email = ${updatedEmail}`);
-        optionalUpdates.push(sql`updated_email = ${updatedEmail}`);
+        setFields.push(sql`email = ${updatedEmail}`);
+        setFields.push(sql`updated_email = ${updatedEmail}`);
       }
       if (updates.followUpNotes !== undefined && updates.followUpNotes !== null) {
-        optionalUpdates.push(sql`follow_up_notes = ${updates.followUpNotes}`);
+        setFields.push(sql`follow_up_notes = ${updates.followUpNotes}`);
       }
 
-      // Atomically update all fields including contact attempt log with row-level locking
-      // The CTE uses FOR UPDATE to lock the row before reading, preventing race conditions
-      const optionalSetClause = optionalUpdates.length > 0 
-        ? sql`, ${sql.join(optionalUpdates, sql`, `)}`
-        : sql``;
-
+      // Atomically update with row-level locking using CTE to prevent race conditions
       await db.execute(
-        sql`WITH current_log AS (
+        sql`WITH locked AS (
               SELECT 
+                id,
                 COALESCE(
                   (SELECT MAX((entry->>'attemptNumber')::int) 
                    FROM jsonb_array_elements(COALESCE(contact_attempts_log, '[]'::jsonb)) AS entry),
@@ -1050,25 +1081,10 @@ router.post(
               WHERE id = ${id}
               FOR UPDATE
             )
-            UPDATE event_requests 
-            SET contact_attempts_log = COALESCE(contact_attempts_log, '[]'::jsonb) || 
-                jsonb_build_array(
-                  jsonb_build_object(
-                    'attemptNumber', (SELECT next_attempt_number FROM current_log),
-                    'timestamp', ${timestamp},
-                    'method', ${method},
-                    'outcome', ${outcome},
-                    'notes', ${notes || `Follow-up ${method} completed`},
-                    'createdBy', ${req.user?.id || 'system'},
-                    'createdByName', ${userName}
-                  )
-                ),
-                follow_up_method = ${method},
-                follow_up_date = NOW(),
-                status = 'in_process',
-                updated_at = NOW()
-                ${optionalSetClause}
-            WHERE id = ${id}`
+            UPDATE event_requests er
+            SET ${sql.join(setFields, sql`, `)}
+            FROM locked
+            WHERE er.id = locked.id`
       );
 
       // Fetch the updated event request for response and audit logging
