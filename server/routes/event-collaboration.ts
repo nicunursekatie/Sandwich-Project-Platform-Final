@@ -84,6 +84,15 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      // Check if event request exists before trying to create comment
+      const eventExists = await storage.getEventRequestById(eventId);
+      if (!eventExists) {
+        return res.status(404).json({ 
+          error: 'Event request not found',
+          details: `Event request with ID ${eventId} does not exist`
+        });
+      }
+
       const validatedData = createCommentSchema.parse(req.body);
 
       const comment = await storage.createEventCollaborationComment({
@@ -101,6 +110,17 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
           error: 'Validation failed',
           details: error.errors 
         });
+      }
+      
+      // Check for database constraint violations
+      if (error instanceof Error) {
+        if (error.message.includes('foreign key') || error.message.includes('violates')) {
+          logger.error('[Event Collaboration] Foreign key constraint violation:', error);
+          return res.status(400).json({ 
+            error: 'Invalid reference',
+            details: 'The event request or user referenced does not exist'
+          });
+        }
       }
       
       logger.error('[Event Collaboration] Error creating comment:', error);
