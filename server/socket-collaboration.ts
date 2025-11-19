@@ -226,7 +226,7 @@ async function getInitialEventState(
 ): Promise<EventState | null> {
   try {
     // Get event to retrieve current version
-    const event = await storage.getEventRequestById(eventRequestId);
+    const event = await storage.getEventRequest(eventRequestId);
     if (!event) return null;
 
     // Get active locks (storage filters by expiration)
@@ -321,7 +321,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         const { eventRequestId, userId, userName } = validated;
 
         // Verify event exists and user has access
-        const event = await storage.getEventRequestById(eventRequestId);
+        const event = await storage.getEventRequest(eventRequestId);
         if (!event) {
           socket.emit('error', { message: 'Event not found' });
           return;
@@ -561,7 +561,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
         try {
           // Get original event data before update for audit logging
-          const originalEvent = await storage.getEventRequestById(eventRequestId);
+          const originalEvent = await storage.getEventRequest(eventRequestId);
           if (!originalEvent) {
             socket.emit('error', { message: 'Event not found' });
             return;
@@ -570,7 +570,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           await storage.updateEventRequest(eventRequestId, updateData, expectedVersionDate);
 
           // Get updated event to retrieve new version
-          const updatedEvent = await storage.getEventRequestById(eventRequestId);
+          const updatedEvent = await storage.getEventRequest(eventRequestId);
           if (!updatedEvent) {
             throw new Error('Event not found after update');
           }
@@ -627,7 +627,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         } catch (updateError: any) {
           // Version conflict detected
           if (updateError.message?.includes('version conflict')) {
-            const currentEvent = await storage.getEventRequestById(eventRequestId);
+            const currentEvent = await storage.getEventRequest(eventRequestId);
             socket.emit('update-rejected', {
               eventRequestId,
               fieldName,
