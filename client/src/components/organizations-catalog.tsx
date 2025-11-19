@@ -1058,11 +1058,9 @@ export default function GroupCatalog({
                                           {getStatusText(org.status)}
                                         </Badge>
                                         <div className="flex items-center gap-1">
-                                          {org.category && (
-                                            <Badge className={getCategoryBadgeColor(org.category)}>
-                                              {getCategoryLabel(org.category)}
-                                            </Badge>
-                                          )}
+                                          <Badge className={getCategoryBadgeColor(org.category)}>
+                                            {getCategoryLabel(org.category)}
+                                          </Badge>
                                           {canEditCategories && (
                                             <Button
                                               variant="ghost"
