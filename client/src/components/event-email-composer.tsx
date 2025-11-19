@@ -354,7 +354,7 @@ ${userEmail}`;
                                         <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">⚡ Quick Start (3 Simple Steps)</h2>
                                         <ol style="margin: 10px 0; padding-left: 25px; font-size: 17px; line-height: 1.8;">
                                             <li style="margin: 8px 0; color: #333333;"><strong>Review the attached toolkit</strong> (everything you need is included)</li>
-                                            <li style="margin: 8px 0; color: #333333;"><strong>Schedule a 15-minute planning call</strong> using the button below</li>
+                                            <li style="margin: 8px 0; color: #333333;"><strong>Schedule a quick planning call</strong> using the button below</li>
                                             <li style="margin: 8px 0; color: #333333;"><strong>We'll finalize details together</strong> and get you on the calendar</li>
                                         </ol>
                                     </td>
@@ -366,7 +366,7 @@ ${userEmail}`;
                                 <tr>
                                     <td align="center" style="padding: 10px 0 30px 0;">
                                         <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">📅 Schedule Your Planning Call</a>
-                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">We recommend booking early to secure your preferred date.</p>
+                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">We recommend scheduling your event date early to secure your preferred time.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -380,8 +380,7 @@ ${userEmail}`;
                                         <ul style="margin: 10px 0; padding-left: 20px;">
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Step-by-step event planning guide</li>
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Food safety requirements checklist</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Sandwich bag labels (print & use)</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Shopping list templates</li>
+                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
                                             <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
@@ -399,7 +398,7 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">📅 Scheduling</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Any day of the week works for 200+ sandwiches</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">We host group events if you are going to make over 200 sandwiches on days other than our normal Wednesday collections</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Flexible on dates? We can suggest high-need times</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">We appreciate 2+ weeks notice when possible</li>
                                         </ul>
@@ -413,9 +412,8 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">🚗 Transportation</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Free pickup for 200+ deli sandwiches</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Large PBJ batches also eligible (based on driver availability)</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll work with you on delivery</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">You just need refrigeration at your sandwich-making location, our drivers will bring coolers for transportation</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll try to work with you on finding a recipient in your area</li>
                                         </ul>
                                     </td>
                                 </tr>
@@ -433,7 +431,7 @@ ${userEmail}`;
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Indoor preparation only</li>
                                         </ul>
                                         <p style="margin: 10px 0 0 0; padding: 12px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 14px; color: #333333;">
-                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside</strong> of each bag (not individual sandwiches).
+                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside of each loaf bag</strong> containing 10-12 sandwiches.
                                         </p>
                                     </td>
                                 </tr>
@@ -511,7 +509,7 @@ ${userEmail}`;
                                         <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">⚡ Quick Start (3 Simple Steps)</h2>
                                         <ol style="margin: 10px 0; padding-left: 25px; font-size: 17px; line-height: 1.8;">
                                             <li style="margin: 8px 0; color: #333333;"><strong>Review the attached toolkit</strong> (everything you need is included)</li>
-                                            <li style="margin: 8px 0; color: #333333;"><strong>Reply with your availability</strong> for a quick 15-minute planning call</li>
+                                            <li style="margin: 8px 0; color: #333333;"><strong>Reply with your availability</strong> for a quick planning call</li>
                                             <li style="margin: 8px 0; color: #333333;"><strong>We'll finalize details together</strong> and get you on the calendar</li>
                                         </ol>
                                     </td>
@@ -538,8 +536,7 @@ ${userEmail}`;
                                         <ul style="margin: 10px 0; padding-left: 20px;">
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Step-by-step event planning guide</li>
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Food safety requirements checklist</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Sandwich bag labels (print & use)</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Shopping list templates</li>
+                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
                                             <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
@@ -557,7 +554,7 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">📅 Scheduling</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Any day of the week works for 200+ sandwiches</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">We host group events if you are going to make over 200 sandwiches on days other than our normal Wednesday collections</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Flexible on dates? We can suggest high-need times</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">We appreciate 2+ weeks notice when possible</li>
                                         </ul>
@@ -571,9 +568,8 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">🚗 Transportation</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Free pickup for 200+ deli sandwiches</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Large PBJ batches also eligible (based on driver availability)</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll work with you on delivery</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">You just need refrigeration at your sandwich-making location, our drivers will bring coolers for transportation</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll try to work with you on finding a recipient in your area</li>
                                         </ul>
                                     </td>
                                 </tr>
@@ -591,7 +587,7 @@ ${userEmail}`;
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Indoor preparation only</li>
                                         </ul>
                                         <p style="margin: 10px 0 0 0; padding: 12px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 14px; color: #333333;">
-                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside</strong> of each bag (not individual sandwiches).
+                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside of each loaf bag</strong> containing 10-12 sandwiches.
                                         </p>
                                     </td>
                                 </tr>
@@ -942,8 +938,7 @@ ${userEmail}`;
                                         <ul style="margin: 10px 0; padding-left: 20px;">
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Step-by-step event planning guide</li>
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Food safety requirements checklist</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Sandwich bag labels (print & use)</li>
-                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Shopping list templates</li>
+                                            <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
                                             <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
@@ -961,7 +956,7 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">📅 Scheduling</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Any day of the week works for 200+ sandwiches</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">We host group events if you are going to make over 200 sandwiches on days other than our normal Wednesday collections</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Flexible on dates? We can suggest high-need times</li>
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">We appreciate 2+ weeks notice when possible</li>
                                         </ul>
@@ -975,9 +970,8 @@ ${userEmail}`;
                                     <td style="padding: 20px; background-color: #f9f9f9; border-left: 3px solid #FBAD3F;">
                                         <h3 style="margin: 0 0 10px 0; color: #236383; font-size: 18px; font-weight: bold;">🚗 Transportation</h3>
                                         <ul style="margin: 5px 0; padding-left: 20px;">
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Free pickup for 200+ deli sandwiches</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Large PBJ batches also eligible (based on driver availability)</li>
-                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll work with you on delivery</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">You just need refrigeration at your sandwich-making location, our drivers will bring coolers for transportation</li>
+                                            <li style="margin: 6px 0; color: #444444; font-size: 15px;">Outside our area? We'll try to work with you on finding a recipient in your area</li>
                                         </ul>
                                     </td>
                                 </tr>
@@ -995,7 +989,7 @@ ${userEmail}`;
                                             <li style="margin: 6px 0; color: #444444; font-size: 15px;">Indoor preparation only</li>
                                         </ul>
                                         <p style="margin: 10px 0 0 0; padding: 12px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 14px; color: #333333;">
-                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside</strong> of each bag (not individual sandwiches).
+                                            <strong>💡 Tip:</strong> Place the attached labels on the <strong>outside of each loaf bag</strong> containing 10-12 sandwiches.
                                         </p>
                                     </td>
                                 </tr>
