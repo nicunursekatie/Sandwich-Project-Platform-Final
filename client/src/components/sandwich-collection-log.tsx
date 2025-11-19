@@ -2673,7 +2673,7 @@ export default function SandwichCollectionLog() {
                                       {group.groupName}
                                     </div>
                                     {group.department && (
-                                      <div className="text-xs text-slate-600 truncate" title={group.department}>
+                                      <div className="text-sm text-slate-600 truncate" title={group.department}>
                                         {group.department}
                                       </div>
                                     )}
