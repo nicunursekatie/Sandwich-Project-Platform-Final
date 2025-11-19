@@ -266,31 +266,58 @@ export function Resources() {
     const CategoryIcon = category.icon;
     const isCopied = copiedId === item.resource.id;
 
+    // Get preview URL for documents
+    const getPreviewUrl = () => {
+      if (item.resource.type === 'file' && item.resource.documentId) {
+        return `/api/documents/${item.resource.documentId}/preview`;
+      }
+      return null;
+    };
+
+    const previewUrl = getPreviewUrl();
+
     return (
       <div
-        className={`border ${category.borderColor} ${category.bgColor} rounded-lg p-4 hover:shadow-md transition-shadow relative`}
+        className={`border ${category.borderColor} ${category.bgColor} rounded-lg overflow-hidden hover:shadow-md transition-shadow relative flex flex-col`}
       >
         {/* Pinned badge */}
         {item.resource.isPinnedGlobal && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 z-10">
             <Pin className="w-4 h-4 text-[#FBAD3F] fill-[#FBAD3F]" />
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-start gap-3 mb-3">
-          <div className={`${category.bgColor} p-2 rounded`}>
-            <CategoryIcon className={`w-5 h-5 ${category.color}`} />
+        {/* Document Preview */}
+        {previewUrl && (
+          <div className="w-full h-48 bg-gray-100 relative overflow-hidden group cursor-pointer" onClick={() => openResource(item)}>
+            <iframe
+              src={previewUrl}
+              className="w-full h-full pointer-events-none"
+              title={`Preview of ${item.resource.title}`}
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-3">
+                <ExternalLink className="w-6 h-6 text-[#236383]" />
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 mb-1 truncate">
-              {item.resource.title}
-            </h3>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.resource.description || 'No description'}
-            </p>
+        )}
+
+        <div className="p-4">
+          {/* Header */}
+          <div className="flex items-start gap-3 mb-3">
+            <div className={`${category.bgColor} p-2 rounded`}>
+              <CategoryIcon className={`w-5 h-5 ${category.color}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                {item.resource.title}
+              </h3>
+              <p className="text-sm text-gray-600 line-clamp-2">
+                {item.resource.description || 'No description'}
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Tags */}
         {item.tags.length > 0 && (
@@ -326,41 +353,42 @@ export function Resources() {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => openResource(item)}
-            className="flex-1 bg-[#236383] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#007E8C] transition-colors flex items-center justify-center gap-2"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Open
-          </button>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openResource(item)}
+              className="flex-1 bg-[#236383] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#007E8C] transition-colors flex items-center justify-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open
+            </button>
 
-          <button
-            onClick={() => copyLink(item)}
-            className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-              isCopied
-                ? 'bg-[#007E8C]/20 text-[#007E8C]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title="Copy link"
-          >
-            {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          </button>
+            <button
+              onClick={() => copyLink(item)}
+              className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                isCopied
+                  ? 'bg-[#007E8C]/20 text-[#007E8C]'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Copy link"
+            >
+              {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </button>
 
-          <button
-            onClick={() => toggleFavorite(item.resource.id)}
-            className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-              item.isFavorite
-                ? 'bg-[#FBAD3F]/20 text-[#FBAD3F]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <Star
-              className={`w-4 h-4 ${item.isFavorite ? 'fill-[#FBAD3F]' : ''}`}
-            />
-          </button>
+            <button
+              onClick={() => toggleFavorite(item.resource.id)}
+              className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                item.isFavorite
+                  ? 'bg-[#FBAD3F]/20 text-[#FBAD3F]'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Star
+                className={`w-4 h-4 ${item.isFavorite ? 'fill-[#FBAD3F]' : ''}`}
+              />
+            </button>
+          </div>
         </div>
       </div>
     );

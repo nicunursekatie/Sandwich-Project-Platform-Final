@@ -164,6 +164,63 @@ documentsRouter.post(
   }
 );
 
+// GET /api/documents/:id/preview - Preview document (inline display)
+documentsRouter.get(
+  '/:id/preview',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+
+      if (!user || !user.email) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const documentId = parseInt(req.params.id);
+
+      if (isNaN(documentId)) {
+        return res.status(400).json({ error: 'Invalid document ID' });
+      }
+
+      // Get all documents and find the requested one
+      const documents = await storage.getAllDocuments();
+      const document = documents.find((doc) => doc.id === documentId);
+
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      // Check if document is active
+      if (!document.isActive) {
+        return res.status(403).json({ error: 'Document is not active' });
+      }
+
+      // Check if file exists on disk
+      if (!existsSync(document.filePath)) {
+        logger.error(`File not found on disk: ${document.filePath}`);
+        return res.status(404).json({ error: 'File not found on server' });
+      }
+
+      // Set appropriate headers for inline viewing
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${document.originalName}"`
+      );
+      res.setHeader(
+        'Content-Type',
+        document.mimeType || 'application/octet-stream'
+      );
+      res.setHeader('Content-Length', document.fileSize);
+
+      // Stream the file to the client
+      const fileStream = require('fs').createReadStream(document.filePath);
+      fileStream.pipe(res);
+    } catch (error: any) {
+      logger.error('Error previewing document:', error);
+      res.status(500).json({ error: 'Failed to preview document' });
+    }
+  }
+);
+
 // GET /api/documents/:id/download - Download specific document
 documentsRouter.get(
   '/:id/download',
