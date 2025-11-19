@@ -2663,6 +2663,11 @@ export default function SandwichCollectionLog() {
                                     <div className="text-sm font-semibold text-slate-800 truncate" title={group.groupName}>
                                       {group.groupName}
                                     </div>
+                                    {group.department && (
+                                      <div className="text-xs text-slate-600 truncate" title={group.department}>
+                                        {group.department}
+                                      </div>
+                                    )}
                                     {hasTypes ? (
                                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
                                         {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
