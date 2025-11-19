@@ -468,155 +468,6 @@ export default function DashboardOverview({
           </div>
         )}
 
-        {/* Hero Impact Section */}
-        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
-          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
-            <div className="mb-4">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
-                <AnimatedCounter
-                  value={statsData?.completeTotalSandwiches || 0}
-                />
-              </h1>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
-                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
-                <p className="premium-text-body-lg text-brand-primary font-medium text-center">
-                  Total sandwiches distributed since 2020
-                </p>
-                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
-              </div>
-            </div>
-            <div className="premium-divider my-4 sm:my-6"></div>
-            <div className="premium-text-body-sm text-gray-600">
-              Real data from verified collection records
-            </div>
-          </div>
-        </div>
-
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
-
-        {/* Recently Accessed Resources Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <RecentlyAccessedResources />
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8 max-w-full">
-          <div className="premium-card premium-interactive p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="premium-text-caption text-brand-primary uppercase">
-                Individual Collections
-              </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-orange rounded-lg flex items-center justify-center">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
-              </div>
-            </div>
-            <div className="premium-text-h2 text-brand-orange mb-2">
-              <AnimatedCounter value={statsData?.individualSandwiches || 0} />
-            </div>
-            <p className="premium-text-body-sm text-gray-600">
-              Personal contributions
-            </p>
-          </div>
-
-          <div className="premium-card premium-interactive p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="premium-text-caption text-brand-primary uppercase">
-                Group Collections
-              </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-light-blue rounded-lg flex items-center justify-center">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
-              </div>
-            </div>
-            <div className="premium-text-h2 text-brand-light-blue mb-2">
-              <AnimatedCounter
-                value={
-                  statsData
-                    ? (statsData.completeTotalSandwiches || 0) -
-                      (statsData.individualSandwiches || 0)
-                    : 0
-                }
-              />
-            </div>
-            <p className="premium-text-body-sm text-gray-600">
-              Organization donations
-            </p>
-          </div>
-
-          <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="premium-text-caption text-brand-primary uppercase">
-                Collection Records
-              </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
-              </div>
-            </div>
-            <div className="premium-text-h2 text-brand-primary mb-2">
-              <AnimatedCounter value={statsData?.totalEntries || 0} />
-            </div>
-            <p className="premium-text-body-sm text-gray-600">Data submissions</p>
-          </div>
-        </div>
-
-        {/* Operational Capacity - Clean Design with Brand Color Accents */}
-        <div className="mx-4 mb-6 sm:mb-8 max-w-full">
-          <div className="premium-card p-4 sm:p-6 max-w-full">
-            <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
-              Operational Capacity
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-full">
-              {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-burgundy mb-1">
-                  {organizationalStats.peakWeekRecord}
-                </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Peak Week
-                </div>
-                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
-              </div>
-
-              {/* Annual Goal - Orange accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-orange mb-1">
-                  {organizationalStats.currentAnnualCapacity}
-                </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Annual Goal
-                </div>
-                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
-              </div>
-
-              {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-light-blue mb-1">
-                  {organizationalStats.weeklyBaseline}
-                </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Weekly Baseline
-                </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
-              </div>
-
-              {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-teal mb-1">
-                  {organizationalStats.surgingCapacity}
-                </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Surge Capacity
-                </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  Peak mobilization
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Planning Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
           <h3 className="premium-text-h3 text-brand-primary mb-6">
@@ -800,6 +651,155 @@ export default function DashboardOverview({
               <p className="premium-text-body-sm text-gray-600 mb-3">Communication</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Messages →
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Impact Section */}
+        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
+          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
+            <div className="mb-4">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
+                <AnimatedCounter
+                  value={statsData?.completeTotalSandwiches || 0}
+                />
+              </h1>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
+                <p className="premium-text-body-lg text-brand-primary font-medium text-center">
+                  Total sandwiches distributed since 2020
+                </p>
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
+              </div>
+            </div>
+            <div className="premium-divider my-4 sm:my-6"></div>
+            <div className="premium-text-body-sm text-gray-600">
+              Real data from verified collection records
+            </div>
+          </div>
+        </div>
+
+        {/* Action Tracker Widget */}
+        <div className="mx-4 mb-8 max-w-full">
+          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
+        </div>
+
+        {/* Recently Accessed Resources Widget */}
+        <div className="mx-4 mb-8 max-w-full">
+          <RecentlyAccessedResources />
+        </div>
+
+        {/* Key Metrics Grid */}
+        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8 max-w-full">
+          <div className="premium-card premium-interactive p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
+                Individual Collections
+              </h3>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-orange rounded-lg flex items-center justify-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <div className="premium-text-h2 text-brand-orange mb-2">
+              <AnimatedCounter value={statsData?.individualSandwiches || 0} />
+            </div>
+            <p className="premium-text-body-sm text-gray-600">
+              Personal contributions
+            </p>
+          </div>
+
+          <div className="premium-card premium-interactive p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
+                Group Collections
+              </h3>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-light-blue rounded-lg flex items-center justify-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <div className="premium-text-h2 text-brand-light-blue mb-2">
+              <AnimatedCounter
+                value={
+                  statsData
+                    ? (statsData.completeTotalSandwiches || 0) -
+                      (statsData.individualSandwiches || 0)
+                    : 0
+                }
+              />
+            </div>
+            <p className="premium-text-body-sm text-gray-600">
+              Organization donations
+            </p>
+          </div>
+
+          <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="premium-text-caption text-brand-primary uppercase">
+                Collection Records
+              </h3>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-primary rounded-lg flex items-center justify-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <div className="premium-text-h2 text-brand-primary mb-2">
+              <AnimatedCounter value={statsData?.totalEntries || 0} />
+            </div>
+            <p className="premium-text-body-sm text-gray-600">Data submissions</p>
+          </div>
+        </div>
+
+        {/* Operational Capacity - Clean Design with Brand Color Accents */}
+        <div className="mx-4 mb-6 sm:mb-8 max-w-full">
+          <div className="premium-card p-4 sm:p-6 max-w-full">
+            <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
+              Operational Capacity
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-full">
+              {/* Peak Week - Burgundy accent */}
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h3 text-brand-burgundy mb-1">
+                  {organizationalStats.peakWeekRecord}
+                </div>
+                <div className="premium-text-body-sm text-gray-700 font-medium">
+                  Peak Week
+                </div>
+                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
+              </div>
+
+              {/* Annual Goal - Orange accent */}
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h3 text-brand-orange mb-1">
+                  {organizationalStats.currentAnnualCapacity}
+                </div>
+                <div className="premium-text-body-sm text-gray-700 font-medium">
+                  Annual Goal
+                </div>
+                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
+              </div>
+
+              {/* Weekly Baseline - Light Blue accent */}
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h4 text-brand-light-blue mb-1">
+                  {organizationalStats.weeklyBaseline}
+                </div>
+                <div className="premium-text-body-sm text-gray-700 font-medium">
+                  Weekly Baseline
+                </div>
+                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
+              </div>
+
+              {/* Surge Capacity - Dark Teal accent */}
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
+                <div className="premium-text-h4 text-brand-teal mb-1">
+                  {organizationalStats.surgingCapacity}
+                </div>
+                <div className="premium-text-body-sm text-gray-700 font-medium">
+                  Surge Capacity
+                </div>
+                <div className="premium-text-caption text-gray-600 mt-1">
+                  Peak mobilization
+                </div>
               </div>
             </div>
           </div>
