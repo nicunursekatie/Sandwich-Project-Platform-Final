@@ -977,6 +977,7 @@ export default function SandwichCollectionLog() {
         .filter((group: any) => group.name && group.count > 0)
         .map((group: any) => ({
           groupName: group.name,
+          department: group.department || undefined,
           sandwichCount: group.count,
           deli: group.deli || 0,
           pbj: group.pbj || 0,

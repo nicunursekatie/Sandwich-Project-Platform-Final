@@ -15,7 +15,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 
 **Key Technical Implementations & Features:**
 -   **Authentication & Permissions**: Role-based access control, session management, and password security.
--   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling. `sandwich_collections` table is the operational source of truth.
+-   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling. `sandwich_collections` table is the operational source of truth. Department names are stored in the groupCollections JSONB array and displayed in the collections log under each group name.
 -   **Search & Filtering**: Real-time capabilities across management interfaces.
 -   **Performance Optimization**: Query optimization, caching, pagination, and database connection pooling.
 -   **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications, including real-time kudos.
