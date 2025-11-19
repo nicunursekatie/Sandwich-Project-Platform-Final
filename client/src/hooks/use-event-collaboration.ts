@@ -140,6 +140,11 @@ export function useEventCollaboration(eventId: number) {
   useEffect(() => {
     if (!user || !eventId) return;
 
+    // Temporarily disable collaboration socket to prevent error spam
+    // TODO: Re-enable once Socket.IO namespace is properly configured on server
+    logger.log(`[EventCollaboration] Collaboration feature temporarily disabled`);
+    return;
+
     // Use current origin for Socket.IO connection (or env variable if provided)
     const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     logger.log(`[EventCollaboration] Connecting to: ${socketUrl}/collaboration`);
