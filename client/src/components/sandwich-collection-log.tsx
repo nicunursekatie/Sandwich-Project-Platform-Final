@@ -2678,7 +2678,7 @@ export default function SandwichCollectionLog() {
                                       </div>
                                     )}
                                     {hasTypes ? (
-                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-lg font-semibold text-slate-900">
                                         {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
                                         {(group.pbj ?? 0) > 0 && <span>{group.pbj} PB&J</span>}
                                         {(group.generic ?? 0) > 0 && <span>{group.generic} Generic</span>}
