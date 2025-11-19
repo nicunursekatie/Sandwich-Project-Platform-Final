@@ -4131,11 +4131,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment> {
-    const [comment] = await db
-      .insert(eventCollaborationComments)
-      .values(data)
-      .returning();
-    return comment;
+    try {
+      const [comment] = await db
+        .insert(eventCollaborationComments)
+        .values(data)
+        .returning();
+      return comment;
+    } catch (error) {
+      console.error('[DatabaseStorage] Error creating event collaboration comment:', error);
+      console.error('[DatabaseStorage] Data:', JSON.stringify(data, null, 2));
+      throw error;
+    }
   }
 
   async updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined> {
