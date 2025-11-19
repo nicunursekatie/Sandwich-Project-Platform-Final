@@ -185,8 +185,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   return {
     header: (
       <div className="mb-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2 break-words">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
             {request.organizationName}
             {request.department && (
               <span className="text-sm font-normal text-gray-600 break-words">
@@ -197,7 +197,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
             onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
-            className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+            className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
               request.isConfirmed
                 ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
                 : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
@@ -209,7 +209,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {isInProcessStale && (
             <Badge
               variant="outline"
-              className="bg-amber-50 text-amber-700 border-amber-300"
+              className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap"
             >
               <AlertTriangle className="w-3 h-3 mr-1" />
               Needs follow-up
@@ -318,47 +318,47 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
 }) => {
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <div className="space-y-1 min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm">
-            <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-base break-words">
+            <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="font-medium text-base break-words min-w-0">
               {request.firstName} {request.lastName}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-base break-words">{request.email}</span>
+          <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+            <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span className="text-base break-all min-w-0">{request.email}</span>
           </div>
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="w-4 h-4 text-gray-400" />
-              <span className="text-base break-words">{request.phone}</span>
+              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-base whitespace-nowrap">{request.phone}</span>
             </div>
           )}
           {request.eventAddress && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words min-w-0"
               >
                 {request.eventAddress}
               </a>
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 flex-shrink-0">
           {request.phone && onCall && (
             <Button
               size="sm"
               variant="outline"
               onClick={onCall}
-              className="text-sm"
+              className="text-sm h-8"
             >
-              <Phone className="w-3 h-3 mr-1" />
+              <Phone className="w-4 h-4 mr-1" />
               Call
             </Button>
           )}
@@ -367,9 +367,9 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-sm"
+              className="text-sm h-8"
             >
-              <Mail className="w-3 h-3 mr-1" />
+              <Mail className="w-4 h-4 mr-1" />
               Email
             </Button>
           )}
@@ -685,12 +685,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
           <Button
             size="sm"
             variant="default"
             onClick={onSchedule}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
           >
             <Calendar className="w-4 h-4 mr-1" />
             Mark Scheduled
@@ -699,7 +699,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onScheduleCall}
-            className="text-base"
+            className="h-8"
           >
             <Phone className="w-4 h-4 mr-1" />
             {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
@@ -708,13 +708,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
           {onResendToolkit && (
-            <Button size="sm" variant="outline" onClick={onResendToolkit}>
+            <Button size="sm" variant="outline" onClick={onResendToolkit} className="h-8">
               <Package className="w-4 h-4 mr-1" />
               Resend Toolkit
             </Button>
@@ -726,7 +726,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
             >
               <UserPlus className="w-4 h-4 mr-1" />
               Assign TSP Contact
@@ -739,7 +739,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onAiSuggest}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
               data-testid="button-ai-suggest-date"
             >
               <Sparkles className="w-4 h-4 mr-1" />
@@ -753,7 +753,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onAiIntakeAssist}
-              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
+              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
               data-testid="button-ai-intake-assist"
             >
               <Sparkles className="w-4 h-4 mr-1" />
@@ -764,7 +764,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           <div className="flex-1" />
 
           {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit}>
+            <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
               <Edit className="w-4 h-4" />
             </Button>
           )}
@@ -774,7 +774,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 h-8"
                   data-testid="button-delete-request"
                 >
                   <Trash2 className="w-4 h-4" />
