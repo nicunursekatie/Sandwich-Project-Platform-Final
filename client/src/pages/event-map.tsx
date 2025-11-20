@@ -73,6 +73,84 @@ interface EventMapData {
   externalId: string | null;
 }
 
+type UpcomingFilterOption =
+  | 'all'
+  | 'this_week'
+  | 'next_week'
+  | 'week_after'
+  | 'two_weeks'
+  | 'this_month'
+  | 'upcoming';
+
+const UPCOMING_FILTER_LABELS: Record<UpcomingFilterOption, string> = {
+  all: 'All Time',
+  this_week: 'This Week (Next 7 Days)',
+  next_week: 'Next Week (Days 8-14)',
+  week_after: 'Week After Next (Days 15-21)',
+  two_weeks: 'Next 2 Weeks (14 Days)',
+  this_month: 'This Month (Next 30 Days)',
+  upcoming: 'All Upcoming Events'
+};
+
+const isEventWithinUpcomingFilter = (
+  event: EventMapData,
+  filter: UpcomingFilterOption
+) => {
+  if (filter === 'all') {
+    return true;
+  }
+
+  const dateStr = event.scheduledEventDate || event.desiredEventDate;
+  if (!dateStr) {
+    return false;
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const eventDate = new Date(dateStr);
+  eventDate.setHours(0, 0, 0, 0);
+
+  if (eventDate < now) {
+    return false;
+  }
+
+  const daysFromNow = (days: number) => {
+    const target = new Date(now);
+    target.setDate(now.getDate() + days);
+    return target;
+  };
+
+  switch (filter) {
+    case 'this_week': {
+      const weekFromNow = daysFromNow(7);
+      return eventDate >= now && eventDate <= weekFromNow;
+    }
+    case 'next_week': {
+      const nextWeekStart = daysFromNow(8);
+      const nextWeekEnd = daysFromNow(14);
+      return eventDate >= nextWeekStart && eventDate <= nextWeekEnd;
+    }
+    case 'week_after': {
+      const weekAfterStart = daysFromNow(15);
+      const weekAfterEnd = daysFromNow(21);
+      return eventDate >= weekAfterStart && eventDate <= weekAfterEnd;
+    }
+    case 'two_weeks': {
+      const twoWeeksFromNow = daysFromNow(14);
+      return eventDate >= now && eventDate <= twoWeeksFromNow;
+    }
+    case 'this_month': {
+      const monthFromNow = daysFromNow(30);
+      return eventDate >= now && eventDate <= monthFromNow;
+    }
+    case 'upcoming':
+      return true;
+    default:
+      return true;
+  }
+};
+
 // Custom marker icons for different statuses
 const createColorIcon = (color: string) => {
   return new L.Icon({
@@ -433,7 +511,7 @@ export default function EventMapView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'this_week' | 'next_week' | 'week_after' | 'two_weeks' | 'this_month' | 'upcoming'>('this_week');
+  const [upcomingFilter, setUpcomingFilter] = useState<UpcomingFilterOption>('this_week');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -580,54 +658,9 @@ export default function EventMapView() {
 
     // Upcoming events filter
     if (upcomingFilter !== 'all') {
-      const now = new Date();
-      now.setHours(0, 0, 0, 0); // Start of today
-
-      filtered = filtered.filter(event => {
-        const date = event.scheduledEventDate || event.desiredEventDate;
-        if (!date) return false;
-
-        const eventDate = new Date(date);
-        eventDate.setHours(0, 0, 0, 0);
-
-        // Only show future events
-        if (eventDate < now) return false;
-
-        if (upcomingFilter === 'this_week') {
-          // This week = next 7 days from today
-          const weekFromNow = new Date(now);
-          weekFromNow.setDate(now.getDate() + 7);
-          return eventDate >= now && eventDate <= weekFromNow;
-        } else if (upcomingFilter === 'next_week') {
-          // Next week = days 8-14 from today
-          const nextWeekStart = new Date(now);
-          nextWeekStart.setDate(now.getDate() + 8);
-          const nextWeekEnd = new Date(now);
-          nextWeekEnd.setDate(now.getDate() + 14);
-          return eventDate >= nextWeekStart && eventDate <= nextWeekEnd;
-        } else if (upcomingFilter === 'week_after') {
-          // Week after next = days 15-21 from today
-          const weekAfterStart = new Date(now);
-          weekAfterStart.setDate(now.getDate() + 15);
-          const weekAfterEnd = new Date(now);
-          weekAfterEnd.setDate(now.getDate() + 21);
-          return eventDate >= weekAfterStart && eventDate <= weekAfterEnd;
-        } else if (upcomingFilter === 'two_weeks') {
-          // Next 2 weeks = next 14 days from today
-          const twoWeeksFromNow = new Date(now);
-          twoWeeksFromNow.setDate(now.getDate() + 14);
-          return eventDate >= now && eventDate <= twoWeeksFromNow;
-        } else if (upcomingFilter === 'this_month') {
-          // This month = next 30 days
-          const monthFromNow = new Date(now);
-          monthFromNow.setDate(now.getDate() + 30);
-          return eventDate >= now && eventDate <= monthFromNow;
-        } else if (upcomingFilter === 'upcoming') {
-          // All upcoming = any future date
-          return true;
-        }
-        return true;
-      });
+      filtered = filtered.filter(event =>
+        isEventWithinUpcomingFilter(event, upcomingFilter)
+      );
     }
 
     // Year filter
@@ -659,6 +692,14 @@ export default function EventMapView() {
 
     return filtered;
   }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter]);
+
+  const eventsInSelectedPeriod = useMemo(() => {
+    return events.filter(event =>
+      isEventWithinUpcomingFilter(event, upcomingFilter)
+    );
+  }, [events, upcomingFilter]);
+
+  const selectedPeriodCount = eventsInSelectedPeriod.length;
 
   // Calculate map center
   const mapCenter: [number, number] = useMemo(() => {
@@ -827,6 +868,23 @@ export default function EventMapView() {
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-500" />
+            <span className="text-gray-700">
+              {UPCOMING_FILTER_LABELS[upcomingFilter]}:
+            </span>
+            <span className="font-semibold text-gray-900">
+              {selectedPeriodCount} event{selectedPeriodCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {upcomingFilter !== 'all' && (
+            <span className="text-xs text-gray-500">
+              Count includes events that still need geocoding
+            </span>
+          )}
         </div>
       </div>
 
