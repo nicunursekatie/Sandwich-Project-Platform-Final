@@ -101,7 +101,7 @@ const getCategoryLabel = (category: string | null | undefined): string => {
     greek_life: 'Fraternity/Sorority',
     cultural: 'Cultural Organization',
     corp: 'Company',
-    large_corp: 'Corporation',
+    large_corp: 'Company',
     small_medium_corp: 'Small Business',
     other: 'Other',
   };
@@ -124,7 +124,7 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
     greek_life: 'bg-pink-100 text-pink-700',
     cultural: 'bg-amber-100 text-amber-700',
     corp: 'bg-indigo-100 text-indigo-700',
-    large_corp: 'bg-orange-100 text-orange-700',
+    large_corp: 'bg-indigo-100 text-indigo-700',
     small_medium_corp: 'bg-teal-100 text-teal-700',
     other: 'bg-gray-100 text-gray-700',
   };
