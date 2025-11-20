@@ -244,9 +244,10 @@ export default function SandwichCollectionLog() {
     groupCollections: '',
     individualDeli: '',
     individualPbj: '',
+    individualGeneric: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; department?: string; count?: number; sandwichCount?: number; deli?: number; pbj?: number; hasTypeBreakdown?: boolean }>
+    Array<{ id: string; groupName: string; department?: string; count?: number; sandwichCount?: number; deli?: number; pbj?: number; generic?: number; hasTypeBreakdown?: boolean }>
   >([]);
   const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
   
@@ -331,10 +332,11 @@ export default function SandwichCollectionLog() {
 
     const individualDeli = parseInt(editFormData.individualDeli) || 0;
     const individualPbj = parseInt(editFormData.individualPbj) || 0;
+    const individualGeneric = parseInt(editFormData.individualGeneric) || 0;
     const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
 
-    const breakdownSum = individualDeli + individualPbj;
-    const hasAnyValue = individualDeli > 0 || individualPbj > 0;
+    const breakdownSum = individualDeli + individualPbj + individualGeneric;
+    const hasAnyValue = individualDeli > 0 || individualPbj > 0 || individualGeneric > 0;
 
     if (!hasAnyValue) {
       // Allow empty breakdown (optional)
@@ -348,7 +350,7 @@ export default function SandwichCollectionLog() {
     } else {
       setEditIndividualBreakdownError('');
     }
-  }, [showEditIndividualBreakdown, editFormData.individualDeli, editFormData.individualPbj, editFormData.individualSandwiches]);
+  }, [showEditIndividualBreakdown, editFormData.individualDeli, editFormData.individualPbj, editFormData.individualGeneric, editFormData.individualSandwiches]);
 
   // Validation for group breakdown in Edit dialog
   useEffect(() => {
@@ -362,8 +364,9 @@ export default function SandwichCollectionLog() {
 
       const deli = group.deli || 0;
       const pbj = group.pbj || 0;
-      const breakdownSum = deli + pbj;
-      const hasAnyValue = deli > 0 || pbj > 0;
+      const generic = group.generic || 0;
+      const breakdownSum = deli + pbj + generic;
+      const hasAnyValue = deli > 0 || pbj > 0 || generic > 0;
       
       if (!hasAnyValue) {
         // Allow empty breakdown (optional)
@@ -1654,9 +1657,9 @@ export default function SandwichCollectionLog() {
     trackClick('edit_collection_button', 'Collections', 'Collection Log', `Editing collection ID: ${collection.id}`);
 
     // Check if individual type breakdown exists
-    const hasIndividualBreakdown = !!(collection.individualDeli || collection.individualPbj);
+    const hasIndividualBreakdown = !!(collection.individualDeli || collection.individualPbj || (collection as any).individualGeneric);
     setShowEditIndividualBreakdown(hasIndividualBreakdown);
-    
+
     setEditFormData({
       collectionDate: collection.collectionDate,
       hostName: collection.hostName,
@@ -1664,6 +1667,7 @@ export default function SandwichCollectionLog() {
       groupCollections: '', // Not used with new schema
       individualDeli: collection.individualDeli?.toString() || '',
       individualPbj: collection.individualPbj?.toString() || '',
+      individualGeneric: (collection as any).individualGeneric?.toString() || '',
     });
 
     // Parse existing group collections from new schema fields
@@ -1677,7 +1681,7 @@ export default function SandwichCollectionLog() {
     ) {
       collection.groupCollections.forEach((group: any, index: number) => {
         if (group.name && group.count > 0) {
-          const hasTypeData = !!(group.deli || group.pbj);
+          const hasTypeData = !!(group.deli || group.pbj || group.generic);
           const groupData: any = {
             id: `edit-${index + 1}`,
             groupName: group.name,
@@ -1690,6 +1694,7 @@ export default function SandwichCollectionLog() {
           if (hasTypeData) {
             groupData.deli = group.deli || 0;
             groupData.pbj = group.pbj || 0;
+            groupData.generic = group.generic || 0;
           }
 
           groupList.push(groupData);
@@ -1766,9 +1771,10 @@ export default function SandwichCollectionLog() {
       }
 
       // Only include type breakdown if this group has it enabled
-      if (group.hasTypeBreakdown && (group.deli || group.pbj)) {
+      if (group.hasTypeBreakdown && (group.deli || group.pbj || group.generic)) {
         groupData.deli = group.deli || 0;
         groupData.pbj = group.pbj || 0;
+        groupData.generic = group.generic || 0;
       }
 
       return groupData;
@@ -1781,6 +1787,7 @@ export default function SandwichCollectionLog() {
       // Include individual type breakdown
       individualDeli: parseInt(editFormData.individualDeli) || 0,
       individualPbj: parseInt(editFormData.individualPbj) || 0,
+      individualGeneric: parseInt(editFormData.individualGeneric) || 0,
       // Include the new unlimited groups array
       groupCollections: groupCollections,
       // Keep legacy fields for backward compatibility (first 2 groups only)
@@ -2621,12 +2628,13 @@ export default function SandwichCollectionLog() {
                       {collection.individualSandwiches > 0 ? (
                         <div className="text-base lg:text-lg font-bold">
                           {(() => {
-                            const hasTypes = collection.individualDeli || collection.individualPbj;
+                            const hasTypes = collection.individualDeli || collection.individualPbj || (collection as any).individualGeneric;
                             if (hasTypes) {
                               return (
                                 <div className="space-y-0.5">
                                   {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
                                   {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
+                                  {((collection as any).individualGeneric ?? 0) > 0 && <div>{(collection as any).individualGeneric} Generic</div>}
                                 </div>
                               );
                             }
@@ -2650,7 +2658,7 @@ export default function SandwichCollectionLog() {
                           return (
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                               {groupData.map((group: any, index: number) => {
-                                const hasTypes = group.deli || group.pbj;
+                                const hasTypes = group.deli || group.pbj || group.generic;
                                 const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
                                 const colorIndex = index % colors.length;
                                 const borderColor = colors[colorIndex];
@@ -2672,6 +2680,7 @@ export default function SandwichCollectionLog() {
                                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
                                         {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
                                         {(group.pbj ?? 0) > 0 && <span>{group.pbj} PB&J</span>}
+                                        {(group.generic ?? 0) > 0 && <span>{group.generic} Generic</span>}
                                       </div>
                                     ) : (
                                       <div className="text-lg font-semibold text-slate-900">{group.sandwichCount}</div>
@@ -3417,7 +3426,7 @@ export default function SandwichCollectionLog() {
                   }
                 />
               ) : (
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <div>
                     <Label htmlFor="edit-deli" className="text-sm">Deli</Label>
                     <Input
@@ -3432,7 +3441,8 @@ export default function SandwichCollectionLog() {
                           individualDeli: value,
                           individualSandwiches: (
                             (parseInt(value) || 0) +
-                            (parseInt(editFormData.individualPbj) || 0)
+                            (parseInt(editFormData.individualPbj) || 0) +
+                            (parseInt(editFormData.individualGeneric) || 0)
                           ).toString(),
                         });
                       }}
@@ -3453,6 +3463,29 @@ export default function SandwichCollectionLog() {
                           individualPbj: value,
                           individualSandwiches: (
                             (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(value) || 0) +
+                            (parseInt(editFormData.individualGeneric) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-generic" className="text-sm">Generic</Label>
+                    <Input
+                      id="edit-generic"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualGeneric}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualGeneric: value,
+                          individualSandwiches: (
+                            (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(editFormData.individualPbj) || 0) +
                             (parseInt(value) || 0)
                           ).toString(),
                         });
@@ -3479,13 +3512,14 @@ export default function SandwichCollectionLog() {
                             ...editFormData,
                             individualDeli: '',
                             individualPbj: '',
+                            individualGeneric: '',
                           });
                         }
                       }}
                       className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
                     />
                     <label htmlFor="edit-individual-breakdown" className="text-sm font-medium cursor-pointer">
-                      Specify sandwich types (Deli/PBJ)
+                      Specify sandwich types (Deli/PBJ/Generic)
                     </label>
                   </div>
                 </div>
@@ -3497,9 +3531,10 @@ export default function SandwichCollectionLog() {
                   {(() => {
                     const individualDeli = parseInt(editFormData.individualDeli) || 0;
                     const individualPbj = parseInt(editFormData.individualPbj) || 0;
+                    const individualGeneric = parseInt(editFormData.individualGeneric) || 0;
                     const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
-                    const breakdownSum = individualDeli + individualPbj;
-                    const hasAnyValue = individualDeli > 0 || individualPbj > 0;
+                    const breakdownSum = individualDeli + individualPbj + individualGeneric;
+                    const hasAnyValue = individualDeli > 0 || individualPbj > 0 || individualGeneric > 0;
                     
                     if (!hasAnyValue) {
                       return null;
@@ -3617,6 +3652,7 @@ export default function SandwichCollectionLog() {
                               // Clear type data when disabling
                               updatedGroup.deli = undefined;
                               updatedGroup.pbj = undefined;
+                              updatedGroup.generic = undefined;
                             }
                             setEditGroupCollections(
                               editGroupCollections.map((g) =>
@@ -3652,7 +3688,7 @@ export default function SandwichCollectionLog() {
                     {/* Type breakdown fields for group when enabled */}
                     {group.hasTypeBreakdown && (
                       <>
-                        <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
+                        <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded">
                           <div>
                             <Label className="text-xs">Deli</Label>
                             <Input
@@ -3664,7 +3700,7 @@ export default function SandwichCollectionLog() {
                                 const updatedGroup = {
                                   ...group,
                                   deli: value,
-                                  sandwichCount: value + (group.pbj || 0),
+                                  sandwichCount: value + (group.pbj || 0) + (group.generic || 0),
                                 };
                                 setEditGroupCollections(
                                   editGroupCollections.map((g) =>
@@ -3687,7 +3723,30 @@ export default function SandwichCollectionLog() {
                                 const updatedGroup = {
                                   ...group,
                                   pbj: value,
-                                  sandwichCount: (group.deli || 0) + value,
+                                  sandwichCount: (group.deli || 0) + value + (group.generic || 0),
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Generic</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.generic || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  generic: value,
+                                  sandwichCount: (group.deli || 0) + (group.pbj || 0) + value,
                                 };
                                 setEditGroupCollections(
                                   editGroupCollections.map((g) =>
@@ -3705,8 +3764,9 @@ export default function SandwichCollectionLog() {
                         {(() => {
                           const deli = group.deli || 0;
                           const pbj = group.pbj || 0;
-                          const breakdownSum = deli + pbj;
-                          const hasAnyValue = deli > 0 || pbj > 0;
+                          const generic = group.generic || 0;
+                          const breakdownSum = deli + pbj + generic;
+                          const hasAnyValue = deli > 0 || pbj > 0 || generic > 0;
                           
                           if (!hasAnyValue) {
                             return null;
