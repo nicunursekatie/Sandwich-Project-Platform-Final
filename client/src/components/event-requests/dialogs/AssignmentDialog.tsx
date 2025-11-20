@@ -104,14 +104,16 @@ function ComprehensivePersonSelector({
       type: 'user',
       section: 'Team Members'
     })),
-    ...drivers.map((driver: any) => ({
-      id: driver.id.toString(),
-      displayName: driver.name,
-      email: driver.email,
-      phone: driver.phone,
-      type: 'driver',
-      section: 'Drivers'
-    })),
+    ...drivers
+      .filter((driver: any) => assignmentType !== 'driver' || driver.vanApproved)
+      .map((driver: any) => ({
+        id: driver.id.toString(),
+        displayName: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        type: 'driver',
+        section: 'Drivers'
+      })),
     ...volunteers.map((volunteer: any) => ({
       id: `volunteer-${volunteer.id}`,
       displayName: `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || volunteer.name || 'Unknown Volunteer',
