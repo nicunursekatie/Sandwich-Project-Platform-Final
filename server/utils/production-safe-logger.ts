@@ -48,7 +48,20 @@ export const logger = {
     if (isDevelopment) {
       console.info(...args);
     } else {
-      winstonLogger.info(args.join(' '));
+      const serialized = args.map(arg => {
+        if (arg instanceof Error) {
+          return `${arg.message}\n${arg.stack || ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      winstonLogger.info(serialized);
     }
   },
 
@@ -60,7 +73,20 @@ export const logger = {
     if (isDevelopment) {
       console.warn(...args);
     } else {
-      winstonLogger.warn(args.join(' '));
+      const serialized = args.map(arg => {
+        if (arg instanceof Error) {
+          return `${arg.message}\n${arg.stack || ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      winstonLogger.warn(serialized);
     }
   },
 
@@ -72,7 +98,21 @@ export const logger = {
     if (isDevelopment) {
       console.error(...args);
     } else {
-      winstonLogger.error(args.join(' '));
+      // Properly serialize errors and objects for production logging
+      const serialized = args.map(arg => {
+        if (arg instanceof Error) {
+          return `${arg.message}\n${arg.stack || ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      winstonLogger.error(serialized);
     }
   },
 

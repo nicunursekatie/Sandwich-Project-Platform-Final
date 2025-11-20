@@ -365,6 +365,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     activityLogRouter
   );
   router.use('/api/activity-log', createErrorHandler('activity-log'));
+  
+  // Alias for plural form (used by some client components)
+  router.use(
+    '/api/activity-logs',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    activityLogRouter
+  );
+  router.use('/api/activity-logs', createErrorHandler('activity-logs'));
 
   // Audit logs router
   const auditLogsRouter = createAuditLogsRouter(deps);
