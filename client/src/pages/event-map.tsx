@@ -233,7 +233,7 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
 
   return (
     <div className="p-2 min-w-[280px] max-w-[320px]">
-      <h3 className="font-semibold text-base mb-1">
+      <h3 className="font-semibold text-lg mb-1 text-gray-900">
         {event.organizationName || 'Unknown Organization'}
       </h3>
       {event.department && (
@@ -264,13 +264,15 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
 
         <div className="flex items-center gap-2">
           <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
-          <span className="text-gray-700">{getEventDate(event)}</span>
+          <span className="text-base text-gray-800 font-medium">{getEventDate(event)}</span>
         </div>
 
         {event.estimatedSandwichCount && (
           <div className="flex items-center gap-2">
             <Package className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <span className="text-gray-700">~{event.estimatedSandwichCount} sandwiches</span>
+            <span className="text-base text-gray-800 font-medium">
+              ~{event.estimatedSandwichCount} sandwiches
+            </span>
           </div>
         )}
 
@@ -355,9 +357,9 @@ function LocationMarker({
           position={[lat, lng]}
           icon={new L.DivIcon({
             html: `<div class="bg-white rounded-lg shadow-lg border-2 px-3 py-2 min-w-[180px]" style="border-color: ${event.status === 'scheduled' ? '#236383' : '#FBAD3F'}">
-              <div class="font-semibold text-xs text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
-              <div class="text-xs text-gray-600">${event.desiredEventDate || event.scheduledEventDate ? format(new Date(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
-              ${event.estimatedSandwichCount ? `<div class="text-xs text-gray-500">${event.estimatedSandwichCount} sandwiches</div>` : ''}
+              <div class="font-semibold text-base text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
+              <div class="text-sm text-gray-700 font-medium">${event.desiredEventDate || event.scheduledEventDate ? format(new Date(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
+              ${event.estimatedSandwichCount ? `<div class="text-sm text-gray-600 font-medium">${event.estimatedSandwichCount} sandwiches</div>` : ''}
             </div>`,
             className: 'custom-label-marker',
             iconSize: [180, 60],
