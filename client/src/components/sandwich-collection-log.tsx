@@ -977,6 +977,7 @@ export default function SandwichCollectionLog() {
         .filter((group: any) => group.name && group.count > 0)
         .map((group: any) => ({
           groupName: group.name,
+          department: group.department || undefined,
           sandwichCount: group.count,
           deli: group.deli || 0,
           pbj: group.pbj || 0,
@@ -2672,12 +2673,12 @@ export default function SandwichCollectionLog() {
                                       {group.groupName}
                                     </div>
                                     {group.department && (
-                                      <div className="text-xs text-slate-600 truncate" title={group.department}>
+                                      <div className="text-sm text-slate-600 truncate" title={group.department}>
                                         {group.department}
                                       </div>
                                     )}
                                     {hasTypes ? (
-                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-lg font-semibold text-slate-900">
                                         {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
                                         {(group.pbj ?? 0) > 0 && <span>{group.pbj} PB&J</span>}
                                         {(group.generic ?? 0) > 0 && <span>{group.generic} Generic</span>}
