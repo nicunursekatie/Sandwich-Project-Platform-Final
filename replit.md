@@ -1,6 +1,17 @@
 ### Overview
 This full-stack application for The Sandwich Project nonprofit is designed to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger.
 
+### Recent Fixes (November 20, 2025)
+**Production Logging Issue Resolution:**
+- Fixed `[object Object]` errors in production logs by improving error serialization in `server/utils/production-safe-logger.ts`
+- Logger now properly serializes Error objects, showing full error messages and stack traces instead of `[object Object]`
+- Applied fix to all logging levels (info, warn, error) for consistent error reporting
+
+**Activity Logs API Endpoint:**
+- Added missing GET endpoint to `/api/activity-log` route to retrieve user activity logs with filtering options (startDate, endDate, action, section, limit)
+- Added plural alias `/api/activity-logs` to match client-side calls from SpreadsheetAnalyticsDashboard
+- Resolves 404 errors from production environment when fetching activity logs for analytics
+
 ### User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
