@@ -15,6 +15,40 @@ import winstonLogger, { createServiceLogger } from './logger';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
+ * Helper to serialize arguments including error objects
+ */
+const serializeArgs = (args: any[]): string => {
+  return args
+    .map((arg) => {
+      if (arg instanceof Error) {
+        return `${arg.message}\n${arg.stack || ''}`;
+      }
+      if (typeof arg === 'object' && arg !== null) {
+        try {
+          const seen = new WeakSet();
+          return JSON.stringify(
+            arg,
+            (key, value) => {
+              if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) {
+                  return '[Circular]';
+                }
+                seen.add(value);
+              }
+              return value;
+            },
+            2
+          );
+        } catch {
+          return String(arg);
+        }
+      }
+      return String(arg);
+    })
+    .join(' ');
+};
+
+/**
  * Production-safe logger that wraps both console and Winston
  * - In development: Uses console for immediate feedback
  * - In production: Uses Winston with proper log levels and rotation
@@ -48,19 +82,21 @@ export const logger = {
     if (isDevelopment) {
       console.info(...args);
     } else {
-      const serialized = args.map(arg => {
-        if (arg instanceof Error) {
-          return `${arg.message}\n${arg.stack || ''}`;
-        }
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch {
-            return String(arg);
+      const serialized = args
+        .map((arg) => {
+          if (arg instanceof Error) {
+            return `${arg.message}\n${arg.stack || ''}`;
           }
-        }
-        return String(arg);
-      }).join(' ');
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        })
+        .join(' ');
       winstonLogger.info(serialized);
     }
   },
@@ -73,19 +109,21 @@ export const logger = {
     if (isDevelopment) {
       console.warn(...args);
     } else {
-      const serialized = args.map(arg => {
-        if (arg instanceof Error) {
-          return `${arg.message}\n${arg.stack || ''}`;
-        }
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch {
-            return String(arg);
+      const serialized = args
+        .map((arg) => {
+          if (arg instanceof Error) {
+            return `${arg.message}\n${arg.stack || ''}`;
           }
-        }
-        return String(arg);
-      }).join(' ');
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        })
+        .join(' ');
       winstonLogger.warn(serialized);
     }
   },
@@ -99,19 +137,21 @@ export const logger = {
       console.error(...args);
     } else {
       // Properly serialize errors and objects for production logging
-      const serialized = args.map(arg => {
-        if (arg instanceof Error) {
-          return `${arg.message}\n${arg.stack || ''}`;
-        }
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch {
-            return String(arg);
+      const serialized = args
+        .map((arg) => {
+          if (arg instanceof Error) {
+            return `${arg.message}\n${arg.stack || ''}`;
           }
-        }
-        return String(arg);
-      }).join(' ');
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        })
+        .join(' ');
       winstonLogger.error(serialized);
     }
   },
