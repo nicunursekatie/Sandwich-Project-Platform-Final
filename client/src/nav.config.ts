@@ -327,6 +327,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'analytics',
   },
   {
+    id: 'weekly-collections-report',
+    label: 'Weekly Collections Report',
+    icon: FileSpreadsheet,
+    href: 'weekly-collections-report',
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'analytics',
+    highlighted: true,
+  },
+  {
     id: 'weekly-monitoring',
     label: 'Weekly Monitoring',
     icon: Clock,

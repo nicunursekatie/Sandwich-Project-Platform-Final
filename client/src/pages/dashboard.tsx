@@ -79,6 +79,7 @@ const ImpactDashboard = lazyWithRetry(() => import('@/pages/impact-dashboard'));
 const DataManagement = lazyWithRetry(() => import('@/pages/data-management'));
 const PerformanceDashboard = lazyWithRetry(() => import('@/pages/performance-dashboard'));
 const GrantMetrics = lazyWithRetry(() => import('@/pages/grant-metrics'));
+const WeeklyCollectionsReport = lazyWithRetry(() => import('@/pages/weekly-collections-report'));
 const UserManagementRedesigned = lazyWithRetry(() => import('@/components/user-management-redesigned'));
 const UserProfile = lazyWithRetry(() => import('@/components/user-profile'));
 const OnboardingAdmin = lazyWithRetry(() => import('@/pages/onboarding-admin'));
