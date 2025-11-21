@@ -464,8 +464,7 @@ export default function ActionCenter() {
       // Break down by day to identify regular distribution (Wednesday) vs special placement
       const { wednesdayTotal, specialPlacementTotal } = calculatePlacementTotals(
         plannedCollectionsThisWeek,
-        scheduledThisWeek,
-        today
+        scheduledThisWeek
       );
 
       const totalPlanned = wednesdayTotal + specialPlacementTotal;
