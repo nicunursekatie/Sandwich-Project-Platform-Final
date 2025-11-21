@@ -226,6 +226,11 @@ export function useCollaboration({
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
+      auth: {
+        // Send authentication credentials with connection
+        userId: user.id,
+        userEmail: user.email,
+      },
     });
 
     // Connection events

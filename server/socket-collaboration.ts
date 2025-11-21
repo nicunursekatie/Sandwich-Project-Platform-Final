@@ -5,6 +5,7 @@ import { logger } from './utils/production-safe-logger';
 import { z } from 'zod';
 import { AuditLogger } from './audit-logger';
 import { extractMentions } from '@shared/mention-utils';
+import { checkPermission } from '@shared/unified-auth-utils';
 
 /**
  * Event Collaboration Socket.IO Module
@@ -14,7 +15,25 @@ import { extractMentions } from '@shared/mention-utils';
  * - Field-level locking with auto-expiration
  * - Optimistic concurrency control
  * - Real-time comments
+ * - Authentication and authorization checks
  */
+
+// ==================== Socket Authentication Interface ====================
+
+interface AuthenticatedSocket extends Socket {
+  data: {
+    user?: {
+      id: string;
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      displayName?: string;
+      role?: string;
+      permissions?: Record<string, boolean>;
+      isActive: boolean;
+    };
+  };
+}
 
 // ==================== Types ====================
 
@@ -292,6 +311,63 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
   logger.log('✓ Socket.IO collaboration namespace initialized on /collaboration');
 
+  // ==================== Authentication Middleware ====================
+
+  /**
+   * SECURITY: Authenticate socket connections
+   * Verifies user session and loads user data before allowing any operations
+   */
+  collaboration.use(async (socket: AuthenticatedSocket, next) => {
+    try {
+      // Extract user info from handshake (sent by client during connection)
+      const userId = socket.handshake.auth?.userId;
+      const userEmail = socket.handshake.auth?.userEmail;
+
+      if (!userId || !userEmail) {
+        logger.error('[Collaboration] Socket authentication failed: Missing credentials');
+        return next(new Error('Authentication required'));
+      }
+
+      // Fetch user from database to verify existence and get current permissions
+      const user = await storage.getUserByEmail(userEmail);
+
+      if (!user) {
+        logger.error(`[Collaboration] Socket authentication failed: User not found - ${userEmail}`);
+        return next(new Error('User not found'));
+      }
+
+      // Verify user ID matches
+      if (user.id !== userId) {
+        logger.error(`[Collaboration] Socket authentication failed: User ID mismatch - ${userEmail}`);
+        return next(new Error('User ID mismatch'));
+      }
+
+      // Check if user account is active
+      if (!user.isActive) {
+        logger.error(`[Collaboration] Socket authentication failed: Inactive user - ${userEmail}`);
+        return next(new Error('Account is not active'));
+      }
+
+      // Store authenticated user in socket data
+      socket.data.user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        displayName: user.displayName || undefined,
+        role: user.role || 'volunteer',
+        permissions: user.permissions || {},
+        isActive: user.isActive,
+      };
+
+      logger.log(`[Collaboration] Socket authenticated: ${user.email} (${socket.id})`);
+      next();
+    } catch (error) {
+      logger.error('[Collaboration] Socket authentication error:', error);
+      next(new Error('Authentication failed'));
+    }
+  });
+
   // Heartbeat cleanup interval (every 30 seconds)
   setInterval(() => {
     cleanupStalePresence();
@@ -311,7 +387,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
   // ==================== Connection Handler ====================
 
-  collaboration.on('connection', (socket: Socket) => {
+  collaboration.on('connection', (socket: AuthenticatedSocket) => {
     logger.log(`✅ Collaboration socket connected: ${socket.id}`);
 
     // ==================== Join Event ====================
@@ -320,6 +396,28 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
       try {
         const validated = JoinEventSchema.parse(data);
         const { eventRequestId, userId, userName } = validated;
+
+        // SECURITY: Verify authenticated user matches the userId in request
+        const authenticatedUser = socket.data.user;
+        if (!authenticatedUser) {
+          socket.emit('error', { message: 'Not authenticated' });
+          logger.error(`[Collaboration] Unauthenticated join-event attempt`);
+          return;
+        }
+
+        if (authenticatedUser.id !== userId) {
+          socket.emit('error', { message: 'User ID mismatch' });
+          logger.error(`[Collaboration] User ID mismatch: ${authenticatedUser.id} vs ${userId}`);
+          return;
+        }
+
+        // SECURITY: Check if user has permission to view events
+        const viewPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        if (!viewPermission.granted) {
+          socket.emit('error', { message: 'Insufficient permissions to view events' });
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS`);
+          return;
+        }
 
         // Verify event exists and user has access
         const event = await storage.getEventRequest(eventRequestId);
@@ -429,6 +527,33 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
       try {
         const validated = AcquireLockSchema.parse(data);
         const { eventRequestId, fieldName, userId, userName } = validated;
+
+        // SECURITY: Verify authenticated user
+        const authenticatedUser = socket.data.user;
+        if (!authenticatedUser) {
+          const errorMsg = 'Not authenticated';
+          socket.emit('error', { message: errorMsg });
+          if (callback) callback({ success: false, error: errorMsg });
+          return;
+        }
+
+        if (authenticatedUser.id !== userId) {
+          const errorMsg = 'User ID mismatch';
+          socket.emit('error', { message: errorMsg });
+          logger.error(`[Collaboration] User ID mismatch on acquire-lock: ${authenticatedUser.id} vs ${userId}`);
+          if (callback) callback({ success: false, error: errorMsg });
+          return;
+        }
+
+        // SECURITY: Check if user has permission to edit events
+        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        if (!editPermission.granted) {
+          const errorMsg = 'Insufficient permissions to edit events';
+          socket.emit('error', { message: errorMsg });
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          if (callback) callback({ success: false, error: errorMsg });
+          return;
+        }
 
         // Check if field is already locked
         const existingLocks = await storage.getEventFieldLocks(eventRequestId);
@@ -550,6 +675,27 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         const { eventRequestId, fieldName, value, expectedVersion, userId, userName } =
           validated;
 
+        // SECURITY: Verify authenticated user
+        const authenticatedUser = socket.data.user;
+        if (!authenticatedUser) {
+          socket.emit('error', { message: 'Not authenticated' });
+          return;
+        }
+
+        if (authenticatedUser.id !== userId) {
+          socket.emit('error', { message: 'User ID mismatch' });
+          logger.error(`[Collaboration] User ID mismatch on field-update: ${authenticatedUser.id} vs ${userId}`);
+          return;
+        }
+
+        // SECURITY: Check if user has permission to edit events
+        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        if (!editPermission.granted) {
+          socket.emit('error', { message: 'Insufficient permissions to edit events' });
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          return;
+        }
+
         const expectedVersionDate = new Date(expectedVersion);
 
         if (isNaN(expectedVersionDate.getTime())) {
@@ -659,6 +805,27 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
       try {
         const validated = CreateCommentSchema.parse(data);
         const { eventRequestId, userId, userName, content, parentCommentId } = validated;
+
+        // SECURITY: Verify authenticated user
+        const authenticatedUser = socket.data.user;
+        if (!authenticatedUser) {
+          socket.emit('error', { message: 'Not authenticated' });
+          return;
+        }
+
+        if (authenticatedUser.id !== userId) {
+          socket.emit('error', { message: 'User ID mismatch' });
+          logger.error(`[Collaboration] User ID mismatch on create-comment: ${authenticatedUser.id} vs ${userId}`);
+          return;
+        }
+
+        // SECURITY: Check if user has permission to comment on events
+        const commentPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        if (!commentPermission.granted) {
+          socket.emit('error', { message: 'Insufficient permissions to comment on events' });
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS (comment)`);
+          return;
+        }
 
         const comment = await storage.createEventCollaborationComment({
           eventRequestId,
