@@ -264,7 +264,7 @@ export const archivedProjects = pgTable('archived_projects', {
 
 export const projectTasks = pgTable('project_tasks', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
+  projectId: integer('project_id'), // Nullable to support standalone tasks
   title: text('title').notNull(),
   description: text('description'),
   status: text('status').notNull().default('pending'), // 'pending', 'in_progress', 'completed'

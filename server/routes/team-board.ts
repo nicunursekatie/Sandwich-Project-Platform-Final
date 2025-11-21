@@ -901,4 +901,117 @@ teamBoardRouter.get(
   }
 );
 
+// POST /api/team-board/:id/promote - Promote holding zone item to a standalone task
+teamBoardRouter.post(
+  '/:id/promote',
+  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      // Validation schema for promote request
+      const promoteSchema = z.object({
+        projectId: z.number().int().positive().optional().nullable(), // Optional project to attach to
+        priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
+        dueDate: z.string().optional().nullable(),
+      });
+
+      const validation = promoteSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Invalid input data',
+          details: validation.error.issues,
+        });
+      }
+
+      const { projectId, priority, dueDate } = validation.data;
+
+      logger.info('Promoting holding zone item to task', {
+        itemId,
+        projectId,
+        userId: req.user.id,
+      });
+
+      // Get the holding zone item
+      const [holdingZoneItem] = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+
+      if (!holdingZoneItem) {
+        return res.status(404).json({ error: 'Holding zone item not found' });
+      }
+
+      // Check if already promoted
+      if (holdingZoneItem.promotedToTaskId) {
+        return res.status(400).json({
+          error: 'Item already promoted to a task',
+          taskId: holdingZoneItem.promotedToTaskId,
+        });
+      }
+
+      // Import projectTasks schema
+      const { projectTasks } = await import('../../shared/schema');
+
+      // Create a new project task
+      const [newTask] = await db
+        .insert(projectTasks)
+        .values({
+          projectId: projectId || null, // Nullable for standalone tasks
+          title: holdingZoneItem.content.substring(0, 255), // Use content as title
+          description: holdingZoneItem.content,
+          status: 'pending',
+          priority: priority,
+          assigneeIds: holdingZoneItem.assignedTo || [],
+          assigneeNames: holdingZoneItem.assignedToNames || [],
+          dueDate: dueDate || null,
+          originType: 'team_board',
+          sourceTeamBoardId: itemId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // Update the holding zone item to mark as promoted
+      await db
+        .update(teamBoardItems)
+        .set({
+          promotedToTaskId: newTask.id,
+          promotedAt: new Date(),
+          status: 'done', // Mark as done since it's been promoted
+        })
+        .where(eq(teamBoardItems.id, itemId));
+
+      logger.info('Successfully promoted holding zone item to task', {
+        itemId,
+        taskId: newTask.id,
+        projectId: projectId || 'standalone',
+        userId: req.user.id,
+      });
+
+      res.status(201).json({
+        success: true,
+        task: newTask,
+        message: projectId
+          ? 'Item promoted to project task'
+          : 'Item promoted to standalone task',
+      });
+    } catch (error) {
+      logger.error('Failed to promote holding zone item', error);
+      res.status(500).json({
+        error: 'Failed to promote item',
+        message: 'An error occurred while promoting the item to a task',
+      });
+    }
+  }
+);
+
 export default teamBoardRouter;
