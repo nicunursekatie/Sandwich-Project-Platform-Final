@@ -119,14 +119,12 @@ export default function SpreadsheetAnalyticsDashboard() {
 
   // Fetch activity logs that contain our analytics events
   const { data: activityLogs = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/activity-logs', timeRange],
+    queryKey: ['/api/enhanced-user-activity/logs', timeRange],
     queryFn: async () => {
       try {
         const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
 
-        const response = await apiRequest('GET', `/api/activity-logs?startDate=${startDate.toISOString()}`);
+        const response = await apiRequest('GET', `/api/enhanced-user-activity/logs?days=${days}`);
         return response || [];
       } catch (error) {
         console.error('Failed to fetch activity logs:', error);
