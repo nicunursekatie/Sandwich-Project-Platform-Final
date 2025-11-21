@@ -1223,8 +1223,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(sandwichCollections)
-      // Note: deletedAt column not yet added to production database
-      // .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
+      .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
       .orderBy(desc(sandwichCollections.collectionDate));
   }
 
@@ -1246,8 +1245,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(sandwichCollections)
-      // Note: deletedAt column not yet added to production database
-      // .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
+      .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
       .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
@@ -1266,9 +1264,8 @@ export class DatabaseStorage implements IStorage {
   async getSandwichCollectionsCount(): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(sandwichCollections);
-      // Note: deletedAt column not yet added to production database
-      // .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
+      .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
     return Number(result[0].count);
   }
 
@@ -1291,9 +1288,8 @@ export class DatabaseStorage implements IStorage {
             ), 0)::int
         `,
       })
-      .from(sandwichCollections);
-      // Note: deletedAt column not yet added to production database
-      // .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
+      .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
 
     return {
       totalEntries: Number(result[0].totalEntries),
@@ -1685,11 +1681,10 @@ export class DatabaseStorage implements IStorage {
     const [collectionCount] = await db
       .select({ count: sql`count(*)` })
       .from(sandwichCollections)
-      .where(
-        eq(sandwichCollections.hostName, hostName)
-        // Note: deletedAt column not yet added to production database
-        // isNull(sandwichCollections.deletedAt) // Exclude soft-deleted collections
-      );
+      .where(and(
+        eq(sandwichCollections.hostName, hostName),
+        isNull(sandwichCollections.deletedAt) // Exclude soft-deleted collections
+      ));
 
     if (Number(collectionCount.count) > 0) {
       throw new Error(
