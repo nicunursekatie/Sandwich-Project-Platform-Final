@@ -901,9 +901,9 @@ export default function HoldingZone() {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap mb-3">
-                  {item.content}
-                </p>
+                <div className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap mb-3">
+                  <MessageWithMentions content={item.content} />
+                </div>
 
                 {/* Assignment Section */}
                 {(canSubmit || canManage) && (
@@ -1115,11 +1115,10 @@ export default function HoldingZone() {
 
             <div className="space-y-2">
               <Label htmlFor="item-content">Content</Label>
-              <Textarea
-                id="item-content"
+              <MentionTextarea
                 value={newItemContent}
-                onChange={(e) => setNewItemContent(e.target.value)}
-                placeholder="Describe the task, note, or idea in detail..."
+                onChange={setNewItemContent}
+                placeholder="Describe the task, note, or idea in detail... Use @ to mention team members"
                 className="min-h-[150px] text-base"
                 data-testid="textarea-new-item-content"
               />

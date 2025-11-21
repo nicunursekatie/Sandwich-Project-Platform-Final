@@ -203,7 +203,10 @@ export const PERMISSIONS = {
   // HOLDING_ZONE - Holding Zone (Team Board) system
   VIEW_HOLDING_ZONE: 'VIEW_HOLDING_ZONE', // View Holding Zone items
   SUBMIT_HOLDING_ZONE: 'SUBMIT_HOLDING_ZONE', // Submit to Holding Zone
-  MANAGE_HOLDING_ZONE: 'MANAGE_HOLDING_ZONE', // Manage Holding Zone (categories, all items)
+  COMMENT_HOLDING_ZONE: 'COMMENT_HOLDING_ZONE', // Comment on Holding Zone items
+  EDIT_OWN_COMMENTS_HOLDING_ZONE: 'EDIT_OWN_COMMENTS_HOLDING_ZONE', // Edit own comments
+  DELETE_OWN_COMMENTS_HOLDING_ZONE: 'DELETE_OWN_COMMENTS_HOLDING_ZONE', // Delete own comments
+  MANAGE_HOLDING_ZONE: 'MANAGE_HOLDING_ZONE', // Manage Holding Zone (categories, all items, all comments)
 
   // VOLUNTEER_CALENDAR - Google Calendar integration
   VOLUNTEER_CALENDAR_VIEW: 'VOLUNTEER_CALENDAR_VIEW', // View volunteer calendar
