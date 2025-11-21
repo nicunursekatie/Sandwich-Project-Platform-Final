@@ -133,6 +133,7 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   setUserPassword(id: string, password: string): Promise<void>;
   findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined>;
+  getUsersByNameOrEmail(searchTerms: string[]): Promise<User[]>;
 
   // Legacy user methods (for backwards compatibility)
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -892,6 +893,38 @@ export class MemStorage implements IStorage {
       }
     }
     return undefined;
+  }
+
+  async getUsersByNameOrEmail(searchTerms: string[]): Promise<User[]> {
+    if (!searchTerms || searchTerms.length === 0) {
+      return [];
+    }
+
+    const matchedUsers: User[] = [];
+    const lowerSearchTerms = searchTerms.map(term => term.toLowerCase());
+
+    for (const user of this.users.values()) {
+      // Build user's full name for comparison
+      const fullName = user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`.toLowerCase()
+        : (user.firstName || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+
+      // Check if any search term matches the user
+      for (const searchTerm of lowerSearchTerms) {
+        if (
+          fullName.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          fullName === searchTerm ||
+          email === searchTerm
+        ) {
+          matchedUsers.push(user);
+          break; // Don't add the same user multiple times
+        }
+      }
+    }
+
+    return matchedUsers;
   }
 
   async createUser(userData: InsertUser): Promise<User> {
