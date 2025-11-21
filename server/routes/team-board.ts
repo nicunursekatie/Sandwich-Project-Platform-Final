@@ -252,9 +252,19 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       .values(newItem)
       .returning();
 
-    logger.info('Successfully created team board item', { 
+    logger.info('Successfully created team board item', {
       itemId: createdItem.id,
-      userId: req.user.id 
+      userId: req.user.id
+    });
+
+    // Process mentions in the item content asynchronously
+    EmailNotificationService.processTeamBoardItemMentions(
+      itemData.content,
+      req.user.id,
+      displayName,
+      createdItem.id
+    ).catch((error) => {
+      logger.error('Failed to process team board item mentions', error);
     });
 
     res.status(201).json(createdItem);
@@ -520,7 +530,7 @@ teamBoardRouter.get('/:id/comments', requirePermission(PERMISSIONS.VIEW_HOLDING_
 });
 
 // POST /api/team-board/:id/comments - Create a new comment
-teamBoardRouter.post('/:id/comments', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
+teamBoardRouter.post('/:id/comments', requirePermission(PERMISSIONS.COMMENT_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -654,9 +664,99 @@ teamBoardRouter.delete('/comments/:commentId', async (req: AuthenticatedRequest,
     res.status(204).send();
   } catch (error) {
     logger.error('Failed to delete comment', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to delete comment',
-      message: 'An error occurred while deleting the comment' 
+      message: 'An error occurred while deleting the comment'
+    });
+  }
+});
+
+// PATCH /api/team-board/comments/:commentId - Edit a comment
+teamBoardRouter.patch('/comments/:commentId', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const commentId = parseInt(req.params.commentId);
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    const { content } = req.body;
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ error: 'Comment content is required' });
+    }
+
+    logger.info('Editing team board comment', {
+      commentId,
+      userId: req.user.id
+    });
+
+    // Check if comment exists and belongs to user
+    const [comment] = await db
+      .select()
+      .from(teamBoardComments)
+      .where(eq(teamBoardComments.id, commentId));
+
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Check permissions: user must own the comment OR have MANAGE permission
+    const hasManagePermission = req.user.permissions?.includes(PERMISSIONS.MANAGE_HOLDING_ZONE);
+    const hasEditPermission = req.user.permissions?.includes(PERMISSIONS.EDIT_OWN_COMMENTS_HOLDING_ZONE);
+
+    if (comment.userId !== req.user.id && !hasManagePermission) {
+      return res.status(403).json({ error: 'You can only edit your own comments' });
+    }
+
+    if (comment.userId === req.user.id && !hasEditPermission && !hasManagePermission) {
+      return res.status(403).json({ error: 'You do not have permission to edit comments' });
+    }
+
+    // Update the comment
+    const [updatedComment] = await db
+      .update(teamBoardComments)
+      .set({ content: content.trim() })
+      .where(eq(teamBoardComments.id, commentId))
+      .returning();
+
+    if (!updatedComment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Process mentions in the edited comment
+    const [item] = await db
+      .select()
+      .from(teamBoardItems)
+      .where(eq(teamBoardItems.id, comment.itemId))
+      .limit(1);
+
+    if (item) {
+      const displayName = req.user.displayName || req.user.email || 'Unknown User';
+      EmailNotificationService.processTeamBoardComment(
+        content.trim(),
+        req.user.id,
+        displayName,
+        comment.itemId,
+        item.content
+      ).catch((error) => {
+        logger.error('Failed to process edited comment mentions', error);
+      });
+    }
+
+    logger.info('Successfully edited comment', {
+      commentId,
+      userId: req.user.id
+    });
+
+    res.json(updatedComment);
+  } catch (error) {
+    logger.error('Failed to edit comment', error);
+    res.status(500).json({
+      error: 'Failed to edit comment',
+      message: 'An error occurred while editing the comment'
     });
   }
 });
