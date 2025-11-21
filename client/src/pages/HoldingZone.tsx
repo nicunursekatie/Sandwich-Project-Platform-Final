@@ -360,15 +360,16 @@ export default function HoldingZone() {
   const canSubmit = user?.permissions?.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
   const canManage = user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
 
-  // Real-time collaboration hook - only enabled if user can view
+  // Real-time collaboration hook - called unconditionally (hook rules)
   const collaboration = useCollaboration({
     resourceType: 'holding-zone',
     resourceId: 'main',
   });
   
-  const isConnected = user && canView ? collaboration.isConnected : false;
-  const presentUsers = user && canView ? collaboration.presentUsers : [];
-  const onFieldUpdate = user && canView ? collaboration.onFieldUpdate : () => () => {};
+  // Only use collaboration if user can view
+  const isConnected = user && canView && collaboration ? collaboration.isConnected : false;
+  const presentUsers = user && canView && collaboration ? collaboration.presentUsers : [];
+  const onFieldUpdate = user && canView && collaboration ? collaboration.onFieldUpdate : () => () => {};
 
   // Listen for real-time updates and refresh the items list
   useEffect(() => {
