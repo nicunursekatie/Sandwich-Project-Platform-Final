@@ -785,4 +785,102 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       logger.error('Error processing team board comment for mentions:', error);
     }
   }
+
+  /**
+   * Process a team board item (task/note/idea) for mentions and send notifications
+   */
+  static async processTeamBoardItemMentions(
+    itemContent: string,
+    creatorId: string,
+    creatorName: string,
+    itemId: number
+  ): Promise<void> {
+    try {
+      // Detect mentions in the item content
+      const mentions = this.detectMentions(itemContent);
+      if (mentions.length === 0) return;
+
+      // Find users who were mentioned
+      const mentionedUsers = await this.findMentionedUsers(mentions);
+
+      // Send notifications to each mentioned user (except the creator)
+      for (const user of mentionedUsers) {
+        if (user.id === creatorId) continue; // Don't notify the creator
+
+        if (!user.email) {
+          logger.warn(`Skipping mention notification: user ${user.id} has no email.`);
+          continue;
+        }
+
+        const userName =
+          user.displayName ||
+          user.firstName ||
+          user.email.split('@')[0] ||
+          'User';
+
+        await this.sendTeamBoardItemMentionNotification(
+          user.email,
+          userName,
+          creatorName,
+          itemContent,
+          itemId
+        );
+      }
+    } catch (error) {
+      logger.error('Error processing team board item for mentions:', error);
+    }
+  }
+
+  /**
+   * Send email notification for team board item mention
+   */
+  private static async sendTeamBoardItemMentionNotification(
+    recipientEmail: string,
+    recipientName: string,
+    mentionerName: string,
+    itemContent: string,
+    itemId: number
+  ): Promise<void> {
+    try {
+      const subject = `${mentionerName} mentioned you in a Holding Zone item`;
+      const itemPreview = itemContent.length > 100
+        ? itemContent.substring(0, 100) + '...'
+        : itemContent;
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #236383;">You've been mentioned!</h2>
+          <p>Hi ${recipientName},</p>
+          <p><strong>${mentionerName}</strong> mentioned you in a Holding Zone item:</p>
+          <div style="background-color: #f5f5f5; padding: 15px; border-left: 4px solid #236383; margin: 20px 0;">
+            <p style="margin: 0; white-space: pre-wrap;">${itemPreview}</p>
+          </div>
+          <p>
+            <a href="${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?section=holding-zone"
+               style="background-color: #236383; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              View Holding Zone
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">
+            This is an automated notification from The Sandwich Project platform.
+          </p>
+        </div>
+      `;
+
+      await sendEmail({
+        to: recipientEmail,
+        subject,
+        text: `${mentionerName} mentioned you in a Holding Zone item:\n\n${itemPreview}\n\nView it in the Holding Zone section.`,
+        html: htmlBody,
+      });
+
+      logger.info('Team board item mention notification sent', {
+        recipientEmail,
+        itemId,
+      });
+    } catch (error) {
+      logger.error('Failed to send team board item mention notification:', error);
+      throw error;
+    }
+  }
 }
