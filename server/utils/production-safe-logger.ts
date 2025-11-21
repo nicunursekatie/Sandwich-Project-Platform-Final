@@ -24,7 +24,16 @@ const serializeArgs = (args: any[]): string => {
     }
     if (typeof arg === 'object' && arg !== null) {
       try {
-        return JSON.stringify(arg, null, 2);
+        const seen = new WeakSet();
+        return JSON.stringify(arg, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return '[Circular]';
+            }
+            seen.add(value);
+          }
+          return value;
+        }, 2);
       } catch {
         return String(arg);
       }
