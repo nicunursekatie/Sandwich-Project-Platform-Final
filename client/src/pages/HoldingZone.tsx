@@ -351,6 +351,9 @@ export default function HoldingZone() {
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
   const [newItemCategoryId, setNewItemCategoryId] = useState<string>('');
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#236383');
 
   // Permission checks
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
@@ -417,6 +420,31 @@ export default function HoldingZone() {
     return filtered;
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
 
+  // Create category mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: async (data: { name: string; color: string }) => {
+      return await apiRequest('POST', '/api/holding-zone/categories', data);
+    },
+    onSuccess: (newCategory: HoldingZoneCategory) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/holding-zone/categories'] });
+      setNewItemCategoryId(String(newCategory.id));
+      setIsCreatingNewCategory(false);
+      setNewCategoryName('');
+      setNewCategoryColor('#236383');
+      toast({
+        title: 'Category created',
+        description: 'Your new category has been created',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to create category',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Create item mutation
   const createItemMutation = useMutation({
     mutationFn: async (data: {
@@ -434,6 +462,9 @@ export default function HoldingZone() {
       setNewItemType('task');
       setNewItemCategoryId('');
       setNewItemIsUrgent(false);
+      setIsCreatingNewCategory(false);
+      setNewCategoryName('');
+      setNewCategoryColor('#236383');
       toast({
         title: 'Item submitted',
         description: 'Your item has been added to the holding zone',
@@ -521,6 +552,22 @@ export default function HoldingZone() {
     queryKey: ['/api/team-board/users'],
     enabled: canSubmit || canManage,
   });
+
+  const handleCreateCategory = () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: 'Category name required',
+        description: 'Please enter a category name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    createCategoryMutation.mutate({
+      name: newCategoryName.trim(),
+      color: newCategoryColor,
+    });
+  };
 
   const handleSubmitItem = () => {
     if (!newItemContent.trim()) {
@@ -913,18 +960,96 @@ export default function HoldingZone() {
 
             <div className="space-y-2">
               <Label htmlFor="item-category">Category (Optional)</Label>
-              <Select value={newItemCategoryId} onValueChange={setNewItemCategoryId}>
-                <SelectTrigger id="item-category" data-testid="select-new-item-category">
-                  <SelectValue placeholder="Select a category..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
+              {!isCreatingNewCategory ? (
+                <Select
+                  value={newItemCategoryId}
+                  onValueChange={(value) => {
+                    if (value === 'create-new') {
+                      setIsCreatingNewCategory(true);
+                      setNewItemCategoryId('');
+                    } else {
+                      setNewItemCategoryId(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="item-category" data-testid="select-new-item-category">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="create-new" className="text-[#236383] font-medium">
+                      + Create New Category...
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="space-y-3 p-4 border border-[#236383] rounded-lg bg-[#E6F4F6]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#236383]">Create New Category</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsCreatingNewCategory(false);
+                        setNewCategoryName('');
+                        setNewCategoryColor('#236383');
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-category-name" className="text-xs">Category Name</Label>
+                    <Input
+                      id="new-category-name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="Enter category name..."
+                      className="text-sm"
+                      data-testid="input-new-category-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-category-color" className="text-xs">Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="new-category-color"
+                        type="color"
+                        value={newCategoryColor}
+                        onChange={(e) => setNewCategoryColor(e.target.value)}
+                        className="w-20 h-9 cursor-pointer"
+                        data-testid="input-new-category-color"
+                      />
+                      <Input
+                        type="text"
+                        value={newCategoryColor}
+                        onChange={(e) => setNewCategoryColor(e.target.value)}
+                        className="flex-1 text-sm"
+                        placeholder="#236383"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleCreateCategory}
+                    disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+                    className="w-full bg-[#236383] hover:bg-[#007E8C] text-sm"
+                    size="sm"
+                    data-testid="button-create-category"
+                  >
+                    {createCategoryMutation.isPending ? (
+                      <><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Creating...</>
+                    ) : (
+                      'Create Category'
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
