@@ -1936,7 +1936,7 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async acquireEventFieldLock(data: { eventRequestId: number; fieldName: string; lockedBy: string; lockedByName: string; expiresAt: Date }) {
+  async acquireEventFieldLock(data: InsertEventFieldLock) {
     // acquireEventFieldLock is a convenience method that wraps createEventFieldLock
     return this.createEventFieldLock(data);
   }
