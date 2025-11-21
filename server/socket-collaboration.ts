@@ -4,6 +4,7 @@ import { storage } from './storage';
 import { logger } from './utils/production-safe-logger';
 import { z } from 'zod';
 import { AuditLogger } from './audit-logger';
+import { extractMentions } from '@shared/mention-utils';
 
 /**
  * Event Collaboration Socket.IO Module
@@ -331,10 +332,12 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         const roomName = getRoomName(eventRequestId);
         const locksRoom = getLocksRoomName(eventRequestId);
         const commentsRoom = getCommentsRoomName(eventRequestId);
+        const userRoom = `user:${userId}`;
 
         socket.join(roomName);
         socket.join(locksRoom);
         socket.join(commentsRoom);
+        socket.join(userRoom); // Join user-specific room for mention notifications
 
         // Track subscription
         if (!socketEventSubscriptions.has(socket.id)) {
@@ -672,6 +675,40 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         });
 
         logger.log(`Comment created by ${userName} in event ${eventRequestId}`);
+
+        // ==================== Detect and Notify Mentions ====================
+        
+        // Extract @mentions from comment content
+        const mentions = extractMentions(content);
+        
+        if (mentions.length > 0) {
+          logger.log(`Detected ${mentions.length} mentions in comment:`, mentions);
+          
+          // Find users by name or email
+          const mentionedUsers = await storage.getUsersByNameOrEmail(mentions);
+          
+          if (mentionedUsers.length > 0) {
+            logger.log(`Found ${mentionedUsers.length} mentioned users`);
+            
+            // Send notification to each mentioned user (excluding the comment author)
+            for (const mentionedUser of mentionedUsers) {
+              if (mentionedUser.id !== userId) {
+                // Emit to user-specific room
+                collaboration.to(`user:${mentionedUser.id}`).emit('user-mentioned', {
+                  resourceType: 'event',
+                  resourceId: eventRequestId,
+                  mentionedBy: userName,
+                  mentionedById: userId,
+                  comment: content,
+                  commentId: comment.id,
+                  timestamp: new Date().toISOString(),
+                });
+                
+                logger.log(`Sent mention notification to user ${mentionedUser.id} (${mentionedUser.email})`);
+              }
+            }
+          }
+        }
       } catch (error) {
         logger.error('Error creating comment:', error);
         socket.emit('error', {

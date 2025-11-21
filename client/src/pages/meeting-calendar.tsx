@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Calendar,
   Clock,
@@ -24,10 +26,14 @@ import {
   Video,
   Phone,
   ArrowLeft,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { queryClient } from '@/lib/queryClient';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollaboration } from '@/hooks/use-collaboration';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Meeting {
   id: number;
@@ -50,11 +56,111 @@ interface MeetingCalendarProps {
   isEmbedded?: boolean;
 }
 
+// Helper functions for presence indicators
+const getInitials = (name: string | null | undefined) => {
+  if (!name || typeof name !== 'string') return '??';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+const getAvatarColor = (name: string | null | undefined) => {
+  const colors = [
+    'bg-[#236383]', 'bg-[#007E8C]', 'bg-[#47B3CB]', 'bg-[#FBAD3F]',
+    'bg-[#A31C41]', 'bg-[#2E7D32]',
+  ];
+  if (!name || typeof name !== 'string') return colors[0];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
+};
+
+// Presence Indicators Component
+function PresenceIndicators({ 
+  presentUsers, 
+  isConnected 
+}: { 
+  presentUsers: Array<{ userId: string; userName: string }>;
+  isConnected: boolean;
+}) {
+  const { user } = useAuth();
+  
+  const otherUsers = presentUsers.filter(u => u.userId !== user?.id);
+  const totalViewers = presentUsers.length;
+
+  return (
+    <TooltipProvider>
+      <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5">
+              {isConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" data-testid="icon-connected" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-red-500" data-testid="icon-disconnected" />
+              )}
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isConnected ? 'Connected' : 'Disconnected'}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {totalViewers} {totalViewers === 1 ? 'person' : 'people'} viewing
+          </span>
+        </div>
+
+        {otherUsers.length > 0 && (
+          <div className="flex -space-x-2">
+            {otherUsers.slice(0, 5).map((u, index) => (
+              <Tooltip key={u.userId}>
+                <TooltipTrigger asChild>
+                  <Avatar 
+                    className={`h-8 w-8 border-2 border-white dark:border-gray-800 ${getAvatarColor(u.userName)}`}
+                    data-testid={`avatar-presence-${index}`}
+                  >
+                    <AvatarFallback className="text-white text-xs">
+                      {getInitials(u.userName)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{u.userName}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+            {otherUsers.length > 5 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Avatar className="h-8 w-8 border-2 border-white dark:border-gray-800 bg-gray-500">
+                    <AvatarFallback className="text-white text-xs">
+                      +{otherUsers.length - 5}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{otherUsers.slice(5).map(u => u.userName).join(', ')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+}
+
 export default function MeetingCalendar({
   isEmbedded = false,
 }: MeetingCalendarProps) {
   const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const { setActiveSection } = useDashboardNavigation();
+  const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -77,6 +183,35 @@ export default function MeetingCalendar({
     meetingLink: '',
   });
   const { toast } = useToast();
+
+  // Real-time collaboration hook
+  const collaboration = useCollaboration({
+    resourceType: 'planning-workspace',
+    resourceId: 'meeting-calendar',
+  });
+  
+  const isConnected = collaboration.isConnected;
+  const presentUsers = collaboration.presentUsers;
+  const onFieldUpdate = collaboration.onFieldUpdate;
+  const emit = collaboration.emit;
+
+  // Listen for real-time updates and refresh the meetings list
+  useEffect(() => {
+    const unsubscribe = onFieldUpdate((fieldName, value, version) => {
+      // Invalidate queries to refresh meetings when any field is updated
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      
+      // Show a subtle toast notification with the user who made the change
+      const updatedByName = presentUsers.find(u => u.userId !== user?.id)?.userName || 'Another team member';
+      toast({
+        title: 'Meeting calendar updated',
+        description: `${updatedByName} made changes to the calendar`,
+        duration: 3000,
+      });
+    });
+
+    return unsubscribe;
+  }, [onFieldUpdate, presentUsers, user, toast]);
 
   // Helper function to safely format dates
   const formatMeetingDate = (dateString: string) => {
@@ -135,6 +270,14 @@ export default function MeetingCalendar({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      
+      // Broadcast the change to other connected users
+      emit('meeting-created', {
+        meetingId: data.id,
+        title: data.title,
+        userName: user?.display_name || `${user?.first_name} ${user?.last_name}` || 'Someone',
+      });
+      
       setIsCreating(false);
       setFormData({
         title: '',
@@ -175,6 +318,14 @@ export default function MeetingCalendar({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      
+      // Broadcast the change to other connected users
+      emit('meeting-updated', {
+        meetingId: data.id,
+        title: data.title,
+        userName: user?.display_name || `${user?.first_name} ${user?.last_name}` || 'Someone',
+      });
+      
       setEditingId(null);
       setFormData({
         title: '',
@@ -210,8 +361,15 @@ export default function MeetingCalendar({
       if (!response.ok) throw new Error('Failed to delete meeting');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (deletedMeeting, meetingId) => {
       queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      
+      // Broadcast the deletion to other connected users
+      emit('meeting-deleted', {
+        meetingId,
+        userName: user?.display_name || `${user?.first_name} ${user?.last_name}` || 'Someone',
+      });
+      
       toast({ title: 'Meeting deleted successfully' });
     },
     onError: () => {
@@ -355,6 +513,14 @@ export default function MeetingCalendar({
           Schedule Meeting
         </Button>
       </div>
+
+      {/* Presence Indicators - Real-time collaboration */}
+      {presentUsers.length > 0 && (
+        <PresenceIndicators 
+          presentUsers={presentUsers} 
+          isConnected={isConnected}
+        />
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

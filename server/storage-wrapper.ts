@@ -3,6 +3,11 @@ import { MemStorage } from './storage';
 // Removed GoogleSheetsStorage import - old implementation deleted to prevent conflicts
 import { DatabaseStorage } from './database-storage';
 import { logger } from './utils/production-safe-logger';
+import type {
+  InsertEventCollaborationComment,
+  InsertEventFieldLock,
+  InsertEventEditRevision,
+} from '@shared/schema';
 
 class StorageWrapper implements IStorage {
   private primaryStorage: IStorage;
@@ -1884,6 +1889,98 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.updateDashboardDocumentOrder(updates),
       () => this.fallbackStorage.updateDashboardDocumentOrder(updates)
+    );
+  }
+
+  // Event Collaboration Comments
+  async getEventCollaborationComments(eventRequestId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventCollaborationComments(eventRequestId),
+      () => this.fallbackStorage.getEventCollaborationComments(eventRequestId)
+    );
+  }
+
+  async createEventCollaborationComment(data: InsertEventCollaborationComment) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createEventCollaborationComment(data),
+      () => this.fallbackStorage.createEventCollaborationComment(data)
+    );
+  }
+
+  async updateEventCollaborationComment(id: number, content: string, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateEventCollaborationComment(id, content, userId),
+      () => this.fallbackStorage.updateEventCollaborationComment(id, content, userId)
+    );
+  }
+
+  async deleteEventCollaborationComment(id: number, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteEventCollaborationComment(id, userId),
+      () => this.fallbackStorage.deleteEventCollaborationComment(id, userId)
+    );
+  }
+
+  // Event Field Locks
+  async getEventFieldLocks(eventRequestId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventFieldLocks(eventRequestId),
+      () => this.fallbackStorage.getEventFieldLocks(eventRequestId)
+    );
+  }
+
+  async createEventFieldLock(data: InsertEventFieldLock) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createEventFieldLock(data),
+      () => this.fallbackStorage.createEventFieldLock(data)
+    );
+  }
+
+  async acquireEventFieldLock(data: InsertEventFieldLock) {
+    // acquireEventFieldLock is a convenience method that wraps createEventFieldLock
+    return this.createEventFieldLock(data);
+  }
+
+  async releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.releaseEventFieldLock(eventRequestId, fieldName, userId),
+      () => this.fallbackStorage.releaseEventFieldLock(eventRequestId, fieldName, userId)
+    );
+  }
+
+  async deleteEventFieldLock(eventRequestId: number, fieldName: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteEventFieldLock(eventRequestId, fieldName),
+      () => this.fallbackStorage.deleteEventFieldLock(eventRequestId, fieldName)
+    );
+  }
+
+  async cleanupExpiredLocks() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.cleanupExpiredLocks(),
+      () => this.fallbackStorage.cleanupExpiredLocks()
+    );
+  }
+
+  // Event Edit Revisions
+  async getEventEditRevisions(eventRequestId: number, options?: { fieldName?: string; limit?: number }) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventEditRevisions(eventRequestId, options),
+      () => this.fallbackStorage.getEventEditRevisions(eventRequestId, options)
+    );
+  }
+
+  async getEventFieldRevisions(eventRequestId: number, fieldName: string, limit?: number, offset?: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventFieldRevisions(eventRequestId, fieldName, limit, offset),
+      () => this.fallbackStorage.getEventFieldRevisions(eventRequestId, fieldName, limit, offset)
+    );
+  }
+
+  async createEventEditRevision(data: InsertEventEditRevision) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createEventEditRevision(data),
+      () => this.fallbackStorage.createEventEditRevision(data)
     );
   }
 }
