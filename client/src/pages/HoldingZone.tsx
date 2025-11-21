@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,9 @@ import {
   Filter,
   Heart,
   UserPlus,
+  Users,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -33,6 +36,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useCollaboration } from '@/hooks/use-collaboration';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Types
 interface HoldingZoneCategory {
@@ -250,6 +255,89 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
   );
 }
 
+// Presence Indicators Component
+function PresenceIndicators({ 
+  presentUsers, 
+  isConnected 
+}: { 
+  presentUsers: Array<{ userId: string; userName: string }>;
+  isConnected: boolean;
+}) {
+  const { user } = useAuth();
+  
+  // Filter out current user from the list
+  const otherUsers = presentUsers.filter(u => u.userId !== user?.id);
+  const totalViewers = presentUsers.length;
+
+  return (
+    <TooltipProvider>
+      <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        {/* Connection Status */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5">
+              {isConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" data-testid="icon-connected" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-red-500" data-testid="icon-disconnected" />
+              )}
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isConnected ? 'Connected' : 'Disconnected'}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* User Count and Avatars */}
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {totalViewers} {totalViewers === 1 ? 'person' : 'people'} viewing
+          </span>
+        </div>
+
+        {/* Avatar Stack */}
+        {otherUsers.length > 0 && (
+          <div className="flex -space-x-2">
+            {otherUsers.slice(0, 5).map((u, index) => (
+              <Tooltip key={u.userId}>
+                <TooltipTrigger asChild>
+                  <Avatar 
+                    className={`h-8 w-8 border-2 border-white dark:border-gray-800 ${getAvatarColor(u.userName)}`}
+                    data-testid={`avatar-presence-${index}`}
+                  >
+                    <AvatarFallback className="text-white text-xs">
+                      {getInitials(u.userName)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{u.userName}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+            {otherUsers.length > 5 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Avatar className="h-8 w-8 border-2 border-white dark:border-gray-800 bg-gray-500">
+                    <AvatarFallback className="text-white text-xs">
+                      +{otherUsers.length - 5}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{otherUsers.slice(5).map(u => u.userName).join(', ')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+}
+
 // Main Holding Zone component
 export default function HoldingZone() {
   const { toast } = useToast();
@@ -268,6 +356,35 @@ export default function HoldingZone() {
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
   const canSubmit = user?.permissions?.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
   const canManage = user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+
+  // Real-time collaboration hook - only enabled if user can view
+  const collaboration = useCollaboration({
+    resourceType: 'holding-zone',
+    resourceId: 'main',
+  });
+  
+  const isConnected = user && canView ? collaboration.isConnected : false;
+  const presentUsers = user && canView ? collaboration.presentUsers : [];
+  const onFieldUpdate = user && canView ? collaboration.onFieldUpdate : () => () => {};
+
+  // Listen for real-time updates and refresh the items list
+  useEffect(() => {
+    if (!canView) return;
+
+    const unsubscribe = onFieldUpdate(() => {
+      // Invalidate queries to refresh items when any field is updated
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      
+      // Show a subtle toast notification
+      toast({
+        title: 'Updates available',
+        description: 'The holding zone has been updated by another team member',
+        duration: 3000,
+      });
+    });
+
+    return unsubscribe;
+  }, [canView, onFieldUpdate, toast]);
 
   // Fetch categories
   const { data: categories = [] } = useQuery<HoldingZoneCategory[]>({
@@ -545,55 +662,61 @@ export default function HoldingZone() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
+      {/* Presence and Filters Row */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Presence Indicators */}
+        <PresenceIndicators presentUsers={presentUsers} isConnected={isConnected} />
+        
+        {/* Filters */}
+        <Card className="flex-1">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
+              </div>
+
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[180px]" data-testid="select-category-filter">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="claimed">Claimed</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="urgent-only"
+                  checked={showUrgentOnly}
+                  onCheckedChange={(checked) => setShowUrgentOnly(checked as boolean)}
+                  data-testid="checkbox-urgent-only"
+                />
+                <Label htmlFor="urgent-only" className="text-sm font-medium cursor-pointer">
+                  Show Urgent Only
+                </Label>
+              </div>
             </div>
-
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[180px]" data-testid="select-category-filter">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat.id} value={String(cat.id)}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="claimed">Claimed</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="urgent-only"
-                checked={showUrgentOnly}
-                onCheckedChange={(checked) => setShowUrgentOnly(checked as boolean)}
-                data-testid="checkbox-urgent-only"
-              />
-              <Label htmlFor="urgent-only" className="text-sm font-medium cursor-pointer">
-                Show Urgent Only
-              </Label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Items List */}
       {isLoading ? (
