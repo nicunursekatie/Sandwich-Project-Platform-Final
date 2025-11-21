@@ -1,12 +1,8 @@
 import { Router } from 'express';
+import weeklyCollectionsRouter from './weekly-collections';
 
 const reportsRouter = Router();
 
-// TODO: Move reporting routes here
-// - Weekly impact reports
-// - Analytics dashboard
-// - PDF report generation
-// - Data export functionality
-// - Performance monitoring
+reportsRouter.use('/weekly-collections', weeklyCollectionsRouter);
 
 export default reportsRouter;
