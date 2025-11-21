@@ -451,6 +451,8 @@ export default function Dashboard({
         );
       case 'grant-metrics':
         return <GrantMetrics />;
+      case 'weekly-collections-report':
+        return <WeeklyCollectionsReport />;
       case 'role-demo':
         return <RoleDemo />;
       case 'work-log':
