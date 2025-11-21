@@ -3,6 +3,11 @@ import { MemStorage } from './storage';
 // Removed GoogleSheetsStorage import - old implementation deleted to prevent conflicts
 import { DatabaseStorage } from './database-storage';
 import { logger } from './utils/production-safe-logger';
+import type {
+  InsertEventCollaborationComment,
+  InsertEventFieldLock,
+  InsertEventEditRevision,
+} from '@shared/schema';
 
 class StorageWrapper implements IStorage {
   private primaryStorage: IStorage;
@@ -1895,7 +1900,7 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async createEventCollaborationComment(data: any) {
+  async createEventCollaborationComment(data: InsertEventCollaborationComment) {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventCollaborationComment(data),
       () => this.fallbackStorage.createEventCollaborationComment(data)
@@ -1924,25 +1929,31 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async createEventFieldLock(data: any) {
+  async createEventFieldLock(data: InsertEventFieldLock) {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventFieldLock(data),
       () => this.fallbackStorage.createEventFieldLock(data)
     );
   }
 
-  async acquireEventFieldLock(eventRequestId: number, fieldName: string, userId: string, userEmail: string) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.acquireEventFieldLock(eventRequestId, fieldName, userId, userEmail),
-      () => this.fallbackStorage.acquireEventFieldLock(eventRequestId, fieldName, userId, userEmail)
-    );
+  async acquireEventFieldLock(data: { eventRequestId: number; fieldName: string; lockedBy: string; lockedByName: string; expiresAt: Date }) {
+    // acquireEventFieldLock is a convenience method that wraps createEventFieldLock
+    return this.createEventFieldLock(data);
   }
 
-  async releaseEventFieldLock(eventRequestId: number, fieldName: string) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.releaseEventFieldLock(eventRequestId, fieldName),
-      () => this.fallbackStorage.releaseEventFieldLock(eventRequestId, fieldName)
-    );
+  async releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string) {
+    // releaseEventFieldLock verifies ownership and then deletes the lock
+    // Get existing locks to verify ownership
+    const locks = await this.getEventFieldLocks(eventRequestId);
+    const lock = locks.find(l => l.fieldName === fieldName && l.lockedBy === userId);
+    
+    if (!lock) {
+      // Lock not found or user doesn't own it
+      return false;
+    }
+    
+    // Delete the lock
+    return this.deleteEventFieldLock(eventRequestId, fieldName);
   }
 
   async deleteEventFieldLock(eventRequestId: number, fieldName: string) {
@@ -1974,7 +1985,7 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async createEventEditRevision(data: any) {
+  async createEventEditRevision(data: InsertEventEditRevision) {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventEditRevision(data),
       () => this.fallbackStorage.createEventEditRevision(data)
