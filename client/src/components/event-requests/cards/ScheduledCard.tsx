@@ -332,7 +332,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     name: string;
     hostLocationName: string;
   }>>({
-    queryKey: ['/api/hosts/host-contacts'],
+    queryKey: ['/api/host-contacts'],
     staleTime: 1 * 60 * 1000,
   });
 

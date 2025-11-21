@@ -1742,7 +1742,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Fetch host contacts for name lookup (individual host people)
   const { data: hostContacts = [] } = useQuery<{ id: number; name: string; hostLocation: string }[]>({
-    queryKey: ['/api/hosts/host-contacts'],
+    queryKey: ['/api/host-contacts'],
     staleTime: 10 * 60 * 1000,
   });
 
