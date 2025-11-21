@@ -4202,17 +4202,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string): Promise<boolean> {
-    // Verify ownership before releasing the lock
-    const locks = await this.getEventFieldLocks(eventRequestId);
-    const lock = locks.find(l => l.fieldName === fieldName && l.lockedBy === userId);
-    
-    if (!lock) {
-      // Lock not found or user doesn't own it
-      return false;
-    }
-    
-    // Delete the lock
-    return this.deleteEventFieldLock(eventRequestId, fieldName);
+    // Verify ownership and delete the lock in a single query
+    const result = await db
+      .delete(eventFieldLocks)
+      .where(
+        and(
+          eq(eventFieldLocks.eventRequestId, eventRequestId),
+          eq(eventFieldLocks.fieldName, fieldName),
+          eq(eventFieldLocks.lockedBy, userId)
+        )
+      );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean> {
