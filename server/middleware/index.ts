@@ -151,10 +151,12 @@ export function validateRequest(
 export function createErrorHandler(moduleId: string) {
   return (error: any, req: any, res: any, next: any) => {
     // Use imported logger
+    // Use originalUrl to get the full path, not just the relative one
+    const fullPath = req.originalUrl || req.url;
 
     logger.error(`${moduleId} error: ${error.message}`, error, {
       method: req.method,
-      url: req.url,
+      url: fullPath,
     });
 
     // Don't expose internal errors in production

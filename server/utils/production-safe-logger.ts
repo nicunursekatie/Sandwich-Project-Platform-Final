@@ -15,6 +15,34 @@ import winstonLogger, { createServiceLogger } from './logger';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
+ * Helper to serialize arguments including error objects
+ */
+const serializeArgs = (args: any[]): string => {
+  return args.map(arg => {
+    if (arg instanceof Error) {
+      return `${arg.message}\n${arg.stack || ''}`;
+    }
+    if (typeof arg === 'object' && arg !== null) {
+      try {
+        const seen = new WeakSet();
+        return JSON.stringify(arg, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return '[Circular]';
+            }
+            seen.add(value);
+          }
+          return value;
+        }, 2);
+      } catch {
+        return String(arg);
+      }
+    }
+    return String(arg);
+  }).join(' ');
+};
+
+/**
  * Production-safe logger that wraps both console and Winston
  * - In development: Uses console for immediate feedback
  * - In production: Uses Winston with proper log levels and rotation
@@ -48,7 +76,7 @@ export const logger = {
     if (isDevelopment) {
       console.info(...args);
     } else {
-      winstonLogger.info(args.join(' '));
+      winstonLogger.info(serializeArgs(args));
     }
   },
 
@@ -60,7 +88,7 @@ export const logger = {
     if (isDevelopment) {
       console.warn(...args);
     } else {
-      winstonLogger.warn(args.join(' '));
+      winstonLogger.warn(serializeArgs(args));
     }
   },
 
@@ -72,7 +100,7 @@ export const logger = {
     if (isDevelopment) {
       console.error(...args);
     } else {
-      winstonLogger.error(args.join(' '));
+      winstonLogger.error(serializeArgs(args));
     }
   },
 
