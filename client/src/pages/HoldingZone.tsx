@@ -28,6 +28,7 @@ import {
   Users,
   Wifi,
   WifiOff,
+  ArrowRight,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -354,6 +355,9 @@ export default function HoldingZone() {
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#236383');
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [itemToPromote, setItemToPromote] = useState<HoldingZoneItem | null>(null);
+  const [promotePriority, setPromotePriority] = useState<'low' | 'medium' | 'high'>('medium');
 
   // Permission checks
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
@@ -521,6 +525,34 @@ export default function HoldingZone() {
       toast({
         title: 'Error',
         description: 'Failed to update assignments',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Promote to task mutation
+  const promoteToTaskMutation = useMutation({
+    mutationFn: async ({ id, priority }: { id: number; priority: 'low' | 'medium' | 'high' }) => {
+      return await apiRequest('POST', `/api/team-board/${id}/promote`, {
+        projectId: null, // Standalone task
+        priority,
+        dueDate: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setPromoteDialogOpen(false);
+      setItemToPromote(null);
+      setPromotePriority('medium');
+      toast({
+        title: 'Item promoted',
+        description: 'The item has been promoted to a standalone task',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to promote item to task',
         variant: 'destructive',
       });
     },
@@ -835,17 +867,33 @@ export default function HoldingZone() {
 
                   {canManage && (
                     <div className="flex gap-2">
-                      {item.status !== 'done' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
-                          disabled={updateItemMutation.isPending}
-                          data-testid={`button-mark-done-${item.id}`}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Mark Done
-                        </Button>
+                      {item.status !== 'done' && !item.completedAt && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setItemToPromote(item);
+                              setPromoteDialogOpen(true);
+                            }}
+                            disabled={promoteToTaskMutation.isPending}
+                            className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                            data-testid={`button-promote-${item.id}`}
+                          >
+                            <ArrowRight className="h-4 w-4 mr-1" />
+                            Promote to Task
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
+                            disabled={updateItemMutation.isPending}
+                            data-testid={`button-mark-done-${item.id}`}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Mark Done
+                          </Button>
+                        </>
                       )}
                     </div>
                   )}
@@ -1118,6 +1166,85 @@ export default function HoldingZone() {
           </div>
           <DialogFooter>
             <Button onClick={() => setIsCategoryManageOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote to Task Dialog */}
+      <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Promote to Task</DialogTitle>
+            <DialogDescription>
+              Convert this holding zone item into a standalone task
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {itemToPromote && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Item Content:
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                  {itemToPromote.content}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="promote-priority">Priority</Label>
+              <Select value={promotePriority} onValueChange={(v) => setPromotePriority(v as any)}>
+                <SelectTrigger id="promote-priority" data-testid="select-promote-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Note:</strong> This will create a standalone task (not attached to any project).
+                The holding zone item will be marked as done, and you can find the new task in the Projects section.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPromoteDialogOpen(false);
+                setItemToPromote(null);
+                setPromotePriority('medium');
+              }}
+              data-testid="button-cancel-promote"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (itemToPromote) {
+                  promoteToTaskMutation.mutate({
+                    id: itemToPromote.id,
+                    priority: promotePriority,
+                  });
+                }
+              }}
+              disabled={promoteToTaskMutation.isPending || !itemToPromote}
+              className="bg-[#236383] hover:bg-[#007E8C]"
+              data-testid="button-confirm-promote"
+            >
+              {promoteToTaskMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Promoting...</>
+              ) : (
+                <>Promote to Task</>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
