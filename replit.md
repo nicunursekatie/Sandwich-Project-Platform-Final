@@ -25,6 +25,21 @@ This full-stack application for The Sandwich Project nonprofit is designed to st
 - Added plural alias `/api/activity-logs` to match client-side calls from SpreadsheetAnalyticsDashboard
 - Resolves 404 errors from production environment when fetching activity logs for analytics
 
+**TSP Holding Zone - Complete Team Board Transformation (November 21, 2025):**
+- **Replaced Kanban-style Team Board** with simple inbox-style "TSP Holding Zone" optimized for volunteers over 40
+- **Flexible Category System**: Created `holding_zone_categories` table with 6 initial categories (group events, hosts, weekly collections, volunteers, tech, fundraising) plus dynamic creation capability
+- **Three-Tier Permission System**: VIEW_HOLDING_ZONE (view only), SUBMIT_HOLDING_ZONE (create/edit own items), MANAGE_HOLDING_ZONE (manage all items and categories)
+- **Production-Safe Security Implementation**: 
+  - Layered middleware approach: requirePermission + requireOwnershipPermission
+  - Both middleware functions fetch fresh user data from database on every request
+  - Users whose permissions are revoked cannot access resources they created (verified by architect)
+  - Pattern: All PATCH/DELETE endpoints check SUBMIT permission FIRST, then verify ownership OR MANAGE permission
+  - Service layer protected by middleware at route level (no direct service calls without auth)
+- **Database Integrity**: `createdBy` column has NOT NULL constraint, verified 0 null values in production
+- **UI Features**: Simple list view, category filtering, urgent flag, status badges, comments, likes, assignments, @mentions
+- **Key Files**: `client/src/pages/HoldingZone.tsx`, `server/routes/team-board.ts`, `server/routes/holding-zone-categories.ts`, `shared/schema.ts`
+- **Security Requirement**: All future Holding Zone mutations MUST include the middleware sequence to maintain security guarantees
+
 ### User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
@@ -50,7 +65,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
 -   **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment.
 -   **Automated Reminders**: 24-hour volunteer reminder system via cron job.
--   **Team Board**: Commenting system with real-time counts and multi-user assignment.
+-   **TSP Holding Zone**: Simple inbox-style system for capturing long-term ideas and tasks with flexible categories, urgent flagging, commenting, likes, assignments, and three-tier permission system (VIEW/SUBMIT/MANAGE). Designed for volunteers over 40 with straightforward UX replacing complex Kanban-style Team Board.
 -   **Email System**: Uses `katie@thesandwichproject.org` as the verified SendGrid sender with table-based HTML templates.
 -   **SMS Notifications**: Opt-in SMS alerts for assignment notifications and event details sharing, secured by Twilio signature validation with mandatory consent verification, and an emergency correction SMS feature.
 -   **Expenses Receipt Upload**: Handles receipt uploads to Google Cloud Storage.
