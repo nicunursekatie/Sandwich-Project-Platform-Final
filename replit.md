@@ -2,6 +2,15 @@
 This full-stack application for The Sandwich Project nonprofit is designed to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger.
 
 ### Recent Fixes (November 20, 2025)
+**CRITICAL: Sandwich Total Data Recovery (Immediate Fix Required)**
+- **Root Cause**: Database queries were filtering by `deletedAt` column that doesn't exist in production database
+- **Impact**: Dashboard showed only 925 sandwiches instead of correct total of 2,071,167 sandwiches
+- **Files Fixed**:
+  - `server/database-storage.ts`: Commented out all `deletedAt` filters in collection queries
+  - `server/data-export.ts`: Removed `deletedAt` filters from export and summary queries
+- **Verification**: Database actually contains 1,794 collections with 2,071,167 total sandwiches (individual: 1,649,717 + groups: 421,450)
+- **Next Steps**: After deployment, need to add `deletedAt` and `deletedBy` columns via proper migration
+
 **Production Logging Issue Resolution:**
 - Fixed `[object Object]` errors in production logs by improving error serialization in `server/utils/production-safe-logger.ts`
 - Logger now properly serializes Error objects, showing full error messages and stack traces instead of `[object Object]`
