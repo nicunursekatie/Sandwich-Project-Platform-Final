@@ -68,23 +68,23 @@ export async function registerRoutes(app: Express): Promise<any> {
   });
 
   // Add session middleware with enhanced security and mobile compatibility
-  app.use(
-    session({
-      store: sessionStore,
-      secret: process.env.SESSION_SECRET || 'temp-secret-key-for-development',
-      resave: false, // Only save session when modified - prevents unnecessary DB writes
-      saveUninitialized: false,
-      cookie: {
-        secure: useSecureCookies, // Only require HTTPS in true production (not Replit dev)
-        httpOnly: true, // Prevent XSS attacks by blocking client-side access
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
-        sameSite: useSecureCookies ? 'none' : 'lax', // 'none' for production mobile, 'lax' for development
-        domain: undefined, // Let Express auto-detect domain for Replit
-      },
-      name: 'tsp.session', // Custom session name
-      rolling: true, // Reset maxAge on every request to keep active sessions alive
-    })
-  );
+  const sessionMiddleware = session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET || 'temp-secret-key-for-development',
+    resave: false, // Only save session when modified - prevents unnecessary DB writes
+    saveUninitialized: false,
+    cookie: {
+      secure: useSecureCookies, // Only require HTTPS in true production (not Replit dev)
+      httpOnly: true, // Prevent XSS attacks by blocking client-side access
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
+      sameSite: useSecureCookies ? 'none' : 'lax', // 'none' for production mobile, 'lax' for development
+      domain: undefined, // Let Express auto-detect domain for Replit
+    },
+    name: 'tsp.session', // Custom session name
+    rolling: true, // Reset maxAge on every request to keep active sessions alive
+  });
+
+  app.use(sessionMiddleware);
 
   // Import authentication middleware and setup
   const { isAuthenticated, setupAuth } = await import('./auth');
@@ -214,6 +214,6 @@ export async function registerRoutes(app: Express): Promise<any> {
   // HTTP server is created by the caller (server/index.ts)
   // This function only registers routes and middleware
 
-  // Return the session store so it can be used for monitoring
-  return sessionStore;
+  // Return the session store and middleware so they can be used for monitoring and Socket.IO
+  return { sessionStore, sessionMiddleware };
 }

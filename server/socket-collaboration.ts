@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { AuditLogger } from './audit-logger';
 import { extractMentions } from '@shared/mention-utils';
 import { checkPermission } from '@shared/unified-auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 /**
  * Event Collaboration Socket.IO Module
@@ -15,7 +16,7 @@ import { checkPermission } from '@shared/unified-auth-utils';
  * - Field-level locking with auto-expiration
  * - Optimistic concurrency control
  * - Real-time comments
- * - Authentication and authorization checks
+ * - Session-based authentication and authorization
  */
 
 // ==================== Socket Authentication Interface ====================
@@ -31,6 +32,20 @@ interface AuthenticatedSocket extends Socket {
       role?: string;
       permissions?: Record<string, boolean>;
       isActive: boolean;
+    };
+  };
+  request: {
+    session?: {
+      user?: {
+        id: string;
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        displayName?: string;
+        role?: string;
+        permissions?: Record<string, boolean>;
+        isActive?: boolean;
+      };
     };
   };
 }
@@ -304,47 +319,69 @@ async function releaseUserLocks(
 
 // ==================== Setup Function ====================
 
-export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServer) {
+export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServer, sessionMiddleware?: any) {
   // Create collaboration namespace
   const collaboration = io.of('/collaboration');
   collaborationNamespace = collaboration;
 
   logger.log('✓ Socket.IO collaboration namespace initialized on /collaboration');
 
+  // ==================== Session Middleware Wrapper ====================
+
+  /**
+   * SECURITY: Wrap Express session middleware for Socket.IO
+   * This ensures socket requests have access to the Express session
+   */
+  if (sessionMiddleware) {
+    collaboration.use((socket, next) => {
+      const req = socket.request as any;
+      const res = {} as any; // Socket.IO doesn't have a response object
+      sessionMiddleware(req, res, (err?: any) => {
+        if (err) {
+          logger.error('[Collaboration] Session middleware error:', err);
+          return next(new Error('Session initialization failed'));
+        }
+        next();
+      });
+    });
+    logger.log('✓ Socket.IO session middleware enabled for collaboration namespace');
+  } else {
+    logger.warn('⚠️  Session middleware not provided - Socket.IO authentication may fail');
+  }
+
   // ==================== Authentication Middleware ====================
 
   /**
-   * SECURITY: Authenticate socket connections
-   * Verifies user session and loads user data before allowing any operations
+   * SECURITY: Authenticate socket connections using Express session
+   * Extracts authenticated user from session - NEVER trusts client-supplied credentials
    */
   collaboration.use(async (socket: AuthenticatedSocket, next) => {
     try {
-      // Extract user info from handshake (sent by client during connection)
-      const userId = socket.handshake.auth?.userId;
-      const userEmail = socket.handshake.auth?.userEmail;
+      // SECURITY: Extract user from Express session (NOT from client-supplied data)
+      const sessionUser = socket.request.session?.user;
 
-      if (!userId || !userEmail) {
-        logger.error('[Collaboration] Socket authentication failed: Missing credentials');
-        return next(new Error('Authentication required'));
+      if (!sessionUser || !sessionUser.email) {
+        logger.error('[Collaboration] Socket authentication failed: No session user');
+        return next(new Error('Authentication required - please log in'));
       }
 
-      // Fetch user from database to verify existence and get current permissions
-      const user = await storage.getUserByEmail(userEmail);
+      // Fetch fresh user data from database to get current permissions
+      const user = await storage.getUserByEmail(sessionUser.email);
 
       if (!user) {
-        logger.error(`[Collaboration] Socket authentication failed: User not found - ${userEmail}`);
+        logger.error(`[Collaboration] Socket authentication failed: User not found - ${sessionUser.email}`);
         return next(new Error('User not found'));
       }
 
-      // Verify user ID matches
-      if (user.id !== userId) {
-        logger.error(`[Collaboration] Socket authentication failed: User ID mismatch - ${userEmail}`);
-        return next(new Error('User ID mismatch'));
+      // Verify session user ID matches database user ID
+      if (user.id !== sessionUser.id) {
+        logger.error(`[Collaboration] Socket authentication failed: User ID mismatch - ${sessionUser.email}`);
+        return next(new Error('Session data mismatch'));
       }
 
       // Check if user account is active
       if (!user.isActive) {
-        logger.error(`[Collaboration] Socket authentication failed: Inactive user - ${userEmail}`);
+        logger.error(`[Collaboration] Socket authentication failed: Inactive user - ${sessionUser.email}`);
         return next(new Error('Account is not active'));
       }
 
@@ -360,7 +397,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         isActive: user.isActive,
       };
 
-      logger.log(`[Collaboration] Socket authenticated: ${user.email} (${socket.id})`);
+      logger.log(`[Collaboration] Socket authenticated via session: ${user.email} (${socket.id})`);
       next();
     } catch (error) {
       logger.error('[Collaboration] Socket authentication error:', error);
@@ -412,10 +449,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to view events
-        const viewPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        const viewPermission = checkPermission(authenticatedUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
         if (!viewPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to view events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_VIEW`);
           return;
         }
 
@@ -546,11 +583,11 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, PERMISSIONS.EVENT_REQUESTS_EDIT);
         if (!editPermission.granted) {
           const errorMsg = 'Insufficient permissions to edit events';
           socket.emit('error', { message: errorMsg });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           if (callback) callback({ success: false, error: errorMsg });
           return;
         }
@@ -689,10 +726,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, PERMISSIONS.EVENT_REQUESTS_EDIT);
         if (!editPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to edit events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           return;
         }
 
@@ -820,10 +857,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to comment on events
-        const commentPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        const commentPermission = checkPermission(authenticatedUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
         if (!commentPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to comment on events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS (comment)`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_VIEW (comment)`);
           return;
         }
 

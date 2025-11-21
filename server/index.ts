@@ -285,14 +285,37 @@ async function bootstrap() {
             serverLogger.warn('SMS features may not work properly');
           }
 
+          // Simple API request logging (without interfering with responses)
+          app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+            serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
+            next();
+          });
+
+          // Register monitoring routes (metrics, health checks, dashboard)
+          const monitoringRouter = createMonitoringRoutes();
+          app.use('/monitoring', monitoringRouter);
+          serverLogger.info('✅ Monitoring routes registered at /monitoring');
+
+          // CRITICAL FIX: Register all API routes FIRST (including session setup) before Socket.IO
+          let sessionStore: any;
+          let sessionMiddleware: any;
+          try {
+            const routeResult = await registerRoutes(app);
+            sessionStore = routeResult.sessionStore;
+            sessionMiddleware = routeResult.sessionMiddleware;
+            serverLogger.info('✅ API routes and session middleware registered');
+          } catch (error) {
+            serverLogger.error('Route registration failed:', error);
+          }
+
           // Set up Socket.io for chat system
           const io = setupSocketChat(httpServer);
           monitorSocketIO(io);
           serverLogger.info('✅ Socket.IO monitoring enabled');
 
-          // Set up Socket.io collaboration namespace for event editing
-          setupSocketCollaboration(httpServer, io);
-          serverLogger.info('✅ Socket.IO collaboration namespace enabled');
+          // Set up Socket.io collaboration namespace for event editing (with session support)
+          setupSocketCollaboration(httpServer, io, sessionMiddleware);
+          serverLogger.info('✅ Socket.IO collaboration namespace enabled with session authentication');
 
           // Configure smart delivery service with Socket.IO for real-time notifications
           smartDeliveryService.setSocketIO(io);
@@ -306,26 +329,6 @@ async function bootstrap() {
           // Monitor native WebSocket performance
           monitorWebSocket(wss);
           serverLogger.info('✅ WebSocket monitoring enabled');
-
-          // Simple API request logging (without interfering with responses)
-          app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-            serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
-            next();
-          });
-
-          // Register monitoring routes (metrics, health checks, dashboard)
-          const monitoringRouter = createMonitoringRoutes();
-          app.use('/monitoring', monitoringRouter);
-          serverLogger.info('✅ Monitoring routes registered at /monitoring');
-
-          // CRITICAL FIX: Register all API routes FIRST to prevent route interception
-          let sessionStore: any;
-          try {
-            sessionStore = await registerRoutes(app);
-            serverLogger.info('✅ API routes registered');
-          } catch (error) {
-            serverLogger.error('Route registration failed:', error);
-          }
 
           // Error tracking middleware (before final error handler)
           app.use(errorTrackingMiddleware);
