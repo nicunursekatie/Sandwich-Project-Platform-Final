@@ -349,7 +349,7 @@ export default function HoldingZone() {
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [newItemCategoryId, setNewItemCategoryId] = useState<string>('');
+  const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -460,7 +460,7 @@ export default function HoldingZone() {
       setIsSubmitDialogOpen(false);
       setNewItemContent('');
       setNewItemType('task');
-      setNewItemCategoryId('');
+      setNewItemCategoryId('none');
       setNewItemIsUrgent(false);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
@@ -582,7 +582,7 @@ export default function HoldingZone() {
     createItemMutation.mutate({
       content: newItemContent.trim(),
       type: newItemType,
-      categoryId: newItemCategoryId ? parseInt(newItemCategoryId) : null,
+      categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
       isUrgent: newItemIsUrgent,
     });
   };
@@ -966,7 +966,7 @@ export default function HoldingZone() {
                   onValueChange={(value) => {
                     if (value === 'create-new') {
                       setIsCreatingNewCategory(true);
-                      setNewItemCategoryId('');
+                      setNewItemCategoryId('none');
                     } else {
                       setNewItemCategoryId(value);
                     }
@@ -976,7 +976,7 @@ export default function HoldingZone() {
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {categories.map(cat => (
                       <SelectItem key={cat.id} value={String(cat.id)}>
                         {cat.name}
