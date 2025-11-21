@@ -33,7 +33,7 @@ export function PageBreadcrumbs({ segments, className = '' }: PageBreadcrumbsPro
           </BreadcrumbLink>
         </BreadcrumbItem>
 
-        {segments.map((segment, index) => {
+        {segments?.map((segment, index) => {
           const isLast = index === segments.length - 1;
 
           return (
