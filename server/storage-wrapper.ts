@@ -1942,18 +1942,10 @@ class StorageWrapper implements IStorage {
   }
 
   async releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string) {
-    // releaseEventFieldLock verifies ownership and then deletes the lock
-    // Get existing locks to verify ownership
-    const locks = await this.getEventFieldLocks(eventRequestId);
-    const lock = locks.find(l => l.fieldName === fieldName && l.lockedBy === userId);
-    
-    if (!lock) {
-      // Lock not found or user doesn't own it
-      return false;
-    }
-    
-    // Delete the lock
-    return this.deleteEventFieldLock(eventRequestId, fieldName);
+    return this.executeWithFallback(
+      () => this.primaryStorage.releaseEventFieldLock(eventRequestId, fieldName, userId),
+      () => this.fallbackStorage.releaseEventFieldLock(eventRequestId, fieldName, userId)
+    );
   }
 
   async deleteEventFieldLock(eventRequestId: number, fieldName: string) {
