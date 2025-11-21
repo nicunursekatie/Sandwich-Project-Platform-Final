@@ -15,12 +15,16 @@ import {
   insertTeamBoardItemLikeSchema,
   type TeamBoardItemLike,
   type InsertTeamBoardItemLike,
+  holdingZoneCategories,
+  type HoldingZoneCategory,
   users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { EmailNotificationService } from '../services/email-notification-service';
 // REFACTOR: Import new assignment service for dual-write
 import { teamBoardAssignmentService } from '../services/assignments';
+import { requirePermission, requireOwnershipPermission } from '../middleware/auth';
+import { PERMISSIONS } from '../../shared/auth-utils';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -41,6 +45,8 @@ const createItemSchema = insertTeamBoardItemSchema
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
     type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
+    categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+    isUrgent: z.boolean().optional(), // Urgent flag for priority items
   });
 
 const updateItemSchema = z.object({
@@ -48,6 +54,8 @@ const updateItemSchema = z.object({
   assignedTo: z.array(z.string()).nullable().optional(),
   assignedToNames: z.array(z.string()).nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
+  categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+  isUrgent: z.boolean().optional(), // Urgent flag for priority items
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
@@ -103,7 +111,7 @@ teamBoardRouter.get('/users', async (req: AuthenticatedRequest, res: Response) =
 });
 
 // GET /api/team-board - Get all board items with comment counts
-teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
+teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -111,14 +119,27 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
 
     logger.info('Fetching team board items', { userId: req.user.id });
 
-    // Fetch all items ordered by creation date (newest first), but show incomplete items first
+    // Fetch all items with category information via left join
     const items = await db
-      .select()
+      .select({
+        item: teamBoardItems,
+        category: holdingZoneCategories,
+      })
       .from(teamBoardItems)
+      .leftJoin(
+        holdingZoneCategories,
+        eq(teamBoardItems.categoryId, holdingZoneCategories.id)
+      )
       .orderBy(desc(teamBoardItems.createdAt));
 
+    // Flatten the results to include category info
+    const flattenedItems = items.map(row => ({
+      ...row.item,
+      category: row.category,
+    }));
+
     // Get comment counts for all items
-    const itemIds = items.map(item => item.id);
+    const itemIds = flattenedItems.map(item => item.id);
     const commentCounts = itemIds.length > 0 
       ? await db
           .select({
@@ -134,7 +155,7 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
     const countMap = new Map(commentCounts.map(c => [c.itemId, Number(c.count)]));
 
     // Add comment counts to items
-    const itemsWithCounts = items.map(item => ({
+    const itemsWithCounts = flattenedItems.map(item => ({
       ...item,
       commentCount: countMap.get(item.id) || 0,
     }));
@@ -187,7 +208,7 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/team-board - Create new board item
-teamBoardRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
+teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -221,6 +242,8 @@ teamBoardRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
       assignedTo: null,
       assignedToNames: null,
       completedAt: null,
+      categoryId: itemData.categoryId ?? null,
+      isUrgent: itemData.isUrgent ?? false,
     };
 
     // Insert the new item
@@ -245,7 +268,29 @@ teamBoardRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // PATCH /api/team-board/:id - Update item (claim, complete, etc.)
-teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
+// SECURITY: Layered permission enforcement
+// 1. requirePermission ensures user currently has SUBMIT capability
+// 2. requireOwnershipPermission verifies user is owner OR has MANAGE
+// This prevents revoked submitters from accessing resources they created
+teamBoardRouter.patch('/:id', 
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), // First: check user has SUBMIT
+  requireOwnershipPermission(
+    PERMISSIONS.SUBMIT_HOLDING_ZONE, // Can edit own items
+    PERMISSIONS.MANAGE_HOLDING_ZONE, // Can edit any items
+    async (req: AuthenticatedRequest) => {
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) return null;
+      
+      const [item] = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+      
+      return item?.createdBy || null;
+    }
+  ), // Then: check ownership OR MANAGE
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -372,7 +417,29 @@ teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) =
 });
 
 // DELETE /api/team-board/:id - Delete item
-teamBoardRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
+// SECURITY: Layered permission enforcement
+// 1. requirePermission ensures user currently has SUBMIT capability
+// 2. requireOwnershipPermission verifies user is owner OR has MANAGE
+// This prevents revoked submitters from accessing resources they created
+teamBoardRouter.delete('/:id', 
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), // First: check user has SUBMIT
+  requireOwnershipPermission(
+    PERMISSIONS.SUBMIT_HOLDING_ZONE, // Can delete own items
+    PERMISSIONS.MANAGE_HOLDING_ZONE, // Can delete any items
+    async (req: AuthenticatedRequest) => {
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) return null;
+      
+      const [item] = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+      
+      return item?.createdBy || null;
+    }
+  ), // Then: check ownership OR MANAGE
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -413,7 +480,7 @@ teamBoardRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) 
 });
 
 // GET /api/team-board/:id/comments - Get all comments for a board item
-teamBoardRouter.get('/:id/comments', async (req: AuthenticatedRequest, res: Response) => {
+teamBoardRouter.get('/:id/comments', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -453,7 +520,7 @@ teamBoardRouter.get('/:id/comments', async (req: AuthenticatedRequest, res: Resp
 });
 
 // POST /api/team-board/:id/comments - Create a new comment
-teamBoardRouter.post('/:id/comments', async (req: AuthenticatedRequest, res: Response) => {
+teamBoardRouter.post('/:id/comments', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -597,6 +664,7 @@ teamBoardRouter.delete('/comments/:commentId', async (req: AuthenticatedRequest,
 // POST /:id/assignments - Add assignment to team board item
 teamBoardRouter.post(
   '/:id/assignments',
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -638,6 +706,7 @@ teamBoardRouter.post(
 // DELETE /:id/assignments/:userId - Remove assignment from team board item
 teamBoardRouter.delete(
   '/:id/assignments/:userId',
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -712,6 +781,7 @@ teamBoardRouter.get(
 // POST /api/team-board/items/:id/like - Like a team board item
 teamBoardRouter.post(
   '/items/:id/like',
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const itemId = parseInt(req.params.id);
@@ -767,6 +837,7 @@ teamBoardRouter.post(
 // DELETE /api/team-board/items/:id/like - Unlike a team board item
 teamBoardRouter.delete(
   '/items/:id/like',
+  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const itemId = parseInt(req.params.id);

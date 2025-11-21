@@ -322,5 +322,67 @@ describe('Authentication Middleware', () => {
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
+
+    it('SECURITY TEST: should deny access when user owns resource but permissions were revoked', async () => {
+      // Simulate a user who created a resource when they had permissions
+      // but their permissions were revoked after creation
+      const staleUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+        role: 'volunteer',
+        isActive: true,
+        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN], // Had permission in session
+      };
+
+      const freshUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+        role: 'volunteer',
+        isActive: true,
+        permissions: [], // Permission revoked in database
+      };
+
+      mockReq.user = staleUser; // Stale session data
+      mockStorage.getUserByEmail.mockResolvedValue(freshUser); // Fresh data from DB
+      
+      // Mock checkOwnershipPermission to verify it checks ownership BEFORE permission
+      // and denies access when user owns resource but lacks current permission
+      mockCheckOwnershipPermission.mockReturnValue({
+        granted: false,
+        reason: "User owns resource but lacks required permission 'COLLECTIONS_EDIT_OWN'",
+        userRole: 'volunteer',
+        userPermissions: [],
+      });
+
+      const getResourceUserId = async () => 'user-123'; // User owns the resource
+      const middleware = requireOwnershipPermission(
+        PERMISSIONS.COLLECTIONS_EDIT_OWN,
+        PERMISSIONS.COLLECTIONS_EDIT_ALL,
+        getResourceUserId
+      );
+
+      await middleware(mockReq as any, mockRes as any, mockNext);
+
+      // Should fetch fresh user data
+      expect(mockStorage.getUserByEmail).toHaveBeenCalledWith('test@example.com');
+      
+      // Should call checkOwnershipPermission with FRESH user data
+      expect(mockCheckOwnershipPermission).toHaveBeenCalledWith(
+        freshUser, // Fresh user data, not stale
+        PERMISSIONS.COLLECTIONS_EDIT_OWN,
+        PERMISSIONS.COLLECTIONS_EDIT_ALL,
+        'user-123'
+      );
+
+      // Should DENY access even though user owns the resource
+      expect(statusMock).toHaveBeenCalledWith(403);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Insufficient permissions',
+          reason: "User owns resource but lacks required permission 'COLLECTIONS_EDIT_OWN'",
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
   });
 });

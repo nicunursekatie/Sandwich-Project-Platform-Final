@@ -97,7 +97,7 @@ const SignUpGeniusViewer = lazyWithRetry(() => import('@/components/signup-geniu
 const DonationTracking = lazyWithRetry(() => import('@/components/donation-tracking'));
 const WeeklyMonitoringDashboard = lazyWithRetry(() => import('@/components/weekly-monitoring-dashboard'));
 const WishlistPage = lazyWithRetry(() => import('@/pages/wishlist'));
-const TeamBoard = lazyWithRetry(() => import('@/pages/TeamBoard'));
+const HoldingZone = lazyWithRetry(() => import('@/pages/HoldingZone'));
 const PromotionGraphics = lazyWithRetry(() => import('@/pages/promotion-graphics'));
 const QuickSMSLinks = lazyWithRetry(() => import('@/pages/quick-sms-links'));
 const CoolerTrackingPage = lazyWithRetry(() => import('@/pages/cooler-tracking'));
@@ -400,7 +400,7 @@ export default function Dashboard({
       case 'wishlist':
         return <WishlistPage />;
       case 'team-board':
-        return <TeamBoard />;
+        return <HoldingZone />;
       case 'promotion':
         return <PromotionGraphics />;
       case 'quick-sms-links':

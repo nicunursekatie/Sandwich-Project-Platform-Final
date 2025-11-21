@@ -122,7 +122,31 @@ export const requirePermission = (permission: string): RequestHandler => {
   };
 };
 
-// Helper function for ownership-aware permission checks
+/**
+ * SECURITY-CRITICAL: Ownership-aware permission checking middleware
+ * 
+ * This middleware enforces TWO levels of security:
+ * 1. Fetches fresh user data from database to ensure current permissions
+ * 2. Verifies BOTH ownership AND current permission at the moment of access
+ * 
+ * CRITICAL PROTECTION AGAINST:
+ * - Users whose permissions were revoked after creating a resource
+ * - Stale permission data from session/cache
+ * - Race conditions between permission revocation and access
+ * 
+ * FLOW:
+ * 1. Authenticate user
+ * 2. FETCH FRESH user data from database (NOT from session/cache)
+ * 3. Get resource owner ID
+ * 4. Call checkOwnershipPermission with fresh user data
+ *    - checkOwnershipPermission verifies ownership FIRST
+ *    - Then verifies user CURRENTLY has the required permission
+ *    - This ensures revoked permissions are enforced immediately
+ * 
+ * @param ownPermission - Permission required to access own resources
+ * @param allPermission - Permission required to access all resources
+ * @param getResourceUserId - Function to get the resource owner ID
+ */
 export const requireOwnershipPermission = (
   ownPermission: string,
   allPermission: string,
@@ -137,15 +161,19 @@ export const requireOwnershipPermission = (
         return res.status(401).json({ message: 'Authentication required' });
       }
 
-      // STEP 2: Fetch fresh user data
+      // STEP 2: SECURITY-CRITICAL - Fetch FRESH user data from database
+      // This ensures we check CURRENT permissions, not stale session data
+      // Prevents access by users whose permissions were revoked
       let currentUser = user;
       if (user.email) {
         try {
           const freshUser = await storage.getUserByEmail(user.email);
           if (freshUser && freshUser.isActive) {
             currentUser = freshUser;
-            req.user = freshUser;
+            req.user = freshUser; // Update request with fresh data
+            logger.log(`🔄 AUTH: Fetched fresh user data for ${freshUser.email}`);
           } else {
+            logger.log(`❌ AUTH: User ${user.email} not found or inactive`);
             return res
               .status(401)
               .json({ message: 'User account not found or inactive' });
@@ -158,12 +186,16 @@ export const requireOwnershipPermission = (
         }
       }
 
-      // STEP 3: Get resource owner ID for ownership check
+      // STEP 3: Get resource owner ID for ownership verification
       const resourceUserId = await getResourceUserId(req);
       
-      // STEP 4: Use unified ownership permission checking
+      // STEP 4: SECURITY-CRITICAL - Verify ownership AND current permissions
+      // The checkOwnershipPermission function will:
+      // - First verify if user owns the resource
+      // - Then verify user CURRENTLY has the required permission
+      // - This prevents revoked users from accessing their old resources
       const permissionResult = checkOwnershipPermission(
-        currentUser,
+        currentUser, // Fresh user data with current permissions
         ownPermission,
         allPermission,
         resourceUserId || undefined
@@ -181,6 +213,7 @@ export const requireOwnershipPermission = (
         `❌ AUTH: Ownership permission DENIED for ${currentUser.email}`
       );
       logger.log(`   Reason: ${permissionResult.reason}`);
+      logger.log(`   Resource owner: ${resourceUserId}, User ID: ${currentUser.id}`);
       
       return res.status(403).json({
         message: 'Insufficient permissions',

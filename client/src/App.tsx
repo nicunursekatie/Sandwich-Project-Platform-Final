@@ -21,6 +21,7 @@ import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
+import HoldingZone from '@/pages/HoldingZone';
 import { logger } from '@/lib/logger';
 
 function Router() {
@@ -253,7 +254,7 @@ function Router() {
           {() => <Dashboard initialSection="wishlist" />}
         </Route>
         <Route path="/team-board">
-          {() => <Dashboard initialSection="team-board" />}
+          <HoldingZone />
         </Route>
         <Route path="/quick-sms-links">
           {() => <Dashboard initialSection="quick-sms-links" />}

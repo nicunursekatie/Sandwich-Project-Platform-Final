@@ -369,6 +369,55 @@ async function seedChatMessages() {
 }
 
 /**
+ * Generate holding zone categories
+ */
+async function seedHoldingZoneCategories() {
+  console.log('🌱 Seeding holding zone categories...');
+
+  const categories = [
+    {
+      name: 'Group Events',
+      color: '#236383', // Primary blue
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+    {
+      name: 'Hosts',
+      color: '#007E8C', // Teal
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+    {
+      name: 'Weekly Collections',
+      color: '#47B3CB', // Light blue
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+    {
+      name: 'Volunteers',
+      color: '#FBAD3F', // Orange/gold
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+    {
+      name: 'Tech',
+      color: '#A31C41', // Red
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+    {
+      name: 'Fundraising',
+      color: '#2E7D32', // Green
+      createdBy: 'admin-001',
+      isActive: true,
+    },
+  ];
+
+  await db.insert(schema.holdingZoneCategories).values(categories).onConflictDoNothing();
+  console.log(`✅ Created ${categories.length} holding zone categories`);
+}
+
+/**
  * Generate sample team board items
  */
 async function seedTeamBoardItems() {
@@ -451,6 +500,7 @@ async function main() {
     const recipients = await seedRecipients();
     await seedSandwichDistributions(hosts, recipients);
     await seedChatMessages();
+    await seedHoldingZoneCategories();
     await seedTeamBoardItems();
     await seedAnnouncements();
 
