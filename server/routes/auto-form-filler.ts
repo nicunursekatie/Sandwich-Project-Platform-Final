@@ -3,6 +3,12 @@ import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import multer from 'multer';
+import { ServiceHoursPDFGenerator } from '../services/service-hours-pdf-generator';
+import * as fs from 'fs';
+import * as path from 'path';
+import { db } from '../db';
+import { volunteers, eventVolunteers, eventRequests } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -87,26 +93,170 @@ autoFormFillerRouter.post(
         fileSize: file.size,
       });
 
-      // TODO: Implement actual form filling logic
-      // This is a placeholder response for now
+      // Handle service hours form type
+      if (formType === 'service_hours') {
+        // Optional parameters for volunteer and event IDs
+        const { volunteerId, eventId } = req.body;
+
+        let volunteerName = '[Volunteer Name]';
+        let serviceEntries: Array<{ date: string; hours: string; description: string }> = [
+          {
+            date: new Date().toISOString().split('T')[0],
+            hours: '3',
+            description: '[Description of volunteer work]',
+          },
+        ];
+        let totalHours = 3;
+
+        // Try to fetch volunteer data if volunteerId is provided
+        if (volunteerId) {
+          const volunteer = await db
+            .select()
+            .from(volunteers)
+            .where(eq(volunteers.id, parseInt(volunteerId)))
+            .limit(1);
+
+          if (volunteer.length > 0) {
+            volunteerName = volunteer[0].name;
+          }
+        }
+
+        // Try to fetch event data if eventId is provided
+        if (eventId) {
+          const eventData = await db
+            .select({
+              requestedDate: eventRequests.requestedDate,
+              organizationName: eventRequests.organizationName,
+              eventType: eventRequests.eventType,
+            })
+            .from(eventRequests)
+            .where(eq(eventRequests.id, parseInt(eventId)))
+            .limit(1);
+
+          if (eventData.length > 0) {
+            const event = eventData[0];
+            serviceEntries = [
+              {
+                date: event.requestedDate
+                  ? new Date(event.requestedDate).toISOString().split('T')[0]
+                  : new Date().toISOString().split('T')[0],
+                hours: '3',
+                description: `${event.eventType || 'Event'} at ${event.organizationName || 'location'}`,
+              },
+            ];
+            totalHours = 3;
+          }
+        }
+
+        const serviceHoursData = {
+          volunteerName,
+          serviceEntries,
+          approverName: user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : 'Katie Long',
+          approverSignature: user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : '',
+          approverContact: '[Contact Number]',
+          totalHours,
+        };
+
+        // Generate the PDF
+        const pdfBuffer = await ServiceHoursPDFGenerator.generatePDF(serviceHoursData);
+
+        // Save to temporary location
+        const tempDir = path.join(process.cwd(), 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        const timestamp = Date.now();
+        const fileName = `service_hours_${timestamp}.pdf`;
+        const filePath = path.join(tempDir, fileName);
+        fs.writeFileSync(filePath, pdfBuffer);
+
+        const result = {
+          success: true,
+          formType,
+          fileName: file.originalname,
+          extractedData: {
+            volunteerName: serviceHoursData.volunteerName,
+            approverName: serviceHoursData.approverName,
+            approverContact: serviceHoursData.approverContact,
+            totalHours: serviceHoursData.totalHours.toString(),
+            entries: serviceHoursData.serviceEntries.length.toString(),
+          },
+          filledFormUrl: `/api/auto-form-filler/download/${fileName}`,
+          message: 'Service hours form has been filled. Please update the volunteer name and service details as needed.',
+        };
+
+        return res.json(result);
+      }
+
+      // For other form types, return placeholder response
       const result = {
         success: true,
         formType,
         fileName: file.originalname,
         extractedData: {
-          // Mock data for demonstration
           organizationName: 'The Sandwich Project',
           contactName: [user.firstName, user.lastName].filter(Boolean).join(' '),
           email: user.email,
           date: new Date().toISOString().split('T')[0],
         },
-        filledFormUrl: null, // Will be populated when actual implementation is added
-        message: 'Form processing is not yet implemented. This is a placeholder response.',
+        filledFormUrl: null,
+        message: 'This form type is not yet fully implemented. Only Service Hours forms are currently supported.',
       };
 
       return res.json(result);
     } catch (error) {
       logger.error('Error processing form:', error);
+      errorHandler(error, req, res, () => {});
+    }
+  }
+);
+
+// GET /api/auto-form-filler/download/:filename - Download generated form
+autoFormFillerRouter.get(
+  '/download/:filename',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { filename } = req.params;
+
+      // Validate filename to prevent directory traversal
+      if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        return res.status(400).json({ error: 'Invalid filename' });
+      }
+
+      const filePath = path.join(process.cwd(), 'temp', filename);
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      // Send the file
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+      // Clean up the file after a short delay (to ensure download completes)
+      fileStream.on('end', () => {
+        setTimeout(() => {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }, 5000);
+      });
+    } catch (error) {
+      logger.error('Error downloading file:', error);
       errorHandler(error, req, res, () => {});
     }
   }
