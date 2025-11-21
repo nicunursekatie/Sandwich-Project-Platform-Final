@@ -468,6 +468,30 @@ export default function DashboardOverview({
           </div>
         )}
 
+        {/* Hero Impact Section */}
+        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
+          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
+            <div className="mb-4">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
+                <AnimatedCounter
+                  value={statsData?.completeTotalSandwiches || 0}
+                />
+              </h1>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
+                <p className="premium-text-body-lg text-brand-primary font-medium text-center">
+                  Total sandwiches distributed since 2020
+                </p>
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
+              </div>
+            </div>
+            <div className="premium-divider my-4 sm:my-6"></div>
+            <div className="premium-text-body-sm text-gray-600">
+              Real data from verified collection records
+            </div>
+          </div>
+        </div>
+
         {/* Planning Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
           <h3 className="premium-text-h3 text-brand-primary mb-6">
@@ -652,30 +676,6 @@ export default function DashboardOverview({
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Messages →
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Impact Section */}
-        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
-          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
-            <div className="mb-4">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
-                <AnimatedCounter
-                  value={statsData?.completeTotalSandwiches || 0}
-                />
-              </h1>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
-                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
-                <p className="premium-text-body-lg text-brand-primary font-medium text-center">
-                  Total sandwiches distributed since 2020
-                </p>
-                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
-              </div>
-            </div>
-            <div className="premium-divider my-4 sm:my-6"></div>
-            <div className="premium-text-body-sm text-gray-600">
-              Real data from verified collection records
             </div>
           </div>
         </div>
