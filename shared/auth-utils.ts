@@ -46,7 +46,7 @@ export const PERMISSIONS = {
   // ADMINISTRATIVE PERMISSIONS
   ADMIN_ACCESS: 'ADMIN_ACCESS',
   MANAGE_ANNOUNCEMENTS: 'MANAGE_ANNOUNCEMENTS',
-  
+
   // CONTACTS - Phone directory
   CONTACTS_VIEW: 'CONTACTS_VIEW', // View phone directory
   MANAGE_DIRECTORY: 'MANAGE_DIRECTORY', // Manage phone directory entries
@@ -117,14 +117,16 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_DELETE_CARD: 'EVENT_REQUESTS_DELETE_CARD', // Delete via card delete buttons
   EVENT_REQUESTS_SYNC: 'EVENT_REQUESTS_SYNC', // Google Sheets sync
   EVENT_REQUESTS_COMPLETE_CONTACT: 'EVENT_REQUESTS_COMPLETE_CONTACT', // Mark primary contact as completed
-  
+
   // EVENT_REQUESTS - Inline editing permissions for specific fields
   EVENT_REQUESTS_INLINE_EDIT_TIMES: 'EVENT_REQUESTS_INLINE_EDIT_TIMES', // Edit event/pickup times inline
   EVENT_REQUESTS_INLINE_EDIT_ADDRESS: 'EVENT_REQUESTS_INLINE_EDIT_ADDRESS', // Edit event address inline
-  EVENT_REQUESTS_INLINE_EDIT_SANDWICHES: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', // Edit sandwich count/types inline
+  EVENT_REQUESTS_INLINE_EDIT_SANDWICHES:
+    'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', // Edit sandwich count/types inline
   EVENT_REQUESTS_INLINE_EDIT_STAFFING: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING', // Edit drivers/speakers/volunteers needed inline
   EVENT_REQUESTS_INLINE_EDIT_LOGISTICS: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', // Edit refrigeration and other logistics inline
-  EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS: 'EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS', // Edit organization name and department inline
+  EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS:
+    'EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS', // Edit organization name and department inline
 
   // EVENT_REQUESTS - Self-signup and assignment permissions
   EVENT_REQUESTS_SELF_SIGNUP: 'EVENT_REQUESTS_SELF_SIGNUP', // Sign up self for driver/speaker/volunteer roles
@@ -194,7 +196,7 @@ export const PERMISSIONS = {
   // ANALYTICS - Dashboard analytics
   ANALYTICS_VIEW: 'ANALYTICS_VIEW',
   ANALYTICS_EXPORT: 'ANALYTICS_EXPORT',
-  
+
   // GRANT_METRICS - Grant reporting and metrics
   GRANT_METRICS_VIEW: 'GRANT_METRICS_VIEW',
   GRANT_METRICS_EXPORT: 'GRANT_METRICS_EXPORT',
@@ -206,6 +208,7 @@ export const PERMISSIONS = {
   COOLERS_MANAGE: 'COOLERS_MANAGE', // Admin: manage cooler types and settings
 
   // HOLDING_ZONE - Holding Zone (Team Board) system
+
   HOLDING_ZONE_VIEW: 'HOLDING_ZONE_VIEW', // View Holding Zone items
   HOLDING_ZONE_ADD: 'HOLDING_ZONE_ADD', // Add new items to Holding Zone
   HOLDING_ZONE_EDIT_OWN: 'HOLDING_ZONE_EDIT_OWN', // Edit own items
@@ -217,6 +220,13 @@ export const PERMISSIONS = {
   VIEW_HOLDING_ZONE: 'HOLDING_ZONE_VIEW',
   SUBMIT_HOLDING_ZONE: 'HOLDING_ZONE_ADD',
   MANAGE_HOLDING_ZONE: 'HOLDING_ZONE_MANAGE',
+
+  VIEW_HOLDING_ZONE: 'VIEW_HOLDING_ZONE', // View Holding Zone items
+  SUBMIT_HOLDING_ZONE: 'SUBMIT_HOLDING_ZONE', // Submit to Holding Zone
+  COMMENT_HOLDING_ZONE: 'COMMENT_HOLDING_ZONE', // Comment on Holding Zone items
+  EDIT_OWN_COMMENTS_HOLDING_ZONE: 'EDIT_OWN_COMMENTS_HOLDING_ZONE', // Edit own comments
+  DELETE_OWN_COMMENTS_HOLDING_ZONE: 'DELETE_OWN_COMMENTS_HOLDING_ZONE', // Delete own comments
+  MANAGE_HOLDING_ZONE: 'MANAGE_HOLDING_ZONE', // Manage Holding Zone (categories, all items, all comments)
 
   // VOLUNTEER_CALENDAR - Google Calendar integration
   VOLUNTEER_CALENDAR_VIEW: 'VOLUNTEER_CALENDAR_VIEW', // View volunteer calendar
@@ -290,7 +300,6 @@ export const PERMISSIONS = {
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
-
 } as const;
 
 // Permission dependencies: When a permission is granted, these dependencies are automatically included
@@ -315,7 +324,10 @@ export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
   [PERMISSIONS.NAV_MY_AVAILABILITY]: [PERMISSIONS.AVAILABILITY_EDIT_OWN],
   [PERMISSIONS.NAV_TEAM_AVAILABILITY]: [PERMISSIONS.AVAILABILITY_VIEW],
   [PERMISSIONS.NAV_GRANT_METRICS]: [PERMISSIONS.GRANT_METRICS_VIEW],
-  [PERMISSIONS.NAV_COOLER_TRACKING]: [PERMISSIONS.COOLERS_VIEW, PERMISSIONS.COOLERS_REPORT],
+  [PERMISSIONS.NAV_COOLER_TRACKING]: [
+    PERMISSIONS.COOLERS_VIEW,
+    PERMISSIONS.COOLERS_REPORT,
+  ],
   [PERMISSIONS.NAV_VOLUNTEER_CALENDAR]: [PERMISSIONS.VOLUNTEER_CALENDAR_VIEW],
   [PERMISSIONS.NAV_EXPENSES]: [PERMISSIONS.EXPENSES_VIEW],
   [PERMISSIONS.NAV_EVENT_REMINDERS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
@@ -332,15 +344,15 @@ export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
 // Helper function to apply permission dependencies
 export function applyPermissionDependencies(permissions: string[]): string[] {
   const result = new Set(permissions);
-  
+
   // For each permission, add its dependencies
-  permissions.forEach(permission => {
+  permissions.forEach((permission) => {
     const dependencies = PERMISSION_DEPENDENCIES[permission];
     if (dependencies) {
-      dependencies.forEach(dep => result.add(dep));
+      dependencies.forEach((dep) => result.add(dep));
     }
   });
-  
+
   return Array.from(result);
 }
 
@@ -696,7 +708,10 @@ export const CHAT_PERMISSIONS = {
 } as const;
 
 // Function to check if user has access to a specific chat room
-export function hasAccessToChat(user: UserForPermissions | null | undefined, chatRoom: string): boolean {
+export function hasAccessToChat(
+  user: UserForPermissions | null | undefined,
+  chatRoom: string
+): boolean {
   if (!user || !user.permissions) return false;
 
   const requiredPermission =
@@ -715,7 +730,9 @@ export function hasAccessToChat(user: UserForPermissions | null | undefined, cha
     // This is a known security issue - numeric permissions are not properly validated
     // TODO: Either migrate all users to string[] format or implement proper bitmask checking
     // For now, returning true to avoid breaking existing users with numeric permissions
-    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`);
+    console.warn(
+      `⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`
+    );
     return true;
   }
 
@@ -724,7 +741,10 @@ export function hasAccessToChat(user: UserForPermissions | null | undefined, cha
 
 // DEPRECATED: Use unified hasPermission from unified-auth-utils instead
 // This function is kept for backwards compatibility only
-export function hasPermission(user: UserForPermissions | null | undefined, permission: string): boolean {
+export function hasPermission(
+  user: UserForPermissions | null | undefined,
+  permission: string
+): boolean {
   // Simple permission check to avoid import issues in browser
   if (!user || !permission) return false;
 
@@ -736,14 +756,16 @@ export function hasPermission(user: UserForPermissions | null | undefined, permi
 
   // Admins get automatic access to navigation and core functionality (backward compatibility)
   if (user.role === 'admin') {
-    if (permission.startsWith('NAV_') ||
-        permission === 'ADMIN_PANEL_ACCESS' ||
-        permission.startsWith('EVENT_REQUESTS_') ||
-        permission.startsWith('DOCUMENTS_') ||
-        permission.startsWith('VOLUNTEERS_') ||
-        permission.startsWith('DRIVERS_') ||
-        permission.startsWith('HOSTS_') ||
-        permission.startsWith('RECIPIENTS_')) {
+    if (
+      permission.startsWith('NAV_') ||
+      permission === 'ADMIN_PANEL_ACCESS' ||
+      permission.startsWith('EVENT_REQUESTS_') ||
+      permission.startsWith('DOCUMENTS_') ||
+      permission.startsWith('VOLUNTEERS_') ||
+      permission.startsWith('DRIVERS_') ||
+      permission.startsWith('HOSTS_') ||
+      permission.startsWith('RECIPIENTS_')
+    ) {
       return true;
     }
   }
@@ -762,7 +784,9 @@ export function hasPermission(user: UserForPermissions | null | undefined, permi
     // This is a known security issue - numeric permissions are not properly validated
     // TODO: Either migrate all users to string[] format or implement proper bitmask checking
     // For now, returning true to avoid breaking existing users with numeric permissions
-    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`);
+    console.warn(
+      `⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`
+    );
     return true;
   }
 
@@ -770,18 +794,28 @@ export function hasPermission(user: UserForPermissions | null | undefined, permi
 }
 
 // Function to check if user can edit a specific collection entry
-export function canEditCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
+export function canEditCollection(
+  user: UserForPermissions | null | undefined,
+  collection: ResourceWithOwner | null | undefined
+): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
 
   // Check if user has edit all permission
-  if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)) {
+  if (
+    Array.isArray(user.permissions) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)
+  ) {
     return true;
   }
 
   // Check if user owns the collection and has edit own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
-  if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_OWN)) {
+  if (
+    resourceOwnerId === user.id &&
+    Array.isArray(user.permissions) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_OWN)
+  ) {
     return true;
   }
 
@@ -789,18 +823,28 @@ export function canEditCollection(user: UserForPermissions | null | undefined, c
 }
 
 // Function to check if user can delete a specific collection entry
-export function canDeleteCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
+export function canDeleteCollection(
+  user: UserForPermissions | null | undefined,
+  collection: ResourceWithOwner | null | undefined
+): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
 
   // Check if user has delete all permission
-  if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)) {
+  if (
+    Array.isArray(user.permissions) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)
+  ) {
     return true;
   }
 
   // Check if user owns the collection and has delete own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
-  if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_OWN)) {
+  if (
+    resourceOwnerId === user.id &&
+    Array.isArray(user.permissions) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_OWN)
+  ) {
     return true;
   }
 
@@ -898,8 +942,12 @@ export function isProjectOwnerOrAssignee(
   const assigneeIdSet = new Set<string>();
 
   normalizeIdArray(project?.assigneeIds).forEach((id) => assigneeIdSet.add(id));
-  normalizeIdArray(project?.assignee_ids).forEach((id) => assigneeIdSet.add(id));
-  normalizeIdArray(project?.supportPeopleIds).forEach((id) => assigneeIdSet.add(id));
+  normalizeIdArray(project?.assignee_ids).forEach((id) =>
+    assigneeIdSet.add(id)
+  );
+  normalizeIdArray(project?.supportPeopleIds).forEach((id) =>
+    assigneeIdSet.add(id)
+  );
   normalizeIdArray(project?.support_people_ids).forEach((id) =>
     assigneeIdSet.add(id)
   );
@@ -918,7 +966,10 @@ export function isProjectOwnerOrAssignee(
   return false;
 }
 
-export function canEditProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
+export function canEditProject(
+  user: UserForPermissions | null | undefined,
+  project: ProjectResource | null | undefined
+): boolean {
   if (!user) return false;
 
   const userPermissions = Array.isArray(user.permissions)
@@ -959,7 +1010,10 @@ export function canEditProject(user: UserForPermissions | null | undefined, proj
   if (projectNames.size > 0) {
     const userAsAny = user as any; // Temporary for accessing optional user properties
     const candidateNames = [
-      [userAsAny.firstName, userAsAny.lastName].filter(Boolean).join(' ').trim(),
+      [userAsAny.firstName, userAsAny.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .trim(),
       userAsAny.displayName,
       userAsAny.preferredEmail,
       user.email,
@@ -977,7 +1031,10 @@ export function canEditProject(user: UserForPermissions | null | undefined, proj
 }
 
 // Function to check if user can delete a specific project
-export function canDeleteProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
+export function canDeleteProject(
+  user: UserForPermissions | null | undefined,
+  project: ProjectResource | null | undefined
+): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_PROJECTS can delete all projects
@@ -998,7 +1055,10 @@ export function canDeleteProject(user: UserForPermissions | null | undefined, pr
 }
 
 // Function to check if user can edit a specific suggestion entry
-export function canEditSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
+export function canEditSuggestion(
+  user: UserForPermissions | null | undefined,
+  suggestion: SuggestionResource | null | undefined
+): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_SUGGESTIONS can edit all suggestions
@@ -1021,7 +1081,10 @@ export function canEditSuggestion(user: UserForPermissions | null | undefined, s
 }
 
 // Function to check if user can delete a specific suggestion entry
-export function canDeleteSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
+export function canDeleteSuggestion(
+  user: UserForPermissions | null | undefined,
+  suggestion: SuggestionResource | null | undefined
+): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_SUGGESTIONS can delete all suggestions
@@ -1044,7 +1107,10 @@ export function canDeleteSuggestion(user: UserForPermissions | null | undefined,
 }
 
 // Function to check if user can edit a specific work log entry
-export function canEditWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
+export function canEditWorkLog(
+  user: UserForPermissions | null | undefined,
+  workLog: WorkLogResource | null | undefined
+): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
@@ -1067,7 +1133,10 @@ export function canEditWorkLog(user: UserForPermissions | null | undefined, work
 }
 
 // Function to check if user can delete a specific work log entry
-export function canDeleteWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
+export function canDeleteWorkLog(
+  user: UserForPermissions | null | undefined,
+  workLog: WorkLogResource | null | undefined
+): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs

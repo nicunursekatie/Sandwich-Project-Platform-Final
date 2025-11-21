@@ -144,7 +144,20 @@ const ProjectsManagementContent: React.FC = () => {
 
       {/* Status Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 mb-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-1">
+          <Button
+            variant="ghost"
+            onClick={() => setActiveTab('standalone_tasks')}
+            className={`font-roboto font-medium transition-all ${
+              activeTab === 'standalone_tasks'
+                ? 'bg-[#007E8C] text-white hover:bg-[#007E8C]/90'
+                : 'text-[#007E8C] hover:text-[#007E8C]/80 hover:bg-[#007E8C]/10'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+            To-Do Tasks
+          </Button>
+
           <Button
             variant="ghost"
             onClick={() => setActiveTab('tabled')}

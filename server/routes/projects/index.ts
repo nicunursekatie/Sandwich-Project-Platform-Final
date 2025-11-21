@@ -605,6 +605,129 @@ export default function createProjectRoutes(options: {
     }
   );
 
+  // GET /standalone-tasks - Get all standalone tasks (not tied to any project)
+  projectsRouter.get('/standalone-tasks', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { db } = await import('../db');
+      const { projectTasks, users } = await import('../../shared/schema');
+      const { isNull, eq, desc } = await import('drizzle-orm');
+
+      logger.info('Fetching standalone tasks');
+
+      // Fetch tasks where projectId is null
+      const standaloneTasks = await db
+        .select({
+          id: projectTasks.id,
+          projectId: projectTasks.projectId,
+          title: projectTasks.title,
+          description: projectTasks.description,
+          status: projectTasks.status,
+          priority: projectTasks.priority,
+          assigneeId: projectTasks.assigneeId,
+          assigneeName: projectTasks.assigneeName,
+          assigneeIds: projectTasks.assigneeIds,
+          assigneeNames: projectTasks.assigneeNames,
+          dueDate: projectTasks.dueDate,
+          completedAt: projectTasks.completedAt,
+          originType: projectTasks.originType,
+          sourceTeamBoardId: projectTasks.sourceTeamBoardId,
+          createdAt: projectTasks.createdAt,
+          updatedAt: projectTasks.updatedAt,
+        })
+        .from(projectTasks)
+        .where(isNull(projectTasks.projectId))
+        .orderBy(desc(projectTasks.createdAt));
+
+      logger.info(`Found ${standaloneTasks.length} standalone tasks`);
+
+      res.json(standaloneTasks);
+    } catch (error) {
+      logger.error('Failed to fetch standalone tasks', error);
+      res.status(500).json({ message: 'Failed to fetch standalone tasks' });
+    }
+  });
+
+  // PATCH /standalone-tasks/:id - Update a standalone task
+  projectsRouter.patch('/standalone-tasks/:id', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: 'Invalid task ID' });
+      }
+
+      const { db } = await import('../db');
+      const { projectTasks } = await import('../../shared/schema');
+      const { eq, isNull, and } = await import('drizzle-orm');
+
+      const { status, priority, title, description, dueDate, assigneeIds, assigneeNames } = req.body;
+
+      logger.info('Updating standalone task', { taskId, updates: req.body });
+
+      // Build update object
+      const updates: any = {
+        updatedAt: new Date(),
+      };
+
+      if (status) updates.status = status;
+      if (priority) updates.priority = priority;
+      if (title) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (dueDate !== undefined) updates.dueDate = dueDate;
+      if (assigneeIds !== undefined) updates.assigneeIds = assigneeIds;
+      if (assigneeNames !== undefined) updates.assigneeNames = assigneeNames;
+      if (status === 'completed') updates.completedAt = new Date();
+
+      // Update the task (only if it's standalone)
+      const [updatedTask] = await db
+        .update(projectTasks)
+        .set(updates)
+        .where(and(eq(projectTasks.id, taskId), isNull(projectTasks.projectId)))
+        .returning();
+
+      if (!updatedTask) {
+        return res.status(404).json({ message: 'Standalone task not found' });
+      }
+
+      logger.info('Successfully updated standalone task', { taskId });
+      res.json(updatedTask);
+    } catch (error) {
+      logger.error('Failed to update standalone task', error);
+      res.status(500).json({ message: 'Failed to update standalone task' });
+    }
+  });
+
+  // DELETE /standalone-tasks/:id - Delete a standalone task
+  projectsRouter.delete('/standalone-tasks/:id', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: 'Invalid task ID' });
+      }
+
+      const { db } = await import('../db');
+      const { projectTasks } = await import('../../shared/schema');
+      const { eq, isNull, and } = await import('drizzle-orm');
+
+      logger.info('Deleting standalone task', { taskId });
+
+      // Delete the task (only if it's standalone)
+      const [deletedTask] = await db
+        .delete(projectTasks)
+        .where(and(eq(projectTasks.id, taskId), isNull(projectTasks.projectId)))
+        .returning();
+
+      if (!deletedTask) {
+        return res.status(404).json({ message: 'Standalone task not found' });
+      }
+
+      logger.info('Successfully deleted standalone task', { taskId });
+      res.json({ success: true, message: 'Task deleted' });
+    } catch (error) {
+      logger.error('Failed to delete standalone task', error);
+      res.status(500).json({ message: 'Failed to delete standalone task' });
+    }
+  });
+
   // Apply error handling middleware
   projectsRouter.use(errorHandler);
 
