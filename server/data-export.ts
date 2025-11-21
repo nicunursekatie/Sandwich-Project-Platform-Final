@@ -27,18 +27,15 @@ export class DataExporter {
     options: ExportOptions = { format: 'csv' }
   ) {
     try {
-      let query = db.select().from(sandwichCollections);
-      // Note: deletedAt column not yet added to production database
-      // .where(isNull(sandwichCollections.deletedAt));
+      let query = db.select().from(sandwichCollections).where(isNull(sandwichCollections.deletedAt));
 
       // Apply date filters
       if (options.dateRange) {
         query = query.where(
-          // Note: deletedAt column not yet added to production database
-          // and(
-          //   isNull(sandwichCollections.deletedAt),
+          and(
+            isNull(sandwichCollections.deletedAt),
             sql`${sandwichCollections.collectionDate} >= ${options.dateRange.start} AND ${sandwichCollections.collectionDate} <= ${options.dateRange.end}`
-          // )
+          )
         );
       }
 
@@ -212,7 +209,7 @@ export class DataExporter {
         contactsCount,
         totalSandwiches,
       ] = await Promise.all([
-        db.select({ count: sql`count(*)` }).from(sandwichCollections), // Note: deletedAt not in prod DB
+        db.select({ count: sql`count(*)` }).from(sandwichCollections).where(isNull(sandwichCollections.deletedAt)),
         db.select({ count: sql`count(*)` }).from(hosts),
         db.select({ count: sql`count(*)` }).from(recipients),
         db.select({ count: sql`count(*)` }).from(projects),
@@ -221,7 +218,8 @@ export class DataExporter {
           .select({
             total: sql`sum(${sandwichCollections.individualSandwiches})`,
           })
-          .from(sandwichCollections), // Note: deletedAt not in prod DB
+          .from(sandwichCollections)
+          .where(isNull(sandwichCollections.deletedAt)),
       ]);
 
       return {
