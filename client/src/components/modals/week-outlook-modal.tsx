@@ -10,9 +10,12 @@ interface SandwichCollection {
   collectionDate: string;
   individualSandwiches: number;
   groupCollections?: Array<{
-    id: number;
-    groupName: string;
-    sandwichCount: number;
+    id?: number;
+    name: string;
+    count: number;
+    // Backward compatibility fields
+    groupName?: string;
+    sandwichCount?: number;
   }>;
 }
 
@@ -97,13 +100,10 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
       date.setDate(currentWeekStart.getDate() + i);
       const dayOfWeek = date.getDay();
 
-      // Filter collections for this day (only future/planned)
+      // Filter collections for this day
       const dayCollections = collections.filter((c) => {
         const collectionDate = parseCollectionDate(c.collectionDate);
-        return (
-          collectionDate.toDateString() === date.toDateString() &&
-          collectionDate > today
-        );
+        return collectionDate.toDateString() === date.toDateString();
       });
 
       // Filter events for this day
@@ -117,7 +117,7 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
       // Calculate total sandwiches for this day
       const collectionTotal = dayCollections.reduce((sum, c) => {
         const groupTotal = (Array.isArray(c.groupCollections) ? c.groupCollections : [])
-          .reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
+          .reduce((gsum, g) => gsum + (g.count || g.sandwichCount || 0), 0);
         return sum + groupTotal;
       }, 0);
 
@@ -158,11 +158,12 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
       const daysFromFriday = (dayOfWeek + 2) % 7;
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - daysFromFriday);
+      weekStart.setHours(0, 0, 0, 0);
       const weekKey = weekStart.toISOString().split('T')[0];
 
       const individual = Number(c.individualSandwiches || 0);
       const group = (Array.isArray(c.groupCollections) ? c.groupCollections : [])
-        .reduce((sum, g) => sum + (g.sandwichCount || 0), 0);
+        .reduce((sum, g) => sum + (g.count || g.sandwichCount || 0), 0);
       const total = individual + group;
 
       weekMap.set(weekKey, (weekMap.get(weekKey) || 0) + total);
@@ -422,7 +423,7 @@ export default function WeekOutlookModal({ isOpen, onClose, initialWeekStart }: 
                         <div key={collection.id} className="text-sm pl-3 border-l-2 border-gray-300">
                           {collection.groupCollections?.map((group, idx) => (
                             <div key={idx} className="text-gray-700">
-                              • <span className="font-medium">{group.groupName}</span>: {group.sandwichCount.toLocaleString()} sandwiches
+                              • <span className="font-medium">{group.name || group.groupName}</span>: {(group.count || group.sandwichCount || 0).toLocaleString()} sandwiches
                             </div>
                           ))}
                         </div>
