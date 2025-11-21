@@ -901,23 +901,44 @@ export class MemStorage implements IStorage {
     }
 
     const matchedUsers: User[] = [];
-    const lowerSearchTerms = searchTerms.map(term => term.toLowerCase());
+    const lowerSearchTerms = searchTerms.map(term => term.toLowerCase().trim());
 
     for (const user of this.users.values()) {
+      // SECURITY: Only search active users to prevent info leakage about inactive accounts
+      if (!user.isActive) {
+        continue;
+      }
+
       // Build user's full name for comparison
       const fullName = user.firstName && user.lastName
         ? `${user.firstName} ${user.lastName}`.toLowerCase()
         : (user.firstName || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
+      const displayName = (user.displayName || '').toLowerCase();
 
       // Check if any search term matches the user
       for (const searchTerm of lowerSearchTerms) {
-        if (
-          fullName.includes(searchTerm) ||
-          email.includes(searchTerm) ||
-          fullName === searchTerm ||
-          email === searchTerm
-        ) {
+        let matched = false;
+
+        // SECURITY: Require minimum length for substring matching to prevent info leakage
+        if (searchTerm.length < 3) {
+          // For short search terms (< 3 chars), only allow exact matching
+          if (fullName === searchTerm || email === searchTerm || displayName === searchTerm) {
+            matched = true;
+          }
+        } else {
+          // For longer search terms, allow substring matching on names
+          // but still require exact match for email (prevent email enumeration)
+          if (
+            fullName.includes(searchTerm) ||
+            displayName.includes(searchTerm) ||
+            email === searchTerm
+          ) {
+            matched = true;
+          }
+        }
+
+        if (matched) {
           matchedUsers.push(user);
           break; // Don't add the same user multiple times
         }
