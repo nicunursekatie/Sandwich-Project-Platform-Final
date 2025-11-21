@@ -97,6 +97,11 @@ export const PERMISSIONS = {
   PROJECTS_EDIT_ALL: 'PROJECTS_EDIT_ALL', // Edit any projects
   PROJECTS_DELETE_OWN: 'PROJECTS_DELETE_OWN', // Delete assigned/owned projects
   PROJECTS_DELETE_ALL: 'PROJECTS_DELETE_ALL', // Delete any projects
+  PROJECTS_TASK_ADD: 'PROJECTS_TASK_ADD', // Add standalone tasks
+  PROJECTS_TASK_EDIT_OWN: 'PROJECTS_TASK_EDIT_OWN', // Edit own standalone tasks
+  PROJECTS_TASK_EDIT_ALL: 'PROJECTS_TASK_EDIT_ALL', // Edit all standalone tasks
+  PROJECTS_TASK_DELETE_OWN: 'PROJECTS_TASK_DELETE_OWN', // Delete own standalone tasks
+  PROJECTS_TASK_DELETE_ALL: 'PROJECTS_TASK_DELETE_ALL', // Delete all standalone tasks
 
   // DISTRIBUTIONS - Sandwich distribution tracking
   DISTRIBUTIONS_VIEW: 'DISTRIBUTIONS_VIEW',
@@ -201,9 +206,17 @@ export const PERMISSIONS = {
   COOLERS_MANAGE: 'COOLERS_MANAGE', // Admin: manage cooler types and settings
 
   // HOLDING_ZONE - Holding Zone (Team Board) system
-  VIEW_HOLDING_ZONE: 'VIEW_HOLDING_ZONE', // View Holding Zone items
-  SUBMIT_HOLDING_ZONE: 'SUBMIT_HOLDING_ZONE', // Submit to Holding Zone
-  MANAGE_HOLDING_ZONE: 'MANAGE_HOLDING_ZONE', // Manage Holding Zone (categories, all items)
+  HOLDING_ZONE_VIEW: 'HOLDING_ZONE_VIEW', // View Holding Zone items
+  HOLDING_ZONE_ADD: 'HOLDING_ZONE_ADD', // Add new items to Holding Zone
+  HOLDING_ZONE_EDIT_OWN: 'HOLDING_ZONE_EDIT_OWN', // Edit own items
+  HOLDING_ZONE_EDIT_ALL: 'HOLDING_ZONE_EDIT_ALL', // Edit all items
+  HOLDING_ZONE_DELETE_OWN: 'HOLDING_ZONE_DELETE_OWN', // Delete own items
+  HOLDING_ZONE_DELETE_ALL: 'HOLDING_ZONE_DELETE_ALL', // Delete all items
+  HOLDING_ZONE_MANAGE: 'HOLDING_ZONE_MANAGE', // Manage categories and item status/functions
+  // Legacy permissions (backward compatibility)
+  VIEW_HOLDING_ZONE: 'HOLDING_ZONE_VIEW',
+  SUBMIT_HOLDING_ZONE: 'HOLDING_ZONE_ADD',
+  MANAGE_HOLDING_ZONE: 'HOLDING_ZONE_MANAGE',
 
   // VOLUNTEER_CALENDAR - Google Calendar integration
   VOLUNTEER_CALENDAR_VIEW: 'VOLUNTEER_CALENDAR_VIEW', // View volunteer calendar
