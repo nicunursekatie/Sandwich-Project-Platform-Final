@@ -632,6 +632,7 @@ export interface IStorage {
   // Event Field Locks
   getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]>;
   createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock>;
+  releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string): Promise<boolean>;
   deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean>;
   cleanupExpiredLocks(): Promise<number>;
 
