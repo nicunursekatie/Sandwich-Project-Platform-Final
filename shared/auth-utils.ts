@@ -200,6 +200,11 @@ export const PERMISSIONS = {
   COOLERS_REPORT: 'COOLERS_REPORT', // Report/update cooler location
   COOLERS_MANAGE: 'COOLERS_MANAGE', // Admin: manage cooler types and settings
 
+  // HOLDING_ZONE - Holding Zone (Team Board) system
+  VIEW_HOLDING_ZONE: 'VIEW_HOLDING_ZONE', // View Holding Zone items
+  SUBMIT_HOLDING_ZONE: 'SUBMIT_HOLDING_ZONE', // Submit to Holding Zone
+  MANAGE_HOLDING_ZONE: 'MANAGE_HOLDING_ZONE', // Manage Holding Zone (categories, all items)
+
   // VOLUNTEER_CALENDAR - Google Calendar integration
   VOLUNTEER_CALENDAR_VIEW: 'VOLUNTEER_CALENDAR_VIEW', // View volunteer calendar
   VOLUNTEER_CALENDAR_SYNC: 'VOLUNTEER_CALENDAR_SYNC', // Sync with Google Calendar

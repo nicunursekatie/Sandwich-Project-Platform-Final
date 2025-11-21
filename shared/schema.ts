@@ -1675,6 +1675,26 @@ export type InsertWishlistSuggestion = z.infer<
   typeof insertWishlistSuggestionSchema
 >;
 
+// Holding Zone Categories - categories for organizing holding zone items
+export const holdingZoneCategories = pgTable('holding_zone_categories', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  color: varchar('color', { length: 50 }).notNull(), // Hex color code or Tailwind color class
+  createdBy: varchar('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+export const insertHoldingZoneCategorySchema = createInsertSchema(
+  holdingZoneCategories
+).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type HoldingZoneCategory = typeof holdingZoneCategories.$inferSelect;
+export type InsertHoldingZoneCategory = z.infer<typeof insertHoldingZoneCategorySchema>;
+
 // Team Bulletin Board - simple board for tasks, notes, ideas, anything team wants to share
 export const teamBoardItems = pgTable('team_board_items', {
   id: serial('id').primaryKey(),
@@ -1685,6 +1705,9 @@ export const teamBoardItems = pgTable('team_board_items', {
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
   assignedToNames: text('assigned_to_names').array(), // Array of display names - supports multiple assignees
   status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
+  // HOLDING ZONE FIELDS
+  categoryId: integer('category_id').references(() => holdingZoneCategories.id), // Category for organization
+  isUrgent: boolean('is_urgent').notNull().default(false), // Urgent flag for priority items
   // NEW REFACTOR FIELDS - Project linking and promotion tracking
   projectId: integer('project_id'), // Optional link to a project for context
   promotedToTaskId: integer('promoted_to_task_id'), // If promoted to project task

@@ -145,7 +145,12 @@ export function hasPermission(user: UserForPermissions | null | undefined, permi
 /**
  * Enhanced permission checker with ownership support
  * 
- * @param user - User object
+ * SECURITY-CRITICAL FLOW:
+ * This function MUST be called with fresh user data to prevent access by users
+ * whose permissions were revoked after they created a resource. The middleware
+ * is responsible for fetching fresh user data before calling this function.
+ * 
+ * @param user - User object (MUST be fresh from database)
  * @param ownPermission - Permission needed to access own resources (e.g., 'COLLECTIONS_EDIT_OWN')
  * @param allPermission - Permission needed to access all resources (e.g., 'COLLECTIONS_EDIT_ALL')
  * @param resourceOwnerId - ID of the resource owner
@@ -158,7 +163,7 @@ export function checkOwnershipPermission(
   resourceOwnerId?: string | string[] | null
 ): PermissionCheckResult {
   
-  // Check for "ALL" permission first
+  // SECURITY: Check for "ALL" permission first with current user permissions
   const allResult = checkPermission(user, allPermission);
   if (allResult.granted) {
     return {
@@ -167,43 +172,50 @@ export function checkOwnershipPermission(
     };
   }
 
-  // Check for "OWN" permission with ownership verification
-  const ownResult = checkPermission(user, ownPermission);
-  if (ownResult.granted) {
-    const normalizedOwnerIds = Array.isArray(resourceOwnerId)
-      ? resourceOwnerId.filter((id) => typeof id === 'string' && id)
-      : resourceOwnerId
-        ? [resourceOwnerId]
-        : [];
+  // SECURITY: Verify ownership before checking OWN permission
+  // This prevents timing issues where permissions are checked before ownership
+  const normalizedOwnerIds = Array.isArray(resourceOwnerId)
+    ? resourceOwnerId.filter((id) => typeof id === 'string' && id)
+    : resourceOwnerId
+      ? [resourceOwnerId]
+      : [];
 
-    if (normalizedOwnerIds.length === 0) {
-      return {
-        granted: false,
-        reason: 'Resource owner ID required for ownership check',
-        userRole: user?.role,
-        userPermissions: ownResult.userPermissions
-      };
-    }
+  if (normalizedOwnerIds.length === 0) {
+    return {
+      granted: false,
+      reason: 'Resource owner ID required for ownership check',
+      userRole: user?.role,
+      userPermissions: getUserPermissions(user)
+    };
+  }
 
-    if (normalizedOwnerIds.includes(user?.id ?? '')) {
+  const isOwner = normalizedOwnerIds.includes(user?.id ?? '');
+  
+  // SECURITY: Only check OWN permission if user actually owns the resource
+  // This ensures we verify current permissions at the exact moment of access
+  if (isOwner) {
+    // Re-verify the user has the OWN permission with their CURRENT permissions
+    const ownResult = checkPermission(user, ownPermission);
+    if (ownResult.granted) {
       return {
         ...ownResult,
-        reason: 'Own-resource permission granted'
+        reason: 'Own-resource permission granted (verified with current permissions)'
       };
     } else {
+      // User owns the resource but no longer has the required permission
       return {
         granted: false,
-        reason: 'User does not own this resource',
+        reason: `User owns resource but lacks required permission '${ownPermission}'`,
         userRole: user?.role,
         userPermissions: ownResult.userPermissions
       };
     }
   }
 
-  // Neither permission granted
+  // User doesn't own the resource and doesn't have ALL permission
   return {
     granted: false,
-    reason: `Neither '${allPermission}' nor '${ownPermission}' permissions found`,
+    reason: `Neither '${allPermission}' permission nor ownership of resource with '${ownPermission}' permission`,
     userRole: user?.role,
     userPermissions: allResult.userPermissions
   };

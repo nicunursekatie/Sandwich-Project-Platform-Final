@@ -41,6 +41,7 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
+import holdingZoneCategoriesRouter from './holding-zone-categories';
 import { promotionGraphicsRouter } from './promotion-graphics';
 import migrationsRouter from './migrations';
 import { createDashboardDocumentsRoutes } from './dashboard-documents';
@@ -553,6 +554,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     teamBoardRouter
   );
   router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Holding zone categories routes
+  router.use(
+    '/api/holding-zone/categories',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    holdingZoneCategoriesRouter
+  );
+  router.use('/api/holding-zone/categories', createErrorHandler('holding-zone-categories'));
 
   // Promotion graphics routes
   router.use(

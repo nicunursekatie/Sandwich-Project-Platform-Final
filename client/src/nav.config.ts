@@ -127,10 +127,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'team-board',
-    label: 'Team Board',
+    label: 'TSP Holding Zone',
     icon: StickyNote,
     href: 'team-board',
-    permission: PERMISSIONS.NAV_TEAM_BOARD,
+    permission: PERMISSIONS.VIEW_HOLDING_ZONE,
     group: 'communication',
     highlighted: true,
   },
