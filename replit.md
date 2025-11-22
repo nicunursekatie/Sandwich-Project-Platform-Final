@@ -1,6 +1,20 @@
 ### Overview
 This full-stack application for The Sandwich Project nonprofit is designed to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger.
 
+### Recent Fixes (November 22, 2025)
+**Real-Time Collaboration System & Granular Permissions Enhancement:**
+- **Re-enabled Socket.IO Event Collaboration**: Restored and fixed real-time collaboration features for event editing (presence tracking, field locking, comments, revision history)
+- **Generic Collaboration Hook**: Created reusable `useCollaboration` hook that works with any resource type (events, holding zone items, planning workspaces, meetings) - eliminates code duplication
+- **TSP Holding Zone Live Updates**: Added real-time presence tracking showing active viewers with avatar stack, connection status, and live item updates when users add/edit/delete items
+- **Meeting Calendar Real-Time Broadcasting**: Enhanced Meeting Calendar to broadcast real-time updates when meetings are created, edited, or deleted - all users see changes instantly
+- **@Mention Notification System**: Built comprehensive @mention detection and notifications - server detects mentions in comments, sends real-time notifications via Socket.IO user rooms, UI component displays unread mentions
+- **Granular Permission System**: Expanded permissions with fine-grained controls:
+  - **Holding Zone**: 7 new permissions (VIEW, ADD, EDIT_OWN, EDIT_ALL, DELETE_OWN, DELETE_ALL, MANAGE) replacing legacy 3-tier system while maintaining backward compatibility
+  - **Projects Standalone Tasks**: 5 new permissions (TASK_ADD, TASK_EDIT_OWN, TASK_EDIT_ALL, TASK_DELETE_OWN, TASK_DELETE_ALL) for granular control over who can manage tasks
+  - **Permission Groups**: Created HOLDING_ZONE group and updated PROJECTS group in permission configuration for organized UI display
+- **Key Files**: `client/src/hooks/use-collaboration.ts`, `client/src/hooks/use-event-collaboration.ts`, `client/src/pages/HoldingZone.tsx`, `client/src/pages/meeting-calendar.tsx`, `server/socket-collaboration.ts`, `client/src/components/MentionNotifications.tsx`, `shared/auth-utils.ts`, `shared/permission-config.ts`
+- **Architecture Pattern**: Generic collaboration hook enables multi-user editing features across different resource types without code duplication - presence tracking, field locking, comments, and real-time synchronization work uniformly
+
 ### Recent Fixes (November 21, 2025)
 **CRITICAL: Database Schema Synchronization Fix**
 - **Root Cause**: Development database was missing columns that exist in production (`deleted_at`, `deleted_by`, `individual_generic`)
