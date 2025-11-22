@@ -172,19 +172,24 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                   }
                   if (desc.includes('Viewed') && desc.includes('activity')) {
                     let feature = log.feature || log.section;
-                    
+
+                    // Skip if feature is just a number (meaningless)
+                    if (!feature || /^\d+$/.test(feature)) {
+                      return 'Viewed activity feed';
+                    }
+
                     // Clean up redundant "Activity" in feature names
                     if (feature.includes(' Activity')) {
                       feature = feature.replace(' Activity', '');
                     }
-                    
+
                     // Map only truly generic/unclear names to meaningful ones
                     const featureMap: Record<string, string> = {
                       'Basic': 'Dashboard',
                       'Count': 'Collection Counts',
                       'Counts': 'Collection Statistics',
                     };
-                    
+
                     const cleanFeature = featureMap[feature] || feature;
                     return `Worked in ${cleanFeature}`;
                   }
