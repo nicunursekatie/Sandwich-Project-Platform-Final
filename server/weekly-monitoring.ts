@@ -26,6 +26,7 @@ const EXPECTED_HOST_LOCATIONS = [
   'Dacula',
   'Flowery Branch',
   'UGA',
+  'Collective Learning',
 ];
 
 // Fallback email mapping for specific locations (when database lookup fails or for spam prevention)

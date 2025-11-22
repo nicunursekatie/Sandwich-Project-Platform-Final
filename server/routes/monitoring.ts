@@ -286,7 +286,16 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
 // Get monitoring statistics
 router.get('/stats', async (req, res) => {
   try {
-    // Get current week collections
+    // Use checkWeeklySubmissions to get accurate counts (handles Dunwoody special logic)
+    const currentWeekStatus = await checkWeeklySubmissions(0);
+    const lastWeekStatus = await checkWeeklySubmissions(1);
+
+    // Count submitted locations
+    const currentWeekSubmitted = currentWeekStatus.filter(s => s.hasSubmitted).length;
+    const lastWeekSubmitted = lastWeekStatus.filter(s => s.hasSubmitted).length;
+    const totalLocations = currentWeekStatus.length;
+
+    // Get sandwich counts from collections
     const now = new Date();
     const currentWeekStart = new Date(now);
     currentWeekStart.setDate(now.getDate() - now.getDay());
@@ -314,34 +323,27 @@ router.get('/stats', async (req, res) => {
       return collDate >= lastWeekStart && collDate <= lastWeekEnd;
     });
 
-    const allRecipients = await storage.getAllRecipients();
-
     const stats = {
-      currentWeek: {
-        reporting: new Set(currentWeekCollections.map((c: any) => c.hostName))
-          .size,
-        total: allRecipients.length,
+      currentWeek: `Week of ${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      totalExpectedLocations: totalLocations,
+      submittedLocations: currentWeekSubmitted,
+      missingLocations: totalLocations - currentWeekSubmitted,
+      lastCheckTime: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      nextScheduledCheck: 'Manual',
+      currentWeekStats: {
+        reporting: currentWeekSubmitted,
+        total: totalLocations,
         percentage:
-          allRecipients.length > 0
-            ? Math.round(
-                (new Set(currentWeekCollections.map((c: any) => c.hostName))
-                  .size /
-                  allRecipients.length) *
-                  100
-              )
+          totalLocations > 0
+            ? Math.round((currentWeekSubmitted / totalLocations) * 100)
             : 0,
       },
-      lastWeek: {
-        reporting: new Set(lastWeekCollections.map((c: any) => c.hostName))
-          .size,
-        total: allRecipients.length,
+      lastWeekStats: {
+        reporting: lastWeekSubmitted,
+        total: totalLocations,
         percentage:
-          allRecipients.length > 0
-            ? Math.round(
-                (new Set(lastWeekCollections.map((c: any) => c.hostName)).size /
-                  allRecipients.length) *
-                  100
-              )
+          totalLocations > 0
+            ? Math.round((lastWeekSubmitted / totalLocations) * 100)
             : 0,
       },
       totalSandwichesThisWeek: currentWeekCollections.reduce(
