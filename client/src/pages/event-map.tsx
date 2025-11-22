@@ -592,11 +592,11 @@ export default function EventMapView() {
     return events.filter(e => e.latitude && e.longitude);
   }, [events]);
 
-  // Group events by exact coordinates
-  const eventsByLocation = useMemo(() => {
+  // Group events by exact coordinates (will be recalculated after filtering)
+  const groupEventsByLocation = (events: EventMapData[]) => {
     const grouped = new Map<string, EventMapData[]>();
 
-    eventsWithCoordinates.forEach(event => {
+    events.forEach(event => {
       const key = `${event.latitude},${event.longitude}`;
       if (!grouped.has(key)) {
         grouped.set(key, []);
@@ -605,7 +605,7 @@ export default function EventMapView() {
     });
 
     return grouped;
-  }, [eventsWithCoordinates]);
+  };
 
   // Filter events without coordinates
   const eventsNeedingGeocode = useMemo(() => {
@@ -697,6 +697,11 @@ export default function EventMapView() {
 
     return filtered;
   }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter, statusFilters]);
+
+  // Group filtered events by location for map display
+  const filteredEventsByLocation = useMemo(() => {
+    return groupEventsByLocation(filteredEvents);
+  }, [filteredEvents]);
 
   const eventsInSelectedPeriod = useMemo(() => {
     return events.filter(event =>
@@ -933,7 +938,7 @@ export default function EventMapView() {
                   spiderfyDistanceMultiplier={1.5}
                   maxClusterRadius={60}
                 >
-                  {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
+                  {Array.from(filteredEventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
                     const [lat, lng] = locationKey.split(',');
                     return (
                       <LocationMarker
@@ -949,7 +954,7 @@ export default function EventMapView() {
                 </MarkerClusterGroup>
               ) : (
                 <>
-                  {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
+                  {Array.from(filteredEventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
                     const [lat, lng] = locationKey.split(',');
                     return (
                       <LocationMarker
