@@ -144,7 +144,7 @@ export default function SpreadsheetAnalyticsDashboard() {
       log.action?.includes('event_requests') ||
       log.action?.includes('spreadsheet') ||
       log.action?.includes('view_mode') ||
-      log.details?.includes('scheduled')
+      (typeof log.details === 'string' && log.details?.includes('scheduled'))
     );
 
     // Calculate metrics
