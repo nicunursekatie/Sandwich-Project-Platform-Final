@@ -2635,7 +2635,7 @@ export default function SandwichCollectionLog() {
                                 <div className="space-y-0.5">
                                   {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
                                   {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
-                                  {((collection as any).individualGeneric ?? 0) > 0 && <div>{(collection as any).individualGeneric} Generic</div>}
+                                  {((collection as any).individualGeneric ?? 0) > 0 && <div>{(collection as any).individualGeneric}</div>}
                                 </div>
                               );
                             }
@@ -2681,7 +2681,7 @@ export default function SandwichCollectionLog() {
                                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-lg font-semibold text-slate-900">
                                         {(group.deli ?? 0) > 0 && <span>{group.deli} Deli</span>}
                                         {(group.pbj ?? 0) > 0 && <span>{group.pbj} PB&J</span>}
-                                        {(group.generic ?? 0) > 0 && <span>{group.generic} Generic</span>}
+                                        {(group.generic ?? 0) > 0 && <span>{group.generic}</span>}
                                       </div>
                                     ) : (
                                       <div className="text-lg font-semibold text-slate-900">{group.sandwichCount}</div>

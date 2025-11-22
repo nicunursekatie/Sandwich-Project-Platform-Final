@@ -385,7 +385,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Package,
     href: 'cooler-tracking',
     permission: PERMISSIONS.NAV_COOLER_TRACKING,
-    group: 'operations',
+    group: 'documentation',
   },
   {
     id: 'document-management',
