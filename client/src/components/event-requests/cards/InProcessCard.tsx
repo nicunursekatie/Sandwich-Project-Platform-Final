@@ -316,6 +316,10 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onCall,
   onContact,
 }) => {
+  // Debug logging
+  console.log('CardContactInfo - eventAddress:', request.eventAddress);
+  console.log('CardContactInfo - full request:', request);
+
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
