@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, Download, TrendingUp } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Download, TrendingUp, Info } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -96,14 +97,27 @@ export default function WeeklyCollectionsReport() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-          <TrendingUp className="w-6 h-6 text-blue-600" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-100">
+          <TrendingUp className="w-6 h-6 text-orange-600" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Weekly Collections Report</h1>
           <p className="text-slate-600">View sandwich collection totals by week (Wednesday-Tuesday)</p>
         </div>
       </div>
+
+      {/* How it Works Info */}
+      <Alert className="bg-amber-50 border-amber-300 border-2">
+        <Info className="h-6 w-6 text-amber-700" />
+        <AlertDescription className="text-slate-800 text-base leading-relaxed">
+          <strong className="text-amber-900 text-lg">How weekly grouping works:</strong> This report groups collections into <strong>Wednesday-to-Tuesday weeks</strong>. 
+          When you enter a start date, the report will include the <strong>entire week</strong> containing that date (starting from the Wednesday of that week). 
+          The same applies to your end date - it includes the full week ending on the Tuesday that contains or follows your end date.
+          <div className="mt-3 text-base bg-white/60 rounded-lg p-3 border border-amber-200">
+            <strong className="text-amber-900">Example:</strong> If you enter 11/22/2025 (a Saturday), the report will include the full week of Nov 19-25, 2025 (Wed-Tue).
+          </div>
+        </AlertDescription>
+      </Alert>
 
       {/* Date Range Filter */}
       <Card className="p-6 bg-white">
@@ -120,6 +134,9 @@ export default function WeeklyCollectionsReport() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Report will start from the Wednesday of this week
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -131,13 +148,16 @@ export default function WeeklyCollectionsReport() {
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Report will end on the Tuesday of this week
+              </p>
             </div>
           </div>
           <div className="flex gap-3">
             <Button
               onClick={handleGenerate}
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand-primary hover:bg-brand-primary-dark"
             >
               {isLoading ? (
                 <>
@@ -173,92 +193,115 @@ export default function WeeklyCollectionsReport() {
 
       {/* Results */}
       {data && (
-        <Card className="bg-white overflow-hidden">
-          <div className="p-6 border-b border-slate-200 bg-slate-50">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-slate-600">Total Weeks</p>
-                <p className="text-2xl font-bold text-slate-900">{data.totalWeeks}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-600">Total Collections</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {data.weeks.reduce((sum, w) => sum + w.collectionCount, 0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-600">Total Sandwiches</p>
-                <p className="text-2xl font-bold text-blue-600">{data.grandTotal.toLocaleString()}</p>
+        <>
+          {/* Date Range Summary */}
+          {data.weeks.length > 0 && (
+            <Alert className="bg-orange-50 border-orange-300 border-2">
+              <Info className="h-5 w-5 text-orange-700" />
+              <AlertDescription className="text-slate-800 text-base">
+                <strong className="text-orange-900 text-base">Showing collections from:</strong> {data.weeks[0].weekStartDate} to {data.weeks[data.weeks.length - 1].weekEndDate}
+                <div className="text-sm mt-2 text-slate-700">
+                  Your selected date range ({data.startDate} to {data.endDate}) was expanded to include complete Wednesday-Tuesday weeks.
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card className="bg-white overflow-hidden">
+            <div className="p-6 border-b border-slate-200 bg-slate-50">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-slate-600">Total Weeks</p>
+                  <p className="text-2xl font-bold text-slate-900">{data.totalWeeks}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Total Collections</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {data.weeks.reduce((sum, w) => sum + w.collectionCount, 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Total Sandwiches</p>
+                  <p className="text-2xl font-bold text-orange-600">{data.grandTotal.toLocaleString()}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Week Starting</TableHead>
-                  <TableHead className="text-right">Collections</TableHead>
-                  <TableHead className="text-right">Individual</TableHead>
-                  <TableHead className="text-right">Group 1</TableHead>
-                  <TableHead className="text-right">Group 2</TableHead>
-                  <TableHead className="text-right">Group Collections</TableHead>
-                  <TableHead className="text-right font-bold">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.weeks.map((week, idx) => (
-                  <TableRow key={idx} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">
-                      <div className="text-sm">
-                        <p className="font-semibold text-slate-900">{week.weekStartDate}</p>
-                        <p className="text-slate-600">to {week.weekEndDate}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700">
-                      {week.collectionCount}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700">
-                      {week.individual.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700">
-                      {week.group1.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700">
-                      {week.group2.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700">
-                      {week.groupCollections.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-blue-600">
-                      {week.totalSandwiches.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <Card className="bg-white overflow-hidden">
+            {data.weeks.length > 0 ? (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Week Starting</TableHead>
+                        <TableHead className="text-right">Collections</TableHead>
+                        <TableHead className="text-right">Individual</TableHead>
+                        <TableHead className="text-right">Group 1</TableHead>
+                        <TableHead className="text-right">Group 2</TableHead>
+                        <TableHead className="text-right">Group Collections</TableHead>
+                        <TableHead className="text-right font-bold">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.weeks.map((week, idx) => (
+                        <TableRow key={idx} className="hover:bg-slate-50">
+                          <TableCell className="font-medium">
+                            <div className="text-sm">
+                              <p className="font-semibold text-slate-900">{week.weekStartDate}</p>
+                              <p className="text-slate-600">to {week.weekEndDate}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-slate-700">
+                            {week.collectionCount}
+                          </TableCell>
+                          <TableCell className="text-right text-slate-700">
+                            {week.individual.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right text-slate-700">
+                            {week.group1.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right text-slate-700">
+                            {week.group2.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right text-slate-700">
+                            {week.groupCollections.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-orange-600">
+                            {week.totalSandwiches.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-          <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end">
-            <div className="text-right">
-              <p className="text-sm text-slate-600 mb-1">Grand Total</p>
-              <p className="text-3xl font-bold text-blue-600">{data.grandTotal.toLocaleString()}</p>
-              <p className="text-sm text-slate-600 mt-2">
-                across {data.weeks.length} weeks
-              </p>
-            </div>
-          </div>
-        </Card>
+                <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end">
+                  <div className="text-right">
+                    <p className="text-sm text-slate-600 mb-1">Grand Total</p>
+                    <p className="text-3xl font-bold text-orange-600">{data.grandTotal.toLocaleString()}</p>
+                    <p className="text-sm text-slate-600 mt-2">
+                      across {data.weeks.length} weeks
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="p-12 text-center">
+                <p className="text-slate-600">No collections found in this date range.</p>
+              </div>
+            )}
+          </Card>
+        </>
       )}
+      
 
       {/* Empty State */}
       {!data && !isLoading && (
         <Card className="p-12 text-center bg-slate-50">
           <p className="text-slate-600 mb-4">
-            Select a date range and click "Generate Report" to view weekly sandwich collection totals.
-          </p>
-          <p className="text-sm text-slate-500">
-            Weeks are calculated as Wednesday to Tuesday to match your collection schedule.
+            Select a date range and click "Generate Report" to view weekly sandwich collection totals grouped by Wednesday-Tuesday weeks.
           </p>
         </Card>
       )}
