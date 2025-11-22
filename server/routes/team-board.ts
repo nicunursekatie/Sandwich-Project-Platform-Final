@@ -48,6 +48,8 @@ const createItemSchema = insertTeamBoardItemSchema
     categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
     isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
+    details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
+    dueDate: z.string().datetime().optional().nullable(), // Optional due date
   });
 
 const updateItemSchema = z.object({
@@ -60,6 +62,8 @@ const updateItemSchema = z.object({
   isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
   content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
   type: z.enum(['task', 'note', 'idea']).optional(),
+  details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
+  dueDate: z.string().datetime().optional().nullable(), // Optional due date
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
@@ -284,6 +288,9 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       completedAt: null,
       categoryId: itemData.categoryId ?? null,
       isUrgent: itemData.isUrgent ?? false,
+      isPrivate: itemData.isPrivate ?? false,
+      details: itemData.details ?? null,
+      dueDate: itemData.dueDate ? new Date(itemData.dueDate) : null,
     };
 
     // Insert the new item
@@ -385,6 +392,7 @@ teamBoardRouter.patch('/:id',
       .set({
         ...updateData,
         ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
+        ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
       })
       .where(eq(teamBoardItems.id, itemId))
       .returning();

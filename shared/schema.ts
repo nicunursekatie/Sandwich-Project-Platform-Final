@@ -1709,6 +1709,8 @@ export const teamBoardItems = pgTable('team_board_items', {
   categoryId: integer('category_id').references(() => holdingZoneCategories.id), // Category for organization
   isUrgent: boolean('is_urgent').notNull().default(false), // Urgent flag for priority items
   isPrivate: boolean('is_private').notNull().default(false), // Private items only visible to creator and admins
+  details: text('details'), // Free text details section for additional information
+  dueDate: timestamp('due_date'), // Optional due date for the item
   // NEW REFACTOR FIELDS - Project linking and promotion tracking
   projectId: integer('project_id'), // Optional link to a project for context
   promotedToTaskId: integer('promoted_to_task_id'), // If promoted to project task
