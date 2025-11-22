@@ -236,6 +236,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'operations',
     highlighted: true,
   },
+  {
+    id: 'cooler-tracking',
+    label: 'Cooler Tracking',
+    icon: Package,
+    href: 'cooler-tracking',
+    permission: PERMISSIONS.NAV_COOLER_TRACKING,
+    group: 'operations',
+  },
 
   // EVENT PLANNING (daily operations)
   {
@@ -378,14 +386,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_WISHLIST,
     group: 'documentation',
     highlighted: true,
-  },
-  {
-    id: 'cooler-tracking',
-    label: 'Cooler Tracking',
-    icon: Package,
-    href: 'cooler-tracking',
-    permission: PERMISSIONS.NAV_COOLER_TRACKING,
-    group: 'documentation',
   },
   {
     id: 'document-management',

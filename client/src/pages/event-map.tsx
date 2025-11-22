@@ -22,6 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -510,10 +512,10 @@ export default function EventMapView() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['new', 'in_process', 'scheduled']));
   const [yearFilter, setYearFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [upcomingFilter, setUpcomingFilter] = useState<UpcomingFilterOption>('this_week');
+  const [upcomingFilter, setUpcomingFilter] = useState<UpcomingFilterOption>('two_weeks');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -530,13 +532,9 @@ export default function EventMapView() {
 
   // Fetch events with coordinates
   const { data: events = [], isLoading, error, refetch } = useQuery<EventMapData[]>({
-    queryKey: ['/api/event-map', statusFilter],
+    queryKey: ['/api/event-map'],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
-      }
-      const response = await fetch(`/api/event-map?${params}`);
+      const response = await fetch(`/api/event-map`);
       if (!response.ok) throw new Error('Failed to fetch event map data');
       return response.json();
     },
@@ -658,6 +656,11 @@ export default function EventMapView() {
   const filteredEvents = useMemo(() => {
     let filtered = eventsWithCoordinates;
 
+    // Status filter
+    if (statusFilters.size > 0 && statusFilters.size < 4) { // Not all statuses selected
+      filtered = filtered.filter(event => statusFilters.has(event.status));
+    }
+
     // Upcoming events filter
     if (upcomingFilter !== 'all') {
       filtered = filtered.filter(event =>
@@ -693,7 +696,7 @@ export default function EventMapView() {
     }
 
     return filtered;
-  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter]);
+  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter, upcomingFilter, statusFilters]);
 
   const eventsInSelectedPeriod = useMemo(() => {
     return events.filter(event =>
@@ -777,12 +780,7 @@ export default function EventMapView() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Event Requests Map</h1>
               <p className="text-sm text-gray-600">
-                {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} on map
-                {eventsNeedingGeocode.length > 0 && (
-                  <span className="text-orange-600 ml-2">
-                    • {eventsNeedingGeocode.length} need geocoding
-                  </span>
-                )}
+                {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} displayed
               </p>
             </div>
           </div>
@@ -857,19 +855,42 @@ export default function EventMapView() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="in_process">In Process</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="border rounded-md p-3 bg-white">
+            <div className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Status Filters
+            </div>
+            <div className="space-y-2">
+              {[
+                { value: 'new', label: 'New' },
+                { value: 'in_process', label: 'In Process' },
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'completed', label: 'Completed' }
+              ].map((status) => (
+                <div key={status.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`status-${status.value}`}
+                    checked={statusFilters.has(status.value)}
+                    onCheckedChange={(checked) => {
+                      const newFilters = new Set(statusFilters);
+                      if (checked) {
+                        newFilters.add(status.value);
+                      } else {
+                        newFilters.delete(status.value);
+                      }
+                      setStatusFilters(newFilters);
+                    }}
+                  />
+                  <Label
+                    htmlFor={`status-${status.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {status.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 gap-2 text-sm text-gray-600">
@@ -882,11 +903,6 @@ export default function EventMapView() {
               {selectedPeriodCount} event{selectedPeriodCount !== 1 ? 's' : ''}
             </span>
           </div>
-          {upcomingFilter !== 'all' && (
-            <span className="text-xs text-gray-500">
-              Count includes events that still need geocoding
-            </span>
-          )}
         </div>
       </div>
 
@@ -966,115 +982,85 @@ export default function EventMapView() {
           )}
         </div>
 
-        {/* Sidebar - Events needing geocoding */}
-        {eventsNeedingGeocode.length > 0 && (
-          <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
-            <div className="p-4 border-b border-gray-200 bg-white">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-orange-500" />
-                Needs Geocoding ({eventsNeedingGeocode.length})
-              </h2>
-              <p className="text-xs text-gray-600 mt-1">
-                Click to add event to map
-              </p>
-            </div>
-            <ScrollArea className="flex-1">
-              <div className="p-3 space-y-2">
-                {eventsNeedingGeocode.map((event) => (
-                  <Card
-                    key={event.id}
-                    className="p-3 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">
-                          {event.organizationName || 'Unknown'}
-                        </h3>
-                        
-                        {/* Contact Person */}
-                        {(event.firstName || event.lastName) && (
-                          <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">
-                              {[event.firstName, event.lastName].filter(Boolean).join(' ')}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Email */}
-                        {event.email && (
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
-                            <Mail className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{event.email}</span>
-                          </div>
-                        )}
-                        
-                        {/* Phone */}
-                        {event.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
-                            <Phone className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{event.phone}</span>
-                          </div>
-                        )}
-                        
-                        <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">
-                          {event.eventAddress}
-                        </p>
-                        
-                        {/* Event ID and Google Sheet Row */}
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
-                            {event.status.replace('_', ' ')}
-                          </Badge>
-                          {event.externalId && (
-                            <span className="text-xs text-gray-500">
-                              Event #{event.id}
-                            </span>
-                          )}
-                          {event.googleSheetRowId && (
-                            <span className="text-xs text-gray-500">
-                              Sheet Row: {event.googleSheetRowId}
-                            </span>
-                          )}
+        {/* Sidebar - Currently Viewing */}
+        <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
+          <div className="p-4 border-b border-gray-200 bg-white">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-brand-primary" />
+              Currently Viewing ({filteredEvents.length})
+            </h2>
+            <p className="text-xs text-gray-600 mt-1">
+              Events displayed on map
+            </p>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-3 space-y-2">
+              {filteredEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  className="p-3 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSelectedEvent(event);
+                    // Zoom to event location if it has coordinates
+                    if (event.latitude && event.longitude) {
+                      // Map will auto-center on popup open
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm truncate">
+                        {event.organizationName || 'Unknown'}
+                      </h3>
+
+                      {/* Event Date */}
+                      {(event.scheduledEventDate || event.desiredEventDate) && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>
+                            {format(new Date(event.scheduledEventDate || event.desiredEventDate!), 'MMM d, yyyy')}
+                          </span>
                         </div>
-                        
-                        <div className="flex gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs h-7"
-                            onClick={() => {
-                              setEditingEvent(event);
-                              setEditedAddress(event.eventAddress || '');
-                            }}
-                            data-testid={`button-edit-address-${event.id}`}
-                          >
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Edit Address
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="text-xs h-7"
-                            onClick={() => geocodeMutation.mutate(event.id)}
-                            disabled={geocodeMutation.isPending}
-                            data-testid={`button-geocode-${event.id}`}
-                          >
-                            {geocodeMutation.isPending ? (
-                              <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                            ) : (
-                              <MapPin className="w-3 h-3 mr-1" />
-                            )}
-                            Geocode
-                          </Button>
+                      )}
+
+                      {/* Contact Person */}
+                      {(event.firstName || event.lastName) && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {[event.firstName, event.lastName].filter(Boolean).join(' ')}
+                          </span>
                         </div>
+                      )}
+
+                      <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">
+                        {event.eventAddress}
+                      </p>
+
+                      {/* Status Badge */}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs`}>
+                          {event.status.replace('_', ' ')}
+                        </Badge>
+                        {event.estimatedSandwichCount && (
+                          <span className="text-xs text-gray-500">
+                            {event.estimatedSandwichCount} sandwiches
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
+                  </div>
+                </Card>
+              ))}
+              {filteredEvents.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No events match your filters</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
 
       {/* Edit Address Dialog */}
