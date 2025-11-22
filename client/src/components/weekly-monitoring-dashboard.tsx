@@ -109,6 +109,28 @@ export default function WeeklyMonitoringDashboard() {
   const [emailBody, setEmailBody] = useState('');
   const { trackReportGeneration, trackCommunication, trackButtonClick } = useAnalytics();
 
+  // Calculate the week date based on selectedWeek
+  const getWeekDateString = (weeksAgo: number): string => {
+    const today = new Date();
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - (weeksAgo * 7));
+
+    // Get the start of the week (Sunday)
+    const dayOfWeek = targetDate.getDay();
+    const startOfWeek = new Date(targetDate);
+    startOfWeek.setDate(targetDate.getDate() - dayOfWeek);
+
+    // Get the end of the week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`;
+  };
+
   // Get monitoring status for selected week
   const {
     data: submissionStatus = [],
@@ -766,8 +788,10 @@ export default function WeeklyMonitoringDashboard() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-teal-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Current Week</p>
-                  <p className="text-lg font-semibold">{stats.currentWeek}</p>
+                  <p className="text-sm text-gray-600">
+                    {selectedWeek === 0 ? 'Current Week' : `${selectedWeek} Week${selectedWeek > 1 ? 's' : ''} Ago`}
+                  </p>
+                  <p className="text-lg font-semibold">{getWeekDateString(selectedWeek)}</p>
                 </div>
               </div>
             </CardContent>

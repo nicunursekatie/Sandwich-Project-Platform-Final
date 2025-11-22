@@ -29,6 +29,9 @@ import {
   Wifi,
   WifiOff,
   ArrowRight,
+  Edit2,
+  Trash2,
+  Check,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -130,6 +133,8 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ['/api/team-board', itemId, 'comments'],
@@ -158,10 +163,63 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
     },
   });
 
+  const editCommentMutation = useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: number; content: string }) => {
+      return await apiRequest('PATCH', `/api/team-board/comments/${commentId}`, { content });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board', itemId, 'comments'] });
+      setEditingCommentId(null);
+      setEditContent('');
+      toast({
+        title: 'Comment updated',
+        description: 'Your comment has been updated',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update comment',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      return await apiRequest('DELETE', `/api/team-board/comments/${commentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board', itemId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      toast({
+        title: 'Comment deleted',
+        description: 'Your comment has been deleted',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete comment',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmitComment = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!newComment.trim()) return;
     createCommentMutation.mutate(newComment.trim());
+  };
+
+  const handleEditComment = (commentId: number) => {
+    editCommentMutation.mutate({ commentId, content: editContent.trim() });
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      deleteCommentMutation.mutate(commentId);
+    }
   };
 
   // If user doesn't have VIEW permission, don't show comment section at all
@@ -193,30 +251,108 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
             </div>
           ) : comments.length > 0 ? (
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
-                  data-testid={`comment-${comment.id}`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className={`h-5 w-5 ${getAvatarColor(comment.userName)}`}>
-                      <AvatarFallback className="text-white text-xs">
-                        {getInitials(comment.userName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      {comment.userName}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatDate(comment.createdAt)}
-                    </span>
+              {comments.map((comment) => {
+                const isOwner = user?.id === comment.userId;
+                const canEdit = isOwner && (user?.permissions?.includes('EDIT_OWN_COMMENTS_HOLDING_ZONE') || user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
+                const canDelete = isOwner && (user?.permissions?.includes('DELETE_OWN_COMMENTS_HOLDING_ZONE') || user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
+                const isEditing = editingCommentId === comment.id;
+
+                return (
+                  <div
+                    key={comment.id}
+                    className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                    data-testid={`comment-${comment.id}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className={`h-5 w-5 ${getAvatarColor(comment.userName)}`}>
+                          <AvatarFallback className="text-white text-xs">
+                            {getInitials(comment.userName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {comment.userName}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      {(canEdit || canDelete) && !isEditing && (
+                        <div className="flex gap-1">
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditContent(comment.content);
+                              }}
+                              data-testid={`button-edit-comment-${comment.id}`}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              disabled={deleteCommentMutation.isPending}
+                              data-testid={`button-delete-comment-${comment.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <MentionTextarea
+                          value={editContent}
+                          onChange={setEditContent}
+                          placeholder="Edit comment..."
+                          className="min-h-[60px] text-sm"
+                          data-testid={`textarea-edit-comment-${comment.id}`}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleEditComment(comment.id)}
+                            disabled={editCommentMutation.isPending || !editContent.trim()}
+                            className="bg-[#236383] hover:bg-[#007E8C] h-7"
+                            data-testid={`button-save-edit-${comment.id}`}
+                          >
+                            {editCommentMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <><Check className="h-3 w-3 mr-1" /> Save</>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingCommentId(null);
+                              setEditContent('');
+                            }}
+                            className="h-7"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        <MessageWithMentions content={comment.content} />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    <MessageWithMentions content={comment.content} />
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-gray-500 text-center py-2">No comments yet</p>

@@ -7,6 +7,7 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { logger } from '../utils/production-safe-logger';
+import { checkWeeklySubmissions } from '../weekly-monitoring';
 
 const router = Router();
 
@@ -211,7 +212,7 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setHours(23, 59, 59, 999);
 
       // Get submission status for this week
-      const submissionStatus = await checkWeekSubmissions(startOfWeek);
+      const submissionStatus = await checkWeeklySubmissions(i);
 
       // Update location stats
       submissionStatus.forEach((status: any) => {
