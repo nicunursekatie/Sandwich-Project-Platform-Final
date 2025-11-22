@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -69,6 +69,8 @@ interface HoldingZoneItem {
   categoryId: number | null;
   isUrgent: boolean;
   isPrivate: boolean;
+  details: string | null;
+  dueDate: Date | string | null;
   likeCount?: number;
   userHasLiked?: boolean;
 }
@@ -493,6 +495,8 @@ export default function HoldingZone() {
   const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
+  const [newItemDetails, setNewItemDetails] = useState('');
+  const [newItemDueDate, setNewItemDueDate] = useState('');
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#236383');
@@ -506,6 +510,12 @@ export default function HoldingZone() {
   const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
+  const [editItemDetails, setEditItemDetails] = useState('');
+  const [editItemDueDate, setEditItemDueDate] = useState('');
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
+  const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
+  const [editingDetailsContent, setEditingDetailsContent] = useState('');
 
   // Permission checks
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
@@ -621,6 +631,8 @@ export default function HoldingZone() {
       setNewItemCategoryId('none');
       setNewItemIsUrgent(false);
       setNewItemIsPrivate(false);
+      setNewItemDetails('');
+      setNewItemDueDate('');
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -661,15 +673,17 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate }: {
+    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate, details, dueDate }: {
       id: number;
       content: string;
       type: 'task' | 'note' | 'idea';
       categoryId: number | null;
       isUrgent: boolean;
       isPrivate: boolean;
+      details?: string | null;
+      dueDate?: string | null;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate, details, dueDate });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -680,6 +694,8 @@ export default function HoldingZone() {
       setEditItemCategoryId('none');
       setEditItemIsUrgent(false);
       setEditItemIsPrivate(false);
+      setEditItemDetails('');
+      setEditItemDueDate('');
       toast({
         title: 'Item updated',
         description: 'Your item has been updated successfully',
@@ -790,6 +806,29 @@ export default function HoldingZone() {
     },
   });
 
+  // Update details mutation (for inline editing)
+  const updateDetailsMutation = useMutation({
+    mutationFn: async ({ id, details }: { id: number; details: string | null }) => {
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { details });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setEditingDetailsItemId(null);
+      setEditingDetailsContent('');
+      toast({
+        title: 'Details updated',
+        description: 'Item details have been updated',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update details',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Fetch team members for assignment
   const { data: teamMembers = [] } = useQuery<TeamMember[]>({
     queryKey: ['/api/team-board/users'],
@@ -828,6 +867,8 @@ export default function HoldingZone() {
       categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
       isUrgent: newItemIsUrgent,
       isPrivate: newItemIsPrivate,
+      details: newItemDetails.trim() || null,
+      dueDate: newItemDueDate ? new Date(newItemDueDate).toISOString() : null,
     });
   };
 
@@ -869,6 +910,35 @@ export default function HoldingZone() {
       assignedTo: newAssignedTo.length === 0 ? null : newAssignedTo,
       assignedToNames: newAssignedToNames.length === 0 ? null : newAssignedToNames,
     });
+  };
+
+  const handleOpenAssignDialog = (item: HoldingZoneItem) => {
+    setItemToAssign(item);
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignFromDialog = (userId: string) => {
+    if (!itemToAssign) return;
+    handleAssignToUser(itemToAssign, userId);
+    setAssignDialogOpen(false);
+    setItemToAssign(null);
+  };
+
+  const handleStartEditingDetails = (item: HoldingZoneItem) => {
+    setEditingDetailsItemId(item.id);
+    setEditingDetailsContent(item.details || '');
+  };
+
+  const handleSaveDetails = (itemId: number) => {
+    updateDetailsMutation.mutate({
+      id: itemId,
+      details: editingDetailsContent.trim() || null,
+    });
+  };
+
+  const handleCancelEditingDetails = () => {
+    setEditingDetailsItemId(null);
+    setEditingDetailsContent('');
   };
 
   // Like Button Component
@@ -1034,9 +1104,13 @@ export default function HoldingZone() {
               }`}
               data-testid={`card-item-${item.id}`}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-2">
+              <CardContent className="p-4">
+                {/* Header: Title, Badges, Actions */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      {item.content}
+                    </h3>
                     <div className="flex items-center gap-2 flex-wrap">
                       <CategoryBadge category={item.category} />
                       {item.isUrgent && (
@@ -1048,123 +1122,148 @@ export default function HoldingZone() {
                       <Badge variant="outline" className="capitalize">
                         {item.type}
                       </Badge>
-                      <Badge
-                        variant={
-                          item.status === 'done' ? 'default' :
-                          item.status === 'claimed' ? 'secondary' : 'outline'
-                        }
-                        className="capitalize"
-                      >
-                        {item.status === 'done' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                        {item.status}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        <span className="font-medium">{item.createdByName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(item.createdAt)}</span>
-                      </div>
-                      {item.commentCount > 0 && (
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-4 w-4" />
-                          <span>{item.commentCount}</span>
-                        </div>
+                      {item.status === 'done' && (
+                        <Badge variant="default" className="gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Done
+                        </Badge>
+                      )}
+                      {item.status === 'claimed' && (
+                        <Badge variant="secondary" className="capitalize">
+                          Claimed
+                        </Badge>
                       )}
                     </div>
                   </div>
 
-                  {canManage && (
-                    <div className="flex gap-2 flex-wrap">
-                      {item.status !== 'done' && !item.completedAt && (
-                        <>
+                  {canManage && item.status !== 'done' && !item.completedAt && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setItemToEdit(item);
+                          setEditItemContent(item.content);
+                          setEditItemType(item.type);
+                          setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
+                          setEditItemIsUrgent(item.isUrgent);
+                          setEditItemIsPrivate(item.isPrivate);
+                          setEditItemDetails(item.details || '');
+                          setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
+                          setEditDialogOpen(true);
+                        }}
+                        className="h-8 w-8 p-0"
+                        data-testid={`button-edit-${item.id}`}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this item?')) {
+                            deleteItemMutation.mutate(item.id);
+                          }
+                        }}
+                        disabled={deleteItemMutation.isPending}
+                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                        data-testid={`button-delete-${item.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Details Section with Inline Editing */}
+                <div className="mb-3">
+                  {editingDetailsItemId === item.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editingDetailsContent}
+                        onChange={(e) => setEditingDetailsContent(e.target.value)}
+                        placeholder="Add details..."
+                        className="min-h-[80px] text-sm"
+                        data-testid={`textarea-details-${item.id}`}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveDetails(item.id)}
+                          disabled={updateDetailsMutation.isPending}
+                          className="h-7 text-xs"
+                        >
+                          {updateDetailsMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <Check className="h-3 w-3 mr-1" />
+                          )}
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEditingDetails}
+                          className="h-7 text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Details</span>
+                        {(canSubmit || canManage) && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
-                              setItemToEdit(item);
-                              setEditItemContent(item.content);
-                              setEditItemType(item.type);
-                              setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
-                              setEditItemIsUrgent(item.isUrgent);
-                              setEditItemIsPrivate(item.isPrivate);
-                              setEditDialogOpen(true);
-                            }}
-                            className="text-gray-700 hover:bg-gray-100 h-8 w-8 p-0"
-                            data-testid={`button-edit-${item.id}`}
+                            onClick={() => handleStartEditingDetails(item)}
+                            className="h-6 px-2 text-xs"
+                            data-testid={`button-edit-details-${item.id}`}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            {item.details ? <Edit2 className="h-3 w-3 mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                            {item.details ? 'Edit' : 'Add'}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this item?')) {
-                                deleteItemMutation.mutate(item.id);
-                              }
-                            }}
-                            disabled={deleteItemMutation.isPending}
-                            className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
-                            data-testid={`button-delete-${item.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setItemToPromote(item);
-                              setPromoteDialogOpen(true);
-                            }}
-                            disabled={promoteToTaskMutation.isPending}
-                            className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
-                            data-testid={`button-promote-${item.id}`}
-                          >
-                            <ArrowRight className="h-4 w-4 mr-1" />
-                            Promote to Task
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
-                            disabled={updateItemMutation.isPending}
-                            data-testid={`button-mark-done-${item.id}`}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Mark Done
-                          </Button>
-                        </>
+                        )}
+                      </div>
+                      {item.details ? (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                          {item.details}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">No details added</p>
                       )}
                     </div>
                   )}
                 </div>
-              </CardHeader>
 
-              <CardContent className="pt-0">
-                <div className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap mb-3">
-                  <MessageWithMentions content={item.content} />
+                {/* Dates */}
+                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span className="font-medium">Created:</span>
+                    <span>{formatDate(item.createdAt)}</span>
+                  </div>
+                  {item.dueDate && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span className="font-medium">Due:</span>
+                      <span>{formatDate(typeof item.dueDate === 'string' ? new Date(item.dueDate) : item.dueDate)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Assignment Section */}
                 {(canSubmit || canManage) && (
-                  <>
+                  <div className="mb-3">
                     {item.assignedTo && item.assignedToNames && item.assignedTo.length > 0 && (
-                      <div className="mb-3 px-3 py-2 rounded-lg bg-[#E6F4F6] dark:bg-[#236383]/20 border-l-3 border-l-[#007E8C]">
-                        <div className="flex items-start gap-2 text-xs mb-2">
-                          <UserPlus className="h-3.5 w-3.5 mt-0.5 text-[#007E8C]" />
-                          <span className="font-medium text-[#236383] dark:text-[#47B3CB]">
-                            Assigned to:
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {item.assignedToNames.map((name, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700"
+                              className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md text-xs"
                               data-testid={`assigned-user-${item.id}-${index}`}
                             >
                               <Avatar className={`h-4 w-4 ${getAvatarColor(name)}`}>
@@ -1172,11 +1271,11 @@ export default function HoldingZone() {
                                   {getInitials(name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-xs text-gray-700 dark:text-gray-300">{name}</span>
+                              <span className="text-gray-700 dark:text-gray-300">{name}</span>
                               {canManage && (
                                 <button
                                   onClick={() => handleUnassign(item, item.assignedTo![index])}
-                                  className="ml-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                                  className="ml-1 text-gray-400 hover:text-red-500"
                                   data-testid={`button-unassign-${item.id}-${index}`}
                                   title="Remove assignee"
                                 >
@@ -1188,37 +1287,72 @@ export default function HoldingZone() {
                         </div>
                       </div>
                     )}
-
-                    {/* Assignment Dropdown - Available to both SUBMIT and MANAGE users */}
-                    {(canSubmit || canManage) && (
-                      <div className="mb-3">
-                        <Select onValueChange={(userId) => handleAssignToUser(item, userId)}>
-                          <SelectTrigger className="w-full text-sm" data-testid={`select-assign-${item.id}`}>
-                            <SelectValue placeholder="Assign to team member..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {teamMembers.map(member => (
-                              <SelectItem key={member.id} value={member.id}>
-                                {member.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Like Button */}
-                {canSubmit && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <LikeButton itemId={item.id} />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenAssignDialog(item)}
+                      className="h-8 text-xs"
+                      data-testid={`button-assign-${item.id}`}
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Assign to team member
+                    </Button>
                   </div>
                 )}
 
-                {/* Comments Section - Only render if user has VIEW permission */}
+                {/* Like and Comments */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  {canSubmit && (
+                    <div className="flex items-center gap-2">
+                      <LikeButton itemId={item.id} />
+                      {item.commentCount > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {item.commentCount} {item.commentCount === 1 ? 'comment' : 'comments'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500">
+                    Creator: <span className="font-medium">{item.createdByName}</span>
+                  </div>
+                </div>
+
+                {/* Comments Section */}
                 {canView && (
-                  <ItemComments itemId={item.id} initialCommentCount={item.commentCount} canView={canView} canSubmit={canSubmit} />
+                  <div className="mt-3">
+                    <ItemComments itemId={item.id} initialCommentCount={item.commentCount} canView={canView} canSubmit={canSubmit} />
+                  </div>
+                )}
+
+                {/* Action Buttons for Manage */}
+                {canManage && item.status !== 'done' && !item.completedAt && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setItemToPromote(item);
+                        setPromoteDialogOpen(true);
+                      }}
+                      disabled={promoteToTaskMutation.isPending}
+                      className="text-xs"
+                      data-testid={`button-promote-${item.id}`}
+                    >
+                      <ArrowRight className="h-3 w-3 mr-1" />
+                      Promote to Task
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
+                      disabled={updateItemMutation.isPending}
+                      className="text-xs"
+                      data-testid={`button-mark-done-${item.id}`}
+                    >
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Mark Done
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1379,6 +1513,29 @@ export default function HoldingZone() {
                 data-testid="textarea-new-item-content"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="item-details">Details (Optional)</Label>
+              <Textarea
+                id="item-details"
+                value={newItemDetails}
+                onChange={(e) => setNewItemDetails(e.target.value)}
+                placeholder="Add additional details..."
+                className="min-h-[100px]"
+                data-testid="textarea-new-item-details"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="item-due-date">Due Date (Optional)</Label>
+              <Input
+                id="item-due-date"
+                type="date"
+                value={newItemDueDate}
+                onChange={(e) => setNewItemDueDate(e.target.value)}
+                data-testid="input-new-item-due-date"
+              />
+            </div>
           </div>
 
           <DialogFooter>
@@ -1483,6 +1640,27 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="edit-item-details">Details (Optional)</Label>
+              <Textarea
+                id="edit-item-details"
+                value={editItemDetails}
+                onChange={(e) => setEditItemDetails(e.target.value)}
+                placeholder="Add additional details..."
+                className="min-h-[100px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-item-due-date">Due Date (Optional)</Label>
+              <Input
+                id="edit-item-due-date"
+                type="date"
+                value={editItemDueDate}
+                onChange={(e) => setEditItemDueDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="edit-item-category">Category (Optional)</Label>
               <Select value={editItemCategoryId} onValueChange={setEditItemCategoryId}>
                 <SelectTrigger id="edit-item-category">
@@ -1510,6 +1688,9 @@ export default function HoldingZone() {
                 setEditItemType('task');
                 setEditItemCategoryId('none');
                 setEditItemIsUrgent(false);
+                setEditItemIsPrivate(false);
+                setEditItemDetails('');
+                setEditItemDueDate('');
               }}
             >
               Cancel
@@ -1524,6 +1705,8 @@ export default function HoldingZone() {
                     categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
                     isUrgent: editItemIsUrgent,
                     isPrivate: editItemIsPrivate,
+                    details: editItemDetails.trim() || null,
+                    dueDate: editItemDueDate ? new Date(editItemDueDate).toISOString() : null,
                   });
                 }
               }}
@@ -1535,6 +1718,44 @@ export default function HoldingZone() {
               ) : (
                 <>Save Changes</>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign to Team Member Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign to Team Member</DialogTitle>
+            <DialogDescription>
+              Select a team member to assign this item to
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              {teamMembers.map(member => (
+                <Button
+                  key={member.id}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleAssignFromDialog(member.id)}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  {member.name}
+                </Button>
+              ))}
+              {teamMembers.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">No team members available</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setAssignDialogOpen(false);
+              setItemToAssign(null);
+            }}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

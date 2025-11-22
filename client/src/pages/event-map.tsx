@@ -52,6 +52,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Helper function to parse date strings as local dates to avoid timezone issues
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 interface EventMapData {
   id: number;
   organizationName: string | null;
@@ -110,8 +116,7 @@ const isEventWithinUpcomingFilter = (
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
-  const eventDate = new Date(dateStr);
-  eventDate.setHours(0, 0, 0, 0);
+  const eventDate = parseLocalDate(dateStr);
 
   if (eventDate < now) {
     return false;
@@ -230,7 +235,7 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
   const contactName = [event.firstName, event.lastName].filter(Boolean).join(' ');
   const getEventDate = (evt: EventMapData) => {
     const date = evt.scheduledEventDate || evt.desiredEventDate;
-    return date ? format(new Date(date), 'MMM dd, yyyy') : 'No date set';
+    return date ? format(parseLocalDate(date), 'MMM dd, yyyy') : 'No date set';
   };
 
   return (
@@ -360,7 +365,7 @@ function LocationMarker({
           icon={new L.DivIcon({
             html: `<div class="bg-white rounded-lg shadow-lg border-2 px-3 py-2 min-w-[180px]" style="border-color: ${event.status === 'scheduled' ? '#236383' : '#FBAD3F'}">
               <div class="font-semibold text-base text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
-              <div class="text-sm text-gray-700 font-medium">${event.desiredEventDate || event.scheduledEventDate ? format(new Date(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
+              <div class="text-sm text-gray-700 font-medium">${event.desiredEventDate || event.scheduledEventDate ? format(parseLocalDate(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
               ${event.estimatedSandwichCount ? `<div class="text-sm text-gray-600 font-medium">${event.estimatedSandwichCount} sandwiches</div>` : ''}
             </div>`,
             className: 'custom-label-marker',
@@ -618,7 +623,7 @@ export default function EventMapView() {
     events.forEach(event => {
       const date = event.scheduledEventDate || event.desiredEventDate;
       if (date) {
-        const year = new Date(date).getFullYear();
+        const year = parseLocalDate(date).getFullYear();
         if (!isNaN(year)) {
           years.add(year);
         }
@@ -674,7 +679,7 @@ export default function EventMapView() {
       filtered = filtered.filter(event => {
         const date = event.scheduledEventDate || event.desiredEventDate;
         if (!date) return false;
-        const year = new Date(date).getFullYear();
+        const year = parseLocalDate(date).getFullYear();
         return year === targetYear;
       });
     }
@@ -1023,7 +1028,7 @@ export default function EventMapView() {
                         <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
                           <Calendar className="w-3 h-3 flex-shrink-0" />
                           <span>
-                            {format(new Date(event.scheduledEventDate || event.desiredEventDate!), 'MMM d, yyyy')}
+                            {format(parseLocalDate(event.scheduledEventDate || event.desiredEventDate!), 'MMM d, yyyy')}
                           </span>
                         </div>
                       )}
