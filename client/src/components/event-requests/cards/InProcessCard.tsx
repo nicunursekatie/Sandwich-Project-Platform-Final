@@ -299,6 +299,22 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
           </div>
         )}
+        {request.eventAddress && (
+          <div className="mt-3 pt-3 border-t border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm uppercase font-bold tracking-wide">Event Location</span>
+            </div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-base font-bold break-words hover:underline"
+            >
+              {request.eventAddress}
+            </a>
+          </div>
+        )}
       </div>
     )
   };
@@ -316,10 +332,6 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onCall,
   onContact,
 }) => {
-  // Debug logging
-  console.log('CardContactInfo - eventAddress:', request.eventAddress);
-  console.log('CardContactInfo - full request:', request);
-
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
