@@ -485,7 +485,7 @@ export default function HoldingZone() {
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('active');
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
@@ -555,12 +555,17 @@ export default function HoldingZone() {
   const filteredItems = useMemo(() => {
     let filtered = items;
 
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => String(item.categoryId) === selectedCategory);
+    // Filter by active/archived status
+    if (selectedStatus === 'active') {
+      filtered = filtered.filter(item => item.status !== 'done' && !item.completedAt);
+    } else if (selectedStatus === 'archived') {
+      filtered = filtered.filter(item => item.status === 'done' || item.completedAt);
+    } else if (selectedStatus !== 'all') {
+      filtered = filtered.filter(item => item.status === selectedStatus);
     }
 
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(item => item.status === selectedStatus);
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(item => String(item.categoryId) === selectedCategory);
     }
 
     if (showUrgentOnly) {
@@ -971,10 +976,12 @@ export default function HoldingZone() {
 
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder="Active Items" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="all">All Items</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="claimed">Claimed</SelectItem>
                   <SelectItem value="done">Done</SelectItem>
@@ -1070,7 +1077,7 @@ export default function HoldingZone() {
                         <>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => {
                               setItemToEdit(item);
                               setEditItemContent(item.content);
@@ -1079,26 +1086,24 @@ export default function HoldingZone() {
                               setEditItemIsUrgent(item.isUrgent);
                               setEditDialogOpen(true);
                             }}
-                            className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                            className="text-gray-700 hover:bg-gray-100 h-8 w-8 p-0"
                             data-testid={`button-edit-${item.id}`}
                           >
-                            <Edit2 className="h-4 w-4 mr-1" />
-                            Edit
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => {
                               if (window.confirm('Are you sure you want to delete this item?')) {
                                 deleteItemMutation.mutate(item.id);
                               }
                             }}
                             disabled={deleteItemMutation.isPending}
-                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
                             data-testid={`button-delete-${item.id}`}
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
