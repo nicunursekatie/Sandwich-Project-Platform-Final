@@ -497,6 +497,12 @@ export default function HoldingZone() {
   const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
   const [itemToPromote, setItemToPromote] = useState<HoldingZoneItem | null>(null);
   const [promotePriority, setPromotePriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
+  const [editItemContent, setEditItemContent] = useState('');
+  const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
+  const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
+  const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
 
   // Permission checks
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
@@ -639,6 +645,60 @@ export default function HoldingZone() {
       toast({
         title: 'Error',
         description: 'Failed to update status',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Edit item mutation
+  const editItemMutation = useMutation({
+    mutationFn: async ({ id, content, type, categoryId, isUrgent }: {
+      id: number;
+      content: string;
+      type: 'task' | 'note' | 'idea';
+      categoryId: number | null;
+      isUrgent: boolean;
+    }) => {
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setEditDialogOpen(false);
+      setItemToEdit(null);
+      setEditItemContent('');
+      setEditItemType('task');
+      setEditItemCategoryId('none');
+      setEditItemIsUrgent(false);
+      toast({
+        title: 'Item updated',
+        description: 'Your item has been updated successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update item',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete item mutation
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest('DELETE', `/api/team-board/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      toast({
+        title: 'Item deleted',
+        description: 'Your item has been deleted',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete item',
         variant: 'destructive',
       });
     },
@@ -1005,9 +1065,41 @@ export default function HoldingZone() {
                   </div>
 
                   {canManage && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {item.status !== 'done' && !item.completedAt && (
                         <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setItemToEdit(item);
+                              setEditItemContent(item.content);
+                              setEditItemType(item.type);
+                              setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
+                              setEditItemIsUrgent(item.isUrgent);
+                              setEditDialogOpen(true);
+                            }}
+                            className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                            data-testid={`button-edit-${item.id}`}
+                          >
+                            <Edit2 className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this item?')) {
+                                deleteItemMutation.mutate(item.id);
+                              }
+                            }}
+                            disabled={deleteItemMutation.isPending}
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            data-testid={`button-delete-${item.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -1304,6 +1396,109 @@ export default function HoldingZone() {
           </div>
           <DialogFooter>
             <Button onClick={() => setIsCategoryManageOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Holding Zone Item</DialogTitle>
+            <DialogDescription>
+              Update the content and settings for this item
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-item-type">Type</Label>
+              <Select value={editItemType} onValueChange={(v) => setEditItemType(v as any)}>
+                <SelectTrigger id="edit-item-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="note">Note</SelectItem>
+                  <SelectItem value="idea">Idea</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-item-urgent"
+                checked={editItemIsUrgent}
+                onCheckedChange={setEditItemIsUrgent}
+              />
+              <Label htmlFor="edit-item-urgent" className="font-normal cursor-pointer">
+                Mark as urgent
+              </Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-item-content">Content</Label>
+              <MentionTextarea
+                value={editItemContent}
+                onChange={setEditItemContent}
+                placeholder="Describe the task, note, or idea in detail... Use @ to mention team members"
+                className="min-h-[150px] text-base"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-item-category">Category (Optional)</Label>
+              <Select value={editItemCategoryId} onValueChange={setEditItemCategoryId}>
+                <SelectTrigger id="edit-item-category">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setItemToEdit(null);
+                setEditItemContent('');
+                setEditItemType('task');
+                setEditItemCategoryId('none');
+                setEditItemIsUrgent(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (itemToEdit) {
+                  editItemMutation.mutate({
+                    id: itemToEdit.id,
+                    content: editItemContent.trim(),
+                    type: editItemType,
+                    categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
+                    isUrgent: editItemIsUrgent,
+                  });
+                }
+              }}
+              disabled={editItemMutation.isPending || !editItemContent.trim()}
+              className="bg-[#236383] hover:bg-[#007E8C]"
+            >
+              {editItemMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : (
+                <>Save Changes</>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
