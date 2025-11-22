@@ -47,6 +47,7 @@ const createItemSchema = insertTeamBoardItemSchema
     type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
     categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
+    isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
   });
 
 const updateItemSchema = z.object({
@@ -56,6 +57,9 @@ const updateItemSchema = z.object({
   completedAt: z.string().datetime().optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
   isUrgent: z.boolean().optional(), // Urgent flag for priority items
+  isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
+  content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
+  type: z.enum(['task', 'note', 'idea']).optional(),
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
@@ -119,7 +123,11 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
 
     logger.info('Fetching team board items', { userId: req.user.id });
 
+    // Determine if user is admin
+    const isAdmin = req.user.role === 'super_admin' || req.user.role === 'admin';
+
     // Fetch all items with category information via left join
+    // Filter: show public items, private items created by user, or all items if admin
     const items = await db
       .select({
         item: teamBoardItems,
@@ -130,10 +138,42 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
         holdingZoneCategories,
         eq(teamBoardItems.categoryId, holdingZoneCategories.id)
       )
+      .where(
+        isAdmin
+          ? undefined // Admins see everything
+          : and(
+              // Non-admins see: public items OR items they created
+              eq(teamBoardItems.isPrivate, false)
+            )
+      )
       .orderBy(desc(teamBoardItems.createdAt));
 
+    // If non-admin, also fetch their private items
+    const privateItems = !isAdmin
+      ? await db
+          .select({
+            item: teamBoardItems,
+            category: holdingZoneCategories,
+          })
+          .from(teamBoardItems)
+          .leftJoin(
+            holdingZoneCategories,
+            eq(teamBoardItems.categoryId, holdingZoneCategories.id)
+          )
+          .where(
+            and(
+              eq(teamBoardItems.isPrivate, true),
+              eq(teamBoardItems.createdBy, req.user.id)
+            )
+          )
+          .orderBy(desc(teamBoardItems.createdAt))
+      : [];
+
+    // Combine public and private items
+    const allItems = [...items, ...privateItems];
+
     // Flatten the results to include category info
-    const flattenedItems = items.map(row => ({
+    const flattenedItems = allItems.map(row => ({
       ...row.item,
       category: row.category,
     }));
