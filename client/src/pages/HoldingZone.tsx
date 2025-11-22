@@ -138,6 +138,9 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ['/api/team-board', itemId, 'comments'],
+    queryFn: async () => {
+      return await apiRequest('GET', `/api/team-board/${itemId}/comments`);
+    },
     enabled: isExpanded && canView,
   });
 
