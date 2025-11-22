@@ -68,6 +68,7 @@ interface HoldingZoneItem {
   category: HoldingZoneCategory | null;
   categoryId: number | null;
   isUrgent: boolean;
+  isPrivate: boolean;
   likeCount?: number;
   userHasLiked?: boolean;
 }
@@ -491,6 +492,7 @@ export default function HoldingZone() {
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
   const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
+  const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#236383');
@@ -503,6 +505,7 @@ export default function HoldingZone() {
   const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
   const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
+  const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
 
   // Permission checks
   const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
@@ -617,6 +620,7 @@ export default function HoldingZone() {
       setNewItemType('task');
       setNewItemCategoryId('none');
       setNewItemIsUrgent(false);
+      setNewItemIsPrivate(false);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -657,14 +661,15 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryId, isUrgent }: {
+    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate }: {
       id: number;
       content: string;
       type: 'task' | 'note' | 'idea';
       categoryId: number | null;
       isUrgent: boolean;
+      isPrivate: boolean;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -674,6 +679,7 @@ export default function HoldingZone() {
       setEditItemType('task');
       setEditItemCategoryId('none');
       setEditItemIsUrgent(false);
+      setEditItemIsPrivate(false);
       toast({
         title: 'Item updated',
         description: 'Your item has been updated successfully',
@@ -821,6 +827,7 @@ export default function HoldingZone() {
       type: newItemType,
       categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
       isUrgent: newItemIsUrgent,
+      isPrivate: newItemIsPrivate,
     });
   };
 
@@ -1084,6 +1091,7 @@ export default function HoldingZone() {
                               setEditItemType(item.type);
                               setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
                               setEditItemIsUrgent(item.isUrgent);
+                              setEditItemIsPrivate(item.isPrivate);
                               setEditDialogOpen(true);
                             }}
                             className="text-gray-700 hover:bg-gray-100 h-8 w-8 p-0"
@@ -1349,6 +1357,18 @@ export default function HoldingZone() {
               </Label>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="item-private"
+                checked={newItemIsPrivate}
+                onCheckedChange={(checked) => setNewItemIsPrivate(checked as boolean)}
+                data-testid="checkbox-new-item-private"
+              />
+              <Label htmlFor="item-private" className="cursor-pointer">
+                Private (only visible to you and admins)
+              </Label>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="item-content">Content</Label>
               <MentionTextarea
@@ -1441,6 +1461,17 @@ export default function HoldingZone() {
               </Label>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-item-private"
+                checked={editItemIsPrivate}
+                onCheckedChange={setEditItemIsPrivate}
+              />
+              <Label htmlFor="edit-item-private" className="font-normal cursor-pointer">
+                Private (only visible to you and admins)
+              </Label>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-item-content">Content</Label>
               <MentionTextarea
@@ -1492,6 +1523,7 @@ export default function HoldingZone() {
                     type: editItemType,
                     categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
                     isUrgent: editItemIsUrgent,
+                    isPrivate: editItemIsPrivate,
                   });
                 }
               }}
