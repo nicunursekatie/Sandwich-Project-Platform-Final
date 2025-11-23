@@ -344,6 +344,14 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'group-collections',
+    label: 'Group Collections Viewer',
+    icon: Users,
+    href: 'group-collections',
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'analytics',
+  },
+  {
     id: 'weekly-monitoring',
     label: 'Weekly Monitoring',
     icon: Clock,

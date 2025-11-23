@@ -80,6 +80,7 @@ const DataManagement = lazyWithRetry(() => import('@/pages/data-management'));
 const PerformanceDashboard = lazyWithRetry(() => import('@/pages/performance-dashboard'));
 const GrantMetrics = lazyWithRetry(() => import('@/pages/grant-metrics'));
 const WeeklyCollectionsReport = lazyWithRetry(() => import('@/pages/weekly-collections-report'));
+const GroupCollectionsViewer = lazyWithRetry(() => import('@/pages/group-collections-viewer'));
 const UserManagementRedesigned = lazyWithRetry(() => import('@/components/user-management-redesigned'));
 const UserProfile = lazyWithRetry(() => import('@/components/user-profile'));
 const OnboardingAdmin = lazyWithRetry(() => import('@/pages/onboarding-admin'));
@@ -453,6 +454,8 @@ export default function Dashboard({
         return <GrantMetrics />;
       case 'weekly-collections-report':
         return <WeeklyCollectionsReport />;
+      case 'group-collections':
+        return <GroupCollectionsViewer />;
       case 'role-demo':
         return <RoleDemo />;
       case 'work-log':
