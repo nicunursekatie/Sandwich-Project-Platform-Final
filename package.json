@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.4",
-    "@esbuild/linux-x64": "^0.25.10",
     "@google-cloud/local-auth": "^3.0.1",
     "@google-cloud/storage": "^7.7.0",
     "@hookform/resolvers": "^3.10.0",
