@@ -125,24 +125,27 @@ export default function WeeklyCollectionsReport() {
     doc.setFillColor(224, 242, 245); // Light teal
     doc.roundedRect(14, 57, pageWidth - 28, 30, 3, 3, 'F');
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(26, 79, 97); // Dark teal
 
-    const col1X = 20;
-    const col2X = pageWidth / 2 - 10;
-    const col3X = pageWidth - 70;
+    // Calculate equal column spacing
+    const boxWidth = pageWidth - 28;
+    const colSpacing = boxWidth / 3;
+    const col1X = 14 + colSpacing / 2;
+    const col2X = 14 + colSpacing + colSpacing / 2;
+    const col3X = 14 + colSpacing * 2 + colSpacing / 2;
 
-    doc.text('Total Weeks:', col1X, 70);
-    doc.text('Total Collections:', col2X, 70);
-    doc.text('Total Sandwiches:', col3X, 70);
+    doc.text('Total Weeks:', col1X, 68, { align: 'center' });
+    doc.text('Total Collections:', col2X, 68, { align: 'center' });
+    doc.text('Total Sandwiches:', col3X, 68, { align: 'center' });
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.setTextColor(0, 126, 140); // Brand primary
-    doc.text(data.totalWeeks.toString(), col1X, 79);
-    doc.text(data.weeks.reduce((sum, w) => sum + w.collectionCount, 0).toLocaleString(), col2X, 79);
-    doc.text(data.grandTotal.toLocaleString(), col3X, 79);
+    doc.text(data.totalWeeks.toString(), col1X, 80, { align: 'center' });
+    doc.text(data.weeks.reduce((sum, w) => sum + w.collectionCount, 0).toLocaleString(), col2X, 80, { align: 'center' });
+    doc.text(data.grandTotal.toLocaleString(), col3X, 80, { align: 'center' });
 
     // Weekly data table
     const tableData = data.weeks.map((week) => [
@@ -167,6 +170,7 @@ export default function WeeklyCollectionsReport() {
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         fontSize: 9,
+        halign: 'center',
       },
       footStyles: {
         fillColor: [26, 79, 97], // Dark teal
@@ -181,15 +185,16 @@ export default function WeeklyCollectionsReport() {
         fillColor: [240, 248, 250], // Very light teal
       },
       columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 22 },
-        2: { cellWidth: 20, halign: 'right' },
-        3: { cellWidth: 22, halign: 'right' },
-        4: { cellWidth: 18, halign: 'right' },
-        5: { cellWidth: 18, halign: 'right' },
-        6: { cellWidth: 22, halign: 'right' },
-        7: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+        0: { halign: 'left' },
+        1: { halign: 'left' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right', fontStyle: 'bold' },
       },
+      tableWidth: 'auto',
       margin: { left: 14, right: 14 },
     });
 
