@@ -1,6 +1,21 @@
 ### Overview
 This full-stack application for The Sandwich Project nonprofit is designed to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger.
 
+### Recent Fixes (November 23, 2025)
+**Comprehensive Communication Monitoring System:**
+- **Automatic Email BCC**: All outgoing SendGrid emails automatically BCC katie@thesandwichproject.org for complete communication oversight
+- **SMS Monitoring & Notifications**: Created `server/utils/sms-monitoring.ts` utility that sends email notifications to admin for every SMS sent (success or failure)
+- **Complete Coverage**: Integrated monitoring into all 5 SMS functions in `server/sms-service.ts`:
+  - `sendSMSReminder` - Weekly volunteer reminders (per-user + system-level error paths)
+  - `sendTestSMS` - Test SMS functionality
+  - `sendConfirmationSMS` - Verification codes (primary provider + Twilio fallback paths)
+  - `sendWelcomeSMS` - Welcome messages for new SMS opt-ins
+  - `sendTspContactAssignmentSMS` - TSP contact assignment notifications
+- **Security & Privacy**: Phone numbers redacted in email notifications (shows last 4 digits only)
+- **Non-Blocking Design**: All monitoring wrapped in try-catch blocks - monitoring failures never break SMS/email delivery
+- **Key Files**: `server/sendgrid.ts`, `server/sms-service.ts`, `server/utils/sms-monitoring.ts`
+- **Architecture Pattern**: Monitoring uses dynamic imports to avoid circular dependencies and safely handles all success/failure/exception paths
+
 ### Recent Fixes (November 22, 2025)
 **Real-Time Collaboration System & Granular Permissions Enhancement:**
 - **Re-enabled Socket.IO Event Collaboration**: Restored and fixed real-time collaboration features for event editing (presence tracking, field locking, comments, revision history)
