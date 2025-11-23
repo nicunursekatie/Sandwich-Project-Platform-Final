@@ -14,7 +14,8 @@ import {
   Mail,
   ChevronDown,
   ChevronUp,
-  CheckSquare
+  CheckSquare,
+  MessageSquare
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import * as React from 'react';
