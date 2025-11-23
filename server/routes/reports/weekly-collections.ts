@@ -81,21 +81,38 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
 
       const week = weeklyMap.get(weekKey)!;
       week.collectionCount += 1;
-      
-      const individual = collection.individualSandwiches || 0;
-      const g1 = collection.group1Count || 0;
-      const g2 = collection.group2Count || 0;
-      let groupColl = 0;
 
-      if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+      const individual = collection.individualSandwiches || 0;
+
+      // Handle both new groupCollections array and legacy group1/group2 fields
+      let groupColl = 0;
+      let g1 = 0;
+      let g2 = 0;
+
+      if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+        // NEW FORMAT: Use groupCollections JSON array
         groupColl = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+
+        // For display columns, track first two groups separately
+        if (collection.groupCollections[0]) {
+          g1 = collection.groupCollections[0].count || 0;
+        }
+        if (collection.groupCollections[1]) {
+          g2 = collection.groupCollections[1].count || 0;
+        }
+      } else {
+        // LEGACY FORMAT: Use old group1Count and group2Count fields
+        g1 = collection.group1Count || 0;
+        g2 = collection.group2Count || 0;
+        groupColl = g1 + g2;
       }
 
       week.individual += individual;
       week.group1 += g1;
       week.group2 += g2;
       week.groupCollections += groupColl;
-      week.totalSandwiches += individual + g1 + g2 + groupColl;
+      // Total is individual + all group collections (groupColl already includes g1 and g2)
+      week.totalSandwiches += individual + groupColl;
     }
 
     const result = Array.from(weeklyMap.values()).sort(
