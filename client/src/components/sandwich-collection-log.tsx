@@ -3356,7 +3356,7 @@ export default function SandwichCollectionLog() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Collection</DialogTitle>
           </DialogHeader>
