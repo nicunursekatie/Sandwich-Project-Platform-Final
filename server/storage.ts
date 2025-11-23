@@ -3322,6 +3322,26 @@ export class MemStorage implements IStorage {
       }
     }
   }
+
+  async cleanupExpiredLocks(): Promise<number> {
+    const now = new Date();
+    let deletedCount = 0;
+
+    // Clean up expired event field locks
+    const expiredLocks: number[] = [];
+    for (const [id, lock] of this.eventFieldLocks) {
+      if (lock.expiresAt && lock.expiresAt < now) {
+        expiredLocks.push(id);
+      }
+    }
+
+    for (const id of expiredLocks) {
+      this.eventFieldLocks.delete(id);
+      deletedCount++;
+    }
+
+    return deletedCount;
+  }
 }
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system
