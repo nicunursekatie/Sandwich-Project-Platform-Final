@@ -51,10 +51,13 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
     for (const collection of collections) {
       const collectionDate = new Date(collection.collectionDate);
       
-      // Get the Wednesday of this week
+      // Get the Wednesday of this week (or the Wednesday before if not Wednesday)
       const dayOfWeek = collectionDate.getDay();
-      const diff = collectionDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) - 2; // Wednesday = 3
-      const wednesday = new Date(collectionDate.setDate(diff));
+      // Calculate days to go back to reach Wednesday (3)
+      // Formula: (dayOfWeek - 3 + 7) % 7 gives us days back from current day to Wednesday
+      const daysToGoBack = (dayOfWeek - 3 + 7) % 7;
+      const wednesday = new Date(collectionDate);
+      wednesday.setDate(wednesday.getDate() - daysToGoBack);
       
       // Format Wednesday date as YYYY-MM-DD
       const wedStr = wednesday.toISOString().split('T')[0];
