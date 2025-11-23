@@ -38,11 +38,27 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       });
     }
 
-    // Get all collections in the date range
+    // Expand the date range to include full Wednesday-Tuesday weeks
+    // Find the Wednesday of the week containing the start date
+    const startDayOfWeek = start.getDay();
+    const daysToGoBackFromStart = (startDayOfWeek - 3 + 7) % 7;
+    const expandedStart = new Date(start);
+    expandedStart.setDate(expandedStart.getDate() - daysToGoBackFromStart);
+    
+    // Find the Tuesday of the week containing the end date
+    const endDayOfWeek = end.getDay();
+    const daysToGoForwardToTuesday = (2 - endDayOfWeek + 7) % 7;
+    const expandedEnd = new Date(end);
+    expandedEnd.setDate(expandedEnd.getDate() + daysToGoForwardToTuesday);
+    
+    const expandedStartStr = expandedStart.toISOString().split('T')[0];
+    const expandedEndStr = expandedEnd.toISOString().split('T')[0];
+
+    // Get all collections in the EXPANDED date range (full weeks)
     const collections = await db
       .select()
       .from(sandwichCollections)
-      .where(sql`${sandwichCollections.collectionDate} >= ${startDate} AND ${sandwichCollections.collectionDate} <= ${endDate} AND ${isNull(sandwichCollections.deletedAt)}`)
+      .where(sql`${sandwichCollections.collectionDate} >= ${expandedStartStr} AND ${sandwichCollections.collectionDate} <= ${expandedEndStr} AND ${isNull(sandwichCollections.deletedAt)}`)
       .orderBy(sandwichCollections.collectionDate);
 
     // Group by Wed-Tue weeks
