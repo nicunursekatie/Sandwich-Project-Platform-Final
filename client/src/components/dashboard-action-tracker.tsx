@@ -14,7 +14,7 @@ import {
   Mail,
   ChevronDown,
   ChevronUp,
-  CheckSquare,
+  SquareCheck,
   MessageSquare
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
@@ -330,7 +330,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                     )}
                     {dashboardData.counts.tasks > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <CheckSquare className="w-4 h-4 text-[#007E8C]" />
+                        <SquareCheck className="w-4 h-4 text-[#007E8C]" />
                         <span className="text-sm font-semibold text-[#007E8C]">{dashboardData.counts.tasks}</span>
                         <span className="text-sm text-gray-600">Task{dashboardData.counts.tasks !== 1 ? 's' : ''}</span>
                       </div>
