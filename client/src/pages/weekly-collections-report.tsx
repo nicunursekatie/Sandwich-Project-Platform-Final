@@ -22,8 +22,6 @@ interface WeeklyData {
   collectionCount: number;
   totalSandwiches: number;
   individual: number;
-  group1: number;
-  group2: number;
   groupCollections: number;
 }
 
@@ -68,19 +66,17 @@ export default function WeeklyCollectionsReport() {
     if (!data?.weeks) return;
 
     const rows = [
-      ['Week Starting', 'Week Ending', 'Collections', 'Individual', 'Group Type 1', 'Group Type 2', 'Group Collections', 'Total Sandwiches'],
+      ['Week Starting', 'Week Ending', 'Collections', 'Individual', 'Group Collections', 'Total Sandwiches'],
       ...data.weeks.map((week) => [
         week.weekStartDate,
         week.weekEndDate,
         week.collectionCount,
         week.individual,
-        week.group1,
-        week.group2,
         week.groupCollections,
         week.totalSandwiches,
       ]),
       [],
-      ['Total', '', data.weeks.length, '', '', '', '', data.grandTotal],
+      ['Total', '', data.weeks.length, '', '', data.grandTotal],
     ];
 
     const csv = rows.map((row) => row.join(',')).join('\n');
@@ -153,17 +149,15 @@ export default function WeeklyCollectionsReport() {
       week.weekEndDate,
       week.collectionCount.toString(),
       week.individual.toLocaleString(),
-      week.group1.toLocaleString(),
-      week.group2.toLocaleString(),
       week.groupCollections.toLocaleString(),
       week.totalSandwiches.toLocaleString(),
     ]);
 
     autoTable(doc, {
       startY: 95,
-      head: [['Week Start', 'Week End', 'Collections', 'Individual', 'Group 1', 'Group 2', 'Group Total', 'Total']],
+      head: [['Week Start', 'Week End', 'Collections', 'Individual', 'Group Total', 'Total']],
       body: tableData,
-      foot: [['Grand Total', '', data.weeks.length.toString(), '', '', '', '', data.grandTotal.toLocaleString()]],
+      foot: [['Grand Total', '', data.weeks.length.toString(), '', '', data.grandTotal.toLocaleString()]],
       theme: 'striped',
       headStyles: {
         fillColor: [71, 179, 203], // Brand teal
@@ -190,9 +184,7 @@ export default function WeeklyCollectionsReport() {
         2: { halign: 'right' },
         3: { halign: 'right' },
         4: { halign: 'right' },
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right', fontStyle: 'bold' },
+        5: { halign: 'right', fontStyle: 'bold' },
       },
       tableWidth: 'auto',
       margin: { left: 14, right: 14 },
@@ -373,8 +365,6 @@ export default function WeeklyCollectionsReport() {
                         <TableHead>Week Starting</TableHead>
                         <TableHead className="text-right">Collections</TableHead>
                         <TableHead className="text-right">Individual</TableHead>
-                        <TableHead className="text-right">Group 1</TableHead>
-                        <TableHead className="text-right">Group 2</TableHead>
                         <TableHead className="text-right">Group Collections</TableHead>
                         <TableHead className="text-right font-bold">Total</TableHead>
                       </TableRow>
@@ -393,12 +383,6 @@ export default function WeeklyCollectionsReport() {
                           </TableCell>
                           <TableCell className="text-right text-slate-700">
                             {week.individual.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right text-slate-700">
-                            {week.group1.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right text-slate-700">
-                            {week.group2.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right text-slate-700">
                             {week.groupCollections.toLocaleString()}

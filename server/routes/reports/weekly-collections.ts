@@ -12,8 +12,6 @@ interface WeeklyData {
   collectionCount: number;
   totalSandwiches: number;
   individual: number;
-  group1: number;
-  group2: number;
   groupCollections: number;
 }
 
@@ -38,11 +36,27 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       });
     }
 
-    // Get all collections in the date range
+    // Expand the date range to include full Wednesday-Tuesday weeks
+    // Find the Wednesday of the week containing the start date
+    const startDayOfWeek = start.getDay();
+    const daysToGoBackFromStart = (startDayOfWeek - 3 + 7) % 7;
+    const expandedStart = new Date(start);
+    expandedStart.setDate(expandedStart.getDate() - daysToGoBackFromStart);
+    
+    // Find the Tuesday of the week containing the end date
+    const endDayOfWeek = end.getDay();
+    const daysToGoForwardToTuesday = (2 - endDayOfWeek + 7) % 7;
+    const expandedEnd = new Date(end);
+    expandedEnd.setDate(expandedEnd.getDate() + daysToGoForwardToTuesday);
+    
+    const expandedStartStr = expandedStart.toISOString().split('T')[0];
+    const expandedEndStr = expandedEnd.toISOString().split('T')[0];
+
+    // Get all collections in the EXPANDED date range (full weeks)
     const collections = await db
       .select()
       .from(sandwichCollections)
-      .where(sql`${sandwichCollections.collectionDate} >= ${startDate} AND ${sandwichCollections.collectionDate} <= ${endDate} AND ${isNull(sandwichCollections.deletedAt)}`)
+      .where(sql`${sandwichCollections.collectionDate} >= ${expandedStartStr} AND ${sandwichCollections.collectionDate} <= ${expandedEndStr} AND ${isNull(sandwichCollections.deletedAt)}`)
       .orderBy(sandwichCollections.collectionDate);
 
     // Group by Wed-Tue weeks
@@ -73,8 +87,6 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
           collectionCount: 0,
           totalSandwiches: 0,
           individual: 0,
-          group1: 0,
-          group2: 0,
           groupCollections: 0,
         });
       }
@@ -86,32 +98,20 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
 
       // Handle both new groupCollections array and legacy group1/group2 fields
       let groupColl = 0;
-      let g1 = 0;
-      let g2 = 0;
 
       if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
-        // NEW FORMAT: Use groupCollections JSON array
+        // NEW FORMAT: Use groupCollections JSON array - sum ALL groups
         groupColl = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
-
-        // For display columns, track first two groups separately
-        if (collection.groupCollections[0]) {
-          g1 = collection.groupCollections[0].count || 0;
-        }
-        if (collection.groupCollections[1]) {
-          g2 = collection.groupCollections[1].count || 0;
-        }
       } else {
         // LEGACY FORMAT: Use old group1Count and group2Count fields
-        g1 = collection.group1Count || 0;
-        g2 = collection.group2Count || 0;
+        const g1 = collection.group1Count || 0;
+        const g2 = collection.group2Count || 0;
         groupColl = g1 + g2;
       }
 
       week.individual += individual;
-      week.group1 += g1;
-      week.group2 += g2;
       week.groupCollections += groupColl;
-      // Total is individual + all group collections (groupColl already includes g1 and g2)
+      // Total is individual + all group collections
       week.totalSandwiches += individual + groupColl;
     }
 
