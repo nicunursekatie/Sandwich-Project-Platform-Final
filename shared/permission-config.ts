@@ -266,27 +266,26 @@ export const PERMISSION_GROUPS = {
   NAVIGATION: {
     label: 'Navigation Tabs',
     permissions: [
-      // Dashboard section
+      // Dashboard
       PERMISSIONS.NAV_DASHBOARD,
       PERMISSIONS.NAV_MY_ACTIONS,
       PERMISSIONS.NAV_MY_AVAILABILITY,
       PERMISSIONS.NAV_TEAM_AVAILABILITY,
       PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
 
-      // Collections section
+      // Collections
       PERMISSIONS.NAV_COLLECTIONS_LOG,
 
-      // Communication section
+      // Communication
       PERMISSIONS.NAV_TEAM_CHAT,
       PERMISSIONS.NAV_INBOX,
       PERMISSIONS.NAV_SUGGESTIONS,
-      PERMISSIONS.VIEW_HOLDING_ZONE, // TSP Holding Zone
+      PERMISSIONS.VIEW_HOLDING_ZONE,
       PERMISSIONS.NAV_PROMOTION,
       PERMISSIONS.NAV_QUICK_SMS_LINKS,
 
-      // Operations section
+      // Operations
       PERMISSIONS.NAV_HOSTS,
-      PERMISSIONS.NAV_ROUTE_MAP, // Host Map (sub-item)
       PERMISSIONS.NAV_DRIVERS,
       PERMISSIONS.NAV_VOLUNTEERS,
       PERMISSIONS.NAV_RECIPIENTS,
@@ -297,39 +296,35 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.NAV_EXPENSES,
       PERMISSIONS.NAV_COOLER_TRACKING,
 
-      // Event Planning section
-      PERMISSIONS.NAV_EVENT_PLANNING, // Event Requests
-      PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW, // Admin Overview (sub-item)
-      // Event Map (uses NAV_EVENT_PLANNING)
+      // Event Planning
+      PERMISSIONS.NAV_EVENT_PLANNING,
+      PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
       PERMISSIONS.NAV_EVENT_REMINDERS,
       PERMISSIONS.NAV_SIGNUP_GENIUS,
       PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
 
-      // Strategic Planning section
+      // Strategic Planning
       PERMISSIONS.NAV_PROJECTS,
       PERMISSIONS.NAV_MEETINGS,
 
-      // Analytics & Reports section
+      // Analytics & Reports
       PERMISSIONS.NAV_ANALYTICS,
       PERMISSIONS.NAV_GRANT_METRICS,
-      // Weekly Collections Report (uses NAV_ANALYTICS)
       PERMISSIONS.NAV_WEEKLY_MONITORING,
 
-      // Documentation section
+      // Documentation
       PERMISSIONS.NAV_RESOURCES,
-      PERMISSIONS.NAV_IMPORTANT_LINKS, // Quick Tools
+      PERMISSIONS.NAV_IMPORTANT_LINKS,
       PERMISSIONS.NAV_AUTO_FORM_FILLER,
       PERMISSIONS.NAV_WISHLIST,
       PERMISSIONS.NAV_DOCUMENT_MANAGEMENT,
 
-      // Admin section
-      PERMISSIONS.ADMIN_PANEL_ACCESS, // Admin Panel
+      // Admin
+      PERMISSIONS.ADMIN_PANEL_ACCESS,
       PERMISSIONS.NAV_USER_MANAGEMENT,
       PERMISSIONS.NAV_HISTORICAL_IMPORT,
-      // SmartSearch AI (uses ADMIN_PANEL_ACCESS)
-      // Service Hours Form (uses ADMIN_PANEL_ACCESS)
 
-      // Help section
+      // Help
       PERMISSIONS.NAV_HELP,
     ],
   },

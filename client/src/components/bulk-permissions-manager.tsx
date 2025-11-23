@@ -144,6 +144,8 @@ export default function BulkPermissionsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      // Invalidate auth/user so permission changes take effect immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       setSelectedUsers([]);
       toast({
         title: 'Bulk Update Complete',
@@ -604,6 +606,8 @@ export default function BulkPermissionsManager() {
               apiRequest('PATCH', `/api/users/${userId}`, { role, permissions })
                 .then(() => {
                   queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+                  // Invalidate auth/user so permission changes take effect immediately
+                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
                   setSelectedUser(null);
                   toast({
                     title: 'User Updated',
