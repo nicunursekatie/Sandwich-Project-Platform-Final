@@ -622,6 +622,9 @@ export default function HoldingZone() {
       type: 'task' | 'note' | 'idea';
       categoryId: number | null;
       isUrgent: boolean;
+      isPrivate: boolean;
+      details: string | null;
+      dueDate: string | null;
     }) => {
       return await apiRequest('POST', '/api/team-board', data);
     },
@@ -974,7 +977,7 @@ export default function HoldingZone() {
   if (!canView) {
     return (
       <div className="container mx-auto p-6">
-        <PageBreadcrumbs items={[{ label: 'Holding Zone' }]} />
+        <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
         <Card className="mt-6">
           <CardContent className="p-12 text-center">
             <h2 className="text-2xl font-semibold mb-2">Access Denied</h2>
@@ -989,7 +992,7 @@ export default function HoldingZone() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <PageBreadcrumbs items={[{ label: 'Holding Zone' }]} />
+      <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
 
       {/* Header */}
       <div className="flex items-center justify-between mt-6 mb-6">
