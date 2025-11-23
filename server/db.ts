@@ -14,20 +14,34 @@ const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_
 // This prevents "expression is not callable" errors when using db.select/insert/update/delete
 type DB = NeonHttpDatabase<typeof schema>;
 let db: DB;
+let sqlClient: ReturnType<typeof neon> | null = null;
 
 if (databaseUrl) {
   logger.log(`🗄️ Using ${process.env.PRODUCTION_DATABASE_URL ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
   // Use HTTP connection instead of WebSocket for better stability
-  const sql = neon(databaseUrl);
-  db = drizzle(sql, { 
+  sqlClient = neon(databaseUrl);
+  db = drizzle(sqlClient, {
     schema,
     logger: false
   }) as DB;
+
+  // Add execute method for raw SQL queries
+  (db as any).execute = async (query: any) => {
+    if (sqlClient) {
+      return await sqlClient(query);
+    }
+    throw new Error('SQL client not initialized');
+  };
 } else {
   // Fallback to SQLite for local development
   logger.log('🗄️ No DATABASE_URL found, using local SQLite database for development');
   const sqlite = new Database('./database.db');
   db = drizzleSQLite(sqlite, { schema }) as unknown as DB;
+
+  // Add execute method for SQLite
+  (db as any).execute = async (query: any) => {
+    return sqlite.prepare(query.sql.join('')).run();
+  };
 }
 
 export { db };

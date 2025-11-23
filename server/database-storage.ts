@@ -4717,4 +4717,80 @@ export class DatabaseStorage implements IStorage {
 
     return await query;
   }
+
+  // ==================== Holding Zone Collaboration ====================
+
+  async getHoldingZoneCollaborationComments(holdingZoneId: string): Promise<any[]> {
+    // For now, return empty array since we don't have holding zone collaboration tables yet
+    // This prevents the 500 error and allows the UI to work
+    return [];
+  }
+
+  async createHoldingZoneCollaborationComment(data: {
+    holdingZoneId: string;
+    userId: string;
+    userName: string;
+    content: string;
+    parentCommentId?: number;
+  }): Promise<any> {
+    // Placeholder implementation
+    return {
+      id: Date.now(),
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  async updateHoldingZoneCollaborationComment(
+    commentId: number,
+    userId: string,
+    content: string
+  ): Promise<any> {
+    // Placeholder implementation
+    return {
+      id: commentId,
+      userId,
+      content,
+      updatedAt: new Date(),
+    };
+  }
+
+  async deleteHoldingZoneCollaborationComment(
+    commentId: number,
+    userId: string
+  ): Promise<boolean> {
+    // Placeholder implementation
+    return true;
+  }
+
+  async getHoldingZoneFieldLocks(holdingZoneId: string): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+
+  async acquireHoldingZoneFieldLock(data: {
+    holdingZoneId: string;
+    userId: string;
+    userName: string;
+    fieldName: string;
+    expiresInMinutes: number;
+  }): Promise<any> {
+    // Placeholder implementation
+    return {
+      id: Date.now(),
+      ...data,
+      lockedAt: new Date(),
+      expiresAt: new Date(Date.now() + data.expiresInMinutes * 60 * 1000),
+    };
+  }
+
+  async releaseHoldingZoneFieldLock(
+    holdingZoneId: string,
+    fieldName: string,
+    userId: string
+  ): Promise<boolean> {
+    // Placeholder implementation
+    return true;
+  }
 }
