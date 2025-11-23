@@ -18,7 +18,11 @@ export function useUserManagement() {
       return apiRequest('PATCH', `/api/users/${userId}`, { role, permissions });
     },
     onSuccess: () => {
+      // Invalidate users list
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      // CRITICAL: Also invalidate auth/user so permission changes take effect immediately
+      // This ensures users see permission changes without having to log out/in
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Updated',
         description: 'User permissions have been successfully updated.',
@@ -45,6 +49,8 @@ export function useUserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      // Invalidate auth/user so status changes take effect immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Status Updated',
         description: 'User status has been successfully changed.',
@@ -127,6 +133,8 @@ export function useUserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      // Invalidate auth/user so role/status changes take effect immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Updated',
         description: 'User details have been successfully updated.',
