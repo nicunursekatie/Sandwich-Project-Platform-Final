@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Mail,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CheckSquare
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import * as React from 'react';
