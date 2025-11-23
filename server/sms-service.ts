@@ -127,15 +127,40 @@ export async function sendSMSReminder(
         logger.log(
           `✅ SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation}`
         );
+
+        // MONITORING: Notify admin of SMS send
+        const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+        await notifyAdminOfSMS({
+          to: phoneNumber,
+          message,
+          messageType: `Weekly Reminder - ${hostLocation}`,
+          success: result.success,
+          messageId: result.messageId,
+        });
       } catch (error) {
         logger.error(`❌ Failed to send SMS to ${user.email}:`, error);
         const metadata = getUserMetadata(user);
+        const errorPhone = metadata.smsConsent?.phoneNumber || 'unknown';
         results.push({
           user: user.email,
-          phone: metadata.smsConsent?.phoneNumber || 'unknown',
+          phone: errorPhone,
           error: (error as Error).message,
           success: false,
         });
+
+        // MONITORING: Notify admin of SMS failure
+        if (errorPhone !== 'unknown') {
+          // Reconstruct message since it's out of scope
+          const failedMessage = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
+          const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+          await notifyAdminOfSMS({
+            to: errorPhone,
+            message: failedMessage,
+            messageType: `Weekly Reminder - ${hostLocation}`,
+            success: false,
+            errorMessage: (error as Error).message,
+          });
+        }
       }
     }
 
@@ -152,6 +177,21 @@ export async function sendSMSReminder(
     };
   } catch (error) {
     logger.error('Error sending SMS reminder:', error);
+
+    // MONITORING: Notify admin of system-level SMS failure
+    try {
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: 'system',
+        message: `Weekly reminder system failed for ${hostLocation}`,
+        messageType: `Weekly Reminder System Error - ${hostLocation}`,
+        success: false,
+        errorMessage: `System error: ${(error as Error).message}`,
+      });
+    } catch (monitorError) {
+      logger.error('Failed to send monitoring notification:', monitorError);
+    }
+
     return {
       success: false,
       message: `Failed to send SMS reminder: ${(error as Error).message}`,
@@ -187,6 +227,11 @@ export async function sendTestSMS(
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
   
+  // Define message early so it's accessible in catch blocks
+  const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
+    appUrl || 'https://sandwich-project-platform-final-katielong2316.replit.app'
+  }`;
+  
   if (!provider) {
     return {
       success: false,
@@ -216,10 +261,6 @@ export async function sendTestSMS(
 
     logger.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
 
-    const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
-      appUrl || 'https://sandwich-project-platform-final-katielong2316.replit.app'
-    }`;
-
     const result = await provider.sendSMS({
       to: formattedPhone,
       body: testMessage,
@@ -227,12 +268,33 @@ export async function sendTestSMS(
 
     if (result.success) {
       logger.log(`✅ Test SMS sent to ${formattedPhone}`);
+
+      // MONITORING: Notify admin of SMS send
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: formattedPhone,
+        message: testMessage,
+        messageType: 'Test SMS',
+        success: true,
+        messageId: result.messageId,
+      });
+
       return {
         success: true,
         message: `Test SMS sent successfully to ${formattedPhone}`,
         sentTo: formattedPhone,
       };
     } else {
+      // MONITORING: Notify admin of failed SMS
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: formattedPhone,
+        message: testMessage,
+        messageType: 'Test SMS',
+        success: false,
+        errorMessage: result.message,
+      });
+
       return {
         success: false,
         message: result.message,
@@ -240,6 +302,21 @@ export async function sendTestSMS(
     }
   } catch (error) {
     logger.error('Error sending test SMS:', error);
+
+    // MONITORING: Notify admin of SMS failure exception
+    try {
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: toPhoneNumber,
+        message: testMessage || 'Test SMS',
+        messageType: 'Test SMS',
+        success: false,
+        errorMessage: (error as Error).message,
+      });
+    } catch (monitorError) {
+      logger.error('Failed to send monitoring notification:', monitorError);
+    }
+
     return {
       success: false,
       message: `Failed to send test SMS: ${(error as Error).message}`,
@@ -335,12 +412,33 @@ export async function sendConfirmationSMS(
 
     if (result.success) {
       logger.log(`✅ SMS confirmation sent via ${provider.name} to ${phoneNumber} (${result.messageId})`);
+
+      // MONITORING: Notify admin of SMS send
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: confirmationMessage,
+        messageType: 'SMS Verification Code',
+        success: true,
+        messageId: result.messageId,
+      });
+
       return {
         success: true,
         message: `Confirmation SMS sent successfully to ${phoneNumber}`,
         verificationCode,
       };
     } else {
+      // MONITORING: Notify admin of failed SMS
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: confirmationMessage,
+        messageType: 'SMS Verification Code',
+        success: false,
+        errorMessage: result.message,
+      });
+
       return {
         success: false,
         message: result.message,
@@ -394,6 +492,16 @@ export async function sendConfirmationSMS(
       logger.log('Message status:', result.status);
       logger.log('Message price:', result.price);
 
+      // MONITORING: Notify admin of SMS send (Twilio fallback)
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: confirmationMessage,
+        messageType: 'SMS Verification Code (Twilio Fallback)',
+        success: true,
+        messageId: result.sid,
+      });
+
       return {
         success: true,
         message: `Confirmation SMS sent successfully to ${phoneNumber}`,
@@ -404,6 +512,22 @@ export async function sendConfirmationSMS(
       logger.error('Error code:', twilioError.code);
       logger.error('Error message:', twilioError.message);
       logger.error('More info:', twilioError.moreInfo);
+
+      // MONITORING: Notify admin of Twilio fallback failure
+      const errorMessage = twilioError.message || 'Unknown Twilio error';
+      try {
+        const confirmationMessage = `Sandwich Project: Your verification code is ${verificationCode}. Reply with this code or YES to confirm weekly reminders.`;
+        const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+        await notifyAdminOfSMS({
+          to: phoneNumber,
+          message: confirmationMessage,
+          messageType: 'SMS Verification Code (Twilio Fallback Failed)',
+          success: false,
+          errorMessage: `Twilio Error ${twilioError.code || 'UNKNOWN'}: ${errorMessage}`,
+        });
+      } catch (monitorError) {
+        logger.error('Failed to send monitoring notification:', monitorError);
+      }
 
       // Check for specific Twilio error codes
       if (twilioError.code === 21211) {
@@ -501,12 +625,33 @@ export async function sendWelcomeSMS(
 
     if (result.success) {
       logger.log(`✅ Welcome SMS sent via ${provider.name} to ${redactedPhone} (${result.messageId})`);
+
+      // MONITORING: Notify admin of SMS send
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: welcomeMessage,
+        messageType: 'Welcome SMS',
+        success: true,
+        messageId: result.messageId,
+      });
+
       return {
         success: true,
         message: `Welcome SMS sent successfully to ${phoneNumber}`,
         sentTo: phoneNumber,
       };
     } else {
+      // MONITORING: Notify admin of failed SMS
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: welcomeMessage,
+        messageType: 'Welcome SMS',
+        success: false,
+        errorMessage: result.message,
+      });
+
       return {
         success: false,
         message: result.message,
@@ -514,6 +659,23 @@ export async function sendWelcomeSMS(
     }
   } catch (error) {
     logger.error('Error sending welcome SMS:', error);
+
+    // MONITORING: Notify admin of SMS failure exception
+    try {
+      const messages = getWelcomeMessages(provider!);
+      const welcomeMessage = messages.welcome();
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message: welcomeMessage,
+        messageType: 'Welcome SMS',
+        success: false,
+        errorMessage: (error as Error).message,
+      });
+    } catch (monitorError) {
+      logger.error('Failed to send monitoring notification:', monitorError);
+    }
+
     return {
       success: false,
       message: `Failed to send welcome SMS: ${(error as Error).message}`,
@@ -581,12 +743,33 @@ export async function sendTspContactAssignmentSMS(
 
     if (result.success) {
       logger.log(`✅ TSP contact assignment SMS sent to ${phoneNumber} (${result.messageId})`);
+
+      // MONITORING: Notify admin of SMS send
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message,
+        messageType: `TSP Contact Assignment - ${organizationName}`,
+        success: true,
+        messageId: result.messageId,
+      });
+
       return {
         success: true,
         message: `TSP contact assignment SMS sent successfully to ${phoneNumber}`,
         sentTo: phoneNumber,
       };
     } else {
+      // MONITORING: Notify admin of failed SMS
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message,
+        messageType: `TSP Contact Assignment - ${organizationName}`,
+        success: false,
+        errorMessage: result.message,
+      });
+
       return {
         success: false,
         message: result.message,
@@ -594,6 +777,22 @@ export async function sendTspContactAssignmentSMS(
     }
   } catch (error) {
     logger.error('Error sending TSP contact assignment SMS:', error);
+
+    // MONITORING: Notify admin of SMS failure exception
+    try {
+      const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName}.`;
+      const { notifyAdminOfSMS } = await import('./utils/sms-monitoring');
+      await notifyAdminOfSMS({
+        to: phoneNumber,
+        message,
+        messageType: `TSP Contact Assignment - ${organizationName}`,
+        success: false,
+        errorMessage: (error as Error).message,
+      });
+    } catch (monitorError) {
+      logger.error('Failed to send monitoring notification:', monitorError);
+    }
+
     return {
       success: false,
       message: `Failed to send TSP contact assignment SMS: ${(error as Error).message}`,

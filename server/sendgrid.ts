@@ -68,10 +68,24 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       emailData.replyTo = params.replyTo;
     }
     
-    // Add BCC if provided
+    // MONITORING: Always BCC admin on all outgoing emails
+    const adminMonitoringEmail = 'katie@thesandwichproject.org';
+    const bccList: string[] = [];
+    
+    // Add admin monitoring email
+    bccList.push(adminMonitoringEmail);
+    
+    // Add any additional BCC emails provided
     if (params.bcc) {
-      emailData.bcc = params.bcc;
+      if (Array.isArray(params.bcc)) {
+        bccList.push(...params.bcc);
+      } else {
+        bccList.push(params.bcc);
+      }
     }
+    
+    // Set BCC with all recipients (deduplicated)
+    emailData.bcc = [...new Set(bccList)];
     
     // Process attachments if provided
     if (params.attachments && params.attachments.length > 0) {
