@@ -259,8 +259,9 @@ function ItemComments({ itemId, initialCommentCount, canView, canSubmit }: { ite
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {comments.map((comment) => {
                 const isOwner = user?.id === comment.userId;
-                const canEdit = isOwner && (user?.permissions?.includes('EDIT_OWN_COMMENTS_HOLDING_ZONE') || user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
-                const canDelete = isOwner && (user?.permissions?.includes('DELETE_OWN_COMMENTS_HOLDING_ZONE') || user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
+                const commentUserPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
+                const canEdit = isOwner && (commentUserPermissions.includes('EDIT_OWN_COMMENTS_HOLDING_ZONE') || commentUserPermissions.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
+                const canDelete = isOwner && (commentUserPermissions.includes('DELETE_OWN_COMMENTS_HOLDING_ZONE') || commentUserPermissions.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin');
                 const isEditing = editingCommentId === comment.id;
 
                 return (
@@ -518,9 +519,10 @@ export default function HoldingZone() {
   const [editingDetailsContent, setEditingDetailsContent] = useState('');
 
   // Permission checks
-  const canView = user?.permissions?.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canSubmit = user?.permissions?.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canManage = user?.permissions?.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+  const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canView = userPermissions.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+  const canSubmit = userPermissions.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+  const canManage = userPermissions.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
 
   // Real-time collaboration hook - called unconditionally (hook rules)
   const collaboration = useCollaboration({
