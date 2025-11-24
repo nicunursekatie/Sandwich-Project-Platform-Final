@@ -94,6 +94,7 @@ interface CardHeaderProps {
   resolveUserName?: (id: string) => string;
   isInProcessStale?: boolean;
   canEdit?: boolean;
+  canEditOrgDetails?: boolean;
   isEditingThisCard?: boolean;
   editingField?: string;
   editingValue?: string;
@@ -108,6 +109,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   resolveUserName,
   isInProcessStale,
   canEdit = false,
+  canEditOrgDetails = false,
   isEditingThisCard = false,
   editingField = '',
   editingValue = '',
@@ -182,18 +184,95 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Check if we're editing this date field
   const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
 
+  // Check if we're editing organization or department fields
+  const isEditingOrgName = isEditingThisCard && editingField === 'organizationName';
+  const isEditingDepartment = isEditingThisCard && editingField === 'department';
+
   return {
     header: (
       <div className="mb-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
-            {request.organizationName}
-            {request.department && (
-              <span className="text-sm font-normal text-gray-600 break-words">
-                &bull; {request.department}
-              </span>
-            )}
-          </h3>
+          {/* Organization Name - with inline editing */}
+          {isEditingOrgName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editingValue}
+                onChange={(e) => setEditingValue?.(e.target.value)}
+                className="h-8 text-lg font-bold text-[#236383]"
+                autoFocus
+                data-testid="input-organization-name"
+              />
+              <Button size="sm" onClick={saveEdit} data-testid="button-save-org-name">
+                <Save className="w-3 h-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-org-name">
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
+                {request.organizationName}
+              </h3>
+              {canEditOrgDetails && startEditing && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => startEditing('organizationName', request.organizationName || '')}
+                  className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                  title="Edit organization name"
+                  data-testid="button-edit-org-name"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Department - with inline editing */}
+          {(request.department || isEditingDepartment || canEditOrgDetails) && (
+            <>
+              <span className="text-gray-600">&bull;</span>
+              {isEditingDepartment ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue?.(e.target.value)}
+                    className="h-8 text-sm font-normal text-gray-600"
+                    placeholder="Department"
+                    autoFocus
+                    data-testid="input-department"
+                  />
+                  <Button size="sm" onClick={saveEdit} data-testid="button-save-department">
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-department">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  {request.department ? (
+                    <span className="text-sm font-normal text-gray-600 break-words">{request.department}</span>
+                  ) : canEditOrgDetails ? (
+                    <span className="text-sm font-normal text-gray-400 italic">No department</span>
+                  ) : null}
+                  {canEditOrgDetails && startEditing && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('department', request.department || '')}
+                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      title={request.department ? "Edit department" : "Add department"}
+                      data-testid="button-edit-department"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
             onClick={() => {
@@ -436,11 +515,18 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
+  // Check if user has permission to edit organization details
+  const canEditOrgDetails =
+    (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
+    user?.role === 'super_admin' ||
+    user?.role === 'admin';
+
   const headerContent = CardHeader({
     request,
     resolveUserName,
     isInProcessStale: isStale,
     canEdit: !!startEditing, // Enable editing if editing functions are provided
+    canEditOrgDetails,
     isEditingThisCard,
     editingField,
     editingValue,

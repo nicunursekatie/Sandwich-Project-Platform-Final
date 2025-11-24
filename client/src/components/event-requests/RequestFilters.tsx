@@ -22,6 +22,7 @@ import {
   Pause,
   BarChart3,
   ClipboardList,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -75,6 +76,7 @@ interface RequestFiltersProps {
     declined: ReactNode;
     postponed: ReactNode;
     my_assignments: ReactNode;
+    volunteer_opportunities: ReactNode;
     admin_overview?: ReactNode;
     planning?: ReactNode;
   };
@@ -194,6 +196,12 @@ export default function RequestFilters({
       shortLabel: 'Mine',
       icon: UserCheck,
       count: statusCounts.my_assignments,
+    },
+    {
+      value: 'volunteer_opportunities',
+      label: 'Volunteer Opportunities',
+      shortLabel: 'Opportunities',
+      icon: Users,
     }
   );
 

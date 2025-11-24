@@ -13,6 +13,7 @@ import { PostponedTab } from './tabs/PostponedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
+import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
@@ -269,6 +270,7 @@ const EventRequestsManagementContent: React.FC = () => {
       declined: <DeclinedTab />,
       postponed: <PostponedTab />,
       my_assignments: <MyAssignmentsTab />,
+      volunteer_opportunities: <VolunteerOpportunitiesTab />,
     };
 
     // Add admin overview tab for users with permission (support both old and new permission strings)
