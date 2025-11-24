@@ -6,10 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, MapPin, Users, Phone, Mail, User, Info, Sandwich } from 'lucide-react';
+import { Calendar, MapPin, Users, Phone, Mail, User, Info, Sandwich, LayoutGrid, Map as MapIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
+import { EventCalendarView } from '@/components/event-calendar-view';
 
 export const VolunteerOpportunitiesTab: React.FC = () => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   } = useEventAssignments();
 
   const [roleFilter, setRoleFilter] = useState<'all' | 'speaker' | 'volunteer'>('all');
+  const [viewMode, setViewMode] = useState<'card' | 'calendar' | 'map'>('card');
 
   // Get ONLY scheduled events
   const scheduledRequests = filterRequestsByStatus('scheduled');
@@ -65,39 +67,114 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Role Filter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-gray-700">Filter by role:</span>
-        <div className="flex gap-2">
-          <Button
-            variant={roleFilter === 'all' ? 'default' : 'outline'}
-            onClick={() => setRoleFilter('all')}
-            size="sm"
-            style={roleFilter === 'all' ? { backgroundColor: '#007E8C' } : {}}
-          >
-            All Roles ({opportunities.length})
-          </Button>
-          <Button
-            variant={roleFilter === 'speaker' ? 'default' : 'outline'}
-            onClick={() => setRoleFilter('speaker')}
-            size="sm"
-            style={roleFilter === 'speaker' ? { backgroundColor: '#007E8C' } : {}}
-          >
-            Speaker Needed
-          </Button>
-          <Button
-            variant={roleFilter === 'volunteer' ? 'default' : 'outline'}
-            onClick={() => setRoleFilter('volunteer')}
-            size="sm"
-            style={roleFilter === 'volunteer' ? { backgroundColor: '#007E8C' } : {}}
-          >
-            Volunteer Needed
-          </Button>
+      {/* View Mode and Role Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* View Toggle */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">View:</span>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              onClick={() => setViewMode('card')}
+              size="sm"
+              style={viewMode === 'card' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              <LayoutGrid className="w-4 h-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'outline'}
+              onClick={() => setViewMode('calendar')}
+              size="sm"
+              style={viewMode === 'calendar' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              <Calendar className="w-4 h-4 mr-1" />
+              Calendar
+            </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              onClick={() => setViewMode('map')}
+              size="sm"
+              style={viewMode === 'map' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              <MapIcon className="w-4 h-4 mr-1" />
+              Map
+            </Button>
+          </div>
+        </div>
+
+        {/* Role Filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-medium text-gray-700">Filter by role:</span>
+          <div className="flex gap-2">
+            <Button
+              variant={roleFilter === 'all' ? 'default' : 'outline'}
+              onClick={() => setRoleFilter('all')}
+              size="sm"
+              style={roleFilter === 'all' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              All Roles ({opportunities.length})
+            </Button>
+            <Button
+              variant={roleFilter === 'speaker' ? 'default' : 'outline'}
+              onClick={() => setRoleFilter('speaker')}
+              size="sm"
+              style={roleFilter === 'speaker' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              Speaker Needed
+            </Button>
+            <Button
+              variant={roleFilter === 'volunteer' ? 'default' : 'outline'}
+              onClick={() => setRoleFilter('volunteer')}
+              size="sm"
+              style={roleFilter === 'volunteer' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              Volunteer Needed
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Opportunities List */}
-      {opportunities.length === 0 ? (
+      {/* Conditional View Rendering */}
+      {viewMode === 'calendar' ? (
+        <div className="bg-white rounded-lg p-4">
+          <EventCalendarView
+            onEventClick={(event) => {
+              // Scroll to card in card view
+              setViewMode('card');
+              setTimeout(() => {
+                const cardElement = document.querySelector(`[data-event-id="${event.id}"]`);
+                if (cardElement) {
+                  cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 100);
+            }}
+          />
+        </div>
+      ) : viewMode === 'map' ? (
+        <Card className="bg-gray-50">
+          <CardContent className="py-12 text-center">
+            <MapIcon className="mx-auto h-16 w-16 text-[#007E8C] mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Map View</h3>
+            <p className="text-gray-600 font-medium mb-4">
+              View volunteer opportunities on a map to see events in your area
+            </p>
+            <p className="text-sm text-gray-500">
+              {opportunities.length} opportunity{opportunities.length !== 1 ? 'ies' : ''} available
+            </p>
+            {opportunities.some(o => !o.eventAddress) && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg max-w-md mx-auto">
+                <p className="text-sm text-amber-800">
+                  Note: Some events don't have addresses and won't appear on the map
+                </p>
+              </div>
+            )}
+            <div className="mt-6 text-sm text-gray-500">
+              Map integration coming soon! For now, use Card or Calendar view.
+            </div>
+          </CardContent>
+        </Card>
+      ) : opportunities.length === 0 ? (
         <Card className="bg-gray-50">
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -122,6 +199,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
             return (
               <Card
                 key={request.id}
+                data-event-id={request.id}
                 className="hover:shadow-lg transition-shadow border-2"
                 style={{ borderColor: '#007E8C', backgroundColor: '#f0f9fa' }}
               >
@@ -130,7 +208,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                   <div className="flex items-start justify-between gap-4 pb-3 border-b-2" style={{ borderColor: '#007E8C' }}>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold" style={{ color: '#1A2332' }}>
-                        {request.groupName}
+                        {request.organizationName}
                         {request.department && (
                           <span className="text-gray-600 font-normal ml-2">
                             &bull; {request.department}
