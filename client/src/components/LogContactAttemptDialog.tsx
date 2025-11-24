@@ -17,10 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Phone, Mail, MessageSquare, X, CheckCircle } from 'lucide-react';
+import { Phone, Mail, MessageSquare, X, CheckCircle, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
+import type { User as UserType } from '@shared/schema';
 
 interface LogContactAttemptDialogProps {
   isOpen: boolean;
@@ -39,6 +42,8 @@ interface LogContactAttemptDialogProps {
       notes?: string;
       createdBy: string;
       createdByName?: string;
+      loggedBy?: string;
+      loggedByName?: string;
     }>;
     // Legacy field - kept for backward compatibility but no longer written to
     unresponsiveNotes?: string;
@@ -73,9 +78,25 @@ export default function LogContactAttemptDialog({
   const [contactOutcome, setContactOutcome] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [customDateTime, setCustomDateTime] = useState<string>('');
+  const [attributedToUserId, setAttributedToUserId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Set default date/time to current when dialog opens
+  // Fetch team members for attribution dropdown
+  const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useQuery<UserType[]>({
+    queryKey: ['/api/users/for-assignments'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/users/for-assignments');
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+        return [];
+      }
+    },
+    retry: false,
+  });
+
+  // Set default date/time to current when dialog opens, and reset attribution to current user
   useEffect(() => {
     if (isOpen) {
       const now = new Date();
@@ -83,14 +104,16 @@ export default function LogContactAttemptDialog({
         .toISOString()
         .slice(0, 16);
       setCustomDateTime(localDateTime);
+      // Default to current user, but allow changing
+      setAttributedToUserId(user?.id || '');
     }
-  }, [isOpen]);
+  }, [isOpen, user?.id]);
 
   const handleSubmit = async () => {
-    if (!contactMethod || !contactOutcome) {
+    if (!contactMethod || !contactOutcome || !attributedToUserId) {
       toast({
         title: 'Missing information',
-        description: 'Please select both contact method and outcome.',
+        description: 'Please select contact method, outcome, and who made the contact.',
         variant: 'destructive',
       });
       return;
@@ -106,16 +129,21 @@ export default function LogContactAttemptDialog({
       // Build structured contact attempt log (new format only)
       const existingLog = eventRequest.contactAttemptsLog || [];
 
-      // Build user name with proper fallback logic
+      // Find the user to attribute the contact attempt to
+      const attributedUser = attributedToUserId 
+        ? teamMembers.find(u => u.id === attributedToUserId)
+        : user;
+
+      // Build user name with proper fallback logic for the attributed user
       let createdByName: string | undefined;
-      if (user?.displayName) {
-        createdByName = user.displayName;
-      } else if (user?.firstName && user?.lastName) {
-        createdByName = `${user.firstName} ${user.lastName}`.trim();
-      } else if (user?.email) {
-        createdByName = user.email;
-      } else if (user?.id) {
-        createdByName = `User ${user.id}`;
+      if (attributedUser?.displayName) {
+        createdByName = attributedUser.displayName;
+      } else if (attributedUser?.firstName && attributedUser?.lastName) {
+        createdByName = `${attributedUser.firstName} ${attributedUser.lastName}`.trim();
+      } else if (attributedUser?.email) {
+        createdByName = attributedUser.email;
+      } else if (attributedUser?.id) {
+        createdByName = `User ${attributedUser.id}`;
       } else {
         createdByName = 'Unknown User';
       }
@@ -127,8 +155,13 @@ export default function LogContactAttemptDialog({
         method: contactMethod,
         outcome: contactOutcome,
         notes: notes || undefined,
-        createdBy: user?.id || 'unknown',
+        createdBy: attributedUser?.id || 'unknown',
         createdByName,
+        // Track who actually logged it (for audit purposes)
+        loggedBy: user?.id || 'unknown',
+        loggedByName: user?.displayName || 
+          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}`.trim() : user?.email) || 
+          'Unknown',
       };
 
       // Add new attempt to existing log
@@ -182,6 +215,7 @@ export default function LogContactAttemptDialog({
       setContactOutcome('');
       setNotes('');
       setCustomDateTime('');
+      setAttributedToUserId(user?.id || '');
       onClose();
     } catch (error) {
       toast({
@@ -200,6 +234,7 @@ export default function LogContactAttemptDialog({
       setContactOutcome('');
       setNotes('');
       setCustomDateTime('');
+      setAttributedToUserId(user?.id || '');
       onClose();
     }
   };
@@ -260,6 +295,43 @@ export default function LogContactAttemptDialog({
             />
             <p className="text-xs text-gray-500">
               Defaults to current date/time. You can change this to log a contact from earlier.
+            </p>
+          </div>
+
+          {/* Attributed To */}
+          <div className="space-y-2">
+            <Label htmlFor="attributed-to" className="text-[#1A2332] font-medium">
+              Who Made This Contact? *
+            </Label>
+            <Select 
+              value={attributedToUserId} 
+              onValueChange={setAttributedToUserId}
+              disabled={isLoadingTeamMembers}
+            >
+              <SelectTrigger id="attributed-to" className="w-full">
+                <SelectValue placeholder="Select team member who made the contact" />
+              </SelectTrigger>
+              <SelectContent>
+                {teamMembers.map((member) => {
+                  const displayName = member.displayName || 
+                    `${member.firstName || ''} ${member.lastName || ''}`.trim() || 
+                    member.email;
+                  return (
+                    <SelectItem key={member.id} value={member.id}>
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        <span>{displayName}</span>
+                        {member.email && member.email !== displayName && (
+                          <span className="text-xs text-gray-500">({member.email})</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Select the team member who actually made this contact attempt. Defaults to you.
             </p>
           </div>
 
@@ -329,7 +401,7 @@ export default function LogContactAttemptDialog({
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !contactMethod || !contactOutcome}
+              disabled={isSubmitting || !contactMethod || !contactOutcome || !attributedToUserId}
               className="flex-1 bg-[#007E8C] hover:bg-[#006B75] text-white"
               data-testid="button-submit-contact-log"
             >

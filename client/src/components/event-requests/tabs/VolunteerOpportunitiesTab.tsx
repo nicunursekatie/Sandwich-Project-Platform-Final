@@ -70,47 +70,51 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       {/* View Mode and Role Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* View Toggle */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">View:</span>
+        <div className="flex items-center gap-3">
+          <span className="text-base font-semibold text-gray-700">View:</span>
           <div className="flex gap-2">
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               onClick={() => setViewMode('card')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={viewMode === 'card' ? { backgroundColor: '#007E8C' } : {}}
             >
-              <LayoutGrid className="w-4 h-4 mr-1" />
+              <LayoutGrid className="w-5 h-5 mr-2" />
               Cards
             </Button>
             <Button
               variant={viewMode === 'calendar' ? 'default' : 'outline'}
               onClick={() => setViewMode('calendar')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={viewMode === 'calendar' ? { backgroundColor: '#007E8C' } : {}}
             >
-              <Calendar className="w-4 h-4 mr-1" />
+              <Calendar className="w-5 h-5 mr-2" />
               Calendar
             </Button>
             <Button
               variant={viewMode === 'map' ? 'default' : 'outline'}
               onClick={() => setViewMode('map')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={viewMode === 'map' ? { backgroundColor: '#007E8C' } : {}}
             >
-              <MapIcon className="w-4 h-4 mr-1" />
+              <MapIcon className="w-5 h-5 mr-2" />
               Map
             </Button>
           </div>
         </div>
 
         {/* Role Filter */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-gray-700">Filter by role:</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-base font-semibold text-gray-700">Filter by role:</span>
           <div className="flex gap-2">
             <Button
               variant={roleFilter === 'all' ? 'default' : 'outline'}
               onClick={() => setRoleFilter('all')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={roleFilter === 'all' ? { backgroundColor: '#007E8C' } : {}}
             >
               All Roles ({opportunities.length})
@@ -118,7 +122,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
             <Button
               variant={roleFilter === 'speaker' ? 'default' : 'outline'}
               onClick={() => setRoleFilter('speaker')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={roleFilter === 'speaker' ? { backgroundColor: '#007E8C' } : {}}
             >
               Speaker Needed
@@ -126,7 +131,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
             <Button
               variant={roleFilter === 'volunteer' ? 'default' : 'outline'}
               onClick={() => setRoleFilter('volunteer')}
-              size="sm"
+              size="default"
+              className="text-base px-4 py-5"
               style={roleFilter === 'volunteer' ? { backgroundColor: '#007E8C' } : {}}
             >
               Volunteer Needed
@@ -154,22 +160,22 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       ) : viewMode === 'map' ? (
         <Card className="bg-gray-50">
           <CardContent className="py-12 text-center">
-            <MapIcon className="mx-auto h-16 w-16 text-[#007E8C] mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Map View</h3>
-            <p className="text-gray-600 font-medium mb-4">
+            <MapIcon className="mx-auto h-20 w-20 text-[#007E8C] mb-6" />
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">Map View</h3>
+            <p className="text-xl text-gray-600 font-medium mb-4">
               View volunteer opportunities on a map to see events in your area
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-lg text-gray-500">
               {opportunities.length} opportunity{opportunities.length !== 1 ? 'ies' : ''} available
             </p>
             {opportunities.some(o => !o.eventAddress) && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg max-w-md mx-auto">
-                <p className="text-sm text-amber-800">
+              <div className="mt-6 p-5 bg-amber-50 border-2 border-amber-300 rounded-lg max-w-md mx-auto">
+                <p className="text-base text-amber-900 font-medium">
                   Note: Some events don't have addresses and won't appear on the map
                 </p>
               </div>
             )}
-            <div className="mt-6 text-sm text-gray-500">
+            <div className="mt-8 text-lg text-gray-500 font-medium">
               Map integration coming soon! For now, use Card or Calendar view.
             </div>
           </CardContent>
@@ -177,13 +183,13 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       ) : opportunities.length === 0 ? (
         <Card className="bg-gray-50">
           <CardContent className="py-12 text-center">
-            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 font-medium">
+            <Users className="mx-auto h-16 w-16 text-gray-400 mb-6" />
+            <p className="text-xl text-gray-600 font-semibold mb-3">
               {roleFilter === 'all'
                 ? 'No volunteer opportunities available at this time'
                 : `No ${roleFilter} opportunities available at this time`}
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-base text-gray-500 mt-2">
               All scheduled events have their roles filled. Check back later!
             </p>
           </CardContent>
@@ -203,33 +209,33 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                 className="hover:shadow-lg transition-shadow border-2"
                 style={{ borderColor: '#007E8C', backgroundColor: '#f0f9fa' }}
               >
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-8 space-y-6">
                   {/* Header */}
-                  <div className="flex items-start justify-between gap-4 pb-3 border-b-2" style={{ borderColor: '#007E8C' }}>
+                  <div className="flex items-start justify-between gap-4 pb-4 border-b-4" style={{ borderColor: '#007E8C' }}>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold" style={{ color: '#1A2332' }}>
+                      <h3 className="text-3xl font-bold leading-tight" style={{ color: '#1A2332' }}>
                         {request.organizationName}
                         {request.department && (
-                          <span className="text-gray-600 font-normal ml-2">
+                          <span className="text-xl text-gray-600 font-medium ml-3">
                             &bull; {request.department}
                           </span>
                         )}
                       </h3>
 
                       {/* Roles Needed */}
-                      <div className="flex gap-2 flex-wrap mt-2">
+                      <div className="flex gap-3 flex-wrap mt-4">
                         {needsSpeaker && (
-                          <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                          <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-base px-4 py-2 font-semibold">
                             Speaker Needed
                           </Badge>
                         )}
                         {needsVolunteer && (
-                          <Badge className="bg-green-600 text-white hover:bg-green-700 text-sm">
+                          <Badge className="bg-green-600 text-white hover:bg-green-700 text-base px-4 py-2 font-semibold">
                             Volunteer Needed
                           </Badge>
                         )}
                         {request.isConfirmed && (
-                          <Badge style={{ backgroundColor: '#007E8C' }} className="text-white text-sm">
+                          <Badge style={{ backgroundColor: '#007E8C' }} className="text-white text-base px-4 py-2 font-semibold">
                             ✓ Date Confirmed
                           </Badge>
                         )}
@@ -238,51 +244,51 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                   </div>
 
                   {/* Event Details - Prominent */}
-                  <div className="space-y-3 p-4 rounded-lg border-2" style={{ backgroundColor: 'white', borderColor: '#007E8C' }}>
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 mt-0.5" style={{ color: '#007E8C' }} />
+                  <div className="space-y-5 p-6 rounded-lg border-3" style={{ backgroundColor: 'white', borderColor: '#007E8C' }}>
+                    <div className="flex items-start gap-4">
+                      <Calendar className="h-7 w-7 mt-1 flex-shrink-0" style={{ color: '#007E8C' }} />
                       <div>
-                        <div className="font-bold text-base" style={{ color: '#1A2332' }}>
+                        <div className="font-bold text-xl leading-tight" style={{ color: '#1A2332' }}>
                           {formatEventDate(request)}
                         </div>
-                        <div className="text-gray-700 font-medium">
+                        <div className="text-gray-700 font-semibold text-lg mt-1">
                           {formatEventTime(request)}
                         </div>
                       </div>
                     </div>
 
                     {request.location && (
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 mt-0.5" style={{ color: '#007E8C' }} />
-                        <div className="text-gray-900 font-medium">{request.location}</div>
+                      <div className="flex items-start gap-4">
+                        <MapPin className="h-7 w-7 mt-1 flex-shrink-0" style={{ color: '#007E8C' }} />
+                        <div className="text-gray-900 font-semibold text-lg">{request.location}</div>
                       </div>
                     )}
 
-                    <div className="flex items-start gap-3">
-                      <Sandwich className="h-5 w-5 mt-0.5" style={{ color: '#007E8C' }} />
-                      <div className="text-gray-900 font-medium">{getSandwichSummary(request)}</div>
+                    <div className="flex items-start gap-4">
+                      <Sandwich className="h-7 w-7 mt-1 flex-shrink-0" style={{ color: '#007E8C' }} />
+                      <div className="text-gray-900 font-semibold text-lg">{getSandwichSummary(request)}</div>
                     </div>
                   </div>
 
                   {/* Two Column Layout for Contact and Planning Notes */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Contact Info - Smaller text */}
-                    <div className="space-y-2 text-sm text-gray-600 p-3 bg-white rounded-lg border border-gray-300">
-                      <div className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                        <User className="h-4 w-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Contact Info */}
+                    <div className="space-y-3 text-gray-700 p-5 bg-white rounded-lg border-2 border-gray-300">
+                      <div className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
+                        <User className="h-6 w-6" />
                         Contact Info
                       </div>
                       {request.name && (
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{request.name}</span>
+                          <span className="font-semibold text-base">{request.name}</span>
                         </div>
                       )}
                       {request.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
+                        <div className="flex items-center gap-3">
+                          <Mail className="h-5 w-5 flex-shrink-0" />
                           <a
                             href={`mailto:${request.email}`}
-                            className="hover:underline"
+                            className="hover:underline text-base font-medium break-all"
                             style={{ color: '#007E8C' }}
                           >
                             {request.email}
@@ -290,11 +296,11 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                         </div>
                       )}
                       {request.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
+                        <div className="flex items-center gap-3">
+                          <Phone className="h-5 w-5 flex-shrink-0" />
                           <a
                             href={`tel:${request.phone}`}
-                            className="hover:underline"
+                            className="hover:underline text-lg font-semibold"
                             style={{ color: '#007E8C' }}
                           >
                             {request.phone}
@@ -305,12 +311,12 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
                     {/* Planning Notes */}
                     {request.planningNotes && (
-                      <div className="space-y-2 text-sm p-3 rounded-lg border-2" style={{ backgroundColor: '#e6f4f6', borderColor: '#007E8C' }}>
-                        <div className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                          <Info className="h-4 w-4" style={{ color: '#007E8C' }} />
+                      <div className="space-y-3 p-5 rounded-lg border-2" style={{ backgroundColor: '#e6f4f6', borderColor: '#007E8C' }}>
+                        <div className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
+                          <Info className="h-6 w-6" style={{ color: '#007E8C' }} />
                           Planning Notes
                         </div>
-                        <div className="text-gray-700 whitespace-pre-wrap">
+                        <div className="text-gray-800 whitespace-pre-wrap text-base leading-relaxed font-medium">
                           {request.planningNotes}
                         </div>
                       </div>
@@ -318,12 +324,12 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                   </div>
 
                   {/* Sign Up Actions - Large, Prominent Buttons */}
-                  <div className="flex gap-3 pt-4 border-t-2" style={{ borderColor: '#007E8C' }}>
+                  <div className="flex gap-4 pt-6 border-t-4" style={{ borderColor: '#007E8C' }}>
                     {needsSpeaker && (
                       <Button
                         onClick={() => handleSelfSignup(request.id, 'speaker')}
                         disabled={isSpeakerSignedUp || !canSelfSignup('speaker')}
-                        className="flex-1 text-base py-6 font-semibold"
+                        className="flex-1 text-xl py-8 font-bold rounded-lg"
                         style={
                           isSpeakerSignedUp
                             ? { backgroundColor: '#e0e0e0', color: '#666' }
@@ -341,7 +347,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       <Button
                         onClick={() => handleSelfSignup(request.id, 'volunteer')}
                         disabled={isVolunteerSignedUp || !canSelfSignup('volunteer')}
-                        className="flex-1 text-base py-6 font-semibold"
+                        className="flex-1 text-xl py-8 font-bold rounded-lg"
                         style={
                           isVolunteerSignedUp
                             ? { backgroundColor: '#e0e0e0', color: '#666' }
@@ -359,18 +365,18 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
                   {/* Show who else is assigned (if anyone) */}
                   {(request.speakerId || request.volunteerId) && (
-                    <div className="text-sm text-gray-600 pt-2 border-t border-gray-300 bg-gray-50 p-3 rounded">
-                      <div className="flex gap-4">
+                    <div className="text-base text-gray-700 pt-4 border-t-2 border-gray-300 bg-gray-50 p-5 rounded-lg">
+                      <div className="flex gap-6 flex-wrap">
                         {request.speakerId && (
                           <div>
-                            <span className="font-semibold">Speaker:</span>{' '}
-                            {resolveUserName(request.speakerId)}
+                            <span className="font-bold text-lg">Speaker:</span>{' '}
+                            <span className="font-semibold text-lg">{resolveUserName(request.speakerId)}</span>
                           </div>
                         )}
                         {request.volunteerId && (
                           <div>
-                            <span className="font-semibold">Volunteer:</span>{' '}
-                            {resolveUserName(request.volunteerId)}
+                            <span className="font-bold text-lg">Volunteer:</span>{' '}
+                            <span className="font-semibold text-lg">{resolveUserName(request.volunteerId)}</span>
                           </div>
                         )}
                       </div>
