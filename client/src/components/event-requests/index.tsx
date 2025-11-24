@@ -260,6 +260,9 @@ const EventRequestsManagementContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // State for volunteer opportunities dialog
+  const [showVolunteerOpportunities, setShowVolunteerOpportunities] = useState(false);
+
   // Memoize tab children to prevent recreation on every render
   const tabChildren = useMemo(() => {
     const tabs: any = {
@@ -270,7 +273,6 @@ const EventRequestsManagementContent: React.FC = () => {
       declined: <DeclinedTab />,
       postponed: <PostponedTab />,
       my_assignments: <MyAssignmentsTab />,
-      volunteer_opportunities: <VolunteerOpportunitiesTab />,
     };
 
     // Add admin overview tab for users with permission (support both old and new permission strings)
@@ -404,6 +406,14 @@ const EventRequestsManagementContent: React.FC = () => {
               </p>
             </div>
             <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-3 flex-wrap'}`}>
+              <button
+                onClick={() => setShowVolunteerOpportunities(true)}
+                className="premium-btn-primary"
+                style={{ backgroundColor: '#007E8C' }}
+              >
+                <Users className="w-4 h-4" />
+                {isMobile ? 'Opportunities' : 'Volunteer Opportunities'}
+              </button>
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
@@ -1028,6 +1038,26 @@ const EventRequestsManagementContent: React.FC = () => {
                 Close Sandwich Planning
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Volunteer Opportunities Dialog */}
+        <Dialog
+          open={showVolunteerOpportunities}
+          onOpenChange={setShowVolunteerOpportunities}
+        >
+          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold flex items-center gap-3" style={{ color: '#007E8C' }}>
+                <Users className="w-6 h-6" />
+                Volunteer Opportunities
+              </DialogTitle>
+              <DialogDescription>
+                Sign up to speak or volunteer at upcoming events
+              </DialogDescription>
+            </DialogHeader>
+
+            <VolunteerOpportunitiesTab />
           </DialogContent>
         </Dialog>
 
