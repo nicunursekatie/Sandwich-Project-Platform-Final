@@ -1,7 +1,6 @@
 import { Router, Response } from 'express';
 import { isAuthenticated } from '../auth';
 import { storage } from '../storage-wrapper';
-import logger from '../utils/logger';
 import { z } from 'zod';
 import { insertMeetingNoteSchema, type MeetingNote } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';

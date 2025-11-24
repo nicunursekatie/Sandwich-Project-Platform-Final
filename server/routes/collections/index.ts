@@ -7,7 +7,6 @@ import {
   requirePermission,
   requireOwnershipPermission,
 } from '../../middleware/auth';
-import { logger } from '../../middleware/logger';
 import { upload } from '../../middleware/uploads';
 import { QueryOptimizer } from '../../performance/query-optimizer';
 import { insertSandwichCollectionSchema } from '@shared/schema';
