@@ -679,6 +679,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       }
 
                       const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                      const loggedByName = attempt.loggedByName;
+                      const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
 
                       return (
                         <div
@@ -715,6 +717,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                 )}
                                 {userName && userName !== 'unknown' && userName !== 'system' && (
                                   <span>• by {userName}</span>
+                                )}
+                                {showLoggedBy && (
+                                  <span className="text-gray-400 italic">
+                                    (logged by {loggedByName})
+                                  </span>
                                 )}
                               </div>
                             </div>
