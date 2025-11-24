@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
 import { EventCalendarView } from '@/components/event-calendar-view';
+import { VolunteerOpportunitiesMap } from './VolunteerOpportunitiesMap';
 
 export const VolunteerOpportunitiesTab: React.FC = () => {
   const { user } = useAuth();
@@ -66,7 +67,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden max-w-full">
       {/* View Mode and Role Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* View Toggle */}
@@ -145,6 +146,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       {viewMode === 'calendar' ? (
         <div className="bg-white rounded-lg p-4">
           <EventCalendarView
+            events={opportunities}
+            filterByNeeds={true}
             onEventClick={(event) => {
               // Scroll to card in card view
               setViewMode('card');
@@ -158,28 +161,21 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
           />
         </div>
       ) : viewMode === 'map' ? (
-        <Card className="bg-gray-50">
-          <CardContent className="py-12 text-center">
-            <MapIcon className="mx-auto h-20 w-20 text-[#007E8C] mb-6" />
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Map View</h3>
-            <p className="text-xl text-gray-600 font-medium mb-4">
-              View volunteer opportunities on a map to see events in your area
-            </p>
-            <p className="text-lg text-gray-500">
-              {opportunities.length} opportunity{opportunities.length !== 1 ? 'ies' : ''} available
-            </p>
-            {opportunities.some(o => !o.eventAddress) && (
-              <div className="mt-6 p-5 bg-amber-50 border-2 border-amber-300 rounded-lg max-w-md mx-auto">
-                <p className="text-base text-amber-900 font-medium">
-                  Note: Some events don't have addresses and won't appear on the map
-                </p>
-              </div>
-            )}
-            <div className="mt-8 text-lg text-gray-500 font-medium">
-              Map integration coming soon! For now, use Card or Calendar view.
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg overflow-hidden" style={{ height: '600px' }}>
+          <VolunteerOpportunitiesMap
+            events={opportunities}
+            onEventClick={(event) => {
+              // Scroll to card in card view
+              setViewMode('card');
+              setTimeout(() => {
+                const cardElement = document.querySelector(`[data-event-id="${event.id}"]`);
+                if (cardElement) {
+                  cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 100);
+            }}
+          />
+        </div>
       ) : opportunities.length === 0 ? (
         <Card className="bg-gray-50">
           <CardContent className="py-12 text-center">
@@ -206,14 +202,14 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
               <Card
                 key={request.id}
                 data-event-id={request.id}
-                className="hover:shadow-lg transition-shadow border-2"
+                className="hover:shadow-lg transition-shadow border-2 max-w-full overflow-hidden"
                 style={{ borderColor: '#007E8C', backgroundColor: '#f0f9fa' }}
               >
                 <CardContent className="p-8 space-y-6">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-4 pb-4 border-b-4" style={{ borderColor: '#007E8C' }}>
-                    <div className="flex-1">
-                      <h3 className="text-3xl font-bold leading-tight" style={{ color: '#1A2332' }}>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-3xl font-bold leading-tight break-words" style={{ color: '#1A2332' }}>
                         {request.organizationName}
                         {request.department && (
                           <span className="text-xl text-gray-600 font-medium ml-3">
@@ -260,20 +256,20 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                     {request.location && (
                       <div className="flex items-start gap-4">
                         <MapPin className="h-7 w-7 mt-1 flex-shrink-0" style={{ color: '#007E8C' }} />
-                        <div className="text-gray-900 font-semibold text-lg">{request.location}</div>
+                        <div className="text-gray-900 font-semibold text-lg break-words">{request.location}</div>
                       </div>
                     )}
 
                     <div className="flex items-start gap-4">
                       <Sandwich className="h-7 w-7 mt-1 flex-shrink-0" style={{ color: '#007E8C' }} />
-                      <div className="text-gray-900 font-semibold text-lg">{getSandwichSummary(request)}</div>
+                      <div className="text-gray-900 font-semibold text-lg break-words">{getSandwichSummary(request)}</div>
                     </div>
                   </div>
 
                   {/* Two Column Layout for Contact and Planning Notes */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 min-w-0">
                     {/* Contact Info */}
-                    <div className="space-y-3 text-gray-700 p-5 bg-white rounded-lg border-2 border-gray-300">
+                    <div className="space-y-3 text-gray-700 p-5 bg-white rounded-lg border-2 border-gray-300 min-w-0">
                       <div className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
                         <User className="h-6 w-6" />
                         Contact Info
@@ -311,12 +307,12 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
                     {/* Planning Notes */}
                     {request.planningNotes && (
-                      <div className="space-y-3 p-5 rounded-lg border-2" style={{ backgroundColor: '#e6f4f6', borderColor: '#007E8C' }}>
+                      <div className="space-y-3 p-5 rounded-lg border-2 min-w-0" style={{ backgroundColor: '#e6f4f6', borderColor: '#007E8C' }}>
                         <div className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
                           <Info className="h-6 w-6" style={{ color: '#007E8C' }} />
                           Planning Notes
                         </div>
-                        <div className="text-gray-800 whitespace-pre-wrap text-base leading-relaxed font-medium">
+                        <div className="text-gray-800 whitespace-pre-wrap break-words text-base leading-relaxed font-medium">
                           {request.planningNotes}
                         </div>
                       </div>

@@ -29,6 +29,8 @@ import {
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
+  events?: EventRequest[]; // Optional: pre-filtered events (e.g., only volunteer opportunities)
+  filterByNeeds?: boolean; // If true, only show events that need speakers or volunteers
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -178,7 +180,7 @@ const getSandwichInfo = (event: EventRequest) => {
   return sandwichInfo;
 };
 
-export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
+export function EventCalendarView({ onEventClick, events: providedEvents, filterByNeeds = false }: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<string[]>([
@@ -189,15 +191,32 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
     'cancelled',
   ]);
 
-  // Fetch all event requests
-  const { data: events = [] } = useQuery<EventRequest[]>({
+  // Fetch all event requests if not provided
+  const { data: fetchedEvents = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
+    enabled: !providedEvents, // Only fetch if events aren't provided
   });
 
-  // Filter events by selected statuses
+  // Use provided events or fetched events
+  const events = providedEvents || fetchedEvents;
+
+  // Filter events by selected statuses and optionally by speaker/volunteer needs
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => statusFilters.includes(event.status));
-  }, [events, statusFilters]);
+    let filtered = events.filter((event) => statusFilters.includes(event.status));
+    
+    // If filterByNeeds is true, only show events that need speakers or volunteers
+    if (filterByNeeds) {
+      filtered = filtered.filter((event) => {
+        const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '' || 
+          (event.speakersNeeded && event.speakersNeeded > 0);
+        const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '' ||
+          (event.volunteersNeeded && event.volunteersNeeded > 0);
+        return needsSpeaker || needsVolunteer;
+      });
+    }
+    
+    return filtered;
+  }, [events, statusFilters, filterByNeeds]);
 
   const toggleStatusFilter = (status: string) => {
     setStatusFilters((prev) =>
