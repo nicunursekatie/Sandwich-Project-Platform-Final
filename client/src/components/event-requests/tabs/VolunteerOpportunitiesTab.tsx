@@ -63,7 +63,14 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     if (!request.sandwichTypes) return 'Not specified';
     const types = parseSandwichTypes(request.sandwichTypes);
     const total = types.reduce((sum, type) => sum + type.quantity, 0);
-    return `${total} sandwiches (${types.map(t => `${t.quantity} ${t.type}`).join(', ')})`;
+
+    // If only one type, just show "200 deli"
+    if (types.length === 1) {
+      return `${types[0].quantity} ${types[0].type}`;
+    }
+
+    // If multiple types, show breakdown with total: "100 deli, 100 veggie (200 total)"
+    return `${types.map(t => `${t.quantity} ${t.type}`).join(', ')} (${total} total)`;
   };
 
   return (
