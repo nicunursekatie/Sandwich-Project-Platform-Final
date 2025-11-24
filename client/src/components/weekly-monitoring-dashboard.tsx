@@ -661,8 +661,8 @@ export default function WeeklyMonitoringDashboard() {
             <Button
               onClick={() => {
                 const missingLocations = submissionStatus
-                  .filter((s) => !s.hasSubmitted)
-                  .map((s) => s.location);
+                  .filter((s: WeeklySubmissionStatus) => !s.hasSubmitted)
+                  .map((s: WeeklySubmissionStatus) => s.location);
                 if (missingLocations.length > 0) {
                   sendSMSRemindersMutation.mutate({
                     missingLocations,
@@ -673,7 +673,7 @@ export default function WeeklyMonitoringDashboard() {
               variant="outline"
               disabled={
                 sendSMSRemindersMutation.isPending ||
-                !submissionStatus.some((s) => !s.hasSubmitted)
+                !submissionStatus.some((s: WeeklySubmissionStatus) => !s.hasSubmitted)
               }
               className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-green-700 border-green-200 hover:bg-green-50 px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
             >
@@ -942,7 +942,7 @@ export default function WeeklyMonitoringDashboard() {
                   <div className="text-sm text-gray-600">
                     <p>Missing environment variables:</p>
                     <ul className="list-disc list-inside mt-1">
-                      {smsConfig?.missingItems?.map((item) => (
+                      {smsConfig?.missingItems?.map((item: string) => (
                         <li key={item} className="font-mono text-xs">
                           {item}
                         </li>
@@ -1072,6 +1072,7 @@ export default function WeeklyMonitoringDashboard() {
                 <MapPin className="h-5 w-5" />
                 Host Location Status - {getWeekLabel(selectedWeek)}
               </CardTitle>
+            </CardHeader>
             <CardContent>
               {statusLoading ? (
                 <div className="flex items-center justify-center py-8">
