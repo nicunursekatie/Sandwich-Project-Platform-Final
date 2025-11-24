@@ -100,14 +100,12 @@ export default function LogContactAttemptDialog({
 
     setIsSubmitting(true);
     try {
-      const currentAttempts = eventRequest.contactAttempts || 0;
-      const attemptNumber = currentAttempts + 1;
-
       // Use custom date/time or current time
       const contactDate = customDateTime ? new Date(customDateTime) : new Date();
 
       // Build structured contact attempt log (new format only)
       const existingLog = eventRequest.contactAttemptsLog || [];
+
       // Build user name with proper fallback logic
       let createdByName: string | undefined;
       if (user?.displayName) {
@@ -121,9 +119,10 @@ export default function LogContactAttemptDialog({
       } else {
         createdByName = 'Unknown User';
       }
-      
+
+      // Create new attempt without attemptNumber (will be assigned after sorting)
       const newAttempt = {
-        attemptNumber,
+        attemptNumber: 0, // Placeholder, will be updated after sorting
         timestamp: contactDate.toISOString(),
         method: contactMethod,
         outcome: contactOutcome,
@@ -131,11 +130,41 @@ export default function LogContactAttemptDialog({
         createdBy: user?.id || 'unknown',
         createdByName,
       };
-      const updatedLog = [...existingLog, newAttempt];
+
+      // Add new attempt to existing log
+      const allAttempts = [...existingLog, newAttempt];
+
+      // Sort all attempts by timestamp (chronological order, oldest first)
+      allAttempts.sort((a, b) => {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        return dateA - dateB;
+      });
+
+      // Renumber attempts sequentially based on chronological order
+      const updatedLog = allAttempts.map((attempt, index) => ({
+        ...attempt,
+        attemptNumber: index + 1,
+      }));
+
+      // Find the most recent contact attempt (last in sorted array)
+      const mostRecentAttempt = updatedLog[updatedLog.length - 1];
+      const lastContactAttempt = mostRecentAttempt.timestamp;
+
+      // Total count is the length of the array
+      const totalAttempts = updatedLog.length;
+
+      // Find which attempt number was assigned to the newly added attempt
+      const addedAttemptIndex = updatedLog.findIndex(
+        (attempt) => attempt.timestamp === contactDate.toISOString() &&
+        attempt.method === contactMethod &&
+        attempt.outcome === contactOutcome
+      );
+      const addedAttemptNumber = addedAttemptIndex !== -1 ? addedAttemptIndex + 1 : totalAttempts;
 
       await onLogContact({
-        contactAttempts: attemptNumber,
-        lastContactAttempt: contactDate.toISOString(),
+        contactAttempts: totalAttempts,
+        lastContactAttempt: lastContactAttempt,
         contactMethod,
         contactOutcome,
         contactAttemptsLog: updatedLog,
@@ -145,7 +174,7 @@ export default function LogContactAttemptDialog({
       const methodLabel = CONTACT_METHODS.find(m => m.value === contactMethod)?.label || contactMethod;
       toast({
         title: 'Contact attempt logged',
-        description: `Logged attempt #${attemptNumber} via ${methodLabel}`,
+        description: `Logged attempt #${addedAttemptNumber} via ${methodLabel}`,
       });
 
       // Reset form
