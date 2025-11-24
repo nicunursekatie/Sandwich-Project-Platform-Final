@@ -510,6 +510,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showContactAttempts, setShowContactAttempts] = useState(false);
   const { user } = useAuth();
 
   // Collaboration hook for comments
@@ -591,7 +592,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {headerContent.eventDate}
             {/* Contact Attempts Info */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 {(request.contactAttempts || request.lastContactAttempt) && (
                   <div className="flex items-center gap-2 text-amber-800">
                     <Phone className="w-4 h-4" />
@@ -607,16 +608,122 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     )}
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onLogContact}
-                  className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
-                >
-                  <Phone className="w-3 h-3" />
-                  Log Contact
-                </Button>
+                <div className="flex items-center gap-2">
+                  {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowContactAttempts(!showContactAttempts)}
+                      className="h-7 text-xs flex items-center gap-1 text-amber-800 hover:bg-amber-100"
+                    >
+                      {showContactAttempts ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {showContactAttempts ? 'Hide' : 'Show'} Details
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onLogContact}
+                    className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Log Contact
+                  </Button>
+                </div>
               </div>
+
+              {/* Contact Attempts Details */}
+              {showContactAttempts && Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
+                  {request.contactAttemptsLog
+                    .slice()
+                    .sort((a, b) => {
+                      // Sort by attemptNumber descending (most recent first)
+                      return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                    })
+                    .map((attempt: any) => {
+                      if (!attempt || typeof attempt !== 'object') return null;
+
+                      const methodIcons = {
+                        phone: <Phone className="w-3 h-3" />,
+                        email: <Mail className="w-3 h-3" />,
+                        both: <MessageSquare className="w-3 h-3" />,
+                      };
+
+                      const methodLabels = {
+                        phone: 'Phone',
+                        email: 'Email',
+                        both: 'Phone & Email',
+                      };
+
+                      const outcomeLabels: { [key: string]: string } = {
+                        successful: 'Successfully contacted - Got response',
+                        no_answer: 'No answer - No response',
+                        left_message: 'Left voicemail/message',
+                        wrong_number: 'Wrong/disconnected number',
+                        email_bounced: 'Email bounced/failed',
+                        requested_callback: 'Requested callback/follow-up',
+                        other: 'Other',
+                      };
+
+                      let parsedDate: Date | undefined;
+                      if (attempt.timestamp) {
+                        try {
+                          parsedDate = new Date(attempt.timestamp);
+                          if (isNaN(parsedDate.getTime())) {
+                            parsedDate = undefined;
+                          }
+                        } catch (e) {
+                          parsedDate = undefined;
+                        }
+                      }
+
+                      const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+
+                      return (
+                        <div
+                          key={attempt.attemptNumber || attempt.timestamp}
+                          className="bg-white rounded p-2 border border-amber-200 text-sm"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-amber-900">
+                                  Attempt #{attempt.attemptNumber || '?'}
+                                </span>
+                                {attempt.method && (
+                                  <div className="flex items-center gap-1 text-amber-700">
+                                    {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                    <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {attempt.outcome && (
+                                <div className="text-xs text-gray-700 mb-1">
+                                  <span className="font-medium">Outcome:</span>{' '}
+                                  {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                </div>
+                              )}
+                              {attempt.notes && (
+                                <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
+                                  {attempt.notes}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                {parsedDate && (
+                                  <span>{parsedDate.toLocaleString()}</span>
+                                )}
+                                {userName && userName !== 'unknown' && userName !== 'system' && (
+                                  <span>• by {userName}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
 
             {/* Scheduled Call Info */}
