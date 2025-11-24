@@ -64,8 +64,15 @@ const createClusterCustomIcon = (cluster: any) => {
 
 // Popup content for volunteer opportunities
 const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventRequest; onEventClick?: (event: EventRequest) => void }) => {
-  const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '';
-  const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
+  // Check if event actually needs speakers and if one is not assigned
+  const speakersNeeded = (event.speakersNeeded ?? 0) > 0;
+  const speakerNotAssigned = !event.speakerId || event.speakerId === null || event.speakerId === '';
+  const needsSpeaker = speakersNeeded && speakerNotAssigned;
+
+  // Check if event actually needs volunteers and if one is not assigned
+  const volunteersNeeded = (event.volunteersNeeded ?? 0) > 0;
+  const volunteerNotAssigned = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
+  const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
   
   const getEventDate = (evt: EventRequest) => {
     const date = evt.scheduledEventDate || evt.desiredEventDate;
@@ -157,8 +164,15 @@ function EventMarker({
   event: EventRequest;
   onEventClick?: (event: EventRequest) => void;
 }) {
-  const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '';
-  const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
+  // Check if event actually needs speakers and if one is not assigned
+  const speakersNeeded = (event.speakersNeeded ?? 0) > 0;
+  const speakerNotAssigned = !event.speakerId || event.speakerId === null || event.speakerId === '';
+  const needsSpeaker = speakersNeeded && speakerNotAssigned;
+
+  // Check if event actually needs volunteers and if one is not assigned
+  const volunteersNeeded = (event.volunteersNeeded ?? 0) > 0;
+  const volunteerNotAssigned = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
+  const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
 
   // Use different marker colors based on what's needed
   const markerColor = needsSpeaker && needsVolunteer 

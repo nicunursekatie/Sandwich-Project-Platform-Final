@@ -31,15 +31,21 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   // Filter events that need volunteers or speakers
   const opportunities = useMemo(() => {
     return scheduledRequests.filter((request: EventRequest) => {
-      // Check if roles are actually missing
-      const needsSpeaker = !request.speakerId || request.speakerId === null || request.speakerId === '';
-      const needsVolunteer = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
+      // Check if event actually needs speakers (speakersNeeded > 0) and if one is not assigned
+      const speakersNeeded = (request.speakersNeeded ?? 0) > 0;
+      const speakerNotAssigned = !request.speakerId || request.speakerId === null || request.speakerId === '';
+      const needsSpeaker = speakersNeeded && speakerNotAssigned;
+
+      // Check if event actually needs volunteers (volunteersNeeded > 0) and if one is not assigned
+      const volunteersNeeded = (request.volunteersNeeded ?? 0) > 0;
+      const volunteerNotAssigned = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
+      const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
 
       // Filter by role selection
       if (roleFilter === 'speaker' && !needsSpeaker) return false;
       if (roleFilter === 'volunteer' && !needsVolunteer) return false;
 
-      // Show if either role is needed
+      // Show if either role is needed (both the need exists AND it's not filled)
       return needsSpeaker || needsVolunteer;
     });
   }, [scheduledRequests, roleFilter]);
@@ -200,8 +206,16 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {opportunities.map((request: EventRequest) => {
-            const needsSpeaker = !request.speakerId || request.speakerId === null || request.speakerId === '';
-            const needsVolunteer = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
+            // Check if event actually needs speakers and if one is not assigned
+            const speakersNeeded = (request.speakersNeeded ?? 0) > 0;
+            const speakerNotAssigned = !request.speakerId || request.speakerId === null || request.speakerId === '';
+            const needsSpeaker = speakersNeeded && speakerNotAssigned;
+
+            // Check if event actually needs volunteers and if one is not assigned
+            const volunteersNeeded = (request.volunteersNeeded ?? 0) > 0;
+            const volunteerNotAssigned = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
+            const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
+
             const isSpeakerSignedUp = request.speakerId === user?.id;
             const isVolunteerSignedUp = request.volunteerId === user?.id;
 
