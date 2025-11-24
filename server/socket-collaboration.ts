@@ -597,7 +597,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         };
 
         // Broadcast lock acquisition
-        collaboration.to(getLocksRoomName(eventRequestId)).emit('lock-acquired', lock);
+        collaboration.to(getLocksRoomName(eventRequestId)).emit('lock-acquired', {
+          eventRequestId,
+          lock,
+        });
 
         // Send callback response
         if (callback) {
