@@ -50,6 +50,8 @@ const createItemSchema = insertTeamBoardItemSchema
     isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
     details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
     dueDate: z.string().datetime().optional().nullable(), // Optional due date
+    assignedTo: z.array(z.string()).nullable().optional(), // Allow assignment on creation
+    assignedToNames: z.array(z.string()).nullable().optional(), // Allow assignment names on creation
   });
 
 const updateItemSchema = z.object({
@@ -283,8 +285,8 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       createdBy: req.user.id,
       createdByName: displayName,
       status: 'open',
-      assignedTo: null,
-      assignedToNames: null,
+      assignedTo: itemData.assignedTo ?? null,
+      assignedToNames: itemData.assignedToNames ?? null,
       completedAt: null,
       categoryId: itemData.categoryId ?? null,
       isUrgent: itemData.isUrgent ?? false,

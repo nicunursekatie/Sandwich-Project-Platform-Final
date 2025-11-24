@@ -1072,7 +1072,6 @@ export default function WeeklyMonitoringDashboard() {
                 <MapPin className="h-5 w-5" />
                 Host Location Status - {getWeekLabel(selectedWeek)}
               </CardTitle>
-            </CardHeader>
             <CardContent>
               {statusLoading ? (
                 <div className="flex items-center justify-center py-8">
