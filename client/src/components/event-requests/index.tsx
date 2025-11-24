@@ -1046,7 +1046,7 @@ const EventRequestsManagementContent: React.FC = () => {
           open={showVolunteerOpportunities}
           onOpenChange={setShowVolunteerOpportunities}
         >
-          <DialogContent className="w-[98vw] max-w-[1800px] max-h-[95vh] flex flex-col overflow-hidden p-0">
+          <DialogContent className="w-[95vw] max-w-[2400px] max-h-[95vh] flex flex-col overflow-hidden p-0">
             <div className="px-8 pt-8 pb-4">
               <DialogHeader>
                 <DialogTitle className="text-3xl font-bold flex items-center gap-4 mb-2" style={{ color: '#007E8C' }}>
