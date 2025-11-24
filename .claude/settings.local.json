@@ -11,7 +11,8 @@
       "Bash(npm run dev:*)",
       "Bash(npx tsx:*)",
       "Bash(taskkill:*)",
-      "Bash(set PORT=5001)"
+      "Bash(set PORT=5001)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
