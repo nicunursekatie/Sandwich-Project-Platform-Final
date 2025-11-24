@@ -459,6 +459,46 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return; // Stop submission until user responds
     }
 
+    // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
+    let totalRelevantSandwiches = 0;
+    
+    // Check sandwich types mode
+    if (sandwichMode === 'types' && formData.sandwichTypes && formData.sandwichTypes.length > 0) {
+      totalRelevantSandwiches = formData.sandwichTypes
+        .filter((item: { type: string; quantity: number }) => {
+          const typeLower = item.type.toLowerCase();
+          // Check for deli (includes deli_turkey, deli_ham, etc.), turkey (standalone), or unknown
+          return (
+            typeLower === 'deli' ||
+            typeLower.includes('deli') ||
+            typeLower === 'turkey' ||
+            typeLower === 'deli_turkey' ||
+            typeLower === 'unknown'
+          );
+        })
+        .reduce((sum: number, item: { type: string; quantity: number }) => sum + item.quantity, 0);
+    } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
+      // If using total mode and >500, we can't determine types, so check if speakers are needed
+      // This is a conservative check - we'll require speakers if total >500
+      totalRelevantSandwiches = formData.totalSandwichCount;
+    } else if (sandwichMode === 'range') {
+      // For range mode, check the max value
+      const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
+      if (maxCount > 500) {
+        // Can't determine types in range mode, so conservatively require speakers if max >500
+        totalRelevantSandwiches = maxCount;
+      }
+    }
+    
+    if (totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      toast({
+        title: 'Speaker Required',
+        description: 'Events with more than 500 deli, turkey, or unknown type sandwiches must have at least 1 speaker. Please set "How many speakers needed?" to at least 1.',
+        variant: 'destructive',
+      });
+      return; // Stop submission
+    }
+
     // All fields are optional - no validation required
 
     // Construct data explicitly without client-only fields
