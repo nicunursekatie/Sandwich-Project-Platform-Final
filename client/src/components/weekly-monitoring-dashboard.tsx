@@ -536,13 +536,13 @@ export default function WeeklyMonitoringDashboard() {
 
   // Email reminder mutations
   const sendSingleEmailMutation = useMutation({
-    mutationFn: (data: { location: string; appUrl?: string }) =>
+    mutationFn: (data: { location: string; appUrl?: string; subject?: string; body?: string }) =>
       apiRequest(
         'POST',
         `/api/monitoring/send-email-reminder?location=${encodeURIComponent(
           data.location
         )}`,
-        { appUrl: data.appUrl }
+        { appUrl: data.appUrl, subject: data.subject, body: data.body }
       ),
     onMutate: (data) => {
       setEmailingSingleLocation(data.location);
@@ -1083,7 +1083,7 @@ export default function WeeklyMonitoringDashboard() {
                 </div>
               ) : statusError ? (
                 <div className="text-center py-8 text-red-500">
-                  Error loading submission data: {statusError.message}
+                  Error loading submission data: {(statusError as Error)?.message || String(statusError)}
                 </div>
               ) : Array.isArray(submissionStatus) &&
                 submissionStatus.length > 0 ? (
