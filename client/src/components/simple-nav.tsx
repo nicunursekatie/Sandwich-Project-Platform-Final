@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
+import type { UserForPermissions } from '@shared/types';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -75,7 +76,15 @@ export default function SimpleNav({
       if (!item.permission) {
         return true;
       }
-      return hasPermission(user, item.permission);
+      // Cast user to UserForPermissions to satisfy type requirements
+      const userForPermissions: UserForPermissions | null | undefined = user ? {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        permissions: (user.permissions as string[] | number | null | undefined) ?? null,
+        isActive: user.isActive,
+      } : null;
+      return hasPermission(userForPermissions, item.permission);
     });
 
     // Toggle section collapse

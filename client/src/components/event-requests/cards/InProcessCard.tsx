@@ -196,7 +196,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           </h3>
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
-            onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+            onClick={() => {
+              startEditing?.('isConfirmed', (!request.isConfirmed).toString());
+              // Immediately save the toggle
+              setTimeout(() => saveEdit?.(), 0);
+            }}
             className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
               request.isConfirmed
                 ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
