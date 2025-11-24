@@ -1046,13 +1046,13 @@ const EventRequestsManagementContent: React.FC = () => {
           open={showVolunteerOpportunities}
           onOpenChange={setShowVolunteerOpportunities}
         >
-          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[98vw] max-w-[1600px] max-h-[95vh] overflow-y-auto p-8">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold flex items-center gap-3" style={{ color: '#007E8C' }}>
-                <Users className="w-6 h-6" />
+              <DialogTitle className="text-3xl font-bold flex items-center gap-4 mb-2" style={{ color: '#007E8C' }}>
+                <Users className="w-8 h-8" />
                 Volunteer Opportunities
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-lg font-medium">
                 Sign up to speak or volunteer at upcoming events
               </DialogDescription>
             </DialogHeader>
