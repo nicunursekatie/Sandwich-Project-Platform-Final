@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
+import { clearFailedImportsCache } from '@/lib/lazy-with-retry';
 
 interface Props {
   children: ReactNode;
@@ -37,6 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReload = () => {
+    // Clear the failed imports cache to allow fresh retry attempts
+    clearFailedImportsCache();
     this.setState({ hasError: false, error: undefined });
   };
 
@@ -57,8 +60,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 Something went wrong
               </CardTitle>
               <CardDescription>
-                We encountered an unexpected error. Please try refreshing the
-                page.
+                There was an issue loading this section. This is often caused by
+                temporary network issues. Please try again.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
