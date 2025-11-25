@@ -456,6 +456,17 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                 {/* Edit/Delete buttons for contact attempts */}
                 {item.type === 'contact' && (item.canEdit || item.canDelete) && (
                   <div className="flex gap-2 ml-6 mt-2">
+                    {item.canEdit && onEditContactAttempt && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[#007E8C] hover:text-[#006B75] hover:bg-[#007E8C]/10"
+                        onClick={() => item.attemptNumber && onEditContactAttempt(item.attemptNumber)}
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
                     {item.canDelete && onDeleteContactAttempt && (
                       <Button
                         size="sm"

@@ -41,6 +41,7 @@ import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import LogContactAttemptDialog from '@/components/LogContactAttemptDialog';
+import EditContactAttemptDialog from '@/components/EditContactAttemptDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
@@ -115,6 +116,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowStaffingPlanningModal,
     showLogContactDialog,
     setShowLogContactDialog,
+    showEditContactDialog,
+    setShowEditContactDialog,
     showAiDateSuggestionDialog,
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
@@ -147,6 +150,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setTspContactEventRequest,
     logContactEventRequest,
     setLogContactEventRequest,
+    editContactEventRequest,
+    setEditContactEventRequest,
+    editContactAttemptData,
+    setEditContactAttemptData,
     aiSuggestionEventRequest,
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,
@@ -653,6 +660,25 @@ const EventRequestsManagementContent: React.FC = () => {
             if (!logContactEventRequest) return;
             await updateEventRequestMutation.mutateAsync({
               id: logContactEventRequest.id,
+              data,
+            });
+          }}
+        />
+
+        {/* Edit Contact Attempt Dialog */}
+        <EditContactAttemptDialog
+          isOpen={showEditContactDialog}
+          onClose={() => {
+            setShowEditContactDialog(false);
+            setEditContactEventRequest(null);
+            setEditContactAttemptData(null);
+          }}
+          eventRequest={editContactEventRequest}
+          contactAttempt={editContactAttemptData}
+          onEditContact={async (data) => {
+            if (!editContactEventRequest) return;
+            await updateEventRequestMutation.mutateAsync({
+              id: editContactEventRequest.id,
               data,
             });
           }}
