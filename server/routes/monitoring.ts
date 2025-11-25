@@ -363,6 +363,171 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Get collection trends (individuals vs groups) for date range
+router.get('/collection-trends', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate query parameters are required' });
+    }
+
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    // Get all collections within the date range
+    const allCollections = await storage.getSandwichCollections(10000, 0);
+
+    // Filter collections within the date range
+    const filteredCollections = allCollections.filter((c: any) => {
+      const collDate = new Date(c.collectionDate);
+      return collDate >= start && collDate <= end && !c.deletedAt;
+    });
+
+    // Helper function to get week start (Wednesday) for a given date
+    const getWeekStart = (date: Date): Date => {
+      const d = new Date(date);
+      const dayOfWeek = d.getDay();
+      // Wednesday is day 3
+      let daysToWednesday;
+      if (dayOfWeek >= 3) {
+        daysToWednesday = dayOfWeek - 3;
+      } else {
+        daysToWednesday = dayOfWeek + 4; // Days since last Wednesday
+      }
+      d.setDate(d.getDate() - daysToWednesday);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    // Group collections by week
+    const weeklyData: Map<string, { weekStart: Date; individualTotal: number; groupTotal: number }> = new Map();
+
+    for (const collection of filteredCollections) {
+      const collDate = new Date(collection.collectionDate);
+      const weekStart = getWeekStart(collDate);
+      const weekKey = weekStart.toISOString().split('T')[0];
+
+      if (!weeklyData.has(weekKey)) {
+        weeklyData.set(weekKey, {
+          weekStart,
+          individualTotal: 0,
+          groupTotal: 0,
+        });
+      }
+
+      const weekData = weeklyData.get(weekKey)!;
+
+      // Add individual sandwiches
+      weekData.individualTotal += collection.individualSandwiches || 0;
+
+      // Add group sandwiches from groupCollections JSONB array
+      if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+        for (const group of collection.groupCollections) {
+          weekData.groupTotal += group.count || group.sandwichCount || 0;
+        }
+      }
+
+      // Also add legacy group counts if they exist
+      weekData.groupTotal += collection.group1Count || 0;
+      weekData.groupTotal += collection.group2Count || 0;
+    }
+
+    // Convert to array and sort by week
+    const trends = Array.from(weeklyData.values())
+      .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime())
+      .map((data) => {
+        const weekEnd = new Date(data.weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          weekLabel: `${data.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          weekStart: data.weekStart.toISOString().split('T')[0],
+          weekEnd: weekEnd.toISOString().split('T')[0],
+          individualTotal: data.individualTotal,
+          groupTotal: data.groupTotal,
+          total: data.individualTotal + data.groupTotal,
+        };
+      });
+
+    res.json({
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+      weekCount: trends.length,
+      trends,
+    });
+  } catch (error) {
+    logger.error('Error getting collection trends:', error);
+    res.status(500).json({ error: 'Failed to get collection trends' });
+  }
+});
+
+// Get current week totals for summary card
+router.get('/current-week-totals', async (req, res) => {
+  try {
+    // Calculate current week range (Wednesday to Tuesday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    let daysToWednesday;
+    if (dayOfWeek >= 3) {
+      daysToWednesday = dayOfWeek - 3;
+    } else {
+      daysToWednesday = dayOfWeek + 4;
+    }
+
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToWednesday);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    // Get all collections for this week
+    const allCollections = await storage.getSandwichCollections(10000, 0);
+
+    const weekCollections = allCollections.filter((c: any) => {
+      const collDate = new Date(c.collectionDate);
+      return collDate >= weekStart && collDate <= weekEnd && !c.deletedAt;
+    });
+
+    let individualTotal = 0;
+    let groupTotal = 0;
+
+    for (const collection of weekCollections) {
+      individualTotal += collection.individualSandwiches || 0;
+
+      // Add group sandwiches from groupCollections JSONB array
+      if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+        for (const group of collection.groupCollections) {
+          groupTotal += group.count || group.sandwichCount || 0;
+        }
+      }
+
+      // Also add legacy group counts
+      groupTotal += collection.group1Count || 0;
+      groupTotal += collection.group2Count || 0;
+    }
+
+    res.json({
+      weekLabel: `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      weekStart: weekStart.toISOString().split('T')[0],
+      weekEnd: weekEnd.toISOString().split('T')[0],
+      individualTotal,
+      groupTotal,
+      total: individualTotal + groupTotal,
+      collectionCount: weekCollections.length,
+    });
+  } catch (error) {
+    logger.error('Error getting current week totals:', error);
+    res.status(500).json({ error: 'Failed to get current week totals' });
+  }
+});
+
 // Manual check for current week
 router.post('/check-now', async (req, res) => {
   try {
