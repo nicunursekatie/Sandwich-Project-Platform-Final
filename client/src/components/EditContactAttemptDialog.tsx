@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Phone, Mail, MessageSquare, X, CheckCircle, User } from 'lucide-react';
+import { Phone, Mail, MessageSquare, X, CheckCircle, User, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -54,6 +54,7 @@ interface EditContactAttemptDialogProps {
 const CONTACT_METHODS = [
   { value: 'phone', label: 'Phone', icon: Phone },
   { value: 'email', label: 'Email', icon: Mail },
+  { value: 'text', label: 'Text', icon: MessageCircle },
   { value: 'both', label: 'Phone & Email', icon: MessageSquare },
 ];
 

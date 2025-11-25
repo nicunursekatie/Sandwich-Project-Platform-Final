@@ -32,6 +32,7 @@ import {
   Sparkles,
   MapPin,
   FileText,
+  MessageCircle,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -651,12 +652,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       const methodIcons = {
                         phone: <Phone className="w-3 h-3" />,
                         email: <Mail className="w-3 h-3" />,
+                        text: <MessageCircle className="w-3 h-3" />,
                         both: <MessageSquare className="w-3 h-3" />,
                       };
 
                       const methodLabels = {
                         phone: 'Phone',
                         email: 'Email',
+                        text: 'Text',
                         both: 'Phone & Email',
                       };
 
@@ -864,23 +867,34 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(!showComments)}
-              className="w-full justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto mb-2"
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-gray-600" />
-                <h3 className="text-sm font-semibold">Team Comments</h3>
-                {collaboration.comments && collaboration.comments.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {collaboration.comments.length}
-                  </Badge>
-                )}
-              </div>
-              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold">Team Comments</h3>
+                  {collaboration.comments && collaboration.comments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {collaboration.comments.length}
+                    </Badge>
+                  )}
+                </div>
+                {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowComments(true)}
+                className="ml-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Add Comment
+              </Button>
+            </div>
 
             {showComments && (
               <div className="mt-3 max-h-[500px]">
