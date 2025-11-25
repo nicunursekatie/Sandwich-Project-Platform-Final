@@ -1,0 +1,1 @@
+ALTER TABLE "event_requests" ADD COLUMN "self_transport" boolean DEFAULT false;

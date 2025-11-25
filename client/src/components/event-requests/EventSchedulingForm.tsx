@@ -89,6 +89,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '',
     driversNeeded: 0,
+    selfTransport: false,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
     speakersNeeded: 0,
@@ -297,6 +298,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest?.driversNeeded || 0,
+        selfTransport: eventRequest?.selfTransport || false,
         vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
         speakersNeeded: eventRequest?.speakersNeeded || 0,
         volunteersNeeded: eventRequest?.volunteersNeeded || 0,
@@ -524,8 +526,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       overnightPickupTime: formData.overnightPickupTime || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true :
                         formData.hasRefrigeration === 'false' ? false : null,
-      driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
-      vanDriverNeeded: formData.vanDriverNeeded || false,
+      driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
+      selfTransport: formData.selfTransport || false,
+      vanDriverNeeded: formData.selfTransport ? false : (formData.vanDriverNeeded || false),
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
@@ -1513,28 +1516,58 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             <div className="space-y-3">
               <Label>Driver Requirements</Label>
               <div className="space-y-2">
-                <div>
-                  <Label htmlFor="driversNeeded">How many drivers needed?</Label>
-                  <Input
-                    id="driversNeeded"
-                    type="number"
-                    value={formData.driversNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, driversNeeded: parseInt(e.target.value) || 0 }))}
-                    min="0"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
+                {/* Self-Transport Option */}
+                <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <input
                     type="checkbox"
-                    id="vanDriverNeeded"
-                    checked={formData.vanDriverNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                    id="selfTransport"
+                    checked={formData.selfTransport}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      selfTransport: e.target.checked,
+                      // Clear driver fields when self-transport is enabled
+                      driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
+                      vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
+                    }))}
                   />
-                  <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
+                  <Label htmlFor="selfTransport" className="text-amber-800 font-medium">
+                    Organization Self-Transport
+                  </Label>
                 </div>
+                {formData.selfTransport && (
+                  <p className="text-sm text-amber-700 ml-6">
+                    The organization will transport sandwiches themselves (no TSP driver needed).
+                    Use the Delivery Destination field above to note where they're delivering.
+                  </p>
+                )}
+
+                {/* Driver fields - only show when NOT self-transport */}
+                {!formData.selfTransport && (
+                  <>
+                    <div>
+                      <Label htmlFor="driversNeeded">How many drivers needed?</Label>
+                      <Input
+                        id="driversNeeded"
+                        type="number"
+                        value={formData.driversNeeded}
+                        onChange={(e) => setFormData(prev => ({ ...prev, driversNeeded: parseInt(e.target.value) || 0 }))}
+                        min="0"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="vanDriverNeeded"
+                        checked={formData.vanDriverNeeded}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                      />
+                      <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
+                    </div>
+                  </>
+                )}
                 
-                {/* Van Driver Selection - Only show when van driver is needed */}
-                {formData.vanDriverNeeded && (
+                {/* Van Driver Selection - Only show when van driver is needed and NOT self-transport */}
+                {formData.vanDriverNeeded && !formData.selfTransport && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
                     <Select
