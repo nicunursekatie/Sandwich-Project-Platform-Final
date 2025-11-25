@@ -37,6 +37,10 @@ export default defineConfig({
     minify: 'esbuild', // esbuild is faster than terser and sufficient for most cases
     // Generate sourcemaps for debugging (as separate files)
     sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,
+    // Disable automatic modulePreload to prevent excessive preload warnings
+    // With 72+ lazy-loaded components, preloading all of them causes browser warnings
+    // Let the lazy-with-retry handle on-demand loading instead
+    modulePreload: false,
     // Optimize chunk splitting for better caching
     rollupOptions: {
       output: {
