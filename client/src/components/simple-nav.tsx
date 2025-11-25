@@ -71,8 +71,12 @@ export default function SimpleNav({
       retry: false,
     });
 
-    // Filter navigation items based on user permissions
+    // Filter navigation items based on user permissions and exclude topNav items
     const filteredNavigationItems = navigationItems.filter(item => {
+      // Exclude items marked for top nav
+      if (item.topNav) {
+        return false;
+      }
       if (!item.permission) {
         return true;
       }
