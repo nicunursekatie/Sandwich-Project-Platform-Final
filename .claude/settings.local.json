@@ -13,7 +13,9 @@
       "Bash(taskkill:*)",
       "Bash(set PORT=5001)",
       "Bash(npx tsc:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npx drizzle-kit generate --name add_self_transport)",
+      "Bash(npx drizzle-kit:*)"
     ],
     "deny": [],
     "ask": []

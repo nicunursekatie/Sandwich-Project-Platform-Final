@@ -1036,34 +1036,91 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Attendance */}
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 shrink-0" />
-              {isEditingThisCard && editingField === 'estimatedAttendance' ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    type="number"
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 w-24 bg-white text-gray-900"
-                    placeholder="Attendance"
-                  />
-                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90" aria-label="Save">
-                    <Save className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20" aria-label="Cancel">
-                    <X className="w-3 h-3" aria-hidden="true" />
-                  </Button>
+            <div className="flex items-start gap-2">
+              <Users className="w-5 h-5 shrink-0 mt-0.5" />
+              {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
+                <div className="flex-1 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-300 block mb-1">Adults</label>
+                      <Input
+                        type="number"
+                        value={editingValue.split(',')[0] || ''}
+                        onChange={(e) => {
+                          const parts = editingValue.split(',');
+                          parts[0] = e.target.value;
+                          setEditingValue(parts.join(','));
+                        }}
+                        className="h-8 w-full bg-white text-gray-900"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-300 block mb-1">Teens</label>
+                      <Input
+                        type="number"
+                        value={editingValue.split(',')[1] || ''}
+                        onChange={(e) => {
+                          const parts = editingValue.split(',');
+                          parts[1] = e.target.value;
+                          setEditingValue(parts.join(','));
+                        }}
+                        className="h-8 w-full bg-white text-gray-900"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-300 block mb-1">Kids</label>
+                      <Input
+                        type="number"
+                        value={editingValue.split(',')[2] || ''}
+                        onChange={(e) => {
+                          const parts = editingValue.split(',');
+                          parts[2] = e.target.value;
+                          setEditingValue(parts.join(','));
+                        }}
+                        className="h-8 w-full bg-white text-gray-900"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90" aria-label="Save">
+                      <Save className="w-3 h-3 mr-1" aria-hidden="true" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20" aria-label="Cancel">
+                      <X className="w-3 h-3 mr-1" aria-hidden="true" />
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || '')}>
-                  <span className="text-base font-semibold">
-                    {request.estimatedAttendance ? `${request.estimatedAttendance} people expected` : <span className="text-gray-600 font-medium">No attendance set</span>}
-                  </span>
+                <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`)}>
+                  <div className="text-base font-semibold">
+                    {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) ? (
+                      <div className="flex flex-wrap gap-2">
+                        {request.attendanceAdults ? <span>{request.attendanceAdults} adults</span> : null}
+                        {request.attendanceTeens ? <span>{request.attendanceTeens} teens</span> : null}
+                        {request.attendanceKids ? <span>{request.attendanceKids} kids</span> : null}
+                        <span className="text-gray-300">
+                          ({(request.attendanceAdults || 0) + (request.attendanceTeens || 0) + (request.attendanceKids || 0)} total)
+                        </span>
+                      </div>
+                    ) : request.estimatedAttendance ? (
+                      `${request.estimatedAttendance} people expected`
+                    ) : (
+                      <span className="text-gray-600 font-medium">No attendance set</span>
+                    )}
+                  </div>
                   {canEdit && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={(e) => { e.stopPropagation(); startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || ''); }}
+                      onClick={(e) => { e.stopPropagation(); startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`); }}
                       className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
                       aria-label="Edit attendance"
                     >
@@ -1087,7 +1144,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <div className="space-y-3">
 
                 {/* Drivers */}
-                {(driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
+                {request.selfTransport ? (
+                  // Organization is transporting sandwiches themselves
+                  <div className="flex items-center justify-between py-0.5">
+                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs py-0.5 px-2">
+                      <Car className="w-3 h-3 mr-1" />
+                      Org Self-Transport
+                    </Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          // Clear self-transport and set drivers needed
+                          startEditing('selfTransport', 'false');
+                          setTimeout(() => saveEdit(), 0);
+                        }}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
+                      >
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Change
+                      </Button>
+                    )}
+                  </div>
+                ) : (driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                     {isEditingThisCard && editingField === 'driversNeeded' ? (
@@ -1163,15 +1243,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <div className="flex items-center justify-between py-0.5">
                     <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
                     {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('driversNeeded', '1')}
-                        className="h-5 px-2 text-[#007E8C] text-xs"
-                      >
-                        <Edit2 className="w-3 h-3 mr-0.5" />
-                        Set Need
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('driversNeeded', '1')}
+                          className="h-5 px-2 text-[#007E8C] text-xs"
+                        >
+                          <Edit2 className="w-3 h-3 mr-0.5" />
+                          Set Need
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            startEditing('selfTransport', 'true');
+                            setTimeout(() => saveEdit(), 0);
+                          }}
+                          className="h-5 px-2 text-[#D68319] text-xs"
+                          title="Organization will transport sandwiches themselves"
+                        >
+                          <Car className="w-3 h-3 mr-0.5" />
+                          Self-Transport
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
