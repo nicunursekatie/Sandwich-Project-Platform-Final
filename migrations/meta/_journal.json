@@ -15,6 +15,13 @@
       "when": 1760843088346,
       "tag": "0001_aberrant_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763953362777,
+      "tag": "0002_glorious_purifiers",
+      "breakpoints": true
     }
   ]
 }

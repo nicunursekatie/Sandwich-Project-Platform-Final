@@ -13,7 +13,9 @@ import {
   AlertCircle,
   Mail,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  SquareCheck,
+  MessageSquare
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import * as React from 'react';
@@ -263,7 +265,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           <div className="flex items-center gap-1 mt-1">
             <Clock className="w-3 h-3 text-gray-400" />
             <span className="text-xs text-gray-500">
-              {type === 'event' ? 'Event' : 'Due'} {formatDate(item.dueDate)}
+              Due {formatDate(item.dueDate)}
             </span>
           </div>
         )}
@@ -328,7 +330,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                     )}
                     {dashboardData.counts.tasks > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <CheckSquare className="w-4 h-4 text-[#007E8C]" />
+                        <SquareCheck className="w-4 h-4 text-[#007E8C]" />
                         <span className="text-sm font-semibold text-[#007E8C]">{dashboardData.counts.tasks}</span>
                         <span className="text-sm text-gray-600">Task{dashboardData.counts.tasks !== 1 ? 's' : ''}</span>
                       </div>

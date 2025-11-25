@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   EventRequestProvider,
@@ -13,6 +13,7 @@ import { PostponedTab } from './tabs/PostponedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
+import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
@@ -40,6 +41,7 @@ import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import LogContactAttemptDialog from '@/components/LogContactAttemptDialog';
+import EditContactAttemptDialog from '@/components/EditContactAttemptDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
@@ -114,6 +116,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowStaffingPlanningModal,
     showLogContactDialog,
     setShowLogContactDialog,
+    showEditContactDialog,
+    setShowEditContactDialog,
     showAiDateSuggestionDialog,
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
@@ -146,6 +150,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setTspContactEventRequest,
     logContactEventRequest,
     setLogContactEventRequest,
+    editContactEventRequest,
+    setEditContactEventRequest,
+    editContactAttemptData,
+    setEditContactAttemptData,
     aiSuggestionEventRequest,
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,
@@ -258,6 +266,9 @@ const EventRequestsManagementContent: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // State for volunteer opportunities dialog
+  const [showVolunteerOpportunities, setShowVolunteerOpportunities] = useState(false);
 
   // Memoize tab children to prevent recreation on every render
   const tabChildren = useMemo(() => {
@@ -402,6 +413,14 @@ const EventRequestsManagementContent: React.FC = () => {
               </p>
             </div>
             <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-3 flex-wrap'}`}>
+              <button
+                onClick={() => setShowVolunteerOpportunities(true)}
+                className="premium-btn-primary"
+                style={{ backgroundColor: '#007E8C' }}
+              >
+                <Users className="w-4 h-4" />
+                {isMobile ? 'Opportunities' : 'Volunteer Opportunities'}
+              </button>
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
@@ -641,6 +660,25 @@ const EventRequestsManagementContent: React.FC = () => {
             if (!logContactEventRequest) return;
             await updateEventRequestMutation.mutateAsync({
               id: logContactEventRequest.id,
+              data,
+            });
+          }}
+        />
+
+        {/* Edit Contact Attempt Dialog */}
+        <EditContactAttemptDialog
+          isOpen={showEditContactDialog}
+          onClose={() => {
+            setShowEditContactDialog(false);
+            setEditContactEventRequest(null);
+            setEditContactAttemptData(null);
+          }}
+          eventRequest={editContactEventRequest}
+          contactAttempt={editContactAttemptData}
+          onEditContact={async (data) => {
+            if (!editContactEventRequest) return;
+            await updateEventRequestMutation.mutateAsync({
+              id: editContactEventRequest.id,
               data,
             });
           }}
@@ -1025,6 +1063,30 @@ const EventRequestsManagementContent: React.FC = () => {
               >
                 Close Sandwich Planning
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Volunteer Opportunities Dialog */}
+        <Dialog
+          open={showVolunteerOpportunities}
+          onOpenChange={setShowVolunteerOpportunities}
+        >
+          <DialogContent className="w-[95vw] max-w-[2400px] max-h-[95vh] flex flex-col overflow-hidden p-0">
+            <div className="px-8 pt-8 pb-4">
+              <DialogHeader>
+                <DialogTitle className="text-3xl font-bold flex items-center gap-4 mb-2" style={{ color: '#007E8C' }}>
+                  <Users className="w-8 h-8" />
+                  Volunteer Opportunities
+                </DialogTitle>
+                <DialogDescription className="text-lg font-medium">
+                  Sign up to speak or volunteer at upcoming events
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-8 pb-8">
+              <VolunteerOpportunitiesTab />
             </div>
           </DialogContent>
         </Dialog>

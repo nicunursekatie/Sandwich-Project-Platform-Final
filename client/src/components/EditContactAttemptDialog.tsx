@@ -25,28 +25,29 @@ import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import type { User as UserType } from '@shared/schema';
 
-interface LogContactAttemptDialogProps {
+interface ContactAttempt {
+  attemptNumber: number;
+  timestamp: string;
+  method: string;
+  outcome: string;
+  notes?: string;
+  createdBy: string;
+  createdByName?: string;
+  loggedBy?: string;
+  loggedByName?: string;
+}
+
+interface EditContactAttemptDialogProps {
   isOpen: boolean;
   onClose: () => void;
   eventRequest: EventRequest | null;
-  onLogContact: (data: {
+  contactAttempt: ContactAttempt | null;
+  onEditContact: (data: {
     contactAttempts: number;
     lastContactAttempt: string;
     contactMethod: string;
     contactOutcome: string;
-    contactAttemptsLog: Array<{
-      attemptNumber: number;
-      timestamp: string;
-      method: string;
-      outcome: string;
-      notes?: string;
-      createdBy: string;
-      createdByName?: string;
-      loggedBy?: string;
-      loggedByName?: string;
-    }>;
-    // Legacy field - kept for backward compatibility but no longer written to
-    unresponsiveNotes?: string;
+    contactAttemptsLog: Array<ContactAttempt>;
   }) => Promise<void>;
 }
 
@@ -67,12 +68,13 @@ const CONTACT_OUTCOMES = [
   { value: 'other', label: 'Other (see notes)' },
 ];
 
-export default function LogContactAttemptDialog({
+export default function EditContactAttemptDialog({
   isOpen,
   onClose,
   eventRequest,
-  onLogContact,
-}: LogContactAttemptDialogProps) {
+  contactAttempt,
+  onEditContact,
+}: EditContactAttemptDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [contactMethod, setContactMethod] = useState<string>('');
@@ -97,18 +99,23 @@ export default function LogContactAttemptDialog({
     retry: false,
   });
 
-  // Set default date/time to current when dialog opens, and reset attribution to current user
+  // Pre-populate form with existing contact attempt data
   useEffect(() => {
-    if (isOpen) {
-      const now = new Date();
-      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    if (isOpen && contactAttempt) {
+      setContactMethod(contactAttempt.method);
+      setContactOutcome(contactAttempt.outcome);
+      setNotes(contactAttempt.notes || '');
+
+      // Convert timestamp to local datetime-local format
+      const attemptDate = new Date(contactAttempt.timestamp);
+      const localDateTime = new Date(attemptDate.getTime() - attemptDate.getTimezoneOffset() * 60000)
         .toISOString()
         .slice(0, 16);
       setCustomDateTime(localDateTime);
-      // Default to current user, but allow changing
-      setAttributedToUserId(user?.id || '');
+
+      setAttributedToUserId(contactAttempt.createdBy);
     }
-  }, [isOpen, user?.id]);
+  }, [isOpen, contactAttempt]);
 
   const handleSubmit = async () => {
     if (!contactMethod || !contactOutcome || !attributedToUserId) {
@@ -120,18 +127,18 @@ export default function LogContactAttemptDialog({
       return;
     }
 
-    if (!eventRequest) return;
+    if (!eventRequest || !contactAttempt) return;
 
     setIsSubmitting(true);
     try {
-      // Use custom date/time or current time
-      const contactDate = customDateTime ? new Date(customDateTime) : new Date();
+      // Use the updated date/time
+      const contactDate = customDateTime ? new Date(customDateTime) : new Date(contactAttempt.timestamp);
 
-      // Build structured contact attempt log (new format only)
+      // Get existing log
       const existingLog = eventRequest.contactAttemptsLog || [];
 
       // Find the user to attribute the contact attempt to
-      const attributedUser = attributedToUserId 
+      const attributedUser = attributedToUserId
         ? teamMembers.find(u => u.id === attributedToUserId)
         : user;
 
@@ -149,66 +156,60 @@ export default function LogContactAttemptDialog({
         createdByName = 'Unknown User';
       }
 
-      // Create new attempt without attemptNumber (will be assigned after sorting)
-      const newAttempt = {
-        attemptNumber: 0, // Placeholder, will be updated after sorting
+      // Update the specific attempt
+      const updatedAttempt: ContactAttempt = {
+        ...contactAttempt,
         timestamp: contactDate.toISOString(),
         method: contactMethod,
         outcome: contactOutcome,
         notes: notes || undefined,
         createdBy: attributedUser?.id || 'unknown',
         createdByName,
-        // Track who actually logged it (for audit purposes)
-        loggedBy: user?.id || 'unknown',
-        loggedByName: user?.displayName || 
-          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}`.trim() : user?.email) || 
-          'Unknown',
+        // Keep the original loggedBy but add edit tracking
+        loggedBy: contactAttempt.loggedBy,
+        loggedByName: contactAttempt.loggedByName,
       };
 
-      // Add new attempt to existing log
-      const allAttempts = [...existingLog, newAttempt];
+      // Replace the old attempt with the updated one
+      const updatedLog = existingLog.map(attempt =>
+        attempt.timestamp === contactAttempt.timestamp &&
+        attempt.attemptNumber === contactAttempt.attemptNumber
+          ? updatedAttempt
+          : attempt
+      );
 
       // Sort all attempts by timestamp (chronological order, oldest first)
-      allAttempts.sort((a, b) => {
+      updatedLog.sort((a, b) => {
         const dateA = new Date(a.timestamp).getTime();
         const dateB = new Date(b.timestamp).getTime();
         return dateA - dateB;
       });
 
       // Renumber attempts sequentially based on chronological order
-      const updatedLog = allAttempts.map((attempt, index) => ({
+      const renumberedLog = updatedLog.map((attempt, index) => ({
         ...attempt,
         attemptNumber: index + 1,
       }));
 
       // Find the most recent contact attempt (last in sorted array)
-      const mostRecentAttempt = updatedLog[updatedLog.length - 1];
+      const mostRecentAttempt = renumberedLog[renumberedLog.length - 1];
       const lastContactAttempt = mostRecentAttempt.timestamp;
 
       // Total count is the length of the array
-      const totalAttempts = updatedLog.length;
+      const totalAttempts = renumberedLog.length;
 
-      // Find which attempt number was assigned to the newly added attempt
-      const addedAttemptIndex = updatedLog.findIndex(
-        (attempt) => attempt.timestamp === contactDate.toISOString() &&
-        attempt.method === contactMethod &&
-        attempt.outcome === contactOutcome
-      );
-      const addedAttemptNumber = addedAttemptIndex !== -1 ? addedAttemptIndex + 1 : totalAttempts;
-
-      await onLogContact({
+      await onEditContact({
         contactAttempts: totalAttempts,
         lastContactAttempt: lastContactAttempt,
-        contactMethod,
-        contactOutcome,
-        contactAttemptsLog: updatedLog,
-        // No longer writing to unresponsiveNotes - using structured format only
+        contactMethod: mostRecentAttempt.method,
+        contactOutcome: mostRecentAttempt.outcome,
+        contactAttemptsLog: renumberedLog,
       });
 
       const methodLabel = CONTACT_METHODS.find(m => m.value === contactMethod)?.label || contactMethod;
       toast({
-        title: 'Contact attempt logged',
-        description: `Logged attempt #${addedAttemptNumber} via ${methodLabel}`,
+        title: 'Contact attempt updated',
+        description: `Updated attempt via ${methodLabel}`,
       });
 
       // Reset form
@@ -216,12 +217,12 @@ export default function LogContactAttemptDialog({
       setContactOutcome('');
       setNotes('');
       setCustomDateTime('');
-      setAttributedToUserId(user?.id || '');
+      setAttributedToUserId('');
       onClose();
     } catch (error) {
       toast({
-        title: 'Failed to log contact',
-        description: 'There was an error logging the contact attempt.',
+        title: 'Failed to update contact',
+        description: 'There was an error updating the contact attempt.',
         variant: 'destructive',
       });
     } finally {
@@ -235,52 +236,27 @@ export default function LogContactAttemptDialog({
       setContactOutcome('');
       setNotes('');
       setCustomDateTime('');
-      setAttributedToUserId(user?.id || '');
+      setAttributedToUserId('');
       onClose();
     }
   };
 
-  if (!eventRequest) return null;
-
-  const currentAttempts = eventRequest.contactAttempts || 0;
-  const nextAttemptNumber = currentAttempts + 1;
+  if (!eventRequest || !contactAttempt) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md sm:max-w-lg" data-testid="dialog-log-contact">
+      <DialogContent className="max-w-md sm:max-w-lg" data-testid="dialog-edit-contact">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-[#236383]">
             <MessageSquare className="w-5 h-5" />
-            <span>Log Contact Attempt</span>
+            <span>Edit Contact Attempt #{contactAttempt.attemptNumber}</span>
           </DialogTitle>
           <DialogDescription>
-            Record your contact attempt for {eventRequest.firstName} {eventRequest.lastName} - {eventRequest.organizationName}
+            Edit contact attempt for {eventRequest.firstName} {eventRequest.lastName} - {eventRequest.organizationName}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Attempt Counter */}
-          <div className="bg-gradient-to-r from-[#e6f2f5] to-[#f0f7f9] border border-[#007E8C]/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#007E8C] font-medium">Previous Attempts</p>
-                <p className="text-2xl font-bold text-[#1A2332]">{currentAttempts}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-[#007E8C] font-medium">This Will Be</p>
-                <p className="text-2xl font-bold text-[#FBAD3F]">Attempt #{nextAttemptNumber}</p>
-              </div>
-            </div>
-            {eventRequest.lastContactAttempt && (
-              <p className="text-xs text-gray-600 mt-2">
-                Last attempt: {new Date(eventRequest.lastContactAttempt).toLocaleString('en-US', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
-              </p>
-            )}
-          </div>
-
           {/* Date/Time of Contact */}
           <div className="space-y-2">
             <Label htmlFor="contact-datetime" className="text-[#1A2332] font-medium">
@@ -294,9 +270,6 @@ export default function LogContactAttemptDialog({
               className="w-full"
               data-testid="input-contact-datetime"
             />
-            <p className="text-xs text-gray-500">
-              Defaults to current date/time. You can change this to log a contact from earlier.
-            </p>
           </div>
 
           {/* Attributed To */}
@@ -304,8 +277,8 @@ export default function LogContactAttemptDialog({
             <Label htmlFor="attributed-to" className="text-[#1A2332] font-medium">
               Who Made This Contact? *
             </Label>
-            <Select 
-              value={attributedToUserId} 
+            <Select
+              value={attributedToUserId}
               onValueChange={setAttributedToUserId}
               disabled={isLoadingTeamMembers}
             >
@@ -314,8 +287,8 @@ export default function LogContactAttemptDialog({
               </SelectTrigger>
               <SelectContent>
                 {teamMembers.map((member) => {
-                  const displayName = member.displayName || 
-                    `${member.firstName || ''} ${member.lastName || ''}`.trim() || 
+                  const displayName = member.displayName ||
+                    `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
                     member.email;
                   return (
                     <SelectItem key={member.id} value={member.id}>
@@ -331,9 +304,6 @@ export default function LogContactAttemptDialog({
                 })}
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">
-              Select the team member who actually made this contact attempt. Defaults to you.
-            </p>
           </div>
 
           {/* Contact Method */}
@@ -393,9 +363,6 @@ export default function LogContactAttemptDialog({
               rows={4}
               className="resize-none"
             />
-            <p className="text-xs text-gray-500">
-              This will be saved with a timestamp and attempt number in the event record.
-            </p>
           </div>
 
           {/* Action Buttons */}
@@ -404,17 +371,17 @@ export default function LogContactAttemptDialog({
               onClick={handleSubmit}
               disabled={isSubmitting || !contactMethod || !contactOutcome || !attributedToUserId}
               className="flex-1 bg-[#007E8C] hover:bg-[#006B75] text-white"
-              data-testid="button-submit-contact-log"
+              data-testid="button-submit-contact-edit"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Logging...
+                  Updating...
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Log Attempt #{nextAttemptNumber}
+                  Save Changes
                 </>
               )}
             </Button>
@@ -423,7 +390,7 @@ export default function LogContactAttemptDialog({
               disabled={isSubmitting}
               variant="outline"
               className="flex-1 sm:flex-none"
-              data-testid="button-cancel-contact-log"
+              data-testid="button-cancel-contact-edit"
             >
               <X className="w-4 h-4 mr-2" />
               Cancel

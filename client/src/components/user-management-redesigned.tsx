@@ -36,7 +36,7 @@ import {
   Award,
   TrendingUp,
   MessageCircle,
-  CheckSquare,
+  SquareCheck,
 } from 'lucide-react';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import BulkPermissionsManager from '@/components/bulk-permissions-manager';
@@ -496,7 +496,7 @@ export default function UserManagementFinal() {
                 {selectedUsers.size > 0 && (
                   <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <div className="flex items-center gap-2 text-sm text-blue-900">
-                      <CheckSquare className="h-4 w-4" />
+                      <SquareCheck className="h-4 w-4" />
                       <span className="font-medium">{selectedUsers.size} user(s) selected</span>
                     </div>
                     <div className="flex gap-2">

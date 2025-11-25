@@ -32,6 +32,7 @@ import {
   Sparkles,
   MapPin,
   FileText,
+  MessageCircle,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -73,6 +74,8 @@ interface InProcessCardProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
+  onEditContactAttempt?: (attemptNumber: number) => void;
+  onDeleteContactAttempt?: (attemptNumber: number) => Promise<void>;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
   canEdit?: boolean;
@@ -94,6 +97,7 @@ interface CardHeaderProps {
   resolveUserName?: (id: string) => string;
   isInProcessStale?: boolean;
   canEdit?: boolean;
+  canEditOrgDetails?: boolean;
   isEditingThisCard?: boolean;
   editingField?: string;
   editingValue?: string;
@@ -108,6 +112,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   resolveUserName,
   isInProcessStale,
   canEdit = false,
+  canEditOrgDetails = false,
   isEditingThisCard = false,
   editingField = '',
   editingValue = '',
@@ -182,21 +187,102 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Check if we're editing this date field
   const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
 
+  // Check if we're editing organization or department fields
+  const isEditingOrgName = isEditingThisCard && editingField === 'organizationName';
+  const isEditingDepartment = isEditingThisCard && editingField === 'department';
+
   return {
     header: (
       <div className="mb-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
-            {request.organizationName}
-            {request.department && (
-              <span className="text-sm font-normal text-gray-600 break-words">
-                &bull; {request.department}
-              </span>
-            )}
-          </h3>
+          {/* Organization Name - with inline editing */}
+          {isEditingOrgName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editingValue}
+                onChange={(e) => setEditingValue?.(e.target.value)}
+                className="h-8 text-lg font-bold text-[#236383]"
+                autoFocus
+                data-testid="input-organization-name"
+              />
+              <Button size="sm" onClick={saveEdit} data-testid="button-save-org-name">
+                <Save className="w-3 h-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-org-name">
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
+                {request.organizationName}
+              </h3>
+              {canEditOrgDetails && startEditing && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => startEditing('organizationName', request.organizationName || '')}
+                  className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                  title="Edit organization name"
+                  data-testid="button-edit-org-name"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Department - with inline editing */}
+          {(request.department || isEditingDepartment || canEditOrgDetails) && (
+            <>
+              <span className="text-gray-600">&bull;</span>
+              {isEditingDepartment ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue?.(e.target.value)}
+                    className="h-8 text-sm font-normal text-gray-600"
+                    placeholder="Department"
+                    autoFocus
+                    data-testid="input-department"
+                  />
+                  <Button size="sm" onClick={saveEdit} data-testid="button-save-department">
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-department">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  {request.department ? (
+                    <span className="text-sm font-normal text-gray-600 break-words">{request.department}</span>
+                  ) : canEditOrgDetails ? (
+                    <span className="text-sm font-normal text-gray-400 italic">No department</span>
+                  ) : null}
+                  {canEditOrgDetails && startEditing && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('department', request.department || '')}
+                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      title={request.department ? "Edit department" : "Add department"}
+                      data-testid="button-edit-department"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
-            onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+            onClick={() => {
+              startEditing?.('isConfirmed', (!request.isConfirmed).toString());
+              // Immediately save the toggle
+              setTimeout(() => saveEdit?.(), 0);
+            }}
             className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
               request.isConfirmed
                 ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
@@ -410,6 +496,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
+  onEditContactAttempt,
+  onDeleteContactAttempt,
   onAiSuggest,
   onAiIntakeAssist,
   canEdit = true,
@@ -427,16 +515,24 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showContactAttempts, setShowContactAttempts] = useState(false);
   const { user } = useAuth();
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
+
+  // Check if user has permission to edit organization details
+  const canEditOrgDetails =
+    (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
+    user?.role === 'super_admin' ||
+    user?.role === 'admin';
 
   const headerContent = CardHeader({
     request,
     resolveUserName,
     isInProcessStale: isStale,
     canEdit: !!startEditing, // Enable editing if editing functions are provided
+    canEditOrgDetails,
     isEditingThisCard,
     editingField,
     editingValue,
@@ -501,7 +597,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {headerContent.eventDate}
             {/* Contact Attempts Info */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 {(request.contactAttempts || request.lastContactAttempt) && (
                   <div className="flex items-center gap-2 text-amber-800">
                     <Phone className="w-4 h-4" />
@@ -517,16 +613,156 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     )}
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onLogContact}
-                  className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
-                >
-                  <Phone className="w-3 h-3" />
-                  Log Contact
-                </Button>
+                <div className="flex items-center gap-2">
+                  {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowContactAttempts(!showContactAttempts)}
+                      className="h-7 text-xs flex items-center gap-1 text-amber-800 hover:bg-amber-100"
+                    >
+                      {showContactAttempts ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {showContactAttempts ? 'Hide' : 'Show'} Details
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onLogContact}
+                    className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Log Contact
+                  </Button>
+                </div>
               </div>
+
+              {/* Contact Attempts Details */}
+              {showContactAttempts && Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
+                  {request.contactAttemptsLog
+                    .slice()
+                    .sort((a, b) => {
+                      // Sort by attemptNumber descending (most recent first)
+                      return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                    })
+                    .map((attempt: any) => {
+                      if (!attempt || typeof attempt !== 'object') return null;
+
+                      const methodIcons = {
+                        phone: <Phone className="w-3 h-3" />,
+                        email: <Mail className="w-3 h-3" />,
+                        text: <MessageCircle className="w-3 h-3" />,
+                        both: <MessageSquare className="w-3 h-3" />,
+                      };
+
+                      const methodLabels = {
+                        phone: 'Phone',
+                        email: 'Email',
+                        text: 'Text',
+                        both: 'Phone & Email',
+                      };
+
+                      const outcomeLabels: { [key: string]: string } = {
+                        successful: 'Successfully contacted - Got response',
+                        no_answer: 'No answer - No response',
+                        left_message: 'Left voicemail/message',
+                        wrong_number: 'Wrong/disconnected number',
+                        email_bounced: 'Email bounced/failed',
+                        requested_callback: 'Requested callback/follow-up',
+                        other: 'Other',
+                      };
+
+                      let parsedDate: Date | undefined;
+                      if (attempt.timestamp) {
+                        try {
+                          parsedDate = new Date(attempt.timestamp);
+                          if (isNaN(parsedDate.getTime())) {
+                            parsedDate = undefined;
+                          }
+                        } catch (e) {
+                          parsedDate = undefined;
+                        }
+                      }
+
+                      const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                      const loggedByName = attempt.loggedByName;
+                      const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
+
+                      return (
+                        <div
+                          key={attempt.attemptNumber || attempt.timestamp}
+                          className="bg-white rounded p-2 border border-amber-200 text-sm"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-amber-900">
+                                  Attempt #{attempt.attemptNumber || '?'}
+                                </span>
+                                {attempt.method && (
+                                  <div className="flex items-center gap-1 text-amber-700">
+                                    {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                    <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {attempt.outcome && (
+                                <div className="text-xs text-gray-700 mb-1">
+                                  <span className="font-medium">Outcome:</span>{' '}
+                                  {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                </div>
+                              )}
+                              {attempt.notes && (
+                                <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
+                                  {attempt.notes}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                {parsedDate && (
+                                  <span>{parsedDate.toLocaleString()}</span>
+                                )}
+                                {userName && userName !== 'unknown' && userName !== 'system' && (
+                                  <span>• by {userName}</span>
+                                )}
+                                {showLoggedBy && (
+                                  <span className="text-gray-400 italic">
+                                    (logged by {loggedByName})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {/* Edit/Delete buttons for contact attempts */}
+                            <div className="flex gap-1 flex-shrink-0">
+                              {onEditContactAttempt && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                  onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                  title="Edit contact attempt"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {onDeleteContactAttempt && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                  title="Delete contact attempt"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
 
             {/* Scheduled Call Info */}
@@ -656,23 +892,34 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(!showComments)}
-              className="w-full justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto mb-2"
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-gray-600" />
-                <h3 className="text-sm font-semibold">Team Comments</h3>
-                {collaboration.comments && collaboration.comments.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {collaboration.comments.length}
-                  </Badge>
-                )}
-              </div>
-              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold">Team Comments</h3>
+                  {collaboration.comments && collaboration.comments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {collaboration.comments.length}
+                    </Badge>
+                  )}
+                </div>
+                {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowComments(true)}
+                className="ml-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Add Comment
+              </Button>
+            </div>
 
             {showComments && (
               <div className="mt-3 max-h-[500px]">
@@ -689,12 +936,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             )}
 
             <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Log & Messages</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Comments & Messages</h3>
               <EventMessageThread
                 eventId={request.id.toString()}
                 eventRequest={request}
                 eventTitle={`${request.organizationName} event`}
                 maxHeight="300px"
+                onEditContactAttempt={onEditContactAttempt}
+                onDeleteContactAttempt={onDeleteContactAttempt}
               />
             </div>
           </div>

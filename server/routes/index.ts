@@ -42,6 +42,7 @@ import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
 import holdingZoneCategoriesRouter from './holding-zone-categories';
+import { createHoldingZoneCollaborationRouter } from './holding-zone-collaboration';
 import { promotionGraphicsRouter } from './promotion-graphics';
 import migrationsRouter from './migrations';
 import { createDashboardDocumentsRoutes } from './dashboard-documents';
@@ -563,6 +564,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     holdingZoneCategoriesRouter
   );
   router.use('/api/holding-zone/categories', createErrorHandler('holding-zone-categories'));
+
+  // Holding zone collaboration routes
+  router.use(
+    '/api/holding-zone',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    createHoldingZoneCollaborationRouter(deps)
+  );
+  router.use('/api/holding-zone', createErrorHandler('holding-zone-collaboration'));
 
   // Promotion graphics routes
   router.use(

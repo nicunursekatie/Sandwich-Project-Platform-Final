@@ -521,6 +521,68 @@ async function sendVolunteerReminders(): Promise<{
 }
 
 /**
+ * Auto-complete scheduled events whose event date has passed
+ * Runs nightly to move events from "scheduled" to "completed" status
+ * Exported so it can be called manually if needed
+ */
+export async function autoCompletePassedEvents(): Promise<{
+  eventsCompleted: number;
+  errors: number;
+  timestamp: Date;
+}> {
+  const now = new Date();
+  let eventsCompleted = 0;
+  let errors = 0;
+
+  try {
+    // Get the start of today (midnight) to compare against event dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find all scheduled events where the scheduled date is before today
+    const passedEvents = await db
+      .select()
+      .from(eventRequests)
+      .where(
+        and(
+          eq(eventRequests.status, 'scheduled'),
+          sql`${eventRequests.scheduledEventDate} < ${today}`
+        )
+      );
+
+    cronLogger.info(`Found ${passedEvents.length} scheduled events with passed dates to auto-complete`);
+
+    for (const event of passedEvents) {
+      try {
+        // Update the event status to completed
+        await db
+          .update(eventRequests)
+          .set({
+            status: 'completed',
+            updatedAt: new Date(),
+          })
+          .where(eq(eventRequests.id, event.id));
+
+        eventsCompleted++;
+        cronLogger.info(`Auto-completed event ${event.id} (${event.organizationName}) - event date was ${event.scheduledEventDate}`);
+      } catch (error) {
+        errors++;
+        cronLogger.error(`Error auto-completing event ${event.id}:`, error);
+      }
+    }
+  } catch (error) {
+    cronLogger.error('Error in autoCompletePassedEvents:', error);
+    throw error;
+  }
+
+  return {
+    eventsCompleted,
+    errors,
+    timestamp: now,
+  };
+}
+
+/**
  * Generate monthly impact report
  */
 async function generateMonthlyImpactReport(): Promise<{
@@ -683,11 +745,42 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Auto-complete passed events - runs daily at 12:05 AM (just after midnight)
+  // Cron format: minute hour day-of-month month day-of-week
+  // '5 0 * * *' = At 12:05 AM every day
+  const autoCompleteJob = cron.schedule('5 0 * * *', async () => {
+    cronLogger.info('Running auto-complete for passed events...');
+    try {
+      const result = await autoCompletePassedEvents();
+      cronLogger.info('Auto-complete job completed', {
+        eventsCompleted: result.eventsCompleted,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running auto-complete cron job',
+        undefined,
+        { jobType: 'auto-complete-events' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Auto-complete events job scheduled successfully', {
+    schedule: 'Daily at 12:05 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
     volunteerReminderJob,
     impactReportJob,
+    autoCompleteJob,
   };
 }
 
@@ -699,5 +792,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.hostScraperJob.stop();
   jobs.volunteerReminderJob.stop();
   jobs.impactReportJob.stop();
+  jobs.autoCompleteJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }
