@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Settings, HelpCircle, FileSpreadsheet, Users, ArrowRight, Sparkles } from 'lucide-react';
 
-const STORAGE_KEY = 'navigation_update_2024_seen';
+const STORAGE_KEY = 'navigation_update_2024_v2_seen';
 
 export function WhatsNewModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,23 +94,19 @@ export function WhatsNewModal() {
           <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-4 border-2 border-orange-200">
             <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
               <ArrowRight className="w-5 h-5 text-brand-orange" />
-              Collections Reports Grouped Together
+              Items Grouped Together
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Your collection reports are now organized under Collections Log. Click Collections Log in the sidebar to see:
+              Several items are now organized together for easier navigation:
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
-                <div className="p-2 bg-teal-100 rounded-md">
-                  <FileSpreadsheet className="w-4 h-4 text-teal-600" />
-                </div>
-                <span className="font-medium text-gray-900">Weekly Collections Report</span>
+            <div className="space-y-3">
+              <div>
+                <div className="font-medium text-gray-900 mb-1">TSP Network</div>
+                <p className="text-xs text-gray-600 mb-2">Find Hosts, Drivers, Volunteers, and Recipients all in one place</p>
               </div>
-              <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
-                <div className="p-2 bg-teal-100 rounded-md">
-                  <Users className="w-4 h-4 text-teal-600" />
-                </div>
-                <span className="font-medium text-gray-900">Group Collections Viewer</span>
+              <div>
+                <div className="font-medium text-gray-900 mb-1">Collections Log</div>
+                <p className="text-xs text-gray-600 mb-2">Weekly Collections Report and Group Collections Viewer are now under Collections Log</p>
               </div>
             </div>
           </div>
