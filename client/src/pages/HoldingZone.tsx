@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -498,6 +500,8 @@ export default function HoldingZone() {
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [newItemDetails, setNewItemDetails] = useState('');
   const [newItemDueDate, setNewItemDueDate] = useState('');
+  const [newItemAssignedTo, setNewItemAssignedTo] = useState<string[]>([]);
+  const [newItemAssignedToNames, setNewItemAssignedToNames] = useState<string[]>([]);
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#236383');
@@ -625,6 +629,8 @@ export default function HoldingZone() {
       isPrivate: boolean;
       details: string | null;
       dueDate: string | null;
+      assignedTo: string[] | null;
+      assignedToNames: string[] | null;
     }) => {
       return await apiRequest('POST', '/api/team-board', data);
     },
@@ -638,6 +644,8 @@ export default function HoldingZone() {
       setNewItemIsPrivate(false);
       setNewItemDetails('');
       setNewItemDueDate('');
+      setNewItemAssignedTo([]);
+      setNewItemAssignedToNames([]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -874,6 +882,8 @@ export default function HoldingZone() {
       isPrivate: newItemIsPrivate,
       details: newItemDetails.trim() || null,
       dueDate: newItemDueDate ? new Date(newItemDueDate).toISOString() : null,
+      assignedTo: newItemAssignedTo.length > 0 ? newItemAssignedTo : null,
+      assignedToNames: newItemAssignedToNames.length > 0 ? newItemAssignedToNames : null,
     });
   };
 
@@ -1540,6 +1550,96 @@ export default function HoldingZone() {
                 onChange={(e) => setNewItemDueDate(e.target.value)}
                 data-testid="input-new-item-due-date"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Assign to Team Members (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="button-select-assignees"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {newItemAssignedToNames.length === 0
+                      ? 'Select team members...'
+                      : `${newItemAssignedToNames.length} member${newItemAssignedToNames.length > 1 ? 's' : ''} selected`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search team members..." />
+                    <CommandList>
+                      <CommandEmpty>No team members found.</CommandEmpty>
+                      <CommandGroup>
+                        {teamMembers.map((member) => {
+                          const isSelected = newItemAssignedTo.includes(member.id);
+                          return (
+                            <CommandItem
+                              key={member.id}
+                              onSelect={() => {
+                                if (isSelected) {
+                                  // Remove from selection
+                                  setNewItemAssignedTo(newItemAssignedTo.filter(id => id !== member.id));
+                                  setNewItemAssignedToNames(
+                                    newItemAssignedToNames.filter((_, idx) => newItemAssignedTo[idx] !== member.id)
+                                  );
+                                } else {
+                                  // Add to selection
+                                  setNewItemAssignedTo([...newItemAssignedTo, member.id]);
+                                  setNewItemAssignedToNames([...newItemAssignedToNames, member.name]);
+                                }
+                              }}
+                            >
+                              <div className="flex items-center w-full">
+                                <div
+                                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary ${
+                                    isSelected
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'opacity-50 [&_svg]:invisible'
+                                  }`}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </div>
+                                <User className="h-4 w-4 mr-2 text-gray-500" />
+                                <span>{member.name}</span>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {newItemAssignedToNames.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {newItemAssignedToNames.map((name, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      {name}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newAssignedTo = [...newItemAssignedTo];
+                          const newAssignedToNames = [...newItemAssignedToNames];
+                          newAssignedTo.splice(index, 1);
+                          newAssignedToNames.splice(index, 1);
+                          setNewItemAssignedTo(newAssignedTo);
+                          setNewItemAssignedToNames(newAssignedToNames);
+                        }}
+                        className="ml-1 hover:text-red-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

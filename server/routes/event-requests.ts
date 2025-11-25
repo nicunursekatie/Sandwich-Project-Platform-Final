@@ -4279,8 +4279,29 @@ We apologize for any confusion!`;
     });
   } catch (error) {
     logger.error('Error sending correction SMS:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to send correction SMS',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Manually trigger auto-complete for past events (admin only)
+router.post('/admin/auto-complete-passed', isAuthenticated, requirePermission('ADMIN'), async (req, res) => {
+  try {
+    const { autoCompletePassedEvents } = await import('../services/cron-jobs');
+    const result = await autoCompletePassedEvents();
+
+    res.json({
+      message: `Auto-complete completed: ${result.eventsCompleted} events moved to completed status`,
+      eventsCompleted: result.eventsCompleted,
+      errors: result.errors,
+      timestamp: result.timestamp,
+    });
+  } catch (error) {
+    logger.error('Error running manual auto-complete:', error);
+    res.status(500).json({
+      message: 'Failed to run auto-complete',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

@@ -426,7 +426,11 @@ export default function RequestFilters({
 
       {/* Tab Content - Shown on all screen sizes */}
       <div className="space-y-4">
-        {children[activeTab as keyof typeof children]}
+        {children[activeTab as keyof typeof children] || (
+          <div className="text-center py-8 text-gray-500">
+            Tab content not found. Please select a valid tab.
+          </div>
+        )}
       </div>
 
       {/* Bottom Pagination - Shown on all screen sizes when there are multiple pages */}

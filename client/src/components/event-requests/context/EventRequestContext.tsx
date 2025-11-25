@@ -67,6 +67,8 @@ interface EventRequestContextType {
   setShowStaffingPlanningModal: (show: boolean) => void;
   showLogContactDialog: boolean;
   setShowLogContactDialog: (show: boolean) => void;
+  showEditContactDialog: boolean;
+  setShowEditContactDialog: (show: boolean) => void;
   showAiDateSuggestionDialog: boolean;
   setShowAiDateSuggestionDialog: (show: boolean) => void;
   showAiIntakeAssistantDialog: boolean;
@@ -87,6 +89,10 @@ interface EventRequestContextType {
   setTspContactEventRequest: (event: EventRequest | null) => void;
   logContactEventRequest: EventRequest | null;
   setLogContactEventRequest: (event: EventRequest | null) => void;
+  editContactEventRequest: EventRequest | null;
+  setEditContactEventRequest: (event: EventRequest | null) => void;
+  editContactAttemptData: any | null;
+  setEditContactAttemptData: (data: any | null) => void;
   aiSuggestionEventRequest: EventRequest | null;
   setAiSuggestionEventRequest: (event: EventRequest | null) => void;
   aiIntakeAssistantEventRequest: EventRequest | null;
@@ -293,6 +299,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
   const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
   const [showLogContactDialog, setShowLogContactDialog] = useState(false);
+  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
   const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
   const [showPostponementDialog, setShowPostponementDialog] = useState(false);
@@ -304,6 +311,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
   const [tspContactEventRequest, setTspContactEventRequest] = useState<EventRequest | null>(null);
   const [logContactEventRequest, setLogContactEventRequest] = useState<EventRequest | null>(null);
+  const [editContactEventRequest, setEditContactEventRequest] = useState<EventRequest | null>(null);
+  const [editContactAttemptData, setEditContactAttemptData] = useState<any | null>(null);
   const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
   const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
@@ -600,6 +609,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowStaffingPlanningModal,
     showLogContactDialog,
     setShowLogContactDialog,
+    showEditContactDialog,
+    setShowEditContactDialog,
     showAiDateSuggestionDialog,
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
@@ -620,6 +631,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setTspContactEventRequest,
     logContactEventRequest,
     setLogContactEventRequest,
+    editContactEventRequest,
+    setEditContactEventRequest,
+    editContactAttemptData,
+    setEditContactAttemptData,
     aiSuggestionEventRequest,
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,

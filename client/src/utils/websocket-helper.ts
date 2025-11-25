@@ -34,10 +34,14 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
   let host;
 
   // Handle different deployment scenarios
-  if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app') || hostname.includes('spock.replit.dev')) {
-    // In Replit development, always use port 5000
+  if (hostname.includes('replit.app')) {
+    // Production Replit apps - DO NOT add port, reverse proxy handles routing
+    host = hostname;
+    logger.log('Detected Replit production environment, using host without port:', host);
+  } else if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('spock.replit.dev')) {
+    // Replit development environments - use port 5000
     host = `${hostname}:5000`;
-    logger.log('Detected Replit environment, using host with port:', host);
+    logger.log('Detected Replit dev environment, using host with port:', host);
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - force port 5000 if no port specified
     const resolvedPort = port || '5000';

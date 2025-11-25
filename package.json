@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.4",
-    "@esbuild/linux-x64": "^0.25.10",
     "@google-cloud/local-auth": "^3.0.1",
     "@google-cloud/storage": "^7.7.0",
     "@hookform/resolvers": "^3.10.0",
@@ -82,7 +81,6 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

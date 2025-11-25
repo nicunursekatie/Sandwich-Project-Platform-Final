@@ -125,7 +125,7 @@ export default function StreamChatRooms() {
         await chatClient.connectUser(
           {
             id: streamUserId,
-            name: `${user.firstName} ${user.lastName}` || user.email,
+            name: (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : undefined) || user.email,
             email: user.email,
           },
           userToken

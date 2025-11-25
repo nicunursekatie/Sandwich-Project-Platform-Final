@@ -3,7 +3,7 @@ import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, User, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2 } from 'lucide-react';
+import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, User, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import type { EventRequest } from '@shared/schema';
@@ -82,89 +82,11 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     // Note: Initial request message is displayed in the "Notes & Requirements" section
     // of the card, so we don't duplicate it here
 
-    // Add structured contact attempts from new contactAttemptsLog
-    // Ensure contactAttemptsLog is an array (handle case where it might be null, undefined, or a string)
-    let contactAttemptsArray: Array<{
-      attemptNumber?: number;
-      timestamp?: string;
-      method?: string;
-      outcome?: string;
-      notes?: string;
-      createdBy?: string;
-      createdByName?: string;
-    }> = [];
-    
-    if (eventRequest.contactAttemptsLog) {
-      if (Array.isArray(eventRequest.contactAttemptsLog)) {
-        contactAttemptsArray = eventRequest.contactAttemptsLog;
-      } else if (typeof eventRequest.contactAttemptsLog === 'string') {
-        // Handle case where it might be a JSON string
-        try {
-          contactAttemptsArray = JSON.parse(eventRequest.contactAttemptsLog);
-        } catch (e) {
-          console.error('Failed to parse contactAttemptsLog:', e);
-        }
-      }
-    }
-    
-    if (contactAttemptsArray && contactAttemptsArray.length > 0) {
-      contactAttemptsArray.forEach((attempt) => {
-        // Skip invalid attempts
-        if (!attempt || typeof attempt !== 'object') {
-          return;
-        }
-        
-        const methodIcons = {
-          phone: <Phone className="h-4 w-4" />,
-          email: <Mail className="h-4 w-4" />,
-          both: <MessageSquare className="h-4 w-4" />,
-        };
+    // Note: Contact attempts are now displayed in the card itself (above the event date),
+    // so we don't duplicate them here in the Communication & Notes section
 
-        const canModify = user?.id && attempt.createdBy && user.id === attempt.createdBy;
-
-        // Parse timestamp safely
-        let parsedDate: Date | undefined;
-        if (attempt.timestamp) {
-          try {
-            parsedDate = new Date(attempt.timestamp);
-            // Check if date is valid
-            if (isNaN(parsedDate.getTime())) {
-              parsedDate = undefined;
-            }
-          } catch (e) {
-            console.error('Failed to parse timestamp:', attempt.timestamp, e);
-            parsedDate = undefined;
-          }
-        }
-
-        // Format user name for display - skip "Legacy Migration" badge
-        const userName = attempt.createdByName || attempt.createdBy;
-        // Only show badge if we have a real user name (not "Legacy Migration" or system)
-        const shouldShowBadge = userName && 
-          userName !== 'Legacy Migration' && 
-          userName !== 'system' && 
-          userName !== 'unknown' &&
-          attempt.createdBy !== 'system';
-        
-        items.push({
-          type: 'contact',
-          icon: methodIcons[attempt.method as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />,
-          title: `Contact Attempt #${attempt.attemptNumber || '?'}`,
-          content: attempt.notes || attempt.outcome || 'No details',
-          date: parsedDate,
-          badge: shouldShowBadge ? `by ${userName}` : undefined, // Only show badge for real users
-          attemptNumber: attempt.attemptNumber,
-          createdBy: attempt.createdBy,
-          canEdit: canModify,
-          canDelete: canModify,
-        });
-      });
-    }
-
-    // Legacy: Parse old unresponsiveNotes if present and no new structured log exists
-    // Check if we have any structured attempts
-    const hasStructuredAttempts = contactAttemptsArray && contactAttemptsArray.length > 0;
-    if (eventRequest.unresponsiveNotes && !hasStructuredAttempts) {
+    // Legacy: Parse old unresponsiveNotes if present (for backwards compatibility)
+    if (eventRequest.unresponsiveNotes && !eventRequest.contactAttemptsLog) {
       // Try to parse individual attempts from legacy format
       // Format examples:
       // - "Attempt #1 - Email: Successfully contacted - Got response..."
@@ -393,7 +315,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Communication & Notes
+              Comments & Messages
               <Badge variant="secondary" className="text-xs">
                 {totalCount}
               </Badge>
@@ -456,6 +378,17 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                 {/* Edit/Delete buttons for contact attempts */}
                 {item.type === 'contact' && (item.canEdit || item.canDelete) && (
                   <div className="flex gap-2 ml-6 mt-2">
+                    {item.canEdit && onEditContactAttempt && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[#007E8C] hover:text-[#006B75] hover:bg-[#007E8C]/10"
+                        onClick={() => item.attemptNumber && onEditContactAttempt(item.attemptNumber)}
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
                     {item.canDelete && onDeleteContactAttempt && (
                       <Button
                         size="sm"

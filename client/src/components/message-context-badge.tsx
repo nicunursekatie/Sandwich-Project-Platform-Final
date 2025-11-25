@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 import {
   FolderKanban,
-  CheckSquare,
+  SquareCheck,
   Calendar,
   Image,
   Receipt,
@@ -41,7 +41,7 @@ export function MessageContextBadge({
       case 'project':
         return <FolderKanban className="w-3 h-3" />;
       case 'task':
-        return <CheckSquare className="w-3 h-3" />;
+        return <SquareCheck className="w-3 h-3" />;
       case 'event':
         return <Calendar className="w-3 h-3" />;
       case 'graphic':

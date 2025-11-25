@@ -330,7 +330,12 @@ export function useCollaboration({
         logger.log('[Collaboration] Locks updated:', data.activeLocks);
         const locksMap = new Map<string, ResourceFieldLock>();
         (data.activeLocks || []).forEach((lock) => {
-          locksMap.set(lock.fieldName, lock);
+          // Safety check: ensure lock has required fields
+          if (lock && lock.fieldName) {
+            locksMap.set(lock.fieldName, lock);
+          } else {
+            logger.error('[Collaboration] Invalid lock in activeLocks:', lock);
+          }
         });
         setLocks(locksMap);
       }
@@ -339,6 +344,11 @@ export function useCollaboration({
     const handleLockAcquired = (data: { resourceId?: number | string; eventRequestId?: number; lock: ResourceFieldLock }) => {
       const dataResourceId = data.resourceId ?? data.eventRequestId;
       if (dataResourceId === resourceId) {
+        // Safety check: ensure lock object exists
+        if (!data.lock || !data.lock.fieldName) {
+          logger.error('[Collaboration] Invalid lock data received:', data);
+          return;
+        }
         logger.log('[Collaboration] Lock acquired:', data.lock);
         setLocks((prev) => {
           const newLocks = new Map(prev);

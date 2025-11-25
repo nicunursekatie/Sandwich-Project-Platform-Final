@@ -17,7 +17,7 @@ import {
   AlertTriangle,
   Scan,
   Square,
-  CheckSquare,
+  SquareCheck,
   Filter,
   X,
   ArrowUp,
@@ -2536,7 +2536,7 @@ export default function SandwichCollectionLog() {
               className="flex items-center space-x-2 text-base text-slate-600 hover:text-slate-900"
             >
               {selectedCollections.size === filteredCollections.length ? (
-                <CheckSquare className="w-4 h-4" />
+                <SquareCheck className="w-4 h-4" />
               ) : (
                 <Square className="w-4 h-4" />
               )}
@@ -2587,7 +2587,7 @@ export default function SandwichCollectionLog() {
                         className="flex items-center shrink-0"
                       >
                         {isSelected ? (
-                          <CheckSquare className="w-5 h-5 text-brand-primary" />
+                          <SquareCheck className="w-5 h-5 text-brand-primary" />
                         ) : (
                           <Square className="w-5 h-5 text-slate-400 hover:text-slate-600" />
                         )}
@@ -3356,7 +3356,7 @@ export default function SandwichCollectionLog() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Collection</DialogTitle>
           </DialogHeader>

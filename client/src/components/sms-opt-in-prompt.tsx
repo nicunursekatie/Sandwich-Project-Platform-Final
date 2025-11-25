@@ -34,17 +34,17 @@ export default function SMSOptInPrompt({ onDismiss }: SMSOptInPromptProps) {
   // SMS opt-in mutation (quick opt-in without phone number entry)
   const quickOptInMutation = useMutation({
     mutationFn: () => {
-      // For quick opt-in, we'll just redirect to the profile notifications tab
+      // For quick opt-in, we'll just redirect to the dedicated SMS setup page
       // where they can enter their phone number
       return Promise.resolve();
     },
     onSuccess: () => {
       toast({
         title: 'Redirecting...',
-        description: 'Taking you to notification settings to complete SMS setup.',
+        description: 'Taking you to SMS setup to complete your opt-in.',
       });
-      // Navigate to user profile notifications tab
-      window.location.href = '/profile?tab=notifications';
+      // Navigate to dedicated SMS opt-in page
+      window.location.href = '/sms-opt-in';
     },
   });
 
