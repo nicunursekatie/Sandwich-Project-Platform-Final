@@ -90,14 +90,14 @@ export function WhatsNewModal() {
             </div>
           </div>
 
-          {/* Nested Collections Items */}
+          {/* Collections Reports Organization */}
           <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-4 border-2 border-orange-200">
             <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
               <ArrowRight className="w-5 h-5 text-brand-orange" />
-              Collections Reports Now Nested
+              Collections Reports Grouped Together
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Reports are now organized under Collections Log. Click the Collections Log item to expand and see:
+              Your collection reports are now organized under Collections Log. Click Collections Log in the sidebar to see:
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
