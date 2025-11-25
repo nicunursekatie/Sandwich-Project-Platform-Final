@@ -26,6 +26,13 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+interface LocationBreakdown {
+  location: string;
+  individual: number;
+  groupTotal: number;
+  groupEventCount: number;
+}
+
 interface WeeklyData {
   weekStartDate: string;
   weekEndDate: string;
@@ -33,6 +40,7 @@ interface WeeklyData {
   totalSandwiches: number;
   individual: number;
   groupCollections: number;
+  locationBreakdowns: LocationBreakdown[];
 }
 
 interface WeeklyReportResponse {
@@ -77,19 +85,87 @@ export default function WeeklyCollectionsReport() {
   const handleDownloadCSV = () => {
     if (!data?.weeks) return;
 
-    const rows = [
-      ['Week Starting', 'Week Ending', 'Collections', 'Individual', 'Group Collections', 'Total Sandwiches'],
-      ...data.weeks.map((week) => [
+    const rows: (string | number)[][] = [];
+
+    // SECTION 1: Weekly Summary
+    rows.push(['=== WEEKLY SUMMARY ===']);
+    rows.push(['Week Starting', 'Week Ending', 'Collections', 'Individual', 'Group Collections', 'Total Sandwiches']);
+    data.weeks.forEach((week) => {
+      rows.push([
         week.weekStartDate,
         week.weekEndDate,
         week.collectionCount,
         week.individual,
         week.groupCollections,
         week.totalSandwiches,
-      ]),
-      [],
-      ['Total', '', data.weeks.length, '', '', data.grandTotal],
-    ];
+      ]);
+    });
+    rows.push(['Total', '', data.weeks.length, '', '', data.grandTotal]);
+    rows.push([]);
+
+    // SECTION 2: Location Breakdowns by Week
+    rows.push(['=== LOCATION BREAKDOWNS BY WEEK ===']);
+    rows.push([]);
+
+    data.weeks.forEach((week) => {
+      rows.push([`Week: ${week.weekStartDate} to ${week.weekEndDate}`]);
+      rows.push(['Location', 'Individual', 'Group Total', '# Group Events', 'Location Total']);
+
+      if (week.locationBreakdowns && week.locationBreakdowns.length > 0) {
+        week.locationBreakdowns.forEach((loc) => {
+          rows.push([
+            loc.location,
+            loc.individual,
+            loc.groupTotal,
+            loc.groupEventCount,
+            loc.individual + loc.groupTotal,
+          ]);
+        });
+        // Week subtotal
+        const weekIndividualTotal = week.locationBreakdowns.reduce((sum, loc) => sum + loc.individual, 0);
+        const weekGroupTotal = week.locationBreakdowns.reduce((sum, loc) => sum + loc.groupTotal, 0);
+        const weekGroupEvents = week.locationBreakdowns.reduce((sum, loc) => sum + loc.groupEventCount, 0);
+        rows.push(['Week Total', weekIndividualTotal, weekGroupTotal, weekGroupEvents, week.totalSandwiches]);
+      } else {
+        rows.push(['No location data available']);
+      }
+      rows.push([]);
+    });
+
+    // SECTION 3: Location Summary (totals across all weeks)
+    rows.push(['=== LOCATION TOTALS (ALL WEEKS) ===']);
+    rows.push(['Location', 'Total Individual', 'Total Group', 'Total Group Events', 'Grand Total']);
+
+    // Aggregate location data across all weeks
+    const locationTotals = new Map<string, { individual: number; groupTotal: number; groupEventCount: number }>();
+    data.weeks.forEach((week) => {
+      if (week.locationBreakdowns) {
+        week.locationBreakdowns.forEach((loc) => {
+          const existing = locationTotals.get(loc.location) || { individual: 0, groupTotal: 0, groupEventCount: 0 };
+          existing.individual += loc.individual;
+          existing.groupTotal += loc.groupTotal;
+          existing.groupEventCount += loc.groupEventCount;
+          locationTotals.set(loc.location, existing);
+        });
+      }
+    });
+
+    const sortedLocations = Array.from(locationTotals.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    sortedLocations.forEach(([location, totals]) => {
+      rows.push([
+        location,
+        totals.individual,
+        totals.groupTotal,
+        totals.groupEventCount,
+        totals.individual + totals.groupTotal,
+      ]);
+    });
+
+    // Grand totals
+    const grandIndividual = sortedLocations.reduce((sum, [, t]) => sum + t.individual, 0);
+    const grandGroup = sortedLocations.reduce((sum, [, t]) => sum + t.groupTotal, 0);
+    const grandEvents = sortedLocations.reduce((sum, [, t]) => sum + t.groupEventCount, 0);
+    rows.push(['GRAND TOTAL', grandIndividual, grandGroup, grandEvents, data.grandTotal]);
 
     const csv = rows.map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });

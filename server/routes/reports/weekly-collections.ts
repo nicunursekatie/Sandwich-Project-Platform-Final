@@ -6,6 +6,13 @@ import { sql, isNull } from 'drizzle-orm';
 
 const weeklyCollectionsRouter = Router();
 
+interface LocationBreakdown {
+  location: string;
+  individual: number;
+  groupTotal: number;
+  groupEventCount: number;
+}
+
 interface WeeklyData {
   weekStartDate: string;
   weekEndDate: string;
@@ -13,6 +20,7 @@ interface WeeklyData {
   totalSandwiches: number;
   individual: number;
   groupCollections: number;
+  locationBreakdowns: LocationBreakdown[];
 }
 
 // GET /api/reports/weekly-collections
@@ -61,10 +69,12 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
 
     // Group by Wed-Tue weeks
     const weeklyMap = new Map<string, WeeklyData>();
+    // Track location data per week: Map<weekKey, Map<location, LocationBreakdown>>
+    const locationMap = new Map<string, Map<string, LocationBreakdown>>();
 
     for (const collection of collections) {
       const collectionDate = new Date(collection.collectionDate);
-      
+
       // Get the Wednesday of this week (or the Wednesday before if not Wednesday)
       const dayOfWeek = collectionDate.getDay();
       // Calculate days to go back to reach Wednesday (3)
@@ -72,7 +82,7 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       const daysToGoBack = (dayOfWeek - 3 + 7) % 7;
       const wednesday = new Date(collectionDate);
       wednesday.setDate(wednesday.getDate() - daysToGoBack);
-      
+
       // Format Wednesday date as YYYY-MM-DD
       const wedStr = wednesday.toISOString().split('T')[0];
       const tuesday = new Date(wednesday);
@@ -88,31 +98,64 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
           totalSandwiches: 0,
           individual: 0,
           groupCollections: 0,
+          locationBreakdowns: [],
         });
+        locationMap.set(weekKey, new Map());
       }
 
       const week = weeklyMap.get(weekKey)!;
+      const weekLocations = locationMap.get(weekKey)!;
       week.collectionCount += 1;
 
       const individual = collection.individualSandwiches || 0;
+      const location = collection.hostName || 'Unknown';
 
       // Handle both new groupCollections array and legacy group1/group2 fields
       let groupColl = 0;
+      let groupEventCount = 0;
 
       if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
         // NEW FORMAT: Use groupCollections JSON array - sum ALL groups
         groupColl = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+        groupEventCount = collection.groupCollections.length;
       } else {
         // LEGACY FORMAT: Use old group1Count and group2Count fields
         const g1 = collection.group1Count || 0;
         const g2 = collection.group2Count || 0;
         groupColl = g1 + g2;
+        // Count legacy group events (if they have a count > 0)
+        if (g1 > 0) groupEventCount++;
+        if (g2 > 0) groupEventCount++;
       }
+
+      // Track location breakdown
+      if (!weekLocations.has(location)) {
+        weekLocations.set(location, {
+          location,
+          individual: 0,
+          groupTotal: 0,
+          groupEventCount: 0,
+        });
+      }
+      const locData = weekLocations.get(location)!;
+      locData.individual += individual;
+      locData.groupTotal += groupColl;
+      locData.groupEventCount += groupEventCount;
 
       week.individual += individual;
       week.groupCollections += groupColl;
       // Total is individual + all group collections
       week.totalSandwiches += individual + groupColl;
+    }
+
+    // Attach location breakdowns to each week
+    for (const [weekKey, week] of weeklyMap) {
+      const weekLocations = locationMap.get(weekKey);
+      if (weekLocations) {
+        week.locationBreakdowns = Array.from(weekLocations.values()).sort((a, b) =>
+          a.location.localeCompare(b.location)
+        );
+      }
     }
 
     const result = Array.from(weeklyMap.values()).sort(
