@@ -4,7 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Download, TrendingUp, Info, FileText } from 'lucide-react';
+import { Loader2, Download, TrendingUp, Info, FileText, BarChart3 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import {
   Table,
   TableBody,
@@ -45,6 +55,8 @@ export default function WeeklyCollectionsReport() {
     // Default to today
     return new Date().toISOString().split('T')[0];
   });
+
+  const [showChart, setShowChart] = useState(true);
 
   const { data, isLoading, error, refetch } = useQuery<WeeklyReportResponse>({
     queryKey: ['/api/reports/weekly-collections', startDate, endDate],
@@ -353,6 +365,96 @@ export default function WeeklyCollectionsReport() {
                 </div>
               </div>
             </div>
+          </Card>
+
+          {/* Visual Chart */}
+          <Card className="bg-white overflow-hidden">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-brand-primary" />
+                <h3 className="font-semibold text-slate-900">Collection Trends</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowChart(!showChart)}
+              >
+                {showChart ? 'Hide' : 'Show'} Chart
+              </Button>
+            </div>
+
+            {showChart && data.weeks.length > 0 && (
+              <div className="p-6">
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={data.weeks.map((week) => ({
+                        weekLabel: week.weekStartDate,
+                        individual: week.individual,
+                        groupCollections: week.groupCollections,
+                        total: week.totalSandwiches,
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="weekLabel"
+                        tick={{ fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string) => [
+                          value.toLocaleString(),
+                          name === 'individual' ? 'Individual' : name === 'groupCollections' ? 'Group Collections' : 'Total'
+                        ]}
+                        labelFormatter={(label) => `Week: ${label}`}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                      />
+                      <Legend
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        formatter={(value) =>
+                          value === 'individual' ? 'Individual' :
+                          value === 'groupCollections' ? 'Group Collections' : 'Total'
+                        }
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="individual"
+                        stroke="#007E8C"
+                        strokeWidth={2}
+                        dot={{ fill: '#007E8C', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: '#007E8C' }}
+                        name="individual"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="groupCollections"
+                        stroke="#FBAD3F"
+                        strokeWidth={2}
+                        dot={{ fill: '#FBAD3F', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: '#FBAD3F' }}
+                        name="groupCollections"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#47B3CB"
+                        strokeWidth={3}
+                        dot={{ fill: '#47B3CB', strokeWidth: 2, r: 5 }}
+                        activeDot={{ r: 7, fill: '#47B3CB' }}
+                        name="total"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </Card>
 
           <Card className="bg-white overflow-hidden">
