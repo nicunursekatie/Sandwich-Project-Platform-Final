@@ -732,6 +732,31 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                 )}
                               </div>
                             </div>
+                            {/* Edit/Delete buttons for contact attempts */}
+                            <div className="flex gap-1 flex-shrink-0">
+                              {onEditContactAttempt && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                  onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                  title="Edit contact attempt"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {onDeleteContactAttempt && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                  title="Delete contact attempt"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -911,7 +936,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             )}
 
             <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Log & Messages</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Comments & Messages</h3>
               <EventMessageThread
                 eventId={request.id.toString()}
                 eventRequest={request}

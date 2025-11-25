@@ -315,7 +315,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Communication & Notes
+              Comments & Messages
               <Badge variant="secondary" className="text-xs">
                 {totalCount}
               </Badge>
