@@ -12,7 +12,8 @@
       "Bash(npx tsx:*)",
       "Bash(taskkill:*)",
       "Bash(set PORT=5001)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

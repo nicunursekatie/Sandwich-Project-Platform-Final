@@ -73,6 +73,8 @@ interface InProcessCardProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
+  onEditContactAttempt?: (attemptNumber: number) => void;
+  onDeleteContactAttempt?: (attemptNumber: number) => Promise<void>;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
   canEdit?: boolean;
@@ -493,6 +495,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
+  onEditContactAttempt,
+  onDeleteContactAttempt,
   onAiSuggest,
   onAiIntakeAssist,
   canEdit = true,
@@ -899,6 +903,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 eventRequest={request}
                 eventTitle={`${request.organizationName} event`}
                 maxHeight="300px"
+                onEditContactAttempt={onEditContactAttempt}
+                onDeleteContactAttempt={onDeleteContactAttempt}
               />
             </div>
           </div>

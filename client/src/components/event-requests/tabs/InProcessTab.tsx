@@ -37,6 +37,9 @@ export const InProcessTab: React.FC = () => {
     setShowTspContactAssignmentDialog,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowEditContactDialog,
+    setEditContactEventRequest,
+    setEditContactAttemptData,
     setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
     setShowAiIntakeAssistantDialog,
@@ -226,6 +229,48 @@ export const InProcessTab: React.FC = () => {
               onLogContact={() => {
                 setLogContactEventRequest(request);
                 setShowLogContactDialog(true);
+              }}
+              onEditContactAttempt={(attemptNumber) => {
+                // Find the contact attempt to edit
+                const attempt = request.contactAttemptsLog?.find(
+                  (a: any) => a.attemptNumber === attemptNumber
+                );
+                if (attempt) {
+                  setEditContactEventRequest(request);
+                  setEditContactAttemptData(attempt);
+                  setShowEditContactDialog(true);
+                }
+              }}
+              onDeleteContactAttempt={async (attemptNumber) => {
+                // Filter out the attempt to delete
+                const updatedLog = request.contactAttemptsLog?.filter(
+                  (a: any) => a.attemptNumber !== attemptNumber
+                );
+
+                // Renumber remaining attempts
+                const renumberedLog = updatedLog?.map((attempt: any, index: number) => ({
+                  ...attempt,
+                  attemptNumber: index + 1,
+                }));
+
+                // Find the most recent attempt
+                const mostRecentAttempt = renumberedLog?.[renumberedLog.length - 1];
+
+                await updateEventRequestMutation.mutateAsync({
+                  id: request.id,
+                  data: {
+                    contactAttempts: renumberedLog?.length || 0,
+                    lastContactAttempt: mostRecentAttempt?.timestamp || null,
+                    contactMethod: mostRecentAttempt?.method || null,
+                    contactOutcome: mostRecentAttempt?.outcome || null,
+                    contactAttemptsLog: renumberedLog || [],
+                  },
+                });
+
+                toast({
+                  title: 'Contact attempt deleted',
+                  description: `Successfully deleted attempt #${attemptNumber}`,
+                });
               }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
