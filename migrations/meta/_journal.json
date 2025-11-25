@@ -22,6 +22,20 @@
       "when": 1763953362777,
       "tag": "0002_glorious_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764100749485,
+      "tag": "0003_add_self_transport",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764102123081,
+      "tag": "0004_add_attendance_breakdown",
+      "breakpoints": true
     }
   ]
 }

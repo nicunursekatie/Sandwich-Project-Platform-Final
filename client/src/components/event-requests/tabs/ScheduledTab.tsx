@@ -210,12 +210,19 @@ export const ScheduledTab: React.FC = () => {
           id: editingScheduledId,
           data: { hasRefrigeration: refrigerationValue },
         });
-      } else if (editingField === 'isConfirmed' || editingField === 'addedToOfficialSheet') {
+      } else if (editingField === 'isConfirmed' || editingField === 'addedToOfficialSheet' || editingField === 'selfTransport') {
         // Special handling for boolean toggles
         const boolValue = editingValue === 'true';
+        const updateData: any = { [editingField]: boolValue };
+
+        // When setting selfTransport to true, clear driversNeeded
+        if (editingField === 'selfTransport' && boolValue) {
+          updateData.driversNeeded = 0;
+        }
+
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
-          data: { [editingField]: boolValue },
+          data: updateData,
         });
       } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
         // When saving a date field, also save the confirmation status
@@ -236,6 +243,19 @@ export const ScheduledTab: React.FC = () => {
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: { assignedRecipientIds: recipientIds },
+        });
+      } else if (editingField === 'attendanceBreakdown') {
+        // Special handling for attendance breakdown - parse comma-separated values
+        const [adults, teens, kids] = editingValue.split(',').map(v => parseInt(v) || null);
+        const total = (adults || 0) + (teens || 0) + (kids || 0);
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: {
+            attendanceAdults: adults,
+            attendanceTeens: teens,
+            attendanceKids: kids,
+            estimatedAttendance: total > 0 ? total : null,
+          },
         });
       } else {
         // Regular field update

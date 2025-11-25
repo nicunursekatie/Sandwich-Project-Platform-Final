@@ -1936,6 +1936,7 @@ export const eventRequests = pgTable(
     overnightPickupTime: time('overnight_pickup_time'), // Time to pick up sandwiches from overnight location
     // Driver, speaker, and volunteer requirements
     driversNeeded: integer('drivers_needed').default(0), // How many drivers this event needs
+    selfTransport: boolean('self_transport').default(false), // Organization is transporting sandwiches themselves (no TSP driver needed)
     speakersNeeded: integer('speakers_needed').default(0), // How many speakers this event needs
     volunteersNeeded: integer('volunteers_needed').default(0), // How many volunteers this event needs
     volunteerNotes: text('volunteer_notes'), // General notes about volunteer requirements
@@ -1981,6 +1982,10 @@ export const eventRequests = pgTable(
     // Event attendance tracking for completed events
     actualAttendance: integer('actual_attendance'), // Actual number of people who attended the event
     estimatedAttendance: integer('estimated_attendance'), // Estimated number of people expected to attend
+    // Attendance breakdown by age group (for more detailed tracking)
+    attendanceAdults: integer('attendance_adults'), // Number of adults who attended
+    attendanceTeens: integer('attendance_teens'), // Number of teens who attended
+    attendanceKids: integer('attendance_kids'), // Number of kids who attended
     attendanceRecordedDate: timestamp('attendance_recorded_date'), // When attendance was recorded
     attendanceRecordedBy: varchar('attendance_recorded_by'), // User ID who recorded attendance
     attendanceNotes: text('attendance_notes'), // Notes about attendance
@@ -2323,8 +2328,12 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     // Attendance tracking fields
     actualAttendance: z.number().nullable().optional(),
     estimatedAttendance: z.number().nullable().optional(),
+    attendanceAdults: z.number().nullable().optional(),
+    attendanceTeens: z.number().nullable().optional(),
+    attendanceKids: z.number().nullable().optional(),
     attendanceNotes: z.string().nullable().optional(),
     driversArranged: z.boolean().nullable().optional(),
+    selfTransport: z.boolean().nullable().optional(), // Organization transporting sandwiches themselves
     driverDetails: z.any().nullable().optional(), // JSONB field
     speakerDetails: z.string().nullable().optional(),
     // Follow-up tracking fields
