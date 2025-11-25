@@ -97,6 +97,26 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'collections',
     highlighted: true,
   },
+  {
+    id: 'weekly-collections-report',
+    label: 'Weekly Collections Report',
+    icon: FileSpreadsheet,
+    href: 'weekly-collections-report',
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'collections',
+    parentId: 'collections',
+    isSubItem: true,
+  },
+  {
+    id: 'group-collections',
+    label: 'Group Collections Viewer',
+    icon: Users,
+    href: 'group-collections',
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'collections',
+    parentId: 'collections',
+    isSubItem: true,
+  },
 
   // Move these back to their original groups without creating "core"
 
@@ -115,14 +135,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Inbox,
     href: 'gmail-inbox',
     permission: PERMISSIONS.NAV_INBOX,
-    group: 'communication',
-  },
-  {
-    id: 'suggestions',
-    label: 'Suggestions',
-    icon: Lightbulb,
-    href: 'suggestions',
-    permission: PERMISSIONS.NAV_SUGGESTIONS,
     group: 'communication',
   },
   {
@@ -335,23 +347,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'analytics',
   },
   {
-    id: 'weekly-collections-report',
-    label: 'Weekly Collections Report',
-    icon: FileSpreadsheet,
-    href: 'weekly-collections-report',
-    permission: PERMISSIONS.NAV_ANALYTICS,
-    group: 'analytics',
-    highlighted: true,
-  },
-  {
-    id: 'group-collections',
-    label: 'Group Collections Viewer',
-    icon: Users,
-    href: 'group-collections',
-    permission: PERMISSIONS.NAV_ANALYTICS,
-    group: 'analytics',
-  },
-  {
     id: 'weekly-monitoring',
     label: 'Weekly Monitoring',
     icon: Clock,
@@ -412,6 +407,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'admin',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
+    topNav: true,
   },
   {
     id: 'user-management',
@@ -446,7 +442,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'admin',
   },
 
-  // HELP - Always at the bottom (standard UX pattern)
+  // HELP - Moved to top nav
   {
     id: 'help',
     label: 'Help',
@@ -454,5 +450,17 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'help',
     permission: PERMISSIONS.NAV_HELP,
     group: 'help',
+    topNav: true,
+  },
+
+  // SUGGESTIONS - Moved to top nav (feedback/ideas)
+  {
+    id: 'suggestions',
+    label: 'Suggestions',
+    icon: Lightbulb,
+    href: 'suggestions',
+    permission: PERMISSIONS.NAV_SUGGESTIONS,
+    group: 'communication',
+    topNav: true,
   },
 ];

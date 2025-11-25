@@ -54,6 +54,7 @@ import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-con
 import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
+import { WhatsNewModal } from '@/components/whats-new-modal';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -553,6 +554,7 @@ export default function Dashboard({
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
       <SMSAnnouncementModal />
+      <WhatsNewModal />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
@@ -672,22 +674,53 @@ export default function Dashboard({
               {/* Onboarding Challenge Button */}
               <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
 
-              {/* Quick Help Button */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  logger.log('Help button clicked');
-                  trackButtonClick('help', 'dashboard_header');
-                  setLocation('/help');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] text-teal-600 hover:bg-teal-50 hover:text-teal-800`}
-                title="Help & Support"
-                aria-label="Help & Support"
-              >
-                <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              {/* Top Nav Items (from nav.config) */}
+              {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
+                const Icon = item.icon;
+                const showNewBadge = !localStorage.getItem('navigation_update_2024_seen');
+
+                return (
+                  <div key={item.id} className="relative group">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        logger.log(`${item.label} button clicked`);
+                        trackButtonClick(item.id, 'dashboard_header');
+                        if (item.href === 'help') {
+                          setLocation('/help');
+                        } else {
+                          setActiveSection(item.href);
+                          window.history.pushState({}, '', `/dashboard?section=${item.href}`);
+                        }
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`p-2 rounded-lg transition-all duration-200 relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                        activeSection === item.href
+                          ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                          : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800 hover:shadow-md'
+                      } ${showNewBadge ? 'ring-2 ring-amber-400 ring-offset-2 animate-pulse' : ''}`}
+                      title={`${item.label}${showNewBadge ? ' (Moved here!)' : ''}`}
+                      aria-label={item.label}
+                    >
+                      {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      {showNewBadge && (
+                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
+                          NEW
+                        </span>
+                      )}
+                    </button>
+                    {/* Enhanced tooltip for moved items */}
+                    {showNewBadge && (
+                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[60]">
+                        <div className="font-semibold">{item.label}</div>
+                        <div className="text-gray-300 text-[10px]">Moved from sidebar</div>
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               <button
                 onClick={(e) => {
