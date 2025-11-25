@@ -12,20 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import {
   CheckCircle,
   XCircle,
@@ -33,11 +19,9 @@ import {
   Mail,
   RefreshCw,
   Calendar,
-  CalendarIcon,
   MapPin,
   AlertTriangle,
   FileBarChart,
-  TrendingUp,
   Users,
   Info,
   MessageSquare,
@@ -105,32 +89,6 @@ interface MonitoringStats {
   nextScheduledCheck: string;
 }
 
-interface CollectionTrendData {
-  weekLabel: string;
-  weekStart: string;
-  weekEnd: string;
-  individualTotal: number;
-  groupTotal: number;
-  total: number;
-}
-
-interface CollectionTrendsResponse {
-  startDate: string;
-  endDate: string;
-  weekCount: number;
-  trends: CollectionTrendData[];
-}
-
-interface CurrentWeekTotals {
-  weekLabel: string;
-  weekStart: string;
-  weekEnd: string;
-  individualTotal: number;
-  groupTotal: number;
-  total: number;
-  collectionCount: number;
-}
-
 export default function WeeklyMonitoringDashboard() {
   const queryClient = useQueryClient();
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = current week, 1 = last week, etc.
@@ -149,17 +107,7 @@ export default function WeeklyMonitoringDashboard() {
   );
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  const { trackReportGeneration, trackCommunication, trackButtonClick } = useAnalytics();
-
-  // Collection trends date range state
-  const getDefaultStartDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() - 84); // 12 weeks ago
-    return date;
-  };
-  const [trendsStartDate, setTrendsStartDate] = useState<Date | undefined>(getDefaultStartDate);
-  const [trendsEndDate, setTrendsEndDate] = useState<Date | undefined>(new Date());
-  const [showRunningTotals, setShowRunningTotals] = useState(false);
+  const { trackReportGeneration, trackCommunication, trackButtonClick} = useAnalytics();
 
   // Calculate the week date based on selectedWeek
   const getWeekDateString = (weeksAgo: number): string => {
@@ -207,25 +155,6 @@ export default function WeeklyMonitoringDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/monitoring/stats'],
     queryFn: () => apiRequest('GET', '/api/monitoring/stats'),
-    refetchInterval: 5 * 60 * 1000,
-  });
-
-  // Get collection trends for date range
-  const { data: trendsData, isLoading: trendsLoading } = useQuery<CollectionTrendsResponse>({
-    queryKey: ['/api/monitoring/collection-trends', trendsStartDate?.toISOString(), trendsEndDate?.toISOString()],
-    queryFn: () => {
-      if (!trendsStartDate || !trendsEndDate) return Promise.resolve({ trends: [], startDate: '', endDate: '', weekCount: 0 });
-      const startStr = format(trendsStartDate, 'yyyy-MM-dd');
-      const endStr = format(trendsEndDate, 'yyyy-MM-dd');
-      return apiRequest('GET', `/api/monitoring/collection-trends?startDate=${startStr}&endDate=${endStr}`);
-    },
-    enabled: !!trendsStartDate && !!trendsEndDate,
-  });
-
-  // Get current week totals for summary card
-  const { data: currentWeekTotals, isLoading: currentWeekLoading } = useQuery<CurrentWeekTotals>({
-    queryKey: ['/api/monitoring/current-week-totals'],
-    queryFn: () => apiRequest('GET', '/api/monitoring/current-week-totals'),
     refetchInterval: 5 * 60 * 1000,
   });
 
@@ -1124,16 +1053,11 @@ export default function WeeklyMonitoringDashboard() {
 
       {/* Main Content - Tabs for different views */}
       <Tabs defaultValue="weekly" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="weekly" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             <span className="hidden sm:inline">Weekly Status</span>
             <span className="sm:hidden">Weekly</span>
-          </TabsTrigger>
-          <TabsTrigger value="trends" className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            <span className="hidden sm:inline">Collection Trends</span>
-            <span className="sm:hidden">Trends</span>
           </TabsTrigger>
           <TabsTrigger value="report" className="flex items-center gap-2">
             <FileBarChart className="w-4 h-4" />
@@ -1282,243 +1206,6 @@ export default function WeeklyMonitoringDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="trends" className="mt-6">
-          {/* Collection Trends - Individuals vs Groups Over Time */}
-          <div className="space-y-6">
-            {/* Current Week Summary Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-brand-primary" />
-                  Current Week Collection Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {currentWeekLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-600">Loading current week...</span>
-                  </div>
-                ) : currentWeekTotals ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-teal-50 rounded-lg p-4 border border-teal-100">
-                      <div className="text-sm font-medium text-teal-700">Individual Sandwiches</div>
-                      <div className="text-2xl font-bold text-teal-800">{currentWeekTotals.individualTotal.toLocaleString()}</div>
-                      <div className="text-xs text-teal-600 mt-1">From individuals this week</div>
-                    </div>
-                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
-                      <div className="text-sm font-medium text-amber-700">Group Sandwiches</div>
-                      <div className="text-2xl font-bold text-amber-800">{currentWeekTotals.groupTotal.toLocaleString()}</div>
-                      <div className="text-xs text-amber-600 mt-1">From groups/organizations</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="text-sm font-medium text-gray-700">Total This Week</div>
-                      <div className="text-2xl font-bold text-gray-800">{currentWeekTotals.total.toLocaleString()}</div>
-                      <div className="text-xs text-gray-600 mt-1">{currentWeekTotals.weekLabel} ({currentWeekTotals.collectionCount} collections)</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">No data available for current week</div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Date Range Selection and Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Collection Trends Over Time
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Date Range Pickers */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !trendsStartDate && "text-muted-foreground"
-                            )}
-                            data-testid="trends-start-date-picker"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {trendsStartDate ? format(trendsStartDate, "PPP") : "Select start date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={trendsStartDate}
-                            onSelect={setTrendsStartDate}
-                            disabled={(date) => date > new Date() || (trendsEndDate ? date > trendsEndDate : false)}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !trendsEndDate && "text-muted-foreground"
-                            )}
-                            data-testid="trends-end-date-picker"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {trendsEndDate ? format(trendsEndDate, "PPP") : "Select end date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={trendsEndDate}
-                            onSelect={setTrendsEndDate}
-                            disabled={(date) => date > new Date() || (trendsStartDate ? date < trendsStartDate : false)}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowRunningTotals(!showRunningTotals)}
-                        className={cn(
-                          "flex items-center gap-2",
-                          showRunningTotals && "bg-teal-50 border-teal-200 text-teal-700"
-                        )}
-                        data-testid="toggle-running-totals"
-                      >
-                        {showRunningTotals ? "Hide" : "Show"} Running Totals
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Line Chart */}
-                  {trendsLoading ? (
-                    <div className="flex items-center justify-center py-16">
-                      <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                      <span className="ml-2 text-gray-600">Loading trends data...</span>
-                    </div>
-                  ) : trendsData && trendsData.trends && trendsData.trends.length > 0 ? (
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={trendsData.trends}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis
-                            dataKey="weekLabel"
-                            tick={{ fontSize: 11 }}
-                            angle={-45}
-                            textAnchor="end"
-                            height={80}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(value) => value.toLocaleString()}
-                          />
-                          <Tooltip
-                            formatter={(value: number, name: string) => [
-                              value.toLocaleString(),
-                              name === 'individualTotal' ? 'Individuals' : name === 'groupTotal' ? 'Groups' : 'Total'
-                            ]}
-                            labelFormatter={(label) => `Week: ${label}`}
-                            contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                          />
-                          <Legend
-                            wrapperStyle={{ paddingTop: '20px' }}
-                            formatter={(value) => 
-                              value === 'individualTotal' ? 'Individuals' : 
-                              value === 'groupTotal' ? 'Groups' : 'Total'
-                            }
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="individualTotal"
-                            stroke="#007E8C"
-                            strokeWidth={2}
-                            dot={{ fill: '#007E8C', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, fill: '#007E8C' }}
-                            name="individualTotal"
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="groupTotal"
-                            stroke="#FBAD3F"
-                            strokeWidth={2}
-                            dot={{ fill: '#FBAD3F', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, fill: '#FBAD3F' }}
-                            name="groupTotal"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 text-gray-500">
-                      <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No trend data available for the selected date range.</p>
-                      <p className="text-sm mt-2">Try selecting a different date range to see collection trends.</p>
-                    </div>
-                  )}
-
-                  {/* Running Weekly Totals (Optional) */}
-                  {showRunningTotals && trendsData && trendsData.trends && trendsData.trends.length > 0 && (
-                    <div className="mt-6 border-t pt-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">Weekly Breakdown</h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b bg-gray-50">
-                              <th className="text-left py-3 px-4 font-medium text-gray-700">Week</th>
-                              <th className="text-right py-3 px-4 font-medium text-teal-700">Individuals</th>
-                              <th className="text-right py-3 px-4 font-medium text-amber-700">Groups</th>
-                              <th className="text-right py-3 px-4 font-medium text-gray-700">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {trendsData.trends.map((week, index) => (
-                              <tr key={week.weekStart} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                <td className="py-3 px-4 text-gray-900">{week.weekLabel}</td>
-                                <td className="py-3 px-4 text-right text-teal-700 font-medium">{week.individualTotal.toLocaleString()}</td>
-                                <td className="py-3 px-4 text-right text-amber-700 font-medium">{week.groupTotal.toLocaleString()}</td>
-                                <td className="py-3 px-4 text-right text-gray-900 font-semibold">{week.total.toLocaleString()}</td>
-                              </tr>
-                            ))}
-                            {/* Summary Row */}
-                            <tr className="border-t-2 border-gray-200 bg-gray-100 font-semibold">
-                              <td className="py-3 px-4 text-gray-900">Total ({trendsData.weekCount} weeks)</td>
-                              <td className="py-3 px-4 text-right text-teal-800">
-                                {trendsData.trends.reduce((sum, week) => sum + week.individualTotal, 0).toLocaleString()}
-                              </td>
-                              <td className="py-3 px-4 text-right text-amber-800">
-                                {trendsData.trends.reduce((sum, week) => sum + week.groupTotal, 0).toLocaleString()}
-                              </td>
-                              <td className="py-3 px-4 text-right text-gray-900">
-                                {trendsData.trends.reduce((sum, week) => sum + week.total, 0).toLocaleString()}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
         <TabsContent value="report" className="mt-6">
           {/* Multi-Week Report */}
