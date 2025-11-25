@@ -124,6 +124,7 @@ const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-showcase'));
 const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
 const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
+const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -367,6 +368,8 @@ export default function Dashboard({
       case 'document-management':
         return <DocumentManagement />;
 
+      case 'tsp-network':
+        return <TSPNetwork />;
       case 'hosts':
         return <HostsManagement />;
       case 'route-map':
@@ -677,7 +680,7 @@ export default function Dashboard({
               {/* Top Nav Items (from nav.config) */}
               {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
                 const Icon = item.icon;
-                const showNewBadge = !localStorage.getItem('navigation_update_2024_seen');
+                const showNewBadge = !localStorage.getItem('navigation_update_2024_v2_seen');
 
                 return (
                   <div key={item.id} className="relative group">

@@ -35,6 +35,9 @@ export default function SimpleNav({
     // State for collapsible sections
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
+    // State for expanded parent items (like TSP Network)
+    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections']));
+
     // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({
       queryKey: ['/api/emails/unread-count', (user as any)?.id || 'no-user'],
@@ -100,6 +103,17 @@ export default function SimpleNav({
         newCollapsed.add(group);
       }
       setCollapsedSections(newCollapsed);
+    };
+
+    // Toggle parent item expansion
+    const toggleParent = (parentId: string) => {
+      const newExpanded = new Set(expandedParents);
+      if (newExpanded.has(parentId)) {
+        newExpanded.delete(parentId);
+      } else {
+        newExpanded.add(parentId);
+      }
+      setExpandedParents(newExpanded);
     };
 
     const isActive = (href: string) => {
@@ -200,6 +214,15 @@ export default function SimpleNav({
             return null;
           }
 
+          // Check if this item has children
+          const hasChildren = filteredNavigationItems.some(navItem => navItem.parentId === item.id);
+          const isExpanded = expandedParents.has(item.id);
+
+          // Hide sub-items if their parent is not expanded
+          if (item.isSubItem && item.parentId && !expandedParents.has(item.parentId)) {
+            return null;
+          }
+
           return (
 
             <Button
@@ -229,12 +252,18 @@ export default function SimpleNav({
                 e.preventDefault();
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
-                
+
+                // If item has children, toggle expansion first
+                if (hasChildren) {
+                  toggleParent(item.id);
+                }
+
+                // Then handle navigation
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');
                   logger.log('Navigation with query params:', { baseSection, queryString });
-                  
+
                   // Navigate using Wouter's setLocation to keep router in sync
                   // The Dashboard will pick up the section and tab from URL params
                   const newUrl = `/dashboard?section=${baseSection}&${queryString}`;
@@ -267,12 +296,21 @@ export default function SimpleNav({
                 <>
                   <span className="flex-1 text-left font-medium">{item.label}</span>
                   {badgeCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
+                    <Badge
+                      variant="destructive"
                       className="ml-auto h-5 min-w-[20px] text-xs"
                     >
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Badge>
+                  )}
+                  {hasChildren && (
+                    <div className="ml-2">
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </div>
                   )}
                 </>
               )}

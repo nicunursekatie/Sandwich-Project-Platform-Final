@@ -165,12 +165,23 @@ export const NAV_ITEMS: NavItem[] = [
 
   // OPERATIONS (the weekly flow)
   {
+    id: 'tsp-network',
+    label: 'TSP Network',
+    icon: Users,
+    href: 'tsp-network',
+    permission: PERMISSIONS.NAV_HOSTS, // Using NAV_HOSTS as the base permission
+    group: 'operations',
+    highlighted: true,
+  },
+  {
     id: 'hosts',
     label: 'Hosts',
     icon: Building2,
     href: 'hosts',
     permission: PERMISSIONS.NAV_HOSTS,
     group: 'operations',
+    parentId: 'tsp-network',
+    isSubItem: true,
   },
   {
     id: 'host-map',
@@ -189,6 +200,8 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'drivers',
     permission: PERMISSIONS.NAV_DRIVERS,
     group: 'operations',
+    parentId: 'tsp-network',
+    isSubItem: true,
   },
   {
     id: 'volunteers',
@@ -197,6 +210,8 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'volunteers',
     permission: PERMISSIONS.NAV_VOLUNTEERS,
     group: 'operations',
+    parentId: 'tsp-network',
+    isSubItem: true,
   },
   {
     id: 'recipients',
@@ -205,6 +220,8 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'recipients',
     permission: PERMISSIONS.NAV_RECIPIENTS,
     group: 'operations',
+    parentId: 'tsp-network',
+    isSubItem: true,
   },
   {
     id: 'groups-catalog',
