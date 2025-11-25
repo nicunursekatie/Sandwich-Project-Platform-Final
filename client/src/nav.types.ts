@@ -13,6 +13,7 @@ export interface NavItem {
   parentId?: string; // ID of parent nav item for nested structure
   isSubItem?: boolean; // Flag to indicate this is a sub-item
   highlighted?: boolean; // Flag to highlight important menu items with special color
+  topNav?: boolean; // Flag to indicate this item should appear in top nav instead of sidebar
 }
 
 export interface NavigationGroup {
