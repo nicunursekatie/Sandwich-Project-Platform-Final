@@ -1104,10 +1104,37 @@ export default function SandwichCollectionLog() {
         ),
       });
     },
-    onError: (error: any, id: number) => {
+    onError: async (error: any, id: number) => {
       logger.error('Delete collection error:', error);
 
-      // Track failed deletion
+      // Refresh data first to check if the deletion actually succeeded
+      // (sometimes the delete works but the response is lost due to network issues)
+      await queryClient.invalidateQueries({
+        queryKey: ['/api/sandwich-collections'],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['/api/sandwich-collections/stats'],
+      });
+
+      // Wait briefly for the refetch to complete, then check if the item still exists
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Get the current collections from the cache
+      const cachedData = queryClient.getQueryData<{ collections: Array<{ id: number }> }>(['/api/sandwich-collections']);
+      const stillExists = cachedData?.collections?.some(c => c.id === id);
+
+      if (!stillExists) {
+        // The deletion actually worked! Show success message instead of error
+        trackDelete('sandwich_collection', 'Collections', 'Collection Log', id.toString());
+        toast({
+          title: 'Collection Deleted 🗑️',
+          description: 'The collection was successfully deleted.',
+          duration: 4000,
+        });
+        return;
+      }
+
+      // Track failed deletion only if it actually failed
       trackActivity({
         action: 'Delete Failed',
         section: 'Collections',
@@ -1118,12 +1145,6 @@ export default function SandwichCollectionLog() {
           error: error?.message || 'Unknown error occurred',
           timestamp: new Date().toISOString()
         },
-      });
-
-      // Check if it's just an auth error but the deletion might have worked
-      // We'll refresh the data to see if it actually got deleted
-      queryClient.invalidateQueries({
-        queryKey: ['/api/sandwich-collections'],
       });
 
       // Show a more helpful error message
@@ -1142,7 +1163,7 @@ export default function SandwichCollectionLog() {
         toast({
           title: 'Delete Error',
           description:
-            'Failed to delete collection. Please refresh the page to check if it was actually deleted.',
+            'Failed to delete collection. Please try again.',
           variant: 'destructive',
         });
       }
