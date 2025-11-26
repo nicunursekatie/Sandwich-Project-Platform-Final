@@ -89,6 +89,14 @@ const HOST_AREAS = [
   'UGA',
 ] as const;
 
+// Predefined contact roles - standardized lowercase values
+const CONTACT_ROLES = [
+  { value: 'lead', label: 'Lead' },
+  { value: 'host', label: 'Host' },
+  { value: 'primary', label: 'Primary Contact' },
+  { value: 'alternate', label: 'Alternate Contact' },
+] as const;
+
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1114,18 +1122,27 @@ export default function HostsManagementConsolidated() {
               </div>
               <div>
                 <Label htmlFor="main-contact-role">Role</Label>
-                <Input
-                  id="main-contact-role"
-                  value={newContact.role}
-                  onChange={(e) => {
-                    e.stopPropagation();
+                <Select
+                  value={newContact.role || ''}
+                  onValueChange={(value) => {
                     setNewContact({
                       ...newContact,
-                      role: e.target.value,
+                      role: value === 'none' ? '' : value,
                     });
                   }}
-                  placeholder="e.g., Manager, Coordinator, Lead, Volunteer"
-                />
+                >
+                  <SelectTrigger id="main-contact-role">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Role</SelectItem>
+                    {CONTACT_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="main-contact-phone">Phone</Label>
@@ -1607,18 +1624,27 @@ export default function HostsManagementConsolidated() {
 
                     <div>
                       <Label htmlFor="edit-contact-role">Role</Label>
-                      <Input
-                        id="edit-contact-role"
+                      <Select
                         value={editingContact.role || ''}
-                        onChange={(e) => {
-                          e.stopPropagation();
+                        onValueChange={(value) => {
                           setEditingContact({
                             ...editingContact,
-                            role: e.target.value,
+                            role: value === 'none' ? '' : value,
                           });
                         }}
-                        placeholder="e.g., Manager, Coordinator, Lead"
-                      />
+                      >
+                        <SelectTrigger id="edit-contact-role">
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Role</SelectItem>
+                          {CONTACT_ROLES.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div>
@@ -1925,18 +1951,27 @@ export default function HostsManagementConsolidated() {
                         </div>
                         <div>
                           <Label htmlFor="contact-role">Role</Label>
-                          <Input
-                            id="contact-role"
-                            value={newContact.role}
-                            onChange={(e) => {
-                              e.stopPropagation();
+                          <Select
+                            value={newContact.role || ''}
+                            onValueChange={(value) => {
                               setNewContact({
                                 ...newContact,
-                                role: e.target.value,
+                                role: value === 'none' ? '' : value,
                               });
                             }}
-                            placeholder="e.g., Manager, Coordinator, Lead, Volunteer"
-                          />
+                          >
+                            <SelectTrigger id="contact-role">
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Role</SelectItem>
+                              {CONTACT_ROLES.map((role) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label htmlFor="contact-phone">Phone</Label>
@@ -2202,18 +2237,27 @@ export default function HostsManagementConsolidated() {
                                           <Label htmlFor="edit-contact-role">
                                             Role
                                           </Label>
-                                          <Input
-                                            id="edit-contact-role"
+                                          <Select
                                             value={editingContact.role || ''}
-                                            onChange={(e) => {
-                                              e.stopPropagation();
+                                            onValueChange={(value) => {
                                               setEditingContact({
                                                 ...editingContact,
-                                                role: e.target.value,
+                                                role: value === 'none' ? '' : value,
                                               });
                                             }}
-                                            placeholder="e.g., Manager, Coordinator, Lead"
-                                          />
+                                          >
+                                            <SelectTrigger id="edit-contact-role">
+                                              <SelectValue placeholder="Select a role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="none">No Role</SelectItem>
+                                              {CONTACT_ROLES.map((role) => (
+                                                <SelectItem key={role.value} value={role.value}>
+                                                  {role.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                         </div>
                                         <div>
                                           <Label htmlFor="edit-contact-phone">
