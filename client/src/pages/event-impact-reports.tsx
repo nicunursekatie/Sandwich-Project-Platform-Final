@@ -468,6 +468,26 @@ export default function EventImpactReports() {
     }
   };
 
+  // Helper for keyboard navigation on sortable headers
+  const handleSortKeyDown = (field: string) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSort(field);
+    }
+  };
+
+  // Helper for toggle expansion with keyboard support
+  const toggleEventExpansion = (eventId: number) => {
+    setExpandedEvent(expandedEvent === eventId ? null : eventId);
+  };
+
+  const handleExpandKeyDown = (eventId: number) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleEventExpansion(eventId);
+    }
+  };
+
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return null;
     return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
@@ -732,7 +752,7 @@ export default function EventImpactReports() {
                             tabIndex={0}
                             role="columnheader"
                             aria-sort={sortField === 'date' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('date'); } }}
+                            onKeyDown={handleSortKeyDown('date')}
                           >
                             <div className="flex items-center gap-1">
                               Date <SortIcon field="date" />
@@ -744,7 +764,7 @@ export default function EventImpactReports() {
                             tabIndex={0}
                             role="columnheader"
                             aria-sort={sortField === 'organization' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('organization'); } }}
+                            onKeyDown={handleSortKeyDown('organization')}
                           >
                             <div className="flex items-center gap-1">
                               Organization <SortIcon field="organization" />
@@ -756,7 +776,7 @@ export default function EventImpactReports() {
                             tabIndex={0}
                             role="columnheader"
                             aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('category'); } }}
+                            onKeyDown={handleSortKeyDown('category')}
                           >
                             <div className="flex items-center gap-1">
                               Category <SortIcon field="category" />
@@ -769,7 +789,7 @@ export default function EventImpactReports() {
                             tabIndex={0}
                             role="columnheader"
                             aria-sort={sortField === 'sandwiches' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('sandwiches'); } }}
+                            onKeyDown={handleSortKeyDown('sandwiches')}
                           >
                             <div className="flex items-center gap-1 justify-end">
                               Sandwiches <SortIcon field="sandwiches" />
@@ -784,16 +804,11 @@ export default function EventImpactReports() {
                             <TableRow
                               key={event.id}
                               className="cursor-pointer hover:bg-gray-50"
-                              onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                              onClick={() => toggleEventExpansion(event.id)}
                               tabIndex={0}
                               role="button"
                               aria-expanded={expandedEvent === event.id}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  setExpandedEvent(expandedEvent === event.id ? null : event.id);
-                                }
-                              }}
+                              onKeyDown={handleExpandKeyDown(event.id)}
                             >
                               <TableCell className="font-medium">
                                 {formatEventDate(event.scheduledEventDate || event.desiredEventDate)}
