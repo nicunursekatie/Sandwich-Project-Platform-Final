@@ -132,7 +132,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
 
 const COLORS = ['#236383', '#FBAD3F', '#47B3CB', '#007E8C', '#A31C41', '#6B7280'];
 
-// Organization category display labels (for organizationCategory field)
+// Organization category display labels
 const ORG_CATEGORY_LABELS: Record<string, string> = {
   'corp': 'Corporate',
   'small_medium_corp': 'Small/Medium Business',
@@ -150,39 +150,6 @@ const ORG_CATEGORY_LABELS: Record<string, string> = {
   'cultural': 'Cultural',
   'other': 'Other',
 };
-
-// AI categorization labels (for autoCategories.eventType field)
-const AI_EVENT_TYPE_LABELS: Record<string, string> = {
-  'corporate': 'Corporate',
-  'school': 'School',
-  'nonprofit': 'Nonprofit',
-  'community': 'Community',
-  'religious': 'Religious',
-  'government': 'Government',
-  'other': 'Other',
-};
-
-// Helper to get the best available organization category
-function getOrganizationCategory(event: any): string {
-  // First check if organizationCategory has a meaningful value (not 'other' or empty)
-  const manualCategory = event.organizationCategory;
-  if (manualCategory && manualCategory !== 'other') {
-    return ORG_CATEGORY_LABELS[manualCategory] || manualCategory;
-  }
-  
-  // Fall back to AI-generated category if available
-  const aiCategory = event.autoCategories?.eventType;
-  if (aiCategory && aiCategory !== 'other') {
-    return AI_EVENT_TYPE_LABELS[aiCategory] || aiCategory;
-  }
-  
-  // If manual category is set (even to 'other'), use it
-  if (manualCategory) {
-    return ORG_CATEGORY_LABELS[manualCategory] || manualCategory;
-  }
-  
-  return 'Other';
-}
 
 export default function EventImpactReports() {
   const [timePreset, setTimePreset] = useState('this-month');
@@ -250,8 +217,9 @@ export default function EventImpactReports() {
       if (event.organizationName) {
         organizations.add(event.organizationName);
       }
-      // Use best available category (manual or AI-generated)
-      const orgType = getOrganizationCategory(event);
+      // Use organizationCategory with display label
+      const rawCategory = event.organizationCategory || 'other';
+      const orgType = ORG_CATEGORY_LABELS[rawCategory] || rawCategory || 'Other';
       organizationTypes.set(orgType, (organizationTypes.get(orgType) || 0) + 1);
     });
 
