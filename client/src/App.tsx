@@ -276,9 +276,7 @@ function Router() {
           {() => <Dashboard initialSection="event-reminders" />}
         </Route>
         <Route path="/event-impact-reports">
-          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
-            <EventImpactReports />
-          </Suspense>
+          {() => <Dashboard initialSection="event-impact-reports" />}
         </Route>
         <Route path="/expenses">
           {() => <Dashboard initialSection="expenses" />}
