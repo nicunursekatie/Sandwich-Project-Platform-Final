@@ -54,7 +54,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
-import { CommentThread } from '@/components/collaboration';
+import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -122,6 +122,8 @@ interface CardHeaderProps {
   updateTspContactMutation?: ReturnType<typeof useMutation>;
   tempIsConfirmed?: boolean;
   setTempIsConfirmed?: (value: boolean) => void;
+  presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
+  currentUserId?: string;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -151,7 +153,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   users = [],
   updateTspContactMutation,
   tempIsConfirmed = false,
-  setTempIsConfirmed
+  setTempIsConfirmed,
+  presentUsers = [],
+  currentUserId = '',
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -224,6 +228,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Real-time Presence Indicator */}
+            {presentUsers && presentUsers.length > 0 && currentUserId && (
+              <CompactPresenceBadge 
+                users={presentUsers} 
+                currentUserId={currentUserId}
+                className="mr-1"
+              />
+            )}
             {/* Organization Name - with inline editing for admins */}
             {isEditingOrgName ? (
               <div className="flex items-center gap-2">
@@ -1950,6 +1962,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           updateTspContactMutation={updateTspContactMutation}
           tempIsConfirmed={tempIsConfirmed}
           setTempIsConfirmed={setTempIsConfirmed}
+          presentUsers={collaboration.presentUsers}
+          currentUserId={user?.id}
         />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}

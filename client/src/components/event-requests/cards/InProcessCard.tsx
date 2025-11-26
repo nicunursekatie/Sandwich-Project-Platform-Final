@@ -56,7 +56,7 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
-import { CommentThread } from '@/components/collaboration';
+import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 
 interface InProcessCardProps {
@@ -105,6 +105,8 @@ interface CardHeaderProps {
   saveEdit?: () => void;
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
+  presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
+  currentUserId?: string;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -120,6 +122,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
+  presentUsers = [],
+  currentUserId = '',
 }) => {
   const isMobile = useIsMobile();
   const StatusIcon =
@@ -195,6 +199,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     header: (
       <div className="mb-4">
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Real-time Presence Indicator */}
+          {presentUsers && presentUsers.length > 0 && currentUserId && (
+            <CompactPresenceBadge 
+              users={presentUsers} 
+              currentUserId={currentUserId}
+              className="mr-1"
+            />
+          )}
           {/* Organization Name - with inline editing */}
           {isEditingOrgName ? (
             <div className="flex items-center gap-2">
@@ -539,7 +551,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     startEditing,
     saveEdit,
     cancelEdit,
-    setEditingValue
+    setEditingValue,
+    presentUsers: collaboration.presentUsers,
+    currentUserId: user?.id,
   });
 
   return (

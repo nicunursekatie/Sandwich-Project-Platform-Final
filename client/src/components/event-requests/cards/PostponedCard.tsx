@@ -30,7 +30,7 @@ import {
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
-import { CommentThread } from '@/components/collaboration';
+import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -61,6 +61,8 @@ interface CardHeaderProps {
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
   resolveUserName?: (id: string) => string;
+  presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
+  currentUserId?: string;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -74,7 +76,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
-  resolveUserName
+  resolveUserName,
+  presentUsers = [],
+  currentUserId = '',
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -143,6 +147,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3 min-w-0 flex-1">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Real-time Presence Indicator */}
+            {presentUsers && presentUsers.length > 0 && currentUserId && (
+              <CompactPresenceBadge 
+                users={presentUsers} 
+                currentUserId={currentUserId}
+                className="mr-1"
+              />
+            )}
             <h3 className="font-semibold text-lg text-[#1A2332] break-words min-w-0">
               {request.organizationName}
               {request.department && (
@@ -265,7 +277,12 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
       data-testid={`card-postponed-${request.id}`}
     >
       <CardContent className="p-3">
-        <CardHeader request={request} resolveUserName={resolveUserName} />
+        <CardHeader 
+          request={request} 
+          resolveUserName={resolveUserName}
+          presentUsers={collaboration.presentUsers}
+          currentUserId={user?.id}
+        />
 
         {/* Postponement Info - Prominent Display */}
         <div className="space-y-3 mb-4">
