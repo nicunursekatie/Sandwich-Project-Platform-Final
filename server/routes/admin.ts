@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import { requirePermission } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
+import { categorizeUncategorizedOrganizations, categorizeOrganization } from '../services/ai-organization-categorization';
 
 interface AdminDependencies {
   isAuthenticated: any;
@@ -278,6 +279,77 @@ export function createAdminRoutes(deps: AdminDependencies) {
   );
 
   // Removed duplicate GET /login route - now only in auth.ts
+
+  // AI Organization Categorization - categorize all uncategorized organizations
+  router.post(
+    '/ai-categorize-organizations',
+    deps.isAuthenticated,
+    requirePermission('ADMIN_ACCESS'),
+    async (req: any, res) => {
+      try {
+        logger.info('Starting AI organization categorization...');
+        
+        const progress = await categorizeUncategorizedOrganizations();
+        
+        res.json({
+          success: true,
+          message: 'Organization categorization complete',
+          results: {
+            total: progress.total,
+            patternMatched: progress.patternMatched,
+            aiCategorized: progress.aiCategorized,
+            skipped: progress.skipped,
+            errors: progress.errors,
+          },
+        });
+      } catch (error) {
+        logger.error('AI organization categorization failed:', error);
+        res.status(500).json({ 
+          error: 'Failed to categorize organizations',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+  );
+
+  // AI Organization Categorization - categorize a single organization
+  router.post(
+    '/ai-categorize-organization/:id',
+    deps.isAuthenticated,
+    requirePermission('ADMIN_ACCESS'),
+    async (req: any, res) => {
+      try {
+        const organizationId = parseInt(req.params.id);
+        if (isNaN(organizationId)) {
+          return res.status(400).json({ error: 'Invalid organization ID' });
+        }
+
+        logger.info(`Categorizing organization ${organizationId}...`);
+        
+        const result = await categorizeOrganization(organizationId);
+        
+        if (!result) {
+          return res.status(404).json({ error: 'Organization not found or could not be categorized' });
+        }
+        
+        res.json({
+          success: true,
+          organizationId,
+          category: result.category,
+          schoolClassification: result.schoolClassification,
+          isReligious: result.isReligious,
+          confidence: result.confidence,
+          reasoning: result.reasoning,
+        });
+      } catch (error) {
+        logger.error('AI organization categorization failed:', error);
+        res.status(500).json({ 
+          error: 'Failed to categorize organization',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+  );
 
   return router;
 }
