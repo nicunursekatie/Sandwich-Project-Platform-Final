@@ -80,13 +80,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-// School classification labels
-const SCHOOL_LABELS: Record<string, string> = {
-  public: 'Public School',
-  private: 'Private School',
-  charter: 'Charter School',
-};
-
 // Time period presets
 const TIME_PRESETS = [
   { value: 'this-week', label: 'This Week' },
@@ -299,10 +292,10 @@ export default function EventImpactReports() {
       totalActualSandwiches += actualSandwiches;
       totalEstimatedSandwiches += estimatedSandwiches;
 
-      // Attendance
-      totalVolunteers += event.volunteerCount || 0;
-      totalAdults += event.adultCount || 0;
-      totalChildren += event.childrenCount || 0;
+      // Attendance - support both new and legacy field names
+      totalVolunteers += (event.volunteerCount ?? event.attendanceAdults ?? 0);
+      totalAdults += (event.adultCount ?? event.attendanceTeens ?? 0);
+      totalChildren += (event.childrenCount ?? event.attendanceKids ?? 0);
 
       // Organizations
       if (event.organizationName) {
@@ -490,11 +483,6 @@ export default function EventImpactReports() {
     });
   };
 
-  const formatEventTime = (time: string | null) => {
-    if (!time) return '';
-    return time;
-  };
-
   if (isLoading) {
     return (
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6 flex items-center justify-center">
@@ -558,6 +546,7 @@ export default function EventImpactReports() {
                     <SelectItem value="new">New</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                     <SelectItem value="postponed">Postponed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -740,6 +729,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('date')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'date' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('date'); } }}
                           >
                             <div className="flex items-center gap-1">
                               Date <SortIcon field="date" />
@@ -748,6 +741,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('organization')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'organization' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('organization'); } }}
                           >
                             <div className="flex items-center gap-1">
                               Organization <SortIcon field="organization" />
@@ -756,6 +753,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('category')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('category'); } }}
                           >
                             <div className="flex items-center gap-1">
                               Category <SortIcon field="category" />
@@ -765,6 +766,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100 text-right"
                             onClick={() => handleSort('sandwiches')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'sandwiches' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('sandwiches'); } }}
                           >
                             <div className="flex items-center gap-1 justify-end">
                               Sandwiches <SortIcon field="sandwiches" />
@@ -780,6 +785,15 @@ export default function EventImpactReports() {
                               key={event.id}
                               className="cursor-pointer hover:bg-gray-50"
                               onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                              tabIndex={0}
+                              role="button"
+                              aria-expanded={expandedEvent === event.id}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  setExpandedEvent(expandedEvent === event.id ? null : event.id);
+                                }
+                              }}
                             >
                               <TableCell className="font-medium">
                                 {formatEventDate(event.scheduledEventDate || event.desiredEventDate)}
