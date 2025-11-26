@@ -451,7 +451,12 @@ export default function EventImpactReports() {
       ]),
     ];
 
-    const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    // Escape CSV cell values: convert to string, escape quotes by doubling them
+    const escapeCell = (cell: any) => {
+      const str = String(cell ?? '');
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+    const csvContent = csvRows.map(row => row.map(escapeCell).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
