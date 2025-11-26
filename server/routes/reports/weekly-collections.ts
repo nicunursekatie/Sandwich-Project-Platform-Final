@@ -24,10 +24,10 @@ interface WeeklyData {
 }
 
 // GET /api/reports/weekly-collections
-// Query params: startDate, endDate (YYYY-MM-DD format)
+// Query params: startDate, endDate (YYYY-MM-DD format), exactDates (optional boolean)
 weeklyCollectionsRouter.get('/', async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, exactDates } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -37,6 +37,7 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
 
     const start = new Date(String(startDate));
     const end = new Date(String(endDate));
+    const useExactDates = exactDates === 'true';
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({
@@ -44,27 +45,36 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       });
     }
 
-    // Expand the date range to include full Wednesday-Tuesday weeks
-    // Find the Wednesday of the week containing the start date
-    const startDayOfWeek = start.getDay();
-    const daysToGoBackFromStart = (startDayOfWeek - 3 + 7) % 7;
-    const expandedStart = new Date(start);
-    expandedStart.setDate(expandedStart.getDate() - daysToGoBackFromStart);
-    
-    // Find the Tuesday of the week containing the end date
-    const endDayOfWeek = end.getDay();
-    const daysToGoForwardToTuesday = (2 - endDayOfWeek + 7) % 7;
-    const expandedEnd = new Date(end);
-    expandedEnd.setDate(expandedEnd.getDate() + daysToGoForwardToTuesday);
-    
-    const expandedStartStr = expandedStart.toISOString().split('T')[0];
-    const expandedEndStr = expandedEnd.toISOString().split('T')[0];
+    let queryStartStr: string;
+    let queryEndStr: string;
 
-    // Get all collections in the EXPANDED date range (full weeks)
+    if (useExactDates) {
+      // Use exact dates as provided
+      queryStartStr = start.toISOString().split('T')[0];
+      queryEndStr = end.toISOString().split('T')[0];
+    } else {
+      // Expand the date range to include full Wednesday-Tuesday weeks
+      // Find the Wednesday of the week containing the start date
+      const startDayOfWeek = start.getDay();
+      const daysToGoBackFromStart = (startDayOfWeek - 3 + 7) % 7;
+      const expandedStart = new Date(start);
+      expandedStart.setDate(expandedStart.getDate() - daysToGoBackFromStart);
+
+      // Find the Tuesday of the week containing the end date
+      const endDayOfWeek = end.getDay();
+      const daysToGoForwardToTuesday = (2 - endDayOfWeek + 7) % 7;
+      const expandedEnd = new Date(end);
+      expandedEnd.setDate(expandedEnd.getDate() + daysToGoForwardToTuesday);
+
+      queryStartStr = expandedStart.toISOString().split('T')[0];
+      queryEndStr = expandedEnd.toISOString().split('T')[0];
+    }
+
+    // Get all collections in the date range
     const collections = await db
       .select()
       .from(sandwichCollections)
-      .where(sql`${sandwichCollections.collectionDate} >= ${expandedStartStr} AND ${sandwichCollections.collectionDate} <= ${expandedEndStr} AND ${isNull(sandwichCollections.deletedAt)}`)
+      .where(sql`${sandwichCollections.collectionDate} >= ${queryStartStr} AND ${sandwichCollections.collectionDate} <= ${queryEndStr} AND ${isNull(sandwichCollections.deletedAt)}`)
       .orderBy(sandwichCollections.collectionDate);
 
     // Group by Wed-Tue weeks

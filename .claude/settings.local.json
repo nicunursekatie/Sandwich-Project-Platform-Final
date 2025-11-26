@@ -15,7 +15,8 @@
       "Bash(npx tsc:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx drizzle-kit generate --name add_self_transport)",
-      "Bash(npx drizzle-kit:*)"
+      "Bash(npx drizzle-kit:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

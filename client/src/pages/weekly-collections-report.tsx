@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Loader2, Download, TrendingUp, Info, FileText, BarChart3 } from 'lucide-react';
 import {
   LineChart,
@@ -65,12 +67,13 @@ export default function WeeklyCollectionsReport() {
   });
 
   const [showChart, setShowChart] = useState(true);
+  const [useExactDates, setUseExactDates] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery<WeeklyReportResponse>({
-    queryKey: ['/api/reports/weekly-collections', startDate, endDate],
+    queryKey: ['/api/reports/weekly-collections', startDate, endDate, useExactDates],
     queryFn: async () => {
       const response = await fetch(
-        `/api/reports/weekly-collections?startDate=${startDate}&endDate=${endDate}`
+        `/api/reports/weekly-collections?startDate=${startDate}&endDate=${endDate}&exactDates=${useExactDates}`
       );
       if (!response.ok) throw new Error('Failed to fetch weekly data');
       return response.json();
@@ -310,17 +313,19 @@ export default function WeeklyCollectionsReport() {
       </div>
 
       {/* How it Works Info */}
-      <Alert className="border-2" style={{ backgroundColor: '#E0F2F5', borderColor: '#007E8C' }}>
-        <Info className="h-6 w-6" style={{ color: '#007E8C' }} />
-        <AlertDescription className="text-slate-800 text-base leading-relaxed">
-          <strong className="text-lg" style={{ color: '#1A4F61' }}>How weekly grouping works:</strong> This report groups collections into <strong>Wednesday-to-Tuesday weeks</strong>. 
-          When you enter a start date, the report will include the <strong>entire week</strong> containing that date (starting from the Wednesday of that week). 
-          The same applies to your end date - it includes the full week ending on the Tuesday that contains or follows your end date.
-          <div className="mt-3 text-base bg-white/80 rounded-lg p-3" style={{ borderWidth: '1px', borderColor: '#47B3CB' }}>
-            <strong style={{ color: '#1A4F61' }}>Example:</strong> If you enter 11/22/2025 (a Saturday), the report will include the full week of Nov 19-25, 2025 (Wed-Tue).
-          </div>
-        </AlertDescription>
-      </Alert>
+      {!useExactDates && (
+        <Alert className="border-2" style={{ backgroundColor: '#E0F2F5', borderColor: '#007E8C' }}>
+          <Info className="h-6 w-6" style={{ color: '#007E8C' }} />
+          <AlertDescription className="text-slate-800 text-base leading-relaxed">
+            <strong className="text-lg" style={{ color: '#1A4F61' }}>How weekly grouping works:</strong> This report groups collections into <strong>Wednesday-to-Tuesday weeks</strong>.
+            When you enter a start date, the report will include the <strong>entire week</strong> containing that date (starting from the Wednesday of that week).
+            The same applies to your end date - it includes the full week ending on the Tuesday that contains or follows your end date.
+            <div className="mt-3 text-base bg-white/80 rounded-lg p-3" style={{ borderWidth: '1px', borderColor: '#47B3CB' }}>
+              <strong style={{ color: '#1A4F61' }}>Example:</strong> If you enter 11/22/2025 (a Saturday), the report will include the full week of Nov 19-25, 2025 (Wed-Tue).
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Date Range Filter */}
       <Card className="p-6 bg-white">
@@ -337,9 +342,11 @@ export default function WeeklyCollectionsReport() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full"
               />
-              <p className="text-xs text-slate-500 mt-1">
-                Report will start from the Wednesday of this week
-              </p>
+              {!useExactDates && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Report will start from the Wednesday of this week
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -351,10 +358,25 @@ export default function WeeklyCollectionsReport() {
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full"
               />
-              <p className="text-xs text-slate-500 mt-1">
-                Report will end on the Tuesday of this week
-              </p>
+              {!useExactDates && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Report will end on the Tuesday of this week
+                </p>
+              )}
             </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="useExactDates"
+              checked={useExactDates}
+              onCheckedChange={(checked) => setUseExactDates(checked === true)}
+            />
+            <Label
+              htmlFor="useExactDates"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Use exact date range (don't expand to Wednesday-Tuesday weeks)
+            </Label>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
