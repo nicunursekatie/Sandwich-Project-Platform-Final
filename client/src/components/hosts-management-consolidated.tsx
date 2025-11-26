@@ -766,6 +766,7 @@ export default function HostsManagementConsolidated() {
       address: editingContact.address?.trim() || '',
       hostLocation: editingContact.hostLocation?.trim() || '',
       weeklyActive: editingContact.weeklyActive || false,
+      isPrimary: editingContact.isPrimary || false,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -1720,22 +1721,22 @@ export default function HostsManagementConsolidated() {
                       <div className="space-y-3">
                         <div className="flex items-center space-x-2">
                           <Switch
-                            id="edit-contact-lead"
-                            checked={editingContact.role === 'lead'}
+                            id="edit-contact-primary"
+                            checked={editingContact.isPrimary || false}
                             onCheckedChange={(checked) => {
                               setEditingContact({
                                 ...editingContact,
-                                role: checked ? 'lead' : '',
+                                isPrimary: checked,
                               });
                             }}
                           />
                           <Label
-                            htmlFor="edit-contact-lead"
+                            htmlFor="edit-contact-primary"
                             className="text-sm"
                           >
-                            Mark as Location Lead
+                            Mark as Primary Contact
                             <span className="block text-xs text-slate-500">
-                              Leads will be highlighted with a crown icon
+                              Primary contacts are highlighted with a star icon
                             </span>
                           </Label>
                         </div>
@@ -2320,24 +2321,22 @@ export default function HostsManagementConsolidated() {
                                           </h3>
                                           <div className="flex items-center space-x-2">
                                             <Switch
-                                              id="edit-contact-lead"
-                                              checked={
-                                                editingContact.role === 'lead'
-                                              }
+                                              id="edit-contact-primary"
+                                              checked={editingContact.isPrimary || false}
                                               onCheckedChange={(checked) => {
                                                 setEditingContact({
                                                   ...editingContact,
-                                                  role: checked ? 'lead' : '',
+                                                  isPrimary: checked,
                                                 });
                                               }}
                                             />
                                             <Label
-                                              htmlFor="edit-contact-lead"
+                                              htmlFor="edit-contact-primary"
                                               className="text-sm"
                                             >
-                                              Mark as Location Lead
+                                              Mark as Primary Contact
                                               <span className="block text-xs text-slate-500">
-                                                Leads will be highlighted with a
+                                                Primary contacts are highlighted with a
                                                 star in the main view
                                               </span>
                                             </Label>
