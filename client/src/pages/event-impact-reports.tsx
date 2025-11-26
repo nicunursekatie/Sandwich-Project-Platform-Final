@@ -542,22 +542,28 @@ export default function EventImpactReports() {
                 </CardHeader>
                 <CardContent>
                   {metrics?.orgTypeData && metrics.orgTypeData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={350}>
                       <RechartsPieChart>
                         <Pie
                           data={metrics.orgTypeData}
                           dataKey="value"
                           nameKey="name"
                           cx="50%"
-                          cy="50%"
-                          outerRadius={100}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          cy="40%"
+                          outerRadius={80}
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                         >
                           {metrics.orgTypeData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value: number, name: string) => [`${value} events`, name]} />
+                        <Legend 
+                          layout="horizontal" 
+                          verticalAlign="bottom" 
+                          align="center"
+                          wrapperStyle={{ paddingTop: '20px' }}
+                        />
                       </RechartsPieChart>
                     </ResponsiveContainer>
                   ) : (
