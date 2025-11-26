@@ -293,6 +293,8 @@ export default function EventImpactReports() {
       totalEstimatedSandwiches += estimatedSandwiches;
 
       // Attendance - support both new and legacy field names
+      // Legacy fields: attendanceAdults, attendanceTeens, attendanceKids
+      // New fields: volunteerCount (total participants), adultCount, childrenCount
       totalVolunteers += (event.volunteerCount ?? event.attendanceAdults ?? 0);
       totalAdults += (event.adultCount ?? event.attendanceTeens ?? 0);
       totalChildren += (event.childrenCount ?? event.attendanceKids ?? 0);
@@ -806,7 +808,6 @@ export default function EventImpactReports() {
                               className="cursor-pointer hover:bg-gray-50"
                               onClick={() => toggleEventExpansion(event.id)}
                               tabIndex={0}
-                              role="button"
                               aria-expanded={expandedEvent === event.id}
                               onKeyDown={handleExpandKeyDown(event.id)}
                             >
