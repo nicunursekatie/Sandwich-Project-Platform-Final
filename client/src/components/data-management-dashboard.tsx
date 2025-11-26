@@ -33,6 +33,8 @@ import {
   Trash2,
   Upload,
   Calendar,
+  Sparkles,
+  Building2,
 } from 'lucide-react';
 
 export function DataManagementDashboard() {
@@ -184,6 +186,29 @@ export function DataManagementDashboard() {
       toast({
         title: 'Import Failed',
         description: error?.details || 'Failed to import 2023 events',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // AI Organization Categorization mutation
+  const aiCategorizeMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('POST', '/api/admin/ai-categorize-organizations'),
+    onSuccess: (data: any) => {
+      const results = data.results || {};
+      toast({
+        title: 'AI Categorization Complete',
+        description: `Processed ${results.total || 0} organizations: ${results.patternMatched || 0} by patterns, ${results.aiCategorized || 0} by AI, ${results.skipped || 0} skipped`,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/data-management/summary'],
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Categorization Failed',
+        description: error?.message || 'Failed to categorize organizations',
         variant: 'destructive',
       });
     },
@@ -450,49 +475,99 @@ export function DataManagementDashboard() {
         </TabsContent>
 
         <TabsContent value="import" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="w-5 h-5" />
-                Import Historical Events
-              </CardTitle>
-              <CardDescription>
-                Import historical event data from Excel files
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Calendar className="w-4 h-4" />
-                    2023 Events
-                  </CardTitle>
-                  <CardDescription>
-                    Import all 2023 historical events from the Excel file
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={() => import2023EventsMutation.mutate()}
-                    disabled={import2023EventsMutation.isPending}
-                    className="w-full"
-                    data-testid="button-import-2023-events"
-                  >
-                    {import2023EventsMutation.isPending ? (
-                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Upload className="w-4 h-4 mr-2" />
-                    )}
-                    Import 2023 Events
-                  </Button>
-                  <p className="text-sm text-gray-600 mt-2">
-                    This will import events from "2023 Events_1757981703985.xlsx" 
-                    and automatically skip any duplicates that already exist.
-                  </p>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Import Historical Events
+                </CardTitle>
+                <CardDescription>
+                  Import historical event data from Excel files
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="w-4 h-4" />
+                      2023 Events
+                    </CardTitle>
+                    <CardDescription>
+                      Import all 2023 historical events from the Excel file
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={() => import2023EventsMutation.mutate()}
+                      disabled={import2023EventsMutation.isPending}
+                      className="w-full"
+                      data-testid="button-import-2023-events"
+                    >
+                      {import2023EventsMutation.isPending ? (
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-2" />
+                      )}
+                      Import 2023 Events
+                    </Button>
+                    <p className="text-sm text-gray-600 mt-2">
+                      This will import events from "2023 Events_1757981703985.xlsx" 
+                      and automatically skip any duplicates that already exist.
+                    </p>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  AI Organization Categorization
+                </CardTitle>
+                <CardDescription>
+                  Use AI to automatically categorize organizations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Building2 className="w-4 h-4" />
+                      Categorize Organizations
+                    </CardTitle>
+                    <CardDescription>
+                      Automatically categorize uncategorized organizations using pattern matching and AI
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={() => aiCategorizeMutation.mutate()}
+                      disabled={aiCategorizeMutation.isPending}
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                      data-testid="button-ai-categorize-organizations"
+                    >
+                      {aiCategorizeMutation.isPending ? (
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      {aiCategorizeMutation.isPending ? 'Categorizing...' : 'Run AI Categorization'}
+                    </Button>
+                    <p className="text-sm text-gray-600 mt-2">
+                      This will categorize organizations where category is empty or "other". 
+                      Uses pattern matching first (free), then AI for ambiguous names.
+                    </p>
+                    <div className="mt-3 text-xs text-gray-500 space-y-1">
+                      <p><strong>Categories:</strong> School, Church/Faith, Club, Neighborhood, Corporate, Nonprofit, Government, Hospital</p>
+                      <p><strong>Also detects:</strong> School type (public/private/charter), Religious affiliation</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="export" className="space-y-6">
