@@ -46,7 +46,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
-import { CommentThread } from '@/components/collaboration';
+import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -98,6 +98,8 @@ interface CardHeaderProps {
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
   handleConfirmToggleClick?: () => void;
+  presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
+  currentUserId?: string;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({ 
@@ -111,7 +113,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
-  handleConfirmToggleClick
+  handleConfirmToggleClick,
+  presentUsers = [],
+  currentUserId = '',
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -180,6 +184,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3 min-w-0 flex-1">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Real-time Presence Indicator */}
+            {presentUsers && presentUsers.length > 0 && currentUserId && (
+              <CompactPresenceBadge 
+                users={presentUsers} 
+                currentUserId={currentUserId}
+                className="mr-1"
+              />
+            )}
             <h3 className="text-xl sm:text-2xl font-bold text-[#236383] break-words min-w-0">
               {request.organizationName}
               {request.department && (
@@ -449,6 +461,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           cancelEdit={cancelEdit}
           setEditingValue={setEditingValue}
           handleConfirmToggleClick={handleConfirmToggleClick}
+          presentUsers={collaboration.presentUsers}
+          currentUserId={user?.id}
         />
 
         {/* Main Content Grid */}

@@ -67,6 +67,19 @@ interface EventState {
   activeUsers: PresenceMeta[];
 }
 
+interface ActivityPayload {
+  id: string;
+  type: 'status_change' | 'field_update' | 'comment' | 'assignment' | 'join' | 'leave';
+  userId: string;
+  userName: string;
+  description: string;
+  details?: string;
+  timestamp: Date;
+  fieldName?: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
 // ==================== Validation Schemas ====================
 
 const JoinEventSchema = z.object({
@@ -302,6 +315,73 @@ async function releaseUserLocks(
   }
 }
 
+/**
+ * Broadcast activity update to all users in an event room
+ * Used to track team activity like status changes, assignments, etc.
+ */
+function broadcastActivity(
+  eventRequestId: number,
+  activity: Omit<ActivityPayload, 'id' | 'timestamp'>
+): void {
+  if (!collaborationNamespace) return;
+
+  const activityPayload: ActivityPayload = {
+    ...activity,
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: new Date(),
+  };
+
+  collaborationNamespace.to(getRoomName(eventRequestId)).emit('activity-update', {
+    eventRequestId,
+    resourceId: eventRequestId,
+    activity: activityPayload,
+  });
+
+  logger.log(`[Activity] ${activity.type}: ${activity.description} (Event ${eventRequestId})`);
+}
+
+/**
+ * Format field name for display in activity feed
+ */
+function formatFieldName(fieldName: string): string {
+  const fieldLabels: Record<string, string> = {
+    status: 'status',
+    assignedToId: 'assignment',
+    assignedToIds: 'team assignments',
+    scheduledDate: 'event date',
+    scheduledTime: 'event time',
+    scheduledEventDate: 'event date',
+    eventStartTime: 'event time',
+    organizationName: 'organization name',
+    contactName: 'contact name',
+    contactEmail: 'email',
+    contactPhone: 'phone',
+    eventType: 'event type',
+    estimatedAttendees: 'estimated attendees',
+    expectedSandwiches: 'expected sandwiches',
+    isConfirmed: 'confirmation status',
+    notes: 'notes',
+    location: 'location',
+    eventLocation: 'event location',
+    eventAddress: 'event address',
+    vanDriverIds: 'van drivers',
+    eventNotes: 'event notes',
+    kitchenNotes: 'kitchen notes',
+    adminNotes: 'admin notes',
+    deliveryNotes: 'delivery notes',
+    desiredEventDate: 'requested date',
+    desiredEventTime: 'requested time',
+    sandwichTypesRequested: 'sandwich types',
+    toolkitSentDate: 'toolkit sent date',
+    toolkitSentBy: 'toolkit sent by',
+    recipientIds: 'recipients',
+    tspContactId: 'TSP contact',
+    intakeCompletedBy: 'intake completed by',
+    intakeCompletedDate: 'intake completed date',
+  };
+  return fieldLabels[fieldName] || fieldName.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+}
+
 // ==================== Setup Function ====================
 
 export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServer) {
@@ -465,6 +545,14 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
           comments,
         });
 
+        // Broadcast join activity to other team members
+        broadcastActivity(eventRequestId, {
+          type: 'join',
+          userId,
+          userName,
+          description: 'started viewing this event',
+        });
+
         logger.log(
           `User ${userName} (${userId}) joined event collaboration: ${eventRequestId}`
         );
@@ -478,9 +566,21 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
     // ==================== Leave Event ====================
 
-    socket.on('leave-event', async (data: { eventRequestId: number; userId: string }) => {
+    socket.on('leave-event', async (data: { eventRequestId: number; userId: string; userName?: string }) => {
       try {
-        const { eventRequestId, userId } = data;
+        const { eventRequestId, userId, userName } = data;
+
+        // Get presence info before removing
+        const presence = presenceByEvent.get(eventRequestId)?.get(userId);
+        const leavingUserName = userName || presence?.userName || 'User';
+
+        // Broadcast leave activity before removing presence
+        broadcastActivity(eventRequestId, {
+          type: 'leave',
+          userId,
+          userName: leavingUserName,
+          description: 'stopped viewing this event',
+        });
 
         // Leave rooms
         socket.leave(getRoomName(eventRequestId));
@@ -773,6 +873,40 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
             version: updatedEvent.updatedAt,
           });
 
+          // Broadcast activity for key field changes
+          const keyFields = [
+            'status', 'assignedToId', 'assignedToIds', 'scheduledDate', 'scheduledEventDate', 
+            'isConfirmed', 'vanDriverIds', 'recipientIds', 'tspContactId'
+          ];
+          if (keyFields.includes(fieldName)) {
+            let activityType: 'status_change' | 'field_update' | 'assignment' = 'field_update';
+            let description = `updated ${formatFieldName(fieldName)}`;
+            
+            if (fieldName === 'status') {
+              activityType = 'status_change';
+              description = `changed status to "${value}"`;
+            } else if (['assignedToId', 'assignedToIds', 'vanDriverIds', 'recipientIds', 'tspContactId'].includes(fieldName)) {
+              activityType = 'assignment';
+              description = `updated ${formatFieldName(fieldName)}`;
+            } else if (fieldName === 'isConfirmed') {
+              description = value ? 'confirmed this event' : 'marked event as unconfirmed';
+            } else if (fieldName === 'scheduledDate' || fieldName === 'scheduledEventDate') {
+              description = `scheduled event for ${value}`;
+            }
+
+            broadcastActivity(eventRequestId, {
+              type: activityType,
+              userId,
+              userName,
+              description,
+              fieldName,
+              oldValue: originalEvent[fieldName as keyof typeof originalEvent] !== undefined
+                ? String(originalEvent[fieldName as keyof typeof originalEvent])
+                : undefined,
+              newValue: String(value),
+            });
+          }
+
           logger.log(
             `Field updated: ${fieldName} by ${userName} in event ${eventRequestId} (with audit log)`
           );
@@ -842,6 +976,15 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         collaboration.to(getCommentsRoomName(eventRequestId)).emit('comment-created', {
           eventRequestId,
           comment,
+        });
+
+        // Broadcast comment activity
+        broadcastActivity(eventRequestId, {
+          type: 'comment',
+          userId,
+          userName,
+          description: parentCommentId ? 'replied to a comment' : 'added a comment',
+          details: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
         });
 
         logger.log(`Comment created by ${userName} in event ${eventRequestId}`);

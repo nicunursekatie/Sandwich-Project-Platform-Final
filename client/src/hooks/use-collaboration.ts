@@ -123,6 +123,19 @@ export interface MentionNotification {
   timestamp: string;
 }
 
+export interface ActivityItem {
+  id: string;
+  type: 'status_change' | 'field_update' | 'comment' | 'assignment' | 'join' | 'leave';
+  userId: string;
+  userName: string;
+  description: string;
+  details?: string;
+  timestamp: Date;
+  fieldName?: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
 export interface UseCollaborationReturn {
   // Connection state
   isConnected: boolean;
@@ -161,6 +174,10 @@ export interface UseCollaborationReturn {
   loadRevisions: () => Promise<EventEditRevision[]>;
   revisionsLoading: boolean;
 
+  // Activity feed
+  activities: ActivityItem[];
+  clearActivities: () => void;
+
   // Custom events
   emit: (eventName: string, data: any) => void;
   on: (eventName: string, handler: (data: any) => void) => () => void;
@@ -192,6 +209,9 @@ export function useCollaboration({
 
   // Mentions
   const [mentions, setMentions] = useState<MentionNotification[]>([]);
+
+  // Activities
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
 
   // Field update callbacks
   const fieldUpdateCallbacks = useRef<Set<FieldUpdateCallback>>(new Set());
@@ -321,6 +341,24 @@ export function useCollaboration({
     newSocket.on('presence-updated', handlePresenceUpdated);
     newSocket.on('user-joined', handleUserJoined);
     newSocket.on('user-left', handleUserLeft);
+
+    // ==================== Activity Events ====================
+
+    const handleActivityUpdate = (data: { resourceId?: number | string; eventRequestId?: number; activity: ActivityItem }) => {
+      // Accept either resourceId or eventRequestId for backward compatibility
+      const dataResourceId = data.resourceId ?? data.eventRequestId;
+      // Convert to numbers for comparison since resourceId may be string or number
+      if (String(dataResourceId) === String(resourceId)) {
+        logger.log('[Collaboration] Activity update:', data.activity);
+        setActivities((prev) => {
+          // Keep last 50 activities
+          const updated = [data.activity, ...prev].slice(0, 50);
+          return updated;
+        });
+      }
+    };
+
+    newSocket.on('activity-update', handleActivityUpdate);
 
     // ==================== Lock Events ====================
 
@@ -843,6 +881,12 @@ export function useCollaboration({
     setMentions((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
+  // ==================== Activities ====================
+
+  const clearActivities = useCallback(() => {
+    setActivities([]);
+  }, []);
+
   // ==================== Reconnection ====================
 
   const reconnect = useCallback(() => {
@@ -891,6 +935,10 @@ export function useCollaboration({
     revisions,
     loadRevisions,
     revisionsLoading,
+
+    // Activities
+    activities,
+    clearActivities,
 
     // Custom events
     emit,
