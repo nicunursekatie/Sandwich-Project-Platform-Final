@@ -371,6 +371,14 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
     group: 'analytics',
   },
+  {
+    id: 'event-impact-reports',
+    label: 'Event Impact Reports',
+    icon: BarChart3,
+    href: 'event-impact-reports',
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'analytics',
+  },
 
   // DOCUMENTATION
   {

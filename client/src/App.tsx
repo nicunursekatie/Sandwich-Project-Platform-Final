@@ -87,6 +87,7 @@ function Router() {
   const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
+  const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -273,6 +274,11 @@ function Router() {
         </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}
+        </Route>
+        <Route path="/event-impact-reports">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <EventImpactReports />
+          </Suspense>
         </Route>
         <Route path="/expenses">
           {() => <Dashboard initialSection="expenses" />}
