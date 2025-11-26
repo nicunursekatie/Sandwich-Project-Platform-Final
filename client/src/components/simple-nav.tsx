@@ -271,6 +271,9 @@ export default function SimpleNav({
                 } else {
                   onSectionChange(item.href);
                 }
+
+                // Scroll to top of page after navigation
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               title={isCollapsed ? item.label : undefined}
               data-nav-id={item.id}

@@ -125,6 +125,7 @@ const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-s
 const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
 const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
 const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
+const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -456,6 +457,8 @@ export default function Dashboard({
         );
       case 'grant-metrics':
         return <GrantMetrics />;
+      case 'event-impact-reports':
+        return <EventImpactReports />;
       case 'weekly-collections-report':
         return <WeeklyCollectionsReport />;
       case 'group-collections':
