@@ -132,6 +132,25 @@ function getDateRange(preset: string): { start: Date; end: Date } {
 
 const COLORS = ['#236383', '#FBAD3F', '#47B3CB', '#007E8C', '#A31C41', '#6B7280'];
 
+// Organization category display labels
+const ORG_CATEGORY_LABELS: Record<string, string> = {
+  'corp': 'Corporate',
+  'small_medium_corp': 'Small/Medium Business',
+  'large_corp': 'Large Corporation',
+  'church_faith': 'Church/Faith',
+  'religious': 'Religious',
+  'nonprofit': 'Nonprofit',
+  'government': 'Government',
+  'hospital': 'Hospital',
+  'political': 'Political',
+  'school': 'School',
+  'neighborhood': 'Neighborhood',
+  'club': 'Club',
+  'greek_life': 'Greek Life',
+  'cultural': 'Cultural',
+  'other': 'Other',
+};
+
 export default function EventImpactReports() {
   const [timePreset, setTimePreset] = useState('this-month');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -198,7 +217,9 @@ export default function EventImpactReports() {
       if (event.organizationName) {
         organizations.add(event.organizationName);
       }
-      const orgType = event.organizationType || 'Other';
+      // Use organizationCategory field with proper display label
+      const rawCategory = event.organizationCategory || 'other';
+      const orgType = ORG_CATEGORY_LABELS[rawCategory] || rawCategory || 'Other';
       organizationTypes.set(orgType, (organizationTypes.get(orgType) || 0) + 1);
     });
 
