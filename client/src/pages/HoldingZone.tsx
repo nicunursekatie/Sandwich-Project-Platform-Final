@@ -32,6 +32,10 @@ import {
   Edit2,
   Trash2,
   Check,
+  FolderKanban,
+  ListTodo,
+  StickyNote,
+  Lightbulb,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -44,6 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCollaboration } from '@/hooks/use-collaboration';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Types
 interface HoldingZoneCategory {
@@ -521,6 +526,12 @@ export default function HoldingZone() {
   const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
   const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
   const [editingDetailsContent, setEditingDetailsContent] = useState('');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'notes'>('tasks');
+  const [upgradeToProjectDialogOpen, setUpgradeToProjectDialogOpen] = useState(false);
+  const [itemToUpgrade, setItemToUpgrade] = useState<HoldingZoneItem | null>(null);
+  const [upgradeProjectTitle, setUpgradeProjectTitle] = useState('');
+  const [upgradeProjectPriority, setUpgradeProjectPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [upgradeProjectCategory, setUpgradeProjectCategory] = useState('technology');
 
   // Permission checks
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
@@ -570,8 +581,8 @@ export default function HoldingZone() {
     enabled: canView,
   });
 
-  // Filter items
-  const filteredItems = useMemo(() => {
+  // Filter items - split by type
+  const { filteredTasks, filteredNotes } = useMemo(() => {
     let filtered = items;
 
     // Filter by active/archived status
@@ -591,8 +602,15 @@ export default function HoldingZone() {
       filtered = filtered.filter(item => item.isUrgent);
     }
 
-    return filtered;
+    // Split into tasks and notes/ideas
+    const tasks = filtered.filter(item => item.type === 'task');
+    const notes = filtered.filter(item => item.type === 'note' || item.type === 'idea');
+
+    return { filteredTasks: tasks, filteredNotes: notes };
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
+
+  // Get current items based on active tab
+  const currentItems = activeTab === 'tasks' ? filteredTasks : filteredNotes;
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -792,6 +810,63 @@ export default function HoldingZone() {
       toast({
         title: 'Error',
         description: 'Failed to promote item to task',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Upgrade to project mutation
+  const upgradeToProjectMutation = useMutation({
+    mutationFn: async ({ 
+      holdingZoneItemId, 
+      title, 
+      priority, 
+      category,
+      description,
+      dueDate 
+    }: { 
+      holdingZoneItemId: number; 
+      title: string;
+      priority: string;
+      category: string;
+      description?: string;
+      dueDate?: string | null;
+    }) => {
+      // Create the project
+      const project = await apiRequest('POST', '/api/projects', {
+        title,
+        description: description || '',
+        status: 'waiting',
+        priority,
+        category,
+        dueDate,
+        notes: `Upgraded from Holding Zone item #${holdingZoneItemId}`,
+      });
+
+      // Mark the holding zone item as done
+      await apiRequest('PATCH', `/api/team-board/${holdingZoneItemId}`, { 
+        status: 'done' 
+      });
+
+      return project;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      setUpgradeToProjectDialogOpen(false);
+      setItemToUpgrade(null);
+      setUpgradeProjectTitle('');
+      setUpgradeProjectPriority('medium');
+      setUpgradeProjectCategory('technology');
+      toast({
+        title: 'Upgraded to Project',
+        description: 'The holding zone item has been upgraded to a project. You can find it in the Projects section.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to upgrade item to project',
         variant: 'destructive',
       });
     },
@@ -1096,22 +1171,58 @@ export default function HoldingZone() {
         </Card>
       </div>
 
+      {/* Tabs for Tasks vs Notes */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'notes')} className="mb-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="tasks" className="flex items-center gap-2" data-testid="tab-tasks">
+            <ListTodo className="h-4 w-4" />
+            Tasks
+            {filteredTasks.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredTasks.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="tab-notes">
+            <StickyNote className="h-4 w-4" />
+            Notes & Ideas
+            {filteredNotes.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredNotes.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Items List */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#236383]" />
         </div>
-      ) : filteredItems.length === 0 ? (
+      ) : currentItems.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              No items found. {canSubmit && "Click 'Submit Item' to add one!"}
-            </p>
+            {activeTab === 'tasks' ? (
+              <>
+                <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No tasks found. {canSubmit && "Click 'Submit Item' to add one!"}
+                </p>
+              </>
+            ) : (
+              <>
+                <StickyNote className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No notes or ideas found. {canSubmit && "Click 'Submit Item' to add one!"}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredItems.map((item) => (
+          {currentItems.map((item) => (
             <Card
               key={item.id}
               className={`transition-all hover:shadow-md ${
@@ -1341,21 +1452,40 @@ export default function HoldingZone() {
 
                 {/* Action Buttons for Manage */}
                 {canManage && item.status !== 'done' && !item.completedAt && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setItemToPromote(item);
-                        setPromoteDialogOpen(true);
-                      }}
-                      disabled={promoteToTaskMutation.isPending}
-                      className="text-xs"
-                      data-testid={`button-promote-${item.id}`}
-                    >
-                      <ArrowRight className="h-3 w-3 mr-1" />
-                      Promote to Task
-                    </Button>
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    {item.type === 'task' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setItemToPromote(item);
+                            setPromoteDialogOpen(true);
+                          }}
+                          disabled={promoteToTaskMutation.isPending}
+                          className="text-xs"
+                          data-testid={`button-promote-${item.id}`}
+                        >
+                          <ArrowRight className="h-3 w-3 mr-1" />
+                          Promote to Task
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            setItemToUpgrade(item);
+                            setUpgradeProjectTitle(item.content);
+                            setUpgradeToProjectDialogOpen(true);
+                          }}
+                          disabled={upgradeToProjectMutation.isPending}
+                          className="text-xs bg-[#236383] hover:bg-[#007E8C]"
+                          data-testid={`button-upgrade-to-project-${item.id}`}
+                        >
+                          <FolderKanban className="h-3 w-3 mr-1" />
+                          Upgrade to Project
+                        </Button>
+                      </>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -1939,6 +2069,134 @@ export default function HoldingZone() {
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Promoting...</>
               ) : (
                 <>Promote to Task</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade to Project Dialog */}
+      <Dialog open={upgradeToProjectDialogOpen} onOpenChange={setUpgradeToProjectDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5 text-[#236383]" />
+              Upgrade to Project
+            </DialogTitle>
+            <DialogDescription>
+              Convert this holding zone task into a full project with tracking and milestones
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {itemToUpgrade && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Original Task:
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                  {itemToUpgrade.content}
+                </p>
+                {itemToUpgrade.details && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Details:</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                      {itemToUpgrade.details}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="upgrade-title">Project Title</Label>
+              <Input
+                id="upgrade-title"
+                value={upgradeProjectTitle}
+                onChange={(e) => setUpgradeProjectTitle(e.target.value)}
+                placeholder="Enter project title..."
+                data-testid="input-upgrade-title"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="upgrade-priority">Priority</Label>
+                <Select value={upgradeProjectPriority} onValueChange={(v) => setUpgradeProjectPriority(v as any)}>
+                  <SelectTrigger id="upgrade-priority" data-testid="select-upgrade-priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="upgrade-category">Category</Label>
+                <Select value={upgradeProjectCategory} onValueChange={setUpgradeProjectCategory}>
+                  <SelectTrigger id="upgrade-category" data-testid="select-upgrade-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technology">💻 Technology</SelectItem>
+                    <SelectItem value="events">📅 Events</SelectItem>
+                    <SelectItem value="grants">💰 Grants</SelectItem>
+                    <SelectItem value="outreach">🤝 Outreach</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                <strong>What happens next:</strong> A new project will be created with full tracking capabilities. 
+                The original holding zone item will be marked as done, and you can manage the project from the Projects section.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUpgradeToProjectDialogOpen(false);
+                setItemToUpgrade(null);
+                setUpgradeProjectTitle('');
+                setUpgradeProjectPriority('medium');
+                setUpgradeProjectCategory('technology');
+              }}
+              data-testid="button-cancel-upgrade"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (itemToUpgrade && upgradeProjectTitle.trim()) {
+                  upgradeToProjectMutation.mutate({
+                    holdingZoneItemId: itemToUpgrade.id,
+                    title: upgradeProjectTitle.trim(),
+                    priority: upgradeProjectPriority,
+                    category: upgradeProjectCategory,
+                    description: itemToUpgrade.details || '',
+                    dueDate: itemToUpgrade.dueDate ? (typeof itemToUpgrade.dueDate === 'string' ? itemToUpgrade.dueDate : new Date(itemToUpgrade.dueDate).toISOString()) : null,
+                  });
+                }
+              }}
+              disabled={upgradeToProjectMutation.isPending || !itemToUpgrade || !upgradeProjectTitle.trim()}
+              className="bg-[#236383] hover:bg-[#007E8C]"
+              data-testid="button-confirm-upgrade"
+            >
+              {upgradeToProjectMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating Project...</>
+              ) : (
+                <>
+                  <FolderKanban className="h-4 w-4 mr-2" />
+                  Upgrade to Project
+                </>
               )}
             </Button>
           </DialogFooter>
