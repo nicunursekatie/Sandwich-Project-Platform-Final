@@ -1399,7 +1399,8 @@ export default function EventImpactReports() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-brand-burgundy to-[#8B1535] text-white">
+          {/* NOTE: Ensure 'brand-burgundy-dark' is defined in tailwind.config.ts as '#8B1535' */}
+          <Card className="bg-gradient-to-r from-brand-burgundy to-brand-burgundy-dark text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
