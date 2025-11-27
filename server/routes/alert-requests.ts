@@ -220,6 +220,10 @@ export function createAIAlertRouter(deps: { isAuthenticated: any }) {
         return res.status(400).json({ error: 'Please provide a more detailed description' });
       }
 
+      if (prompt.length > 1000) {
+        return res.status(400).json({ error: 'Prompt must be 1000 characters or less' });
+      }
+
       // Check if OpenAI is configured
       if (!process.env.OPENAI_API_KEY) {
         // Sanitize user input before including in response
