@@ -14,7 +14,7 @@ import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
-// Custom CSS for cluster tooltips
+// Custom CSS for cluster tooltips and animations
 const clusterTooltipStyles = `
   .cluster-tooltip {
     background: white !important;
@@ -28,6 +28,72 @@ const clusterTooltipStyles = `
   }
   .cluster-tooltip::before {
     display: none !important;
+  }
+
+  /* Cluster marker animations */
+  .custom-marker-cluster > div {
+    animation: clusterAppear 0.3s ease-out forwards;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .custom-marker-cluster > div:hover {
+    transform: scale(1.1);
+  }
+
+  @keyframes clusterAppear {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    70% {
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Marker cluster group transition */
+  .leaflet-marker-icon {
+    transition: opacity 0.25s ease-out;
+  }
+
+  /* Stacked location marker animation */
+  .stacked-marker > div {
+    animation: stackedAppear 0.35s ease-out forwards;
+  }
+
+  @keyframes stackedAppear {
+    0% {
+      opacity: 0;
+      transform: scale(0.3) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Custom label marker animation */
+  .custom-label-marker > div {
+    animation: labelSlideIn 0.3s ease-out forwards;
+  }
+
+  @keyframes labelSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Cluster spiderfy animation */
+  .leaflet-cluster-anim .leaflet-marker-icon {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
   }
 `;
 
@@ -1168,6 +1234,10 @@ export default function EventMapView() {
                   showCoverageOnHover={true}
                   spiderfyDistanceMultiplier={1.5}
                   maxClusterRadius={60}
+                  animate={true}
+                  animateAddingMarkers={true}
+                  spiderfyOnMaxZoom={true}
+                  zoomToBoundsOnClick={true}
                 >
                   <ClusterTooltipHandler clusterRef={clusterGroupRef} />
                   {Array.from(filteredEventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
