@@ -706,7 +706,7 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createStandardMiddleware(),
     aiAlertRouter
   );
-  router.use('/api/ai', createErrorHandler('ai-alerts'));
+  router.use('/api/ai', createErrorHandler('ai'));
 
   // Email/inbox system
   const emailRouter = createEmailRouter(deps);
