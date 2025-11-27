@@ -148,7 +148,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'promotion',
-    label: 'Promotion',
+    label: 'Social Media Graphics',
     icon: Image,
     href: 'promotion',
     permission: PERMISSIONS.NAV_PROMOTION,

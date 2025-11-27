@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -27,6 +27,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { format } from 'date-fns';
 import {
   Calendar,
   Download,
@@ -44,6 +49,10 @@ import {
   ChevronUp,
   CalendarDays,
   ListFilter,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -239,6 +248,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function EventImpactReports() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isAdmin = user && hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS);
+
   const [timePreset, setTimePreset] = useState('this-year');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -247,6 +260,18 @@ export default function EventImpactReports() {
   const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+  const [showCategorizationTool, setShowCategorizationTool] = useState(false);
+  const [categorizationProgress, setCategorizationProgress] = useState<{
+    running: boolean;
+    total: number;
+    processed: number;
+    patternMatched: number;
+    aiCategorized: number;
+    errors: number;
+  } | null>(null);
 
   // Calculate actual date range
   const dateRange = useMemo(() => {
@@ -754,115 +779,335 @@ export default function EventImpactReports() {
           </p>
         </div>
 
-        {/* Controls */}
-        <Card className="mb-6 print:hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Report Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Time Period Selector */}
-              <div className="space-y-2">
-                <Label>Time Period</Label>
-                <Select value={timePreset} onValueChange={setTimePreset}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_PRESETS.map(preset => (
-                      <SelectItem key={preset.value} value={preset.value}>
-                        {preset.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* Prominent Date Range Selector */}
+        <Card className="mb-4 print:hidden border-2 border-[#236383]/20">
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+              {/* Quick Presets */}
+              <div className="flex-1">
+                <Label className="text-sm font-medium mb-2 block">Quick Select</Label>
+                <div className="flex flex-wrap gap-2">
+                  {TIME_PRESETS.slice(0, 6).map(preset => (
+                    <Button
+                      key={preset.value}
+                      variant={timePreset === preset.value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTimePreset(preset.value)}
+                      className={timePreset === preset.value ? 'bg-[#236383] hover:bg-[#236383]/90' : ''}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                  <Button
+                    variant={timePreset === 'custom' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimePreset('custom')}
+                    className={timePreset === 'custom' ? 'bg-[#236383] hover:bg-[#236383]/90' : ''}
+                  >
+                    Custom Range
+                  </Button>
+                </div>
               </div>
 
-              {/* Status Filter */}
-              <div className="space-y-2">
-                <Label>Event Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_process">In Process</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="postponed">Postponed</SelectItem>
-                    <SelectItem value="declined">Declined</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Calendar Date Pickers */}
+              <div className="flex gap-3 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">From</Label>
+                  <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-[160px] justify-start text-left font-normal"
+                      >
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        {format(dateRange.start, 'MMM d, yyyy')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateRange.start}
+                        onSelect={(date) => {
+                          if (date) {
+                            setTimePreset('custom');
+                            setCustomStartDate(format(date, 'yyyy-MM-dd'));
+                            setStartDateOpen(false);
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Category Filter */}
-              <div className="space-y-2">
-                <Label>Organization Type</Label>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {availableCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>
-                        {CATEGORY_LABELS[cat] || cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">To</Label>
+                  <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-[160px] justify-start text-left font-normal"
+                      >
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        {format(dateRange.end, 'MMM d, yyyy')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateRange.end}
+                        onSelect={(date) => {
+                          if (date) {
+                            setTimePreset('custom');
+                            setCustomEndDate(format(date, 'yyyy-MM-dd'));
+                            setEndDateOpen(false);
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Custom Date Range */}
-              {timePreset === 'custom' && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Start Date</Label>
-                    <Input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>End Date</Label>
-                    <Input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Export Button */}
-              <div className="space-y-2">
-                <Label>Export Data</Label>
-                <Button variant="outline" onClick={exportToCSV} className="w-full">
+                <Button variant="outline" onClick={exportToCSV}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export CSV
+                  Export
                 </Button>
               </div>
             </div>
 
-            {/* Current Range Display */}
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
-              <p className="text-sm text-blue-700">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Showing data from <strong>{dateRange.start.toLocaleDateString()}</strong> to <strong>{dateRange.end.toLocaleDateString()}</strong>
+            {/* Results Summary Bar */}
+            <div className="mt-4 p-3 bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 rounded-lg flex items-center justify-between">
+              <p className="text-sm text-gray-700">
+                <Calendar className="w-4 h-4 inline mr-2 text-[#236383]" />
+                <strong>{processedData?.totalEvents || 0}</strong> events from{' '}
+                <strong>{format(dateRange.start, 'MMM d, yyyy')}</strong> to{' '}
+                <strong>{format(dateRange.end, 'MMM d, yyyy')}</strong>
               </p>
-              <p className="text-sm text-blue-600">
-                {processedData?.totalEvents || 0} events found
-              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="text-gray-600"
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  Filters
+                  {showFilters ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCategorizationTool(!showCategorizationTool)}
+                    className="text-purple-600"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Categorize
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Collapsible Additional Filters */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Event Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="in_process">In Process</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="postponed">Postponed</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Organization Type</Label>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {availableCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>
+                          {CATEGORY_LABELS[cat] || cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setStatusFilter('all');
+                      setCategoryFilter('all');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Admin AI Categorization Tool */}
+        {isAdmin && showCategorizationTool && (
+          <Card className="mb-4 print:hidden border-2 border-purple-200 bg-purple-50/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-purple-900">
+                <Sparkles className="w-5 h-5" />
+                AI Organization Categorization Tool
+              </CardTitle>
+              <CardDescription>
+                Use AI to automatically categorize events/organizations currently marked as "Other"
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Show count of "Other" organizations */}
+              <div className="mb-4 p-3 bg-white rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      Organizations needing categorization
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Events/organizations currently categorized as "Other" or uncategorized
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    {processedData?.categoryChartData?.find(c => c.rawCategory === 'other')?.events || 0} events
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Progress display */}
+              {categorizationProgress && (
+                <div className="mb-4 p-4 bg-white rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2">
+                    {categorizationProgress.running ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    )}
+                    <span className="font-medium">
+                      {categorizationProgress.running ? 'Processing...' : 'Complete'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500">Processed:</span>{' '}
+                      <strong>{categorizationProgress.processed}/{categorizationProgress.total}</strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Pattern Matched:</span>{' '}
+                      <strong className="text-blue-600">{categorizationProgress.patternMatched}</strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">AI Categorized:</span>{' '}
+                      <strong className="text-purple-600">{categorizationProgress.aiCategorized}</strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Errors:</span>{' '}
+                      <strong className={categorizationProgress.errors > 0 ? 'text-red-600' : 'text-gray-400'}>
+                        {categorizationProgress.errors}
+                      </strong>
+                    </div>
+                  </div>
+                  {categorizationProgress.running && (
+                    <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${(categorizationProgress.processed / categorizationProgress.total) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={async () => {
+                    setCategorizationProgress({
+                      running: true,
+                      total: 0,
+                      processed: 0,
+                      patternMatched: 0,
+                      aiCategorized: 0,
+                      errors: 0,
+                    });
+
+                    try {
+                      const response = await fetch('/api/admin/ai-categorize-organizations', {
+                        method: 'POST',
+                        credentials: 'include',
+                      });
+                      const result = await response.json();
+
+                      setCategorizationProgress({
+                        running: false,
+                        total: result.results?.total || 0,
+                        processed: result.results?.total || 0,
+                        patternMatched: result.results?.patternMatched || 0,
+                        aiCategorized: result.results?.aiCategorized || 0,
+                        errors: result.results?.errors || 0,
+                      });
+
+                      // Refresh data
+                      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+                    } catch (error) {
+                      setCategorizationProgress((prev) =>
+                        prev ? { ...prev, running: false, errors: prev.errors + 1 } : null
+                      );
+                    }
+                  }}
+                  disabled={categorizationProgress?.running}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {categorizationProgress?.running ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Run AI Categorization
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCategorizationTool(false)}
+                >
+                  Close
+                </Button>
+              </div>
+
+              <p className="mt-3 text-xs text-gray-500">
+                <AlertCircle className="w-3 h-3 inline mr-1" />
+                This uses pattern matching first, then AI for remaining items. Results are saved automatically.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -939,38 +1184,6 @@ export default function EventImpactReports() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Data Quality Indicator */}
-        {processedData?.dataQuality && (processedData.dataQuality.missingSandwichPct > 0 || processedData.dataQuality.missingCategoryPct > 0) && (
-          <Card className="mb-6 border-amber-200 bg-amber-50 print:hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-amber-800 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Data Quality Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="flex flex-col">
-                  <span className="text-amber-700">Missing Sandwich Counts</span>
-                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingSandwichCount} ({processedData.dataQuality.missingSandwichPct}%)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-amber-700">Missing Org Category</span>
-                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingCategory} ({processedData.dataQuality.missingCategoryPct}%)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-amber-700">Missing Address</span>
-                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingAddress} ({processedData.dataQuality.missingAddressPct}%)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-amber-700">Missing Org Name</span>
-                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingOrgName}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Tabs for different views */}
         <Tabs defaultValue="events" className="space-y-6">
@@ -1849,6 +2062,38 @@ export default function EventImpactReports() {
             </tbody>
           </table>
         </div>
+
+        {/* Data Quality Notes - at bottom */}
+        {processedData?.dataQuality && (processedData.dataQuality.missingSandwichPct > 0 || processedData.dataQuality.missingCategoryPct > 0) && (
+          <Card className="mt-8 border-amber-200 bg-amber-50 print:hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-amber-800 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Data Quality Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Sandwich Counts</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingSandwichCount} ({processedData.dataQuality.missingSandwichPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Org Category</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingCategory} ({processedData.dataQuality.missingCategoryPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Address</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingAddress} ({processedData.dataQuality.missingAddressPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Org Name</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingOrgName}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
