@@ -190,27 +190,103 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-800 border-red-300',
 };
 
-// Custom cluster icon - branded with TSP colors (for nearby grouped events)
+// Custom cluster icon - density-based sizing and color gradients
 const createClusterCustomIcon = (cluster: any) => {
   const count = cluster.getChildCount();
 
-  // Size based on count
-  let size = 'medium';
-  if (count < 10) size = 'small';
-  else if (count >= 50) size = 'large';
+  // Determine size tier based on count
+  let sizePx: number;
+  let fontSize: string;
+  let borderWidth: number;
 
-  const sizeClasses = {
-    small: 'w-10 h-10 text-sm',
-    medium: 'w-14 h-14 text-base',
-    large: 'w-20 h-20 text-xl'
-  };
+  if (count < 5) {
+    sizePx = 36;
+    fontSize = '12px';
+    borderWidth = 3;
+  } else if (count < 10) {
+    sizePx = 42;
+    fontSize = '13px';
+    borderWidth = 3;
+  } else if (count < 20) {
+    sizePx = 50;
+    fontSize = '14px';
+    borderWidth = 4;
+  } else if (count < 50) {
+    sizePx = 58;
+    fontSize = '16px';
+    borderWidth = 4;
+  } else if (count < 100) {
+    sizePx = 68;
+    fontSize = '18px';
+    borderWidth = 5;
+  } else {
+    sizePx = 80;
+    fontSize = '20px';
+    borderWidth = 5;
+  }
+
+  // Determine color intensity based on count (darker = more events)
+  // Low density: lighter teal, High density: deep navy/dark teal
+  let bgGradient: string;
+  let glowIntensity: string;
+
+  if (count < 5) {
+    // Very light - soft teal
+    bgGradient = 'linear-gradient(135deg, #47B3CB 0%, #007E8C 100%)';
+    glowIntensity = '0 2px 8px rgba(71, 179, 203, 0.4)';
+  } else if (count < 10) {
+    // Light - medium teal
+    bgGradient = 'linear-gradient(135deg, #007E8C 0%, #236383 100%)';
+    glowIntensity = '0 3px 10px rgba(0, 126, 140, 0.5)';
+  } else if (count < 20) {
+    // Medium - teal to navy
+    bgGradient = 'linear-gradient(135deg, #236383 0%, #1a4a5e 100%)';
+    glowIntensity = '0 4px 12px rgba(35, 99, 131, 0.6)';
+  } else if (count < 50) {
+    // Medium-high - navy with amber accent
+    bgGradient = 'linear-gradient(135deg, #1a4a5e 0%, #0f3040 100%)';
+    glowIntensity = '0 5px 15px rgba(26, 74, 94, 0.7)';
+  } else if (count < 100) {
+    // High - deep navy with orange glow
+    bgGradient = 'linear-gradient(135deg, #0f3040 0%, #FBAD3F 100%)';
+    glowIntensity = '0 6px 20px rgba(251, 173, 63, 0.6)';
+  } else {
+    // Very high - hot gradient (orange to red)
+    bgGradient = 'linear-gradient(135deg, #FBAD3F 0%, #f59e0b 50%, #dc2626 100%)';
+    glowIntensity = '0 8px 25px rgba(220, 38, 38, 0.5)';
+  }
+
+  // Add pulsing animation for very high density clusters
+  const pulseAnimation = count >= 50 ? 'animation: pulse 2s infinite;' : '';
 
   return L.divIcon({
-    html: `<div class="${sizeClasses[size]} rounded-full bg-gradient-to-br from-[#236383] to-[#007E8C] text-white font-bold flex items-center justify-center shadow-lg border-4 border-white">
-      ${count}
-    </div>`,
+    html: `
+      <style>
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      </style>
+      <div style="
+        width: ${sizePx}px;
+        height: ${sizePx}px;
+        border-radius: 50%;
+        background: ${bgGradient};
+        color: white;
+        font-weight: bold;
+        font-size: ${fontSize};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${glowIntensity};
+        border: ${borderWidth}px solid rgba(255, 255, 255, 0.9);
+        ${pulseAnimation}
+      ">
+        ${count}
+      </div>`,
     className: 'custom-marker-cluster',
-    iconSize: L.point(40, 40, true),
+    iconSize: L.point(sizePx, sizePx, true),
+    iconAnchor: L.point(sizePx / 2, sizePx / 2, true),
   });
 };
 
