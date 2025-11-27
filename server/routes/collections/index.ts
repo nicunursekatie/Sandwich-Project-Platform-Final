@@ -989,20 +989,17 @@ collectionsRouter.patch(
   }
 );
 
-// Unlinked group collections for Event Impact Reports
-// Returns group collections that are not linked to event requests
-// These are collections where groups submitted sandwiches directly without an associated event
+// Group collections for Event Impact Reports
+// Returns group collections - both linked and unlinked to event requests
+// This ensures we capture all group sandwich data for reporting
 collectionsRouter.get('/unlinked-groups', async (req, res) => {
   try {
     const collections = await storage.getAllSandwichCollections();
 
-    // Filter for collections with group data that are NOT linked to event requests
+    // Filter for collections with group data (regardless of event linkage)
     const groupCollections = collections.filter((collection) => {
       // Skip soft-deleted records
       if (collection.deletedAt) return false;
-
-      // Skip collections that ARE linked to an event request
-      if (collection.eventRequestId) return false;
 
       // Check for group data in JSONB column
       const hasJsonbGroups = collection.groupCollections &&
@@ -1016,6 +1013,8 @@ collectionsRouter.get('/unlinked-groups', async (req, res) => {
 
       return hasJsonbGroups || hasLegacyGroups;
     });
+
+    logger.info(`Group collections found: ${groupCollections.length} total`);
 
     // Transform to match event request shape for the report
     const transformedCollections = groupCollections.map((collection) => {
@@ -1038,7 +1037,9 @@ collectionsRouter.get('/unlinked-groups', async (req, res) => {
       }
 
       return {
-        id: collection.id,
+        id: `collection-${collection.id}`, // Prefix to avoid ID collision with events
+        collectionId: collection.id,
+        eventRequestId: collection.eventRequestId, // Include for deduplication
         collectionDate: collection.collectionDate,
         scheduledEventDate: collection.collectionDate, // Map to expected field
         organizationName: groupNames.length > 0 ? groupNames[0] : collection.hostName,
@@ -1056,8 +1057,8 @@ collectionsRouter.get('/unlinked-groups', async (req, res) => {
 
     res.json(transformedCollections);
   } catch (error) {
-    logger.error('Failed to fetch unlinked group collections:', error);
-    res.status(500).json({ message: 'Failed to fetch unlinked group collections' });
+    logger.error('Failed to fetch group collections:', error);
+    res.status(500).json({ message: 'Failed to fetch group collections' });
   }
 });
 
