@@ -1017,8 +1017,12 @@ export default function EventImpactReports() {
                         selected={dateRange.start}
                         onSelect={(date) => {
                           if (date) {
-                            setTimePreset('custom');
                             setCustomStartDate(format(date, 'yyyy-MM-dd'));
+                            // Auto-fill end date if not set
+                            if (!customEndDate) {
+                              setCustomEndDate(format(dateRange.end, 'yyyy-MM-dd'));
+                            }
+                            setTimePreset('custom');
                             setStartDateOpen(false);
                           }
                         }}
@@ -1046,8 +1050,12 @@ export default function EventImpactReports() {
                         selected={dateRange.end}
                         onSelect={(date) => {
                           if (date) {
-                            setTimePreset('custom');
                             setCustomEndDate(format(date, 'yyyy-MM-dd'));
+                            // Auto-fill start date if not set
+                            if (!customStartDate) {
+                              setCustomStartDate(format(dateRange.start, 'yyyy-MM-dd'));
+                            }
+                            setTimePreset('custom');
                             setEndDateOpen(false);
                           }
                         }}
