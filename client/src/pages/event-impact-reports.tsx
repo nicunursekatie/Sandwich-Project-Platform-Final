@@ -59,6 +59,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   CalendarDays,
   ListFilter,
   Sparkles,
@@ -1858,10 +1859,331 @@ export default function EventImpactReports() {
                       <Sandwich className="w-12 h-12 mb-4 opacity-30" />
                       <p className="font-medium">No sandwich type data available</p>
                       <p className="text-sm mt-1">Type data comes from the "actualSandwichTypes" field on completed events</p>
+                      {isAdmin && (
+                        <Button
+                          className="mt-4 bg-purple-600 hover:bg-purple-700"
+                          onClick={() => {
+                            setShowBackfillTool(true);
+                            fetchMissingTypesMutation.mutate();
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Smart Backfill Tool
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
               </Card>
+
+              {/* Smart Backfill Tool Card - Admin Only */}
+              {isAdmin && (
+                <Card className="lg:col-span-2 border-2 border-purple-200 bg-purple-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-900">
+                      <Sparkles className="w-5 h-5" />
+                      Smart Sandwich Type Backfill
+                    </CardTitle>
+                    <CardDescription>
+                      Use AI to analyze historical patterns and suggest sandwich type distributions for events missing this data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {!showBackfillTool ? (
+                      <div className="text-center py-6">
+                        <p className="text-gray-600 mb-4">
+                          This tool analyzes your existing event data to find patterns and suggests sandwich type breakdowns
+                          for events that have total counts but no type information.
+                        </p>
+                        <Button
+                          onClick={() => {
+                            setShowBackfillTool(true);
+                            fetchMissingTypesMutation.mutate();
+                          }}
+                          disabled={fetchMissingTypesMutation.isPending}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          {fetchMissingTypesMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Launch Smart Backfill Tool
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Step indicator */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${backfillStep === 'select' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
+                            1. Select Events
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${backfillStep === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
+                            2. Review Suggestions
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${backfillStep === 'complete' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+                            3. Complete
+                          </div>
+                        </div>
+
+                        {/* Step 1: Select Events */}
+                        {backfillStep === 'select' && backfillData && (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                              <div>
+                                <p className="font-medium">{backfillData.totalMissing} events missing type data</p>
+                                <p className="text-sm text-gray-500">{backfillData.totalWithTypes} events have type data (used for pattern analysis)</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const allIds = new Set(backfillData.eventsMissingTypes.map(e => e.id));
+                                    setSelectedBackfillEvents(allIds);
+                                  }}
+                                >
+                                  Select All
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedBackfillEvents(new Set())}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-12">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedBackfillEvents.size === backfillData.eventsMissingTypes.length}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedBackfillEvents(new Set(backfillData.eventsMissingTypes.map(ev => ev.id)));
+                                          } else {
+                                            setSelectedBackfillEvents(new Set());
+                                          }
+                                        }}
+                                      />
+                                    </TableHead>
+                                    <TableHead>Organization</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead className="text-right">Sandwiches</TableHead>
+                                    <TableHead>Pattern</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {backfillData.eventsMissingTypes.slice(0, 100).map((event) => (
+                                    <TableRow key={event.id}>
+                                      <TableCell>
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedBackfillEvents.has(event.id)}
+                                          onChange={(e) => {
+                                            const newSet = new Set(selectedBackfillEvents);
+                                            if (e.target.checked) {
+                                              newSet.add(event.id);
+                                            } else {
+                                              newSet.delete(event.id);
+                                            }
+                                            setSelectedBackfillEvents(newSet);
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
+                                      <TableCell>{event.scheduledEventDate ? new Date(event.scheduledEventDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                      <TableCell className="text-right">{event.actualSandwichCount?.toLocaleString()}</TableCell>
+                                      <TableCell>
+                                        {event.hasOrgPattern ? (
+                                          <Badge className="bg-green-100 text-green-800">Has Pattern</Badge>
+                                        ) : (
+                                          <Badge variant="outline">No Pattern</Badge>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-500">{selectedBackfillEvents.size} events selected</p>
+                              <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => setShowBackfillTool(false)}>
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => getBackfillSuggestionsMutation.mutate(Array.from(selectedBackfillEvents))}
+                                  disabled={selectedBackfillEvents.size === 0 || getBackfillSuggestionsMutation.isPending}
+                                  className="bg-purple-600 hover:bg-purple-700"
+                                >
+                                  {getBackfillSuggestionsMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Analyzing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      Get AI Suggestions ({selectedBackfillEvents.size})
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Step 2: Review Suggestions */}
+                        {backfillStep === 'review' && backfillSuggestions && (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                              <div>
+                                <p className="font-medium">{backfillSuggestions.length} suggestions generated</p>
+                                <p className="text-sm text-gray-500">
+                                  Review and approve suggestions before applying
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBackfillSuggestions(backfillSuggestions.map(s => ({ ...s, approved: true })));
+                                  }}
+                                >
+                                  Approve All
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBackfillSuggestions(backfillSuggestions.map(s => ({ ...s, approved: false })));
+                                  }}
+                                >
+                                  Reject All
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-[400px] overflow-y-auto space-y-2">
+                              {backfillSuggestions.map((suggestion, idx) => (
+                                <div
+                                  key={suggestion.eventId}
+                                  className={`p-4 rounded-lg border ${suggestion.approved ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <p className="font-medium">{suggestion.organizationName}</p>
+                                      <p className="text-sm text-gray-500">
+                                        {suggestion.scheduledEventDate ? new Date(suggestion.scheduledEventDate).toLocaleDateString() : 'N/A'} • {suggestion.actualSandwichCount} sandwiches
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={
+                                        suggestion.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                                        suggestion.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-gray-100 text-gray-800'
+                                      }>
+                                        {suggestion.confidence} confidence
+                                      </Badge>
+                                      <Button
+                                        variant={suggestion.approved ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => {
+                                          const newSuggestions = [...backfillSuggestions];
+                                          newSuggestions[idx] = { ...suggestion, approved: !suggestion.approved };
+                                          setBackfillSuggestions(newSuggestions);
+                                        }}
+                                      >
+                                        {suggestion.approved ? 'Approved' : 'Approve'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mb-2">{suggestion.reasoning}</p>
+                                  <div className="flex gap-4 text-sm">
+                                    <span>Deli: <strong>{suggestion.suggestion.deli}</strong></span>
+                                    <span>Turkey: <strong>{suggestion.suggestion.turkey}</strong></span>
+                                    <span>Ham: <strong>{suggestion.suggestion.ham}</strong></span>
+                                    <span>PB&J: <strong>{suggestion.suggestion.pbj}</strong></span>
+                                    {suggestion.suggestion.generic > 0 && <span>Other: <strong>{suggestion.suggestion.generic}</strong></span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-500">
+                                {backfillSuggestions.filter(s => s.approved).length} of {backfillSuggestions.length} approved
+                              </p>
+                              <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => setBackfillStep('select')}>
+                                  Back
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    const approvals = backfillSuggestions
+                                      .filter(s => s.approved)
+                                      .map(s => ({ eventId: s.eventId, types: s.suggestion }));
+                                    applyBackfillMutation.mutate(approvals);
+                                  }}
+                                  disabled={backfillSuggestions.filter(s => s.approved).length === 0 || applyBackfillMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  {applyBackfillMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Applying...
+                                    </>
+                                  ) : (
+                                    <>
+                                      Apply {backfillSuggestions.filter(s => s.approved).length} Changes
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Step 3: Complete */}
+                        {backfillStep === 'complete' && (
+                          <div className="text-center py-8">
+                            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                            <h3 className="text-xl font-bold text-green-800 mb-2">Backfill Complete!</h3>
+                            <p className="text-gray-600 mb-4">
+                              Sandwich type data has been added to your events. The charts above should now show the updated data.
+                            </p>
+                            <Button
+                              onClick={() => {
+                                setShowBackfillTool(false);
+                                setBackfillData(null);
+                                setBackfillSuggestions(null);
+                                setSelectedBackfillEvents(new Set());
+                                setBackfillStep('select');
+                              }}
+                            >
+                              Done
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Sandwich Distribution Histogram */}
               <Card className="lg:col-span-2">
