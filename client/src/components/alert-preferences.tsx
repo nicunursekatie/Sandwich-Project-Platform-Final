@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -221,6 +221,13 @@ export default function AlertPreferences() {
     queryFn: () => apiRequest('GET', '/api/me/notification-preferences'),
   });
 
+  // Validate preferences data with Zod schema before passing to form
+  const validatedPreferences = useMemo(() => {
+    if (!preferences) return undefined;
+    const result = notificationPreferencesSchema.safeParse(preferences);
+    return result.success ? result.data : undefined;
+  }, [preferences]);
+
   // Load existing alert requests
   const { data: alertRequests } = useQuery({
     queryKey: ['/api/alert-requests'],
@@ -257,7 +264,7 @@ export default function AlertPreferences() {
       secondaryReminderHours: 1,
       secondaryReminderType: 'email',
     },
-    values: preferences as NotificationPreferencesFormData | undefined,
+    values: validatedPreferences,
   });
 
   // Submit alert request mutation
