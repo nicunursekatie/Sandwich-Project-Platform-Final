@@ -29,8 +29,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { apiRequest } from '@/lib/queryClient';
 import { format, parseISO } from 'date-fns';
 import {
   Calendar,
@@ -53,6 +65,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Upload,
+  FileUp,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -292,6 +306,26 @@ export default function EventImpactReports() {
     errors: number;
   } | null>(null);
 
+  // Import dialog state
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importCsvData, setImportCsvData] = useState('');
+  const [importAnalysis, setImportAnalysis] = useState<{
+    headers: string[];
+    sampleRows: Record<string, string>[];
+    suggestedMappings: Record<string, string | null>;
+    confidence: string;
+    notes: string;
+    totalRows: number;
+  } | null>(null);
+  const [importMappings, setImportMappings] = useState<Record<string, string | null>>({});
+  const [importResults, setImportResults] = useState<{
+    processed: number;
+    updated: number;
+    notFound: number;
+    errors: number;
+    details: Array<{ row: number; status: string; message: string }>;
+  } | null>(null);
+
   // Calculate actual date range
   const dateRange = useMemo(() => {
     if (timePreset === 'custom' && customStartDate && customEndDate) {
@@ -315,6 +349,119 @@ export default function EventImpactReports() {
   });
 
   const isLoading = eventsLoading || collectionsLoading;
+
+  const { toast } = useToast();
+
+  // Mutation for generating AI impact report PDF
+  const generateReportMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/impact-reports/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          startDate: dateRange.start.toISOString(),
+          endDate: dateRange.end.toISOString(),
+          reportType: 'custom',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate report');
+      }
+
+      // Get the PDF blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TSP_Impact_Report_${dateRange.start.toISOString().split('T')[0]}_to_${dateRange.end.toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Report Generated',
+        description: 'Your AI-powered impact report has been downloaded.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Report Generation Failed',
+        description: error.message || 'Failed to generate the impact report. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for analyzing CSV data
+  const analyzeSheetMutation = useMutation({
+    mutationFn: async (csvData: string) => {
+      const response = await fetch('/api/impact-reports/analyze-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ csvData }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to analyze sheet');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setImportAnalysis(data);
+      setImportMappings(data.suggestedMappings);
+      toast({
+        title: 'Sheet Analyzed',
+        description: `Found ${data.totalRows} rows. AI confidence: ${data.confidence}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Analysis Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for importing sandwich type data
+  const importDataMutation = useMutation({
+    mutationFn: async ({ csvData, mappings }: { csvData: string; mappings: Record<string, string | null> }) => {
+      const response = await fetch('/api/impact-reports/backfill-sandwich-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ csvData, mappings }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to import data');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setImportResults(data);
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      toast({
+        title: 'Import Complete',
+        description: `Updated ${data.updated} events. ${data.notFound} not found, ${data.errors} errors.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Import Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Process and filter events
   const processedData = useMemo(() => {
@@ -912,7 +1059,40 @@ export default function EventImpactReports() {
 
                 <Button variant="outline" onClick={exportToCSV}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export
+                  Export CSV
+                </Button>
+
+                <Button
+                  variant="default"
+                  onClick={() => generateReportMutation.mutate()}
+                  disabled={generateReportMutation.isPending}
+                  className="bg-brand-primary hover:bg-brand-primary/90"
+                >
+                  {generateReportMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI Report
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setImportCsvData('');
+                    setImportAnalysis(null);
+                    setImportMappings({});
+                    setImportResults(null);
+                    setShowImportDialog(true);
+                  }}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  Import Data
                 </Button>
               </div>
             </div>
@@ -2137,6 +2317,287 @@ export default function EventImpactReports() {
           </Card>
         )}
       </div>
+
+      {/* Import Sandwich Type Data Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileUp className="w-5 h-5" />
+              Import Sandwich Type Data
+            </DialogTitle>
+            <DialogDescription>
+              Paste CSV data from your Google Sheet to backfill sandwich type information for historical events.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Step 1: Paste CSV Data */}
+            {!importAnalysis && !importResults && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Paste your CSV data from Google Sheets</Label>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Copy from Google Sheets: Select cells → Ctrl/Cmd+C → Paste here
+                  </p>
+                  <Textarea
+                    value={importCsvData}
+                    onChange={(e) => setImportCsvData(e.target.value)}
+                    placeholder="Date,Organization,Deli,Turkey,Ham,PBJ
+1/15/2025,Local Church,50,30,20,40
+1/20/2025,Community Center,100,60,40,80"
+                    className="font-mono text-sm h-48"
+                  />
+                </div>
+                <Button
+                  onClick={() => analyzeSheetMutation.mutate(importCsvData)}
+                  disabled={!importCsvData.trim() || analyzeSheetMutation.isPending}
+                >
+                  {analyzeSheetMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Analyze Columns
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Step 2: Review and Adjust Mappings */}
+            {importAnalysis && !importResults && (
+              <div className="space-y-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <strong>AI Confidence: {importAnalysis.confidence}</strong>
+                    {importAnalysis.notes && ` - ${importAnalysis.notes}`}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Found {importAnalysis.totalRows} rows to process
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Date Column *</Label>
+                    <Select
+                      value={importMappings.date || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, date: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Organization Column *</Label>
+                    <Select
+                      value={importMappings.organizationName || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, organizationName: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Deli Count</Label>
+                    <Select
+                      value={importMappings.deli || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, deli: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Turkey Count</Label>
+                    <Select
+                      value={importMappings.turkey || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, turkey: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Ham Count</Label>
+                    <Select
+                      value={importMappings.ham || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, ham: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>PB&J Count</Label>
+                    <Select
+                      value={importMappings.pbj || ''}
+                      onValueChange={(v) => setImportMappings({ ...importMappings, pbj: v || null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select column (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {importAnalysis.headers.map((h) => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Sample Data Preview</Label>
+                  <div className="mt-2 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {importAnalysis.headers.map((h) => (
+                            <TableHead key={h} className="text-xs">{h}</TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {importAnalysis.sampleRows.slice(0, 3).map((row, i) => (
+                          <TableRow key={i}>
+                            {importAnalysis.headers.map((h) => (
+                              <TableCell key={h} className="text-xs">{row[h]}</TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setImportAnalysis(null);
+                      setImportMappings({});
+                    }}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => importDataMutation.mutate({ csvData: importCsvData, mappings: importMappings })}
+                    disabled={!importMappings.date || !importMappings.organizationName || importDataMutation.isPending}
+                  >
+                    {importDataMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import {importAnalysis.totalRows} Rows
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Results */}
+            {importResults && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="p-3 bg-gray-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{importResults.processed}</p>
+                    <p className="text-xs text-gray-600">Processed</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-600">{importResults.updated}</p>
+                    <p className="text-xs text-green-700">Updated</p>
+                  </div>
+                  <div className="p-3 bg-amber-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-amber-600">{importResults.notFound}</p>
+                    <p className="text-xs text-amber-700">Not Found</p>
+                  </div>
+                  <div className="p-3 bg-red-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResults.errors}</p>
+                    <p className="text-xs text-red-700">Errors</p>
+                  </div>
+                </div>
+
+                {importResults.details.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">Row</TableHead>
+                          <TableHead className="w-24">Status</TableHead>
+                          <TableHead>Message</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {importResults.details.map((d, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs">{d.row}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={d.status === 'updated' ? 'default' : d.status === 'not_found' ? 'secondary' : 'destructive'}
+                                className="text-xs"
+                              >
+                                {d.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">{d.message}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                <Button onClick={() => setShowImportDialog(false)}>
+                  Done
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
