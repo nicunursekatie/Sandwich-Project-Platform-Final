@@ -802,14 +802,14 @@ export default function HoldingZone() {
       setItemToPromote(null);
       setPromotePriority('medium');
       toast({
-        title: 'Item promoted',
-        description: 'The item has been promoted to a standalone task',
+        title: 'Task-Draft promoted',
+        description: 'The task-draft has been promoted to a Task-Planned',
       });
     },
     onError: () => {
       toast({
         title: 'Error',
-        description: 'Failed to promote item to task',
+        description: 'Failed to promote task-draft',
         variant: 'destructive',
       });
     },
@@ -860,13 +860,13 @@ export default function HoldingZone() {
       setUpgradeProjectCategory('technology');
       toast({
         title: 'Upgraded to Project',
-        description: 'The holding zone item has been upgraded to a project. You can find it in the Projects section.',
+        description: 'The task-draft has been upgraded to a project. You can find it in the Projects section.',
       });
     },
     onError: () => {
       toast({
         title: 'Error',
-        description: 'Failed to upgrade item to project',
+        description: 'Failed to upgrade task-draft to project',
         variant: 'destructive',
       });
     },
@@ -1176,7 +1176,7 @@ export default function HoldingZone() {
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="tasks" className="flex items-center gap-2" data-testid="tab-tasks">
             <ListTodo className="h-4 w-4" />
-            Tasks
+            Task-Drafts
             {filteredTasks.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {filteredTasks.length}
@@ -1207,7 +1207,7 @@ export default function HoldingZone() {
               <>
                 <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 dark:text-gray-400 text-lg">
-                  No tasks found. {canSubmit && "Click 'Submit Item' to add one!"}
+                  No task-drafts found. {canSubmit && "Click 'Submit Item' to add one!"}
                 </p>
               </>
             ) : (
@@ -1467,7 +1467,7 @@ export default function HoldingZone() {
                           data-testid={`button-promote-${item.id}`}
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
-                          Promote to Task
+                          Promote to Task-Planned
                         </Button>
                         <Button
                           size="sm"
@@ -1523,7 +1523,7 @@ export default function HoldingZone() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
                 </SelectContent>
@@ -1835,7 +1835,7 @@ export default function HoldingZone() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
                 </SelectContent>
@@ -1996,13 +1996,13 @@ export default function HoldingZone() {
         </DialogContent>
       </Dialog>
 
-      {/* Promote to Task Dialog */}
+      {/* Promote to Task-Planned Dialog */}
       <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Promote to Task</DialogTitle>
+            <DialogTitle>Promote to Task-Planned</DialogTitle>
             <DialogDescription>
-              Convert this holding zone item into a standalone task
+              Convert this task-draft into a standalone planned task ready for action
             </DialogDescription>
           </DialogHeader>
 
@@ -2034,8 +2034,8 @@ export default function HoldingZone() {
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> This will create a standalone task (not attached to any project).
-                The holding zone item will be marked as done, and you can find the new task in the Projects section.
+                <strong>Note:</strong> This will create a standalone Task-Planned (not attached to any project).
+                The task-draft will be marked as done, and you can find the new task in the Projects section.
               </p>
             </div>
           </div>
@@ -2068,7 +2068,7 @@ export default function HoldingZone() {
               {promoteToTaskMutation.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Promoting...</>
               ) : (
-                <>Promote to Task</>
+                <>Promote to Task-Planned</>
               )}
             </Button>
           </DialogFooter>
@@ -2084,7 +2084,7 @@ export default function HoldingZone() {
               Upgrade to Project
             </DialogTitle>
             <DialogDescription>
-              Convert this holding zone task into a full project with tracking and milestones
+              Convert this task-draft into a full project with tracking and milestones
             </DialogDescription>
           </DialogHeader>
 
@@ -2092,7 +2092,7 @@ export default function HoldingZone() {
             {itemToUpgrade && (
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Original Task:
+                  Original Task-Draft:
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                   {itemToUpgrade.content}
@@ -2154,7 +2154,7 @@ export default function HoldingZone() {
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
               <p className="text-sm text-green-800 dark:text-green-200">
                 <strong>What happens next:</strong> A new project will be created with full tracking capabilities. 
-                The original holding zone item will be marked as done, and you can manage the project from the Projects section.
+                The task-draft will be marked as done, and you can manage the project from the Projects section.
               </p>
             </div>
           </div>
