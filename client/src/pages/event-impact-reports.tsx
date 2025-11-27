@@ -75,8 +75,11 @@ import {
 // Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
 function parseLocalDate(dateInput: string | Date | null | undefined): Date | null {
   if (!dateInput) return null;
-  // If it's already a Date object, return it
+  // If it's already a Date object (check both instanceof and duck typing for cross-realm compatibility)
   if (dateInput instanceof Date) return dateInput;
+  if (typeof dateInput === 'object' && dateInput !== null && typeof (dateInput as any).getTime === 'function') {
+    return dateInput as Date;
+  }
   // If it's not a string at this point, bail
   if (typeof dateInput !== 'string') return null;
   // If it's just a date (YYYY-MM-DD), parse in local time
