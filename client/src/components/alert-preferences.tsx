@@ -202,7 +202,6 @@ export default function AlertPreferences() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('current-alerts');
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [isAIDialogOpen] = useState(false);
   const [aiGeneratedAlert, setAiGeneratedAlert] = useState<string | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
