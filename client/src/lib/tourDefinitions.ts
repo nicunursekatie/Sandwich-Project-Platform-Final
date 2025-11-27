@@ -22,6 +22,7 @@ export interface Tour {
   steps: TourStep[];
   estimatedTime?: string;
   afterComplete?: () => void; // Optional callback to run after tour completes
+  requiredPermission?: string; // Permission required to view/start this tour (uses PERMISSIONS from auth-utils)
 }
 
 export type TourCategory = 
@@ -67,6 +68,7 @@ export const TOURS: Tour[] = [
     category: 'files-resources',
     icon: 'FileImage',
     estimatedTime: '1 min',
+    requiredPermission: 'NAV_RESOURCES',
     steps: [
       {
         id: 'logos-nav',
@@ -76,16 +78,16 @@ export const TOURS: Tour[] = [
         position: 'right'
       },
       {
-        id: 'logos-important-docs',
-        title: 'Navigate to Important Documents',
-        description: 'First, we need to go to Important Documents section. I\'ll take you there now.',
-        targetSelector: '[data-nav-id="important-documents"]',
+        id: 'logos-resources',
+        title: 'Navigate to Resources',
+        description: 'First, we need to go to the Resources section where documents are stored. I\'ll take you there now.',
+        targetSelector: '[data-nav-id="resources"]',
         position: 'right',
         navigationAction: {
-          section: 'important-documents'
+          section: 'resources'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="important-documents"]');
+          const navItem = document.querySelector('[data-nav-id="resources"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -125,6 +127,7 @@ export const TOURS: Tour[] = [
     category: 'files-resources',
     icon: 'ClipboardList',
     estimatedTime: '1 min',
+    requiredPermission: 'NAV_RESOURCES',
     steps: [
       {
         id: 'signin-nav',
@@ -135,15 +138,15 @@ export const TOURS: Tour[] = [
       },
       {
         id: 'signin-docs',
-        title: 'Go to Important Documents',
-        description: 'Sign-in forms are stored in Important Documents. Let\'s navigate there.',
-        targetSelector: '[data-nav-id="important-documents"]',
+        title: 'Go to Resources',
+        description: 'Sign-in forms are stored in Resources. Let\'s navigate there.',
+        targetSelector: '[data-nav-id="resources"]',
         position: 'right',
         navigationAction: {
-          section: 'important-documents'
+          section: 'resources'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="important-documents"]');
+          const navItem = document.querySelector('[data-nav-id="resources"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -187,15 +190,16 @@ export const TOURS: Tour[] = [
   {
     id: 'analytics-overview',
     title: 'Analytics Dashboard Tour',
-    description: 'Explore impact metrics and host performance analytics',
+    description: 'Explore impact metrics and community collection trends',
     category: 'analytics-reports',
     icon: 'TrendingUp',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_ANALYTICS',
     steps: [
       {
         id: 'analytics-nav',
         title: 'Welcome to Analytics!',
-        description: 'Discover powerful insights about TSP\'s impact and performance. Let\'s explore the Analytics dashboard.',
+        description: 'Discover powerful insights about TSP\'s community impact and collection trends. Let\'s explore the Analytics dashboard.',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },
@@ -218,23 +222,23 @@ export const TOURS: Tour[] = [
       {
         id: 'analytics-impact-tab',
         title: 'Impact Dashboard',
-        description: 'The Impact Dashboard shows overall community impact, collection trends, and key metrics. This is your main analytics overview.',
+        description: 'The Impact Dashboard shows overall community impact, collection trends, and progress toward our annual goal of 500,000 sandwiches.',
         targetSelector: '[data-value="impact"], [data-testid="tab-impact"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
-        id: 'analytics-host-tab',
-        title: 'Host Analytics',
-        description: 'The Host Analytics tab provides detailed performance metrics for individual hosts, including collection history and trends.',
-        targetSelector: '[data-value="hosts"], [data-testid="tab-hosts"]',
+        id: 'analytics-collection-trends',
+        title: 'Collection Trends',
+        description: 'View collection patterns over time - individual vs group contributions, seasonal trends, and historical comparisons.',
+        targetSelector: '[data-value="trends"], [data-testid="tab-trends"], [data-testid="collection-chart"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
         id: 'analytics-metrics',
         title: 'Key Metrics',
-        description: 'Use these analytics to track sandwiches collected, volunteer participation, and community impact over time. Export data for reports!',
+        description: 'Track sandwiches collected, volunteer participation, and community impact over time. Export data for grant reports!',
         targetSelector: '[data-testid="metrics-container"], [data-testid="analytics-content"]',
         position: 'top',
         highlightPadding: 16
@@ -257,6 +261,7 @@ export const TOURS: Tour[] = [
     category: 'my-work',
     icon: 'ListTodo',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_MY_ACTIONS',
     steps: [
       {
         id: 'action-hub-intro',
@@ -323,6 +328,7 @@ export const TOURS: Tour[] = [
     category: 'my-work',
     icon: 'Calendar',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_EVENT_PLANNING',
     steps: [
       {
         id: 'assignments-intro',
@@ -447,6 +453,7 @@ export const TOURS: Tour[] = [
     category: 'events-calendar',
     icon: 'Calendar',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_EVENT_PLANNING',
     steps: [
       {
         id: 'calendar-intro',
@@ -522,6 +529,7 @@ export const TOURS: Tour[] = [
     category: 'team-management',
     icon: 'MessageSquare',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_TEAM_CHAT',
     steps: [
       {
         id: 'chat-intro',
@@ -574,23 +582,24 @@ export const TOURS: Tour[] = [
   },
   {
     id: 'team-board-guide',
-    title: 'Using Team Board',
-    description: 'Post tasks, ideas, and notes for the team',
+    title: 'Using TSP Holding Zone',
+    description: 'Post task drafts, notes, and ideas for the team',
     category: 'team-management',
     icon: 'Trello',
     estimatedTime: '2 min',
+    requiredPermission: 'VIEW_HOLDING_ZONE',
     steps: [
       {
         id: 'board-intro',
-        title: 'Team Board - Shared Task Hub',
-        description: 'Team Board is like a virtual bulletin board where anyone can post tasks, ideas, notes, or reminders for the team.',
+        title: 'TSP Holding Zone Overview',
+        description: 'The Holding Zone is where you can capture task drafts, notes, and ideas before they become formal projects. It\'s organized into two tabs: Task-Drafts and Notes & Ideas.',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },
       {
         id: 'board-nav',
-        title: 'Open Team Board',
-        description: 'Find Team Board in the navigation menu.',
+        title: 'Open TSP Holding Zone',
+        description: 'Find "TSP Holding Zone" in the navigation menu.',
         targetSelector: '[data-nav-id="team-board"]',
         position: 'right',
         navigationAction: {
@@ -604,34 +613,34 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'board-create',
-        title: 'Create New Items',
-        description: 'Click here to post a new task, idea, note, or reminder for the team. Choose the type that fits best!',
-        targetSelector: '[data-testid="create-board-item"], [data-testid="new-item-button"]',
+        id: 'board-tabs',
+        title: 'Two Main Tabs',
+        description: 'Task-Drafts are work items that can later be upgraded to Projects. Notes & Ideas are for capturing thoughts and discussions that don\'t need formal tracking.',
+        targetSelector: '[data-testid="holding-zone-tabs"], [role="tablist"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
-        id: 'board-columns',
-        title: 'Three Status Columns',
-        description: 'Items are organized by status: Open (available to claim), In Progress (being worked on), and Done (completed).',
-        targetSelector: '[data-testid="board-columns"], [data-testid="status-columns"]',
-        position: 'top',
-        highlightPadding: 16
+        id: 'board-create',
+        title: 'Create New Items',
+        description: 'Click here to add a new item. Choose Task-Draft for actionable work, or Note/Idea for general thoughts.',
+        targetSelector: '[data-testid="create-board-item"], [data-testid="new-item-button"], [data-testid="button-add-item"]',
+        position: 'bottom',
+        highlightPadding: 8
       },
       {
-        id: 'board-claim',
-        title: 'Claim Tasks',
-        description: 'See a task you want to help with? Click "Claim" to assign yourself, or assign it to a teammate!',
-        targetSelector: '[data-testid="claim-button"], [data-testid^="button-claim-"]',
+        id: 'board-upgrade',
+        title: 'Upgrade to Project',
+        description: 'Task-Drafts can be upgraded to full Projects when they\'re ready for formal tracking with milestones and task assignments.',
+        targetSelector: '[data-testid="upgrade-to-project"], [data-testid^="button-upgrade-"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
         id: 'board-comments',
-        title: 'Add Comments',
-        description: 'Click on any item to view details and add comments. Keep conversations organized per task!',
-        targetSelector: '[data-testid="board-item"]:first-child',
+        title: 'Add Comments & Likes',
+        description: 'Click on any item to view details, add comments, and like items you support. Keep discussions organized!',
+        targetSelector: '[data-testid="board-item"]:first-child, [data-testid="holding-zone-item"]:first-child',
         position: 'left',
         highlightPadding: 12
       }
@@ -644,6 +653,7 @@ export const TOURS: Tour[] = [
     category: 'events-calendar',
     icon: 'ClipboardCheck',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_COLLECTIONS_LOG',
     steps: [
       {
         id: 'collections-intro',
@@ -656,13 +666,13 @@ export const TOURS: Tour[] = [
         id: 'collections-nav',
         title: 'Open Collections Log',
         description: 'Navigate to Collections Log in the menu.',
-        targetSelector: '[data-nav-id="collections-log"]',
+        targetSelector: '[data-nav-id="collections"]',
         position: 'right',
         navigationAction: {
-          section: 'collections-log'
+          section: 'collections'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="collections-log"]');
+          const navItem = document.querySelector('[data-nav-id="collections"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -701,6 +711,7 @@ export const TOURS: Tour[] = [
     category: 'team-management',
     icon: 'Mail',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_INBOX',
     steps: [
       {
         id: 'inbox-intro',
@@ -713,13 +724,13 @@ export const TOURS: Tour[] = [
         id: 'inbox-nav',
         title: 'Open Inbox',
         description: 'Click on Inbox in the navigation.',
-        targetSelector: '[data-nav-id="inbox"]',
+        targetSelector: '[data-nav-id="gmail-inbox"]',
         position: 'right',
         navigationAction: {
           section: 'gmail-inbox'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="inbox"]');
+          const navItem = document.querySelector('[data-nav-id="gmail-inbox"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -766,6 +777,7 @@ export const TOURS: Tour[] = [
     category: 'my-work',
     icon: 'ListTodo',
     estimatedTime: '3 min',
+    requiredPermission: 'NAV_PROJECTS',
     steps: [
       {
         id: 'projects-intro',
@@ -823,6 +835,7 @@ export const TOURS: Tour[] = [
     category: 'events-calendar',
     icon: 'Building2',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_HOSTS',
     steps: [
       {
         id: 'hosts-intro',
@@ -872,6 +885,7 @@ export const TOURS: Tour[] = [
     category: 'events-calendar',
     icon: 'Clock',
     estimatedTime: '2 min',
+    requiredPermission: 'NAV_EVENT_REMINDERS',
     steps: [
       {
         id: 'reminders-intro',
@@ -921,6 +935,7 @@ export const TOURS: Tour[] = [
     category: 'my-work',
     icon: 'Calendar',
     estimatedTime: '1 min',
+    requiredPermission: 'NAV_MY_AVAILABILITY',
     steps: [
       {
         id: 'availability-intro',
@@ -962,6 +977,7 @@ export const TOURS: Tour[] = [
     category: 'team-management',
     icon: 'Users',
     estimatedTime: '3 min',
+    requiredPermission: 'NAV_VOLUNTEERS',
     steps: [
       {
         id: 'volunteers-intro',
