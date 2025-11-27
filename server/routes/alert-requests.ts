@@ -6,6 +6,18 @@ import { logger } from '../utils/production-safe-logger';
 import OpenAI from 'openai';
 
 /**
+ * Validates and parses an ID parameter from request params.
+ * Returns the parsed integer if valid, or null if invalid.
+ */
+function parseAndValidateId(id: string): number | null {
+  const parsedId = parseInt(id, 10);
+  if (isNaN(parsedId) || parsedId <= 0) {
+    return null;
+  }
+  return parsedId;
+}
+
+/**
  * Alert Requests API
  * Handles user-submitted requests for new notification types
  */
@@ -115,8 +127,8 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const { status, adminNotes } = req.body;
 
       // Validate that id is a valid integer
-      const parsedId = parseInt(id, 10);
-      if (isNaN(parsedId) || parsedId <= 0) {
+      const parsedId = parseAndValidateId(id);
+      if (parsedId === null) {
         return res.status(400).json({ error: 'Invalid alert request ID' });
       }
 
@@ -168,8 +180,8 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const { id } = req.params;
 
       // Validate that id is a valid integer
-      const parsedId = parseInt(id, 10);
-      if (isNaN(parsedId) || parsedId <= 0) {
+      const parsedId = parseAndValidateId(id);
+      if (parsedId === null) {
         return res.status(400).json({ error: 'Invalid alert request ID' });
       }
 
