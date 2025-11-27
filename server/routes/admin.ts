@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import { requirePermission } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
-import { categorizeUncategorizedOrganizations, categorizeOrganization } from '../services/ai-organization-categorization';
+import { categorizeUncategorizedOrganizations, categorizeOrganization, categorizeUncategorizedEventRequests } from '../services/ai-organization-categorization';
 
 interface AdminDependencies {
   isAuthenticated: any;
@@ -280,20 +280,21 @@ export function createAdminRoutes(deps: AdminDependencies) {
 
   // Removed duplicate GET /login route - now only in auth.ts
 
-  // AI Organization Categorization - categorize all uncategorized organizations
+  // AI Organization Categorization - categorize all uncategorized event requests
   router.post(
     '/ai-categorize-organizations',
     deps.isAuthenticated,
     requirePermission('ADMIN_ACCESS'),
     async (req: any, res) => {
       try {
-        logger.info('Starting AI organization categorization...');
-        
-        const progress = await categorizeUncategorizedOrganizations();
-        
+        logger.info('Starting AI event request categorization...');
+
+        // Categorize event requests (which is what the UI shows)
+        const progress = await categorizeUncategorizedEventRequests();
+
         res.json({
           success: true,
-          message: 'Organization categorization complete',
+          message: 'Event request categorization complete',
           results: {
             total: progress.total,
             patternMatched: progress.patternMatched,
@@ -303,9 +304,9 @@ export function createAdminRoutes(deps: AdminDependencies) {
           },
         });
       } catch (error) {
-        logger.error('AI organization categorization failed:', error);
-        res.status(500).json({ 
-          error: 'Failed to categorize organizations',
+        logger.error('AI event request categorization failed:', error);
+        res.status(500).json({
+          error: 'Failed to categorize event requests',
           message: error instanceof Error ? error.message : 'Unknown error',
         });
       }
