@@ -454,6 +454,45 @@ const generateClusterTooltip = (cluster: any): string => {
   `;
 };
 
+// Helper to calculate best tooltip direction based on cluster position
+const calculateTooltipDirection = (
+  map: L.Map,
+  clusterLatLng: L.LatLng
+): { direction: 'top' | 'bottom' | 'left' | 'right'; offset: L.Point } => {
+  const containerPoint = map.latLngToContainerPoint(clusterLatLng);
+  const mapSize = map.getSize();
+  
+  // Tooltip dimensions (approximate)
+  const tooltipWidth = 280;
+  const tooltipHeight = 200;
+  const clusterRadius = 40; // Account for cluster icon size
+  const margin = 20; // Margin from edge
+  
+  // Check available space in each direction
+  const spaceTop = containerPoint.y;
+  const spaceBottom = mapSize.y - containerPoint.y;
+  const spaceLeft = containerPoint.x;
+  const spaceRight = mapSize.x - containerPoint.x;
+  
+  // Prioritize: bottom if near top, top if near bottom, then left/right
+  if (spaceTop < tooltipHeight + clusterRadius + margin) {
+    // Near top edge - show tooltip below
+    return { direction: 'bottom', offset: L.point(0, 20) };
+  } else if (spaceBottom < tooltipHeight + clusterRadius + margin) {
+    // Near bottom edge - show tooltip above
+    return { direction: 'top', offset: L.point(0, -20) };
+  } else if (spaceRight < tooltipWidth / 2 + margin) {
+    // Near right edge - show tooltip to the left
+    return { direction: 'left', offset: L.point(-20, 0) };
+  } else if (spaceLeft < tooltipWidth / 2 + margin) {
+    // Near left edge - show tooltip to the right
+    return { direction: 'right', offset: L.point(20, 0) };
+  }
+  
+  // Default to top (most common case)
+  return { direction: 'top', offset: L.point(0, -20) };
+};
+
 // Component to handle cluster tooltips
 function ClusterTooltipHandler({ clusterRef }: { clusterRef: React.RefObject<any> }) {
   const map = useMap();
@@ -467,11 +506,17 @@ function ClusterTooltipHandler({ clusterRef }: { clusterRef: React.RefObject<any
       const cluster = e.propagatedFrom || e.layer;
       if (cluster && cluster.getChildCount) {
         const tooltipContent = generateClusterTooltip(cluster);
+        
+        // Calculate best direction based on cluster position
+        const clusterLatLng = cluster.getLatLng();
+        const { direction, offset } = calculateTooltipDirection(map, clusterLatLng);
+        
         cluster.bindTooltip(tooltipContent, {
-          direction: 'top',
-          offset: L.point(0, -20),
+          direction,
+          offset,
           opacity: 0.95,
           className: 'cluster-tooltip',
+          sticky: false,
         }).openTooltip();
       }
     };
