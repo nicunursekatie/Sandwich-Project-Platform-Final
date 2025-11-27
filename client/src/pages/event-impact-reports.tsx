@@ -326,6 +326,35 @@ export default function EventImpactReports() {
     details: Array<{ row: number; status: string; message: string }>;
   } | null>(null);
 
+  // Smart backfill state
+  const [showBackfillTool, setShowBackfillTool] = useState(false);
+  const [backfillData, setBackfillData] = useState<{
+    eventsMissingTypes: Array<{
+      id: number;
+      organizationName: string;
+      organizationCategory: string;
+      scheduledEventDate: string;
+      actualSandwichCount: number;
+      hasOrgPattern: boolean;
+    }>;
+    totalMissing: number;
+    totalWithTypes: number;
+  } | null>(null);
+  const [backfillSuggestions, setBackfillSuggestions] = useState<Array<{
+    eventId: number;
+    organizationName: string;
+    organizationCategory: string;
+    scheduledEventDate: string;
+    actualSandwichCount: number;
+    suggestion: { deli: number; turkey: number; ham: number; pbj: number; generic: number };
+    confidence: 'high' | 'medium' | 'low';
+    reasoning: string;
+    approved: boolean;
+    edited: boolean;
+  }> | null>(null);
+  const [selectedBackfillEvents, setSelectedBackfillEvents] = useState<Set<number>>(new Set());
+  const [backfillStep, setBackfillStep] = useState<'select' | 'review' | 'complete'>('select');
+
   // Calculate actual date range
   const dateRange = useMemo(() => {
     if (timePreset === 'custom' && customStartDate && customEndDate) {
@@ -457,6 +486,93 @@ export default function EventImpactReports() {
     onError: (error: Error) => {
       toast({
         title: 'Import Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for fetching events missing types
+  const fetchMissingTypesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/impact-reports/events-missing-types', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch events');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setBackfillData(data);
+      setBackfillStep('select');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for getting AI suggestions
+  const getBackfillSuggestionsMutation = useMutation({
+    mutationFn: async (eventIds: number[]) => {
+      const response = await fetch('/api/impact-reports/ai-suggest-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ eventIds }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to get suggestions');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setBackfillSuggestions(
+        data.suggestions.map((s: any) => ({ ...s, approved: true, edited: false }))
+      );
+      setBackfillStep('review');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for applying approved suggestions
+  const applyBackfillMutation = useMutation({
+    mutationFn: async (approvals: Array<{ eventId: number; types: any }>) => {
+      const response = await fetch('/api/impact-reports/apply-sandwich-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ approvals }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to apply types');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Success',
+        description: data.message,
+      });
+      setBackfillStep('complete');
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
         description: error.message,
         variant: 'destructive',
       });
