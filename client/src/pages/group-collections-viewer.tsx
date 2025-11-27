@@ -350,7 +350,7 @@ export default function GroupCollectionsViewer() {
               <div className="text-sm text-brand-teal font-medium">Unique Groups</div>
               <div className="text-3xl font-bold text-brand-navy mt-2">{uniqueGroups}</div>
             </Card>
-            <Card className="p-6 bg-gradient-to-br from-[#FEF3E2] to-[#FDE7C8] border-2 border-brand-orange/30">
+            <Card className="p-6 bg-gradient-to-br from-brand-orange-lighter to-brand-orange-light border-2 border-brand-orange/30">
               <div className="text-sm text-brand-orange-dark font-medium">Total Sandwiches</div>
               <div className="text-3xl font-bold text-brand-navy mt-2">{totalSandwiches.toLocaleString()}</div>
             </Card>
