@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -1517,9 +1517,8 @@ export default function EventImpactReports() {
                       </TableHeader>
                       <TableBody>
                         {processedData.filteredEvents.map((event: any) => (
-                          <>
+                          <Fragment key={event.id}>
                             <TableRow
-                              key={event.id}
                               className="cursor-pointer hover:bg-gray-50"
                               onClick={() => toggleEventExpansion(event.id)}
                               tabIndex={0}
@@ -1612,7 +1611,7 @@ export default function EventImpactReports() {
                                 </TableCell>
                               </TableRow>
                             )}
-                          </>
+                          </Fragment>
                         ))}
                       </TableBody>
                     </Table>
