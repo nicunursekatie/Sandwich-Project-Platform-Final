@@ -265,10 +265,19 @@ export function Resources() {
     const category = getCategoryInfo(item.resource.category);
     const CategoryIcon = category.icon;
     const isCopied = copiedId === item.resource.id;
+    const [previewError, setPreviewError] = useState(false);
 
-    // Get preview URL for documents
+    // Check if file type supports iframe preview (PDFs and images only)
+    const canPreviewInIframe = () => {
+      // Extract file extension from title or original name
+      const title = item.resource.title.toLowerCase();
+      const previewableExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp'];
+      return previewableExtensions.some(ext => title.endsWith(ext));
+    };
+
+    // Get preview URL for documents (only for previewable types)
     const getPreviewUrl = () => {
-      if (item.resource.type === 'file' && item.resource.documentId) {
+      if (item.resource.type === 'file' && item.resource.documentId && canPreviewInIframe() && !previewError) {
         return `/api/documents/${item.resource.documentId}/preview`;
       }
       return null;
@@ -294,7 +303,26 @@ export function Resources() {
               src={previewUrl}
               className="w-full h-full pointer-events-none"
               title={`Preview of ${item.resource.title}`}
+              onError={() => setPreviewError(true)}
             />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-3">
+                <ExternalLink className="w-6 h-6 text-[#236383]" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fallback preview for non-previewable files */}
+        {item.resource.type === 'file' && item.resource.documentId && !previewUrl && (
+          <div
+            className="w-full h-32 bg-gray-50 relative overflow-hidden group cursor-pointer flex items-center justify-center"
+            onClick={() => openResource(item)}
+          >
+            <div className="text-center">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <span className="text-sm text-gray-500">Click to open document</span>
+            </div>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-3">
                 <ExternalLink className="w-6 h-6 text-[#236383]" />
