@@ -14,11 +14,11 @@ import {
 export default function EventsViewer() {
   const [isLoading, setIsLoading] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(85); // Default zoom level (85%)
-  const [spreadsheetId, setSpreadsheetId] = useState<string | null>(null);
+
+  // Events Google Sheet ID - this is the actual editable spreadsheet
+  const EVENTS_SPREADSHEET_ID = '1HxPIt3jCx1Y4LuKOh9WzAlM5RMr2fkUlXCI1Yn1hx7w';
 
   // Use published Google Sheets URL (no authentication required)
-  // TODO: Update this URL with the current published Google Sheets URL
-  // To get the URL: Open the sheet → File → Share → Publish to web → Get the publish URL
   const embedUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2r5KMRKuKSrqn1yQxtw8T0e5Ooi_iBfd0HlgGVcIHtFat3o54FrqyTLB_uq-RxojjSFg1GTvpIZLZ/pubhtml?widget=true&amp;headers=false';
   const fullViewUrl =
@@ -30,24 +30,6 @@ export default function EventsViewer() {
     if (savedZoom) {
       setZoomLevel(parseInt(savedZoom));
     }
-  }, []);
-
-  // Fetch the spreadsheet ID from the API
-  useEffect(() => {
-    const fetchSpreadsheetId = async () => {
-      try {
-        const response = await fetch('/api/google-sheets/event-requests/config/check');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.spreadsheetId) {
-            setSpreadsheetId(data.spreadsheetId);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch spreadsheet ID:', error);
-      }
-    };
-    fetchSpreadsheetId();
   }, []);
 
   // Save zoom preference when changed
@@ -74,12 +56,10 @@ export default function EventsViewer() {
   };
 
   const handleEditInGoogleDrive = () => {
-    if (spreadsheetId) {
-      window.open(
-        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
-        '_blank'
-      );
-    }
+    window.open(
+      `https://docs.google.com/spreadsheets/d/${EVENTS_SPREADSHEET_ID}/edit`,
+      '_blank'
+    );
   };
 
   const handleZoomIn = () => {
@@ -121,7 +101,6 @@ export default function EventsViewer() {
                 variant="outline"
                 size="sm"
                 onClick={handleEditInGoogleDrive}
-                disabled={!spreadsheetId}
                 className="flex items-center gap-2"
                 title="Edit in Google Drive"
               >
