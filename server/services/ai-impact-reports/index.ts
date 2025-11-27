@@ -44,6 +44,13 @@ export interface ImpactReportGenerationResult {
     hoursVolunteered?: number;
     expensesTotal?: number;
   };
+  sandwichTypeBreakdown?: {
+    deli: number;
+    turkey: number;
+    ham: number;
+    pbj: number;
+    generic: number;
+  } | null;
   highlights: Array<{
     title: string;
     description: string;
@@ -79,7 +86,7 @@ export async function generateImpactReport(
     const dataContext = buildDataContext(data);
 
     // 3. Generate report with AI (passing metrics directly to avoid fragile string parsing)
-    const report = await generateReportWithAI(dataContext, startDate, endDate, reportType, data.metrics);
+    const report = await generateReportWithAI(dataContext, startDate, endDate, reportType, data.metrics, data.sandwichTypeBreakdown);
 
     const duration = Date.now() - startTime;
     logger.info('AI impact report generation completed', {
@@ -150,10 +157,57 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     ...events.flatMap(e => e.assignedSpeakerIds || []),
   ].filter(Boolean));
 
+  // Aggregate sandwich type data
+  const sandwichTypeBreakdown: Record<string, number> = {
+    deli: 0,
+    turkey: 0,
+    ham: 0,
+    pbj: 0,
+    generic: 0,
+  };
+
+  // From collections - individual sandwiches
+  collections.forEach((c) => {
+    sandwichTypeBreakdown.deli += c.individualDeli || 0;
+    sandwichTypeBreakdown.turkey += c.individualTurkey || 0;
+    sandwichTypeBreakdown.ham += c.individualHam || 0;
+    sandwichTypeBreakdown.pbj += c.individualPbj || 0;
+    sandwichTypeBreakdown.generic += c.individualGeneric || 0;
+
+    // From groupCollections JSONB
+    if (c.groupCollections && Array.isArray(c.groupCollections)) {
+      c.groupCollections.forEach((group: any) => {
+        sandwichTypeBreakdown.deli += group.deli || 0;
+        sandwichTypeBreakdown.turkey += group.turkey || 0;
+        sandwichTypeBreakdown.ham += group.ham || 0;
+        sandwichTypeBreakdown.pbj += group.pbj || 0;
+      });
+    }
+  });
+
+  // From events - actualSandwichTypes
+  events.forEach((e) => {
+    if (e.actualSandwichTypes && Array.isArray(e.actualSandwichTypes)) {
+      (e.actualSandwichTypes as Array<{ type: string; quantity: number }>).forEach((st) => {
+        const type = st.type?.toLowerCase() || 'generic';
+        if (type.includes('deli')) sandwichTypeBreakdown.deli += st.quantity || 0;
+        else if (type.includes('turkey')) sandwichTypeBreakdown.turkey += st.quantity || 0;
+        else if (type.includes('ham')) sandwichTypeBreakdown.ham += st.quantity || 0;
+        else if (type.includes('pbj') || type.includes('peanut')) sandwichTypeBreakdown.pbj += st.quantity || 0;
+        else sandwichTypeBreakdown.generic += st.quantity || 0;
+      });
+    }
+  });
+
+  // Calculate if we have meaningful type data
+  const totalTypedSandwiches = Object.values(sandwichTypeBreakdown).reduce((a, b) => a + b, 0);
+  const hasSandwichTypeData = totalTypedSandwiches > 0;
+
   return {
     events,
     collections,
     expenses: expensesList,
+    sandwichTypeBreakdown: hasSandwichTypeData ? sandwichTypeBreakdown : null,
     metrics: {
       eventsCompleted: events.length,
       sandwichesDistributed: totalSandwiches,
@@ -209,6 +263,23 @@ function buildDataContext(data: any): string {
     context.push('');
   }
 
+  // Add sandwich type breakdown if available
+  if (data.sandwichTypeBreakdown) {
+    const types = data.sandwichTypeBreakdown;
+    const totalTyped = types.deli + types.turkey + types.ham + types.pbj + types.generic;
+
+    context.push(`# Sandwich Type Breakdown`);
+    context.push(`- Deli: ${types.deli.toLocaleString()} (${totalTyped > 0 ? ((types.deli / totalTyped) * 100).toFixed(1) : 0}%)`);
+    context.push(`- Turkey: ${types.turkey.toLocaleString()} (${totalTyped > 0 ? ((types.turkey / totalTyped) * 100).toFixed(1) : 0}%)`);
+    context.push(`- Ham: ${types.ham.toLocaleString()} (${totalTyped > 0 ? ((types.ham / totalTyped) * 100).toFixed(1) : 0}%)`);
+    context.push(`- PB&J: ${types.pbj.toLocaleString()} (${totalTyped > 0 ? ((types.pbj / totalTyped) * 100).toFixed(1) : 0}%)`);
+    if (types.generic > 0) {
+      context.push(`- Other/Unspecified: ${types.generic.toLocaleString()} (${totalTyped > 0 ? ((types.generic / totalTyped) * 100).toFixed(1) : 0}%)`);
+    }
+    context.push(`- Total with type data: ${totalTyped.toLocaleString()}`);
+    context.push('');
+  }
+
   // Add expense breakdown
   if (data.expenses.length > 0) {
     context.push(`# Expense Breakdown`);
@@ -246,7 +317,14 @@ async function generateReportWithAI(
     organizationsServed: number;
     volunteersEngaged: number;
     expensesTotal: number;
-  }
+  },
+  sandwichTypeBreakdown?: {
+    deli: number;
+    turkey: number;
+    ham: number;
+    pbj: number;
+    generic: number;
+  } | null
 ): Promise<ImpactReportGenerationResult> {
   const periodLabel = formatPeriodLabel(startDate, endDate, reportType);
 
@@ -334,6 +412,7 @@ Return JSON with this structure:
       organizationsServed: metrics.organizationsServed,
       expensesTotal: metrics.expensesTotal,
     },
+    sandwichTypeBreakdown: sandwichTypeBreakdown || null,
     highlights: result.highlights || [],
     trends: result.trends || [],
   };
