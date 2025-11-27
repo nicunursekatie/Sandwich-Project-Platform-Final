@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
-import { impactReports } from '../../shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { impactReports, eventRequests } from '../../shared/schema';
+import { eq, desc, and, gt, inArray } from 'drizzle-orm';
 import { logger } from '../middleware/logger';
 import { generateImpactReport, saveImpactReport } from '../services/ai-impact-reports';
 import jsPDF from 'jspdf';
@@ -630,6 +630,339 @@ impactReportsRouter.post('/backfill-sandwich-types', async (req: AuthenticatedRe
       error: 'Failed to backfill sandwich types',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// ========================================
+// SMART SANDWICH TYPE BACKFILL TOOL
+// ========================================
+
+// GET /api/impact-reports/events-missing-types - Find events that have sandwich counts but no type data
+impactReportsRouter.get('/events-missing-types', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Find completed events with actualSandwichCount > 0 but no actualSandwichTypes
+    const events = await db.query.eventRequests.findMany({
+      where: and(
+        eq(eventRequests.status, 'completed'),
+        gt(eventRequests.actualSandwichCount, 0)
+      ),
+    });
+
+    // Filter to events missing type data
+    const eventsMissingTypes = events.filter((e) => {
+      if (!e.actualSandwichTypes) return true;
+      if (!Array.isArray(e.actualSandwichTypes)) return true;
+      if (e.actualSandwichTypes.length === 0) return true;
+      // Check if all quantities are 0
+      const totalTyped = (e.actualSandwichTypes as Array<{ type: string; quantity: number }>)
+        .reduce((sum, t) => sum + (t.quantity || 0), 0);
+      return totalTyped === 0;
+    });
+
+    // Also get events that DO have type data for pattern analysis
+    const eventsWithTypes = events.filter((e) => {
+      if (!e.actualSandwichTypes || !Array.isArray(e.actualSandwichTypes)) return false;
+      const totalTyped = (e.actualSandwichTypes as Array<{ type: string; quantity: number }>)
+        .reduce((sum, t) => sum + (t.quantity || 0), 0);
+      return totalTyped > 0;
+    });
+
+    // Build pattern data by organization
+    const patternsByOrg = new Map<string, {
+      events: number;
+      avgDeli: number;
+      avgTurkey: number;
+      avgHam: number;
+      avgPbj: number;
+      avgGeneric: number;
+    }>();
+
+    eventsWithTypes.forEach((e) => {
+      const orgName = e.organizationName || 'Unknown';
+      const types = e.actualSandwichTypes as Array<{ type: string; quantity: number }>;
+      const total = e.actualSandwichCount || 1;
+
+      let deli = 0, turkey = 0, ham = 0, pbj = 0, generic = 0;
+      types.forEach((t) => {
+        const typeLower = (t.type || '').toLowerCase();
+        if (typeLower.includes('deli')) deli += t.quantity || 0;
+        else if (typeLower.includes('turkey')) turkey += t.quantity || 0;
+        else if (typeLower.includes('ham')) ham += t.quantity || 0;
+        else if (typeLower.includes('pbj') || typeLower.includes('peanut')) pbj += t.quantity || 0;
+        else generic += t.quantity || 0;
+      });
+
+      const existing = patternsByOrg.get(orgName);
+      if (existing) {
+        const n = existing.events;
+        patternsByOrg.set(orgName, {
+          events: n + 1,
+          avgDeli: (existing.avgDeli * n + (deli / total) * 100) / (n + 1),
+          avgTurkey: (existing.avgTurkey * n + (turkey / total) * 100) / (n + 1),
+          avgHam: (existing.avgHam * n + (ham / total) * 100) / (n + 1),
+          avgPbj: (existing.avgPbj * n + (pbj / total) * 100) / (n + 1),
+          avgGeneric: (existing.avgGeneric * n + (generic / total) * 100) / (n + 1),
+        });
+      } else {
+        patternsByOrg.set(orgName, {
+          events: 1,
+          avgDeli: (deli / total) * 100,
+          avgTurkey: (turkey / total) * 100,
+          avgHam: (ham / total) * 100,
+          avgPbj: (pbj / total) * 100,
+          avgGeneric: (generic / total) * 100,
+        });
+      }
+    });
+
+    res.json({
+      eventsMissingTypes: eventsMissingTypes.map((e) => ({
+        id: e.id,
+        organizationName: e.organizationName,
+        organizationCategory: e.organizationCategory,
+        scheduledEventDate: e.scheduledEventDate,
+        actualSandwichCount: e.actualSandwichCount,
+        hasOrgPattern: patternsByOrg.has(e.organizationName || ''),
+      })),
+      totalMissing: eventsMissingTypes.length,
+      totalWithTypes: eventsWithTypes.length,
+      organizationPatterns: Object.fromEntries(patternsByOrg),
+    });
+  } catch (error) {
+    logger.error('Error fetching events missing types', { error });
+    res.status(500).json({ error: 'Failed to fetch events missing types' });
+  }
+});
+
+// POST /api/impact-reports/ai-suggest-types - AI analyzes events and suggests type distributions
+impactReportsRouter.post('/ai-suggest-types', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { eventIds } = req.body;
+    if (!eventIds || !Array.isArray(eventIds) || eventIds.length === 0) {
+      return res.status(400).json({ error: 'eventIds array is required' });
+    }
+
+    // Limit batch size
+    const batchIds = eventIds.slice(0, 50);
+
+    // Get the events to analyze
+    const eventsToAnalyze = await db.query.eventRequests.findMany({
+      where: inArray(eventRequests.id, batchIds),
+    });
+
+    // Get events with type data for context
+    const eventsWithTypes = await db.query.eventRequests.findMany({
+      where: and(
+        eq(eventRequests.status, 'completed'),
+        gt(eventRequests.actualSandwichCount, 0)
+      ),
+    });
+
+    // Build pattern context
+    const patterns: Record<string, { deli: number; turkey: number; ham: number; pbj: number; generic: number; count: number }> = {};
+
+    eventsWithTypes.forEach((e) => {
+      if (!e.actualSandwichTypes || !Array.isArray(e.actualSandwichTypes)) return;
+      const types = e.actualSandwichTypes as Array<{ type: string; quantity: number }>;
+      const totalTyped = types.reduce((sum, t) => sum + (t.quantity || 0), 0);
+      if (totalTyped === 0) return;
+
+      const orgName = e.organizationName || 'Unknown';
+      const total = e.actualSandwichCount || totalTyped;
+
+      let deli = 0, turkey = 0, ham = 0, pbj = 0, generic = 0;
+      types.forEach((t) => {
+        const typeLower = (t.type || '').toLowerCase();
+        if (typeLower.includes('deli')) deli += t.quantity || 0;
+        else if (typeLower.includes('turkey')) turkey += t.quantity || 0;
+        else if (typeLower.includes('ham')) ham += t.quantity || 0;
+        else if (typeLower.includes('pbj') || typeLower.includes('peanut')) pbj += t.quantity || 0;
+        else generic += t.quantity || 0;
+      });
+
+      if (!patterns[orgName]) {
+        patterns[orgName] = { deli: 0, turkey: 0, ham: 0, pbj: 0, generic: 0, count: 0 };
+      }
+      patterns[orgName].deli += (deli / total);
+      patterns[orgName].turkey += (turkey / total);
+      patterns[orgName].ham += (ham / total);
+      patterns[orgName].pbj += (pbj / total);
+      patterns[orgName].generic += (generic / total);
+      patterns[orgName].count += 1;
+    });
+
+    // Average the patterns
+    Object.keys(patterns).forEach((org) => {
+      const p = patterns[org];
+      if (p.count > 0) {
+        p.deli = p.deli / p.count;
+        p.turkey = p.turkey / p.count;
+        p.ham = p.ham / p.count;
+        p.pbj = p.pbj / p.count;
+        p.generic = p.generic / p.count;
+      }
+    });
+
+    // Generate suggestions
+    const suggestions = eventsToAnalyze.map((event) => {
+      const orgName = event.organizationName || '';
+      const total = event.actualSandwichCount || 0;
+      const orgPattern = patterns[orgName];
+
+      let suggestion: { deli: number; turkey: number; ham: number; pbj: number; generic: number };
+      let confidence: 'high' | 'medium' | 'low';
+      let reasoning: string;
+
+      if (orgPattern && orgPattern.count >= 2) {
+        // Use organization's historical pattern
+        suggestion = {
+          deli: Math.round(total * orgPattern.deli),
+          turkey: Math.round(total * orgPattern.turkey),
+          ham: Math.round(total * orgPattern.ham),
+          pbj: Math.round(total * orgPattern.pbj),
+          generic: Math.round(total * orgPattern.generic),
+        };
+        confidence = 'high';
+        reasoning = `Based on ${orgPattern.count} previous events from "${orgName}"`;
+      } else if (orgPattern && orgPattern.count === 1) {
+        // Single historical data point
+        suggestion = {
+          deli: Math.round(total * orgPattern.deli),
+          turkey: Math.round(total * orgPattern.turkey),
+          ham: Math.round(total * orgPattern.ham),
+          pbj: Math.round(total * orgPattern.pbj),
+          generic: Math.round(total * orgPattern.generic),
+        };
+        confidence = 'medium';
+        reasoning = `Based on 1 previous event from "${orgName}"`;
+      } else {
+        // No pattern - use category-based defaults or generic split
+        const category = event.organizationCategory || 'other';
+
+        // Category-based defaults (can be refined based on actual data)
+        if (category === 'school') {
+          suggestion = {
+            deli: Math.round(total * 0.35),
+            turkey: Math.round(total * 0.25),
+            ham: Math.round(total * 0.15),
+            pbj: Math.round(total * 0.25),
+            generic: 0,
+          };
+          reasoning = 'Default school distribution (schools often have PB&J for dietary needs)';
+        } else if (category === 'church_faith') {
+          suggestion = {
+            deli: Math.round(total * 0.40),
+            turkey: Math.round(total * 0.30),
+            ham: Math.round(total * 0.20),
+            pbj: Math.round(total * 0.10),
+            generic: 0,
+          };
+          reasoning = 'Default faith organization distribution';
+        } else {
+          // Generic default
+          suggestion = {
+            deli: Math.round(total * 0.40),
+            turkey: Math.round(total * 0.30),
+            ham: Math.round(total * 0.20),
+            pbj: Math.round(total * 0.10),
+            generic: 0,
+          };
+          reasoning = 'Generic distribution (no historical data for this organization)';
+        }
+        confidence = 'low';
+      }
+
+      // Adjust to make sure total matches
+      const suggestionTotal = suggestion.deli + suggestion.turkey + suggestion.ham + suggestion.pbj + suggestion.generic;
+      if (suggestionTotal !== total && total > 0) {
+        const diff = total - suggestionTotal;
+        suggestion.deli += diff; // Add difference to deli (most common)
+      }
+
+      return {
+        eventId: event.id,
+        organizationName: event.organizationName,
+        organizationCategory: event.organizationCategory,
+        scheduledEventDate: event.scheduledEventDate,
+        actualSandwichCount: event.actualSandwichCount,
+        suggestion,
+        confidence,
+        reasoning,
+      };
+    });
+
+    res.json({
+      suggestions,
+      totalAnalyzed: suggestions.length,
+      patternsUsed: Object.keys(patterns).length,
+    });
+  } catch (error) {
+    logger.error('Error generating sandwich type suggestions', { error });
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+});
+
+// POST /api/impact-reports/apply-sandwich-types - Apply approved sandwich type suggestions
+impactReportsRouter.post('/apply-sandwich-types', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { approvals } = req.body;
+    if (!approvals || !Array.isArray(approvals) || approvals.length === 0) {
+      return res.status(400).json({ error: 'approvals array is required' });
+    }
+
+    let updated = 0;
+    let errors = 0;
+
+    for (const approval of approvals) {
+      try {
+        const { eventId, types } = approval;
+        if (!eventId || !types) continue;
+
+        // Build actualSandwichTypes array
+        const actualSandwichTypes: Array<{ type: string; quantity: number }> = [];
+        if (types.deli > 0) actualSandwichTypes.push({ type: 'Deli', quantity: types.deli });
+        if (types.turkey > 0) actualSandwichTypes.push({ type: 'Turkey', quantity: types.turkey });
+        if (types.ham > 0) actualSandwichTypes.push({ type: 'Ham', quantity: types.ham });
+        if (types.pbj > 0) actualSandwichTypes.push({ type: 'PB&J', quantity: types.pbj });
+        if (types.generic > 0) actualSandwichTypes.push({ type: 'Other', quantity: types.generic });
+
+        await db.update(eventRequests)
+          .set({
+            actualSandwichTypes: actualSandwichTypes,
+            updatedAt: new Date(),
+          })
+          .where(eq(eventRequests.id, eventId));
+
+        updated++;
+      } catch (err) {
+        errors++;
+        logger.error('Error applying sandwich type to event', { approval, error: err });
+      }
+    }
+
+    logger.info('Sandwich types applied', { updated, errors, userId: req.user.id });
+
+    res.json({
+      success: true,
+      updated,
+      errors,
+      message: `Updated ${updated} events${errors > 0 ? `, ${errors} errors` : ''}`,
+    });
+  } catch (error) {
+    logger.error('Error applying sandwich types', { error });
+    res.status(500).json({ error: 'Failed to apply sandwich types' });
   }
 });
 
