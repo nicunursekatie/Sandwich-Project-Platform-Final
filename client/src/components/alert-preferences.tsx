@@ -14,12 +14,10 @@ import {
   Sparkles,
   Send,
   Calendar,
-  Users,
   ClipboardList,
   Lightbulb,
   Clock,
   Settings,
-  ChevronRight,
   Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
