@@ -112,7 +112,7 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       }
 
       const { id } = req.params;
-      const alertId = parseInt(id);
+      const alertId = parseInt(id, 10);
 
       if (isNaN(alertId)) {
         return res.status(400).json({ error: 'Invalid alert request ID' });
@@ -166,7 +166,7 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       }
 
       const { id } = req.params;
-      const alertId = parseInt(id);
+      const alertId = parseInt(id, 10);
 
       if (isNaN(alertId)) {
         return res.status(400).json({ error: 'Invalid alert request ID' });
