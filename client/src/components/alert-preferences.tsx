@@ -14,12 +14,10 @@ import {
   Sparkles,
   Send,
   Calendar,
-  Users,
   ClipboardList,
   Lightbulb,
   Clock,
   Settings,
-  ChevronRight,
   Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -56,15 +54,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
+// Removed unused dialog imports
 import {
   Accordion,
   AccordionContent,
@@ -210,10 +200,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
 
 export default function AlertPreferences() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  useAuth();
   const [activeTab, setActiveTab] = useState('current-alerts');
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
+  const [isAIDialogOpen] = useState(false);
   const [aiGeneratedAlert, setAiGeneratedAlert] = useState<string | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
@@ -227,13 +216,13 @@ export default function AlertPreferences() {
   const isPendingConfirmation = userSMSStatus?.isPendingConfirmation || false;
 
   // Load notification preferences
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const { data: preferences } = useQuery({
     queryKey: ['/api/me/notification-preferences'],
     queryFn: () => apiRequest('GET', '/api/me/notification-preferences'),
   });
 
   // Load existing alert requests
-  const { data: alertRequests, isLoading: requestsLoading } = useQuery({
+  const { data: alertRequests } = useQuery({
     queryKey: ['/api/alert-requests'],
     queryFn: () => apiRequest('GET', '/api/alert-requests'),
   });
