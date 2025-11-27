@@ -989,6 +989,75 @@ collectionsRouter.patch(
   }
 );
 
+// Unlinked group collections for Event Impact Reports
+// Returns group collections that are not linked to event requests
+// These are collections where groups submitted sandwiches directly without an associated event
+collectionsRouter.get('/unlinked-groups', async (req, res) => {
+  try {
+    const collections = await storage.getAllSandwichCollections();
+
+    // Filter for collections with group data (not soft-deleted)
+    const groupCollections = collections.filter((collection) => {
+      // Skip soft-deleted records
+      if (collection.deletedAt) return false;
+
+      // Check for group data in JSONB column
+      const hasJsonbGroups = collection.groupCollections &&
+        Array.isArray(collection.groupCollections) &&
+        collection.groupCollections.length > 0 &&
+        collection.groupCollections.some((g: any) => (g.count || 0) > 0);
+
+      // Check for legacy group columns
+      const hasLegacyGroups = (collection.group1Count || 0) > 0 ||
+                              (collection.group2Count || 0) > 0;
+
+      return hasJsonbGroups || hasLegacyGroups;
+    });
+
+    // Transform to match event request shape for the report
+    const transformedCollections = groupCollections.map((collection) => {
+      // Calculate total group sandwiches
+      let groupSandwichCount = 0;
+      let groupNames: string[] = [];
+
+      if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+        groupSandwichCount = collection.groupCollections.reduce(
+          (sum: number, group: any) => sum + (group.count || 0), 0
+        );
+        groupNames = collection.groupCollections
+          .map((g: any) => g.name)
+          .filter((n: string) => n && n.trim());
+      } else {
+        // Legacy columns
+        groupSandwichCount = (collection.group1Count || 0) + (collection.group2Count || 0);
+        if (collection.group1Name) groupNames.push(collection.group1Name);
+        if (collection.group2Name) groupNames.push(collection.group2Name);
+      }
+
+      return {
+        id: collection.id,
+        collectionDate: collection.collectionDate,
+        scheduledEventDate: collection.collectionDate, // Map to expected field
+        organizationName: groupNames.length > 0 ? groupNames[0] : collection.hostName,
+        groupNames: groupNames,
+        actualSandwichCount: groupSandwichCount,
+        estimatedSandwichCount: groupSandwichCount,
+        status: 'completed', // Collections are always completed
+        source: 'collection', // Flag to identify source
+        hostName: collection.hostName,
+        submittedAt: collection.submittedAt,
+        createdBy: collection.createdBy,
+        createdByName: collection.createdByName,
+      };
+    });
+
+    res.json(transformedCollections);
+  } catch (error) {
+    logger.error('Failed to fetch unlinked group collections:', error);
+    res.status(500).json({ message: 'Failed to fetch unlinked group collections' });
+  }
+});
+
 // =============================================================================
 // PARAMETERIZED ROUTES - These MUST come AFTER all named routes above
 // =============================================================================

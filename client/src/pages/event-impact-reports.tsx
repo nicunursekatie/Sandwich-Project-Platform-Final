@@ -285,16 +285,38 @@ export default function EventImpactReports() {
   }, [timePreset, customStartDate, customEndDate]);
 
   // Fetch event requests
-  const { data: eventRequests = [], isLoading } = useQuery({
+  const { data: eventRequests = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['/api/event-requests'],
   });
+
+  // Fetch group collections not linked to event requests
+  const { data: unlinkedCollections = [], isLoading: collectionsLoading } = useQuery({
+    queryKey: ['/api/sandwich-collections/unlinked-groups'],
+  });
+
+  const isLoading = eventsLoading || collectionsLoading;
 
   // Process and filter events
   const processedData = useMemo(() => {
     if (!Array.isArray(eventRequests)) return null;
 
+    // Map unlinked collections to match event request shape
+    const mappedCollections = Array.isArray(unlinkedCollections)
+      ? unlinkedCollections.map((c: any) => ({
+          ...c,
+          // Ensure dates are properly formatted
+          scheduledEventDate: c.scheduledEventDate || c.collectionDate,
+          desiredEventDate: c.collectionDate,
+          // organizationCategory is unknown for collections
+          organizationCategory: 'other',
+        }))
+      : [];
+
+    // Combine event requests with unlinked collections
+    const allEvents = [...eventRequests, ...mappedCollections];
+
     // Filter events in the date range
-    let filteredEvents = eventRequests.filter((event: any) => {
+    let filteredEvents = allEvents.filter((event: any) => {
       const eventDate = event.scheduledEventDate
         ? new Date(event.scheduledEventDate)
         : event.desiredEventDate
@@ -644,7 +666,7 @@ export default function EventImpactReports() {
       repeatAnalysisData,
       dataQuality,
     };
-  }, [eventRequests, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
+  }, [eventRequests, unlinkedCollections, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
 
   // Get unique categories for filter
   const availableCategories = useMemo(() => {
