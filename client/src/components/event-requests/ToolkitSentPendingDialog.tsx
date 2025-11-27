@@ -67,13 +67,19 @@ export function ToolkitSentPendingDialog() {
 
   const formatEventDate = (dateValue: any) => {
     if (!dateValue) return 'No date';
-    
+
     try {
-      const date = new Date(dateValue);
+      // Parse date-only strings at noon to avoid timezone edge cases
+      let date: Date;
+      if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        date = new Date(dateValue + 'T12:00:00');
+      } else {
+        date = new Date(dateValue);
+      }
       if (isNaN(date.getTime())) return 'No date';
-      
+
       return date.toLocaleDateString('en-US', {
-        timeZone: 'UTC',
+        timeZone: 'America/New_York',
         month: 'short',
         day: 'numeric',
         year: 'numeric',

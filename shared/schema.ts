@@ -2296,8 +2296,9 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
           if (!str || str === '') return null;
           try {
             // Handle YYYY-MM-DD format from HTML5 date inputs
+            // IMPORTANT: Do NOT use 'Z' suffix - it causes dates to shift by one day!
             if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-              return new Date(str + 'T12:00:00.000Z');
+              return new Date(str + 'T12:00:00');
             }
             return new Date(str);
           } catch (e) {
