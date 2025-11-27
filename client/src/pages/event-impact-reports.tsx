@@ -1199,7 +1199,7 @@ export default function EventImpactReports() {
 
         {/* Admin AI Categorization Tool */}
         {isAdmin && showCategorizationTool && (
-          <Card className="mb-4 print:hidden border-2 border-brand-teal/30 bg-[#E0F2F5]/50">
+          <Card className="mb-4 print:hidden border-2 border-brand-teal/30 bg-brand-teal-light/50">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-brand-navy">
                 <Sparkles className="w-5 h-5" />
