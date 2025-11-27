@@ -1,5 +1,4 @@
 import { Router, type Response } from 'express';
-import { logger } from '../middleware/logger';
 import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
 import { logger } from '../utils/production-safe-logger';

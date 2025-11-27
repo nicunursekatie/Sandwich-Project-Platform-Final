@@ -1,6 +1,5 @@
 import { Router, type Request, type Response } from 'express';
 import { createErrorHandler } from '../../middleware';
-import { logger } from '../../middleware/logger';
 import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
 import { taskService } from '../../services/tasks/index';
