@@ -16,7 +16,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(npx drizzle-kit generate --name add_self_transport)",
       "Bash(npx drizzle-kit:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(npx vite build)",
+      "Bash(timeout 15 npm run dev:*)"
     ],
     "deny": [],
     "ask": []

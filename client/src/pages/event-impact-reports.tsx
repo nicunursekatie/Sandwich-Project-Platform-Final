@@ -59,6 +59,8 @@ import {
   LineChart,
   Line,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 
 // Organization category labels for display
@@ -170,6 +172,60 @@ function getDateRange(preset: string): { start: Date; end: Date } {
 }
 
 const COLORS = ['#236383', '#FBAD3F', '#47B3CB', '#007E8C', '#A31C41', '#6B7280', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B'];
+
+// Helper to create histogram buckets for sandwich distribution
+function createSandwichBuckets(events: any[]): { range: string; count: number; minVal: number }[] {
+  const sandwichCounts = events
+    .map((e: any) => e.actualSandwichCount || e.estimatedSandwichCount || 0)
+    .filter((c: number) => c > 0);
+
+  if (sandwichCounts.length === 0) return [];
+
+  const max = Math.max(...sandwichCounts);
+
+  // Determine bucket size based on data spread
+  let bucketSize = 100;
+  if (max > 2000) bucketSize = 500;
+  else if (max > 1000) bucketSize = 250;
+  else if (max > 500) bucketSize = 100;
+  else if (max > 200) bucketSize = 50;
+  else bucketSize = 25;
+
+  const buckets: Map<number, number> = new Map();
+
+  sandwichCounts.forEach((count: number) => {
+    const bucketStart = Math.floor(count / bucketSize) * bucketSize;
+    buckets.set(bucketStart, (buckets.get(bucketStart) || 0) + 1);
+  });
+
+  // Convert to array and sort
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([start, count]) => ({
+      range: `${start}-${start + bucketSize - 1}`,
+      count,
+      minVal: start,
+    }));
+}
+
+// Helper to extract region from address (simplified - uses city or first part)
+function extractRegion(address: string | null | undefined): string {
+  if (!address) return 'Unknown';
+
+  // Try to extract city from address
+  // Common formats: "123 Main St, Atlanta, GA 30301" or "Atlanta, GA"
+  const parts = address.split(',').map(p => p.trim());
+
+  if (parts.length >= 2) {
+    // Usually city is second to last (before state/zip)
+    const cityPart = parts[parts.length - 2] || parts[0];
+    // Remove numbers (zip codes that might be in wrong position)
+    const city = cityPart.replace(/\d+/g, '').trim();
+    if (city && city.length > 1) return city;
+  }
+
+  return parts[0] || 'Unknown';
+}
 
 // Status badge colors
 const STATUS_COLORS: Record<string, string> = {
@@ -357,28 +413,183 @@ export default function EventImpactReports() {
       }))
       .sort((a, b) => b.events - a.events);
 
-    const weekdayChartData = Object.entries(weekdayData).map(([day, count]) => ({
+    // ENHANCED: Weekday data with sandwich counts (not just event counts)
+    const weekdaySandwichData: Record<string, number> = {
+      Sunday: 0, Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0,
+    };
+    filteredEvents.forEach((event: any) => {
+      const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+      const weekday = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      weekdaySandwichData[weekday] = (weekdaySandwichData[weekday] || 0) + sandwichCount;
+    });
+
+    const weekdayChartData = Object.entries(weekdayData).map(([day, eventCount]) => ({
       day,
-      events: count,
+      events: eventCount,
+      sandwiches: weekdaySandwichData[day] || 0,
+      avgPerEvent: eventCount > 0 ? Math.round((weekdaySandwichData[day] || 0) / eventCount) : 0,
     }));
 
-    // Top organizations by events
-    const orgEventCounts = new Map<string, { count: number; sandwiches: number; category: string }>();
+    // NEW: Sandwich distribution histogram
+    const sandwichDistribution = createSandwichBuckets(filteredEvents);
+
+    // NEW: Average sandwiches by org type with min/max/event count
+    const categoryStats = new Map<string, { counts: number[]; total: number; eventCount: number }>();
+    filteredEvents.forEach((event: any) => {
+      const category = event.organizationCategory || 'other';
+      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      if (sandwichCount > 0) {
+        const existing = categoryStats.get(category) || { counts: [], total: 0, eventCount: 0 };
+        existing.counts.push(sandwichCount);
+        existing.total += sandwichCount;
+        existing.eventCount += 1;
+        categoryStats.set(category, existing);
+      }
+    });
+
+    const avgSandwichesByCategory = Array.from(categoryStats.entries())
+      .map(([category, stats]) => ({
+        category: CATEGORY_LABELS[category] || category,
+        rawCategory: category,
+        avgSandwiches: stats.eventCount > 0 ? Math.round(stats.total / stats.eventCount) : 0,
+        minSandwiches: stats.counts.length > 0 ? Math.min(...stats.counts) : 0,
+        maxSandwiches: stats.counts.length > 0 ? Math.max(...stats.counts) : 0,
+        eventCount: stats.eventCount,
+        totalSandwiches: stats.total,
+      }))
+      .sort((a, b) => b.avgSandwiches - a.avgSandwiches);
+
+    // NEW: Category trends over time (monthly breakdown by category)
+    const categoryTrendsMap = new Map<string, Map<string, { events: number; sandwiches: number }>>();
+    filteredEvents.forEach((event: any) => {
+      const category = event.organizationCategory || 'other';
+      const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+      const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
+      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+
+      if (!categoryTrendsMap.has(monthKey)) {
+        categoryTrendsMap.set(monthKey, new Map());
+      }
+      const monthData = categoryTrendsMap.get(monthKey)!;
+      const existing = monthData.get(category) || { events: 0, sandwiches: 0 };
+      monthData.set(category, {
+        events: existing.events + 1,
+        sandwiches: existing.sandwiches + sandwichCount,
+      });
+    });
+
+    // Get all unique categories for trend chart
+    const allCategories = Array.from(new Set(filteredEvents.map((e: any) => e.organizationCategory || 'other')));
+
+    const categoryTrendsData = Array.from(categoryTrendsMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([monthKey, categoryData]) => {
+        const date = new Date(monthKey + '-01');
+        const monthLabel = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const row: Record<string, any> = { month: monthLabel, monthKey };
+
+        allCategories.forEach((cat) => {
+          const data = categoryData.get(cat);
+          row[`${cat}_events`] = data?.events || 0;
+          row[`${cat}_sandwiches`] = data?.sandwiches || 0;
+        });
+
+        return row;
+      });
+
+    // NEW: Regional data
+    const regionData = new Map<string, { events: number; sandwiches: number }>();
+    filteredEvents.forEach((event: any) => {
+      const region = extractRegion(event.eventAddress);
+      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const existing = regionData.get(region) || { events: 0, sandwiches: 0 };
+      regionData.set(region, {
+        events: existing.events + 1,
+        sandwiches: existing.sandwiches + sandwichCount,
+      });
+    });
+
+    const regionalChartData = Array.from(regionData.entries())
+      .map(([region, data]) => ({
+        region,
+        events: data.events,
+        sandwiches: data.sandwiches,
+        avgPerEvent: data.events > 0 ? Math.round(data.sandwiches / data.events) : 0,
+      }))
+      .sort((a, b) => b.events - a.events)
+      .slice(0, 15); // Top 15 regions
+
+    // NEW: Top organizations with more details (for enhanced leaderboard)
+    const orgEventCounts = new Map<string, {
+      count: number;
+      sandwiches: number;
+      category: string;
+      lastEventDate: Date | null;
+      firstEventDate: Date | null;
+    }>();
     filteredEvents.forEach((event: any) => {
       if (event.organizationName) {
-        const existing = orgEventCounts.get(event.organizationName) || { count: 0, sandwiches: 0, category: event.organizationCategory };
+        const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+        const existing = orgEventCounts.get(event.organizationName) || {
+          count: 0,
+          sandwiches: 0,
+          category: event.organizationCategory,
+          lastEventDate: null,
+          firstEventDate: null,
+        };
         orgEventCounts.set(event.organizationName, {
           count: existing.count + 1,
           sandwiches: existing.sandwiches + (event.actualSandwichCount || event.estimatedSandwichCount || 0),
           category: event.organizationCategory,
+          lastEventDate: !existing.lastEventDate || eventDate > existing.lastEventDate ? eventDate : existing.lastEventDate,
+          firstEventDate: !existing.firstEventDate || eventDate < existing.firstEventDate ? eventDate : existing.firstEventDate,
         });
       }
     });
 
     const topOrganizations = Array.from(orgEventCounts.entries())
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .map(([name, data]) => ({
+        name,
+        ...data,
+        avgPerEvent: data.count > 0 ? Math.round(data.sandwiches / data.count) : 0,
+      }))
+      .sort((a, b) => b.sandwiches - a.sandwiches); // Sort by total sandwiches
+
+    // NEW: Repeat organization analysis (retention tiers)
+    const repeatAnalysis = {
+      oneTime: 0,
+      returning: 0, // 2-4 events
+      regulars: 0,  // 5-9 events
+      powerPartners: 0, // 10+ events
+    };
+
+    orgEventCounts.forEach((data) => {
+      if (data.count === 1) repeatAnalysis.oneTime += 1;
+      else if (data.count >= 2 && data.count <= 4) repeatAnalysis.returning += 1;
+      else if (data.count >= 5 && data.count <= 9) repeatAnalysis.regulars += 1;
+      else if (data.count >= 10) repeatAnalysis.powerPartners += 1;
+    });
+
+    const repeatAnalysisData = [
+      { tier: '1 event (One-timers)', count: repeatAnalysis.oneTime, color: '#6B7280' },
+      { tier: '2-4 events (Returning)', count: repeatAnalysis.returning, color: '#47B3CB' },
+      { tier: '5-9 events (Regulars)', count: repeatAnalysis.regulars, color: '#FBAD3F' },
+      { tier: '10+ events (Power Partners)', count: repeatAnalysis.powerPartners, color: '#236383' },
+    ];
+
+    // NEW: Data quality metrics
+    const dataQuality = {
+      totalEvents: filteredEvents.length,
+      missingSandwichCount: filteredEvents.filter((e: any) => !e.actualSandwichCount && !e.estimatedSandwichCount).length,
+      missingCategory: filteredEvents.filter((e: any) => !e.organizationCategory).length,
+      missingAddress: filteredEvents.filter((e: any) => !e.eventAddress).length,
+      missingOrgName: filteredEvents.filter((e: any) => !e.organizationName).length,
+    };
+
+    dataQuality.missingSandwichPct = filteredEvents.length > 0 ? Math.round((dataQuality.missingSandwichCount / filteredEvents.length) * 100) : 0;
+    dataQuality.missingCategoryPct = filteredEvents.length > 0 ? Math.round((dataQuality.missingCategory / filteredEvents.length) * 100) : 0;
+    dataQuality.missingAddressPct = filteredEvents.length > 0 ? Math.round((dataQuality.missingAddress / filteredEvents.length) * 100) : 0;
 
     return {
       filteredEvents,
@@ -399,6 +610,14 @@ export default function EventImpactReports() {
       categoryChartData,
       weekdayChartData,
       topOrganizations,
+      // NEW data
+      sandwichDistribution,
+      avgSandwichesByCategory,
+      categoryTrendsData,
+      allCategories,
+      regionalChartData,
+      repeatAnalysisData,
+      dataQuality,
     };
   }, [eventRequests, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
 
@@ -721,24 +940,69 @@ export default function EventImpactReports() {
           </Card>
         </div>
 
+        {/* Data Quality Indicator */}
+        {processedData?.dataQuality && (processedData.dataQuality.missingSandwichPct > 0 || processedData.dataQuality.missingCategoryPct > 0) && (
+          <Card className="mb-6 border-amber-200 bg-amber-50 print:hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-amber-800 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Data Quality Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Sandwich Counts</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingSandwichCount} ({processedData.dataQuality.missingSandwichPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Org Category</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingCategory} ({processedData.dataQuality.missingCategoryPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Address</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingAddress} ({processedData.dataQuality.missingAddressPct}%)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-700">Missing Org Name</span>
+                  <span className="font-bold text-amber-900">{processedData.dataQuality.missingOrgName}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tabs for different views */}
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="print:hidden">
-            <TabsTrigger value="events" className="flex items-center gap-2">
+          <TabsList className="print:hidden grid grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+            <TabsTrigger value="events" className="flex items-center gap-1 text-xs sm:text-sm py-2">
               <ListFilter className="w-4 h-4" />
-              Event List
+              <span className="hidden sm:inline">Event List</span>
+              <span className="sm:hidden">Events</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
+            <TabsTrigger value="sandwiches" className="flex items-center gap-1 text-xs sm:text-sm py-2">
+              <Sandwich className="w-4 h-4" />
+              <span className="hidden sm:inline">Sandwich Analysis</span>
+              <span className="sm:hidden">Sandwiches</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-1 text-xs sm:text-sm py-2">
               <BarChart3 className="w-4 h-4" />
-              By Category
+              <span className="hidden sm:inline">By Category</span>
+              <span className="sm:hidden">Categories</span>
             </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
+            <TabsTrigger value="geographic" className="flex items-center gap-1 text-xs sm:text-sm py-2">
+              <MapPin className="w-4 h-4" />
+              <span className="hidden sm:inline">Geographic</span>
+              <span className="sm:hidden">Regions</span>
+            </TabsTrigger>
+            <TabsTrigger value="organizations" className="flex items-center gap-1 text-xs sm:text-sm py-2">
+              <Building className="w-4 h-4" />
+              <span className="hidden sm:inline">Organizations</span>
+              <span className="sm:hidden">Orgs</span>
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="flex items-center gap-1 text-xs sm:text-sm py-2">
               <TrendingUp className="w-4 h-4" />
               Trends
-            </TabsTrigger>
-            <TabsTrigger value="organizations" className="flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              Top Organizations
             </TabsTrigger>
           </TabsList>
 
@@ -921,6 +1185,132 @@ export default function EventImpactReports() {
             </Card>
           </TabsContent>
 
+          {/* Sandwich Analysis Tab - NEW */}
+          <TabsContent value="sandwiches">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Sandwich Distribution Histogram */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sandwich className="w-5 h-5" />
+                    Sandwiches per Event Distribution
+                  </CardTitle>
+                  <CardDescription>
+                    How many sandwiches do your events typically make? This histogram shows the distribution.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.sandwichDistribution && processedData.sandwichDistribution.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={processedData.sandwichDistribution}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="range" angle={-45} textAnchor="end" height={80} fontSize={12} />
+                        <YAxis label={{ value: 'Number of Events', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip
+                          formatter={(value: number) => [`${value} events`, 'Events']}
+                          labelFormatter={(label) => `${label} sandwiches`}
+                        />
+                        <Bar dataKey="count" fill="#236383" name="Events">
+                          {processedData.sandwichDistribution.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[350px] flex items-center justify-center text-gray-500">
+                      No sandwich distribution data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Average Sandwiches by Organization Type */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Average Sandwiches by Organization Type</CardTitle>
+                  <CardDescription>
+                    Which organization types produce the most sandwiches per event?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.avgSandwichesByCategory && processedData.avgSandwichesByCategory.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={processedData.avgSandwichesByCategory} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="category" type="category" width={120} fontSize={11} />
+                        <Tooltip
+                          formatter={(value: number, name: string) => {
+                            if (name === 'avgSandwiches') return [`${value.toLocaleString()}`, 'Avg per Event'];
+                            return [value, name];
+                          }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg text-sm">
+                                  <p className="font-bold">{data.category}</p>
+                                  <p>Avg: <span className="font-semibold">{data.avgSandwiches.toLocaleString()}</span> sandwiches</p>
+                                  <p className="text-gray-500">Range: {data.minSandwiches.toLocaleString()} - {data.maxSandwiches.toLocaleString()}</p>
+                                  <p className="text-gray-500">Based on {data.eventCount} events</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="avgSandwiches" fill="#FBAD3F" name="Avg Sandwiches" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[350px] flex items-center justify-center text-gray-500">
+                      No category data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Category Stats Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Detailed Category Statistics</CardTitle>
+                  <CardDescription>Event counts and sandwich ranges by organization type</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.avgSandwichesByCategory && processedData.avgSandwichesByCategory.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead className="text-right">Events</TableHead>
+                          <TableHead className="text-right">Avg</TableHead>
+                          <TableHead className="text-right">Min</TableHead>
+                          <TableHead className="text-right">Max</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {processedData.avgSandwichesByCategory.map((cat) => (
+                          <TableRow key={cat.rawCategory}>
+                            <TableCell className="font-medium">{cat.category}</TableCell>
+                            <TableCell className="text-right">{cat.eventCount}</TableCell>
+                            <TableCell className="text-right font-semibold text-[#FBAD3F]">{cat.avgSandwiches.toLocaleString()}</TableCell>
+                            <TableCell className="text-right text-gray-500">{cat.minSandwiches.toLocaleString()}</TableCell>
+                            <TableCell className="text-right text-gray-500">{cat.maxSandwiches.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{cat.totalSandwiches.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No data available</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Categories Tab */}
           <TabsContent value="categories">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1030,6 +1420,137 @@ export default function EventImpactReports() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Category Trends Over Time - NEW */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Category Mix Over Time</CardTitle>
+                  <CardDescription>
+                    How has your organization mix shifted? Track which categories are growing or declining.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.categoryTrendsData && processedData.categoryTrendsData.length > 0 && processedData.allCategories ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <AreaChart data={processedData.categoryTrendsData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        {processedData.allCategories.slice(0, 8).map((cat: string, index: number) => (
+                          <Area
+                            key={cat}
+                            type="monotone"
+                            dataKey={`${cat}_events`}
+                            stackId="1"
+                            stroke={COLORS[index % COLORS.length]}
+                            fill={COLORS[index % COLORS.length]}
+                            name={CATEGORY_LABELS[cat] || cat}
+                          />
+                        ))}
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[400px] flex items-center justify-center text-gray-500">
+                      Not enough data to show trends
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Geographic Tab - NEW */}
+          <TabsContent value="geographic">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Regional Breakdown Chart */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Events & Sandwiches by Region
+                  </CardTitle>
+                  <CardDescription>
+                    Where are your events happening? Identify active regions vs underserved areas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.regionalChartData && processedData.regionalChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={processedData.regionalChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="region" angle={-45} textAnchor="end" height={100} fontSize={11} />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg text-sm">
+                                  <p className="font-bold">{data.region}</p>
+                                  <p className="text-[#236383]">Events: <span className="font-semibold">{data.events}</span></p>
+                                  <p className="text-[#FBAD3F]">Sandwiches: <span className="font-semibold">{data.sandwiches.toLocaleString()}</span></p>
+                                  <p className="text-gray-500">Avg per event: {data.avgPerEvent.toLocaleString()}</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="events" fill="#236383" name="Events" />
+                        <Bar yAxisId="right" dataKey="sandwiches" fill="#FBAD3F" name="Sandwiches" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[400px] flex items-center justify-center text-gray-500">
+                      No regional data available (address data may be missing)
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Regional Stats Table */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Regional Statistics</CardTitle>
+                  <CardDescription>Detailed breakdown by location</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.regionalChartData && processedData.regionalChartData.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Region</TableHead>
+                          <TableHead className="text-right">Events</TableHead>
+                          <TableHead className="text-right">Sandwiches</TableHead>
+                          <TableHead className="text-right">Avg/Event</TableHead>
+                          <TableHead className="text-right">% of Events</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {processedData.regionalChartData.map((region) => (
+                          <TableRow key={region.region}>
+                            <TableCell className="font-medium">{region.region}</TableCell>
+                            <TableCell className="text-right">{region.events}</TableCell>
+                            <TableCell className="text-right">{region.sandwiches.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{region.avgPerEvent.toLocaleString()}</TableCell>
+                            <TableCell className="text-right text-gray-500">
+                              {processedData.totalEvents > 0
+                                ? `${Math.round((region.events / processedData.totalEvents) * 100)}%`
+                                : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No regional data available</div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -1078,25 +1599,45 @@ export default function EventImpactReports() {
                 </CardContent>
               </Card>
 
-              {/* Weekday Distribution */}
+              {/* Weekday Distribution - ENHANCED */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Events by Day of Week</CardTitle>
-                  <CardDescription>When do most events occur?</CardDescription>
+                  <CardTitle>Events & Sandwiches by Day of Week</CardTitle>
+                  <CardDescription>
+                    Which days are most productive? Compare event counts vs sandwich output.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {processedData?.weekdayChartData ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={processedData.weekdayChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="day" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="events" fill="#47B3CB" name="Events" />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg text-sm">
+                                  <p className="font-bold">{data.day}</p>
+                                  <p className="text-[#236383]">Events: <span className="font-semibold">{data.events}</span></p>
+                                  <p className="text-[#FBAD3F]">Sandwiches: <span className="font-semibold">{data.sandwiches?.toLocaleString() || 0}</span></p>
+                                  <p className="text-gray-500">Avg per event: {data.avgPerEvent?.toLocaleString() || 0}</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="events" fill="#236383" name="Events" label={{ position: 'top', fontSize: 10 }} />
+                        <Bar yAxisId="right" dataKey="sandwiches" fill="#FBAD3F" name="Sandwiches" />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    <div className="h-[350px] flex items-center justify-center text-gray-500">
                       No data available
                     </div>
                   )}
@@ -1132,53 +1673,159 @@ export default function EventImpactReports() {
             </div>
           </TabsContent>
 
-          {/* Top Organizations Tab */}
+          {/* Organizations Tab - ENHANCED */}
           <TabsContent value="organizations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Organizations</CardTitle>
-                <CardDescription>Organizations with the most events in the selected period</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {processedData?.topOrganizations && processedData.topOrganizations.length > 0 ? (
-                  <div className="space-y-4">
-                    {processedData.topOrganizations.map((org, index) => (
-                      <div
-                        key={org.name}
-                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-shrink-0 w-8 h-8 bg-[#236383] text-white rounded-full flex items-center justify-center font-bold">
-                          {index + 1}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Repeat Organization Analysis */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Organization Retention
+                  </CardTitle>
+                  <CardDescription>
+                    How many organizations return for multiple events?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.repeatAnalysisData ? (
+                    <div className="space-y-3">
+                      {processedData.repeatAnalysisData.map((tier) => (
+                        <div key={tier.tier} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: tier.color }}
+                            />
+                            <span className="text-sm font-medium">{tier.tier}</span>
+                          </div>
+                          <span className="text-lg font-bold">{tier.count}</span>
                         </div>
-                        <div className="flex-grow">
-                          <div className="font-medium">{org.name}</div>
-                          <div className="text-sm text-gray-500">
-                            <Badge variant="outline" className="mr-2">
-                              {CATEGORY_LABELS[org.category] || org.category || 'Other'}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex gap-6 text-right">
-                          <div>
-                            <div className="text-2xl font-bold text-[#236383]">{org.count}</div>
-                            <div className="text-sm text-gray-500">events</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-[#FBAD3F]">{org.sandwiches.toLocaleString()}</div>
-                            <div className="text-sm text-gray-500">sandwiches</div>
-                          </div>
+                      ))}
+                      <div className="pt-3 border-t mt-3">
+                        <div className="text-sm text-gray-600">
+                          <strong>Retention Rate:</strong>{' '}
+                          {processedData.uniqueOrganizations > 0
+                            ? `${Math.round(((processedData.repeatAnalysisData[1].count + processedData.repeatAnalysisData[2].count + processedData.repeatAnalysisData[3].count) / processedData.uniqueOrganizations) * 100)}%`
+                            : '0%'} of orgs return
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No organization data available for the selected period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No data available</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Retention Visualization */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Retention Distribution</CardTitle>
+                  <CardDescription>Visual breakdown of organization engagement levels</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.repeatAnalysisData ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={processedData.repeatAnalysisData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="tier" type="category" width={180} fontSize={11} />
+                        <Tooltip />
+                        <Bar dataKey="count" name="Organizations">
+                          {processedData.repeatAnalysisData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[250px] flex items-center justify-center text-gray-500">
+                      No data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Enhanced Top Organizations Leaderboard */}
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Organization Leaderboard</CardTitle>
+                  <CardDescription>
+                    Top organizations by total sandwiches. Click column headers to sort.
+                    Organizations with recent events are MVPs; those inactive may need re-engagement.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.topOrganizations && processedData.topOrganizations.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">#</TableHead>
+                            <TableHead>Organization</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead className="text-right">Total Sandwiches</TableHead>
+                            <TableHead className="text-right">Events</TableHead>
+                            <TableHead className="text-right">Avg/Event</TableHead>
+                            <TableHead className="text-right">Last Event</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedData.topOrganizations.slice(0, 25).map((org, index) => {
+                            const daysSinceLastEvent = org.lastEventDate
+                              ? Math.floor((new Date().getTime() - new Date(org.lastEventDate).getTime()) / (1000 * 60 * 60 * 24))
+                              : null;
+                            const isInactive = daysSinceLastEvent !== null && daysSinceLastEvent > 365;
+
+                            return (
+                              <TableRow key={org.name} className={isInactive ? 'bg-amber-50' : ''}>
+                                <TableCell className="font-bold text-gray-400">{index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{org.name}</div>
+                                  {isInactive && (
+                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 mt-1">
+                                      Re-engage?
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-xs">
+                                    {CATEGORY_LABELS[org.category] || org.category || 'Other'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right font-bold text-[#FBAD3F]">
+                                  {org.sandwiches.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-[#236383]">
+                                  {org.count}
+                                </TableCell>
+                                <TableCell className="text-right text-gray-600">
+                                  {org.avgPerEvent?.toLocaleString() || '-'}
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {org.lastEventDate
+                                    ? new Date(org.lastEventDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: '2-digit',
+                                      })
+                                    : '-'}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No organization data available for the selected period</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
