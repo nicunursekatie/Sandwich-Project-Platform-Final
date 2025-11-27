@@ -160,7 +160,7 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
         return res.status(404).json({ error: 'Alert request not found' });
       }
 
-      logger.info(`Alert request ${id} updated by admin ${user.id}: status=${status}`);
+      logger.info(`Alert request ${parsedId} updated by admin ${user.id}: status=${status}`);
 
       res.json(updatedRequest);
     } catch (error) {
