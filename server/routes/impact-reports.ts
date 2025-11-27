@@ -4,7 +4,7 @@ import { impactReports, eventRequests } from '../../shared/schema';
 import { eq, desc, and, gt, inArray } from 'drizzle-orm';
 import { logger } from '../middleware/logger';
 import { generateImpactReport, saveImpactReport } from '../services/ai-impact-reports';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
 interface AuthenticatedRequest extends Request {
