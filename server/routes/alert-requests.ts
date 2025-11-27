@@ -113,6 +113,12 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       }
 
       const { id } = req.params;
+      const alertId = parseInt(id, 10);
+
+      if (isNaN(alertId)) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
+
       const { status, adminNotes } = req.body;
 
       const updateData: any = {
@@ -136,7 +142,7 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const [updatedRequest] = await db
         .update(alertRequests)
         .set(updateData)
-        .where(eq(alertRequests.id, parseInt(id)))
+        .where(eq(alertRequests.id, alertId))
         .returning();
 
       if (!updatedRequest) {
@@ -161,6 +167,11 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       }
 
       const { id } = req.params;
+      const alertId = parseInt(id, 10);
+
+      if (isNaN(alertId)) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
 
       // Only allow users to delete their own requests (or admins)
       const user = (req as any).user;
@@ -170,8 +181,8 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
         .delete(alertRequests)
         .where(
           isAdmin
-            ? eq(alertRequests.id, parseInt(id))
-            : and(eq(alertRequests.id, parseInt(id)), eq(alertRequests.userId, userId))
+            ? eq(alertRequests.id, alertId)
+            : and(eq(alertRequests.id, alertId), eq(alertRequests.userId, userId))
         )
         .returning();
 
