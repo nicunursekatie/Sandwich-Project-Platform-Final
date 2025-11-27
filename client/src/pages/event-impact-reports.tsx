@@ -292,12 +292,21 @@ export default function EventImpactReports() {
       totalActualSandwiches += actualSandwiches;
       totalEstimatedSandwiches += estimatedSandwiches;
 
-      // Attendance - support both new and legacy field names
-      // Legacy fields: attendanceAdults, attendanceTeens, attendanceKids
-      // New fields: volunteerCount (total participants), adultCount, childrenCount
-      totalVolunteers += (event.volunteerCount ?? event.attendanceAdults ?? 0);
-      totalAdults += (event.adultCount ?? event.attendanceTeens ?? 0);
-      totalChildren += (event.childrenCount ?? event.attendanceKids ?? 0);
+      // Attendance - use actual data for completed events, planned data otherwise
+      if (event.status === 'completed') {
+        // For completed events, prefer actual attendance if available
+        totalAdults += event.attendanceAdults || event.adultCount || 0;
+        totalChildren += event.attendanceKids || event.childrenCount || 0;
+        // Teens tracked separately in actual attendance
+        const teens = event.attendanceTeens || 0;
+        totalAdults += teens; // Include teens with adults for total count
+      } else {
+        // For planned events, use expected counts
+        totalAdults += event.adultCount || 0;
+        totalChildren += event.childrenCount || 0;
+      }
+      // volunteerCount is always the number of participants/volunteers expected
+      totalVolunteers += event.volunteerCount || 0;
 
       // Organizations
       if (event.organizationName) {
