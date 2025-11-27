@@ -292,3 +292,100 @@ export async function categorizeOrganization(
 
   return null;
 }
+
+/**
+ * Categorize event requests that have 'other' or null/empty organizationCategory.
+ * This looks at the event_requests table, not organizations table.
+ */
+export async function categorizeUncategorizedEventRequests(
+  onProgress?: (progress: CategorizationProgress) => void
+): Promise<CategorizationProgress> {
+  const progress: CategorizationProgress = {
+    total: 0,
+    processed: 0,
+    patternMatched: 0,
+    aiCategorized: 0,
+    skipped: 0,
+    errors: 0,
+  };
+
+  try {
+    // Import eventRequests schema
+    const { eventRequests } = await import('../../../shared/schema');
+
+    // Find event requests with uncategorized organizations
+    const uncategorizedEvents = await db
+      .select()
+      .from(eventRequests)
+      .where(or(
+        isNull(eventRequests.organizationCategory),
+        eq(eventRequests.organizationCategory, ''),
+        eq(eventRequests.organizationCategory, 'other')
+      ));
+
+    progress.total = uncategorizedEvents.length;
+    logger.info(`Starting event request categorization: ${progress.total} events to process`);
+
+    for (const event of uncategorizedEvents) {
+      try {
+        const orgName = event.organizationName;
+        if (!orgName) {
+          progress.skipped++;
+          progress.processed++;
+          continue;
+        }
+
+        const patternResult = patternCategorize(orgName);
+
+        if (patternResult) {
+          await db
+            .update(eventRequests)
+            .set({
+              organizationCategory: patternResult.category,
+              updatedAt: new Date(),
+            })
+            .where(eq(eventRequests.id, event.id));
+
+          progress.patternMatched++;
+          logger.info(`[PATTERN] Event ${event.id} "${orgName}" → ${patternResult.category}`);
+        } else {
+          const aiResult = await categorizeWithAI(orgName);
+
+          if (aiResult && aiResult.category !== 'other') {
+            await db
+              .update(eventRequests)
+              .set({
+                organizationCategory: aiResult.category,
+                updatedAt: new Date(),
+              })
+              .where(eq(eventRequests.id, event.id));
+
+            progress.aiCategorized++;
+            logger.info(`[AI] Event ${event.id} "${orgName}" → ${aiResult.category} (${aiResult.reasoning})`);
+          } else {
+            progress.skipped++;
+            logger.info(`[SKIP] Event ${event.id} "${orgName}" - could not determine category`);
+          }
+
+          // Rate limit AI calls
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        progress.processed++;
+        if (onProgress) {
+          onProgress(progress);
+        }
+      } catch (error) {
+        progress.errors++;
+        progress.processed++;
+        logger.error(`Failed to categorize event ${event.id}`, { error });
+      }
+    }
+
+    logger.info('Event request categorization complete', progress);
+    return progress;
+  } catch (error) {
+    logger.error('Event request categorization failed', { error });
+    throw error;
+  }
+}
