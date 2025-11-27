@@ -73,15 +73,19 @@ import {
 } from 'recharts';
 
 // Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
-function parseLocalDate(dateStr: string | null | undefined): Date | null {
-  if (!dateStr) return null;
+function parseLocalDate(dateInput: string | Date | null | undefined): Date | null {
+  if (!dateInput) return null;
+  // If it's already a Date object, return it
+  if (dateInput instanceof Date) return dateInput;
+  // If it's not a string at this point, bail
+  if (typeof dateInput !== 'string') return null;
   // If it's just a date (YYYY-MM-DD), parse in local time
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [year, month, day] = dateStr.split('-').map(Number);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    const [year, month, day] = dateInput.split('-').map(Number);
     return new Date(year, month - 1, day);
   }
   // For ISO datetime strings, use parseISO which handles timezone correctly
-  return parseISO(dateStr);
+  return parseISO(dateInput);
 }
 
 // Organization category labels for display
