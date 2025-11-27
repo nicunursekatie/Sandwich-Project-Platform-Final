@@ -584,7 +584,7 @@ export default function EventImpactReports() {
   const processedData = useMemo(() => {
     if (!Array.isArray(eventRequests)) return null;
 
-    // Map unlinked collections to match event request shape
+    // Map group collections to match event request shape
     const mappedCollections = Array.isArray(unlinkedCollections)
       ? unlinkedCollections.map((c: any) => ({
           ...c,
@@ -596,8 +596,20 @@ export default function EventImpactReports() {
         }))
       : [];
 
-    // Combine event requests with unlinked collections
-    const allEvents = [...eventRequests, ...mappedCollections];
+    // Get set of event request IDs that have linked collections
+    const linkedEventIds = new Set(
+      mappedCollections
+        .filter((c: any) => c.eventRequestId)
+        .map((c: any) => c.eventRequestId)
+    );
+
+    // Filter out event requests that have linked collections (we'll use collection data instead)
+    const eventRequestsWithoutLinkedCollections = eventRequests.filter(
+      (e: any) => !linkedEventIds.has(e.id)
+    );
+
+    // Combine: event requests (without linked collections) + all group collections
+    const allEvents = [...eventRequestsWithoutLinkedCollections, ...mappedCollections];
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
@@ -2641,32 +2653,6 @@ export default function EventImpactReports() {
                 </CardContent>
               </Card>
 
-              {/* Completed vs Scheduled by Month */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Completed vs Scheduled Events</CardTitle>
-                  <CardDescription>Event completion status by month</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {processedData?.monthlyChartData && processedData.monthlyChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={processedData.monthlyChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="completed" stackId="a" fill="#10B981" name="Completed" />
-                        <Bar dataKey="scheduled" stackId="a" fill="#3B82F6" name="Scheduled" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-gray-500">
-                      No data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
