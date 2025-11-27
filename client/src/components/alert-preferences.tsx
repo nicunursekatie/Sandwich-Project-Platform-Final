@@ -227,7 +227,7 @@ export default function AlertPreferences() {
   const isPendingConfirmation = userSMSStatus?.isPendingConfirmation || false;
 
   // Load notification preferences
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const { data: preferences } = useQuery({
     queryKey: ['/api/me/notification-preferences'],
     queryFn: () => apiRequest('GET', '/api/me/notification-preferences'),
   });
