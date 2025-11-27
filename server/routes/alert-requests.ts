@@ -114,6 +114,12 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const { id } = req.params;
       const { status, adminNotes } = req.body;
 
+      // Validate that id is a valid integer
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
+
       const updateData: any = {
         updatedAt: new Date(),
       };
@@ -135,7 +141,7 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const [updatedRequest] = await db
         .update(alertRequests)
         .set(updateData)
-        .where(eq(alertRequests.id, parseInt(id)))
+        .where(eq(alertRequests.id, parsedId))
         .returning();
 
       if (!updatedRequest) {
@@ -161,6 +167,12 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
 
       const { id } = req.params;
 
+      // Validate that id is a valid integer
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
+
       // Only allow users to delete their own requests (or admins)
       const user = (req as any).user;
       const isAdmin = typeof user.permissions === 'number' && user.permissions >= 80;
@@ -169,8 +181,8 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
         .delete(alertRequests)
         .where(
           isAdmin
-            ? eq(alertRequests.id, parseInt(id))
-            : and(eq(alertRequests.id, parseInt(id)), eq(alertRequests.userId, userId))
+            ? eq(alertRequests.id, parsedId)
+            : and(eq(alertRequests.id, parsedId), eq(alertRequests.userId, userId))
         )
         .returning();
 
