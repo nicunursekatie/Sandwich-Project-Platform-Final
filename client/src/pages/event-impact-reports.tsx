@@ -31,7 +31,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import {
   Calendar,
   Download,
@@ -71,6 +71,18 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+
+// Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
+function parseLocalDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  // If it's just a date (YYYY-MM-DD), parse in local time
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  // For ISO datetime strings, use parseISO which handles timezone correctly
+  return parseISO(dateStr);
+}
 
 // Organization category labels for display
 const CATEGORY_LABELS: Record<string, string> = {
@@ -276,10 +288,11 @@ export default function EventImpactReports() {
   // Calculate actual date range
   const dateRange = useMemo(() => {
     if (timePreset === 'custom' && customStartDate && customEndDate) {
-      return {
-        start: new Date(customStartDate),
-        end: new Date(customEndDate),
-      };
+      const start = parseLocalDate(customStartDate) || new Date();
+      const end = parseLocalDate(customEndDate) || new Date();
+      // Set end date to end of day for inclusive filtering
+      end.setHours(23, 59, 59, 999);
+      return { start, end };
     }
     return getDateRange(timePreset);
   }, [timePreset, customStartDate, customEndDate]);
@@ -317,11 +330,8 @@ export default function EventImpactReports() {
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
-      const eventDate = event.scheduledEventDate
-        ? new Date(event.scheduledEventDate)
-        : event.desiredEventDate
-          ? new Date(event.desiredEventDate)
-          : null;
+      const eventDate = parseLocalDate(event.scheduledEventDate)
+        || parseLocalDate(event.desiredEventDate);
       if (!eventDate) return false;
 
       const inRange = eventDate >= dateRange.start && eventDate <= dateRange.end;
@@ -340,8 +350,8 @@ export default function EventImpactReports() {
       let comparison = 0;
       switch (sortField) {
         case 'date':
-          const dateA = new Date(a.scheduledEventDate || a.desiredEventDate || 0);
-          const dateB = new Date(b.scheduledEventDate || b.desiredEventDate || 0);
+          const dateA = parseLocalDate(a.scheduledEventDate || a.desiredEventDate) || new Date(0);
+          const dateB = parseLocalDate(b.scheduledEventDate || b.desiredEventDate) || new Date(0);
           comparison = dateA.getTime() - dateB.getTime();
           break;
         case 'organization':
@@ -425,7 +435,7 @@ export default function EventImpactReports() {
       });
 
       // Monthly data
-      const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
       const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = eventDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 
@@ -465,7 +475,7 @@ export default function EventImpactReports() {
       Sunday: 0, Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0,
     };
     filteredEvents.forEach((event: any) => {
-      const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
       const weekday = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
       const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
       weekdaySandwichData[weekday] = (weekdaySandwichData[weekday] || 0) + sandwichCount;
@@ -511,7 +521,7 @@ export default function EventImpactReports() {
     const categoryTrendsMap = new Map<string, Map<string, { events: number; sandwiches: number }>>();
     filteredEvents.forEach((event: any) => {
       const category = event.organizationCategory || 'other';
-      const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
       const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
       const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
 
@@ -532,7 +542,7 @@ export default function EventImpactReports() {
     const categoryTrendsData = Array.from(categoryTrendsMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, categoryData]) => {
-        const date = new Date(monthKey + '-01');
+        const date = parseLocalDate(monthKey + '-01') || new Date();
         const monthLabel = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
         const row: Record<string, any> = { month: monthLabel, monthKey };
 
@@ -577,7 +587,7 @@ export default function EventImpactReports() {
     }>();
     filteredEvents.forEach((event: any) => {
       if (event.organizationName) {
-        const eventDate = new Date(event.scheduledEventDate || event.desiredEventDate);
+        const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
         const existing = orgEventCounts.get(event.organizationName) || {
           count: 0,
           sandwiches: 0,
@@ -710,7 +720,7 @@ export default function EventImpactReports() {
       ['EVENT DETAILS'],
       ['Date', 'Organization', 'Category', 'Status', 'Sandwiches (Est)', 'Sandwiches (Actual)', 'Event Time', 'Address'],
       ...processedData.filteredEvents.map((e: any) => [
-        new Date(e.scheduledEventDate || e.desiredEventDate).toLocaleDateString(),
+        (parseLocalDate(e.scheduledEventDate || e.desiredEventDate) || new Date()).toLocaleDateString(),
         e.organizationName || 'N/A',
         CATEGORY_LABELS[e.organizationCategory] || e.organizationCategory || 'N/A',
         e.status || 'N/A',
@@ -772,7 +782,9 @@ export default function EventImpactReports() {
 
   const formatEventDate = (date: string | null) => {
     if (!date) return 'TBD';
-    return new Date(date).toLocaleDateString('en-US', {
+    const parsedDate = parseLocalDate(date);
+    if (!parsedDate) return 'TBD';
+    return parsedDate.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -2007,8 +2019,9 @@ export default function EventImpactReports() {
                         </TableHeader>
                         <TableBody>
                           {processedData.topOrganizations.slice(0, 25).map((org, index) => {
-                            const daysSinceLastEvent = org.lastEventDate
-                              ? Math.floor((new Date().getTime() - new Date(org.lastEventDate).getTime()) / (1000 * 60 * 60 * 24))
+                            const lastEventParsed = org.lastEventDate ? parseLocalDate(org.lastEventDate) : null;
+                            const daysSinceLastEvent = lastEventParsed
+                              ? Math.floor((new Date().getTime() - lastEventParsed.getTime()) / (1000 * 60 * 60 * 24))
                               : null;
                             const isInactive = daysSinceLastEvent !== null && daysSinceLastEvent > 365;
 
@@ -2038,8 +2051,8 @@ export default function EventImpactReports() {
                                   {org.avgPerEvent?.toLocaleString() || '-'}
                                 </TableCell>
                                 <TableCell className="text-right text-sm">
-                                  {org.lastEventDate
-                                    ? new Date(org.lastEventDate).toLocaleDateString('en-US', {
+                                  {lastEventParsed
+                                    ? lastEventParsed.toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: '2-digit',
