@@ -420,8 +420,8 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Event Impact Reports',
     icon: BarChart3,
     href: 'event-impact-reports',
-    permission: PERMISSIONS.NAV_ANALYTICS,
-    group: 'analytics',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'event-planning',
   },
 
   // ADMIN
