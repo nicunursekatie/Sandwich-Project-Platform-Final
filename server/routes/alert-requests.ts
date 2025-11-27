@@ -213,14 +213,15 @@ export function createAIAlertRouter(deps: { isAuthenticated: any }) {
       if (!process.env.OPENAI_API_KEY) {
         // Sanitize user input before including in response
         const sanitizedPrompt = sanitizeText(prompt);
-        const sanitizedAfterWhen = prompt.toLowerCase().includes('when')
-          ? sanitizeText(prompt.split('when')[1]?.trim() || prompt)
+        const hasWhenKeyword = sanitizedPrompt.toLowerCase().includes('when');
+        const sanitizedAfterWhen = hasWhenKeyword
+          ? sanitizeText(sanitizedPrompt.split('when')[1]?.trim() || sanitizedPrompt)
           : sanitizedPrompt;
         
         // Provide a helpful fallback response if no AI is available
         return res.json({
-          generatedAlert: `Based on your request: "${sanitizedPrompt}"\n\nHere's a suggested alert description:\n\nI would like to receive notifications when ${prompt.toLowerCase().includes('when') ? sanitizedAfterWhen : sanitizedPrompt}.\n\nPlease include:\n- The specific trigger condition\n- Preferred timing (immediately, daily digest, etc.)\n- Which delivery method works best (email, SMS, or both)`,
-          suggestion: `I would like to be notified ${prompt.toLowerCase().includes('when') ? 'when' + sanitizedAfterWhen : 'about: ' + sanitizedPrompt}`,
+          generatedAlert: `Based on your request: "${sanitizedPrompt}"\n\nHere's a suggested alert description:\n\nI would like to receive notifications when ${hasWhenKeyword ? sanitizedAfterWhen : sanitizedPrompt}.\n\nPlease include:\n- The specific trigger condition\n- Preferred timing (immediately, daily digest, etc.)\n- Which delivery method works best (email, SMS, or both)`,
+          suggestion: `I would like to be notified ${hasWhenKeyword ? 'when' + sanitizedAfterWhen : 'about: ' + sanitizedPrompt}`,
         });
       }
 
