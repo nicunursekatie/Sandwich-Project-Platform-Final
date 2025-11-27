@@ -552,7 +552,7 @@ export default function AlertPreferences() {
             </CardHeader>
             <CardContent>
               {showSMSWarning && (
-                <Alert variant="warning" className="mb-6">
+                <Alert variant="destructive" className="mb-6">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     You've selected SMS notifications but haven't opted in yet.
