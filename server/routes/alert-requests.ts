@@ -7,6 +7,18 @@ import { sanitizeText } from '../middleware/sanitizer';
 import OpenAI from 'openai';
 
 /**
+ * Validates and parses an ID parameter from request params.
+ * Returns the parsed integer if valid, or null if invalid.
+ */
+function parseAndValidateId(id: string): number | null {
+  const parsedId = parseInt(id, 10);
+  if (isNaN(parsedId) || parsedId <= 0) {
+    return null;
+  }
+  return parsedId;
+}
+
+/**
  * Alert Requests API
  * Handles user-submitted requests for new notification types
  */
@@ -121,6 +133,12 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
 
       const { status, adminNotes } = req.body;
 
+      // Validate that id is a valid integer
+      const parsedId = parseAndValidateId(id);
+      if (parsedId === null) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
+
       const updateData: any = {
         updatedAt: new Date(),
       };
@@ -142,14 +160,14 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
       const [updatedRequest] = await db
         .update(alertRequests)
         .set(updateData)
-        .where(eq(alertRequests.id, alertId))
+        .where(eq(alertRequests.id, parsedId))
         .returning();
 
       if (!updatedRequest) {
         return res.status(404).json({ error: 'Alert request not found' });
       }
 
-      logger.info(`Alert request ${id} updated by admin ${user.id}: status=${status}`);
+      logger.info(`Alert request ${parsedId} updated by admin ${user.id}: status=${status}`);
 
       res.json(updatedRequest);
     } catch (error) {
@@ -173,6 +191,12 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
         return res.status(400).json({ error: 'Invalid alert request ID' });
       }
 
+      // Validate that id is a valid integer
+      const parsedId = parseAndValidateId(id);
+      if (parsedId === null) {
+        return res.status(400).json({ error: 'Invalid alert request ID' });
+      }
+
       // Only allow users to delete their own requests (or admins)
       const user = (req as any).user;
       const isAdmin = typeof user.permissions === 'number' && user.permissions >= 80;
@@ -181,8 +205,8 @@ export function createAlertRequestsRouter(deps: { isAuthenticated: any }) {
         .delete(alertRequests)
         .where(
           isAdmin
-            ? eq(alertRequests.id, alertId)
-            : and(eq(alertRequests.id, alertId), eq(alertRequests.userId, userId))
+            ? eq(alertRequests.id, parsedId)
+            : and(eq(alertRequests.id, parsedId), eq(alertRequests.userId, userId))
         )
         .returning();
 
