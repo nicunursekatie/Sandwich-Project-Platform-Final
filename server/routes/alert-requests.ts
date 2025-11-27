@@ -3,6 +3,7 @@ import { db } from '../db';
 import { alertRequests, users } from '@shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { sanitizeText } from '../middleware/sanitizer';
 import OpenAI from 'openai';
 
 /**
@@ -210,10 +211,16 @@ export function createAIAlertRouter(deps: { isAuthenticated: any }) {
 
       // Check if OpenAI is configured
       if (!process.env.OPENAI_API_KEY) {
+        // Sanitize user input before including in response
+        const sanitizedPrompt = sanitizeText(prompt);
+        const sanitizedAfterWhen = prompt.toLowerCase().includes('when')
+          ? sanitizeText(prompt.split('when')[1]?.trim() || prompt)
+          : sanitizedPrompt;
+        
         // Provide a helpful fallback response if no AI is available
         return res.json({
-          generatedAlert: `Based on your request: "${prompt}"\n\nHere's a suggested alert description:\n\nI would like to receive notifications when ${prompt.toLowerCase().includes('when') ? prompt.split('when')[1]?.trim() || prompt : prompt}.\n\nPlease include:\n- The specific trigger condition\n- Preferred timing (immediately, daily digest, etc.)\n- Which delivery method works best (email, SMS, or both)`,
-          suggestion: `I would like to be notified ${prompt.toLowerCase().includes('when') ? 'when' + prompt.split('when')[1]?.trim() || prompt : 'about: ' + prompt}`,
+          generatedAlert: `Based on your request: "${sanitizedPrompt}"\n\nHere's a suggested alert description:\n\nI would like to receive notifications when ${prompt.toLowerCase().includes('when') ? sanitizedAfterWhen : sanitizedPrompt}.\n\nPlease include:\n- The specific trigger condition\n- Preferred timing (immediately, daily digest, etc.)\n- Which delivery method works best (email, SMS, or both)`,
+          suggestion: `I would like to be notified ${prompt.toLowerCase().includes('when') ? 'when' + sanitizedAfterWhen : 'about: ' + sanitizedPrompt}`,
         });
       }
 
@@ -264,14 +271,17 @@ Be concise and practical. Frame the response as a well-written alert request tha
     } catch (error) {
       logger.error('Error generating AI alert:', error);
 
+      // Sanitize user input before including in fallback response
+      const sanitizedPrompt = sanitizeText(req.body.prompt || '');
+      
       // Provide fallback on error
       const safePrompt =
         typeof req.body?.prompt === 'string' && req.body.prompt.trim().length > 0
           ? req.body.prompt.replace(/[\r\n]+/g, ' ').slice(0, 200)
           : 'a new alert (details not provided)';
       res.json({
-        generatedAlert: `Based on your description, here's a draft alert request:\n\nI would like to receive a notification about: ${safePrompt}\n\nPlease specify:\n- What should trigger this alert?\n- How soon before/after should it be sent?\n- Do you prefer email, SMS, or both?`,
-        suggestion: `Notification request: ${safePrompt}`,
+        generatedAlert: `Based on your description, here's a draft alert request:\n\nI would like to receive a notification about: ${sanitizedPrompt}\n\nPlease specify:\n- What should trigger this alert?\n- How soon before/after should it be sent?\n- Do you prefer email, SMS, or both?`,
+        suggestion: `Notification request: ${sanitizedPrompt}`,
       });
     }
   });
