@@ -32,6 +32,11 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **TSP Holding Zone**: Simple inbox-style system for capturing long-term ideas and tasks with flexible categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system (VIEW/SUBMIT/MANAGE).
 -   **Error Handling & Logging**: Robust error handling with `lazyWithRetry` for dynamic component imports and improved production-safe logging that properly serializes error objects.
 -   **Timezone Management**: Ensures accurate storage of user-entered times.
+-   **Date Handling Rules** (CRITICAL - see `client/src/lib/date-utils.ts`):
+    - **Never** use `T12:00:00.000Z` - only use `T12:00:00` (no timezone suffix)
+    - **Always** use `timeZone: 'America/New_York'` for display formatting
+    - **Always** use the provided utility functions: `parseDateOnly()`, `formatDateDisplay()`, `formatDateForInput()`, `normalizeDate()`, etc.
+    - These rules prevent timezone conversion issues that can shift dates by one day
 -   **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
 
 ### External Dependencies
