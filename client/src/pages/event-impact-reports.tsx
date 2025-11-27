@@ -549,6 +549,15 @@ export default function EventImpactReports() {
       Saturday: 0,
     };
 
+    // Sandwich type breakdown
+    const sandwichTypeBreakdown: Record<string, number> = {
+      deli: 0,
+      turkey: 0,
+      ham: 0,
+      pbj: 0,
+      generic: 0,
+    };
+
     filteredEvents.forEach((event: any) => {
       // Sandwiches
       const actualSandwiches = event.actualSandwichCount || 0;
@@ -558,6 +567,19 @@ export default function EventImpactReports() {
       totalSandwiches += sandwichCount;
       totalActualSandwiches += actualSandwiches;
       totalEstimatedSandwiches += estimatedSandwiches;
+
+      // Aggregate sandwich types from actualSandwichTypes JSONB
+      if (event.actualSandwichTypes && Array.isArray(event.actualSandwichTypes)) {
+        event.actualSandwichTypes.forEach((st: { type: string; quantity: number }) => {
+          const type = (st.type || '').toLowerCase();
+          const qty = st.quantity || 0;
+          if (type.includes('deli')) sandwichTypeBreakdown.deli += qty;
+          else if (type.includes('turkey')) sandwichTypeBreakdown.turkey += qty;
+          else if (type.includes('ham')) sandwichTypeBreakdown.ham += qty;
+          else if (type.includes('pbj') || type.includes('peanut')) sandwichTypeBreakdown.pbj += qty;
+          else sandwichTypeBreakdown.generic += qty;
+        });
+      }
 
       // Attendance - use actual data for completed events, planned data otherwise
       if (event.status === 'completed') {
@@ -829,6 +851,7 @@ export default function EventImpactReports() {
       regionalChartData,
       repeatAnalysisData,
       dataQuality,
+      sandwichTypeBreakdown,
     };
   }, [eventRequests, unlinkedCollections, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
 
@@ -1516,10 +1539,10 @@ export default function EventImpactReports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {processedData.filteredEvents.map((event: any) => (
-                          <>
+                        {processedData.filteredEvents.flatMap((event: any) => {
+                          const rows = [
                             <TableRow
-                              key={event.id}
+                              key={`row-${event.id}`}
                               className="cursor-pointer hover:bg-gray-50"
                               onClick={() => toggleEventExpansion(event.id)}
                               tabIndex={0}
@@ -1569,8 +1592,10 @@ export default function EventImpactReports() {
                                 )}
                               </TableCell>
                             </TableRow>
-                            {expandedEvent === event.id && (
-                              <TableRow className="bg-gray-50">
+                          ];
+                          if (expandedEvent === event.id) {
+                            rows.push(
+                              <TableRow key={`expanded-${event.id}`} className="bg-gray-50">
                                 <TableCell colSpan={6}>
                                   <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {event.eventAddress && (
@@ -1611,9 +1636,10 @@ export default function EventImpactReports() {
                                   </div>
                                 </TableCell>
                               </TableRow>
-                            )}
-                          </>
-                        ))}
+                            );
+                          }
+                          return rows;
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -1630,6 +1656,97 @@ export default function EventImpactReports() {
           {/* Sandwich Analysis Tab - NEW */}
           <TabsContent value="sandwiches">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Sandwich Type Breakdown - NEW */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sandwich className="w-5 h-5" />
+                    Sandwich Types Breakdown
+                  </CardTitle>
+                  <CardDescription>
+                    Distribution of sandwich types across all events in the selected period
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.sandwichTypeBreakdown && Object.values(processedData.sandwichTypeBreakdown).some(v => v > 0) ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Pie Chart */}
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsPieChart>
+                          <Pie
+                            data={[
+                              { name: 'Deli', value: processedData.sandwichTypeBreakdown.deli, color: '#236383' },
+                              { name: 'Turkey', value: processedData.sandwichTypeBreakdown.turkey, color: '#FBAD3F' },
+                              { name: 'Ham', value: processedData.sandwichTypeBreakdown.ham, color: '#47B3CB' },
+                              { name: 'PB&J', value: processedData.sandwichTypeBreakdown.pbj, color: '#9333ea' },
+                              { name: 'Other', value: processedData.sandwichTypeBreakdown.generic, color: '#6B7280' },
+                            ].filter(d => d.value > 0)}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={100}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {[
+                              { name: 'Deli', value: processedData.sandwichTypeBreakdown.deli, color: '#236383' },
+                              { name: 'Turkey', value: processedData.sandwichTypeBreakdown.turkey, color: '#FBAD3F' },
+                              { name: 'Ham', value: processedData.sandwichTypeBreakdown.ham, color: '#47B3CB' },
+                              { name: 'PB&J', value: processedData.sandwichTypeBreakdown.pbj, color: '#9333ea' },
+                              { name: 'Other', value: processedData.sandwichTypeBreakdown.generic, color: '#6B7280' },
+                            ].filter(d => d.value > 0).map((entry, index) => (
+                              <Cell key={`type-cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']} />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+
+                      {/* Stats Table */}
+                      <div className="space-y-4">
+                        <div className="text-sm font-medium text-gray-500 mb-2">Breakdown by Type</div>
+                        {[
+                          { name: 'Deli', value: processedData.sandwichTypeBreakdown.deli, color: '#236383' },
+                          { name: 'Turkey', value: processedData.sandwichTypeBreakdown.turkey, color: '#FBAD3F' },
+                          { name: 'Ham', value: processedData.sandwichTypeBreakdown.ham, color: '#47B3CB' },
+                          { name: 'PB&J', value: processedData.sandwichTypeBreakdown.pbj, color: '#9333ea' },
+                          { name: 'Other/Generic', value: processedData.sandwichTypeBreakdown.generic, color: '#6B7280' },
+                        ].map((type) => {
+                          const total = Object.values(processedData.sandwichTypeBreakdown).reduce((a, b) => a + b, 0);
+                          const pct = total > 0 ? ((type.value / total) * 100).toFixed(1) : '0';
+                          return (
+                            <div key={type.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: type.color }} />
+                                <span className="font-medium">{type.name}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-bold text-lg">{type.value.toLocaleString()}</span>
+                                <span className="text-gray-500 text-sm ml-2">({pct}%)</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between p-3 bg-[#236383] text-white rounded-lg">
+                            <span className="font-medium">Total with Type Data</span>
+                            <span className="font-bold text-lg">
+                              {Object.values(processedData.sandwichTypeBreakdown).reduce((a, b) => a + b, 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-gray-500">
+                      <Sandwich className="w-12 h-12 mb-4 opacity-30" />
+                      <p className="font-medium">No sandwich type data available</p>
+                      <p className="text-sm mt-1">Type data comes from the "actualSandwichTypes" field on completed events</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Sandwich Distribution Histogram */}
               <Card className="lg:col-span-2">
                 <CardHeader>
