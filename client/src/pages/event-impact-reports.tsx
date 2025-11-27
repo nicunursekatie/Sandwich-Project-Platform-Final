@@ -80,13 +80,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-// School classification labels
-const SCHOOL_LABELS: Record<string, string> = {
-  public: 'Public School',
-  private: 'Private School',
-  charter: 'Charter School',
-};
-
 // Time period presets
 const TIME_PRESETS = [
   { value: 'this-week', label: 'This Week' },
@@ -299,10 +292,12 @@ export default function EventImpactReports() {
       totalActualSandwiches += actualSandwiches;
       totalEstimatedSandwiches += estimatedSandwiches;
 
-      // Attendance
-      totalVolunteers += event.volunteerCount || 0;
-      totalAdults += event.adultCount || 0;
-      totalChildren += event.childrenCount || 0;
+      // Attendance - support both new and legacy field names
+      // Legacy fields: attendanceAdults, attendanceTeens, attendanceKids
+      // New fields: volunteerCount (total participants), adultCount, childrenCount
+      totalVolunteers += (event.volunteerCount ?? event.attendanceAdults ?? 0);
+      totalAdults += (event.adultCount ?? event.attendanceTeens ?? 0);
+      totalChildren += (event.childrenCount ?? event.attendanceKids ?? 0);
 
       // Organizations
       if (event.organizationName) {
@@ -475,6 +470,26 @@ export default function EventImpactReports() {
     }
   };
 
+  // Helper for keyboard navigation on sortable headers
+  const handleSortKeyDown = (field: string) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSort(field);
+    }
+  };
+
+  // Helper for toggle expansion with keyboard support
+  const toggleEventExpansion = (eventId: number) => {
+    setExpandedEvent(expandedEvent === eventId ? null : eventId);
+  };
+
+  const handleExpandKeyDown = (eventId: number) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleEventExpansion(eventId);
+    }
+  };
+
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return null;
     return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
@@ -488,11 +503,6 @@ export default function EventImpactReports() {
       day: 'numeric',
       year: 'numeric',
     });
-  };
-
-  const formatEventTime = (time: string | null) => {
-    if (!time) return '';
-    return time;
   };
 
   if (isLoading) {
@@ -558,6 +568,7 @@ export default function EventImpactReports() {
                     <SelectItem value="new">New</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                     <SelectItem value="postponed">Postponed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -740,6 +751,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('date')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'date' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={handleSortKeyDown('date')}
                           >
                             <div className="flex items-center gap-1">
                               Date <SortIcon field="date" />
@@ -748,6 +763,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('organization')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'organization' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={handleSortKeyDown('organization')}
                           >
                             <div className="flex items-center gap-1">
                               Organization <SortIcon field="organization" />
@@ -756,6 +775,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => handleSort('category')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={handleSortKeyDown('category')}
                           >
                             <div className="flex items-center gap-1">
                               Category <SortIcon field="category" />
@@ -765,6 +788,10 @@ export default function EventImpactReports() {
                           <TableHead
                             className="cursor-pointer hover:bg-gray-100 text-right"
                             onClick={() => handleSort('sandwiches')}
+                            tabIndex={0}
+                            role="columnheader"
+                            aria-sort={sortField === 'sandwiches' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            onKeyDown={handleSortKeyDown('sandwiches')}
                           >
                             <div className="flex items-center gap-1 justify-end">
                               Sandwiches <SortIcon field="sandwiches" />
@@ -779,7 +806,10 @@ export default function EventImpactReports() {
                             <TableRow
                               key={event.id}
                               className="cursor-pointer hover:bg-gray-50"
-                              onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                              onClick={() => toggleEventExpansion(event.id)}
+                              tabIndex={0}
+                              aria-expanded={expandedEvent === event.id}
+                              onKeyDown={handleExpandKeyDown(event.id)}
                             >
                               <TableCell className="font-medium">
                                 {formatEventDate(event.scheduledEventDate || event.desiredEventDate)}
