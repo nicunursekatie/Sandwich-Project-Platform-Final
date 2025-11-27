@@ -200,7 +200,7 @@ const ALERT_CATEGORIES: AlertCategory[] = [
 
 export default function AlertPreferences() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  useAuth();
   const [activeTab, setActiveTab] = useState('current-alerts');
   const [isAIDialogOpen] = useState(false);
   const [aiGeneratedAlert, setAiGeneratedAlert] = useState<string | null>(null);
