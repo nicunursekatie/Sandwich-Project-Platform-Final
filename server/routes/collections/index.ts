@@ -996,10 +996,13 @@ collectionsRouter.get('/unlinked-groups', async (req, res) => {
   try {
     const collections = await storage.getAllSandwichCollections();
 
-    // Filter for collections with group data (not soft-deleted)
+    // Filter for collections with group data that are NOT linked to event requests
     const groupCollections = collections.filter((collection) => {
       // Skip soft-deleted records
       if (collection.deletedAt) return false;
+
+      // Skip collections that ARE linked to an event request
+      if (collection.eventRequestId) return false;
 
       // Check for group data in JSONB column
       const hasJsonbGroups = collection.groupCollections &&
