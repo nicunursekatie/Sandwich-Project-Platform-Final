@@ -3812,14 +3812,14 @@ export type InsertMeetingProject = z.infer<typeof insertMeetingProjectSchema>;
  */
 export const alertRequests = pgTable('alert_requests', {
   id: serial('id').primaryKey(),
-  userId: varchar('user_id').notNull(), // FK to users.id - who submitted the request
+  userId: varchar('user_id').notNull().references(() => users.id), // FK to users.id - who submitted the request
   alertDescription: text('alert_description').notNull(), // What the user wants to be alerted about
   preferredChannel: varchar('preferred_channel').notNull().default('no_preference'), // 'email', 'sms', 'both', 'no_preference'
   frequency: varchar('frequency').notNull().default('immediate'), // 'immediate', 'daily', 'weekly', 'custom'
   additionalNotes: text('additional_notes'), // Any extra details
   status: varchar('status').notNull().default('pending'), // 'pending', 'in_progress', 'implemented', 'rejected'
   adminNotes: text('admin_notes'), // Admin response/notes
-  reviewedBy: varchar('reviewed_by'), // Admin who reviewed the request
+  reviewedBy: varchar('reviewed_by').references(() => users.id), // Admin who reviewed the request
   reviewedAt: timestamp('reviewed_at'), // When the request was reviewed
   implementedAt: timestamp('implemented_at'), // When the alert was implemented
   createdAt: timestamp('created_at').defaultNow().notNull(),
