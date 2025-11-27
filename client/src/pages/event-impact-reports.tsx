@@ -584,32 +584,59 @@ export default function EventImpactReports() {
   const processedData = useMemo(() => {
     if (!Array.isArray(eventRequests)) return null;
 
-    // Map group collections to match event request shape
-    const mappedCollections = Array.isArray(unlinkedCollections)
-      ? unlinkedCollections.map((c: any) => ({
-          ...c,
-          // Ensure dates are properly formatted
-          scheduledEventDate: c.scheduledEventDate || c.collectionDate,
-          desiredEventDate: c.collectionDate,
-          // organizationCategory is unknown for collections
-          organizationCategory: 'other',
-        }))
-      : [];
+    // Build a map of eventRequestId -> collection data for linked collections
+    // Track duplicates as a data quality issue to surface to the user
+    const linkedCollectionsByEventId = new Map<number, any>();
+    const duplicateCollections: { eventRequestId: number; collections: any[] }[] = [];
+    const collectionsByEventId = new Map<number, any[]>(); // Temporary for duplicate detection
+    const trulyUnlinkedCollections: any[] = [];
 
-    // Get set of event request IDs that have linked collections
-    const linkedEventIds = new Set(
-      mappedCollections
-        .filter((c: any) => c.eventRequestId)
-        .map((c: any) => c.eventRequestId)
-    );
+    if (Array.isArray(unlinkedCollections)) {
+      // First pass: group collections by eventRequestId to detect duplicates
+      unlinkedCollections.forEach((c: any) => {
+        if (c.eventRequestId) {
+          const existing = collectionsByEventId.get(c.eventRequestId) || [];
+          existing.push(c);
+          collectionsByEventId.set(c.eventRequestId, existing);
+        } else {
+          // This collection has no linked event request - it's truly unlinked
+          trulyUnlinkedCollections.push({
+            ...c,
+            scheduledEventDate: c.scheduledEventDate || c.collectionDate,
+            desiredEventDate: c.collectionDate,
+            // organizationCategory is unknown for collections
+            organizationCategory: 'other',
+          });
+        }
+      });
 
-    // Filter out event requests that have linked collections (we'll use collection data instead)
-    const eventRequestsWithoutLinkedCollections = eventRequests.filter(
-      (e: any) => !linkedEventIds.has(e.id)
-    );
+      // Second pass: identify duplicates and keep first collection per event
+      collectionsByEventId.forEach((collections, eventRequestId) => {
+        linkedCollectionsByEventId.set(eventRequestId, collections[0]);
+        if (collections.length > 1) {
+          duplicateCollections.push({ eventRequestId, collections });
+        }
+      });
+    }
 
-    // Combine: event requests (without linked collections) + all group collections
-    const allEvents = [...eventRequestsWithoutLinkedCollections, ...mappedCollections];
+    // Merge event requests with their linked collections (if any)
+    // IMPORTANT: Preserve event request metadata (status, category) but use collection's actual sandwich count
+    const mergedEventRequests = eventRequests.map((event: any) => {
+      const linkedCollection = linkedCollectionsByEventId.get(event.id);
+      if (linkedCollection) {
+        return {
+          ...event,
+          // Use collection's actual sandwich count when available
+          actualSandwichCount: linkedCollection.actualSandwichCount || event.actualSandwichCount,
+          // Mark that this event has collection data
+          hasCollectionData: true,
+        };
+      }
+      return event;
+    });
+
+    // Combine: merged event requests + truly unlinked collections
+    const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections];
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
@@ -981,6 +1008,8 @@ export default function EventImpactReports() {
       repeatAnalysisData,
       dataQuality,
       sandwichTypeBreakdown,
+      // Data integrity issues
+      duplicateCollections,
     };
   }, [eventRequests, unlinkedCollections, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
 
@@ -2653,6 +2682,47 @@ export default function EventImpactReports() {
                 </CardContent>
               </Card>
 
+              {/* Productivity Trend - Average Sandwiches per Event */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Productivity Trend</CardTitle>
+                  <CardDescription>
+                    Average sandwiches made per event each month - shows efficiency over time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.monthlyChartData && processedData.monthlyChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart
+                        data={processedData.monthlyChartData.map((m: any) => ({
+                          ...m,
+                          avgPerEvent: m.events > 0 ? Math.round(m.sandwiches / m.events) : 0
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number) => [value.toLocaleString(), 'Avg Sandwiches/Event']}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="avgPerEvent"
+                          stroke="#10B981"
+                          strokeWidth={3}
+                          dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
+                          name="Avg per Event"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                      No data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
             </div>
           </TabsContent>
 
@@ -2833,6 +2903,34 @@ export default function EventImpactReports() {
             </tbody>
           </table>
         </div>
+
+        {/* Duplicate Collections Warning - Data Integrity Issue */}
+        {processedData?.duplicateCollections && processedData.duplicateCollections.length > 0 && (
+          <Card className="mt-8 border-red-300 bg-red-50 print:hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-red-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Data Integrity Issue: Duplicate Collections Found
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-red-700 mb-3">
+                The following event requests have multiple collections linked to them. This indicates a data issue that should be resolved in the Collections Log.
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {processedData.duplicateCollections.map((dup: any) => (
+                  <div key={dup.eventRequestId} className="text-sm bg-white p-2 rounded border border-red-200">
+                    <span className="font-medium text-red-900">Event Request #{dup.eventRequestId}</span>
+                    <span className="text-red-700 ml-2">
+                      — {dup.collections.length} collections linked
+                      (IDs: {dup.collections.map((c: any) => c.collectionId).join(', ')})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Data Quality Notes - at bottom */}
         {processedData?.dataQuality && (processedData.dataQuality.missingSandwichPct > 0 || processedData.dataQuality.missingCategoryPct > 0) && (
