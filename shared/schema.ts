@@ -701,6 +701,8 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   // Soft delete tracking
   deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
   deletedBy: text('deleted_by'), // User ID who deleted this record
+  // Link to event request (for group events that came from formal event requests)
+  eventRequestId: integer('event_request_id'), // Links collection to event request
 });
 
 // Authoritative weekly collections from Scott's Excel tracking system
