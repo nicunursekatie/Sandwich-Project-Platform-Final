@@ -275,6 +275,10 @@ Be concise and practical. Frame the response as a well-written alert request tha
       const sanitizedPrompt = sanitizeText(req.body.prompt || '');
       
       // Provide fallback on error
+      const safePrompt =
+        typeof req.body?.prompt === 'string' && req.body.prompt.trim().length > 0
+          ? req.body.prompt.replace(/[\r\n]+/g, ' ').slice(0, 200)
+          : 'a new alert (details not provided)';
       res.json({
         generatedAlert: `Based on your description, here's a draft alert request:\n\nI would like to receive a notification about: ${sanitizedPrompt}\n\nPlease specify:\n- What should trigger this alert?\n- How soon before/after should it be sent?\n- Do you prefer email, SMS, or both?`,
         suggestion: `Notification request: ${sanitizedPrompt}`,
