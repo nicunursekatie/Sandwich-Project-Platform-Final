@@ -940,9 +940,20 @@ export default function SandwichCollectionLog() {
     'Other',
   ];
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateInput: string | Date | null | undefined) => {
+    if (!dateInput) return 'N/A';
+    // If it's already a Date object, use it directly
+    if (dateInput instanceof Date) {
+      return dateInput.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+    // If it's not a string, bail
+    if (typeof dateInput !== 'string') return 'N/A';
     // Parse date as local date to avoid timezone issues
-    const [year, month, day] = dateString.split('-').map(Number);
+    const [year, month, day] = dateInput.split('-').map(Number);
     const localDate = new Date(year, month - 1, day);
     return localDate.toLocaleDateString('en-US', {
       year: 'numeric',
