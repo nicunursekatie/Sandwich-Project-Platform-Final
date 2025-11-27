@@ -491,13 +491,14 @@ export default function SandwichForecastWidget() {
           ) : (
             <div className="grid gap-2">
               {distributionEvents.map(event => {
-                const eventDate = new Date(event.desiredEventDate!);
+                // Parse date at noon to avoid timezone edge cases
+                const eventDate = new Date(event.desiredEventDate + 'T12:00:00');
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -562,13 +563,14 @@ export default function SandwichForecastWidget() {
           ) : (
             <div className="grid gap-2">
               {otherEvents.map(event => {
-                const eventDate = new Date(event.desiredEventDate!);
+                // Parse date at noon to avoid timezone edge cases
+                const eventDate = new Date(event.desiredEventDate + 'T12:00:00');
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

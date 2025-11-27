@@ -337,8 +337,8 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  // Get day of week
-  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  // Get day of week - use Eastern Time for consistent display
+  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
 
   // Find all events in the same week
   const eventsInWeek = scheduledEvents.filter(event => {
@@ -389,8 +389,8 @@ function getWeekStart(date: Date): Date {
  * Builds the prompt for OpenAI
  */
 function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[], flexibilityOptions?: FlexibilityOptions): string {
-  const requestedDate = eventRequest.desiredEventDate 
-    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+  const requestedDate = eventRequest.desiredEventDate
+    ? new Date(eventRequest.desiredEventDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York' })
     : 'Not specified';
 
   // Convert desiredEventDate to string for comparison
@@ -422,9 +422,10 @@ ${eventRequest.message ? `\n\nNOTE FROM SUBMISSION:\n"${eventRequest.message}"` 
 
   const dateOptions = dateAnalyses.map((analysis, idx) => {
     const isRequestedDate = analysis.date === desiredDateString;
+    // Parse dates at noon to avoid timezone edge cases
     return `
-Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
-  - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+Option ${idx + 1}: ${new Date(analysis.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
+  - Week of: ${new Date(analysis.weekStarting + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
   - Events already scheduled that week: ${analysis.eventCount}
   - Total sandwiches scheduled that week: ${analysis.totalScheduledSandwiches.toLocaleString()}
   - Status: ${analysis.isOptimal ? '✓ Good balance' : '⚠ Busy week'}

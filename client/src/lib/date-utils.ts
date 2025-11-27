@@ -4,7 +4,13 @@
  * The main issue is that HTML date inputs and JavaScript Date objects
  * can cause timezone conversions that shift dates by one day.
  * These utilities ensure dates are handled consistently as local dates.
+ *
+ * IMPORTANT: All users of this app are in Eastern Time (America/New_York).
+ * All date display functions should use this timezone explicitly.
  */
+
+// Eastern Time Zone - all users of this app are in this timezone
+export const APP_TIMEZONE = 'America/New_York';
 
 /**
  * Format a date string (YYYY-MM-DD) for HTML date input
@@ -33,6 +39,7 @@ export function formatDateForInput(dateString: string): string {
  * Format a date string for display purposes
  * Returns a user-friendly formatted date
  * Handles both date-only strings (YYYY-MM-DD) and full datetime strings (YYYY-MM-DD HH:MM:SS.microseconds)
+ * Always uses Eastern Time (America/New_York) for consistent display.
  */
 export function formatDateForDisplay(dateString: string): string {
   if (!dateString) return '';
@@ -59,6 +66,7 @@ export function formatDateForDisplay(dateString: string): string {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: APP_TIMEZONE,
     });
   } catch {
     return dateString; // Return original if parsing fails

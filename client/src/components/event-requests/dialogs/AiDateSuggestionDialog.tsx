@@ -93,22 +93,24 @@ export function AiDateSuggestionDialog({
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    // Parse date at noon to avoid timezone edge cases
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
-      timeZone: 'UTC'
+      timeZone: 'America/New_York'
     });
   };
 
   const formatWeek = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    // Parse date at noon to avoid timezone edge cases
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      timeZone: 'UTC'
+      timeZone: 'America/New_York'
     });
   };
 
@@ -301,7 +303,7 @@ export function AiDateSuggestionDialog({
                     <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                       <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-[#236383]" />
                       <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#236383] leading-tight">
-                        {new Date(suggestion.recommendedDate).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}
+                        {new Date(suggestion.recommendedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })}
                       </p>
                     </div>
                     <p className="text-xl sm:text-2xl font-semibold text-[#47B3CB] px-2">
