@@ -3841,7 +3841,18 @@ export const insertAlertRequestSchema = createInsertSchema(alertRequests).omit({
   updatedAt: true,
 });
 
-export const updateAlertRequestSchema = createInsertSchema(alertRequests).partial();
+export const updateAlertRequestSchema = createInsertSchema(alertRequests)
+  .omit({
+    id: true,
+    status: true,
+    adminNotes: true,
+    reviewedBy: true,
+    reviewedAt: true,
+    implementedAt: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .partial();
 
 export type AlertRequest = typeof alertRequests.$inferSelect;
 export type InsertAlertRequest = z.infer<typeof insertAlertRequestSchema>;
