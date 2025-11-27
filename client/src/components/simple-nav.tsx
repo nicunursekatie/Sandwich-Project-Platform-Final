@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,6 @@ import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
 import { SmartSearch } from '@/components/SmartSearch';
 
 export default function SimpleNav({

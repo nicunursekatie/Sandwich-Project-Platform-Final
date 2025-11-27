@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -13,6 +13,34 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+
+// Custom CSS for cluster tooltips
+const clusterTooltipStyles = `
+  .cluster-tooltip {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    padding: 0 !important;
+  }
+  .cluster-tooltip .leaflet-tooltip-tip {
+    display: none;
+  }
+  .cluster-tooltip::before {
+    display: none !important;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleId = 'cluster-tooltip-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = clusterTooltipStyles;
+    document.head.appendChild(style);
+  }
+}
 import { format } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
@@ -190,29 +218,217 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-800 border-red-300',
 };
 
-// Custom cluster icon - branded with TSP colors (for nearby grouped events)
+// Custom cluster icon - density-based sizing and color gradients
 const createClusterCustomIcon = (cluster: any) => {
   const count = cluster.getChildCount();
 
-  // Size based on count
-  let size = 'medium';
-  if (count < 10) size = 'small';
-  else if (count >= 50) size = 'large';
+  // Determine size tier based on count
+  let sizePx: number;
+  let fontSize: string;
+  let borderWidth: number;
 
-  const sizeClasses = {
-    small: 'w-10 h-10 text-sm',
-    medium: 'w-14 h-14 text-base',
-    large: 'w-20 h-20 text-xl'
-  };
+  if (count < 5) {
+    sizePx = 36;
+    fontSize = '12px';
+    borderWidth = 3;
+  } else if (count < 10) {
+    sizePx = 42;
+    fontSize = '13px';
+    borderWidth = 3;
+  } else if (count < 20) {
+    sizePx = 50;
+    fontSize = '14px';
+    borderWidth = 4;
+  } else if (count < 50) {
+    sizePx = 58;
+    fontSize = '16px';
+    borderWidth = 4;
+  } else if (count < 100) {
+    sizePx = 68;
+    fontSize = '18px';
+    borderWidth = 5;
+  } else {
+    sizePx = 80;
+    fontSize = '20px';
+    borderWidth = 5;
+  }
+
+  // Determine color intensity based on count (darker = more events)
+  // Low density: lighter teal, High density: deep navy/dark teal
+  let bgGradient: string;
+  let glowIntensity: string;
+
+  if (count < 5) {
+    // Very light - soft teal
+    bgGradient = 'linear-gradient(135deg, #47B3CB 0%, #007E8C 100%)';
+    glowIntensity = '0 2px 8px rgba(71, 179, 203, 0.4)';
+  } else if (count < 10) {
+    // Light - medium teal
+    bgGradient = 'linear-gradient(135deg, #007E8C 0%, #236383 100%)';
+    glowIntensity = '0 3px 10px rgba(0, 126, 140, 0.5)';
+  } else if (count < 20) {
+    // Medium - teal to navy
+    bgGradient = 'linear-gradient(135deg, #236383 0%, #1a4a5e 100%)';
+    glowIntensity = '0 4px 12px rgba(35, 99, 131, 0.6)';
+  } else if (count < 50) {
+    // Medium-high - navy with amber accent
+    bgGradient = 'linear-gradient(135deg, #1a4a5e 0%, #0f3040 100%)';
+    glowIntensity = '0 5px 15px rgba(26, 74, 94, 0.7)';
+  } else if (count < 100) {
+    // High - deep navy with orange glow
+    bgGradient = 'linear-gradient(135deg, #0f3040 0%, #FBAD3F 100%)';
+    glowIntensity = '0 6px 20px rgba(251, 173, 63, 0.6)';
+  } else {
+    // Very high - hot gradient (orange to red)
+    bgGradient = 'linear-gradient(135deg, #FBAD3F 0%, #f59e0b 50%, #dc2626 100%)';
+    glowIntensity = '0 8px 25px rgba(220, 38, 38, 0.5)';
+  }
+
+  // Add pulsing animation for very high density clusters
+  const pulseAnimation = count >= 50 ? 'animation: pulse 2s infinite;' : '';
 
   return L.divIcon({
-    html: `<div class="${sizeClasses[size]} rounded-full bg-gradient-to-br from-[#236383] to-[#007E8C] text-white font-bold flex items-center justify-center shadow-lg border-4 border-white">
-      ${count}
-    </div>`,
+    html: `
+      <style>
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      </style>
+      <div style="
+        width: ${sizePx}px;
+        height: ${sizePx}px;
+        border-radius: 50%;
+        background: ${bgGradient};
+        color: white;
+        font-weight: bold;
+        font-size: ${fontSize};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${glowIntensity};
+        border: ${borderWidth}px solid rgba(255, 255, 255, 0.9);
+        ${pulseAnimation}
+      ">
+        ${count}
+      </div>`,
     className: 'custom-marker-cluster',
-    iconSize: L.point(40, 40, true),
+    iconSize: L.point(sizePx, sizePx, true),
+    iconAnchor: L.point(sizePx / 2, sizePx / 2, true),
   });
 };
+
+// Helper function to generate cluster tooltip content
+const generateClusterTooltip = (cluster: any): string => {
+  const markers = cluster.getAllChildMarkers();
+  const events: EventMapData[] = markers
+    .map((marker: any) => marker.options?.eventData)
+    .filter(Boolean);
+
+  if (events.length === 0) {
+    return `<div class="p-2 text-sm">${cluster.getChildCount()} events</div>`;
+  }
+
+  // Calculate status breakdown
+  const statusCounts: Record<string, number> = {};
+  let totalSandwiches = 0;
+  const orgNames: string[] = [];
+
+  events.forEach((event: EventMapData) => {
+    // Count statuses
+    const status = event.status || 'unknown';
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+    // Sum sandwiches
+    if (event.estimatedSandwichCount) {
+      totalSandwiches += event.estimatedSandwichCount;
+    }
+
+    // Collect org names (top 5)
+    if (event.organizationName && orgNames.length < 5) {
+      orgNames.push(event.organizationName);
+    }
+  });
+
+  // Build status breakdown HTML
+  const statusLabels: Record<string, string> = {
+    new: '🟡 New',
+    in_process: '🟠 In Process',
+    scheduled: '🔵 Scheduled',
+    completed: '🟢 Completed',
+    declined: '⚪ Declined',
+    postponed: '🟤 Postponed',
+    cancelled: '🔴 Cancelled',
+  };
+
+  const statusBreakdown = Object.entries(statusCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([status, count]) => `<div class="flex justify-between gap-4"><span>${statusLabels[status] || status}</span><span class="font-semibold">${count}</span></div>`)
+    .join('');
+
+  // Build organizations list
+  const orgList = orgNames.length > 0
+    ? `<div class="border-t border-gray-200 pt-2 mt-2">
+        <div class="text-xs font-semibold text-gray-500 mb-1">TOP ORGANIZATIONS</div>
+        ${orgNames.map(name => `<div class="text-xs truncate">${name}</div>`).join('')}
+        ${events.length > 5 ? `<div class="text-xs text-gray-400 italic">+${events.length - 5} more...</div>` : ''}
+      </div>`
+    : '';
+
+  return `
+    <div class="p-3 min-w-[200px] max-w-[280px]">
+      <div class="font-bold text-base mb-2">${events.length} Events</div>
+      <div class="text-sm space-y-1 mb-2">
+        ${statusBreakdown}
+      </div>
+      ${totalSandwiches > 0 ? `<div class="text-sm font-medium text-amber-700 border-t border-gray-200 pt-2 mt-2">🥪 ~${totalSandwiches.toLocaleString()} sandwiches</div>` : ''}
+      ${orgList}
+      <div class="text-xs text-gray-400 mt-2 italic">Click to zoom in</div>
+    </div>
+  `;
+};
+
+// Component to handle cluster tooltips
+function ClusterTooltipHandler({ clusterRef }: { clusterRef: React.RefObject<any> }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!clusterRef.current) return;
+
+    const clusterGroup = clusterRef.current;
+
+    const handleClusterMouseover = (e: any) => {
+      const cluster = e.propagatedFrom || e.layer;
+      if (cluster && cluster.getChildCount) {
+        const tooltipContent = generateClusterTooltip(cluster);
+        cluster.bindTooltip(tooltipContent, {
+          direction: 'top',
+          offset: L.point(0, -20),
+          opacity: 0.95,
+          className: 'cluster-tooltip',
+        }).openTooltip();
+      }
+    };
+
+    const handleClusterMouseout = (e: any) => {
+      const cluster = e.propagatedFrom || e.layer;
+      if (cluster && cluster.closeTooltip) {
+        cluster.closeTooltip();
+        cluster.unbindTooltip();
+      }
+    };
+
+    clusterGroup.on('clustermouseover', handleClusterMouseover);
+    clusterGroup.on('clustermouseout', handleClusterMouseout);
+
+    return () => {
+      clusterGroup.off('clustermouseover', handleClusterMouseover);
+      clusterGroup.off('clustermouseout', handleClusterMouseout);
+    };
+  }, [clusterRef, map]);
+
+  return null;
+}
 
 // Custom icon for multiple events at the EXACT same location (stacked)
 const createStackedLocationIcon = (count: number) => {
@@ -372,6 +588,8 @@ function LocationMarker({
             iconSize: [180, 60],
             iconAnchor: [90, 30]
           })}
+          // @ts-ignore - custom property for cluster tooltip
+          eventData={event}
           eventHandlers={{
             click: () => onEventSelect(event)
           }}
@@ -387,6 +605,8 @@ function LocationMarker({
       <Marker
         position={[lat, lng]}
         icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+        // @ts-ignore - custom property for cluster tooltip
+        eventData={event}
         eventHandlers={{
           click: () => onEventSelect(event)
         }}
@@ -398,12 +618,14 @@ function LocationMarker({
     );
   }
 
-  // Multiple events at same location
+  // Multiple events at same location - pass first event data for clustering
   if (!expanded) {
     return (
       <Marker
         position={[lat, lng]}
         icon={createStackedLocationIcon(events.length)}
+        // @ts-ignore - custom property for cluster tooltip (use first event as representative)
+        eventData={events[0]}
         eventHandlers={{
           click: () => setExpanded(true)
         }}
@@ -437,6 +659,8 @@ function LocationMarker({
             key={event.id}
             position={[offsetLat, offsetLng]}
             icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+            // @ts-ignore - custom property for cluster tooltip
+            eventData={event}
             eventHandlers={{
               click: () => onEventSelect(event)
             }}
@@ -525,6 +749,7 @@ export default function EventMapView() {
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
   const [clusteringEnabled, setClusteringEnabled] = useState(true);
+  const clusterGroupRef = useRef<any>(null);
 
   useEffect(() => {
     trackView(
@@ -937,12 +1162,14 @@ export default function EventMapView() {
               
               {clusteringEnabled ? (
                 <MarkerClusterGroup
+                  ref={clusterGroupRef}
                   chunkedLoading
                   iconCreateFunction={createClusterCustomIcon}
                   showCoverageOnHover={true}
                   spiderfyDistanceMultiplier={1.5}
                   maxClusterRadius={60}
                 >
+                  <ClusterTooltipHandler clusterRef={clusterGroupRef} />
                   {Array.from(filteredEventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
                     const [lat, lng] = locationKey.split(',');
                     return (
