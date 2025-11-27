@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   HelpCircle,
   X,
@@ -31,6 +31,8 @@ import {
   type TourCategory,
 } from '@/lib/tourDefinitions';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 const CATEGORY_ICONS: Record<string, any> = {
   FolderOpen,
@@ -54,6 +56,31 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
   const [completedTours, setCompletedTours] = useState<string[]>([]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<HTMLDivElement>(null);
+  
+  // Get user for permission checking
+  const { user } = useAuth();
+  
+  // Filter tours based on user permissions
+  const availableTours = useMemo(() => {
+    // If no user, show tours without permission requirements
+    if (!user) {
+      return TOURS.filter(tour => !tour.requiredPermission);
+    }
+    
+    // Spread the full user object to preserve all fields (role, permissions, legacyRole, etc.)
+    // hasPermission uses getRolePermissions which needs the complete user shape
+    const userForPermissions = {
+      ...user,
+      permissions: (user.permissions as string[] | null) ?? null,
+    };
+    
+    return TOURS.filter(tour => {
+      // If no permission required, tour is available to everyone
+      if (!tour.requiredPermission) return true;
+      // Check if user has the required permission
+      return hasPermission(userForPermissions, tour.requiredPermission);
+    });
+  }, [user]);
 
   // Load completed tours from localStorage
   useEffect(() => {
@@ -230,11 +257,26 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     setIsOpen(prev => !prev);
   }, []);
 
-  const filteredTours = searchQuery
-    ? searchTours(searchQuery)
-    : selectedCategory
-      ? getToursByCategory(selectedCategory)
-      : TOURS;
+  // Filter tours by search query and category, but only from available tours (permission-filtered)
+  const filteredTours = useMemo(() => {
+    let tours = availableTours;
+    
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase().trim();
+      tours = tours.filter(tour => 
+        tour.title.toLowerCase().includes(lowerQuery) ||
+        tour.description.toLowerCase().includes(lowerQuery) ||
+        tour.steps.some(step => 
+          step.title.toLowerCase().includes(lowerQuery) ||
+          step.description.toLowerCase().includes(lowerQuery)
+        )
+      );
+    } else if (selectedCategory) {
+      tours = tours.filter(tour => tour.category === selectedCategory);
+    }
+    
+    return tours;
+  }, [availableTours, searchQuery, selectedCategory]);
 
   const isTourCompleted = (tourId: string) => completedTours.includes(tourId);
 
@@ -296,7 +338,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
             </CardHeader>
 
             <CardContent className="p-4">
-              {/* Categories */}
+              {/* Categories - only show categories that have at least one available tour */}
               {!searchQuery && (
                 <div className="mb-4 flex flex-wrap gap-2">
                   <Button
@@ -308,6 +350,10 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
                     All Tours
                   </Button>
                   {Object.entries(TOUR_CATEGORIES).map(([key, category]) => {
+                    // Only show category if user has access to at least one tour in it
+                    const hasToursInCategory = availableTours.some(tour => tour.category === key);
+                    if (!hasToursInCategory) return null;
+                    
                     const IconComponent = CATEGORY_ICONS[category.icon];
                     return (
                       <Button
@@ -328,9 +374,19 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
               {/* Tour List */}
               <ScrollArea className="h-[320px] pr-4">
                 <div className="space-y-2">
-                  {filteredTours.length === 0 ? (
+                  {availableTours.length === 0 ? (
+                    <div className="text-center py-8">
+                      <HelpCircle className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        No guided tours are currently available for your account.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Tours are based on the features you have access to.
+                      </p>
+                    </div>
+                  ) : filteredTours.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      No tours found. Try a different search.
+                      No tours found matching your search. Try a different term.
                     </p>
                   ) : (
                     filteredTours.map((tour) => {
