@@ -233,7 +233,7 @@ export default function AlertPreferences() {
   });
 
   // Load existing alert requests
-  const { data: alertRequests, isLoading: requestsLoading } = useQuery({
+  const { data: alertRequests } = useQuery({
     queryKey: ['/api/alert-requests'],
     queryFn: () => apiRequest('GET', '/api/alert-requests'),
   });
