@@ -127,8 +127,9 @@ function getCollectionSandwichCount(collection: any): number {
 
   if (hasGroupCollections) {
     // Use new groupCollections JSONB column
+    // Handle both 'count' and legacy 'sandwichCount' field names for backward compatibility
     total += collection.groupCollections.reduce(
-      (sum: number, group: any) => sum + (group.count || 0), 0
+      (sum: number, group: any) => sum + (Number(group.count) || Number(group.sandwichCount) || 0), 0
     );
   } else {
     // Fall back to legacy group columns (for older data)
