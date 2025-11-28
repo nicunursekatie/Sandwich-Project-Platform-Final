@@ -3858,3 +3858,83 @@ export const updateAlertRequestSchema = createInsertSchema(alertRequests)
 export type AlertRequest = typeof alertRequests.$inferSelect;
 export type InsertAlertRequest = z.infer<typeof insertAlertRequestSchema>;
 export type UpdateAlertRequest = z.infer<typeof updateAlertRequestSchema>;
+
+// ============================================================================
+// ORGANIZATION ENGAGEMENT SCORES - AI-powered group engagement insights
+// ============================================================================
+
+/**
+ * Organization Engagement Scores - Track and score organization engagement
+ * Used for identifying under-engaged groups and prioritizing outreach
+ */
+export const organizationEngagementScores = pgTable('organization_engagement_scores', {
+  id: serial('id').primaryKey(),
+
+  // Organization identification (uses canonical name for matching)
+  organizationName: varchar('organization_name').notNull(), // Display name
+  canonicalName: varchar('canonical_name').notNull().unique(), // Lowercase, normalized for matching
+  category: varchar('category'), // 'corp', 'school', 'church_faith', 'nonprofit', 'government', 'hospital', etc.
+
+  // Core engagement metrics (0-100 scale)
+  overallEngagementScore: decimal('overall_engagement_score', { precision: 5, scale: 2 }).notNull().default('50.00'),
+
+  // Component scores (0-100 scale each)
+  frequencyScore: decimal('frequency_score', { precision: 5, scale: 2 }).default('0'), // Based on request/event frequency
+  recencyScore: decimal('recency_score', { precision: 5, scale: 2 }).default('0'), // Based on days since last activity
+  volumeScore: decimal('volume_score', { precision: 5, scale: 2 }).default('0'), // Based on sandwiches distributed
+  completionScore: decimal('completion_score', { precision: 5, scale: 2 }).default('0'), // Based on event completion rate
+  consistencyScore: decimal('consistency_score', { precision: 5, scale: 2 }).default('0'), // Based on regular engagement pattern
+
+  // Engagement trend
+  engagementTrend: varchar('engagement_trend').default('stable'), // 'increasing', 'decreasing', 'stable', 'new'
+  trendPercentChange: decimal('trend_percent_change', { precision: 5, scale: 2 }).default('0'),
+
+  // Raw metrics used for scoring
+  totalEvents: integer('total_events').notNull().default(0),
+  completedEvents: integer('completed_events').notNull().default(0),
+  totalSandwiches: integer('total_sandwiches').notNull().default(0),
+  daysSinceLastEvent: integer('days_since_last_event'),
+  daysSinceFirstEvent: integer('days_since_first_event'),
+  lastEventDate: timestamp('last_event_date'),
+  firstEventDate: timestamp('first_event_date'),
+  averageEventInterval: integer('average_event_interval'), // Average days between events
+
+  // AI-generated insights and recommendations
+  engagementLevel: varchar('engagement_level').notNull().default('unknown'), // 'highly_engaged', 'engaged', 'moderate', 'low', 'at_risk', 'dormant', 'new'
+  outreachPriority: varchar('outreach_priority').default('normal'), // 'urgent', 'high', 'normal', 'low'
+  recommendedActions: jsonb('recommended_actions').default('[]'), // Array of suggested actions
+  insights: jsonb('insights').default('{}'), // AI-generated insights
+  programSuitability: jsonb('program_suitability').default('[]'), // Array of programs this org might be good for
+
+  // Score calculation metadata
+  lastCalculatedAt: timestamp('last_calculated_at').defaultNow().notNull(),
+  calculationVersion: varchar('calculation_version').default('1.0'),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_org_engagement_canonical').on(table.canonicalName),
+  index('idx_org_engagement_score').on(table.overallEngagementScore),
+  index('idx_org_engagement_level').on(table.engagementLevel),
+  index('idx_org_engagement_priority').on(table.outreachPriority),
+  index('idx_org_engagement_category').on(table.category),
+  index('idx_org_engagement_last_calc').on(table.lastCalculatedAt),
+]);
+
+export const insertOrganizationEngagementScoreSchema = createInsertSchema(organizationEngagementScores).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateOrganizationEngagementScoreSchema = createInsertSchema(organizationEngagementScores)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .partial();
+
+export type OrganizationEngagementScore = typeof organizationEngagementScores.$inferSelect;
+export type InsertOrganizationEngagementScore = z.infer<typeof insertOrganizationEngagementScoreSchema>;
+export type UpdateOrganizationEngagementScore = z.infer<typeof updateOrganizationEngagementScoreSchema>;
