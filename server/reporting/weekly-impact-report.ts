@@ -254,16 +254,12 @@ export class WeeklyImpactReportGenerator {
       const weekStart = new Date(weekEnd);
       weekStart.setDate(weekEnd.getDate() - 6);
 
-      // Format the Wednesday of this week (collection weeks are Wed-Tue)
-      const wednesdayOfWeek = new Date(weekStart);
-      // Adjust to Wednesday if needed
-      const dayOfWeek = wednesdayOfWeek.getDay();
-      const daysToWednesday = (dayOfWeek - 3 + 7) % 7;
-      wednesdayOfWeek.setDate(wednesdayOfWeek.getDate() - daysToWednesday);
-      const wednesdayStr = wednesdayOfWeek.toISOString().split('T')[0];
-
-      // Check if this is an excluded week (Thanksgiving, holidays on Wed/Thu)
-      const exclusionCheck = isInExcludedWeek(wednesdayStr);
+      // Check if this period falls in an excluded collection week (Thanksgiving, holidays on Wed/Thu)
+      // Use a date from the middle of the period - isInExcludedWeek will find the correct Wed-Tue week
+      const midWeek = new Date(weekStart);
+      midWeek.setDate(weekStart.getDate() + 3);
+      const midWeekStr = `${midWeek.getFullYear()}-${String(midWeek.getMonth() + 1).padStart(2, '0')}-${String(midWeek.getDate()).padStart(2, '0')}`;
+      const exclusionCheck = isInExcludedWeek(midWeekStr);
 
       if (!exclusionCheck.excluded) {
         const weekData = await this.getWeekData(weekStart, weekEnd);
