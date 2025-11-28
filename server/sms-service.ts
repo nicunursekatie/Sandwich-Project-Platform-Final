@@ -1106,7 +1106,7 @@ export async function sendEventReminderSMS(
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-      timeZone: 'UTC',
+      timeZone: 'America/New_York',
     });
 
     const roleText = role && role !== 'general' ? ` as ${role}` : '';

@@ -271,8 +271,8 @@ export default function GroupCollectionsViewer() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100">
-          <Users className="w-6 h-6 text-purple-600" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary-light">
+          <Users className="w-6 h-6 text-brand-primary" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Group Collections Viewer</h1>
@@ -311,7 +311,7 @@ export default function GroupCollectionsViewer() {
           <Button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-brand-primary hover:bg-brand-primary-dark"
           >
             {isLoading ? (
               <>
@@ -342,24 +342,24 @@ export default function GroupCollectionsViewer() {
         <>
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200">
-              <div className="text-sm text-purple-700 font-medium">Total Collections</div>
-              <div className="text-3xl font-bold text-purple-900 mt-2">{filteredAndSorted.length}</div>
+            <Card className="p-6 bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light border-2 border-brand-primary-border">
+              <div className="text-sm text-brand-primary font-medium">Total Collections</div>
+              <div className="text-3xl font-bold text-brand-navy mt-2">{filteredAndSorted.length}</div>
             </Card>
-            <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
-              <div className="text-sm text-blue-700 font-medium">Unique Groups</div>
-              <div className="text-3xl font-bold text-blue-900 mt-2">{uniqueGroups}</div>
+            <Card className="p-6 bg-gradient-to-br from-[#E0F2F5] to-[#B8E6EE] border-2 border-brand-teal/30">
+              <div className="text-sm text-brand-teal font-medium">Unique Groups</div>
+              <div className="text-3xl font-bold text-brand-navy mt-2">{uniqueGroups}</div>
             </Card>
-            <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200">
-              <div className="text-sm text-green-700 font-medium">Total Sandwiches</div>
-              <div className="text-3xl font-bold text-green-900 mt-2">{totalSandwiches.toLocaleString()}</div>
+            <Card className="p-6 bg-gradient-to-br from-brand-orange-lighter to-brand-orange-light border-2 border-brand-orange/30">
+              <div className="text-sm text-brand-orange-dark font-medium">Total Sandwiches</div>
+              <div className="text-3xl font-bold text-brand-navy mt-2">{totalSandwiches.toLocaleString()}</div>
             </Card>
           </div>
 
           {/* Filters & Export */}
-          <Card className="p-6 bg-white">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
+          <Card className="p-4 sm:p-6 bg-white">
+            <div className="flex flex-col gap-4">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   placeholder="Search by group name, host, or department..."
@@ -368,9 +368,9 @@ export default function GroupCollectionsViewer() {
                   className="pl-10"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -384,25 +384,27 @@ export default function GroupCollectionsViewer() {
                   variant="outline"
                   size="sm"
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="w-20"
+                  className="w-20 shrink-0"
                 >
                   {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
                 </Button>
-                <Button
-                  onClick={handleDownloadPDF}
-                  className="gap-2 bg-purple-600 hover:bg-purple-700"
-                >
-                  <FileText className="w-4 h-4" />
-                  PDF
-                </Button>
-                <Button
-                  onClick={handleDownloadCSV}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  CSV
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    onClick={handleDownloadPDF}
+                    className="flex-1 sm:flex-none gap-2 bg-brand-primary hover:bg-brand-primary-dark"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden sm:inline">PDF</span>
+                  </Button>
+                  <Button
+                    onClick={handleDownloadCSV}
+                    variant="outline"
+                    className="flex-1 sm:flex-none gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">CSV</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -431,7 +433,7 @@ export default function GroupCollectionsViewer() {
                       <TableCell className="font-medium">{item.collectionDate}</TableCell>
                       <TableCell>{item.hostName}</TableCell>
                       <TableCell>
-                        <div className="font-medium text-purple-700">{item.groupName}</div>
+                        <div className="font-medium text-brand-primary">{item.groupName}</div>
                       </TableCell>
                       <TableCell>
                         {item.department ? (
@@ -440,7 +442,7 @@ export default function GroupCollectionsViewer() {
                           <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-bold text-purple-700">
+                      <TableCell className="text-right font-bold text-brand-teal">
                         {item.count.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right text-slate-600">
@@ -473,7 +475,7 @@ export default function GroupCollectionsViewer() {
             <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end">
               <div className="text-right">
                 <p className="text-sm text-slate-600 mb-1">Grand Total</p>
-                <p className="text-3xl font-bold text-purple-700">{totalSandwiches.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-brand-teal">{totalSandwiches.toLocaleString()}</p>
                 <p className="text-sm text-slate-600 mt-2">
                   across {filteredAndSorted.length} group collection{filteredAndSorted.length !== 1 ? 's' : ''}
                 </p>

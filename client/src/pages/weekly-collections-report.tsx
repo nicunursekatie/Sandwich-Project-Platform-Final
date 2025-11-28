@@ -303,25 +303,25 @@ export default function WeeklyCollectionsReport() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl" style={{ backgroundColor: '#E0F2F5' }}>
-          <TrendingUp className="w-6 h-6" style={{ color: '#007E8C' }} />
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary-light">
+          <TrendingUp className="w-6 h-6 text-brand-teal" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Weekly Collections Report</h1>
-          <p className="text-slate-600">View sandwich collection totals by week (Wednesday-Tuesday)</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Weekly Collections Report</h1>
+          <p className="text-slate-600 text-sm sm:text-base">View sandwich collection totals by week (Wednesday-Tuesday)</p>
         </div>
       </div>
 
       {/* How it Works Info */}
       {!useExactDates && (
-        <Alert className="border-2" style={{ backgroundColor: '#E0F2F5', borderColor: '#007E8C' }}>
-          <Info className="h-6 w-6" style={{ color: '#007E8C' }} />
+        <Alert className="border-2 bg-brand-primary-light border-brand-teal">
+          <Info className="h-6 w-6 text-brand-teal" />
           <AlertDescription className="text-slate-800 text-base leading-relaxed">
-            <strong className="text-lg" style={{ color: '#1A4F61' }}>How weekly grouping works:</strong> This report groups collections into <strong>Wednesday-to-Tuesday weeks</strong>.
+            <strong className="text-lg text-brand-navy">How weekly grouping works:</strong> This report groups collections into <strong>Wednesday-to-Tuesday weeks</strong>.
             When you enter a start date, the report will include the <strong>entire week</strong> containing that date (starting from the Wednesday of that week).
             The same applies to your end date - it includes the full week ending on the Tuesday that contains or follows your end date.
-            <div className="mt-3 text-base bg-white/80 rounded-lg p-3" style={{ borderWidth: '1px', borderColor: '#47B3CB' }}>
-              <strong style={{ color: '#1A4F61' }}>Example:</strong> If you enter 11/22/2025 (a Saturday), the report will include the full week of Nov 19-25, 2025 (Wed-Tue).
+            <div className="mt-3 text-base bg-white/80 rounded-lg p-3 border border-brand-light-blue">
+              <strong className="text-brand-navy">Example:</strong> If you enter 11/22/2025 (a Saturday), the report will include the full week of Nov 19-25, 2025 (Wed-Tue).
             </div>
           </AlertDescription>
         </Alert>
@@ -405,9 +405,8 @@ export default function WeeklyCollectionsReport() {
                 </Button>
                 <Button
                   onClick={handleDownloadCSV}
-                  className="gap-2"
+                  className="gap-2 border-brand-teal text-brand-teal hover:bg-brand-teal/10"
                   variant="outline"
-                  style={{ borderColor: '#007E8C', color: '#007E8C' }}
                   title="Download raw data as CSV for Excel"
                 >
                   <Download className="w-4 h-4" />
@@ -433,10 +432,10 @@ export default function WeeklyCollectionsReport() {
         <>
           {/* Date Range Summary */}
           {data.weeks.length > 0 && (
-            <Alert className="border-2" style={{ backgroundColor: '#E0F2F5', borderColor: '#007E8C' }}>
-              <Info className="h-5 w-5" style={{ color: '#007E8C' }} />
+            <Alert className="border-2 bg-brand-primary-light border-brand-teal">
+              <Info className="h-5 w-5 text-brand-teal" />
               <AlertDescription className="text-slate-800 text-base">
-                <strong className="text-base" style={{ color: '#1A4F61' }}>Showing collections from:</strong> {data.weeks[0].weekStartDate} to {data.weeks[data.weeks.length - 1].weekEndDate}
+                <strong className="text-base text-brand-navy">Showing collections from:</strong> {data.weeks[0].weekStartDate} to {data.weeks[data.weeks.length - 1].weekEndDate}
                 <div className="text-sm mt-2 text-slate-700">
                   Your selected date range ({data.startDate} to {data.endDate}) was expanded to include complete Wednesday-Tuesday weeks.
                 </div>
@@ -445,8 +444,8 @@ export default function WeeklyCollectionsReport() {
           )}
 
           <Card className="bg-white overflow-hidden">
-            <div className="p-6 border-b border-slate-200 bg-slate-50">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 border-b border-slate-200 bg-slate-50">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-slate-600">Total Weeks</p>
                   <p className="text-2xl font-bold text-slate-900">{data.totalWeeks}</p>
@@ -459,7 +458,7 @@ export default function WeeklyCollectionsReport() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Total Sandwiches</p>
-                  <p className="text-2xl font-bold" style={{ color: '#007E8C' }}>{data.grandTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-brand-teal">{data.grandTotal.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -587,7 +586,7 @@ export default function WeeklyCollectionsReport() {
                           <TableCell className="text-right text-slate-700">
                             {week.groupCollections.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right font-bold" style={{ color: '#007E8C' }}>
+                          <TableCell className="text-right font-bold text-brand-teal">
                             {week.totalSandwiches.toLocaleString()}
                           </TableCell>
                         </TableRow>
@@ -599,7 +598,7 @@ export default function WeeklyCollectionsReport() {
                 <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end">
                   <div className="text-right">
                     <p className="text-sm text-slate-600 mb-1">Grand Total</p>
-                    <p className="text-3xl font-bold" style={{ color: '#007E8C' }}>{data.grandTotal.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-brand-teal">{data.grandTotal.toLocaleString()}</p>
                     <p className="text-sm text-slate-600 mt-2">
                       across {data.weeks.length} weeks
                     </p>

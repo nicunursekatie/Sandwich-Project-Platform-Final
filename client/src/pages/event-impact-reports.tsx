@@ -1151,14 +1151,14 @@ export default function EventImpactReports() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6 flex items-center justify-center">
+      <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light min-h-screen p-6 flex items-center justify-center">
         <div className="text-lg text-gray-600">Loading event data...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+    <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 print:mb-4">
@@ -1201,17 +1201,17 @@ export default function EventImpactReports() {
               </div>
 
               {/* Calendar Date Pickers */}
-              <div className="flex gap-3 items-end">
+              <div className="flex flex-wrap gap-3 items-end">
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-500">From</Label>
                   <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-[160px] justify-start text-left font-normal"
+                        className="w-full sm:w-[160px] justify-start text-left font-normal"
                       >
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        {format(dateRange.start, 'MMM d, yyyy')}
+                        <CalendarDays className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{format(dateRange.start, 'MMM d, yyyy')}</span>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1241,10 +1241,10 @@ export default function EventImpactReports() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-[160px] justify-start text-left font-normal"
+                        className="w-full sm:w-[160px] justify-start text-left font-normal"
                       >
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        {format(dateRange.end, 'MMM d, yyyy')}
+                        <CalendarDays className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{format(dateRange.end, 'MMM d, yyyy')}</span>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1268,48 +1268,51 @@ export default function EventImpactReports() {
                   </Popover>
                 </div>
 
-                <Button variant="outline" onClick={exportToCSV}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <Button variant="outline" onClick={exportToCSV} className="flex-1 sm:flex-none">
+                    <FileSpreadsheet className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Export CSV</span>
+                  </Button>
 
-                <Button
-                  variant="default"
-                  onClick={() => generateReportMutation.mutate()}
-                  disabled={generateReportMutation.isPending}
-                  className="bg-brand-primary hover:bg-brand-primary/90"
-                >
-                  {generateReportMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Report
-                    </>
-                  )}
-                </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => generateReportMutation.mutate()}
+                    disabled={generateReportMutation.isPending}
+                    className="flex-1 sm:flex-none bg-brand-primary hover:bg-brand-primary/90"
+                  >
+                    {generateReportMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+                        <span className="hidden sm:inline">Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">AI Report</span>
+                      </>
+                    )}
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setImportCsvData('');
-                    setImportAnalysis(null);
-                    setImportMappings({});
-                    setImportResults(null);
-                    setShowImportDialog(true);
-                  }}
-                >
-                  <FileUp className="w-4 h-4 mr-2" />
-                  Import Data
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => {
+                      setImportCsvData('');
+                      setImportAnalysis(null);
+                      setImportMappings({});
+                      setImportResults(null);
+                      setShowImportDialog(true);
+                    }}
+                  >
+                    <FileUp className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Import Data</span>
+                  </Button>
+                </div>
               </div>
             </div>
 
             {/* Results Summary Bar */}
-            <div className="mt-4 p-3 bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 rounded-lg flex items-center justify-between">
+            <div className="mt-4 p-3 bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-sm text-gray-700">
                 <Calendar className="w-4 h-4 inline mr-2 text-[#236383]" />
                 <strong>{processedData?.totalEvents || 0}</strong> events from{' '}
@@ -1332,7 +1335,7 @@ export default function EventImpactReports() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowCategorizationTool(!showCategorizationTool)}
-                    className="text-purple-600"
+                    className="text-brand-teal"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
                     AI Categorize
@@ -1399,9 +1402,9 @@ export default function EventImpactReports() {
 
         {/* Admin AI Categorization Tool */}
         {isAdmin && showCategorizationTool && (
-          <Card className="mb-4 print:hidden border-2 border-purple-200 bg-purple-50/50">
+          <Card className="mb-4 print:hidden border-2 border-brand-teal/30 bg-brand-teal-light/50">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-purple-900">
+              <CardTitle className="flex items-center gap-2 text-brand-navy">
                 <Sparkles className="w-5 h-5" />
                 AI Organization Categorization Tool
               </CardTitle>
@@ -1432,7 +1435,7 @@ export default function EventImpactReports() {
                 <div className="mb-4 p-4 bg-white rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
                     {categorizationProgress.running ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                      <Loader2 className="w-4 h-4 animate-spin text-brand-teal" />
                     ) : (
                       <CheckCircle2 className="w-4 h-4 text-green-600" />
                     )}
@@ -1451,7 +1454,7 @@ export default function EventImpactReports() {
                     </div>
                     <div>
                       <span className="text-gray-500">AI Categorized:</span>{' '}
-                      <strong className="text-purple-600">{categorizationProgress.aiCategorized}</strong>
+                      <strong className="text-brand-teal">{categorizationProgress.aiCategorized}</strong>
                     </div>
                     <div>
                       <span className="text-gray-500">Errors:</span>{' '}
@@ -1463,7 +1466,7 @@ export default function EventImpactReports() {
                   {categorizationProgress.running && (
                     <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-brand-teal h-2 rounded-full transition-all duration-300"
                         style={{
                           width: `${(categorizationProgress.processed / categorizationProgress.total) * 100}%`,
                         }}
@@ -1511,7 +1514,7 @@ export default function EventImpactReports() {
                     }
                   }}
                   disabled={categorizationProgress?.running}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-brand-teal hover:bg-brand-teal-dark"
                 >
                   {categorizationProgress?.running ? (
                     <>
@@ -1599,7 +1602,8 @@ export default function EventImpactReports() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+          {/* NOTE: Ensure 'brand-burgundy-dark' is defined in tailwind.config.ts as '#8B1535' */}
+          <Card className="bg-gradient-to-r from-brand-burgundy to-brand-burgundy-dark text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
