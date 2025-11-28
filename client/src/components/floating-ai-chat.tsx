@@ -144,7 +144,15 @@ function renderMarkdown(text: string): React.ReactNode {
   const flushList = () => {
     if (listItems.length > 0) {
       if (listType === 'ol') {
-        elements.push(<ol key={`list-${elements.length}`} className="list-decimal list-outside ml-5 space-y-1 my-2">{listItems}</ol>);
+        elements.push(
+          <ol 
+            key={`list-${elements.length}`} 
+            className="list-decimal list-outside ml-5 space-y-1 my-2"
+            style={{ counterReset: 'list-counter' }}
+          >
+            {listItems}
+          </ol>
+        );
       } else {
         elements.push(<ul key={`list-${elements.length}`} className="list-disc list-outside ml-5 space-y-1 my-2">{listItems}</ul>);
       }
@@ -210,7 +218,8 @@ function renderMarkdown(text: string): React.ReactNode {
       const match = trimmedLine.match(/^\d+\.\s+(.+)$/);
       const content = match ? match[1].trim() : trimmedLine.replace(/^\d+\.\s*/, '').trim();
       if (content) {
-        listItems.push(<li key={`ol-${listItems.length}`}>{processInlineFormatting(content)}</li>);
+        // Use index for unique keys across entire message, but preserve list item index for proper numbering
+        listItems.push(<li key={`ol-${index}`}>{processInlineFormatting(content)}</li>);
       }
     } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || trimmedLine.startsWith('* ')) {
       // Bullet list item
@@ -220,7 +229,8 @@ function renderMarkdown(text: string): React.ReactNode {
       }
       const content = trimmedLine.slice(2).trim();
       if (content) {
-        listItems.push(<li key={`ul-${listItems.length}`}>{processInlineFormatting(content)}</li>);
+        // Use index for unique keys across entire message
+        listItems.push(<li key={`ul-${index}`}>{processInlineFormatting(content)}</li>);
       }
     } else if (trimmedLine === '') {
       flushList();
@@ -258,41 +268,58 @@ export function FloatingAIChat({
 
   const questions = suggestedQuestions || DEFAULT_QUESTIONS[contextType];
 
-  // Helper function to scroll to bottom
-  const scrollToBottom = () => {
+  // Helper function to scroll to show new messages (but not force to absolute bottom)
+  const scrollToShowNew = (forceBottom: boolean = false) => {
     // Use requestAnimationFrame for better timing, then setTimeout for DOM updates
     requestAnimationFrame(() => {
       setTimeout(() => {
         if (scrollRef.current) {
-          // ScrollArea uses Radix UI - try multiple ways to find the scrollable element
-          // Method 1: Find the viewport element (Radix UI internal structure)
+          // Find the viewport element
           const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-          if (viewport) {
-            viewport.scrollTop = viewport.scrollHeight;
-            return;
-          }
-          
-          // Method 2: Find any element with overflow styles (try viewport class specifically)
-          const viewportByClass = scrollRef.current.querySelector('.rt-ScrollAreaViewport') as HTMLElement;
-          if (viewportByClass) {
-            viewportByClass.scrollTop = viewportByClass.scrollHeight;
-            return;
-          }
-          
-          // Method 3: Find any element with overflow styles
-          const scrollableElements = scrollRef.current.querySelectorAll('[style*="overflow"], [class*="viewport"]');
-          Array.from(scrollableElements).forEach((element) => {
-            const htmlElement = element as HTMLElement;
-            if (htmlElement.scrollHeight > htmlElement.clientHeight) {
-              htmlElement.scrollTop = htmlElement.scrollHeight;
+          if (!viewport) {
+            const viewportByClass = scrollRef.current.querySelector('.rt-ScrollAreaViewport') as HTMLElement;
+            if (viewportByClass) {
+              if (forceBottom) {
+                viewportByClass.scrollTop = viewportByClass.scrollHeight;
+              } else {
+                // Scroll to show new content if user is at or near the bottom (within 100px)
+                const maxScroll = viewportByClass.scrollHeight - viewportByClass.clientHeight;
+                const distanceFromBottom = maxScroll - viewportByClass.scrollTop;
+                // Scroll if user is at or near the bottom (within 100px) to show new messages
+                if (distanceFromBottom <= 100) {
+                  viewportByClass.scrollTop = viewportByClass.scrollHeight - viewportByClass.clientHeight;
+                }
+              }
               return;
             }
-          });
+          } else {
+            if (forceBottom) {
+              viewport.scrollTop = viewport.scrollHeight;
+            } else {
+              // Scroll to show new content if user is at or near the bottom (within 100px)
+              const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+              const distanceFromBottom = maxScroll - viewport.scrollTop;
+              // Scroll if user is at or near the bottom (within 100px) to show new messages
+              if (distanceFromBottom <= 100) {
+                viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
+              }
+            }
+            return;
+          }
           
-          // Method 4: Try to scroll the container directly
+          // Fallback: try to scroll the container directly
           const scrollElement = scrollRef.current as HTMLElement;
           if (scrollElement.scrollHeight > scrollElement.clientHeight) {
-            scrollElement.scrollTop = scrollElement.scrollHeight;
+            if (forceBottom) {
+              scrollElement.scrollTop = scrollElement.scrollHeight;
+            } else {
+              const maxScroll = scrollElement.scrollHeight - scrollElement.clientHeight;
+              const distanceFromBottom = maxScroll - scrollElement.scrollTop;
+              // Scroll if user is at or near the bottom (within 100px) to show new messages
+              if (distanceFromBottom <= 100) {
+                scrollElement.scrollTop = scrollElement.scrollHeight - scrollElement.clientHeight;
+              }
+            }
           }
         }
       }, 100);
@@ -340,7 +367,7 @@ export function FloatingAIChat({
       ]);
       setShowSuggestions(false);
       // Scroll after AI response is added (with extra delay if chart is present for rendering)
-      setTimeout(() => scrollToBottom(), data.chart ? 300 : 100);
+      setTimeout(() => scrollToShowNew(false), data.chart ? 300 : 100);
     },
     onError: () => {
       setMessages(prev => [
@@ -354,15 +381,18 @@ export function FloatingAIChat({
     },
   });
 
-  // Scroll when messages change
+  // Scroll when messages change - only scroll if user is near bottom
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0) {
+      // Only auto-scroll if user hasn't manually scrolled up
+      scrollToShowNew(false);
+    }
   }, [messages]);
 
-  // Scroll when AI starts responding
+  // Scroll when AI starts responding - gentle scroll
   useEffect(() => {
     if (chatMutation.isPending) {
-      scrollToBottom();
+      scrollToShowNew(false);
     }
   }, [chatMutation.isPending]);
 
@@ -376,8 +406,8 @@ export function FloatingAIChat({
     ]);
     setInputValue('');
     chatMutation.mutate(userMessage);
-    // Scroll immediately after adding user message
-    scrollToBottom();
+    // Scroll immediately after adding user message - gentle scroll
+    scrollToShowNew(false);
   };
 
   const handleSuggestionClick = (question: string) => {
@@ -386,8 +416,8 @@ export function FloatingAIChat({
       { role: 'user', content: question, timestamp: new Date() },
     ]);
     chatMutation.mutate(question);
-    // Scroll immediately after adding user message
-    scrollToBottom();
+    // Scroll immediately after adding user message - gentle scroll
+    scrollToShowNew(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
