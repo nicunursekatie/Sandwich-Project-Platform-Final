@@ -3903,7 +3903,7 @@ export const organizationEngagementScores = pgTable('organization_engagement_sco
   engagementLevel: varchar('engagement_level').notNull().default('unknown'), // 'highly_engaged', 'engaged', 'moderate', 'low', 'at_risk', 'dormant', 'new'
   outreachPriority: varchar('outreach_priority').default('normal'), // 'urgent', 'high', 'normal', 'low'
   recommendedActions: jsonb('recommended_actions').default('[]'), // Array of suggested actions
-  insights: jsonb('insights').default('{}'), // AI-generated insights
+  insights: jsonb('insights').default('[]'), // Array of AI-generated insights
   programSuitability: jsonb('program_suitability').default('[]'), // Array of programs this org might be good for
 
   // Score calculation metadata
