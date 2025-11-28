@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation } from 'wouter';
-import { User, Lock, Mail, FileText, Save, MessageSquare, Smartphone, CheckCircle, AlertTriangle } from 'lucide-react';
+import { User, Lock, Save, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
-import NotificationPreferences from './notification-preferences';
+import AlertPreferences from './alert-preferences';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -396,8 +396,8 @@ export default function UserProfile() {
           }`}
           data-testid="button-notifications-tab"
         >
-          <MessageSquare className="w-4 h-4 inline mr-2" />
-          Notifications
+          <Bell className="w-4 h-4 inline mr-2" />
+          Alerts
         </button>
       </div>
 
@@ -639,221 +639,9 @@ export default function UserProfile() {
         </Card>
       )}
 
-      {/* Notifications Tab */}
+      {/* Notifications Tab - Now Alert Preferences */}
       {activeTab === 'notifications' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              SMS Notifications
-            </CardTitle>
-            <CardDescription>
-              Manage your SMS reminder preferences for weekly sandwich collection submissions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {isAlreadyOptedIn ? (
-              // Already confirmed SMS opt-in - show status and opt-out option
-              <div className="space-y-4">
-                <Alert data-testid="alert-sms-opted-in">
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    You're confirmed for SMS reminders!
-                    {userSMSStatus?.phoneNumber && (
-                      <span className="block mt-1 font-medium">
-                        Phone: {userSMSStatus.phoneNumber}
-                      </span>
-                    )}
-                    {userSMSStatus?.confirmedAt && (
-                      <span className="block mt-1 text-xs text-muted-foreground">
-                        Confirmed: {new Date(userSMSStatus.confirmedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </AlertDescription>
-                </Alert>
-
-                <div className="bg-muted p-4 rounded-lg text-sm">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Smartphone className="h-4 w-4" />
-                    What you'll receive:
-                  </h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• Friendly reminders when weekly sandwich counts are missing</li>
-                    <li>• Direct links to the app for easy submission</li>
-                    <li>• Only related to sandwich collection reminders</li>
-                  </ul>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={() => optOutMutation.mutate()}
-                  disabled={optOutMutation.isPending}
-                  className="w-full"
-                  data-testid="button-sms-opt-out"
-                >
-                  {optOutMutation.isPending
-                    ? 'Unsubscribing...'
-                    : 'Unsubscribe from SMS Reminders'}
-                </Button>
-              </div>
-            ) : isPendingConfirmation ? (
-              // Pending confirmation - show verification code form
-              <div className="space-y-4">
-                <Alert data-testid="alert-sms-pending-confirmation">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>SMS Confirmation Required</strong>
-                    <br />
-                    We sent a verification code to {userSMSStatus?.phoneNumber}. 
-                    Please enter the 6-digit code below or reply "YES" to the text message.
-                  </AlertDescription>
-                </Alert>
-
-                <form onSubmit={handleConfirmSMS} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code">Verification Code</Label>
-                    <Input
-                      id="verification-code"
-                      type="text"
-                      placeholder="Enter 6-digit code"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      maxLength={6}
-                      className="text-lg text-center tracking-widest"
-                      data-testid="input-verification-code"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      You can also reply "YES" to the text message instead of entering the code here.
-                    </p>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full btn-tsp-primary"
-                    disabled={confirmSMSMutation.isPending || verificationCode.length !== 6}
-                    data-testid="button-confirm-sms"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    {confirmSMSMutation.isPending
-                      ? 'Confirming...'
-                      : 'Confirm SMS Signup'}
-                  </Button>
-                </form>
-
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Didn't receive the code? Check your spam folder or try signing up again.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => optOutMutation.mutate()}
-                    disabled={optOutMutation.isPending}
-                    className="text-sm"
-                    data-testid="button-reset-sms-verification"
-                  >
-                    {optOutMutation.isPending ? 'Resetting...' : 'Reset SMS Verification'}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              // Not opted in - show sign-up form
-              <form onSubmit={handleSMSSubmit} className="space-y-6">
-                <div className="bg-brand-primary-lighter dark:bg-blue-950/50 p-4 rounded-lg">
-                  <h3 className="font-medium text-brand-primary-darker dark:text-brand-primary-light mb-2 flex items-center gap-2">
-                    <Smartphone className="h-4 w-4" />
-                    How SMS Reminders Work
-                  </h3>
-                  <ul className="text-sm text-brand-primary-dark dark:text-brand-primary-muted space-y-1">
-                    <li>• Get text reminders when weekly sandwich counts are missing</li>
-                    <li>• Includes direct links to the app for easy submission</li>
-                    <li>• Only used for sandwich collection reminders</li>
-                    <li>• You can unsubscribe at any time</li>
-                  </ul>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sms-phone">Phone Number *</Label>
-                  <Input
-                    id="sms-phone"
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    required
-                    className="text-lg"
-                    data-testid="input-sms-phone"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    We'll format this automatically. US numbers only.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="sms-consent"
-                      checked={consent}
-                      onCheckedChange={(checked) => setConsent(checked as boolean)}
-                      className="mt-1"
-                      data-testid="checkbox-sms-consent"
-                    />
-                    <div>
-                      <Label
-                        htmlFor="sms-consent"
-                        className="text-sm leading-relaxed cursor-pointer"
-                      >
-                        I consent to receive SMS text message reminders from The
-                        Sandwich Project about weekly collection submissions. I understand:
-                      </Label>
-                      <ul className="text-xs text-muted-foreground mt-2 space-y-1 ml-4">
-                        <li>• Messages will only be sent for sandwich collection reminders</li>
-                        <li>• I can unsubscribe at any time</li>
-                        <li>• Standard message and data rates may apply</li>
-                        <li>• My phone number will not be shared with third parties</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full btn-tsp-primary"
-                  disabled={optInMutation.isPending || !consent || !phoneNumber.trim()}
-                  data-testid="button-sms-opt-in"
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  {optInMutation.isPending
-                    ? 'Signing Up...'
-                    : 'Sign Up for SMS Reminders'}
-                </Button>
-              </form>
-            )}
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Questions about SMS notifications? Contact us through the messaging system.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Visual Separator */}
-      {activeTab === 'notifications' && (
-        <div className="relative my-8">
-          <Separator className="my-6" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="bg-background px-4 text-sm font-medium text-muted-foreground">
-              Optional: Customize Your Reminder Settings
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Event Notification Preferences */}
-      {activeTab === 'notifications' && (
-        <NotificationPreferences />
+        <AlertPreferences />
       )}
 
       {/* Toll-Free Verification Panel - Admin Only */}

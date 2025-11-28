@@ -72,6 +72,7 @@ import objectsRouter from './objects';
 import serviceHoursRouter from './service-hours';
 import { impactReportsRouter } from './impact-reports';
 import { predictionsRouter } from './predictions';
+import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 
 // Import centralized middleware
 import {
@@ -686,6 +687,26 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRemindersRouter
   );
   router.use('/api/event-reminders', createErrorHandler('event-reminders'));
+
+  // Alert requests - user-submitted requests for new notification types
+  const alertRequestsRouter = createAlertRequestsRouter(deps);
+  router.use(
+    '/api/alert-requests',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    alertRequestsRouter
+  );
+  router.use('/api/alert-requests', createErrorHandler('alert-requests'));
+
+  // AI alert generation
+  const aiAlertRouter = createAIAlertRouter(deps);
+  router.use(
+    '/api/ai',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    aiAlertRouter
+  );
+  router.use('/api/ai', createErrorHandler('ai'));
 
   // Email/inbox system
   const emailRouter = createEmailRouter(deps);
