@@ -141,10 +141,25 @@ function getCollectionSandwichCount(collection: any): number {
 }
 
 /**
+ * Convert a Date to YYYY-MM-DD string for consistent comparisons
+ * This avoids timezone issues by comparing date strings directly
+ */
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Gather all relevant data from the database for the report period
  */
 async function gatherReportData(startDate: Date, endDate: Date) {
   logger.info('Gathering report data', { startDate, endDate });
+
+  // Convert dates to YYYY-MM-DD strings for consistent comparison (avoids timezone issues)
+  const startDateStr = toDateString(startDate);
+  const endDateStr = toDateString(endDate);
 
   // Statuses that should be excluded from statistics (events that didn't/won't happen)
   const EXCLUDED_STATUSES = ['cancelled', 'postponed', 'declined'];
@@ -158,20 +173,21 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     if (!eventDate) return false;
     // Exclude events that didn't happen (cancelled, postponed, declined)
     if (e.status && EXCLUDED_STATUSES.includes(e.status)) return false;
-    return eventDate >= startDate && eventDate < endDate;
+    // Convert event date to string for comparison
+    const eventDateStr = toDateString(new Date(eventDate));
+    return eventDateStr >= startDateStr && eventDateStr < endDateStr;
   });
 
   // Get sandwich collections for the period
   const allCollections = await db.query.sandwichCollections.findMany();
 
-  // Filter collections by date range - need to parse string date to compare
+  // Filter collections by date range using string comparison (avoids timezone issues)
   const collections = allCollections.filter(c => {
     if (c.deletedAt) return false; // Skip soft-deleted records
     const collectionDateStr = c.collectionDate;
     if (!collectionDateStr) return false;
-    // Parse YYYY-MM-DD string to Date for comparison (use UTC to match startDate/endDate)
-    const collectionDate = new Date(collectionDateStr + 'T00:00:00Z');
-    return collectionDate >= startDate && collectionDate < endDate;
+    // YYYY-MM-DD strings are lexicographically sortable, so direct comparison works
+    return collectionDateStr >= startDateStr && collectionDateStr < endDateStr;
   });
 
   // Get expenses for the period

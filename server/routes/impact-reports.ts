@@ -1124,6 +1124,14 @@ function getCollectionSandwichCount(collection: any): number {
   return total;
 }
 
+// Helper to convert Date to YYYY-MM-DD string for timezone-safe comparison
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // POST /api/impact-reports/ai-chat - Interactive AI chat for data insights
 impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1147,20 +1155,25 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
     const allEvents = await db.query.eventRequests.findMany();
     const allCollections = await db.query.sandwichCollections.findMany();
 
-    // Filter events by date range
+    // Convert date range to YYYY-MM-DD strings for timezone-safe comparison
+    const startDateStr = toDateString(startDate);
+    const endDateStr = toDateString(endDate);
+
+    // Filter events by date range using string comparison
     const events = allEvents.filter(e => {
       const eventDate = e.scheduledEventDate || e.desiredEventDate;
       if (!eventDate) return false;
-      return eventDate >= startDate && eventDate < endDate;
+      const eventDateStr = toDateString(eventDate);
+      return eventDateStr >= startDateStr && eventDateStr < endDateStr;
     });
 
-    // Filter collections by date range
+    // Filter collections by date range using string comparison
     const collections = allCollections.filter(c => {
       if (c.deletedAt) return false;
       const collectionDateStr = c.collectionDate;
       if (!collectionDateStr) return false;
-      const collectionDate = new Date(collectionDateStr + 'T00:00:00Z');
-      return collectionDate >= startDate && collectionDate < endDate;
+      // collectionDate is already a YYYY-MM-DD string, compare directly
+      return collectionDateStr >= startDateStr && collectionDateStr < endDateStr;
     });
 
     // Build collection map for merging
