@@ -64,6 +64,55 @@ interface FloatingAIChatProps {
 
 const CHART_COLORS = ['#47B3CB', '#236383', '#FBAD3F', '#007E8C', '#A31C41', '#10B981', '#6366F1', '#F59E0B'];
 
+// Helper function to generate descriptive axis labels
+function getAxisLabel(key: string, chartTitle: string, isYAxis: boolean = false): string {
+  const lowerKey = key.toLowerCase();
+  const lowerTitle = chartTitle.toLowerCase();
+
+  // Y-axis labels
+  if (isYAxis) {
+    if (lowerKey === 'value' || lowerKey === 'count') {
+      if (lowerTitle.includes('sandwich')) {
+        return 'Number of Sandwiches';
+      } else if (lowerTitle.includes('event')) {
+        return 'Number of Events';
+      } else if (lowerTitle.includes('collection')) {
+        return 'Collections';
+      } else if (lowerTitle.includes('trend')) {
+        return 'Value';
+      }
+      return 'Count';
+    }
+    if (lowerKey.includes('sandwich')) return 'Number of Sandwiches';
+    if (lowerKey.includes('event')) return 'Number of Events';
+    if (lowerKey.includes('collection')) return 'Collections';
+    if (lowerKey.includes('amount') || lowerKey.includes('total')) return 'Amount';
+    if (lowerKey.includes('percentage') || lowerKey.includes('percent')) return 'Percentage';
+  }
+
+  // X-axis labels
+  if (lowerKey === 'name' || lowerKey === 'label') {
+    if (lowerTitle.includes('month') || lowerTitle.includes('monthly')) return 'Month';
+    if (lowerTitle.includes('week') || lowerTitle.includes('weekly')) return 'Week';
+    if (lowerTitle.includes('date') || lowerTitle.includes('time')) return 'Date';
+    if (lowerTitle.includes('host') || lowerTitle.includes('organization')) return 'Host/Organization';
+    return 'Category';
+  }
+  if (lowerKey.includes('date') || lowerKey.includes('time')) return 'Date';
+  if (lowerKey.includes('month')) return 'Month';
+  if (lowerKey.includes('year')) return 'Year';
+  if (lowerKey.includes('day')) return 'Day';
+  if (lowerKey.includes('host')) return 'Host';
+  if (lowerKey.includes('organization') || lowerKey.includes('org')) return 'Organization';
+  if (lowerKey.includes('category')) return 'Category';
+
+  // Default: capitalize and format
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+}
+
 const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
   collections: [
     "Which host collected the most sandwiches?",
@@ -95,9 +144,9 @@ function renderMarkdown(text: string): React.ReactNode {
   const flushList = () => {
     if (listItems.length > 0) {
       if (listType === 'ol') {
-        elements.push(<ol key={`list-${elements.length}`} className="list-decimal list-inside space-y-1 my-2">{listItems}</ol>);
+        elements.push(<ol key={`list-${elements.length}`} className="list-decimal list-outside ml-5 space-y-1 my-2">{listItems}</ol>);
       } else {
-        elements.push(<ul key={`list-${elements.length}`} className="list-disc list-inside space-y-1 my-2">{listItems}</ul>);
+        elements.push(<ul key={`list-${elements.length}`} className="list-disc list-outside ml-5 space-y-1 my-2">{listItems}</ul>);
       }
       listItems = [];
       listType = null;
@@ -151,19 +200,28 @@ function renderMarkdown(text: string): React.ReactNode {
         </h2>
       );
     } else if (/^\d+\.\s/.test(trimmedLine)) {
+      // Numbered list item (e.g., "1. Item", "2. Item")
+      // Must have a space after the period to distinguish from decimal numbers
       if (listType !== 'ol') {
         flushList();
         listType = 'ol';
       }
-      const content = trimmedLine.replace(/^\d+\.\s/, '');
-      listItems.push(<li key={index}>{processInlineFormatting(content)}</li>);
-    } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
+      // Extract content after the number and period (handles "1. " or "10. " with any spacing)
+      const match = trimmedLine.match(/^\d+\.\s+(.+)$/);
+      const content = match ? match[1].trim() : trimmedLine.replace(/^\d+\.\s*/, '').trim();
+      if (content) {
+        listItems.push(<li key={`ol-${listItems.length}`}>{processInlineFormatting(content)}</li>);
+      }
+    } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || trimmedLine.startsWith('* ')) {
+      // Bullet list item
       if (listType !== 'ul') {
         flushList();
         listType = 'ul';
       }
-      const content = trimmedLine.slice(2);
-      listItems.push(<li key={index}>{processInlineFormatting(content)}</li>);
+      const content = trimmedLine.slice(2).trim();
+      if (content) {
+        listItems.push(<li key={`ul-${listItems.length}`}>{processInlineFormatting(content)}</li>);
+      }
     } else if (trimmedLine === '') {
       flushList();
       elements.push(<div key={index} className="h-2" />);
@@ -200,11 +258,46 @@ export function FloatingAIChat({
 
   const questions = suggestedQuestions || DEFAULT_QUESTIONS[contextType];
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+  // Helper function to scroll to bottom
+  const scrollToBottom = () => {
+    // Use requestAnimationFrame for better timing, then setTimeout for DOM updates
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          // ScrollArea uses Radix UI - try multiple ways to find the scrollable element
+          // Method 1: Find the viewport element (Radix UI internal structure)
+          const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+          if (viewport) {
+            viewport.scrollTop = viewport.scrollHeight;
+            return;
+          }
+          
+          // Method 2: Find any element with overflow styles (try viewport class specifically)
+          const viewportByClass = scrollRef.current.querySelector('.rt-ScrollAreaViewport') as HTMLElement;
+          if (viewportByClass) {
+            viewportByClass.scrollTop = viewportByClass.scrollHeight;
+            return;
+          }
+          
+          // Method 3: Find any element with overflow styles
+          const scrollableElements = scrollRef.current.querySelectorAll('[style*="overflow"], [class*="viewport"]');
+          Array.from(scrollableElements).forEach((element) => {
+            const htmlElement = element as HTMLElement;
+            if (htmlElement.scrollHeight > htmlElement.clientHeight) {
+              htmlElement.scrollTop = htmlElement.scrollHeight;
+              return;
+            }
+          });
+          
+          // Method 4: Try to scroll the container directly
+          const scrollElement = scrollRef.current as HTMLElement;
+          if (scrollElement.scrollHeight > scrollElement.clientHeight) {
+            scrollElement.scrollTop = scrollElement.scrollHeight;
+          }
+        }
+      }, 100);
+    });
+  };
 
   useEffect(() => {
     if (isOpen && !isMinimized && inputRef.current) {
@@ -246,6 +339,8 @@ export function FloatingAIChat({
         },
       ]);
       setShowSuggestions(false);
+      // Scroll after AI response is added (with extra delay if chart is present for rendering)
+      setTimeout(() => scrollToBottom(), data.chart ? 300 : 100);
     },
     onError: () => {
       setMessages(prev => [
@@ -259,6 +354,18 @@ export function FloatingAIChat({
     },
   });
 
+  // Scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Scroll when AI starts responding
+  useEffect(() => {
+    if (chatMutation.isPending) {
+      scrollToBottom();
+    }
+  }, [chatMutation.isPending]);
+
   const handleSend = () => {
     if (!inputValue.trim() || chatMutation.isPending) return;
 
@@ -269,6 +376,8 @@ export function FloatingAIChat({
     ]);
     setInputValue('');
     chatMutation.mutate(userMessage);
+    // Scroll immediately after adding user message
+    scrollToBottom();
   };
 
   const handleSuggestionClick = (question: string) => {
@@ -277,6 +386,8 @@ export function FloatingAIChat({
       { role: 'user', content: question, timestamp: new Date() },
     ]);
     chatMutation.mutate(question);
+    // Scroll immediately after adding user message
+    scrollToBottom();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -339,14 +450,48 @@ export function FloatingAIChat({
     }
 
     try {
-      const svgClone = svgElement.cloneNode(true) as SVGElement;
+      const xKey = chart.xKey || 'name';
+      const yKey = chart.yKey || 'value';
+      
+      // Get original chart dimensions
       const bbox = svgElement.getBoundingClientRect();
-      svgClone.setAttribute('width', String(bbox.width));
-      svgClone.setAttribute('height', String(bbox.height));
+      const chartWidth = bbox.width;
+      const chartHeight = bbox.height;
 
+      // Create a larger canvas to accommodate title, labels, and description
+      const padding = 40;
+      const titleHeight = 50;
+      const xAxisLabelHeight = 30;
+      const yAxisLabelWidth = 60;
+      const descriptionHeight = chart.description ? 40 : 0;
+      
+      const canvasWidth = chartWidth + yAxisLabelWidth + padding * 2;
+      const canvasHeight = titleHeight + chartHeight + xAxisLabelHeight + descriptionHeight + padding * 2;
+      
+      // Create high-resolution canvas (2x for retina)
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasWidth * scale;
+      canvas.height = canvasHeight * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast({ title: 'Export Failed', description: 'Could not create canvas context', variant: 'destructive' });
+        return;
+      }
+
+      ctx.scale(scale, scale);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // Clone and prepare SVG
+      const svgClone = svgElement.cloneNode(true) as SVGElement;
+      svgClone.setAttribute('width', String(chartWidth));
+      svgClone.setAttribute('height', String(chartHeight));
+
+      // Add white background to SVG
       const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      bgRect.setAttribute('width', '100%');
-      bgRect.setAttribute('height', '100%');
+      bgRect.setAttribute('width', String(chartWidth));
+      bgRect.setAttribute('height', String(chartHeight));
       bgRect.setAttribute('fill', 'white');
       svgClone.insertBefore(bgRect, svgClone.firstChild);
 
@@ -356,31 +501,105 @@ export function FloatingAIChat({
 
       const img = new window.Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = bbox.width * 2;
-        canvas.height = bbox.height * 2;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.scale(2, 2);
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, bbox.width, bbox.height);
-          ctx.drawImage(img, 0, 0);
+        // Draw title at the top (centered)
+        ctx.fillStyle = '#1f2937';
+        ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const titleX = canvasWidth / 2;
+        ctx.fillText(chart.title, titleX, padding);
 
-          const pngUrl = canvas.toDataURL('image/png');
-          const link = document.createElement('a');
-          link.href = pngUrl;
-          link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        // Draw Y-axis label (rotated)
+        ctx.save();
+        ctx.translate(padding + 15, titleHeight + padding + chartHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = '#4b5563';
+        ctx.font = '14px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const yAxisLabel = getAxisLabel(yKey, chart.title, true);
+        ctx.fillText(yAxisLabel, 0, 0);
+        ctx.restore();
 
-          toast({ title: 'PNG Downloaded', description: `${chart.title} chart exported successfully` });
+        // Draw chart
+        const chartX = padding + yAxisLabelWidth;
+        const chartY = titleHeight + padding;
+        ctx.drawImage(img, chartX, chartY, chartWidth, chartHeight);
+
+        // Draw X-axis label at the bottom (centered)
+        ctx.fillStyle = '#4b5563';
+        ctx.font = '14px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const xAxisLabel = getAxisLabel(xKey, chart.title, false);
+        const xAxisLabelY = titleHeight + padding + chartHeight + xAxisLabelHeight;
+        ctx.fillText(xAxisLabel, titleX, xAxisLabelY);
+
+        // Draw description if present
+        if (chart.description) {
+          ctx.fillStyle = '#6b7280';
+          ctx.font = '12px system-ui, -apple-system, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          const descriptionY = titleHeight + padding + chartHeight + xAxisLabelHeight + 10;
+          
+          // Word wrap description if needed
+          // Note: maxWidth is in logical coordinates (pre-scale)
+          // After ctx.scale(), measureText() returns scaled measurements
+          // So we need to account for the scale factor when comparing
+          const maxWidth = canvasWidth - padding * 2;
+          const words = chart.description.split(' ');
+          let line = '';
+          let y = descriptionY;
+
+          words.forEach((word, index) => {
+            const testLine = line + word + ' ';
+            const metrics = ctx.measureText(testLine);
+            // Compare in the same coordinate space (scaled)
+            if (metrics.width > maxWidth * scale && index > 0) {
+              ctx.fillText(line.trim(), titleX, y);
+              line = word + ' ';
+              y += 16;
+            } else {
+              line = testLine;
+            }
+          });
+          ctx.fillText(line.trim(), titleX, y);
         }
-        URL.revokeObjectURL(svgUrl);
+
+        // Download the image
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(svgUrl);
+
+            toast({ title: 'PNG Downloaded', description: `${chart.title} chart exported successfully` });
+          } else {
+            URL.revokeObjectURL(svgUrl);
+            toast({ title: 'Export Failed', description: 'Unable to create image', variant: 'destructive' });
+          }
+        }, 'image/png');
       };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(svgUrl);
+        toast({ title: 'Export Failed', description: 'Unable to load chart image', variant: 'destructive' });
+      };
+      
       img.src = svgUrl;
-    } catch {
-      toast({ title: 'Export Failed', description: 'Unable to export chart as PNG', variant: 'destructive' });
+    } catch (error) {
+      toast({ 
+        title: 'Export Failed', 
+        description: error instanceof Error ? error.message : 'Unable to export chart as PNG', 
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -595,7 +814,7 @@ export function FloatingAIChat({
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Ask about your data..."
               className="flex-1 text-sm"
               disabled={chatMutation.isPending}

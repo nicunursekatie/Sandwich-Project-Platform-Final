@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calculator, Plus, HelpCircle, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calculator, Plus, HelpCircle, AlertCircle, CheckCircle, Calendar, X } from 'lucide-react';
 import sandwichLogo from '@assets/LOGOS/sandwich logo.png';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,43 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+// Calculate the previous Wednesday (or today if it's Wednesday)
+function getPreviousWednesday(): string {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 3 = Wednesday
+
+  // Calculate days to go back to Wednesday
+  // If today is Wednesday (3), use today
+  // Otherwise, go back to the most recent Wednesday
+  let daysToSubtract: number;
+  if (dayOfWeek === 3) {
+    daysToSubtract = 0; // It's Wednesday
+  } else if (dayOfWeek > 3) {
+    daysToSubtract = dayOfWeek - 3; // Days since last Wednesday
+  } else {
+    daysToSubtract = dayOfWeek + 4; // Days to go back (Sunday = 4, Monday = 5, Tuesday = 6)
+  }
+
+  const previousWednesday = new Date(today);
+  previousWednesday.setDate(today.getDate() - daysToSubtract);
+
+  // Format as YYYY-MM-DD
+  const localDate = new Date(previousWednesday.getTime() - previousWednesday.getTimezoneOffset() * 60000);
+  return localDate.toISOString().split('T')[0];
+}
+
+// Check if a date string is a Wednesday
+function isWednesday(dateStr: string): boolean {
+  const date = new Date(dateStr + 'T12:00:00'); // Add time to avoid timezone issues
+  return date.getDay() === 3;
+}
+
+// Format date for display (e.g., "Wed, Nov 27")
+function formatDateForDisplay(dateStr: string): string {
+  const date = new Date(dateStr + 'T12:00:00');
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
 interface CompactCollectionFormProps {
   onSuccess?: () => void;
@@ -61,6 +98,10 @@ export default function CompactCollectionForm({
   // Validation state
   const [groupBreakdownError, setGroupBreakdownError] = useState<string>('');
 
+  // Wednesday date suggestion state
+  const [wednesdaySuggestionDismissed, setWednesdaySuggestionDismissed] = useState(false);
+  const previousWednesday = getPreviousWednesday();
+
   const { toast} = useToast();
   const queryClient = useQueryClient();
 
@@ -82,6 +123,16 @@ export default function CompactCollectionForm({
 
   // Check if any detail fields have values
   const hasDetails = Object.values(details).some(v => v && v !== '0');
+
+  // Show Wednesday suggestion when:
+  // 1. User is entering individual sandwiches (not just groups)
+  // 2. The current date is NOT the previous Wednesday
+  // 3. The suggestion hasn't been dismissed
+  const showWednesdaySuggestion =
+    (simpleTotal !== '' || hasDetails) &&
+    date !== previousWednesday &&
+    !wednesdaySuggestionDismissed &&
+    groupCollections.length === 0; // Only for individual entries without groups
 
   // Auto-switch to detailed mode if user starts typing in detail fields
   const handleDetailChange = (type: keyof typeof details, value: string) => {
@@ -404,7 +455,11 @@ export default function CompactCollectionForm({
               <Input
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  // Reset dismissal if user manually changes date
+                  setWednesdaySuggestionDismissed(false);
+                }}
                 className="h-12 md:h-10 text-lg md:text-base"
               />
             </div>
@@ -438,6 +493,53 @@ export default function CompactCollectionForm({
               </Select>
             </div>
           </div>
+
+          {/* Wednesday Date Suggestion Banner */}
+          {showWednesdaySuggestion && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-800">
+                    Did you collect these sandwiches on {formatDateForDisplay(previousWednesday)}?
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Collections typically happen on Wednesdays. Setting the correct collection date helps keep our records accurate.
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
+                      onClick={() => {
+                        setDate(previousWednesday);
+                        setWednesdaySuggestionDismissed(true);
+                      }}
+                    >
+                      <Calendar className="w-3 h-3 mr-1" />
+                      Yes, use {formatDateForDisplay(previousWednesday)}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-blue-700 hover:text-blue-800 hover:bg-blue-100 h-8 text-xs"
+                      onClick={() => setWednesdaySuggestionDismissed(true)}
+                    >
+                      No, keep current date
+                    </Button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWednesdaySuggestionDismissed(true)}
+                  className="text-blue-400 hover:text-blue-600"
+                  aria-label="Dismiss suggestion"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Individual sandwiches - DUAL MODE (always visible) */}
           <div className="bg-gray-50 rounded-lg p-5">
