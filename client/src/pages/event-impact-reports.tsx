@@ -217,6 +217,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
 const COLORS = ['#236383', '#FBAD3F', '#47B3CB', '#007E8C', '#A31C41', '#6B7280', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B'];
 
 // Helper to create histogram buckets for sandwich distribution
+// Uses fixed buckets optimized for typical event sizes (most under 1000, few over 3000)
 function createSandwichBuckets(events: any[]): { range: string; count: number; minVal: number }[] {
   const sandwichCounts = events
     .map((e: any) => e.actualSandwichCount || e.estimatedSandwichCount || 0)
@@ -224,31 +225,34 @@ function createSandwichBuckets(events: any[]): { range: string; count: number; m
 
   if (sandwichCounts.length === 0) return [];
 
-  const max = Math.max(...sandwichCounts);
+  // Fixed buckets focused on where most events fall
+  const bucketDefs = [
+    { min: 1, max: 99, label: '1-99' },
+    { min: 100, max: 199, label: '100-199' },
+    { min: 200, max: 299, label: '200-299' },
+    { min: 300, max: 399, label: '300-399' },
+    { min: 400, max: 499, label: '400-499' },
+    { min: 500, max: 599, label: '500-599' },
+    { min: 600, max: 699, label: '600-699' },
+    { min: 700, max: 799, label: '700-799' },
+    { min: 800, max: 899, label: '800-899' },
+    { min: 900, max: 999, label: '900-999' },
+    { min: 1000, max: 1499, label: '1000-1499' },
+    { min: 1500, max: 1999, label: '1500-1999' },
+    { min: 2000, max: 2999, label: '2000-2999' },
+    { min: 3000, max: 4999, label: '3000-4999' },
+    { min: 5000, max: Infinity, label: '5000+' },
+  ];
 
-  // Determine bucket size based on data spread
-  let bucketSize = 100;
-  if (max > 2000) bucketSize = 500;
-  else if (max > 1000) bucketSize = 250;
-  else if (max > 500) bucketSize = 100;
-  else if (max > 200) bucketSize = 50;
-  else bucketSize = 25;
+  // Count events in each bucket
+  const bucketCounts = bucketDefs.map(bucket => ({
+    range: bucket.label,
+    count: sandwichCounts.filter(c => c >= bucket.min && c <= bucket.max).length,
+    minVal: bucket.min,
+  }));
 
-  const buckets: Map<number, number> = new Map();
-
-  sandwichCounts.forEach((count: number) => {
-    const bucketStart = Math.floor(count / bucketSize) * bucketSize;
-    buckets.set(bucketStart, (buckets.get(bucketStart) || 0) + 1);
-  });
-
-  // Convert to array and sort
-  return Array.from(buckets.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([start, count]) => ({
-      range: `${start}-${start + bucketSize - 1}`,
-      count,
-      minVal: start,
-    }));
+  // Only return buckets that have at least one event
+  return bucketCounts.filter(b => b.count > 0);
 }
 
 // Helper to extract region from address (simplified - uses city or first part)
