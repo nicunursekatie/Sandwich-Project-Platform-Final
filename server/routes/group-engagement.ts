@@ -67,7 +67,7 @@ export function createGroupEngagementRoutes(deps: GroupEngagementDependencies) {
       if (category) {
         const categories = (category as string).split(',');
         engagements = engagements.filter(eng =>
-          eng.category && categories.includes(eng.category)
+          categories.includes(eng.category || 'uncategorized')
         );
       }
 

@@ -671,27 +671,33 @@ async function gatherOrganizationMetrics(
     new Set(eventDates.map(d => d.toISOString().split('T')[0]))
   ).map(s => new Date(s)).sort((a, b) => a.getTime() - b.getTime());
 
-  // Count unique collection dates as completed events
-  const collectionDates = new Set<string>();
+  // Build set of completed event dates (deduped by date)
+  // A date is "completed" if it has either a completed request OR a collection
+  const completedEventDates = new Set<string>();
+
+  // Add dates from completed requests
+  orgRequests
+    .filter(req => req.status === 'completed' || req.status === 'contact_completed')
+    .forEach(req => {
+      const date = req.scheduledEventDate || req.desiredEventDate;
+      if (date) {
+        completedEventDates.add(new Date(date).toISOString().split('T')[0]);
+      }
+    });
+
+  // Add dates from collections (all collections are inherently completed)
   orgCollections.forEach(collection => {
     if (collection.collectionDate) {
-      collectionDates.add(new Date(collection.collectionDate).toISOString().split('T')[0]);
+      completedEventDates.add(new Date(collection.collectionDate).toISOString().split('T')[0]);
     }
   });
-  const collectionEventCount = collectionDates.size;
 
   // Calculate metrics - include both requests AND collections as events
-  // Collections represent actual completed distributions
-  const completedRequestEvents = orgRequests.filter(
-    req => req.status === 'completed' || req.status === 'contact_completed'
-  ).length;
-
-  // Total events = event requests + unique collection dates (avoiding double-counting)
-  // Use uniqueDates which already dedupes by date
+  // Total events = unique dates from both sources (already deduped)
   const totalEvents = uniqueDates.length;
 
-  // Completed events = completed requests + all collection events (collections are inherently completed)
-  const completedEvents = completedRequestEvents + collectionEventCount;
+  // Completed events = unique dates with completed activity (deduped to avoid >100% completion)
+  const completedEvents = completedEventDates.size;
 
   const firstEventDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
   const lastEventDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : null;
