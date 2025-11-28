@@ -710,7 +710,7 @@ export default function PromotionGraphics() {
                     variant="outline"
                     size="sm"
                     className="flex-1 min-w-[100px]"
-                    onClick={() => window.open(graphic.imageUrl, '_blank')}
+                    onClick={() => window.open(`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}&download=true&filename=${encodeURIComponent(graphic.fileName)}`, '_blank')}
                   >
                     <Download className="h-4 w-4 mr-1" />
                     Download
@@ -807,7 +807,7 @@ export default function PromotionGraphics() {
               <DialogFooter className="gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
+                  onClick={() => window.open(`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}&download=true&filename=${encodeURIComponent(selectedGraphic.fileName)}`, '_blank')}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download

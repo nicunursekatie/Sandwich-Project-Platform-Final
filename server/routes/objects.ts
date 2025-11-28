@@ -21,7 +21,7 @@ router.post('/upload', async (req, res) => {
 // GET /api/objects/proxy - Proxy private object storage files
 router.get('/proxy', async (req, res) => {
   try {
-    const { url } = req.query;
+    const { url, download, filename } = req.query;
 
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'URL parameter is required' });
@@ -42,6 +42,14 @@ router.get('/proxy', async (req, res) => {
     const [exists] = await file.exists();
     if (!exists) {
       return res.status(404).json({ error: 'File not found' });
+    }
+
+    // If download=true, set Content-Disposition header to force download
+    if (download === 'true') {
+      const downloadFilename = typeof filename === 'string' && filename
+        ? filename
+        : objectPath.split('/').pop() || 'download';
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
     }
 
     // Download and stream the file
