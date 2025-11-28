@@ -357,6 +357,10 @@ export default function EventImpactReports() {
   const [backfillStep, setBackfillStep] = useState<'select' | 'review' | 'complete'>('select');
   const [manualEntries, setManualEntries] = useState<Map<number, { deli: number; turkey: number; ham: number; pbj: number }>>(new Map());
 
+  // Location backfill state
+  const [showLocationTool, setShowLocationTool] = useState(false);
+  const [locationEntries, setLocationEntries] = useState<Map<number, string>>(new Map());
+
   // Calculate actual date range
   const dateRange = useMemo(() => {
     if (timePreset === 'custom' && customStartDate && customEndDate) {
@@ -570,6 +574,39 @@ export default function EventImpactReports() {
         description: data.message,
       });
       setBackfillStep('complete');
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for applying location updates
+  const applyLocationsMutation = useMutation({
+    mutationFn: async (updates: Array<{ eventId: number; address: string }>) => {
+      const response = await fetch('/api/impact-reports/apply-locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ updates }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to apply locations');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Success',
+        description: data.message,
+      });
+      setShowLocationTool(false);
+      setLocationEntries(new Map());
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
     },
     onError: (error: Error) => {
@@ -2347,6 +2384,133 @@ export default function EventImpactReports() {
                             </Button>
                           </div>
                         )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location Entry Tool Card - Admin Only */}
+              {isAdmin && (
+                <Card className="lg:col-span-2 border-orange-200 bg-orange-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-orange-600" />
+                      Location Entry Tool
+                    </CardTitle>
+                    <CardDescription>
+                      Add missing addresses to events for better geographic analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {!showLocationTool ? (
+                      <div className="text-center py-4">
+                        <p className="text-gray-600 mb-4">
+                          {processedData?.dataQuality?.missingAddress || 0} events are missing location data.
+                        </p>
+                        <Button
+                          onClick={() => setShowLocationTool(true)}
+                          variant="outline"
+                          className="border-orange-300 hover:bg-orange-100"
+                          disabled={!processedData?.dataQuality?.missingAddress}
+                        >
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Open Location Entry Tool
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                          <p className="font-medium text-orange-900">Events missing location data</p>
+                          <p className="text-sm text-orange-700 mt-1">
+                            Enter the address for each event below. You can enter partial addresses like "Atlanta, GA" or full addresses.
+                          </p>
+                        </div>
+
+                        <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Organization</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Sandwiches</TableHead>
+                                <TableHead className="w-1/2">Address</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {processedData?.filteredEvents
+                                ?.filter((e: any) => !e.eventAddress)
+                                .slice(0, 100)
+                                .map((event: any) => (
+                                  <TableRow key={event.id} className={locationEntries.get(event.id) ? 'bg-green-50' : ''}>
+                                    <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
+                                    <TableCell>
+                                      {event.scheduledEventDate
+                                        ? new Date(event.scheduledEventDate).toLocaleDateString()
+                                        : event.desiredEventDate
+                                          ? new Date(event.desiredEventDate).toLocaleDateString()
+                                          : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>{event.actualSandwichCount || event.estimatedSandwichCount || '-'}</TableCell>
+                                    <TableCell>
+                                      <Input
+                                        placeholder="Enter address..."
+                                        value={locationEntries.get(event.id) || ''}
+                                        onChange={(e) => {
+                                          const newEntries = new Map(locationEntries);
+                                          if (e.target.value) {
+                                            newEntries.set(event.id, e.target.value);
+                                          } else {
+                                            newEntries.delete(event.id);
+                                          }
+                                          setLocationEntries(newEntries);
+                                        }}
+                                        className="w-full"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-500">
+                            {locationEntries.size} locations entered
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setShowLocationTool(false);
+                                setLocationEntries(new Map());
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                const updates = Array.from(locationEntries.entries())
+                                  .filter(([_, address]) => address.trim())
+                                  .map(([eventId, address]) => ({ eventId, address: address.trim() }));
+                                applyLocationsMutation.mutate(updates);
+                              }}
+                              disabled={locationEntries.size === 0 || applyLocationsMutation.isPending}
+                              className="bg-orange-600 hover:bg-orange-700"
+                            >
+                              {applyLocationsMutation.isPending ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  Save Locations ({locationEntries.size})
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </CardContent>
