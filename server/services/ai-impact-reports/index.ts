@@ -110,7 +110,8 @@ export async function generateImpactReport(
 
 /**
  * Calculate total sandwich count from a collection record
- * This properly sums individualSandwiches + groupCollections + legacy group columns
+ * This properly sums individualSandwiches + groupCollections (or legacy group columns as fallback)
+ * Matches client logic: use groupCollections if available, otherwise fall back to legacy columns
  */
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
@@ -118,16 +119,22 @@ function getCollectionSandwichCount(collection: any): number {
   // Individual sandwiches
   total += collection.individualSandwiches || 0;
 
-  // Group collections from JSONB column
-  if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+  // Group collections: use JSONB column if available, otherwise fall back to legacy columns
+  // This matches the client's if/else pattern to avoid double-counting
+  const hasGroupCollections = collection.groupCollections &&
+    Array.isArray(collection.groupCollections) &&
+    collection.groupCollections.length > 0;
+
+  if (hasGroupCollections) {
+    // Use new groupCollections JSONB column
     total += collection.groupCollections.reduce(
       (sum: number, group: any) => sum + (group.count || 0), 0
     );
+  } else {
+    // Fall back to legacy group columns (for older data)
+    total += collection.group1Count || 0;
+    total += collection.group2Count || 0;
   }
-
-  // Legacy group columns (for older data)
-  total += collection.group1Count || 0;
-  total += collection.group2Count || 0;
 
   return total;
 }
