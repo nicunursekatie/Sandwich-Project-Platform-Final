@@ -236,7 +236,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-[#47B3CB] to-[#236383] hover:from-[#236383] hover:to-[#47B3CB] z-50"
+        className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-[#47B3CB] to-[#236383] hover:from-[#236383] hover:to-[#47B3CB] z-50"
         size="icon"
       >
         <Sparkles className="h-6 w-6 text-white" />
@@ -247,7 +247,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
   // Minimized state
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 right-6 z-50">
         <Card className="w-72 shadow-xl border-[#47B3CB]/30">
           <CardHeader className="py-2 px-3 flex flex-row items-center justify-between bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white rounded-t-lg">
             <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
 
   // Full chat panel
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-20 right-6 z-50">
       <Card className="w-96 h-[500px] shadow-xl border-[#47B3CB]/30 flex flex-col">
         {/* Header */}
         <CardHeader className="py-3 px-4 flex flex-row items-center justify-between bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white rounded-t-lg flex-shrink-0">
