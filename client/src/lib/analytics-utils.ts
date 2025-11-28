@@ -1,5 +1,6 @@
 import type { SandwichCollection } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { isInExcludedWeek } from '@/lib/excluded-weeks';
 
 /**
  * Parse a collection date string and ensure YYYY-MM-DD values are treated as local time.
@@ -222,22 +223,32 @@ export function getRecordWeek(collections: SandwichCollection[]): {
 /**
  * Calculate actual average weekly sandwiches from collections data.
  * Only includes complete weeks (past Thursday) to avoid skewing the average.
+ * Excludes no-collection weeks (Thanksgiving, holidays on Wed/Thu).
  */
 export function calculateActualWeeklyAverage(
   collections: SandwichCollection[]
 ): number {
   const weeklyData = calculateWeeklyData(collections);
 
-  // Filter to only complete weeks to avoid skewing average with partial data
-  const completeWeeks = weeklyData.filter(week => week.isComplete);
+  // Filter to only complete weeks and exclude no-collection weeks (Thanksgiving, holidays)
+  const activeWeeks = weeklyData.filter(week => {
+    if (!week.isComplete) return false;
+    // Check if this is an excluded week (uses Wednesday of the week)
+    // weekStartDate is Friday, so we need to go back 2 days to get Wednesday
+    const fridayDate = new Date(week.weekStartDate + 'T12:00:00');
+    const wednesdayDate = new Date(fridayDate);
+    wednesdayDate.setDate(fridayDate.getDate() - 2);
+    const wednesdayStr = wednesdayDate.toISOString().split('T')[0];
+    return !isInExcludedWeek(wednesdayStr).excluded;
+  });
 
-  if (completeWeeks.length === 0) return 0;
+  if (activeWeeks.length === 0) return 0;
 
-  const totalSandwiches = completeWeeks.reduce(
+  const totalSandwiches = activeWeeks.reduce(
     (sum, week) => sum + week.totalSandwiches,
     0
   );
-  return Math.round(totalSandwiches / completeWeeks.length);
+  return Math.round(totalSandwiches / activeWeeks.length);
 }
 
 // ============================================================================

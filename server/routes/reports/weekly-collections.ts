@@ -199,10 +199,9 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       result = result.filter(w => !w.isExcludedWeek);
     }
 
-    // Calculate stats (excluding no-collection weeks if they were filtered)
-    const activeWeeks = result.filter(w => !w.isExcludedWeek);
-    const grandTotal = activeWeeks.reduce((sum, week) => sum + week.totalSandwiches, 0);
-    const averagePerWeek = activeWeeks.length > 0 ? Math.round(grandTotal / activeWeeks.length) : 0;
+    // Calculate stats from the result array (already filtered if shouldExclude was true)
+    const grandTotal = result.reduce((sum, week) => sum + week.totalSandwiches, 0);
+    const averagePerWeek = result.length > 0 ? Math.round(grandTotal / result.length) : 0;
 
     res.json({
       startDate,

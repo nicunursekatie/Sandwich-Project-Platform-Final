@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { isInExcludedWeek } from '@/lib/excluded-weeks';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Card,
@@ -538,13 +539,21 @@ export default function GrantMetrics() {
       ? ((yearTotals[2024] - yearTotals[2023]) / yearTotals[2023]) * 100
       : 0;
 
-    // Calculate weekly average from last 12 weeks
+    // Calculate weekly average from last 12 weeks (excluding no-collection weeks like Thanksgiving)
     const now = new Date();
     const twelveWeeksAgo = new Date(now);
     twelveWeeksAgo.setDate(now.getDate() - (12 * 7));
 
     const recentWeeks = Object.entries(weeklyData)
-      .filter(([weekKey]) => new Date(weekKey) >= twelveWeeksAgo)
+      .filter(([weekKey]) => {
+        const weekDate = new Date(weekKey);
+        if (weekDate < twelveWeeksAgo) return false;
+        // weekKey is Monday - convert to Wednesday to check exclusion (add 2 days)
+        const wednesday = new Date(weekDate);
+        wednesday.setDate(weekDate.getDate() + 2);
+        const wednesdayStr = `${wednesday.getFullYear()}-${String(wednesday.getMonth() + 1).padStart(2, '0')}-${String(wednesday.getDate()).padStart(2, '0')}`;
+        return !isInExcludedWeek(wednesdayStr).excluded;
+      })
       .map(([, total]) => total);
 
     const weeklyAverage = recentWeeks.length > 0
