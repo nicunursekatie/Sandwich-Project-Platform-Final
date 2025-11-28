@@ -157,24 +157,37 @@ export const useEventFilters = () => {
     return false;
   };
 
+  // Helper to parse date in local timezone (avoids UTC midnight timezone shift)
+  const parseLocalDate = (dateInput: string | Date | null | undefined): Date | null => {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) return dateInput;
+    if (typeof dateInput !== 'string') return null;
+    // If it's just a date (YYYY-MM-DD), parse in local time to avoid timezone shift
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const [year, month, day] = dateInput.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    // For ISO datetime strings, still parse but the date portion will be correct
+    const parsed = new Date(dateInput);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   // Helper function to check if a date matches the search query
   const dateMatchesSearch = (dateValue: string | Date | null | undefined, searchQuery: string): boolean => {
     if (!dateValue || !searchQuery) return false;
 
     try {
-      const dateStr = dateValue instanceof Date ? dateValue.toISOString() : dateValue.toString();
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return false;
+      const date = parseLocalDate(dateValue);
+      if (!date) return false;
 
       const searchLower = searchQuery.toLowerCase();
 
       const formats = [
-        dateStr.toLowerCase(),
         date.toLocaleDateString(),
         date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
         date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        date.toISOString().split('T')[0],
+        `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
         `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`,
         `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`,
       ];
