@@ -54,6 +54,7 @@ import { ProjectAssigneeSelector } from '@/components/project-assignee-selector'
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { logger } from '@/lib/logger';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Component to display assignee email
 function AssigneeEmail({ assigneeId }: { assigneeId: string | number }) {
@@ -1244,6 +1245,21 @@ export default function ProjectsClean() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Projects Assistant"
+        subtitle="Ask about projects and tasks"
+        suggestedQuestions={[
+          "What projects are in progress?",
+          "How do I create a new project?",
+          "Show me overdue projects",
+          "Who is assigned to what?",
+          "What projects need attention?",
+          "How do I update project status?",
+        ]}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { logger } from '@/lib/logger';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
@@ -738,6 +739,21 @@ export default function ImportantLinks() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Quick Tools Assistant"
+        subtitle="Ask about spreadsheets and tools"
+        suggestedQuestions={[
+          "How do I use the events calendar?",
+          "What's in the historical records?",
+          "How do I add data to the spreadsheet?",
+          "Where can I find event details?",
+          "How do I export data?",
+          "What tools are available?",
+        ]}
+      />
     </div>
   );
 }

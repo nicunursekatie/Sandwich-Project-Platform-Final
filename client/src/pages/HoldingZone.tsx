@@ -48,6 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCollaboration } from '@/hooks/use-collaboration';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Types
@@ -2202,6 +2203,21 @@ export default function HoldingZone() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Holding Zone Assistant"
+        subtitle="Ask about your ideas and tasks"
+        suggestedQuestions={[
+          "What items need attention?",
+          "How do I upgrade an idea to a project?",
+          "Show me items by category",
+          "What's the difference between ideas and tasks?",
+          "How do I prioritize items?",
+          "What items are due soon?",
+        ]}
+      />
     </div>
   );
 }

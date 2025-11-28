@@ -1,5 +1,6 @@
 import { Building2, Car, Users } from 'lucide-react';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 export default function TSPNetwork() {
   const { setActiveSection } = useDashboardNavigation();
@@ -120,6 +121,21 @@ export default function TSPNetwork() {
           Each group plays a vital role in collecting and distributing sandwiches to those in need.
         </p>
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Network Assistant"
+        subtitle="Ask about hosts, drivers, and volunteers"
+        suggestedQuestions={[
+          "How many active hosts do we have?",
+          "How do I add a new volunteer?",
+          "What drivers are available?",
+          "Show me recent network changes",
+          "How do I update host information?",
+          "What recipients are we serving?",
+        ]}
+      />
     </div>
   );
 }

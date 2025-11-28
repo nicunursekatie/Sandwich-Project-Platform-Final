@@ -42,6 +42,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 interface WeeklySubmissionStatus {
   location: string;
@@ -1601,6 +1602,21 @@ export default function WeeklyMonitoringDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Monitoring Assistant"
+        subtitle="Ask about weekly submissions"
+        suggestedQuestions={[
+          "Which locations haven't submitted yet?",
+          "Show me this week's progress",
+          "How do we compare to last week?",
+          "Which locations need follow-up?",
+          "What's our submission rate?",
+          "Show me trends over time",
+        ]}
+      />
     </div>
   );
 }
