@@ -115,7 +115,7 @@ export const EASTERN_DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
  * formatDateForDisplay("2025-09-03") // "Wednesday, September 3, 2025"
  * formatDateForDisplay("2025-09-03", { weekday: 'short' }) // "Wed, September 3, 2025"
  */
-export function formatDateDisplay(
+export function formatDateForDisplay(
   date: Date | string | null | undefined,
   options: Partial<Intl.DateTimeFormatOptions> = {}
 ): string {
