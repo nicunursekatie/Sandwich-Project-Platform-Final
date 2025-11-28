@@ -966,6 +966,54 @@ impactReportsRouter.post('/apply-sandwich-types', async (req: AuthenticatedReque
   }
 });
 
+// POST /api/impact-reports/apply-locations - Apply location/address updates to events
+impactReportsRouter.post('/apply-locations', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { updates } = req.body;
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'updates array is required' });
+    }
+
+    let updated = 0;
+    let errors = 0;
+
+    for (const update of updates) {
+      try {
+        const { eventId, address } = update;
+        if (!eventId || !address) continue;
+
+        await db.update(eventRequests)
+          .set({
+            eventAddress: address,
+            updatedAt: new Date(),
+          })
+          .where(eq(eventRequests.id, eventId));
+
+        updated++;
+      } catch (err) {
+        errors++;
+        logger.error('Error applying location to event', { update, error: err });
+      }
+    }
+
+    logger.info('Locations applied', { updated, errors, userId: req.user.id });
+
+    res.json({
+      success: true,
+      updated,
+      errors,
+      message: `Updated ${updated} events${errors > 0 ? `, ${errors} errors` : ''}`,
+    });
+  } catch (error) {
+    logger.error('Error applying locations', { error });
+    res.status(500).json({ error: 'Failed to apply locations' });
+  }
+});
+
 // GET /api/impact-reports/:id - Get a specific impact report
 impactReportsRouter.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
