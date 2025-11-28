@@ -353,10 +353,9 @@ export default function StaffingForecastWidget() {
                           </div>
                           <div className="text-sm text-gray-600">
                             {(() => {
-                              const date = new Date(event.desiredEventDate!);
-                              // Add timezone offset to ensure local date interpretation
-                              const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-                              return localDate.toLocaleDateString('en-US', {
+                              // Parse as local time by appending noon to avoid timezone issues
+                              const date = new Date(event.desiredEventDate + 'T12:00:00');
+                              return date.toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
                                 day: 'numeric'

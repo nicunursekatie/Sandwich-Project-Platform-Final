@@ -158,11 +158,11 @@ export const formatEventDate = (dateString: string) => {
 
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
 
+    // Date is already in local time (either from T12:00:00 or direct Date object)
+    // No timezone manipulation needed - just use the local methods
     const dayOfWeek = date.getDay();
-    // Add timezone offset to ensure local date interpretation 
-    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const dayName = localDate.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateFormatted = localDate.toLocaleDateString('en-US', {
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateFormatted = date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
