@@ -17,7 +17,13 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  Download,
+  Copy,
+  Check,
+  Image,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import {
   ResponsiveContainer,
   BarChart,
@@ -175,55 +181,223 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
     }
   };
 
-  const renderChart = (chart: ChartData) => {
+  const { toast } = useToast();
+  const [copiedChartId, setCopiedChartId] = useState<string | null>(null);
+
+  // Export chart data as CSV
+  const exportAsCSV = (chart: ChartData) => {
     const xKey = chart.xKey || 'name';
     const yKey = chart.yKey || 'value';
 
+    // Build CSV content
+    const headers = [xKey, yKey].join(',');
+    const rows = chart.data.map(row => `"${row[xKey]}",${row[yKey]}`).join('\n');
+    const csvContent = `${headers}\n${rows}`;
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'CSV Downloaded',
+      description: `${chart.title} data exported successfully`,
+    });
+  };
+
+  // Copy chart data to clipboard
+  const copyToClipboard = async (chart: ChartData, chartId: string) => {
+    const xKey = chart.xKey || 'name';
+    const yKey = chart.yKey || 'value';
+
+    // Format as tab-separated for easy paste into Excel/Sheets
+    const headers = `${xKey}\t${yKey}`;
+    const rows = chart.data.map(row => `${row[xKey]}\t${row[yKey]}`).join('\n');
+    const content = `${headers}\n${rows}`;
+
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedChartId(chartId);
+      setTimeout(() => setCopiedChartId(null), 2000);
+      toast({
+        title: 'Copied to Clipboard',
+        description: 'Data ready to paste into Excel or Google Sheets',
+      });
+    } catch (err) {
+      toast({
+        title: 'Copy Failed',
+        description: 'Unable to copy to clipboard',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Export chart as PNG using SVG conversion
+  const exportAsPNG = async (chart: ChartData, chartId: string) => {
+    const chartElement = document.getElementById(chartId);
+    if (!chartElement) return;
+
+    const svgElement = chartElement.querySelector('svg');
+    if (!svgElement) {
+      toast({
+        title: 'Export Failed',
+        description: 'Could not find chart to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Clone the SVG and set dimensions
+      const svgClone = svgElement.cloneNode(true) as SVGElement;
+      const bbox = svgElement.getBoundingClientRect();
+      svgClone.setAttribute('width', String(bbox.width));
+      svgClone.setAttribute('height', String(bbox.height));
+
+      // Add white background
+      const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bgRect.setAttribute('width', '100%');
+      bgRect.setAttribute('height', '100%');
+      bgRect.setAttribute('fill', 'white');
+      svgClone.insertBefore(bgRect, svgClone.firstChild);
+
+      // Convert to data URL
+      const svgData = new XMLSerializer().serializeToString(svgClone);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+
+      // Create image and canvas for PNG conversion
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = bbox.width * 2; // 2x for better quality
+        canvas.height = bbox.height * 2;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.scale(2, 2);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, bbox.width, bbox.height);
+          ctx.drawImage(img, 0, 0);
+
+          // Download PNG
+          const pngUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = pngUrl;
+          link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          toast({
+            title: 'PNG Downloaded',
+            description: `${chart.title} chart exported successfully`,
+          });
+        }
+        URL.revokeObjectURL(svgUrl);
+      };
+      img.src = svgUrl;
+    } catch (err) {
+      toast({
+        title: 'Export Failed',
+        description: 'Unable to export chart as PNG',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const renderChart = (chart: ChartData, messageIndex: number) => {
+    const xKey = chart.xKey || 'name';
+    const yKey = chart.yKey || 'value';
+    const chartId = `ai-chart-${messageIndex}`;
+
     return (
       <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">{chart.title}</h4>
-        <ResponsiveContainer width="100%" height={200}>
-          {chart.type === 'bar' ? (
-            <BarChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} fontSize={10} />
-              <YAxis fontSize={10} />
-              <Tooltip />
-              <Bar dataKey={yKey} fill="#47B3CB">
-                {chart.data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          ) : chart.type === 'line' ? (
-            <LineChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} fontSize={10} />
-              <YAxis fontSize={10} />
-              <Tooltip />
-              <Line type="monotone" dataKey={yKey} stroke="#47B3CB" strokeWidth={2} />
-            </LineChart>
-          ) : (
-            <PieChart>
-              <Pie
-                data={chart.data}
-                dataKey={yKey}
-                nameKey={xKey}
-                cx="50%"
-                cy="50%"
-                outerRadius={70}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-                fontSize={10}
-              >
-                {chart.data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          )}
-        </ResponsiveContainer>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-gray-700">{chart.title}</h4>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              onClick={() => copyToClipboard(chart, chartId)}
+              title="Copy data to clipboard"
+            >
+              {copiedChartId === chartId ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              onClick={() => exportAsCSV(chart)}
+              title="Download as CSV"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              onClick={() => exportAsPNG(chart, chartId)}
+              title="Download as PNG"
+            >
+              <Image className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        <div id={chartId}>
+          <ResponsiveContainer width="100%" height={200}>
+            {chart.type === 'bar' ? (
+              <BarChart data={chart.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey={xKey} fontSize={10} />
+                <YAxis fontSize={10} />
+                <Tooltip />
+                <Bar dataKey={yKey} fill="#47B3CB">
+                  {chart.data.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : chart.type === 'line' ? (
+              <LineChart data={chart.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey={xKey} fontSize={10} />
+                <YAxis fontSize={10} />
+                <Tooltip />
+                <Line type="monotone" dataKey={yKey} stroke="#47B3CB" strokeWidth={2} />
+              </LineChart>
+            ) : (
+              <PieChart>
+                <Pie
+                  data={chart.data}
+                  dataKey={yKey}
+                  nameKey={xKey}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  fontSize={10}
+                >
+                  {chart.data.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            )}
+          </ResponsiveContainer>
+        </div>
         {chart.description && (
           <p className="text-xs text-gray-500 mt-2 italic">{chart.description}</p>
         )}
@@ -347,7 +521,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
-                {message.chart && renderChart(message.chart)}
+                {message.chart && renderChart(message.chart, index)}
               </div>
             ))}
 
