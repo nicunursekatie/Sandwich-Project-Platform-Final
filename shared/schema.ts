@@ -3802,3 +3802,59 @@ export const insertMeetingProjectSchema = createInsertSchema(meetingProjects).om
 
 export type MeetingProject = typeof meetingProjects.$inferSelect;
 export type InsertMeetingProject = z.infer<typeof insertMeetingProjectSchema>;
+
+// ============================================================================
+// ALERT REQUESTS - User-submitted requests for new alert types
+// ============================================================================
+
+/**
+ * Alert Requests - Track user requests for new notification types
+ * Allows users to suggest alerts they'd like to receive and track status
+ */
+export const alertRequests = pgTable('alert_requests', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id), // FK to users.id - who submitted the request
+  alertDescription: text('alert_description').notNull(), // What the user wants to be alerted about
+  preferredChannel: varchar('preferred_channel').notNull().default('no_preference'), // 'email', 'sms', 'both', 'no_preference'
+  frequency: varchar('frequency').notNull().default('immediate'), // 'immediate', 'daily', 'weekly', 'custom'
+  additionalNotes: text('additional_notes'), // Any extra details
+  status: varchar('status').notNull().default('pending'), // 'pending', 'in_progress', 'implemented', 'rejected'
+  adminNotes: text('admin_notes'), // Admin response/notes
+  reviewedBy: varchar('reviewed_by').references(() => users.id), // Admin who reviewed the request
+  reviewedAt: timestamp('reviewed_at'), // When the request was reviewed
+  implementedAt: timestamp('implemented_at'), // When the alert was implemented
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_alert_requests_user').on(table.userId),
+  index('idx_alert_requests_status').on(table.status),
+  index('idx_alert_requests_created').on(table.createdAt),
+]);
+
+export const insertAlertRequestSchema = createInsertSchema(alertRequests).omit({
+  id: true,
+  status: true,
+  adminNotes: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  implementedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateAlertRequestSchema = createInsertSchema(alertRequests)
+  .omit({
+    id: true,
+    status: true,
+    adminNotes: true,
+    reviewedBy: true,
+    reviewedAt: true,
+    implementedAt: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .partial();
+
+export type AlertRequest = typeof alertRequests.$inferSelect;
+export type InsertAlertRequest = z.infer<typeof insertAlertRequestSchema>;
+export type UpdateAlertRequest = z.infer<typeof updateAlertRequestSchema>;
