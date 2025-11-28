@@ -105,7 +105,6 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
-      .filter((driver: any) => assignmentType !== 'driver' || driver.vanApproved)
       .map((driver: any) => ({
         id: driver.id.toString(),
         displayName: driver.name,
