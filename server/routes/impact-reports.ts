@@ -4,8 +4,8 @@ import { impactReports, eventRequests } from '../../shared/schema';
 import { eq, desc, and, gt, inArray } from 'drizzle-orm';
 import { logger } from '../middleware/logger';
 import { generateImpactReport, saveImpactReport } from '../services/ai-impact-reports';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -149,7 +149,7 @@ impactReportsRouter.post('/generate-pdf', async (req: AuthenticatedRequest, res:
       metricsData.push(['Total Expenses', `$${report.metrics.expensesTotal.toLocaleString()}`]);
     }
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['Metric', 'Value']],
       body: metricsData,
@@ -195,7 +195,7 @@ impactReportsRouter.post('/generate-pdf', async (req: AuthenticatedRequest, res:
           typeData.push(['Other/Unspecified', types.generic.toLocaleString(), `${((types.generic / totalTyped) * 100).toFixed(1)}%`]);
         }
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPosition,
           head: [['Type', 'Count', 'Percentage']],
           body: typeData,
