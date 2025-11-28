@@ -1045,7 +1045,7 @@ export async function saveEngagementScores(engagements: OrganizationEngagement[]
 
     logger.info('Finished saving engagement scores');
   } catch (error) {
-    logger.error('Failed to save engagement scores - transaction rolled back', { error });
+    logger.error(`Failed to save ${engagements.length} engagement scores - transaction rolled back`, { error });
     throw error;
   }
 }
