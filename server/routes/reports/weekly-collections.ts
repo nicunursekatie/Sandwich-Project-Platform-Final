@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { sandwichCollections } from '@shared/schema';
 import { sql, isNull } from 'drizzle-orm';
+import { isInExcludedWeek, getExcludedWeeksInRange } from '../../utils/excluded-weeks';
 
 const weeklyCollectionsRouter = Router();
 
@@ -21,13 +22,19 @@ interface WeeklyData {
   individual: number;
   groupCollections: number;
   locationBreakdowns: LocationBreakdown[];
+  isExcludedWeek?: boolean;
+  excludedReason?: string;
 }
 
 // GET /api/reports/weekly-collections
-// Query params: startDate, endDate (YYYY-MM-DD format), exactDates (optional boolean)
+// Query params:
+//   startDate, endDate (YYYY-MM-DD format)
+//   exactDates (optional boolean) - if true, use exact dates instead of expanding to full weeks
+//   excludeNoCollectionWeeks (optional boolean) - if true, exclude Thanksgiving and holiday weeks from results
+//   markExcludedWeeks (optional boolean) - if true, include excluded weeks but mark them
 weeklyCollectionsRouter.get('/', async (req, res) => {
   try {
-    const { startDate, endDate, exactDates } = req.query;
+    const { startDate, endDate, exactDates, excludeNoCollectionWeeks, markExcludedWeeks } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -158,7 +165,7 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       week.totalSandwiches += individual + groupColl;
     }
 
-    // Attach location breakdowns to each week
+    // Attach location breakdowns to each week and mark excluded weeks
     for (const [weekKey, week] of weeklyMap) {
       const weekLocations = locationMap.get(weekKey);
       if (weekLocations) {
@@ -166,18 +173,56 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
           a.location.localeCompare(b.location)
         );
       }
+
+      // Check if this week is an excluded week (Thanksgiving, holidays on Wed/Thu)
+      const exclusionCheck = isInExcludedWeek(week.weekStartDate);
+      if (exclusionCheck.excluded) {
+        week.isExcludedWeek = true;
+        week.excludedReason = exclusionCheck.reason;
+      }
     }
 
-    const result = Array.from(weeklyMap.values()).sort(
+    let result = Array.from(weeklyMap.values()).sort(
       (a, b) => new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime()
     );
+
+    // Get list of excluded weeks in range for reference
+    const excludedWeeksList = getExcludedWeeksInRange(queryStartStr, queryEndStr);
+
+    // Filter out excluded weeks if requested
+    const shouldExclude = excludeNoCollectionWeeks === 'true';
+    const shouldMark = markExcludedWeeks === 'true';
+
+    let excludedWeeksInResult: WeeklyData[] = [];
+    if (shouldExclude) {
+      excludedWeeksInResult = result.filter(w => w.isExcludedWeek);
+      result = result.filter(w => !w.isExcludedWeek);
+    }
+
+    // Calculate stats (excluding no-collection weeks if they were filtered)
+    const activeWeeks = result.filter(w => !w.isExcludedWeek);
+    const grandTotal = activeWeeks.reduce((sum, week) => sum + week.totalSandwiches, 0);
+    const averagePerWeek = activeWeeks.length > 0 ? Math.round(grandTotal / activeWeeks.length) : 0;
 
     res.json({
       startDate,
       endDate,
       weeks: result,
       totalWeeks: result.length,
-      grandTotal: result.reduce((sum, week) => sum + week.totalSandwiches, 0),
+      grandTotal,
+      averagePerWeek,
+      // Include info about excluded weeks
+      excludedWeeks: {
+        count: excludedWeeksList.length,
+        dates: excludedWeeksList,
+        ...(shouldExclude && excludedWeeksInResult.length > 0 ? {
+          filtered: excludedWeeksInResult.map(w => ({
+            weekStartDate: w.weekStartDate,
+            reason: w.excludedReason,
+            sandwichesNotCounted: w.totalSandwiches
+          }))
+        } : {})
+      }
     });
   } catch (error) {
     console.error('[Weekly Collections Report Error]', error);

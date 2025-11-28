@@ -1,4 +1,5 @@
 import type { DatabaseStorage } from '../database-storage';
+import { isInExcludedWeek } from '../utils/excluded-weeks';
 
 interface WeeklyReportData {
   report_date: string;
@@ -243,14 +244,44 @@ export class WeeklyImpactReportGenerator {
 
   private async getFourWeekAverages(endDate: Date) {
     const weeks = [];
-    for (let i = 0; i < 4; i++) {
+    let weeksChecked = 0;
+    let i = 0;
+
+    // Get 4 non-excluded weeks (may need to look back further if some weeks are excluded)
+    while (weeks.length < 4 && weeksChecked < 12) {
       const weekEnd = new Date(endDate);
       weekEnd.setDate(endDate.getDate() - i * 7);
       const weekStart = new Date(weekEnd);
       weekStart.setDate(weekEnd.getDate() - 6);
 
-      const weekData = await this.getWeekData(weekStart, weekEnd);
-      weeks.push(weekData);
+      // Format the Wednesday of this week (collection weeks are Wed-Tue)
+      const wednesdayOfWeek = new Date(weekStart);
+      // Adjust to Wednesday if needed
+      const dayOfWeek = wednesdayOfWeek.getDay();
+      const daysToWednesday = (dayOfWeek - 3 + 7) % 7;
+      wednesdayOfWeek.setDate(wednesdayOfWeek.getDate() - daysToWednesday);
+      const wednesdayStr = wednesdayOfWeek.toISOString().split('T')[0];
+
+      // Check if this is an excluded week (Thanksgiving, holidays on Wed/Thu)
+      const exclusionCheck = isInExcludedWeek(wednesdayStr);
+
+      if (!exclusionCheck.excluded) {
+        const weekData = await this.getWeekData(weekStart, weekEnd);
+        weeks.push(weekData);
+      }
+
+      i++;
+      weeksChecked++;
+    }
+
+    // If we couldn't find 4 weeks, use what we have
+    if (weeks.length === 0) {
+      return {
+        avgTotal: 0,
+        avgActiveLocations: 0,
+        avgGroupTotal: 0,
+        avgPerLocation: 0,
+      };
     }
 
     const avgTotal =
