@@ -1731,7 +1731,7 @@ export default function EventImpactReports() {
 
         {/* Tabs for different views */}
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="print:hidden grid grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+          <TabsList className="print:hidden grid grid-cols-4 lg:grid-cols-7 h-auto gap-1">
             <TabsTrigger value="events" className="flex items-center gap-1 text-xs sm:text-sm py-2">
               <ListFilter className="w-4 h-4" />
               <span className="hidden sm:inline">Event List</span>
@@ -1760,6 +1760,11 @@ export default function EventImpactReports() {
             <TabsTrigger value="trends" className="flex items-center gap-1 text-xs sm:text-sm py-2">
               <TrendingUp className="w-4 h-4" />
               Trends
+            </TabsTrigger>
+            <TabsTrigger value="ai-insights" className="flex items-center gap-1 text-xs sm:text-sm py-2 bg-gradient-to-r from-[#47B3CB]/10 to-[#236383]/10 data-[state=active]:from-[#47B3CB] data-[state=active]:to-[#236383] data-[state=active]:text-white">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">AI Insights</span>
+              <span className="sm:hidden">AI</span>
             </TabsTrigger>
           </TabsList>
 
@@ -3299,6 +3304,11 @@ export default function EventImpactReports() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* AI Insights Tab */}
+          <TabsContent value="ai-insights">
+            <AIInsightsChat dateRange={dateRange} />
+          </TabsContent>
         </Tabs>
 
         {/* Print-only summary */}
@@ -3691,9 +3701,6 @@ export default function EventImpactReports() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* AI Insights Chat */}
-      <AIInsightsChat dateRange={dateRange} />
     </div>
   );
 }
