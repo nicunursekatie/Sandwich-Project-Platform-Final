@@ -585,11 +585,14 @@ export default function EventImpactReports() {
     if (!Array.isArray(eventRequests)) return null;
 
     // Build a map of eventRequestId -> collection data for linked collections
-    // Track duplicates as a data quality issue to surface to the user
+    // Track duplicates and orphans as data quality issues to surface to the user
     const linkedCollectionsByEventId = new Map<number, any>();
     const duplicateCollections: { eventRequestId: number; collections: any[] }[] = [];
     const collectionsByEventId = new Map<number, any[]>(); // Temporary for duplicate detection
     const trulyUnlinkedCollections: any[] = [];
+
+    // Build a set of valid event request IDs for orphan detection
+    const validEventIds = new Set(eventRequests.map((e: any) => e.id));
 
     if (Array.isArray(unlinkedCollections)) {
       // First pass: group collections by eventRequestId to detect duplicates
@@ -610,7 +613,7 @@ export default function EventImpactReports() {
         }
       });
 
-      // Second pass: identify duplicates and keep first collection per event
+      // Second pass: identify duplicates, orphans, and keep first collection per event
       collectionsByEventId.forEach((collections, eventRequestId) => {
         linkedCollectionsByEventId.set(eventRequestId, collections[0]);
         if (collections.length > 1) {
@@ -618,6 +621,24 @@ export default function EventImpactReports() {
         }
       });
     }
+
+    // Identify orphaned collections (eventRequestId points to non-existent event)
+    const orphanedCollections: { eventRequestId: number; collection: any }[] = [];
+    linkedCollectionsByEventId.forEach((collection, eventRequestId) => {
+      if (!validEventIds.has(eventRequestId)) {
+        orphanedCollections.push({ eventRequestId, collection });
+      }
+    });
+
+    // Convert orphaned collections to standalone entries (so data isn't lost)
+    const orphanedAsStandalone = orphanedCollections.map(({ collection }) => ({
+      ...collection,
+      scheduledEventDate: collection.scheduledEventDate || collection.collectionDate,
+      desiredEventDate: collection.collectionDate,
+      organizationCategory: 'other',
+      status: 'completed',
+      isOrphaned: true, // Flag for display
+    }));
 
     // Merge event requests with their linked collections (if any)
     // IMPORTANT: Preserve event request metadata (status, category) but use collection's actual sandwich count
@@ -635,8 +656,8 @@ export default function EventImpactReports() {
       return event;
     });
 
-    // Combine: merged event requests + truly unlinked collections
-    const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections];
+    // Combine: merged event requests + truly unlinked collections + orphaned collections
+    const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections, ...orphanedAsStandalone];
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
@@ -1010,6 +1031,7 @@ export default function EventImpactReports() {
       sandwichTypeBreakdown,
       // Data integrity issues
       duplicateCollections,
+      orphanedCollections,
     };
   }, [eventRequests, unlinkedCollections, dateRange, statusFilter, categoryFilter, sortField, sortDirection]);
 
@@ -1465,7 +1487,7 @@ export default function EventImpactReports() {
                     });
 
                     try {
-                      const response = await fetch('/api/admin/ai-categorize-organizations', {
+                      const response = await fetch('/api/ai-categorize-organizations', {
                         method: 'POST',
                         credentials: 'include',
                       });
@@ -2924,6 +2946,34 @@ export default function EventImpactReports() {
                     <span className="text-red-700 ml-2">
                       — {dup.collections.length} collections linked
                       (IDs: {dup.collections.map((c: any) => c.collectionId).join(', ')})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Orphaned Collections Warning - Data Integrity Issue */}
+        {processedData?.orphanedCollections && processedData.orphanedCollections.length > 0 && (
+          <Card className="mt-4 border-orange-300 bg-orange-50 print:hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Data Integrity Issue: Orphaned Collections Found
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-orange-700 mb-3">
+                The following collections reference event requests that no longer exist. These collections are included in the report but may need their event links updated or cleared.
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {processedData.orphanedCollections.map((orphan: any) => (
+                  <div key={orphan.collection.collectionId} className="text-sm bg-white p-2 rounded border border-orange-200">
+                    <span className="font-medium text-orange-900">Collection #{orphan.collection.collectionId}</span>
+                    <span className="text-orange-700 ml-2">
+                      — references deleted Event Request #{orphan.eventRequestId}
+                      {orphan.collection.organizationName && ` (${orphan.collection.organizationName})`}
                     </span>
                   </div>
                 ))}

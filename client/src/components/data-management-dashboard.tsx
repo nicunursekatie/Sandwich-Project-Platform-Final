@@ -194,7 +194,7 @@ export function DataManagementDashboard() {
   // AI Organization Categorization mutation
   const aiCategorizeMutation = useMutation({
     mutationFn: () =>
-      apiRequest('POST', '/api/admin/ai-categorize-organizations'),
+      apiRequest('POST', '/api/ai-categorize-organizations'),
     onSuccess: (data: any) => {
       const results = data.results || {};
       toast({
