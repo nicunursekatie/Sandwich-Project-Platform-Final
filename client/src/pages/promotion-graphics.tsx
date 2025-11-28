@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -46,7 +46,9 @@ import {
   Plus,
   MessageCircle,
   FileText,
+  RotateCcw,
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { hasPermission } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
@@ -127,6 +129,7 @@ export default function PromotionGraphics() {
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAudience, setFilterAudience] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('active');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -180,6 +183,9 @@ export default function PromotionGraphics() {
   // Filter to show only active graphics
   const activeGraphics = graphics.filter((g) => g.status === 'active');
 
+  // Filter to show only archived graphics
+  const archivedGraphics = graphics.filter((g) => g.status === 'archived');
+
   // Apply search and audience filters
   const filteredGraphics = activeGraphics.filter((graphic) => {
     // Search filter
@@ -189,6 +195,19 @@ export default function PromotionGraphics() {
       graphic.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Audience filter
+    const matchesAudience =
+      filterAudience === 'all' || graphic.targetAudience === filterAudience;
+
+    return matchesSearch && matchesAudience;
+  });
+
+  // Apply same filters to archived graphics
+  const filteredArchivedGraphics = archivedGraphics.filter((graphic) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      graphic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      graphic.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesAudience =
       filterAudience === 'all' || graphic.targetAudience === filterAudience;
 
@@ -236,6 +255,28 @@ export default function PromotionGraphics() {
       toast({
         title: 'Archive Failed',
         description: error.message || 'Failed to archive graphic. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Restore mutation
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest('PUT', `/api/promotion-graphics/${id}`, { status: 'active' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/promotion-graphics'] });
+      toast({
+        title: 'Success',
+        description: 'Graphic restored successfully.',
+      });
+    },
+    onError: (error: any) => {
+      logger.error('Failed to restore graphic', error);
+      toast({
+        title: 'Restore Failed',
+        description: error.message || 'Failed to restore graphic. Please try again.',
         variant: 'destructive',
       });
     },
@@ -593,151 +634,310 @@ export default function PromotionGraphics() {
         </div>
       </div>
 
-      {/* Graphics Grid */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading graphics...</p>
-        </div>
-      ) : activeGraphics.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">No graphics available yet</p>
-            {canUpload && (
-              <Button
-                onClick={() => setShowUploadDialog(true)}
-                style={{ backgroundColor: '#007E8C', color: 'white' }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Upload First Graphic
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : filteredGraphics.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">No graphics match your filters</p>
-            <Button
-              onClick={() => {
-                setSearchQuery('');
-                setFilterAudience('all');
-              }}
-              variant="outline"
-            >
-              Clear Filters
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGraphics.map((graphic) => (
-            <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => {
-                setSelectedGraphic(graphic);
-                trackViewMutation.mutate(graphic.id);
-              }}>
-                {graphic.fileType === 'application/pdf' ? (
-                  <div className="w-full h-full relative">
-                    <iframe
-                      src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
-                      className="w-full h-full pointer-events-none"
-                      title={graphic.title}
-                    />
-                    <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedGraphic(graphic)} />
-                  </div>
-                ) : (
-                  <img
-                    src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
-                    alt={graphic.title}
-                    className="w-full h-full object-contain"
-                  />
+      {/* Tabs for Active/Archived */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Active ({activeGraphics.length})
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="flex items-center gap-2">
+            <Archive className="h-4 w-4" />
+            Archived ({archivedGraphics.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Active Graphics Tab */}
+        <TabsContent value="active">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading graphics...</p>
+            </div>
+          ) : activeGraphics.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">No graphics available yet</p>
+                {canUpload && (
+                  <Button
+                    onClick={() => setShowUploadDialog(true)}
+                    style={{ backgroundColor: '#007E8C', color: 'white' }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Upload First Graphic
+                  </Button>
                 )}
-              </div>
-              <CardHeader>
-                <CardTitle className="flex items-start justify-between">
-                  <span className="text-lg">{graphic.title}</span>
-                  {graphic.notificationSent && (
-                    <Badge variant="outline" className="ml-2">
-                      <Send className="h-3 w-3 mr-1" />
-                      Sent
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription className="line-clamp-2">
-                  <LinkifyText text={graphic.description} />
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  {graphic.intendedUseDate && (
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" style={{ color: '#FBAD3F' }} />
-                      <span>
-                        Use by: {format(new Date(graphic.intendedUseDate), 'MMM d, yyyy')}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center text-gray-600">
-                    <Users className="h-4 w-4 mr-2" style={{ color: '#47B3CB' }} />
-                    <span className="capitalize">{graphic.targetAudience}</span>
-                  </div>
-                  {graphic.viewCount !== undefined && graphic.viewCount > 0 && (
-                    <div className="flex items-center text-gray-600">
-                      <Eye className="h-4 w-4 mr-2" style={{ color: '#007E8C' }} />
-                      <span>{graphic.viewCount} {graphic.viewCount === 1 ? 'view' : 'views'}</span>
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-500">
-                    Uploaded by {graphic.uploadedByName}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 min-w-[80px]"
-                    onClick={() => {
-                      setSelectedGraphic(graphic);
-                      trackViewMutation.mutate(graphic.id);
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 min-w-[100px]"
-                    onClick={() => window.open(`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}&download=true&filename=${encodeURIComponent(graphic.fileName)}`, '_blank')}
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMessageGraphic(graphic)}
-                    title="Message about this graphic"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                  {canDelete && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => archiveMutation.mutate(graphic.id)}
-                    >
-                      <Archive className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          ) : filteredGraphics.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">No graphics match your filters</p>
+                <Button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterAudience('all');
+                  }}
+                  variant="outline"
+                >
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredGraphics.map((graphic) => (
+                <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => {
+                    setSelectedGraphic(graphic);
+                    trackViewMutation.mutate(graphic.id);
+                  }}>
+                    {graphic.fileType === 'application/pdf' ? (
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                          className="w-full h-full pointer-events-none"
+                          title={graphic.title}
+                        />
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedGraphic(graphic)} />
+                      </div>
+                    ) : (
+                      <img
+                        src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                        alt={graphic.title}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="flex items-start justify-between">
+                      <span className="text-lg">{graphic.title}</span>
+                      {graphic.notificationSent && (
+                        <Badge variant="outline" className="ml-2">
+                          <Send className="h-3 w-3 mr-1" />
+                          Sent
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      <LinkifyText text={graphic.description} />
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      {graphic.intendedUseDate && (
+                        <div className="flex items-center text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2" style={{ color: '#FBAD3F' }} />
+                          <span>
+                            Use by: {format(new Date(graphic.intendedUseDate), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center text-gray-600">
+                        <Users className="h-4 w-4 mr-2" style={{ color: '#47B3CB' }} />
+                        <span className="capitalize">{graphic.targetAudience}</span>
+                      </div>
+                      {graphic.viewCount !== undefined && graphic.viewCount > 0 && (
+                        <div className="flex items-center text-gray-600">
+                          <Eye className="h-4 w-4 mr-2" style={{ color: '#007E8C' }} />
+                          <span>{graphic.viewCount} {graphic.viewCount === 1 ? 'view' : 'views'}</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        Uploaded by {graphic.uploadedByName}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 min-w-[80px]"
+                        onClick={() => {
+                          setSelectedGraphic(graphic);
+                          trackViewMutation.mutate(graphic.id);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 min-w-[100px]"
+                        onClick={() => window.open(`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}&download=true&filename=${encodeURIComponent(graphic.fileName)}`, '_blank')}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMessageGraphic(graphic)}
+                        title="Message about this graphic"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      {canDelete && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => archiveMutation.mutate(graphic.id)}
+                          title="Archive this graphic"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Archived Graphics Tab */}
+        <TabsContent value="archived">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading graphics...</p>
+            </div>
+          ) : archivedGraphics.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">No archived graphics</p>
+                <p className="text-sm text-gray-400">
+                  Graphics you archive will appear here for historical reference
+                </p>
+              </CardContent>
+            </Card>
+          ) : filteredArchivedGraphics.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">No archived graphics match your filters</p>
+                <Button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterAudience('all');
+                  }}
+                  variant="outline"
+                >
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredArchivedGraphics.map((graphic) => (
+                <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow opacity-75 hover:opacity-100">
+                  <div className="aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer relative" onClick={() => {
+                    setSelectedGraphic(graphic);
+                    trackViewMutation.mutate(graphic.id);
+                  }}>
+                    <Badge className="absolute top-2 left-2 z-10 bg-gray-600">
+                      <Archive className="h-3 w-3 mr-1" />
+                      Archived
+                    </Badge>
+                    {graphic.fileType === 'application/pdf' ? (
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                          className="w-full h-full pointer-events-none"
+                          title={graphic.title}
+                        />
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedGraphic(graphic)} />
+                      </div>
+                    ) : (
+                      <img
+                        src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                        alt={graphic.title}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="flex items-start justify-between">
+                      <span className="text-lg">{graphic.title}</span>
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      <LinkifyText text={graphic.description} />
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      {graphic.intendedUseDate && (
+                        <div className="flex items-center text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2" style={{ color: '#FBAD3F' }} />
+                          <span>
+                            Use by: {format(new Date(graphic.intendedUseDate), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center text-gray-600">
+                        <Users className="h-4 w-4 mr-2" style={{ color: '#47B3CB' }} />
+                        <span className="capitalize">{graphic.targetAudience}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Uploaded by {graphic.uploadedByName}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 min-w-[80px]"
+                        onClick={() => {
+                          setSelectedGraphic(graphic);
+                          trackViewMutation.mutate(graphic.id);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 min-w-[100px]"
+                        onClick={() => window.open(`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}&download=true&filename=${encodeURIComponent(graphic.fileName)}`, '_blank')}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                      {canDelete && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreMutation.mutate(graphic.id)}
+                            title="Restore this graphic"
+                            style={{ borderColor: '#007E8C', color: '#007E8C' }}
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Restore
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedGraphic(graphic);
+                              setShowDeleteDialog(true);
+                            }}
+                            title="Permanently delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedGraphic} onOpenChange={() => setSelectedGraphic(null)}>
@@ -814,16 +1014,30 @@ export default function PromotionGraphics() {
                 </Button>
                 {canDelete && (
                   <>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        archiveMutation.mutate(selectedGraphic.id);
-                        setSelectedGraphic(null);
-                      }}
-                    >
-                      <Archive className="h-4 w-4 mr-2" />
-                      Archive
-                    </Button>
+                    {selectedGraphic.status === 'archived' ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          restoreMutation.mutate(selectedGraphic.id);
+                          setSelectedGraphic(null);
+                        }}
+                        style={{ borderColor: '#007E8C', color: '#007E8C' }}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Restore
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          archiveMutation.mutate(selectedGraphic.id);
+                          setSelectedGraphic(null);
+                        }}
+                      >
+                        <Archive className="h-4 w-4 mr-2" />
+                        Archive
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       onClick={() => setShowDeleteDialog(true)}
