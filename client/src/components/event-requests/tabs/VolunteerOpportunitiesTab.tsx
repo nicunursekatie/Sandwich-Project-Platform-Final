@@ -174,7 +174,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
           />
         </div>
       ) : viewMode === 'map' ? (
-        <div className="bg-white rounded-lg overflow-hidden" style={{ height: '600px' }}>
+        <div className="bg-white rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
           <VolunteerOpportunitiesMap
             events={opportunities}
             onEventClick={(event) => {
