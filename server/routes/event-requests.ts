@@ -10,6 +10,7 @@ import {
   type User,
 } from '@shared/schema';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { parseDateOnly } from '@shared/date-utils';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -944,10 +945,9 @@ router.post(
         updates.desiredEventDate &&
         typeof updates.desiredEventDate === 'string'
       ) {
-        // Convert string date to proper Date object
-        updates.desiredEventDate = new Date(
-          updates.desiredEventDate + 'T12:00:00.000Z'
-        );
+        // Convert string date to proper Date object using timezone-safe utility
+        // IMPORTANT: Do NOT use 'Z' suffix - it causes dates to shift by one day!
+        updates.desiredEventDate = parseDateOnly(updates.desiredEventDate);
       }
 
       // CRITICAL FIX: Explicitly set status to 'scheduled' when completing event details
@@ -1315,17 +1315,12 @@ router.patch(
         ) {
           try {
             const dateString = processedUpdates[field] as string;
-            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
-            let dateValue: Date;
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
-              dateValue = new Date(dateString + 'T12:00:00.000Z');
-            } else {
-              dateValue = new Date(dateString);
-            }
+            // Use timezone-safe date parsing utility
+            // IMPORTANT: Do NOT use 'Z' suffix - it causes dates to shift by one day!
+            const dateValue = parseDateOnly(dateString);
 
             // Check if the date is valid
-            if (isNaN(dateValue.getTime())) {
+            if (!dateValue) {
               logger.error(`[PATCH] Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
@@ -1573,17 +1568,12 @@ router.put(
         ) {
           try {
             const dateString = processedUpdates[field] as string;
-            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
-            let dateValue: Date;
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
-              dateValue = new Date(dateString + 'T12:00:00.000Z');
-            } else {
-              dateValue = new Date(dateString);
-            }
+            // Use timezone-safe date parsing utility
+            // IMPORTANT: Do NOT use 'Z' suffix - it causes dates to shift by one day!
+            const dateValue = parseDateOnly(dateString);
 
             // Check if the date is valid
-            if (isNaN(dateValue.getTime())) {
+            if (!dateValue) {
               logger.error(`Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
@@ -1597,11 +1587,6 @@ router.put(
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
           // Allow null or empty string to clear date fields
           processedUpdates[field] = null;
-        }
-      });
-
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
         }
       });
 
