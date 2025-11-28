@@ -506,7 +506,7 @@ export default function ImpactDashboard() {
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg">
+    <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light p-6 rounded-lg">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -1088,8 +1088,8 @@ export default function ImpactDashboard() {
                         </div>
                       </div>
 
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-700">
+                      <div className="bg-brand-primary-light p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-brand-primary">
                           {Math.round(
                             chartData.reduce((sum, item) => sum + item.sandwiches, 0) /
                             chartData.reduce((sum, item) => sum + item.collections, 0)
