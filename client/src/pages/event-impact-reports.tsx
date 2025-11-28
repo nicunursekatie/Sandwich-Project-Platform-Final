@@ -651,6 +651,7 @@ export default function EventImpactReports() {
             desiredEventDate: c.collectionDate,
             // organizationCategory is unknown for collections
             organizationCategory: 'other',
+            isFromCollection: true, // Flag to identify collection-originated entries
           });
         }
       });
@@ -680,6 +681,7 @@ export default function EventImpactReports() {
       organizationCategory: 'other',
       status: 'completed',
       isOrphaned: true, // Flag for display
+      isFromCollection: true, // Flag to identify collection-originated entries
     }));
 
     // Merge event requests with their linked collections (if any)
@@ -2686,13 +2688,13 @@ export default function EventImpactReports() {
                     {!showLocationTool ? (
                       <div className="text-center py-4">
                         <p className="text-gray-600 mb-4">
-                          {processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isOrphaned && !e.collectionDate).length || 0} events are missing location data.
+                          {processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status)).length || 0} events are missing location data.
                         </p>
                         <Button
                           onClick={() => setShowLocationTool(true)}
                           variant="outline"
                           className="border-orange-300 hover:bg-orange-100"
-                          disabled={!processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isOrphaned && !e.collectionDate).length}
+                          disabled={!processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status)).length}
                         >
                           <MapPin className="w-4 h-4 mr-2" />
                           Open Location Entry Tool
@@ -2719,7 +2721,7 @@ export default function EventImpactReports() {
                             </TableHeader>
                             <TableBody>
                               {processedData?.filteredEvents
-                                ?.filter((e: any) => !e.eventAddress && !e.isOrphaned && !e.collectionDate)
+                                ?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status))
                                 .slice(0, 100)
                                 .map((event: any) => (
                                   <TableRow key={event.id} className={locationEntries.get(event.id) ? 'bg-green-50' : ''}>
