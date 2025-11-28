@@ -101,10 +101,12 @@ export default function LogContactAttemptDialog({
   useEffect(() => {
     if (isOpen) {
       const now = new Date();
-      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      setCustomDateTime(localDateTime);
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setCustomDateTime(`${year}-${month}-${day}T${hours}:${minutes}`);
       // Default to current user, but allow changing
       setAttributedToUserId(user?.id || '');
     }

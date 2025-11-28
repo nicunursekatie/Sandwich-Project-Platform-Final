@@ -19,6 +19,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+// Format a Date as YYYY-MM-DD in local timezone (no timezone math tricks)
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Calculate the previous Wednesday (or today if it's Wednesday)
 function getPreviousWednesday(): string {
   const today = new Date();
@@ -39,9 +47,7 @@ function getPreviousWednesday(): string {
   const previousWednesday = new Date(today);
   previousWednesday.setDate(today.getDate() - daysToSubtract);
 
-  // Format as YYYY-MM-DD
-  const localDate = new Date(previousWednesday.getTime() - previousWednesday.getTimezoneOffset() * 60000);
-  return localDate.toISOString().split('T')[0];
+  return formatLocalDate(previousWednesday);
 }
 
 // Check if a date string is a Wednesday
@@ -64,11 +70,7 @@ export default function CompactCollectionForm({
   onSuccess,
 }: CompactCollectionFormProps) {
   // Get today's date in user's local timezone
-  const today = new Date();
-  const localDate = new Date(
-    today.getTime() - today.getTimezoneOffset() * 60000
-  );
-  const [date, setDate] = useState(localDate.toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => formatLocalDate(new Date()));
   const [location, setLocation] = useState('');
   const [groupCollections, setGroupCollections] = useState<
     Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>

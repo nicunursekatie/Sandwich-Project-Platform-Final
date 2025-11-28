@@ -106,12 +106,14 @@ export default function EditContactAttemptDialog({
       setContactOutcome(contactAttempt.outcome);
       setNotes(contactAttempt.notes || '');
 
-      // Convert timestamp to local datetime-local format
+      // Convert timestamp to local datetime-local format (YYYY-MM-DDTHH:mm)
       const attemptDate = new Date(contactAttempt.timestamp);
-      const localDateTime = new Date(attemptDate.getTime() - attemptDate.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      setCustomDateTime(localDateTime);
+      const year = attemptDate.getFullYear();
+      const month = String(attemptDate.getMonth() + 1).padStart(2, '0');
+      const day = String(attemptDate.getDate()).padStart(2, '0');
+      const hours = String(attemptDate.getHours()).padStart(2, '0');
+      const minutes = String(attemptDate.getMinutes()).padStart(2, '0');
+      setCustomDateTime(`${year}-${month}-${day}T${hours}:${minutes}`);
 
       setAttributedToUserId(contactAttempt.createdBy);
     }
