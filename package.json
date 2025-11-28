@@ -173,7 +173,7 @@
     "@typescript-eslint/parser": "^8.43.0",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.31.4",
+    "drizzle-kit": "^0.31.7",
     "esbuild": "^0.25.10",
     "eslint": "^9.35.0",
     "eslint-plugin-react": "^7.37.5",
