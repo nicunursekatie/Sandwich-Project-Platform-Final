@@ -1,11 +1,11 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ReportData } from './report-generator';
 
 export class PDFGenerator {
   static async generatePDF(reportData: ReportData): Promise<Buffer> {
     try {
-      const doc = new (jsPDF as any)();
+      const doc = new jsPDF();
       const { metadata, summary, data, charts } = reportData;
 
       // Set up colors
