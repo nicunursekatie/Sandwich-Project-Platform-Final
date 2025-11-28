@@ -455,12 +455,12 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
                       <Button
                         key={index}
                         variant="outline"
-                        className="text-left justify-start h-auto py-3 px-4 text-sm hover:bg-[#47B3CB]/10 hover:border-[#47B3CB] transition-colors"
+                        className="text-left justify-start items-start h-auto py-3 px-4 text-xs hover:bg-[#47B3CB]/10 hover:border-[#47B3CB] transition-colors min-h-[60px]"
                         onClick={() => handleSuggestionClick(question)}
                         disabled={chatMutation.isPending}
                       >
-                        <MessageCircle className="h-4 w-4 mr-3 flex-shrink-0 text-[#47B3CB]" />
-                        <span className="text-gray-700">{question}</span>
+                        <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0 text-[#47B3CB] mt-0.5" />
+                        <span className="text-gray-700 whitespace-normal break-words text-left leading-snug">{question}</span>
                       </Button>
                     ))}
                   </div>
