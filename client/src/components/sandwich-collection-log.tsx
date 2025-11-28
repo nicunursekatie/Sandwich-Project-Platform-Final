@@ -3980,11 +3980,11 @@ export default function SandwichCollectionLog() {
         title="Collection Insights"
         subtitle="Ask about your collection data"
         suggestedQuestions={[
-          "Which host collected the most sandwiches?",
+          "What's our total sandwich count this month?",
           "What's our average collection size?",
           "Show collections by month",
           "Which days have the most collections?",
-          "Top 10 hosts by sandwich count",
+          "How are we trending compared to last month?",
           "Show monthly trends as a chart",
         ]}
       />
