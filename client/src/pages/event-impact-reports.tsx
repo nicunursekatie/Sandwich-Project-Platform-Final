@@ -2180,13 +2180,83 @@ export default function EventImpactReports() {
                                     </div>
                                   </div>
                                   <p className="text-xs text-gray-500 mb-2">{suggestion.reasoning}</p>
-                                  <div className="flex gap-4 text-sm">
-                                    <span>Deli: <strong>{suggestion.suggestion.deli}</strong></span>
-                                    <span>Turkey: <strong>{suggestion.suggestion.turkey}</strong></span>
-                                    <span>Ham: <strong>{suggestion.suggestion.ham}</strong></span>
-                                    <span>PB&J: <strong>{suggestion.suggestion.pbj}</strong></span>
-                                    {suggestion.suggestion.generic > 0 && <span>Other: <strong>{suggestion.suggestion.generic}</strong></span>}
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-gray-600 whitespace-nowrap">Deli:</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={suggestion.suggestion.deli}
+                                        onChange={(e) => {
+                                          const newSuggestions = [...backfillSuggestions];
+                                          newSuggestions[idx] = {
+                                            ...suggestion,
+                                            suggestion: { ...suggestion.suggestion, deli: parseInt(e.target.value) || 0 },
+                                            edited: true,
+                                          };
+                                          setBackfillSuggestions(newSuggestions);
+                                        }}
+                                        className="w-20 h-8 text-center"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-gray-600 whitespace-nowrap">Turkey:</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={suggestion.suggestion.turkey}
+                                        onChange={(e) => {
+                                          const newSuggestions = [...backfillSuggestions];
+                                          newSuggestions[idx] = {
+                                            ...suggestion,
+                                            suggestion: { ...suggestion.suggestion, turkey: parseInt(e.target.value) || 0 },
+                                            edited: true,
+                                          };
+                                          setBackfillSuggestions(newSuggestions);
+                                        }}
+                                        className="w-20 h-8 text-center"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-gray-600 whitespace-nowrap">Ham:</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={suggestion.suggestion.ham}
+                                        onChange={(e) => {
+                                          const newSuggestions = [...backfillSuggestions];
+                                          newSuggestions[idx] = {
+                                            ...suggestion,
+                                            suggestion: { ...suggestion.suggestion, ham: parseInt(e.target.value) || 0 },
+                                            edited: true,
+                                          };
+                                          setBackfillSuggestions(newSuggestions);
+                                        }}
+                                        className="w-20 h-8 text-center"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-gray-600 whitespace-nowrap">PB&J:</label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={suggestion.suggestion.pbj}
+                                        onChange={(e) => {
+                                          const newSuggestions = [...backfillSuggestions];
+                                          newSuggestions[idx] = {
+                                            ...suggestion,
+                                            suggestion: { ...suggestion.suggestion, pbj: parseInt(e.target.value) || 0 },
+                                            edited: true,
+                                          };
+                                          setBackfillSuggestions(newSuggestions);
+                                        }}
+                                        className="w-20 h-8 text-center"
+                                      />
+                                    </div>
                                   </div>
+                                  {suggestion.edited && (
+                                    <p className="text-xs text-blue-600 mt-1">Manually edited</p>
+                                  )}
                                 </div>
                               ))}
                             </div>
