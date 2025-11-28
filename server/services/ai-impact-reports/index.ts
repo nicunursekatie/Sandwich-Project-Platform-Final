@@ -109,25 +109,33 @@ export async function generateImpactReport(
 }
 
 /**
- * Helper function to calculate sandwich count from a collection record
- * This handles the groupCollections JSONB field which contains most sandwich data
+ * Calculate total sandwich count from a collection record
+ * This properly sums individualSandwiches + groupCollections (or legacy group columns as fallback)
+ * Matches client logic: use groupCollections if available, otherwise fall back to legacy columns
  */
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
 
-  // Add individual sandwiches
+  // Individual sandwiches
   total += collection.individualSandwiches || 0;
 
-  // Add from groupCollections JSONB array (primary source of group sandwich data)
-  if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
-    collection.groupCollections.forEach((group: any) => {
-      total += group.count || 0;
-    });
-  }
+  // Group collections: use JSONB column if available, otherwise fall back to legacy columns
+  // This matches the client's if/else pattern to avoid double-counting
+  const hasGroupCollections = collection.groupCollections &&
+    Array.isArray(collection.groupCollections) &&
+    collection.groupCollections.length > 0;
 
-  // Add legacy group columns
-  total += collection.group1Count || 0;
-  total += collection.group2Count || 0;
+  if (hasGroupCollections) {
+    // Use new groupCollections JSONB column
+    // Handle both 'count' and legacy 'sandwichCount' field names for backward compatibility
+    total += collection.groupCollections.reduce(
+      (sum: number, group: any) => sum + (Number(group.count) || Number(group.sandwichCount) || 0), 0
+    );
+  } else {
+    // Fall back to legacy group columns (for older data)
+    total += collection.group1Count || 0;
+    total += collection.group2Count || 0;
+  }
 
   return total;
 }
@@ -189,19 +197,18 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   // Calculate totals - merge event data with collection data (same as component)
   let totalSandwiches = 0;
 
-  // Count from events (using collection data when linked, otherwise event data)
+  // Count from events (using collection's sandwich count when linked)
   events.forEach(e => {
     const linkedCollection = collectionsByEventId.get(e.id);
-    if (linkedCollection) {
-      // Use collection's calculated sandwich count
-      totalSandwiches += getCollectionSandwichCount(linkedCollection);
-    } else {
-      // Use event's sandwich count
-      totalSandwiches += e.actualSandwichCount || e.estimatedSandwichCount || 0;
-    }
+    // If there's a linked collection, calculate its total properly
+    // Otherwise fall back to the event's sandwich counts
+    const sandwichCount = linkedCollection
+      ? getCollectionSandwichCount(linkedCollection)
+      : (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+    totalSandwiches += sandwichCount;
   });
 
-  // Add unlinked collections (collections without eventRequestId)
+  // Add unlinked collections (those with no eventRequestId)
   unlinkedCollections.forEach(c => {
     totalSandwiches += getCollectionSandwichCount(c);
   });
