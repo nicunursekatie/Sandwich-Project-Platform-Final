@@ -73,6 +73,7 @@ import serviceHoursRouter from './service-hours';
 import { impactReportsRouter } from './impact-reports';
 import { predictionsRouter } from './predictions';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
+import { createGroupEngagementRoutes } from './group-engagement';
 
 // Import centralized middleware
 import {
@@ -471,6 +472,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     predictionsRouter
   );
   router.use('/api/predictions', createErrorHandler('predictions'));
+
+  // Group Engagement routes - AI-powered organization engagement insights
+  const groupEngagementRouter = createGroupEngagementRoutes({
+    isAuthenticated: deps.isAuthenticated,
+  });
+  router.use(
+    '/api/group-engagement',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    groupEngagementRouter
+  );
+  router.use('/api/group-engagement', createErrorHandler('group-engagement'));
 
   // Service hours PDF generation
   router.use(
