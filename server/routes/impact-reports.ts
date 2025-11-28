@@ -723,6 +723,7 @@ impactReportsRouter.get('/events-missing-types', async (req: AuthenticatedReques
       eventsMissingTypes: eventsMissingTypes.map((e) => ({
         id: e.id,
         organizationName: e.organizationName,
+        department: e.department,
         organizationCategory: e.organizationCategory,
         scheduledEventDate: e.scheduledEventDate || e.desiredEventDate, // Fallback to desiredEventDate
         actualSandwichCount: e.actualSandwichCount,

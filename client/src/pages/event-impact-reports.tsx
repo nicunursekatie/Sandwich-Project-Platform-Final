@@ -1014,27 +1014,66 @@ export default function EventImpactReports() {
       }))
       .sort((a, b) => b.sandwiches - a.sandwiches); // Sort by total sandwiches
 
-    // NEW: Repeat organization analysis (retention tiers)
-    const repeatAnalysis = {
-      oneTime: 0,
-      returning: 0, // 2-4 events
-      regulars: 0,  // 5-9 events
-      powerPartners: 0, // 10+ events
-    };
+    // NEW: Category retention analysis - which categories have repeat organizations?
+    const categoryRetentionMap = new Map<string, {
+      totalOrgs: number;
+      repeatOrgs: number;
+      totalEvents: number;
+      totalSandwiches: number;
+      avgEventsPerOrg: number;
+    }>();
 
+    // Group organizations by category and count repeats
     orgEventCounts.forEach((data) => {
-      if (data.count === 1) repeatAnalysis.oneTime += 1;
-      else if (data.count >= 2 && data.count <= 4) repeatAnalysis.returning += 1;
-      else if (data.count >= 5 && data.count <= 9) repeatAnalysis.regulars += 1;
-      else if (data.count >= 10) repeatAnalysis.powerPartners += 1;
+      const category = data.category || 'other';
+      const existing = categoryRetentionMap.get(category) || {
+        totalOrgs: 0,
+        repeatOrgs: 0,
+        totalEvents: 0,
+        totalSandwiches: 0,
+        avgEventsPerOrg: 0,
+      };
+      existing.totalOrgs += 1;
+      existing.totalEvents += data.count;
+      existing.totalSandwiches += data.sandwiches;
+      if (data.count > 1) {
+        existing.repeatOrgs += 1;
+      }
+      categoryRetentionMap.set(category, existing);
     });
 
-    const repeatAnalysisData = [
-      { tier: '1 event (One-timers)', count: repeatAnalysis.oneTime, color: '#6B7280' },
-      { tier: '2-4 events (Returning)', count: repeatAnalysis.returning, color: '#47B3CB' },
-      { tier: '5-9 events (Regulars)', count: repeatAnalysis.regulars, color: '#FBAD3F' },
-      { tier: '10+ events (Power Partners)', count: repeatAnalysis.powerPartners, color: '#236383' },
-    ];
+    // Calculate averages and format for display
+    const categoryRetentionData = Array.from(categoryRetentionMap.entries())
+      .map(([category, data]) => ({
+        category,
+        categoryLabel: CATEGORY_LABELS[category] || category,
+        totalOrgs: data.totalOrgs,
+        repeatOrgs: data.repeatOrgs,
+        repeatRate: data.totalOrgs > 0 ? Math.round((data.repeatOrgs / data.totalOrgs) * 100) : 0,
+        avgEventsPerOrg: data.totalOrgs > 0 ? Math.round((data.totalEvents / data.totalOrgs) * 10) / 10 : 0,
+        totalEvents: data.totalEvents,
+        totalSandwiches: data.totalSandwiches,
+      }))
+      .filter(d => d.totalOrgs >= 2) // Only show categories with at least 2 organizations
+      .sort((a, b) => b.avgEventsPerOrg - a.avgEventsPerOrg); // Sort by avg events per org
+
+    // Also get list of repeat organizations for display
+    const repeatOrganizations = Array.from(orgEventCounts.entries())
+      .filter(([_, data]) => data.count > 1)
+      .map(([name, data]) => ({
+        name,
+        eventCount: data.count,
+        sandwiches: data.sandwiches,
+        category: data.category,
+        categoryLabel: CATEGORY_LABELS[data.category] || data.category || 'Other',
+        avgPerEvent: data.count > 0 ? Math.round(data.sandwiches / data.count) : 0,
+      }))
+      .sort((a, b) => b.eventCount - a.eventCount);
+
+    // Simple retention summary
+    const totalOrgs = orgEventCounts.size;
+    const repeatOrgCount = repeatOrganizations.length;
+    const retentionRate = totalOrgs > 0 ? Math.round((repeatOrgCount / totalOrgs) * 100) : 0;
 
     // NEW: Data quality metrics
     const dataQuality = {
@@ -1074,7 +1113,10 @@ export default function EventImpactReports() {
       categoryTrendsData,
       allCategories,
       regionalChartData,
-      repeatAnalysisData,
+      categoryRetentionData,
+      repeatOrganizations,
+      retentionRate,
+      repeatOrgCount,
       dataQuality,
       sandwichTypeBreakdown,
       // Data integrity issues
@@ -2079,7 +2121,10 @@ export default function EventImpactReports() {
                                     const hasEntry = entrySum > 0;
                                     return (
                                       <TableRow key={event.id} className={hasEntry ? 'bg-green-50' : ''}>
-                                        <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
+                                        <TableCell className="font-medium">
+                                          {event.organizationName || 'Unknown'}
+                                          {event.department && <span className="text-gray-500 font-normal"> • {event.department}</span>}
+                                        </TableCell>
                                         <TableCell>{event.scheduledEventDate ? new Date(event.scheduledEventDate).toLocaleDateString() : 'N/A'}</TableCell>
                                         <TableCell className="text-right font-medium">{event.actualSandwichCount?.toLocaleString()}</TableCell>
                                         <TableCell>
@@ -2688,13 +2733,13 @@ export default function EventImpactReports() {
                     {!showLocationTool ? (
                       <div className="text-center py-4">
                         <p className="text-gray-600 mb-4">
-                          {processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status)).length || 0} events are missing location data.
+                          {processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && e.source !== 'collection' && !String(e.id).startsWith('collection-') && !['declined', 'postponed', 'cancelled'].includes(e.status)).length || 0} events are missing location data.
                         </p>
                         <Button
                           onClick={() => setShowLocationTool(true)}
                           variant="outline"
                           className="border-orange-300 hover:bg-orange-100"
-                          disabled={!processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status)).length}
+                          disabled={!processedData?.filteredEvents?.filter((e: any) => !e.eventAddress && !e.isFromCollection && e.source !== 'collection' && !String(e.id).startsWith('collection-') && !['declined', 'postponed', 'cancelled'].includes(e.status)).length}
                         >
                           <MapPin className="w-4 h-4 mr-2" />
                           Open Location Entry Tool
@@ -2721,11 +2766,14 @@ export default function EventImpactReports() {
                             </TableHeader>
                             <TableBody>
                               {processedData?.filteredEvents
-                                ?.filter((e: any) => !e.eventAddress && !e.isFromCollection && !['declined', 'postponed', 'cancelled'].includes(e.status))
+                                ?.filter((e: any) => !e.eventAddress && !e.isFromCollection && e.source !== 'collection' && !String(e.id).startsWith('collection-') && !['declined', 'postponed', 'cancelled'].includes(e.status))
                                 .slice(0, 100)
                                 .map((event: any) => (
                                   <TableRow key={event.id} className={locationEntries.get(event.id) ? 'bg-green-50' : ''}>
-                                    <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
+                                    <TableCell className="font-medium">
+                                      {event.organizationName || 'Unknown'}
+                                      {event.department && <span className="text-gray-500 font-normal"> • {event.department}</span>}
+                                    </TableCell>
                                     <TableCell>
                                       {event.scheduledEventDate
                                         ? new Date(event.scheduledEventDate).toLocaleDateString()
@@ -2979,38 +3027,32 @@ export default function EventImpactReports() {
                 </CardContent>
               </Card>
 
-              {/* Productivity Trend - Average Sandwiches per Event */}
+              {/* Monthly Events & Sandwiches */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Productivity Trend</CardTitle>
+                  <CardTitle>Monthly Events & Sandwiches</CardTitle>
                   <CardDescription>
-                    Average sandwiches made per event each month - shows efficiency over time
+                    Number of events and total sandwiches per month - tracks growth over time
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {processedData?.monthlyChartData && processedData.monthlyChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
-                        data={processedData.monthlyChartData.map((m: any) => ({
-                          ...m,
-                          avgPerEvent: m.events > 0 ? Math.round(m.sandwiches / m.events) : 0
-                        }))}
-                      >
+                      <BarChart data={processedData.monthlyChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
-                        <YAxis />
+                        <YAxis yAxisId="left" orientation="left" stroke="#47B3CB" />
+                        <YAxis yAxisId="right" orientation="right" stroke="#236383" />
                         <Tooltip
-                          formatter={(value: number) => [value.toLocaleString(), 'Avg Sandwiches/Event']}
+                          formatter={(value: number, name: string) => [
+                            value.toLocaleString(),
+                            name === 'events' ? 'Events' : 'Sandwiches'
+                          ]}
                         />
-                        <Line
-                          type="monotone"
-                          dataKey="avgPerEvent"
-                          stroke="#10B981"
-                          strokeWidth={3}
-                          dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
-                          name="Avg per Event"
-                        />
-                      </LineChart>
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="events" fill="#47B3CB" name="Events" />
+                        <Bar yAxisId="right" dataKey="sandwiches" fill="#236383" name="Sandwiches" />
+                      </BarChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="h-[300px] flex items-center justify-center text-gray-500">
@@ -3026,71 +3068,132 @@ export default function EventImpactReports() {
           {/* Organizations Tab - ENHANCED */}
           <TabsContent value="organizations">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Repeat Organization Analysis */}
+              {/* Retention Summary */}
               <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    Organization Retention
+                    Retention Summary
                   </CardTitle>
                   <CardDescription>
-                    How many organizations return for multiple events?
+                    Organizations that have hosted more than one event
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {processedData?.repeatAnalysisData ? (
-                    <div className="space-y-3">
-                      {processedData.repeatAnalysisData.map((tier) => (
-                        <div key={tier.tier} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: tier.color }}
-                            />
-                            <span className="text-sm font-medium">{tier.tier}</span>
-                          </div>
-                          <span className="text-lg font-bold">{tier.count}</span>
-                        </div>
-                      ))}
-                      <div className="pt-3 border-t mt-3">
-                        <div className="text-sm text-gray-600">
-                          <strong>Retention Rate:</strong>{' '}
-                          {processedData.uniqueOrganizations > 0
-                            ? `${Math.round(((processedData.repeatAnalysisData[1].count + processedData.repeatAnalysisData[2].count + processedData.repeatAnalysisData[3].count) / processedData.uniqueOrganizations) * 100)}%`
-                            : '0%'} of orgs return
-                        </div>
+                  <div className="space-y-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-700">
+                        {processedData?.repeatOrgCount || 0}
                       </div>
+                      <div className="text-sm text-blue-600">Repeat Organizations</div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-600">Total Organizations</span>
+                      <span className="font-bold">{processedData?.uniqueOrganizations || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                      <span className="text-sm text-green-700">Retention Rate</span>
+                      <span className="font-bold text-green-700">{processedData?.retentionRate || 0}%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Category Retention - Which categories produce repeat partners? */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Retention by Category</CardTitle>
+                  <CardDescription>Which organization types are most likely to host multiple events? Sorted by average events per organization.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processedData?.categoryRetentionData && processedData.categoryRetentionData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Category</TableHead>
+                            <TableHead className="text-right">Orgs</TableHead>
+                            <TableHead className="text-right">Repeat Orgs</TableHead>
+                            <TableHead className="text-right">Repeat Rate</TableHead>
+                            <TableHead className="text-right">Avg Events/Org</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedData.categoryRetentionData.map((cat: any) => (
+                            <TableRow key={cat.category}>
+                              <TableCell className="font-medium">{cat.categoryLabel}</TableCell>
+                              <TableCell className="text-right">{cat.totalOrgs}</TableCell>
+                              <TableCell className="text-right">{cat.repeatOrgs}</TableCell>
+                              <TableCell className="text-right">
+                                <span className={cat.repeatRate >= 30 ? 'text-green-600 font-semibold' : ''}>
+                                  {cat.repeatRate}%
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className={cat.avgEventsPerOrg >= 2 ? 'text-blue-600 font-semibold' : ''}>
+                                  {cat.avgEventsPerOrg}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">No data available</div>
+                    <div className="h-[200px] flex items-center justify-center text-gray-500">
+                      No category data available
+                    </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Retention Visualization */}
-              <Card className="lg:col-span-2">
+              {/* Repeat Organizations List */}
+              <Card className="lg:col-span-3">
                 <CardHeader>
-                  <CardTitle>Retention Distribution</CardTitle>
-                  <CardDescription>Visual breakdown of organization engagement levels</CardDescription>
+                  <CardTitle>Repeat Organizations</CardTitle>
+                  <CardDescription>
+                    Organizations that have hosted more than one event - your most engaged partners, sorted by event count
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {processedData?.repeatAnalysisData ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={processedData.repeatAnalysisData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="tier" type="category" width={180} fontSize={11} />
-                        <Tooltip />
-                        <Bar dataKey="count" name="Organizations">
-                          {processedData.repeatAnalysisData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                  {processedData?.repeatOrganizations && processedData.repeatOrganizations.length > 0 ? (
+                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Organization</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead className="text-right">Events</TableHead>
+                            <TableHead className="text-right">Total Sandwiches</TableHead>
+                            <TableHead className="text-right">Avg/Event</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedData.repeatOrganizations.map((org: any) => (
+                            <TableRow key={org.name}>
+                              <TableCell className="font-medium">{org.name}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">
+                                  {org.categoryLabel}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-bold text-blue-600">
+                                {org.eventCount}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-[#FBAD3F]">
+                                {org.sandwiches.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-right text-gray-600">
+                                {org.avgPerEvent.toLocaleString()}
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                        </TableBody>
+                      </Table>
+                    </div>
                   ) : (
-                    <div className="h-[250px] flex items-center justify-center text-gray-500">
-                      No data available
+                    <div className="text-center py-8 text-gray-500">
+                      No repeat organizations found in this time period
                     </div>
                   )}
                 </CardContent>
