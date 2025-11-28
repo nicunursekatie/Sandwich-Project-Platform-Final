@@ -625,29 +625,46 @@ async function gatherOrganizationMetrics(
     return matchesGroup1 || matchesGroup2 || matchesGroupCollections;
   });
 
-  // Calculate sandwich totals from collections
+  // Calculate sandwich totals from collections (primary source - actual distributions)
+  // Track which dates have collection data to avoid double-counting with event requests
   let totalSandwiches = 0;
+  const datesWithCollectionData = new Set<string>();
+
   orgCollections.forEach(collection => {
+    const collectionDate = collection.collectionDate
+      ? new Date(collection.collectionDate).toISOString().split('T')[0]
+      : null;
+
     if (collection.group1Name && canonicalizeOrgName(collection.group1Name) === canonicalName) {
       totalSandwiches += collection.group1Count || 0;
+      if (collectionDate) datesWithCollectionData.add(collectionDate);
     }
     if (collection.group2Name && canonicalizeOrgName(collection.group2Name) === canonicalName) {
       totalSandwiches += collection.group2Count || 0;
+      if (collectionDate) datesWithCollectionData.add(collectionDate);
     }
     if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
       collection.groupCollections.forEach((group: any) => {
         if (group.name && canonicalizeOrgName(group.name) === canonicalName) {
           totalSandwiches += group.count || 0;
+          if (collectionDate) datesWithCollectionData.add(collectionDate);
         }
       });
     }
   });
 
-  // Add estimated sandwiches from completed requests
+  // Add sandwich counts from completed requests ONLY for dates without collection data
+  // This prevents double-counting when the same event has both collection and request data
   orgRequests
     .filter(req => req.status === 'completed' || req.status === 'contact_completed')
     .forEach(req => {
-      totalSandwiches += req.actualSandwichCount || req.estimatedSandwichCount || 0;
+      const reqDate = req.scheduledEventDate || req.desiredEventDate;
+      const reqDateStr = reqDate ? new Date(reqDate).toISOString().split('T')[0] : null;
+
+      // Only add if there's no collection data for this date
+      if (!reqDateStr || !datesWithCollectionData.has(reqDateStr)) {
+        totalSandwiches += req.actualSandwichCount || req.estimatedSandwichCount || 0;
+      }
     });
 
   // Gather all event dates
