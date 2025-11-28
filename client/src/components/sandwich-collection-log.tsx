@@ -77,6 +77,7 @@ import {
   calculateGroupSandwiches,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { getCollectionDefaults, getRoleViewDescription } from '@shared/role-view-defaults';
 
 interface ImportResult {
@@ -3972,6 +3973,21 @@ export default function SandwichCollectionLog() {
       </Dialog>
 
       {/* Quick Help Button */}
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Collection Insights"
+        subtitle="Ask about your collection data"
+        suggestedQuestions={[
+          "Which host collected the most sandwiches?",
+          "What's our average collection size?",
+          "Show collections by month",
+          "Which days have the most collections?",
+          "Top 10 hosts by sandwich count",
+          "Show monthly trends as a chart",
+        ]}
+      />
     </div>
   );
 }

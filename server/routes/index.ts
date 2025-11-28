@@ -72,6 +72,7 @@ import objectsRouter from './objects';
 import serviceHoursRouter from './service-hours';
 import { impactReportsRouter } from './impact-reports';
 import { predictionsRouter } from './predictions';
+import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
 
@@ -472,6 +473,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     predictionsRouter
   );
   router.use('/api/predictions', createErrorHandler('predictions'));
+
+  // AI Chat routes - Universal AI assistant for various contexts
+  router.use(
+    '/api/ai-chat',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    aiChatRouter
+  );
+  router.use('/api/ai-chat', createErrorHandler('ai-chat'));
 
   // Group Engagement routes - AI-powered organization engagement insights
   const groupEngagementRouter = createGroupEngagementRoutes({
