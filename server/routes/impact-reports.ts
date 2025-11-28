@@ -724,7 +724,7 @@ impactReportsRouter.get('/events-missing-types', async (req: AuthenticatedReques
         id: e.id,
         organizationName: e.organizationName,
         organizationCategory: e.organizationCategory,
-        scheduledEventDate: e.scheduledEventDate,
+        scheduledEventDate: e.scheduledEventDate || e.desiredEventDate, // Fallback to desiredEventDate
         actualSandwichCount: e.actualSandwichCount,
         hasOrgPattern: patternsByOrg.has(e.organizationName || ''),
       })),
