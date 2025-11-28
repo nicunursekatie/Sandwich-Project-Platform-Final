@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { ReportData } from './report-generator';
 
 export class PDFGenerator {
@@ -56,7 +56,7 @@ export class PDFGenerator {
         ['Active Projects', summary.activeProjects.toString()],
       ];
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: yPosition,
         head: [['Metric', 'Value']],
         body: statsData,
@@ -90,7 +90,7 @@ export class PDFGenerator {
           performer.value.toLocaleString(),
         ]);
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPosition,
           head: [['Name', 'Count']],
           body: performersData,
@@ -151,7 +151,7 @@ export class PDFGenerator {
                 (item.value || 0).toLocaleString(),
               ]);
 
-            (doc as any).autoTable({
+            autoTable(doc, {
               startY: yPosition,
               head: [['Category', 'Value']],
               body: chartData,
@@ -196,7 +196,7 @@ export class PDFGenerator {
           ) => headers.map((header) => this.formatValue(row[header]))
         );
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPosition,
           head: [headers.map((header) => this.formatHeader(header))],
           body: tableData,
