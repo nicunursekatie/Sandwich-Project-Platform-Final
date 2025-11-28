@@ -1161,8 +1161,10 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
 
     // Filter events by date range using string comparison
     const events = allEvents.filter(e => {
-      const eventDate = e.scheduledEventDate || e.desiredEventDate;
-      if (!eventDate) return false;
+      const eventDateRaw = e.scheduledEventDate || e.desiredEventDate;
+      if (!eventDateRaw) return false;
+      // Handle both Date objects and string dates
+      const eventDate = eventDateRaw instanceof Date ? eventDateRaw : new Date(eventDateRaw);
       const eventDateStr = toDateString(eventDate);
       return eventDateStr >= startDateStr && eventDateStr < endDateStr;
     });
@@ -1215,9 +1217,11 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       if (sandwichCount > 0) categoryStats[category].counts.push(sandwichCount);
 
       // Monthly stats
-      const eventDate = e.scheduledEventDate || e.desiredEventDate;
-      if (eventDate) {
-        const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
+      const eventDateRaw2 = e.scheduledEventDate || e.desiredEventDate;
+      if (eventDateRaw2) {
+        // Handle both Date objects and string dates
+        const eventDateObj = eventDateRaw2 instanceof Date ? eventDateRaw2 : new Date(eventDateRaw2);
+        const monthKey = `${eventDateObj.getFullYear()}-${String(eventDateObj.getMonth() + 1).padStart(2, '0')}`;
         if (!monthlyStats[monthKey]) {
           monthlyStats[monthKey] = { events: 0, sandwiches: 0 };
         }
@@ -1320,15 +1324,22 @@ ${repeatOrgs.slice(0, 10).map((org, i) => `${i + 1}. ${org.name}: ${org.events} 
 `;
 
     // Build conversation for OpenAI
-    const systemPrompt = `You are a data analyst assistant for The Sandwich Project, a nonprofit that makes and distributes sandwiches to people in need.
+    const systemPrompt = `You are a data analyst assistant for The Sandwich Project, a nonprofit that coordinates sandwich-making events with community organizations.
 
-You have access to their event and sandwich distribution data. Your job is to:
-1. Answer questions about the data
-2. Provide insights and analysis
-3. Suggest ways to visualize or understand the data better
-4. Help interpret trends and patterns
+CRITICAL RULES - YOU MUST FOLLOW THESE:
+1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
+2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts per event.
+3. The categories in the data refer to ORGANIZATION types (schools, churches, corporate, etc.), NOT sandwich types.
+4. If asked about something not in the data, say "That information is not tracked in the current data."
+5. Never make up statistics or trends that aren't directly derivable from the provided data.
 
-When the user asks for a chart or visualization, respond with a JSON block that can be rendered. Use this format:
+Your job is to:
+1. Answer questions using ONLY the data provided below
+2. Provide insights and analysis based on the actual numbers
+3. Create visualizations of the real data
+4. Help interpret trends and patterns in the existing data
+
+When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
 {
   "type": "bar" | "line" | "pie",
@@ -1340,9 +1351,9 @@ When the user asks for a chart or visualization, respond with a JSON block that 
 }
 \`\`\`
 
-Keep responses concise but insightful. Focus on actionable information.
+Keep responses concise but insightful. Focus on actionable information derived from the actual data.
 
-CURRENT DATA:
+CURRENT DATA (this is the ONLY data you should reference):
 ${dataSummary}`;
 
     const messages: any[] = [

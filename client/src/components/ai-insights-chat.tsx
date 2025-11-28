@@ -9,19 +9,15 @@ import {
   MessageCircle,
   Send,
   Loader2,
-  X,
-  Minimize2,
-  Maximize2,
   Sparkles,
   BarChart3,
   TrendingUp,
-  ChevronDown,
-  ChevronUp,
   Download,
   Copy,
   Check,
   Image,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -71,16 +67,19 @@ const SUGGESTED_QUESTIONS = [
   "Which categories have the best retention?",
   "What's the typical sandwich count for school events?",
   "Compare corporate vs nonprofit events",
+  "Which month had the highest sandwich collection?",
+  "Show top 10 organizations by sandwich count",
+  "What percentage of events are from schools?",
 ];
 
 export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [copiedChartId, setCopiedChartId] = useState<string | null>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -89,12 +88,12 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
     }
   }, [messages]);
 
-  // Focus input when chat opens
+  // Focus input on mount
   useEffect(() => {
-    if (isOpen && !isMinimized && inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isOpen, isMinimized]);
+  }, []);
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
@@ -162,7 +161,6 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
   };
 
   const handleSuggestionClick = (question: string) => {
-    setInputValue(question);
     setMessages(prev => [
       ...prev,
       {
@@ -181,8 +179,10 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
     }
   };
 
-  const { toast } = useToast();
-  const [copiedChartId, setCopiedChartId] = useState<string | null>(null);
+  const clearConversation = () => {
+    setMessages([]);
+    setShowSuggestions(true);
+  };
 
   // Export chart data as CSV
   const exportAsCSV = (chart: ChartData) => {
@@ -317,50 +317,50 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
     const chartId = `ai-chart-${messageIndex}`;
 
     return (
-      <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-700">{chart.title}</h4>
+      <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-base font-semibold text-gray-700">{chart.title}</h4>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => copyToClipboard(chart, chartId)}
               title="Copy data to clipboard"
             >
               {copiedChartId === chartId ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
+                <Check className="h-4 w-4 text-green-500" />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-4 w-4" />
               )}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsCSV(chart)}
               title="Download as CSV"
             >
-              <FileSpreadsheet className="h-3.5 w-3.5" />
+              <FileSpreadsheet className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
+              className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsPNG(chart, chartId)}
               title="Download as PNG"
             >
-              <Image className="h-3.5 w-3.5" />
+              <Image className="h-4 w-4" />
             </Button>
           </div>
         </div>
         <div id={chartId}>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={300}>
             {chart.type === 'bar' ? (
               <BarChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xKey} fontSize={10} />
-                <YAxis fontSize={10} />
+                <XAxis dataKey={xKey} fontSize={11} />
+                <YAxis fontSize={11} />
                 <Tooltip />
                 <Bar dataKey={yKey} fill="#47B3CB">
                   {chart.data.map((_, index) => (
@@ -371,10 +371,10 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
             ) : chart.type === 'line' ? (
               <LineChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xKey} fontSize={10} />
-                <YAxis fontSize={10} />
+                <XAxis dataKey={xKey} fontSize={11} />
+                <YAxis fontSize={11} />
                 <Tooltip />
-                <Line type="monotone" dataKey={yKey} stroke="#47B3CB" strokeWidth={2} />
+                <Line type="monotone" dataKey={yKey} stroke="#47B3CB" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             ) : (
               <PieChart>
@@ -384,186 +384,194 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
                   nameKey={xKey}
                   cx="50%"
                   cy="50%"
-                  outerRadius={70}
+                  outerRadius={100}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                  fontSize={10}
+                  labelLine={true}
+                  fontSize={11}
                 >
                   {chart.data.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             )}
           </ResponsiveContainer>
         </div>
         {chart.description && (
-          <p className="text-xs text-gray-500 mt-2 italic">{chart.description}</p>
+          <p className="text-sm text-gray-500 mt-3 italic">{chart.description}</p>
         )}
       </div>
     );
   };
 
-  // Floating button when closed
-  if (!isOpen) {
-    return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-[#47B3CB] to-[#236383] hover:from-[#236383] hover:to-[#47B3CB] z-50"
-        size="icon"
-      >
-        <Sparkles className="h-6 w-6 text-white" />
-      </Button>
-    );
-  }
-
-  // Minimized state
-  if (isMinimized) {
-    return (
-      <div className="fixed bottom-20 right-6 z-50">
-        <Card className="w-72 shadow-xl border-[#47B3CB]/30">
-          <CardHeader className="py-2 px-3 flex flex-row items-center justify-between bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white rounded-t-lg">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="font-medium text-sm">AI Insights</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-white hover:bg-white/20"
-                onClick={() => setIsMinimized(false)}
-              >
-                <Maximize2 className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-white hover:bg-white/20"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Chat Section */}
+      <div className="lg:col-span-2">
+        <Card className="h-[700px] flex flex-col">
+          <CardHeader className="py-4 px-6 bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white rounded-t-lg flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-6 w-6" />
+                <div>
+                  <CardTitle className="text-lg">AI Data Insights</CardTitle>
+                  <p className="text-sm text-white/80">
+                    Ask questions about your event and sandwich data
+                  </p>
+                </div>
+              </div>
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                  onClick={clearConversation}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              )}
             </div>
           </CardHeader>
+
+          {/* Messages Area */}
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <ScrollArea className="h-full p-6" ref={scrollRef}>
+              {messages.length === 0 && showSuggestions ? (
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <Sparkles className="h-12 w-12 mx-auto text-[#47B3CB] mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      What would you like to know?
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      I can analyze your event data and create custom visualizations. Try one of these questions or ask your own:
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SUGGESTED_QUESTIONS.map((question, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="text-left justify-start h-auto py-3 px-4 text-sm hover:bg-[#47B3CB]/10 hover:border-[#47B3CB] transition-colors"
+                        onClick={() => handleSuggestionClick(question)}
+                        disabled={chatMutation.isPending}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-3 flex-shrink-0 text-[#47B3CB]" />
+                        <span className="text-gray-700">{question}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`${message.role === 'user' ? 'flex justify-end' : ''}`}
+                    >
+                      <div
+                        className={`max-w-[90%] ${
+                          message.role === 'user'
+                            ? 'bg-[#47B3CB] text-white rounded-2xl rounded-tr-sm px-4 py-3'
+                            : 'bg-gray-50 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3'
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      </div>
+                      {message.chart && renderChart(message.chart, index)}
+                    </div>
+                  ))}
+
+                  {chatMutation.isPending && (
+                    <div className="flex items-center gap-3 text-gray-500 bg-gray-50 rounded-2xl px-4 py-3 max-w-[90%]">
+                      <Loader2 className="h-5 w-5 animate-spin text-[#47B3CB]" />
+                      <span className="text-sm">Analyzing your data...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+
+          {/* Input Area */}
+          <div className="p-4 border-t bg-gray-50 rounded-b-lg flex-shrink-0">
+            <div className="flex gap-3">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask a question about your data..."
+                className="flex-1"
+                disabled={chatMutation.isPending}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || chatMutation.isPending}
+                className="bg-[#47B3CB] hover:bg-[#236383] px-6"
+              >
+                {chatMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Analyzing data from {dateRange.start.toLocaleDateString()} to {dateRange.end.toLocaleDateString()}
+            </p>
+          </div>
         </Card>
       </div>
-    );
-  }
 
-  // Full chat panel
-  return (
-    <div className="fixed bottom-20 right-6 z-50">
-      <Card className="w-96 h-[500px] shadow-xl border-[#47B3CB]/30 flex flex-col">
-        {/* Header */}
-        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white rounded-t-lg flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
+      {/* Tips Panel */}
+      <div className="lg:col-span-1">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-[#47B3CB]" />
+              Tips for Better Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-gray-600">
             <div>
-              <span className="font-semibold">AI Data Insights</span>
-              <p className="text-xs text-white/80">Ask questions about your data</p>
+              <h4 className="font-medium text-gray-700 mb-1">Ask for comparisons</h4>
+              <p className="text-xs">"Compare school events vs corporate events"</p>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-white hover:bg-white/20"
-              onClick={() => setIsMinimized(true)}
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-white hover:bg-white/20"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full p-4" ref={scrollRef}>
-            {messages.length === 0 && showSuggestions && (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600 text-center mb-4">
-                  I can help you understand your event data. Try asking:
-                </p>
-                {SUGGESTED_QUESTIONS.map((question, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-full text-left justify-start h-auto py-2 px-3 text-sm hover:bg-[#47B3CB]/10 hover:border-[#47B3CB]"
-                    onClick={() => handleSuggestionClick(question)}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0 text-[#47B3CB]" />
-                    <span className="text-gray-700">{question}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
-
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
-              >
-                <div
-                  className={`inline-block max-w-[85%] rounded-lg px-3 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-[#47B3CB] text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                </div>
-                {message.chart && renderChart(message.chart, index)}
-              </div>
-            ))}
-
-            {chatMutation.isPending && (
-              <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Analyzing data...</span>
-              </div>
-            )}
-          </ScrollArea>
-        </div>
-
-        {/* Input Area */}
-        <div className="p-3 border-t bg-gray-50 rounded-b-lg flex-shrink-0">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about your data..."
-              className="flex-1 text-sm"
-              disabled={chatMutation.isPending}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || chatMutation.isPending}
-              size="icon"
-              className="bg-[#47B3CB] hover:bg-[#236383]"
-            >
-              {chatMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-gray-400 mt-1 text-center">
-            Data range: {dateRange.start.toLocaleDateString()} - {dateRange.end.toLocaleDateString()}
-          </p>
-        </div>
-      </Card>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Request specific charts</h4>
+              <p className="text-xs">"Show me a pie chart of events by category"</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Look for trends</h4>
+              <p className="text-xs">"What's the monthly growth trend for sandwiches?"</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Get rankings</h4>
+              <p className="text-xs">"Top 5 organizations by sandwich count"</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Explore patterns</h4>
+              <p className="text-xs">"Which months have the most events?"</p>
+            </div>
+            <div className="pt-3 border-t">
+              <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-[#47B3CB]" />
+                Export Options
+              </h4>
+              <p className="text-xs text-gray-500">
+                Every chart can be exported as CSV, PNG, or copied to clipboard for use in presentations or spreadsheets.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
