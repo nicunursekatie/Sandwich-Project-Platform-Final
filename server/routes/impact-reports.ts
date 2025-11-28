@@ -4,7 +4,7 @@ import { impactReports, eventRequests } from '../../shared/schema';
 import { eq, desc, and, gt, inArray } from 'drizzle-orm';
 import { logger } from '../middleware/logger';
 import { generateImpactReport, saveImpactReport } from '../services/ai-impact-reports';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface AuthenticatedRequest extends Request {
@@ -107,7 +107,7 @@ impactReportsRouter.post('/generate-pdf', async (req: AuthenticatedRequest, res:
     const report = await generateImpactReport(start, end, reportType || 'custom');
 
     // Generate PDF
-    const doc = new (jsPDF as any)();
+    const doc = new jsPDF();
     const primaryColor: [number, number, number] = [35, 99, 131]; // TSP brand color #236383
     const darkGray: [number, number, number] = [102, 102, 102];
     const lightGray: [number, number, number] = [248, 249, 250];
