@@ -317,13 +317,13 @@ export function SmartTooltipGuide({
       {!isVisible && availableSequences.length > 0 && (
         <Button
           variant="outline"
-          size="sm"
-          className="fixed bottom-4 right-4 z-40 bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 border-0 shadow-lg"
+          size="default"
+          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 border-0 shadow-xl rounded-full px-5 py-6 h-auto flex-col gap-1"
           onClick={() => setIsVisible(true)}
-          title="Interactive tutorials and guides"
+          title="Interactive tutorials and guided walkthroughs"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Tutorials
+          <HelpCircle className="w-6 h-6" />
+          <span className="text-xs font-medium">Guided Tours</span>
         </Button>
       )}
 
