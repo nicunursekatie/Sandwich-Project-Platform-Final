@@ -95,6 +95,7 @@ import type { Meeting, MeetingFormData } from './meetings/dashboard/hooks/useMee
 import type { Project, NewProjectData } from './meetings/dashboard/hooks/useProjects';
 import type { AgendaItem, OffAgendaItemData } from './meetings/dashboard/hooks/useAgenda';
 import { logger } from '@/lib/logger';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 export default function EnhancedMeetingDashboard() {
   const { user } = useAuth();
@@ -977,6 +978,21 @@ export default function EnhancedMeetingDashboard() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Meetings Assistant"
+        subtitle="Ask about meetings and agendas"
+        suggestedQuestions={[
+          "What meetings are coming up?",
+          "How do I add an agenda item?",
+          "Show me past meeting notes",
+          "Who is attending the next meeting?",
+          "How do I schedule a new meeting?",
+          "What action items are pending?",
+        ]}
+      />
     </div>
   );
 }

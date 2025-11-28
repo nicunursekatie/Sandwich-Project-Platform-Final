@@ -38,6 +38,7 @@ import {
   parseCollectionDate,
   calculateYearlyBreakdown,
 } from '@/lib/analytics-utils';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/lib/logger';
@@ -679,6 +680,21 @@ export default function AnalyticsDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Analytics Assistant"
+        subtitle="Ask about collection trends and data"
+        suggestedQuestions={[
+          "What's our total sandwich count?",
+          "Show me monthly trends",
+          "How are we doing this year?",
+          "What was our best week?",
+          "How do we compare to last month?",
+          "What's our weekly average?",
+        ]}
+      />
     </div>
     </TooltipProvider>
   );

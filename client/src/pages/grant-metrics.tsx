@@ -64,6 +64,7 @@ import {
 } from 'recharts';
 import { calculateTotalSandwiches, calculateGroupSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 export default function GrantMetrics() {
   const { trackView } = useActivityTracker();
@@ -2014,6 +2015,21 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Grant Metrics Assistant"
+        subtitle="Ask about impact metrics and data"
+        suggestedQuestions={[
+          "What are our key impact metrics?",
+          "Show me year-over-year growth",
+          "How many sandwiches this fiscal year?",
+          "What's our volunteer engagement?",
+          "Show me distribution by location",
+          "What metrics can I use for grants?",
+        ]}
+      />
     </div>
   );
 }

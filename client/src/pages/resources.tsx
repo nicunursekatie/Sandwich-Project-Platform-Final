@@ -27,6 +27,7 @@ import {
   FileEdit,
   X,
 } from 'lucide-react';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Category definitions with icons and colors (using brand color scheme)
 const CATEGORIES = [
@@ -789,6 +790,21 @@ export function Resources() {
           </div>
         )}
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Resources Assistant"
+        subtitle="Ask about documents and links"
+        suggestedQuestions={[
+          "What resources are available?",
+          "How do I add a new resource?",
+          "Show me training materials",
+          "Where are the templates?",
+          "What documents do I need?",
+          "How do I find specific resources?",
+        ]}
+      />
     </div>
   );
 }

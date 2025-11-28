@@ -43,6 +43,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import type { UserForPermissions } from '@shared/types';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 interface OrganizationContact {
   organizationName: string;
@@ -2033,6 +2034,21 @@ export default function GroupCatalog({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="general"
+        title="Organizations Assistant"
+        subtitle="Ask about groups and organizations"
+        suggestedQuestions={[
+          "How many organizations are in the catalog?",
+          "Show me organizations by category",
+          "How do I update organization details?",
+          "What organization types do we have?",
+          "How do I add a new organization?",
+          "Which organizations have upcoming events?",
+        ]}
+      />
     </div>
   );
 }

@@ -55,6 +55,7 @@ import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 import { WhatsNewModal } from '@/components/whats-new-modal';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -948,6 +949,21 @@ export default function Dashboard({
 
         {/* Guided Tour System */}
         <GuidedTour />
+
+        {/* AI Assistant */}
+        <FloatingAIChat
+          contextType="general"
+          title="TSP Assistant"
+          subtitle="Ask anything about the platform"
+          suggestedQuestions={[
+            "What can I do on this platform?",
+            "How do I add a new collection?",
+            "What reports are available?",
+            "How do I manage volunteers?",
+            "Show me recent activity",
+            "What's the status of our projects?",
+          ]}
+        />
       </DashboardNavigationProvider>
     </>
   );
