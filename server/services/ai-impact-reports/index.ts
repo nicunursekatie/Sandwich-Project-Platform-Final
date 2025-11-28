@@ -109,6 +109,30 @@ export async function generateImpactReport(
 }
 
 /**
+ * Helper function to calculate sandwich count from a collection record
+ * This handles the groupCollections JSONB field which contains most sandwich data
+ */
+function getCollectionSandwichCount(collection: any): number {
+  let total = 0;
+
+  // Add individual sandwiches
+  total += collection.individualSandwiches || 0;
+
+  // Add from groupCollections JSONB array (primary source of group sandwich data)
+  if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+    collection.groupCollections.forEach((group: any) => {
+      total += group.count || 0;
+    });
+  }
+
+  // Add legacy group columns
+  total += collection.group1Count || 0;
+  total += collection.group2Count || 0;
+
+  return total;
+}
+
+/**
  * Gather all relevant data from the database for the report period
  */
 async function gatherReportData(startDate: Date, endDate: Date) {
@@ -127,10 +151,13 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   // Get sandwich collections for the period
   const allCollections = await db.query.sandwichCollections.findMany();
 
-  // Filter collections by date range
+  // Filter collections by date range - need to parse string date to compare
   const collections = allCollections.filter(c => {
-    const collectionDate = c.collectionDate;
-    if (!collectionDate) return false;
+    if (c.deletedAt) return false; // Skip soft-deleted records
+    const collectionDateStr = c.collectionDate;
+    if (!collectionDateStr) return false;
+    // Parse YYYY-MM-DD string to Date for comparison
+    const collectionDate = new Date(collectionDateStr + 'T00:00:00');
     return collectionDate >= startDate && collectionDate < endDate;
   });
 
@@ -162,26 +189,28 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   // Calculate totals - merge event data with collection data (same as component)
   let totalSandwiches = 0;
 
-  // Count from events (using collection's actualSandwichCount when linked)
+  // Count from events (using collection data when linked, otherwise event data)
   events.forEach(e => {
     const linkedCollection = collectionsByEventId.get(e.id);
-    const sandwichCount = linkedCollection?.sandwichCount
-      || e.actualSandwichCount
-      || e.estimatedSandwichCount
-      || 0;
-    totalSandwiches += sandwichCount;
+    if (linkedCollection) {
+      // Use collection's calculated sandwich count
+      totalSandwiches += getCollectionSandwichCount(linkedCollection);
+    } else {
+      // Use event's sandwich count
+      totalSandwiches += e.actualSandwichCount || e.estimatedSandwichCount || 0;
+    }
   });
 
-  // Add unlinked collections
+  // Add unlinked collections (collections without eventRequestId)
   unlinkedCollections.forEach(c => {
-    totalSandwiches += c.sandwichCount || 0;
+    totalSandwiches += getCollectionSandwichCount(c);
   });
 
   // Add orphaned collections (eventRequestId points to event not in our filtered set)
   let orphanedCollectionCount = 0;
   collectionsByEventId.forEach((collection, eventRequestId) => {
     if (!validEventIds.has(eventRequestId)) {
-      totalSandwiches += collection.sandwichCount || 0;
+      totalSandwiches += getCollectionSandwichCount(collection);
       orphanedCollectionCount++;
     }
   });
