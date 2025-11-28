@@ -164,8 +164,8 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     if (c.deletedAt) return false; // Skip soft-deleted records
     const collectionDateStr = c.collectionDate;
     if (!collectionDateStr) return false;
-    // Parse YYYY-MM-DD string to Date for comparison
-    const collectionDate = new Date(collectionDateStr + 'T00:00:00');
+    // Parse YYYY-MM-DD string to Date for comparison (use UTC to match startDate/endDate)
+    const collectionDate = new Date(collectionDateStr + 'T00:00:00Z');
     return collectionDate >= startDate && collectionDate < endDate;
   });
 

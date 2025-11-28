@@ -1159,7 +1159,7 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       if (c.deletedAt) return false;
       const collectionDateStr = c.collectionDate;
       if (!collectionDateStr) return false;
-      const collectionDate = new Date(collectionDateStr + 'T00:00:00');
+      const collectionDate = new Date(collectionDateStr + 'T00:00:00Z');
       return collectionDate >= startDate && collectionDate < endDate;
     });
 
