@@ -72,6 +72,114 @@ const SUGGESTED_QUESTIONS = [
   "What percentage of events are from schools?",
 ];
 
+// Simple markdown renderer for AI responses
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let listItems: React.ReactNode[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      if (listType === 'ol') {
+        elements.push(<ol key={`list-${elements.length}`} className="list-decimal list-inside space-y-1 my-2">{listItems}</ol>);
+      } else {
+        elements.push(<ul key={`list-${elements.length}`} className="list-disc list-inside space-y-1 my-2">{listItems}</ul>);
+      }
+      listItems = [];
+      listType = null;
+    }
+  };
+
+  const processInlineFormatting = (line: string): React.ReactNode => {
+    // Process bold (**text** or __text__)
+    const parts: React.ReactNode[] = [];
+    let remaining = line;
+    let key = 0;
+
+    while (remaining.length > 0) {
+      const boldMatch = remaining.match(/\*\*(.+?)\*\*|__(.+?)__/);
+      if (boldMatch && boldMatch.index !== undefined) {
+        // Add text before the match
+        if (boldMatch.index > 0) {
+          parts.push(<span key={key++}>{remaining.slice(0, boldMatch.index)}</span>);
+        }
+        // Add bold text
+        parts.push(<strong key={key++} className="font-semibold">{boldMatch[1] || boldMatch[2]}</strong>);
+        remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+      } else {
+        parts.push(<span key={key++}>{remaining}</span>);
+        break;
+      }
+    }
+
+    return parts.length === 1 ? parts[0] : <>{parts}</>;
+  };
+
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+
+    // Headers
+    if (trimmedLine.startsWith('### ')) {
+      flushList();
+      elements.push(
+        <h4 key={index} className="font-semibold text-gray-800 mt-3 mb-1">
+          {processInlineFormatting(trimmedLine.slice(4))}
+        </h4>
+      );
+    } else if (trimmedLine.startsWith('## ')) {
+      flushList();
+      elements.push(
+        <h3 key={index} className="font-bold text-gray-800 mt-3 mb-1">
+          {processInlineFormatting(trimmedLine.slice(3))}
+        </h3>
+      );
+    } else if (trimmedLine.startsWith('# ')) {
+      flushList();
+      elements.push(
+        <h2 key={index} className="font-bold text-gray-900 mt-3 mb-2 text-base">
+          {processInlineFormatting(trimmedLine.slice(2))}
+        </h2>
+      );
+    }
+    // Numbered list items
+    else if (/^\d+\.\s/.test(trimmedLine)) {
+      if (listType !== 'ol') {
+        flushList();
+        listType = 'ol';
+      }
+      const content = trimmedLine.replace(/^\d+\.\s/, '');
+      listItems.push(<li key={index}>{processInlineFormatting(content)}</li>);
+    }
+    // Bullet list items
+    else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
+      if (listType !== 'ul') {
+        flushList();
+        listType = 'ul';
+      }
+      const content = trimmedLine.slice(2);
+      listItems.push(<li key={index}>{processInlineFormatting(content)}</li>);
+    }
+    // Empty line
+    else if (trimmedLine === '') {
+      flushList();
+      elements.push(<div key={index} className="h-2" />);
+    }
+    // Regular paragraph
+    else {
+      flushList();
+      elements.push(
+        <p key={index} className="my-1">
+          {processInlineFormatting(trimmedLine)}
+        </p>
+      );
+    }
+  });
+
+  flushList();
+  return <div className="text-sm leading-relaxed">{elements}</div>;
+}
+
 export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -479,7 +587,11 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
                             : 'bg-gray-50 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        {message.role === 'user' ? (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        ) : (
+                          renderMarkdown(message.content)
+                        )}
                       </div>
                       {message.chart && renderChart(message.chart, index)}
                     </div>

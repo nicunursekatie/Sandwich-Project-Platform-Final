@@ -1,10 +1,10 @@
-# Form Patterns and Best Practices
+# UI Patterns and Best Practices
 
-This directory contains documentation for standardized form patterns used throughout the Sandwich Project Platform application.
+This directory contains documentation for standardized patterns used throughout the Sandwich Project Platform application.
 
 ## Overview
 
-Forms are a critical part of the user experience. These patterns ensure:
+These patterns ensure:
 - **Consistency** across the application
 - **Better UX** through progressive disclosure and clear feedback
 - **Data insights** through comprehensive activity tracking
@@ -12,7 +12,35 @@ Forms are a critical part of the user experience. These patterns ensure:
 
 ## Patterns
 
-### 1. [Progressive Disclosure](./progressive-disclosure.md)
+### 1. [AI Chat](./ai-chat.md)
+
+Add AI-powered chat assistants to pages for data insights and visualizations.
+
+**Key Components:**
+- `FloatingAIChat` - Reusable floating chat component
+- `/api/ai-chat` endpoint - Context-aware AI backend
+
+**When to use:**
+- Pages with data that users might want to explore
+- Dashboards and analytics pages
+- Collection logs, event lists, impact reports
+
+**Quick Example:**
+```tsx
+import { FloatingAIChat } from '@/components/floating-ai-chat';
+
+<FloatingAIChat
+  contextType="collections"
+  title="Collection Insights"
+  subtitle="Ask about your data"
+/>
+```
+
+📖 [Read full documentation](./ai-chat.md)
+
+---
+
+### 2. [Progressive Disclosure](./progressive-disclosure.md)
 
 Reduce cognitive load by showing only essential information initially, revealing additional details when needed.
 
@@ -41,7 +69,7 @@ const { isOpen, toggle } = useProgressiveDisclosure();
 
 ---
 
-### 2. [Validation Feedback](./validation-feedback.md)
+### 3. [Validation Feedback](./validation-feedback.md)
 
 Provide clear, consistent validation feedback to improve form completion rates.
 
@@ -75,7 +103,7 @@ import { Field } from '@/components/ui/field-validation-wrapper';
 
 ---
 
-### 3. [Form Activity Tracking](./form-activity-tracking.md)
+### 4. [Form Activity Tracking](./form-activity-tracking.md)
 
 Centralized tracking for form interactions to understand user behavior and improve UX.
 
@@ -367,6 +395,7 @@ export default ComprehensiveForm;
 
 | Pattern | Use Case | Required? |
 |---------|----------|-----------|
+| **AI Chat** | Pages with data users want to explore | Optional |
 | **Progressive Disclosure** | Forms with many optional fields | Optional |
 | **Validation Feedback** | Any form with validation | Recommended |
 | **Form Activity Tracking** | All forms | Recommended |
@@ -375,6 +404,7 @@ export default ComprehensiveForm;
 
 | Component/Hook | Location |
 |----------------|----------|
+| `FloatingAIChat` | `client/src/components/floating-ai-chat.tsx` |
 | `useProgressiveDisclosure` | `client/src/hooks/useProgressiveDisclosure.ts` |
 | `ValidationMessage` | `client/src/components/ui/validation-message.tsx` |
 | `ValidationSummary` | `client/src/components/ui/validation-summary.tsx` |
