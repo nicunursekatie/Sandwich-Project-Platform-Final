@@ -114,21 +114,24 @@ export async function generateImpactReport(
 async function gatherReportData(startDate: Date, endDate: Date) {
   logger.info('Gathering report data', { startDate, endDate });
 
-  // Get completed events in the period
-  const events = await db.query.eventRequests.findMany({
-    where: and(
-      eq(eventRequests.status, 'completed'),
-      gte(eventRequests.scheduledEventDate, startDate),
-      lt(eventRequests.scheduledEventDate, endDate)
-    ),
+  // Get all events in the period - use scheduledEventDate OR desiredEventDate (matching component)
+  const allEventRequests = await db.query.eventRequests.findMany();
+
+  // Filter events by date range (same as component does client-side)
+  const events = allEventRequests.filter(e => {
+    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    if (!eventDate) return false;
+    return eventDate >= startDate && eventDate < endDate;
   });
 
-  // Get sandwich collections
-  const collections = await db.query.sandwichCollections.findMany({
-    where: and(
-      gte(sandwichCollections.collectionDate, startDate),
-      lt(sandwichCollections.collectionDate, endDate)
-    ),
+  // Get sandwich collections for the period
+  const allCollections = await db.query.sandwichCollections.findMany();
+
+  // Filter collections by date range
+  const collections = allCollections.filter(c => {
+    const collectionDate = c.collectionDate;
+    if (!collectionDate) return false;
+    return collectionDate >= startDate && collectionDate < endDate;
   });
 
   // Get expenses for the period
@@ -139,8 +142,53 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     ),
   });
 
-  // Calculate totals
-  const totalSandwiches = collections.reduce((sum, c) => sum + (c.sandwichCount || 0), 0);
+  // Build a map of collections by eventRequestId for merging (matching component logic)
+  const collectionsByEventId = new Map<number, typeof collections[0]>();
+  const unlinkedCollections: typeof collections = [];
+  const validEventIds = new Set(events.map(e => e.id));
+
+  collections.forEach(c => {
+    if (c.eventRequestId) {
+      // Only use first collection per event (same as component)
+      if (!collectionsByEventId.has(c.eventRequestId)) {
+        collectionsByEventId.set(c.eventRequestId, c);
+      }
+    } else {
+      // Truly unlinked collection
+      unlinkedCollections.push(c);
+    }
+  });
+
+  // Calculate totals - merge event data with collection data (same as component)
+  let totalSandwiches = 0;
+
+  // Count from events (using collection's actualSandwichCount when linked)
+  events.forEach(e => {
+    const linkedCollection = collectionsByEventId.get(e.id);
+    const sandwichCount = linkedCollection?.sandwichCount
+      || e.actualSandwichCount
+      || e.estimatedSandwichCount
+      || 0;
+    totalSandwiches += sandwichCount;
+  });
+
+  // Add unlinked collections
+  unlinkedCollections.forEach(c => {
+    totalSandwiches += c.sandwichCount || 0;
+  });
+
+  // Add orphaned collections (eventRequestId points to event not in our filtered set)
+  let orphanedCollectionCount = 0;
+  collectionsByEventId.forEach((collection, eventRequestId) => {
+    if (!validEventIds.has(eventRequestId)) {
+      totalSandwiches += collection.sandwichCount || 0;
+      orphanedCollectionCount++;
+    }
+  });
+
+  // Total events = event requests + unlinked collections + orphaned collections
+  const totalEvents = events.length + unlinkedCollections.length + orphanedCollectionCount;
+
   const totalExpenses = expensesList.reduce((sum, e) => {
     if (typeof e.amount === 'number' && !isNaN(e.amount)) {
       return sum + e.amount;
@@ -150,7 +198,11 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     }
   }, 0);
 
-  const uniqueOrganizations = new Set(events.map(e => e.organizationName).filter(Boolean));
+  // Include organizations from both events and unlinked collections
+  const uniqueOrganizations = new Set([
+    ...events.map(e => e.organizationName).filter(Boolean),
+    ...unlinkedCollections.map(c => c.hostName).filter(Boolean),
+  ]);
   const uniqueVolunteers = new Set([
     ...events.flatMap(e => e.assignedVolunteerIds || []),
     ...events.flatMap(e => e.assignedDriverIds || []),
@@ -209,7 +261,7 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     expenses: expensesList,
     sandwichTypeBreakdown: hasSandwichTypeData ? sandwichTypeBreakdown : null,
     metrics: {
-      eventsCompleted: events.length,
+      eventsCompleted: totalEvents, // Use totalEvents which includes unlinked + orphaned collections
       sandwichesDistributed: totalSandwiches,
       organizationsServed: uniqueOrganizations.size,
       volunteersEngaged: uniqueVolunteers.size,
