@@ -390,7 +390,11 @@ function getWeekStart(date: Date): Date {
  */
 function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[], flexibilityOptions?: FlexibilityOptions): string {
   const requestedDate = eventRequest.desiredEventDate
-    ? new Date(eventRequest.desiredEventDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+    ? (
+        typeof eventRequest.desiredEventDate === 'string'
+          ? new Date(eventRequest.desiredEventDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+          : new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+      )
     : 'Not specified';
 
   // Convert desiredEventDate to string for comparison
