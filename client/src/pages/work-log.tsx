@@ -70,7 +70,7 @@ export default function WorkLogPage() {
         description: description || 'Work logged',
         hours,
         minutes,
-        workDate: workDate + 'T12:00:00.000Z', // Add time component for proper date parsing
+        workDate: workDate + 'T12:00:00', // Add time component WITHOUT 'Z' to avoid timezone shift
       });
       return data;
     },

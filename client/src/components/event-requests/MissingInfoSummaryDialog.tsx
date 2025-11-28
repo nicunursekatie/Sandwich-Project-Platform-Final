@@ -98,19 +98,24 @@ export function MissingInfoSummaryDialog() {
 
   const formatEventDate = (dateValue: any) => {
     if (!dateValue) return 'No date';
-    
+
     try {
-      // Create a Date object from whatever value we receive
-      const date = new Date(dateValue);
-      
+      // Parse date-only strings at noon to avoid timezone edge cases
+      let date: Date;
+      if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        date = new Date(dateValue + 'T12:00:00');
+      } else {
+        date = new Date(dateValue);
+      }
+
       // Check if the date is valid
       if (isNaN(date.getTime())) {
         return 'No date';
       }
-      
-      // Format using UTC to prevent timezone conversion
+
+      // Format using Eastern Time to ensure consistent display
       return date.toLocaleDateString('en-US', {
-        timeZone: 'UTC',
+        timeZone: 'America/New_York',
         month: 'short',
         day: 'numeric',
         year: 'numeric',
