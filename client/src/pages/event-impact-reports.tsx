@@ -86,6 +86,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+import { AIInsightsChat } from '@/components/ai-insights-chat';
 
 // Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
 function parseLocalDate(dateInput: string | Date | null | undefined): Date | null {
@@ -3675,6 +3676,9 @@ export default function EventImpactReports() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Insights Chat */}
+      <AIInsightsChat dateRange={dateRange} />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
-import { impactReports, eventRequests } from '../../shared/schema';
+import { impactReports, eventRequests, sandwichCollections } from '../../shared/schema';
 import { eq, desc, and, gt, inArray } from 'drizzle-orm';
 import { logger } from '../middleware/logger';
 import { generateImpactReport, saveImpactReport } from '../services/ai-impact-reports';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import OpenAI from 'openai';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -1085,5 +1086,297 @@ impactReportsRouter.patch('/:id/publish', async (req: AuthenticatedRequest, res:
   } catch (error) {
     logger.error('Error publishing impact report', { error });
     res.status(500).json({ error: 'Failed to publish impact report' });
+  }
+});
+
+// =============================================================================
+// AI DATA INSIGHTS CHAT
+// =============================================================================
+
+// Helper to get OpenAI client
+function getOpenAIClient(): OpenAI {
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    throw new Error('AI_INTEGRATIONS_OPENAI_API_KEY environment variable is required');
+  }
+  return new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+}
+
+// Helper to calculate sandwich count from collection (same as ai-impact-reports service)
+function getCollectionSandwichCount(collection: any): number {
+  let total = 0;
+  total += collection.individualSandwiches || 0;
+
+  const hasGroupCollections = collection.groupCollections &&
+    Array.isArray(collection.groupCollections) &&
+    collection.groupCollections.length > 0;
+
+  if (hasGroupCollections) {
+    total += collection.groupCollections.reduce(
+      (sum: number, group: any) => sum + (Number(group.count) || Number(group.sandwichCount) || 0), 0
+    );
+  } else {
+    total += collection.group1Count || 0;
+    total += collection.group2Count || 0;
+  }
+  return total;
+}
+
+// POST /api/impact-reports/ai-chat - Interactive AI chat for data insights
+impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { message, conversationHistory = [], dataContext } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    logger.info('AI chat request', { userId: req.user.id, messageLength: message.length });
+
+    // Parse date range from dataContext if provided
+    const startDate = dataContext?.startDate ? new Date(dataContext.startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const endDate = dataContext?.endDate ? new Date(dataContext.endDate) : new Date();
+
+    // Gather current data from database
+    const allEvents = await db.query.eventRequests.findMany();
+    const allCollections = await db.query.sandwichCollections.findMany();
+
+    // Filter events by date range
+    const events = allEvents.filter(e => {
+      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      if (!eventDate) return false;
+      return eventDate >= startDate && eventDate < endDate;
+    });
+
+    // Filter collections by date range
+    const collections = allCollections.filter(c => {
+      if (c.deletedAt) return false;
+      const collectionDateStr = c.collectionDate;
+      if (!collectionDateStr) return false;
+      const collectionDate = new Date(collectionDateStr + 'T00:00:00');
+      return collectionDate >= startDate && collectionDate < endDate;
+    });
+
+    // Build collection map for merging
+    const collectionsByEventId = new Map<number, any>();
+    const unlinkedCollections: any[] = [];
+    const validEventIds = new Set(events.map(e => e.id));
+
+    collections.forEach(c => {
+      if (c.eventRequestId) {
+        if (!collectionsByEventId.has(c.eventRequestId)) {
+          collectionsByEventId.set(c.eventRequestId, c);
+        }
+      } else {
+        unlinkedCollections.push(c);
+      }
+    });
+
+    // Calculate comprehensive metrics
+    let totalSandwiches = 0;
+    const categoryStats: Record<string, { events: number; sandwiches: number; counts: number[] }> = {};
+    const monthlyStats: Record<string, { events: number; sandwiches: number }> = {};
+    const organizationStats: Record<string, { events: number; sandwiches: number; category: string }> = {};
+
+    events.forEach(e => {
+      const linkedCollection = collectionsByEventId.get(e.id);
+      const sandwichCount = linkedCollection
+        ? getCollectionSandwichCount(linkedCollection)
+        : (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+
+      totalSandwiches += sandwichCount;
+
+      // Category stats
+      const category = e.organizationCategory || 'other';
+      if (!categoryStats[category]) {
+        categoryStats[category] = { events: 0, sandwiches: 0, counts: [] };
+      }
+      categoryStats[category].events++;
+      categoryStats[category].sandwiches += sandwichCount;
+      if (sandwichCount > 0) categoryStats[category].counts.push(sandwichCount);
+
+      // Monthly stats
+      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      if (eventDate) {
+        const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyStats[monthKey]) {
+          monthlyStats[monthKey] = { events: 0, sandwiches: 0 };
+        }
+        monthlyStats[monthKey].events++;
+        monthlyStats[monthKey].sandwiches += sandwichCount;
+      }
+
+      // Organization stats
+      const orgName = e.organizationName || 'Unknown';
+      if (!organizationStats[orgName]) {
+        organizationStats[orgName] = { events: 0, sandwiches: 0, category };
+      }
+      organizationStats[orgName].events++;
+      organizationStats[orgName].sandwiches += sandwichCount;
+    });
+
+    // Add unlinked and orphaned collections
+    unlinkedCollections.forEach(c => {
+      totalSandwiches += getCollectionSandwichCount(c);
+    });
+
+    collectionsByEventId.forEach((collection, eventRequestId) => {
+      if (!validEventIds.has(eventRequestId)) {
+        totalSandwiches += getCollectionSandwichCount(collection);
+      }
+    });
+
+    // Calculate category statistics (median, std dev, etc.)
+    const categoryAnalysis: Record<string, any> = {};
+    Object.entries(categoryStats).forEach(([category, stats]) => {
+      const counts = stats.counts.sort((a, b) => a - b);
+      // Proper median calculation for both odd and even length arrays
+      let median = 0;
+      if (counts.length > 0) {
+        const mid = Math.floor(counts.length / 2);
+        median = counts.length % 2 !== 0
+          ? counts[mid] // Odd length: take middle element
+          : Math.round((counts[mid - 1] + counts[mid]) / 2); // Even length: average two middle elements
+      }
+      const mean = counts.length > 0
+        ? counts.reduce((a, b) => a + b, 0) / counts.length
+        : 0;
+      const variance = counts.length > 0
+        ? counts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / counts.length
+        : 0;
+      const stdDev = Math.sqrt(variance);
+
+      categoryAnalysis[category] = {
+        eventCount: stats.events,
+        totalSandwiches: stats.sandwiches,
+        avgSandwiches: Math.round(mean),
+        medianSandwiches: median,
+        minSandwiches: counts.length > 0 ? Math.min(...counts) : 0,
+        maxSandwiches: counts.length > 0 ? Math.max(...counts) : 0,
+        stdDeviation: Math.round(stdDev),
+        consistency: stdDev > 0 ? (mean / stdDev).toFixed(2) : 'N/A', // Higher = more consistent
+      };
+    });
+
+    // Top organizations
+    const topOrgs = Object.entries(organizationStats)
+      .sort((a, b) => b[1].sandwiches - a[1].sandwiches)
+      .slice(0, 20)
+      .map(([name, stats]) => ({ name, ...stats }));
+
+    // Repeat organizations
+    const repeatOrgs = Object.entries(organizationStats)
+      .filter(([_, stats]) => stats.events > 1)
+      .sort((a, b) => b[1].events - a[1].events)
+      .map(([name, stats]) => ({ name, ...stats }));
+
+    // Build data summary for AI
+    const dataSummary = `
+## Current Data Summary (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})
+
+### Overall Metrics
+- Total Events: ${events.length}
+- Total Sandwiches: ${totalSandwiches.toLocaleString()}
+- Unique Organizations: ${Object.keys(organizationStats).length}
+- Repeat Organizations (2+ events): ${repeatOrgs.length}
+
+### Category Breakdown
+${Object.entries(categoryAnalysis)
+  .filter(([cat]) => cat !== 'other')
+  .map(([category, stats]) =>
+    `- ${category}: ${stats.eventCount} events, ${stats.totalSandwiches.toLocaleString()} sandwiches, avg ${stats.avgSandwiches}, median ${stats.medianSandwiches}, std dev ${stats.stdDeviation}`
+  ).join('\n')}
+
+### Monthly Trends
+${Object.entries(monthlyStats)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([month, stats]) => `- ${month}: ${stats.events} events, ${stats.sandwiches.toLocaleString()} sandwiches`)
+  .join('\n')}
+
+### Top 10 Organizations by Sandwiches
+${topOrgs.slice(0, 10).map((org, i) => `${i + 1}. ${org.name}: ${org.sandwiches.toLocaleString()} sandwiches (${org.events} events)`).join('\n')}
+
+### Repeat Organizations (Top 10 by Event Count)
+${repeatOrgs.slice(0, 10).map((org, i) => `${i + 1}. ${org.name}: ${org.events} events, ${org.sandwiches.toLocaleString()} sandwiches`).join('\n')}
+`;
+
+    // Build conversation for OpenAI
+    const systemPrompt = `You are a data analyst assistant for The Sandwich Project, a nonprofit that makes and distributes sandwiches to people in need.
+
+You have access to their event and sandwich distribution data. Your job is to:
+1. Answer questions about the data
+2. Provide insights and analysis
+3. Suggest ways to visualize or understand the data better
+4. Help interpret trends and patterns
+
+When the user asks for a chart or visualization, respond with a JSON block that can be rendered. Use this format:
+\`\`\`chart
+{
+  "type": "bar" | "line" | "pie",
+  "title": "Chart Title",
+  "data": [{ "name": "Label", "value": 123 }, ...],
+  "xKey": "name",
+  "yKey": "value",
+  "description": "Brief explanation of what this shows"
+}
+\`\`\`
+
+Keep responses concise but insightful. Focus on actionable information.
+
+CURRENT DATA:
+${dataSummary}`;
+
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory.slice(-10), // Keep last 10 messages for context
+      { role: 'user', content: message }
+    ];
+
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.7,
+      max_tokens: 1500,
+    });
+
+    const aiResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.';
+
+    // Parse any chart data from the response
+    let chartData = null;
+    const chartMatch = aiResponse.match(/```chart\n([\s\S]*?)\n```/);
+    if (chartMatch) {
+      try {
+        chartData = JSON.parse(chartMatch[1]);
+      } catch (e) {
+        logger.warn('Failed to parse chart data from AI response');
+      }
+    }
+
+    // Clean response (remove chart JSON block for display)
+    const cleanedResponse = aiResponse.replace(/```chart\n[\s\S]*?\n```/g, '').trim();
+
+    res.json({
+      response: cleanedResponse,
+      chart: chartData,
+      dataContext: {
+        totalEvents: events.length,
+        totalSandwiches,
+        dateRange: { start: startDate.toISOString(), end: endDate.toISOString() },
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in AI chat', { error });
+    res.status(500).json({
+      error: 'Failed to process AI chat request',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
