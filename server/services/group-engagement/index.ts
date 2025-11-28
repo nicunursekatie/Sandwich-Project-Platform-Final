@@ -103,7 +103,7 @@ function canonicalizeOrgName(orgName: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
-    .replace(/[&\.,;:!?"'\-_]/g, '')
+    .replace(/[&.,;:!?"'_-]/g, '')
     .replace(/\s/g, '');
 }
 
