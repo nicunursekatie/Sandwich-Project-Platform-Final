@@ -355,6 +355,7 @@ export default function EventImpactReports() {
   }> | null>(null);
   const [selectedBackfillEvents, setSelectedBackfillEvents] = useState<Set<number>>(new Set());
   const [backfillStep, setBackfillStep] = useState<'select' | 'review' | 'complete'>('select');
+  const [manualEntries, setManualEntries] = useState<Map<number, { deli: number; turkey: number; ham: number; pbj: number }>>(new Map());
 
   // Calculate actual date range
   const dateRange = useMemo(() => {
@@ -921,6 +922,7 @@ export default function EventImpactReports() {
     });
 
     const regionalChartData = Array.from(regionData.entries())
+      .filter(([region]) => region !== 'Unknown') // Exclude events with no address
       .map(([region, data]) => ({
         region,
         events: data.events,
@@ -929,6 +931,9 @@ export default function EventImpactReports() {
       }))
       .sort((a, b) => b.events - a.events)
       .slice(0, 15); // Top 15 regions
+
+    // Track count of events with unknown location for data quality indicator
+    const eventsWithUnknownLocation = regionData.get('Unknown')?.events || 0;
 
     // NEW: Top organizations with more details (for enhanced leaderboard)
     const orgEventCounts = new Map<string, {
@@ -2000,111 +2005,136 @@ export default function EventImpactReports() {
                           </div>
                         </div>
 
-                        {/* Step 1: Select Events */}
+                        {/* Step 1: Manual Entry */}
                         {backfillStep === 'select' && backfillData && (
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium">{backfillData.totalMissing} events missing type data</p>
-                                <p className="text-sm text-gray-500">{backfillData.totalWithTypes} events have type data (used for pattern analysis)</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const allIds = new Set(backfillData.eventsMissingTypes.map(e => e.id));
-                                    setSelectedBackfillEvents(allIds);
-                                  }}
-                                >
-                                  Select All
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setSelectedBackfillEvents(new Set())}
-                                >
-                                  Clear
-                                </Button>
-                              </div>
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                              <p className="font-medium text-blue-900">{backfillData.totalMissing} events missing sandwich type data</p>
+                              <p className="text-sm text-blue-700 mt-1">
+                                Enter the sandwich type breakdown for each event below. The "Sum" column shows your total - it will turn orange if it doesn't match the event's total sandwich count.
+                              </p>
                             </div>
 
-                            <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+                            <div className="max-h-[500px] overflow-y-auto border rounded-lg">
                               <Table>
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead className="w-12">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedBackfillEvents.size === backfillData.eventsMissingTypes.length}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedBackfillEvents(new Set(backfillData.eventsMissingTypes.map(ev => ev.id)));
-                                          } else {
-                                            setSelectedBackfillEvents(new Set());
-                                          }
-                                        }}
-                                      />
-                                    </TableHead>
                                     <TableHead>Organization</TableHead>
                                     <TableHead>Date</TableHead>
-                                    <TableHead className="text-right">Sandwiches</TableHead>
-                                    <TableHead>Pattern</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                    <TableHead className="text-center w-20">Deli</TableHead>
+                                    <TableHead className="text-center w-20">Turkey</TableHead>
+                                    <TableHead className="text-center w-20">Ham</TableHead>
+                                    <TableHead className="text-center w-20">PB&J</TableHead>
+                                    <TableHead className="text-center w-20">Sum</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {backfillData.eventsMissingTypes.slice(0, 100).map((event) => (
-                                    <TableRow key={event.id}>
-                                      <TableCell>
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedBackfillEvents.has(event.id)}
-                                          onChange={(e) => {
-                                            const newSet = new Set(selectedBackfillEvents);
-                                            if (e.target.checked) {
-                                              newSet.add(event.id);
-                                            } else {
-                                              newSet.delete(event.id);
-                                            }
-                                            setSelectedBackfillEvents(newSet);
-                                          }}
-                                        />
-                                      </TableCell>
-                                      <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
-                                      <TableCell>{event.scheduledEventDate ? new Date(event.scheduledEventDate).toLocaleDateString() : 'N/A'}</TableCell>
-                                      <TableCell className="text-right">{event.actualSandwichCount?.toLocaleString()}</TableCell>
-                                      <TableCell>
-                                        {event.hasOrgPattern ? (
-                                          <Badge className="bg-green-100 text-green-800">Has Pattern</Badge>
-                                        ) : (
-                                          <Badge variant="outline">No Pattern</Badge>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
+                                  {backfillData.eventsMissingTypes.slice(0, 100).map((event) => {
+                                    const entry = manualEntries.get(event.id) || { deli: 0, turkey: 0, ham: 0, pbj: 0 };
+                                    const entrySum = entry.deli + entry.turkey + entry.ham + entry.pbj;
+                                    const hasEntry = entrySum > 0;
+                                    return (
+                                      <TableRow key={event.id} className={hasEntry ? 'bg-green-50' : ''}>
+                                        <TableCell className="font-medium">{event.organizationName || 'Unknown'}</TableCell>
+                                        <TableCell>{event.scheduledEventDate ? new Date(event.scheduledEventDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-medium">{event.actualSandwichCount?.toLocaleString()}</TableCell>
+                                        <TableCell>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={entry.deli || ''}
+                                            onChange={(e) => {
+                                              const newEntries = new Map(manualEntries);
+                                              newEntries.set(event.id, { ...entry, deli: parseInt(e.target.value) || 0 });
+                                              setManualEntries(newEntries);
+                                            }}
+                                            className="w-16 h-8 text-center p-1"
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={entry.turkey || ''}
+                                            onChange={(e) => {
+                                              const newEntries = new Map(manualEntries);
+                                              newEntries.set(event.id, { ...entry, turkey: parseInt(e.target.value) || 0 });
+                                              setManualEntries(newEntries);
+                                            }}
+                                            className="w-16 h-8 text-center p-1"
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={entry.ham || ''}
+                                            onChange={(e) => {
+                                              const newEntries = new Map(manualEntries);
+                                              newEntries.set(event.id, { ...entry, ham: parseInt(e.target.value) || 0 });
+                                              setManualEntries(newEntries);
+                                            }}
+                                            className="w-16 h-8 text-center p-1"
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={entry.pbj || ''}
+                                            onChange={(e) => {
+                                              const newEntries = new Map(manualEntries);
+                                              newEntries.set(event.id, { ...entry, pbj: parseInt(e.target.value) || 0 });
+                                              setManualEntries(newEntries);
+                                            }}
+                                            className="w-16 h-8 text-center p-1"
+                                          />
+                                        </TableCell>
+                                        <TableCell className={`text-center font-medium ${entrySum > 0 && entrySum !== event.actualSandwichCount ? 'text-orange-600' : entrySum > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                          {entrySum > 0 ? entrySum : '-'}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
                                 </TableBody>
                               </Table>
                             </div>
 
                             <div className="flex justify-between items-center">
-                              <p className="text-sm text-gray-500">{selectedBackfillEvents.size} events selected</p>
+                              <p className="text-sm text-gray-500">
+                                {Array.from(manualEntries.values()).filter(e => e.deli + e.turkey + e.ham + e.pbj > 0).length} events with manual entries
+                              </p>
                               <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => setShowBackfillTool(false)}>
                                   Cancel
                                 </Button>
                                 <Button
-                                  onClick={() => getBackfillSuggestionsMutation.mutate(Array.from(selectedBackfillEvents))}
-                                  disabled={selectedBackfillEvents.size === 0 || getBackfillSuggestionsMutation.isPending}
-                                  className="bg-purple-600 hover:bg-purple-700"
+                                  onClick={() => {
+                                    // Save manual entries directly
+                                    const approvals = Array.from(manualEntries.entries())
+                                      .filter(([_, entry]) => entry.deli + entry.turkey + entry.ham + entry.pbj > 0)
+                                      .map(([eventId, entry]) => ({
+                                        eventId,
+                                        types: { ...entry, generic: 0 },
+                                      }));
+                                    applyBackfillMutation.mutate(approvals);
+                                  }}
+                                  disabled={Array.from(manualEntries.values()).filter(e => e.deli + e.turkey + e.ham + e.pbj > 0).length === 0 || applyBackfillMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700"
                                 >
-                                  {getBackfillSuggestionsMutation.isPending ? (
+                                  {applyBackfillMutation.isPending ? (
                                     <>
                                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      Analyzing...
+                                      Saving...
                                     </>
                                   ) : (
                                     <>
-                                      Get AI Suggestions ({selectedBackfillEvents.size})
+                                      Save Manual Entries ({Array.from(manualEntries.values()).filter(e => e.deli + e.turkey + e.ham + e.pbj > 0).length})
                                     </>
                                   )}
                                 </Button>
@@ -2309,6 +2339,7 @@ export default function EventImpactReports() {
                                 setBackfillData(null);
                                 setBackfillSuggestions(null);
                                 setSelectedBackfillEvents(new Set());
+                                setManualEntries(new Map());
                                 setBackfillStep('select');
                               }}
                             >
