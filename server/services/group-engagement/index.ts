@@ -972,45 +972,18 @@ export async function getGroupInsightsSummary(): Promise<GroupInsightsSummary> {
 
 /**
  * Save engagement scores to database (for caching/historical tracking)
+ * Uses a transaction to ensure atomicity - all scores are saved or none are.
  */
 export async function saveEngagementScores(engagements: OrganizationEngagement[]): Promise<void> {
   logger.info(`Saving ${engagements.length} engagement scores to database`);
 
-  for (const eng of engagements) {
-    try {
-      await db.insert(organizationEngagementScores)
-        .values({
-          organizationName: eng.organizationName,
-          canonicalName: eng.canonicalName,
-          category: eng.category,
-          overallEngagementScore: eng.scores.overall.toString(),
-          frequencyScore: eng.scores.frequency.toString(),
-          recencyScore: eng.scores.recency.toString(),
-          volumeScore: eng.scores.volume.toString(),
-          completionScore: eng.scores.completion.toString(),
-          consistencyScore: eng.scores.consistency.toString(),
-          engagementTrend: eng.engagementTrend,
-          trendPercentChange: eng.trendPercentChange.toString(),
-          totalEvents: eng.metrics.totalEvents,
-          completedEvents: eng.metrics.completedEvents,
-          totalSandwiches: eng.metrics.totalSandwiches,
-          daysSinceLastEvent: eng.metrics.daysSinceLastEvent,
-          daysSinceFirstEvent: eng.metrics.daysSinceFirstEvent,
-          lastEventDate: eng.metrics.lastEventDate,
-          firstEventDate: eng.metrics.firstEventDate,
-          averageEventInterval: eng.metrics.averageEventInterval,
-          engagementLevel: eng.engagementLevel,
-          outreachPriority: eng.outreachPriority,
-          recommendedActions: eng.recommendedActions,
-          insights: eng.insights,
-          programSuitability: eng.programSuitability,
-          lastCalculatedAt: eng.lastCalculatedAt,
-          calculationVersion: '1.0'
-        })
-        .onConflictDoUpdate({
-          target: organizationEngagementScores.canonicalName,
-          set: {
+  try {
+    await db.transaction(async (trx) => {
+      for (const eng of engagements) {
+        await trx.insert(organizationEngagementScores)
+          .values({
             organizationName: eng.organizationName,
+            canonicalName: eng.canonicalName,
             category: eng.category,
             overallEngagementScore: eng.scores.overall.toString(),
             frequencyScore: eng.scores.frequency.toString(),
@@ -1034,14 +1007,45 @@ export async function saveEngagementScores(engagements: OrganizationEngagement[]
             insights: eng.insights,
             programSuitability: eng.programSuitability,
             lastCalculatedAt: eng.lastCalculatedAt,
-            calculationVersion: '1.0',
-            updatedAt: new Date()
-          }
-        });
-    } catch (error) {
-      logger.warn(`Failed to save engagement score for ${eng.canonicalName}`, { error });
-    }
-  }
+            calculationVersion: '1.0'
+          })
+          .onConflictDoUpdate({
+            target: organizationEngagementScores.canonicalName,
+            set: {
+              organizationName: eng.organizationName,
+              category: eng.category,
+              overallEngagementScore: eng.scores.overall.toString(),
+              frequencyScore: eng.scores.frequency.toString(),
+              recencyScore: eng.scores.recency.toString(),
+              volumeScore: eng.scores.volume.toString(),
+              completionScore: eng.scores.completion.toString(),
+              consistencyScore: eng.scores.consistency.toString(),
+              engagementTrend: eng.engagementTrend,
+              trendPercentChange: eng.trendPercentChange.toString(),
+              totalEvents: eng.metrics.totalEvents,
+              completedEvents: eng.metrics.completedEvents,
+              totalSandwiches: eng.metrics.totalSandwiches,
+              daysSinceLastEvent: eng.metrics.daysSinceLastEvent,
+              daysSinceFirstEvent: eng.metrics.daysSinceFirstEvent,
+              lastEventDate: eng.metrics.lastEventDate,
+              firstEventDate: eng.metrics.firstEventDate,
+              averageEventInterval: eng.metrics.averageEventInterval,
+              engagementLevel: eng.engagementLevel,
+              outreachPriority: eng.outreachPriority,
+              recommendedActions: eng.recommendedActions,
+              insights: eng.insights,
+              programSuitability: eng.programSuitability,
+              lastCalculatedAt: eng.lastCalculatedAt,
+              calculationVersion: '1.0',
+              updatedAt: new Date()
+            }
+          });
+      }
+    });
 
-  logger.info('Finished saving engagement scores');
+    logger.info('Finished saving engagement scores');
+  } catch (error) {
+    logger.error('Failed to save engagement scores - transaction rolled back', { error });
+    throw error;
+  }
 }
