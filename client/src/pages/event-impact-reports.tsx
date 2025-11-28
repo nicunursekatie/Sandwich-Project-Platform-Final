@@ -903,6 +903,7 @@ export default function EventImpactReports() {
     });
 
     const avgSandwichesByCategory = Array.from(categoryStats.entries())
+      .filter(([category]) => category !== 'other') // Exclude "other" category
       .map(([category, stats]) => ({
         category: CATEGORY_LABELS[category] || category,
         rawCategory: category,
@@ -1044,6 +1045,7 @@ export default function EventImpactReports() {
 
     // Calculate averages and format for display
     const categoryRetentionData = Array.from(categoryRetentionMap.entries())
+      .filter(([category]) => category !== 'other') // Exclude "other" category
       .map(([category, data]) => ({
         category,
         categoryLabel: CATEGORY_LABELS[category] || category,
