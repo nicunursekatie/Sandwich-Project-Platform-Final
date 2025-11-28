@@ -106,6 +106,7 @@ const CoolerTrackingPage = lazyWithRetry(() => import('@/pages/cooler-tracking')
 const EventRequestsManagement = lazyWithRetry(() => import('@/components/event-requests'));
 const EventRemindersManagement = lazyWithRetry(() => import('@/components/event-reminders-management'));
 const GroupCatalog = lazyWithRetry(() => import('@/components/organizations-catalog'));
+const GroupsInsightsDashboard = lazyWithRetry(() => import('@/components/groups-insights-dashboard'));
 const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-enhanced'));
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
@@ -398,6 +399,8 @@ export default function Dashboard({
             onNavigateToEventPlanning={() => setActiveSection('event-requests')}
           />
         );
+      case 'groups-insights':
+        return <GroupsInsightsDashboard />;
       case 'action-tracking':
         return <ActionTracking />;
       case 'my-actions':

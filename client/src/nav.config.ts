@@ -294,6 +294,17 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'groups-insights',
+    label: 'Groups Engagement Insights',
+    icon: Sparkles,
+    href: 'groups-insights',
+    permission: PERMISSIONS.NAV_GROUPS_CATALOG,
+    group: 'operations',
+    parentId: 'groups-catalog',
+    isSubItem: true,
+    highlighted: true,
+  },
+  {
     id: 'donation-tracking',
     label: 'Distribution Tracking',
     icon: Truck,
