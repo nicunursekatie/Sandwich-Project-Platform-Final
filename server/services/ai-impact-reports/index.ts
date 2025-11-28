@@ -146,13 +146,18 @@ function getCollectionSandwichCount(collection: any): number {
 async function gatherReportData(startDate: Date, endDate: Date) {
   logger.info('Gathering report data', { startDate, endDate });
 
+  // Statuses that should be excluded from statistics (events that didn't/won't happen)
+  const EXCLUDED_STATUSES = ['cancelled', 'postponed', 'declined'];
+
   // Get all events in the period - use scheduledEventDate OR desiredEventDate (matching component)
   const allEventRequests = await db.query.eventRequests.findMany();
 
-  // Filter events by date range (same as component does client-side)
+  // Filter events by date range and exclude cancelled/postponed/declined (same as component does client-side)
   const events = allEventRequests.filter(e => {
     const eventDate = e.scheduledEventDate || e.desiredEventDate;
     if (!eventDate) return false;
+    // Exclude events that didn't happen (cancelled, postponed, declined)
+    if (e.status && EXCLUDED_STATUSES.includes(e.status)) return false;
     return eventDate >= startDate && eventDate < endDate;
   });
 

@@ -703,6 +703,9 @@ export default function EventImpactReports() {
     // Combine: merged event requests + truly unlinked collections + orphaned collections
     const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections, ...orphanedAsStandalone];
 
+    // Statuses that should be excluded from statistics (events that didn't/won't happen)
+    const EXCLUDED_STATUSES = ['cancelled', 'postponed', 'declined'];
+
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
       const eventDate = parseLocalDate(event.scheduledEventDate)
@@ -711,8 +714,16 @@ export default function EventImpactReports() {
 
       const inRange = eventDate >= dateRange.start && eventDate <= dateRange.end;
 
-      // Status filter
-      const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+      // Status filter - if user selects "all", exclude cancelled/postponed/declined by default
+      // If user explicitly selects a specific status, show only that status
+      let matchesStatus = false;
+      if (statusFilter === 'all') {
+        // Exclude events that didn't happen from the default "all" view
+        matchesStatus = !EXCLUDED_STATUSES.includes(event.status);
+      } else {
+        // User explicitly selected a status (including cancelled/postponed/declined)
+        matchesStatus = event.status === statusFilter;
+      }
 
       // Category filter
       const matchesCategory = categoryFilter === 'all' || event.organizationCategory === categoryFilter;
@@ -1443,14 +1454,18 @@ export default function EventImpactReports() {
                   <Label>Event Status</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All statuses" />
+                      <SelectValue placeholder="All active statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="all">All Active Statuses</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="scheduled">Scheduled</SelectItem>
                       <SelectItem value="in_process">In Process</SelectItem>
                       <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="followed_up">Followed Up</SelectItem>
+                      <SelectItem disabled value="_separator" className="text-xs text-gray-400 font-medium">
+                        --- Excluded from stats ---
+                      </SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                       <SelectItem value="postponed">Postponed</SelectItem>
                       <SelectItem value="declined">Declined</SelectItem>
