@@ -671,11 +671,27 @@ async function gatherOrganizationMetrics(
     new Set(eventDates.map(d => d.toISOString().split('T')[0]))
   ).map(s => new Date(s)).sort((a, b) => a.getTime() - b.getTime());
 
-  // Calculate metrics
-  const totalEvents = orgRequests.length;
-  const completedEvents = orgRequests.filter(
+  // Count unique collection dates as completed events
+  const collectionDates = new Set<string>();
+  orgCollections.forEach(collection => {
+    if (collection.collectionDate) {
+      collectionDates.add(new Date(collection.collectionDate).toISOString().split('T')[0]);
+    }
+  });
+  const collectionEventCount = collectionDates.size;
+
+  // Calculate metrics - include both requests AND collections as events
+  // Collections represent actual completed distributions
+  const completedRequestEvents = orgRequests.filter(
     req => req.status === 'completed' || req.status === 'contact_completed'
   ).length;
+
+  // Total events = event requests + unique collection dates (avoiding double-counting)
+  // Use uniqueDates which already dedupes by date
+  const totalEvents = uniqueDates.length;
+
+  // Completed events = completed requests + all collection events (collections are inherently completed)
+  const completedEvents = completedRequestEvents + collectionEventCount;
 
   const firstEventDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
   const lastEventDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : null;
