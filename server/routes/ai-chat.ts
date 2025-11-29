@@ -676,6 +676,8 @@ The Dashboard provides an overview of The Sandwich Project's activities:
 // Get system prompt for context type
 function getSystemPrompt(contextType: string, dataSummary: string): string {
   const baseRules = `
+TODAY'S DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
 CRITICAL RULES - YOU MUST FOLLOW THESE:
 1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
 2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
@@ -683,6 +685,7 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 4. Never make up statistics or trends that aren't directly derivable from the provided data.
 5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
 6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
+7. When referring to dates, use today's date (shown above) as your reference point. Do NOT assume it is any date other than today.
 
 When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
