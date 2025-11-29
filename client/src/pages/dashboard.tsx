@@ -105,6 +105,7 @@ const PromotionGraphics = lazyWithRetry(() => import('@/pages/promotion-graphics
 const QuickSMSLinks = lazyWithRetry(() => import('@/pages/quick-sms-links'));
 const CoolerTrackingPage = lazyWithRetry(() => import('@/pages/cooler-tracking'));
 const EventRequestsManagement = lazyWithRetry(() => import('@/components/event-requests'));
+const EventOperationalDashboard = lazyWithRetry(() => import('@/components/event-operational-dashboard'));
 const EventRemindersManagement = lazyWithRetry(() => import('@/components/event-reminders-management'));
 const GroupCatalog = lazyWithRetry(() => import('@/components/organizations-catalog'));
 const GroupsInsightsDashboard = lazyWithRetry(() => import('@/components/groups-insights-dashboard'));
@@ -390,6 +391,8 @@ export default function Dashboard({
           initialTab={urlParams.tab}
           initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
         />;
+      case 'event-ops-dashboard':
+        return <EventOperationalDashboard />;
       case 'event-reminders':
         return <EventRemindersManagement />;
       case 'historical-import':
@@ -951,7 +954,7 @@ export default function Dashboard({
         <GuidedTour />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
-        {!['event-requests', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'organizations'].includes(activeSection) && (
+        {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'organizations'].includes(activeSection) && (
           <FloatingAIChat
             contextType="dashboard"
             title="TSP Assistant"
