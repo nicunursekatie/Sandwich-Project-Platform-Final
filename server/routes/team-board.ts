@@ -200,10 +200,43 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
     // Create a map of itemId -> comment count
     const countMap = new Map(commentCounts.map(c => [c.itemId, Number(c.count)]));
 
-    // Add comment counts to items
+    // Get like counts and user's likes for all items in a single query
+    const likeCounts = itemIds.length > 0
+      ? await db
+          .select({
+            itemId: teamBoardItemLikes.itemId,
+            count: count(teamBoardItemLikes.id),
+          })
+          .from(teamBoardItemLikes)
+          .where(inArray(teamBoardItemLikes.itemId, itemIds))
+          .groupBy(teamBoardItemLikes.itemId)
+      : [];
+
+    // Get which items the current user has liked
+    const userLikes = itemIds.length > 0 && req.user?.id
+      ? await db
+          .select({
+            itemId: teamBoardItemLikes.itemId,
+          })
+          .from(teamBoardItemLikes)
+          .where(
+            and(
+              inArray(teamBoardItemLikes.itemId, itemIds),
+              eq(teamBoardItemLikes.userId, req.user.id)
+            )
+          )
+      : [];
+
+    // Create maps for quick lookup
+    const likeCountMap = new Map(likeCounts.map(c => [c.itemId, Number(c.count)]));
+    const userLikedSet = new Set(userLikes.map(l => l.itemId));
+
+    // Add comment counts and like data to items
     const itemsWithCounts = flattenedItems.map(item => ({
       ...item,
       commentCount: countMap.get(item.id) || 0,
+      likeCount: likeCountMap.get(item.id) || 0,
+      userHasLiked: userLikedSet.has(item.id),
     }));
 
     // Sort: open/claimed items first, then done items
