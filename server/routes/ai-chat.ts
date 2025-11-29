@@ -186,7 +186,9 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   // Track events needing attention
   let eventsWithMissingInfo = 0;
   let unconfirmedScheduled = 0;
-  let needsFollowUp = 0;
+  let needsOneDayFollowUp = 0;
+  let needsOneMonthFollowUp = 0;
+  let hasScheduledFollowUp = 0;
   const missingInfoBreakdown: Record<string, number> = {};
 
   // Get upcoming events (next 30 days)
@@ -243,9 +245,24 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       unconfirmedScheduled++;
     }
 
-    // Check for events needing follow-up
-    if (e.needsFollowUp) {
-      needsFollowUp++;
+    // Check for completed events needing follow-ups
+    if (e.status === 'completed') {
+      // 1-day follow-up needed (event completed but no 1-day follow-up done)
+      if (!e.followUpOneDayCompleted) {
+        needsOneDayFollowUp++;
+      }
+      // 1-month follow-up needed (1-day done but not 1-month)
+      if (e.followUpOneDayCompleted && !e.followUpOneMonthCompleted) {
+        needsOneMonthFollowUp++;
+      }
+    }
+
+    // Check for events with scheduled follow-up dates
+    if (e.nextFollowUpDate) {
+      const followUpDate = e.nextFollowUpDate instanceof Date ? e.nextFollowUpDate : new Date(e.nextFollowUpDate);
+      if (followUpDate <= thirtyDaysOut) {
+        hasScheduledFollowUp++;
+      }
     }
   });
 
@@ -262,7 +279,9 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 - Events Missing Critical Info: ${eventsWithMissingInfo}
 ${Object.entries(missingInfoBreakdown).length > 0 ? Object.entries(missingInfoBreakdown).map(([item, count]) => `  - Missing ${item}: ${count}`).join('\n') : '  - None'}
 - Scheduled Events Not Yet Confirmed: ${unconfirmedScheduled}
-- Events Needing Follow-Up: ${needsFollowUp}
+- Completed Events Needing 1-Day Follow-Up: ${needsOneDayFollowUp}
+- Completed Events Needing 1-Month Follow-Up: ${needsOneMonthFollowUp}
+- Events with Scheduled Follow-Up (Next 30 Days): ${hasScheduledFollowUp}
 
 ### Events by Status
 ${Object.entries(statusCounts)
