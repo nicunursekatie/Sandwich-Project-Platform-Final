@@ -85,10 +85,16 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
   const isWithin7Days = (() => {
     if (!displayDate) return false;
-    const eventDate = new Date(displayDate);
+    // Parse as local date to avoid timezone issues
+    const dateStr = displayDate.toString().split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day);
+
     const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    return eventDate <= sevenDaysFromNow && eventDate >= now;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    return eventDate <= sevenDaysFromNow && eventDate >= today;
   })();
 
   // Staffing text color - red if within 7 days, orange otherwise
