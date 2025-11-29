@@ -688,18 +688,23 @@ function LocationMarker({
     const showLabel = zoom >= 12;
 
     if (showLabel) {
+      const borderColor = event.status === 'scheduled' ? '#236383' : '#FBAD3F';
       return (
         <Marker
           position={[lat, lng]}
           icon={new L.DivIcon({
-            html: `<div class="bg-white rounded-lg shadow-lg border-2 px-3 py-2 min-w-[180px]" style="border-color: ${event.status === 'scheduled' ? '#236383' : '#FBAD3F'}">
-              <div class="font-semibold text-base text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
-              <div class="text-sm text-gray-700 font-medium">${event.desiredEventDate || event.scheduledEventDate ? format(parseLocalDate(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
-              ${event.estimatedSandwichCount ? `<div class="text-sm text-gray-600 font-medium">${event.estimatedSandwichCount} sandwiches</div>` : ''}
+            html: `<div class="flex flex-col items-center">
+              <div class="bg-white rounded-lg shadow-lg border-2 px-3 py-2 min-w-[180px]" style="border-color: ${borderColor}">
+                <div class="font-semibold text-base text-gray-900 truncate">${event.organizationName || 'Unknown'}</div>
+                <div class="text-sm text-gray-700 font-medium">${event.desiredEventDate || event.scheduledEventDate ? format(parseLocalDate(event.desiredEventDate || event.scheduledEventDate!), 'MMM d') : 'No date'}</div>
+                ${event.estimatedSandwichCount ? `<div class="text-sm text-gray-600 font-medium">${event.estimatedSandwichCount} sandwiches</div>` : ''}
+              </div>
+              <div style="width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 12px solid ${borderColor}; margin-top: -1px;"></div>
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${borderColor}; margin-top: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
             </div>`,
             className: 'custom-label-marker',
-            iconSize: [180, 60],
-            iconAnchor: [90, 30]
+            iconSize: [180, 90],
+            iconAnchor: [90, 90]
           })}
           // @ts-ignore - custom property for cluster tooltip
           eventData={event}
