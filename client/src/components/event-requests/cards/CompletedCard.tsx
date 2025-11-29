@@ -543,7 +543,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
 }) => {
   const parsePostgresArray = (arr: unknown): string[] => {
     if (!arr) return [];
-    if (Array.isArray(arr)) return arr;
+    if (Array.isArray(arr)) return arr.map(String); // Convert all elements to strings
     if (typeof arr === 'string') {
       if (arr === '{}' || arr === '') return [];
       const cleaned = arr.replace(/^{|}$/g, '');
@@ -570,12 +570,14 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     });
 
     // Add van driver if assigned AND not already in regular drivers (avoid double-counting)
-    if (request.assignedVanDriverId && !regularDrivers.includes(request.assignedVanDriverId)) {
-      let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+    // Convert vanDriverId to string for consistent comparison
+    const vanDriverIdStr = request.assignedVanDriverId ? String(request.assignedVanDriverId) : null;
+    if (vanDriverIdStr && !regularDrivers.includes(vanDriverIdStr)) {
+      let vanDriverName = request.customVanDriverName || resolveUserName(vanDriverIdStr);
       if (vanDriverName.startsWith('custom-')) {
         vanDriverName = extractNameFromCustomId(vanDriverName);
       }
-      drivers.push({ id: request.assignedVanDriverId, name: vanDriverName });
+      drivers.push({ id: vanDriverIdStr, name: vanDriverName });
     }
 
     return drivers;
@@ -608,20 +610,15 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const speakers = getSpeakers();
   const volunteers = getVolunteers();
 
-  // Calculate staffing gaps
+  // Calculate staffing gaps - use drivers.length which is already deduplicated
   const staffingGaps: string[] = [];
   const driversNeeded = request.driversNeeded || 0;
   const speakersNeeded = request.speakersNeeded || 0;
   const volunteersNeeded = request.volunteersNeeded || 0;
 
-  // Count ALL drivers (regular + van driver) for staffing gap calculation, avoiding double-counting
-  const regularDriverIds = parsePostgresArray(request.assignedDriverIds);
-  const regularDriversCount = regularDriverIds.length;
-  const isVanDriverUnique = request.assignedVanDriverId && !regularDriverIds.includes(request.assignedVanDriverId);
-  const totalDriversCount = regularDriversCount + (isVanDriverUnique ? 1 : 0);
-  
-  if (driversNeeded > totalDriversCount) {
-    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${totalDriversCount})`);
+  // Only check driver staffing gap if not self-transport
+  if (!request.selfTransport && driversNeeded > drivers.length) {
+    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${drivers.length})`);
   }
   if (speakersNeeded > speakers.length) {
     staffingGaps.push(`Needed ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} (had ${speakers.length})`);
@@ -646,62 +643,72 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
       {/* Compact Team Display */}
       <div className="bg-white/50 rounded-lg px-3 py-2 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {/* Drivers */}
+          {/* Drivers or Self-Transport */}
           <div className="flex items-center gap-2">
             <Car className="w-4 h-4 text-[#236383]" />
-            <span className="font-medium text-[#236383]">Drivers:</span>
-            {canEdit && onAssign && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onAssign('driver')}
-                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                title="Add driver"
-                data-testid="button-add-driver"
-              >
-                <UserPlus className="w-3 h-3 text-[#236383]" />
-              </Button>
-            )}
-            {drivers.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {drivers.map((driver, index) => (
-                  <React.Fragment key={driver.id}>
-                    <Badge
-                      variant="secondary"
-                      className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
-                      data-testid={`badge-driver-${driver.id}`}
-                    >
-                      <span className="flex items-center gap-1">
-                        {driver.name}
-                        <SendKudosButton
-                          recipientId={driver.id}
-                          recipientName={driver.name}
-                          contextType="project"
-                          contextId={request.id.toString()}
-                          contextTitle={`${request.organizationName} event`}
-                          size="sm"
-                          variant="outline"
-                          iconOnly
-                          className="h-3 w-3 p-0"
-                        />
-                        {canEdit && onRemoveAssignment && (
-                          <button
-                            onClick={() => onRemoveAssignment('driver', driver.id)}
-                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                            title="Remove driver"
-                            data-testid={`button-remove-driver-${driver.id}`}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </span>
-                    </Badge>
-                    {index < drivers.length - 1 && <span className="text-gray-400">•</span>}
-                  </React.Fragment>
-                ))}
-              </div>
+            {request.selfTransport ? (
+              // Organization transported sandwiches themselves
+              <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs px-2 py-0.5">
+                <Car className="w-3 h-3 mr-1" />
+                Org Self-Transport
+              </Badge>
             ) : (
-              <span className="text-gray-500 italic text-xs">(none)</span>
+              <>
+                <span className="font-medium text-[#236383]">Drivers:</span>
+                {canEdit && onAssign && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAssign('driver')}
+                    className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                    title="Add driver"
+                    data-testid="button-add-driver"
+                  >
+                    <UserPlus className="w-3 h-3 text-[#236383]" />
+                  </Button>
+                )}
+                {drivers.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {drivers.map((driver, index) => (
+                      <React.Fragment key={driver.id}>
+                        <Badge
+                          variant="secondary"
+                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
+                          data-testid={`badge-driver-${driver.id}`}
+                        >
+                          <span className="flex items-center gap-1">
+                            {driver.name}
+                            <SendKudosButton
+                              recipientId={driver.id}
+                              recipientName={driver.name}
+                              contextType="project"
+                              contextId={request.id.toString()}
+                              contextTitle={`${request.organizationName} event`}
+                              size="sm"
+                              variant="outline"
+                              iconOnly
+                              className="h-3 w-3 p-0"
+                            />
+                            {canEdit && onRemoveAssignment && (
+                              <button
+                                onClick={() => onRemoveAssignment('driver', driver.id)}
+                                className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                                title="Remove driver"
+                                data-testid={`button-remove-driver-${driver.id}`}
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </span>
+                        </Badge>
+                        {index < drivers.length - 1 && <span className="text-gray-400">•</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-gray-500 italic text-xs">(none)</span>
+                )}
+              </>
             )}
           </div>
 
@@ -1766,12 +1773,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     });
 
     // Add van driver if assigned AND not already in regular drivers (avoid double-counting)
-    if (request.assignedVanDriverId && !regularDrivers.includes(request.assignedVanDriverId)) {
-      let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+    // Convert vanDriverId to string for consistent comparison
+    const vanDriverIdStr = request.assignedVanDriverId ? String(request.assignedVanDriverId) : null;
+    if (vanDriverIdStr && !regularDrivers.includes(vanDriverIdStr)) {
+      let vanDriverName = request.customVanDriverName || resolveUserName(vanDriverIdStr);
       if (vanDriverName.startsWith('custom-')) {
         vanDriverName = extractNameFromCustomId(vanDriverName);
       }
-      driversList.push({ id: request.assignedVanDriverId, name: vanDriverName });
+      driversList.push({ id: vanDriverIdStr, name: vanDriverName });
     }
 
     return driversList;
