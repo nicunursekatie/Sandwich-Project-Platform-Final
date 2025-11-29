@@ -1810,14 +1810,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const speakersNeeded = request.speakersNeeded || 0;
   const volunteersNeeded = request.volunteersNeeded || 0;
 
-  // Count ALL drivers (regular + van driver) for staffing gap calculation, avoiding double-counting
-  const regularDriverIds = parsePostgresArray(request.assignedDriverIds);
-  const regularDriversCount = regularDriverIds.length;
-  const isVanDriverUnique = request.assignedVanDriverId && !regularDriverIds.includes(request.assignedVanDriverId);
-  const totalDriversCount = regularDriversCount + (isVanDriverUnique ? 1 : 0);
-
-  if (driversNeeded > totalDriversCount) {
-    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${totalDriversCount})`);
+  // Use drivers.length for consistency with the displayed count and other checks
+  if (driversNeeded > drivers.length) {
+    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${drivers.length})`);
   }
   if (speakersNeeded > speakers.length) {
     staffingGaps.push(`Needed ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} (had ${speakers.length})`);
