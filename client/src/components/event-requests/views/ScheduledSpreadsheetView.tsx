@@ -120,6 +120,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   // Time editing state for AM/PM
   const [timePeriod, setTimePeriod] = useState<'AM' | 'PM'>('AM');
 
+  // Fullscreen mode state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
     return eventRequests.filter(req => req.status === 'scheduled');
@@ -1149,6 +1152,25 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     }
   }, [resizingColumn, columnWidths]);
 
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isFullscreen]);
+
   const isEditing = (eventId: number, field: string) => {
     return editingScheduledId === eventId && editingField === field;
   };
@@ -1643,12 +1665,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       }
     };
     
+    // Columns that should wrap text instead of truncating
+    const wrapColumns = ['notes', 'additionalNotes', 'address', 'groupName', 'department'];
+    const shouldWrap = wrapColumns.includes(column.id);
+
     return (
-      <div 
-        className="flex items-center gap-0.5 group min-h-[20px]"
+      <div
+        className="flex items-start gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className="text-base font-medium truncate flex-1 leading-tight">{content || '-'}</span>
+        <span className={`text-base font-medium flex-1 leading-tight ${shouldWrap ? 'whitespace-normal break-words' : 'truncate'}`}>{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
@@ -1670,8 +1696,25 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     );
   }
 
-  return (
-    <div className="w-full">
+  // Spreadsheet content that can be rendered normally or in fullscreen
+  const spreadsheetContent = (
+    <div className={isFullscreen ? "fixed inset-0 z-50 bg-white p-4 overflow-auto" : "w-full"}>
+      {/* Fullscreen Header */}
+      {isFullscreen && (
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-[#236383]">Scheduled Events Spreadsheet</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFullscreen(false)}
+            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+          >
+            <Minimize2 className="h-4 w-4 mr-2" />
+            Exit Fullscreen
+          </Button>
+        </div>
+      )}
+
       {/* Search and Controls */}
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex items-center gap-4 flex-wrap">
@@ -1684,6 +1727,19 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           <div className="text-sm text-gray-600">
             {sortedEvents.length} event{sortedEvents.length !== 1 ? 's' : ''}
           </div>
+          {/* Fullscreen toggle button - only show when NOT already fullscreen */}
+          {!isFullscreen && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFullscreen(true)}
+              className="ml-auto border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+              title="Open spreadsheet in fullscreen mode for easier editing"
+            >
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Fullscreen
+            </Button>
+          )}
         </div>
         
         {/* Date Range Filter */}
@@ -1734,7 +1790,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
       {/* Table Container with Horizontal and Vertical Scroll */}
       <div className="border rounded-lg overflow-hidden bg-white">
-        <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
+        <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto' }}>
           <table className="w-full border-collapse">
             <thead className="bg-[#007E8C] border-b-2 border-[#236383] sticky top-0 z-10">
               <tr>
@@ -1799,14 +1855,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-8`}
+                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors min-h-[48px]`}
                 >
                   {columns.map((column) => {
                     const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
                     return (
                       <td
                         key={column.id}
-                        className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
+                        className="px-1.5 py-2 border-r border-gray-200 text-base leading-tight align-top"
                         style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
                       >
                         {renderCell(event, column)}
@@ -1829,6 +1885,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4" />
           <span>Drag column headers to reorder columns. Your preference will be saved.</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Maximize2 className="h-4 w-4" />
+          <span>Click Fullscreen for a larger workspace. Press Escape to exit fullscreen mode.</span>
         </div>
       </div>
 
@@ -1919,6 +1979,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       </Dialog>
     </div>
   );
+
+  return spreadsheetContent;
 };
 
 
