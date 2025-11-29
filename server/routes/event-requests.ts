@@ -228,11 +228,13 @@ const logActivity = async (
 // Valid status values for event requests
 const VALID_EVENT_REQUEST_STATUSES = [
   'new',
-  'followed_up', 
+  'followed_up',
   'in_process',
   'scheduled',
   'completed',
-  'declined'
+  'declined',
+  'postponed',
+  'cancelled'
 ] as const;
 
 // Helper function to validate and sanitize status values
@@ -386,7 +388,12 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
       // Method 4: Listed in speaker details (check if user's name or email appears in speaker details)
       if (event.speakerDetails && currentUser && currentUser.email) {
-        const speakerText = event.speakerDetails.toLowerCase();
+        // speakerDetails is now JSONB - convert to string for text search
+        const speakerText = (
+          typeof event.speakerDetails === 'string'
+            ? event.speakerDetails
+            : JSON.stringify(event.speakerDetails)
+        ).toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
         const userName = currentUser.displayName?.toLowerCase() || '';
         const userFirstName = currentUser.firstName?.toLowerCase() || '';
@@ -519,7 +526,12 @@ function getAssignmentType(
   }
 
   if (event.speakerDetails && currentUser && currentUser.email) {
-    const speakerText = event.speakerDetails.toLowerCase();
+    // speakerDetails is now JSONB - convert to string for text search
+    const speakerText = (
+      typeof event.speakerDetails === 'string'
+        ? event.speakerDetails
+        : JSON.stringify(event.speakerDetails)
+    ).toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
     const userName = currentUser.displayName?.toLowerCase() || '';
     const userFirstName = currentUser.firstName?.toLowerCase() || '';

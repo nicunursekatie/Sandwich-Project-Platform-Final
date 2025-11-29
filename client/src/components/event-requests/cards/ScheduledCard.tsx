@@ -1345,7 +1345,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
                 <MultiRecipientSelector
-                  value={editingValue ? JSON.parse(editingValue) : []}
+                  value={(() => {
+                    if (!editingValue) return [];
+                    try {
+                      const parsed = JSON.parse(editingValue);
+                      return Array.isArray(parsed) ? parsed : [];
+                    } catch {
+                      return [];
+                    }
+                  })()}
                   onChange={(ids) => setEditingValue(JSON.stringify(ids))}
                   placeholder="Select recipient organizations..."
                   data-testid="assigned-recipients-editor"

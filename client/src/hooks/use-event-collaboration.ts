@@ -83,17 +83,17 @@ export type { EventCollaborationComment, EventFieldLock, EventEditRevision } fro
 
 /**
  * Event-specific collaboration hook (backward compatible wrapper)
- * 
+ *
  * This hook now delegates all functionality to the generic useCollaboration hook
  * with resourceType='event', maintaining full backward compatibility with existing code.
- * 
- * @param eventId - The ID of the event request to collaborate on
+ *
+ * @param eventId - The ID of the event request to collaborate on (pass null/0 for new events)
  * @returns Full collaboration API for the event
  */
-export function useEventCollaboration(eventId: number): UseCollaborationReturn {
+export function useEventCollaboration(eventId: number | null | undefined): UseCollaborationReturn {
   return useCollaboration({
     resourceType: 'event',
-    resourceId: eventId,
+    resourceId: eventId || 0, // useCollaboration handles 0/falsy as "disabled"
     namespace: '/collaboration',
   });
 }
