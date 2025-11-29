@@ -1666,16 +1666,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     
     const content = typeof renderedContent === 'string' ? renderedContent : String(renderedContent);
 
-    // Columns that should wrap text instead of truncating
-    const wrapColumns = ['notes', 'additionalNotes', 'address', 'groupName', 'department'];
-    const shouldWrap = wrapColumns.includes(column.id);
-
     return (
       <div
-        className="flex items-start gap-0.5 group min-h-[20px]"
+        className="flex items-center gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className={`text-base font-medium flex-1 leading-tight ${shouldWrap ? 'whitespace-normal break-words' : 'truncate'}`}>{content || '-'}</span>
+        <span className="text-base font-medium truncate flex-1 leading-tight">{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
@@ -1856,14 +1852,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors min-h-[48px]`}
+                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-10`}
                 >
                   {columns.map((column) => {
                     const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
                     return (
                       <td
                         key={column.id}
-                        className="px-1.5 py-2 border-r border-gray-200 text-base leading-tight align-top"
+                        className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
                         style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
                       >
                         {renderCell(event, column)}
