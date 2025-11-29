@@ -35,6 +35,7 @@ import {
   DollarSign,
   Receipt,
   Sparkles,
+  Gauge,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -171,6 +172,17 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-requests',
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'event-planning',
+    highlighted: true,
+  },
+  {
+    id: 'event-ops-dashboard',
+    label: 'Ops Dashboard',
+    icon: Gauge,
+    href: 'event-ops-dashboard',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'event-planning',
+    parentId: 'event-requests',
+    isSubItem: true,
     highlighted: true,
   },
   {
