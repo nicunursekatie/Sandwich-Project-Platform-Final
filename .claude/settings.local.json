@@ -18,7 +18,8 @@
       "Bash(npx drizzle-kit:*)",
       "Bash(lsof:*)",
       "Bash(npx vite build)",
-      "Bash(timeout 15 npm run dev:*)"
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(NODE_ENV=development npx tsx:*)"
     ],
     "deny": [],
     "ask": []
