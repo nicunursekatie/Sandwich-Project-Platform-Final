@@ -272,9 +272,9 @@ export const useEventFilters = () => {
             : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return oldestDateA - oldestDateB;
         case 'organization_asc':
-          return a.organizationName.localeCompare(b.organizationName);
+          return (a.organizationName || '').localeCompare(b.organizationName || '');
         case 'organization_desc':
-          return b.organizationName.localeCompare(a.organizationName);
+          return (b.organizationName || '').localeCompare(a.organizationName || '');
         case 'created_date_desc':
           const createdDateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const createdDateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -385,9 +385,9 @@ export const useEventFilters = () => {
               : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
             return dateAscA - dateAscB;
           case 'organization_asc':
-            return a.organizationName.localeCompare(b.organizationName);
+            return (a.organizationName || '').localeCompare(b.organizationName || '');
           case 'organization_desc':
-            return b.organizationName.localeCompare(a.organizationName);
+            return (b.organizationName || '').localeCompare(a.organizationName || '');
           case 'created_date_desc':
             const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
