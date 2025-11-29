@@ -679,9 +679,21 @@ export function useCollaboration({
           parentCommentId: parentId,
         });
 
+        logger.log('[Collaboration] Comment created, response:', response);
+
         // Socket.IO will handle real-time update, but update local state as backup
-        if (response.comment) {
+        if (response && response.comment) {
           setComments((prev) => [...prev, response.comment]);
+        } else {
+          // If response doesn't contain comment, refetch all comments
+          logger.warn('[Collaboration] Response missing comment, refetching all comments');
+          const refetchEndpoint = resourceType === 'event'
+            ? `/api/event-requests/${resourceId}/collaboration/comments`
+            : `/api/${resourceType}/${resourceId}/collaboration/comments`;
+          const refreshResponse = await apiRequest('GET', refetchEndpoint);
+          if (refreshResponse && refreshResponse.comments) {
+            setComments(refreshResponse.comments);
+          }
         }
       } catch (err) {
         logger.error('[Collaboration] Error adding comment:', err);
