@@ -131,6 +131,48 @@ Note: Individual sandwich collections are typically logged on Wednesday or Thurs
 `;
 }
 
+// Helper to check missing critical info for an event
+function getEventMissingInfo(event: any): string[] {
+  const missing: string[] = [];
+
+  // Check for contact info (email OR phone)
+  if (!event.email && !event.phone) {
+    missing.push('Contact Info');
+  }
+
+  // Check for sandwich count
+  const hasSandwichCount =
+    (event.estimatedSandwichCount && event.estimatedSandwichCount > 0) ||
+    (event.estimatedSandwichCountMin && event.estimatedSandwichCountMin > 0) ||
+    (event.estimatedSandwichCountMax && event.estimatedSandwichCountMax > 0);
+
+  if (!hasSandwichCount) {
+    missing.push('Sandwich Info');
+  }
+
+  // Check for address (skip if org is delivering themselves)
+  const organizationDelivering =
+    (!event.driversNeeded || event.driversNeeded === 0) && !event.vanDriverNeeded;
+
+  if (!organizationDelivering) {
+    const hasAddress =
+      (event.eventAddress && event.eventAddress.trim() !== '') ||
+      (event.deliveryDestination && event.deliveryDestination.trim() !== '') ||
+      (event.overnightHoldingLocation && event.overnightHoldingLocation.trim() !== '');
+
+    if (!hasAddress) {
+      missing.push('Address');
+    }
+  }
+
+  // If speakers needed, check for event start time
+  if (event.speakersNeeded && event.speakersNeeded > 0 && !event.eventStartTime) {
+    missing.push('Event Start Time');
+  }
+
+  return missing;
+}
+
 // Build context for events
 async function buildEventsContext(contextData?: Record<string, any>): Promise<string> {
   const allEvents = await db.query.eventRequests.findMany();
@@ -140,6 +182,17 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   const monthlyStats: Record<string, { events: number; sandwiches: number }> = {};
   const statusCounts: Record<string, number> = {};
   let totalSandwiches = 0;
+
+  // Track events needing attention
+  let eventsWithMissingInfo = 0;
+  let unconfirmedScheduled = 0;
+  let needsFollowUp = 0;
+  const missingInfoBreakdown: Record<string, number> = {};
+
+  // Get upcoming events (next 30 days)
+  const now = new Date();
+  const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  let upcomingCount = 0;
 
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
@@ -163,11 +216,37 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       }
       monthlyStats[monthKey].events++;
       monthlyStats[monthKey].sandwiches += sandwichCount;
+
+      // Check if upcoming (next 30 days)
+      if (date >= now && date <= thirtyDaysOut && (e.status === 'scheduled' || e.status === 'in_process')) {
+        upcomingCount++;
+      }
     }
 
     // Status counts
     const status = e.status || 'unknown';
     statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+    // Check for missing critical info (only for active events)
+    if (e.status === 'in_process' || e.status === 'scheduled' || e.status === 'new') {
+      const missingInfo = getEventMissingInfo(e);
+      if (missingInfo.length > 0) {
+        eventsWithMissingInfo++;
+        missingInfo.forEach(item => {
+          missingInfoBreakdown[item] = (missingInfoBreakdown[item] || 0) + 1;
+        });
+      }
+    }
+
+    // Check for unconfirmed scheduled events
+    if (e.status === 'scheduled' && !e.isConfirmed) {
+      unconfirmedScheduled++;
+    }
+
+    // Check for events needing follow-up
+    if (e.needsFollowUp) {
+      needsFollowUp++;
+    }
   });
 
   return `
@@ -177,6 +256,13 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
+- Upcoming Events (Next 30 Days): ${upcomingCount}
+
+### Action Items & Alerts
+- Events Missing Critical Info: ${eventsWithMissingInfo}
+${Object.entries(missingInfoBreakdown).length > 0 ? Object.entries(missingInfoBreakdown).map(([item, count]) => `  - Missing ${item}: ${count}`).join('\n') : '  - None'}
+- Scheduled Events Not Yet Confirmed: ${unconfirmedScheduled}
+- Events Needing Follow-Up: ${needsFollowUp}
 
 ### Events by Status
 ${Object.entries(statusCounts)

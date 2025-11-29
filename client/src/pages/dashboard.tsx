@@ -950,20 +950,22 @@ export default function Dashboard({
         {/* Guided Tour System */}
         <GuidedTour />
 
-        {/* AI Assistant */}
-        <FloatingAIChat
-          contextType="dashboard"
-          title="TSP Assistant"
-          subtitle="Ask anything about the platform"
-          suggestedQuestions={[
-            "What can I do on this platform?",
-            "How do I add a new collection?",
-            "What reports are available?",
-            "How do I manage volunteers?",
-            "Show me recent activity",
-            "What's the status of our projects?",
-          ]}
-        />
+        {/* AI Assistant - Only show on sections that don't have their own AI chat */}
+        {!['event-requests', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'holding-zone', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'organizations'].includes(activeSection) && (
+          <FloatingAIChat
+            contextType="dashboard"
+            title="TSP Assistant"
+            subtitle="Ask anything about the platform"
+            suggestedQuestions={[
+              "What can I do on this platform?",
+              "How do I add a new collection?",
+              "What reports are available?",
+              "How do I manage volunteers?",
+              "Show me recent activity",
+              "What's the status of our projects?",
+            ]}
+          />
+        )}
       </DashboardNavigationProvider>
     </>
   );
