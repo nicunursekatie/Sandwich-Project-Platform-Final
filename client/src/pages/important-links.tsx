@@ -742,7 +742,7 @@ export default function ImportantLinks() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="links"
         title="Quick Tools Assistant"
         subtitle="Ask about spreadsheets and tools"
         suggestedQuestions={[

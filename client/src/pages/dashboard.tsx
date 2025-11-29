@@ -952,7 +952,7 @@ export default function Dashboard({
 
         {/* AI Assistant */}
         <FloatingAIChat
-          contextType="general"
+          contextType="dashboard"
           title="TSP Assistant"
           subtitle="Ask anything about the platform"
           suggestedQuestions={[

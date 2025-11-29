@@ -1248,7 +1248,7 @@ export default function ProjectsClean() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="projects"
         title="Projects Assistant"
         subtitle="Ask about projects and tasks"
         suggestedQuestions={[

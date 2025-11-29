@@ -793,7 +793,7 @@ export function Resources() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="resources"
         title="Resources Assistant"
         subtitle="Ask about documents and links"
         suggestedQuestions={[

@@ -2037,7 +2037,7 @@ export default function GroupCatalog({
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="organizations"
         title="Organizations Assistant"
         subtitle="Ask about groups and organizations"
         suggestedQuestions={[

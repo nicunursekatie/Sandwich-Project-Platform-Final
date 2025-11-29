@@ -239,6 +239,335 @@ The platform includes:
 `;
 }
 
+// Build context for Holding Zone (Team Board)
+async function buildHoldingZoneContext(): Promise<string> {
+  const items = await db.query.teamBoardItems.findMany();
+
+  // Calculate metrics
+  const statusCounts: Record<string, number> = { open: 0, claimed: 0, done: 0 };
+  const typeCounts: Record<string, number> = { task: 0, note: 0, idea: 0 };
+  const urgentCount = items.filter(i => i.isUrgent).length;
+
+  items.forEach(item => {
+    statusCounts[item.status || 'open']++;
+    typeCounts[item.type || 'task']++;
+  });
+
+  const recentItems = items
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10);
+
+  return `
+## Holding Zone Data Summary
+
+### Current Items Overview
+- Total Items: ${items.length}
+- Open Items: ${statusCounts.open}
+- Claimed Items: ${statusCounts.claimed}
+- Completed Items: ${statusCounts.done}
+- Urgent Items: ${urgentCount}
+
+### Items by Type
+- Tasks: ${typeCounts.task}
+- Notes: ${typeCounts.note}
+- Ideas: ${typeCounts.idea}
+
+### Recent Items (Last 10)
+${recentItems.map(item => `- [${item.type}] ${item.content?.substring(0, 50)}${item.content && item.content.length > 50 ? '...' : ''} (${item.status})`).join('\n')}
+
+### About the Holding Zone
+The Holding Zone is a collaborative space where team members can:
+- Capture quick tasks, notes, and ideas
+- Assign items to team members
+- Mark items as urgent
+- Track completion status
+- Add comments and collaborate on items
+`;
+}
+
+// Build context for TSP Network
+async function buildNetworkContext(): Promise<string> {
+  const hosts = await db.query.hosts.findMany();
+  const drivers = await db.query.drivers.findMany();
+  const volunteers = await db.query.volunteers.findMany();
+  const recipients = await db.query.recipients.findMany();
+
+  const activeHosts = hosts.filter(h => h.isActive !== false).length;
+  const activeDrivers = drivers.filter(d => d.isActive !== false).length;
+  const activeVolunteers = volunteers.filter(v => v.isActive !== false).length;
+  const activeRecipients = recipients.filter(r => r.isActive !== false).length;
+
+  return `
+## TSP Network Data Summary
+
+### Network Overview
+- Total Hosts: ${hosts.length} (${activeHosts} active)
+- Total Drivers: ${drivers.length} (${activeDrivers} active)
+- Total Volunteers: ${volunteers.length} (${activeVolunteers} active)
+- Total Recipients: ${recipients.length} (${activeRecipients} active)
+
+### About the TSP Network
+The TSP Network manages all the people and organizations involved in The Sandwich Project:
+- **Hosts**: Locations where sandwiches are made (homes, churches, businesses)
+- **Drivers**: People who pick up and deliver sandwiches
+- **Volunteers**: Team members who help with various tasks
+- **Recipients**: Organizations that receive sandwiches for distribution
+
+### Key Functions
+- Track contact information and availability
+- Manage active/inactive status
+- Record notes and special requirements
+- Coordinate scheduling and routes
+`;
+}
+
+// Build context for Projects
+async function buildProjectsContext(): Promise<string> {
+  const projects = await db.query.projects.findMany();
+
+  const statusCounts: Record<string, number> = {};
+  const priorityCounts: Record<string, number> = {};
+  const categoryCounts: Record<string, number> = {};
+
+  projects.forEach(p => {
+    statusCounts[p.status || 'waiting'] = (statusCounts[p.status || 'waiting'] || 0) + 1;
+    priorityCounts[p.priority || 'medium'] = (priorityCounts[p.priority || 'medium'] || 0) + 1;
+    if (p.category) {
+      categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+    }
+  });
+
+  const activeProjects = projects.filter(p => p.status !== 'completed' && p.status !== 'archived');
+
+  return `
+## Projects Data Summary
+
+### Overview
+- Total Projects: ${projects.length}
+- Active Projects: ${activeProjects.length}
+
+### Projects by Status
+${Object.entries(statusCounts)
+  .sort((a, b) => b[1] - a[1])
+  .map(([status, count]) => `- ${status}: ${count}`)
+  .join('\n')}
+
+### Projects by Priority
+${Object.entries(priorityCounts)
+  .sort((a, b) => b[1] - a[1])
+  .map(([priority, count]) => `- ${priority}: ${count}`)
+  .join('\n')}
+
+### Projects by Category
+${Object.entries(categoryCounts)
+  .sort((a, b) => b[1] - a[1])
+  .map(([category, count]) => `- ${category}: ${count}`)
+  .join('\n')}
+
+### About Projects
+Projects help track ongoing initiatives for The Sandwich Project:
+- Set priority levels (low, medium, high, urgent)
+- Track status (waiting, in-progress, completed, archived)
+- Assign team members
+- Set due dates and track progress
+- Categorize by type (technology, operations, outreach, etc.)
+`;
+}
+
+// Build context for Meetings
+async function buildMeetingsContext(): Promise<string> {
+  const meetings = await db.query.meetings.findMany();
+  const agendaItems = await db.query.agendaItems.findMany();
+
+  // Sort meetings by date
+  const upcomingMeetings = meetings
+    .filter(m => new Date(m.scheduledDate) >= new Date())
+    .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
+    .slice(0, 5);
+
+  const recentMeetings = meetings
+    .filter(m => new Date(m.scheduledDate) < new Date())
+    .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())
+    .slice(0, 5);
+
+  return `
+## Meetings Data Summary
+
+### Overview
+- Total Meetings Scheduled: ${meetings.length}
+- Total Agenda Items: ${agendaItems.length}
+
+### Upcoming Meetings
+${upcomingMeetings.length > 0
+  ? upcomingMeetings.map(m => `- ${m.title} (${new Date(m.scheduledDate).toLocaleDateString()})`).join('\n')
+  : '- No upcoming meetings scheduled'}
+
+### Recent Meetings
+${recentMeetings.length > 0
+  ? recentMeetings.map(m => `- ${m.title} (${new Date(m.scheduledDate).toLocaleDateString()})`).join('\n')
+  : '- No recent meetings'}
+
+### About Meetings
+The meeting dashboard helps manage committee meetings:
+- Schedule meetings with dates and times
+- Create and manage agenda items
+- Track action items from meetings
+- Record meeting notes and minutes
+- Compile agendas for distribution
+`;
+}
+
+// Build context for Resources
+async function buildResourcesContext(): Promise<string> {
+  const resources = await db.query.resources.findMany();
+
+  const categoryStats: Record<string, number> = {};
+  const typeStats: Record<string, number> = {};
+
+  resources.forEach(r => {
+    if (r.category) {
+      categoryStats[r.category] = (categoryStats[r.category] || 0) + 1;
+    }
+    if (r.resourceType) {
+      typeStats[r.resourceType] = (typeStats[r.resourceType] || 0) + 1;
+    }
+  });
+
+  return `
+## Resources Data Summary
+
+### Overview
+- Total Resources: ${resources.length}
+
+### Resources by Category
+${Object.entries(categoryStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([category, count]) => `- ${category}: ${count}`)
+  .join('\n') || '- No categories defined'}
+
+### Resources by Type
+${Object.entries(typeStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([type, count]) => `- ${type}: ${count}`)
+  .join('\n') || '- No types defined'}
+
+### About Resources
+Resources is a library of documents and materials for The Sandwich Project:
+- Training materials and guides
+- Forms and templates
+- Policy documents
+- How-to guides and procedures
+- Links to external resources
+`;
+}
+
+// Build context for Organizations
+async function buildOrganizationsContext(): Promise<string> {
+  const organizations = await db.query.organizations.findMany();
+  const events = await db.query.eventRequests.findMany();
+
+  const categoryStats: Record<string, number> = {};
+  organizations.forEach(org => {
+    const category = org.category || 'other';
+    categoryStats[category] = (categoryStats[category] || 0) + 1;
+  });
+
+  // Count events per organization
+  const orgsWithEvents = new Set(events.map(e => e.organizationName).filter(Boolean));
+
+  return `
+## Organizations Data Summary
+
+### Overview
+- Total Organizations: ${organizations.length}
+- Organizations with Events: ${orgsWithEvents.size}
+
+### Organizations by Category
+${Object.entries(categoryStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([category, count]) => `- ${category}: ${count}`)
+  .join('\n') || '- No categories defined'}
+
+### About Organizations
+The Organizations catalog tracks groups that partner with The Sandwich Project:
+- Schools, churches, businesses, and community groups
+- Contact information and key contacts
+- Event history and relationships
+- Notes and special requirements
+`;
+}
+
+// Build context for Important Links
+async function buildLinksContext(): Promise<string> {
+  const links = await db.query.driveLinks.findMany();
+
+  const categoryStats: Record<string, number> = {};
+  links.forEach(link => {
+    const category = link.category || 'general';
+    categoryStats[category] = (categoryStats[category] || 0) + 1;
+  });
+
+  return `
+## Important Links Data Summary
+
+### Overview
+- Total Links: ${links.length}
+
+### Links by Category
+${Object.entries(categoryStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([category, count]) => `- ${category}: ${count}`)
+  .join('\n') || '- No categories defined'}
+
+### About Important Links
+Important Links is a quick-access hub for frequently used resources:
+- Google Drive folders and documents
+- External tools and platforms
+- Key websites and portals
+- Shared team resources
+`;
+}
+
+// Build context for Dashboard
+async function buildDashboardContext(): Promise<string> {
+  // Combine key metrics from across the platform
+  const collections = (await db.query.sandwichCollections.findMany()).filter(c => !c.deletedAt);
+  const events = await db.query.eventRequests.findMany();
+  const projects = await db.query.projects.findMany();
+  const teamBoardItems = await db.query.teamBoardItems.findMany();
+
+  let totalSandwiches = 0;
+  collections.forEach(c => {
+    totalSandwiches += getCollectionSandwichCount(c);
+  });
+
+  const activeProjects = projects.filter(p => p.status !== 'completed' && p.status !== 'archived').length;
+  const openItems = teamBoardItems.filter(i => i.status === 'open').length;
+  const upcomingEvents = events.filter(e => {
+    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    return eventDate && new Date(eventDate) >= new Date();
+  }).length;
+
+  return `
+## Dashboard Data Summary
+
+### Quick Stats
+- Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
+- Total Collections: ${collections.length}
+- Total Events: ${events.length}
+- Upcoming Events: ${upcomingEvents}
+- Active Projects: ${activeProjects}
+- Open Holding Zone Items: ${openItems}
+
+### About the Dashboard
+The Dashboard provides an overview of The Sandwich Project's activities:
+- Quick access to key metrics
+- Recent activity summaries
+- Navigation to all platform features
+- Announcements and updates
+`;
+}
+
 // Get system prompt for context type
 function getSystemPrompt(contextType: string, dataSummary: string): string {
   const baseRules = `
@@ -282,6 +611,38 @@ IMPORTANT: Never rank or compare hosts or organizations against each other. Focu
     'general': `You are a helpful assistant for The Sandwich Project platform.
 You help users navigate and understand the platform's features for managing sandwich collections, events, volunteers, and organizational data.
 If the user asks about specific data, let them know which section of the platform would have that information.`,
+
+    'holding-zone': `You are a helpful assistant for The Sandwich Project's Holding Zone.
+The Holding Zone is a collaborative task board where team members capture tasks, notes, and ideas before they become formal projects.
+You help users manage their items, understand the status of tasks, and organize their workflow.`,
+
+    'network': `You are a helpful assistant for The Sandwich Project's TSP Network.
+The TSP Network manages all the people and organizations involved: hosts (where sandwiches are made), drivers (who deliver), volunteers (who help), and recipients (who receive sandwiches).
+You help users understand the network structure and find information about participants.`,
+
+    'projects': `You are a helpful assistant for The Sandwich Project's project management.
+Projects track ongoing initiatives with priorities, statuses, categories, and team assignments.
+You help users understand project status, priorities, and organizational structure.`,
+
+    'meetings': `You are a helpful assistant for The Sandwich Project's meeting management.
+The meeting dashboard helps schedule and manage committee meetings, agendas, and action items.
+You help users find meeting information and understand upcoming schedules.`,
+
+    'resources': `You are a helpful assistant for The Sandwich Project's resource library.
+Resources include training materials, guides, forms, templates, and procedures.
+You help users find and understand available resources.`,
+
+    'organizations': `You are a helpful assistant for The Sandwich Project's organization catalog.
+Organizations are groups that partner with TSP for sandwich-making events.
+You help users understand the organization database and event relationships.`,
+
+    'links': `You are a helpful assistant for The Sandwich Project's important links.
+Important Links provides quick access to frequently used documents and external resources.
+You help users find and navigate to key resources.`,
+
+    'dashboard': `You are a helpful assistant for The Sandwich Project's dashboard.
+The dashboard provides an overview of all platform activities and key metrics.
+You help users understand the overall status and navigate to different sections.`,
   };
 
   const contextDesc = contextDescriptions[contextType] || contextDescriptions['general'];
@@ -323,6 +684,30 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         const collectionsData = await buildCollectionsContext(contextData);
         const eventsData = await buildEventsContext(contextData);
         dataSummary = `${collectionsData}\n\n${eventsData}`;
+        break;
+      case 'holding-zone':
+        dataSummary = await buildHoldingZoneContext();
+        break;
+      case 'network':
+        dataSummary = await buildNetworkContext();
+        break;
+      case 'projects':
+        dataSummary = await buildProjectsContext();
+        break;
+      case 'meetings':
+        dataSummary = await buildMeetingsContext();
+        break;
+      case 'resources':
+        dataSummary = await buildResourcesContext();
+        break;
+      case 'organizations':
+        dataSummary = await buildOrganizationsContext();
+        break;
+      case 'links':
+        dataSummary = await buildLinksContext();
+        break;
+      case 'dashboard':
+        dataSummary = await buildDashboardContext();
         break;
       case 'general':
         dataSummary = await buildGeneralContext();

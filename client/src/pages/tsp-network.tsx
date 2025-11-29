@@ -124,7 +124,7 @@ export default function TSPNetwork() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="network"
         title="Network Assistant"
         subtitle="Ask about hosts, drivers, and volunteers"
         suggestedQuestions={[
