@@ -864,18 +864,29 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return contacts.filter(c => c && c !== 'Not assigned').join(', ') || '';
       },
     },
-    // 8. Driver/speaker/volunteer need
+    // 8. Driver/speaker/volunteer need (only show unfilled positions)
     {
       id: 'volunteersNeeded',
       label: 'Staff Needed',
       width: '140px',
       hideOnMobile: true,
       render: (event) => {
+        // Calculate assigned counts
+        const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+        const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
+        const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+
+        // Calculate remaining needs (only show if still unfilled)
         const needs = [];
-        if (event.volunteersNeeded && event.volunteersNeeded > 0) needs.push(`${event.volunteersNeeded} vol`);
-        if (event.driversNeeded && event.driversNeeded > 0) needs.push(`${event.driversNeeded} driver`);
-        if (event.speakersNeeded && event.speakersNeeded > 0) needs.push(`${event.speakersNeeded} speaker`);
-        return needs.join(', ') || 'None';
+        const driversStillNeeded = (event.driversNeeded || 0) - driversAssigned;
+        const speakersStillNeeded = (event.speakersNeeded || 0) - speakersAssigned;
+        const volunteersStillNeeded = (event.volunteersNeeded || 0) - volunteersAssigned;
+
+        if (volunteersStillNeeded > 0) needs.push(`${volunteersStillNeeded} vol`);
+        if (driversStillNeeded > 0) needs.push(`${driversStillNeeded} driver`);
+        if (speakersStillNeeded > 0) needs.push(`${speakersStillNeeded} speaker`);
+
+        return needs.join(', ') || '✓';
       },
     },
     // 9. Assigned Staff (who is actually assigned)

@@ -511,20 +511,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </span>
                 </>
               ) : canEdit ? (
-                <>
-                  <span className="text-[#236383]/60">•</span>
-                  <span
-                    className="text-lg text-gray-400 cursor-pointer hover:text-[#007E8C]"
-                    onClick={() => startEditing('department', '')}
-                  >
-                    + Add Dept
-                  </span>
-                </>
+                <Edit2
+                  className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
+                  onClick={() => startEditing('department', '')}
+                  title="Add department"
+                />
               ) : null}
             </div>
 
             {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full">
               <Badge
                 onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
@@ -1234,10 +1230,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Drivers */}
                 {request.selfTransport ? (
                   // Organization is transporting sandwiches themselves
-                  <div className="flex items-center justify-between py-0.5">
-                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs py-0.5 px-2">
-                      <Car className="w-3 h-3 mr-1" />
-                      Org Self-Transport
+                  <div className="flex items-center justify-between py-1">
+                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-semibold text-sm py-1.5 px-3">
+                      <Car className="w-4 h-4 mr-1.5" />
+                      Organization Self-Transport
                     </Badge>
                     {canEdit && (
                       <Button
@@ -1433,10 +1429,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('speakersNeeded', '1')}
-                      className="h-5 px-2 text-[#007E8C] text-xs"
+                      className="h-5 w-5 p-0 text-[#007E8C]"
+                      title="Add speaker need"
                     >
-                      <Megaphone className="w-3 h-3 mr-0.5" />
-                      Add Speaker Need
+                      <Megaphone className="w-3 h-3" />
                     </Button>
                   </div>
                 ) : null}
