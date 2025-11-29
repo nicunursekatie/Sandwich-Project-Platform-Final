@@ -1362,7 +1362,7 @@ export default function WeeklyMonitoringDashboard() {
                     <div className="space-y-4">
                       {multiWeekReport.weeks && multiWeekReport.weeks.map ? (
                         multiWeekReport.weeks.map(
-                          (week: any, index: number) => (
+                          (week: MultiWeekReport, index: number) => (
                             <div key={index} className="border rounded-lg p-4">
                               <h4 className="font-medium mb-3">
                                 {week.weekLabel}
@@ -1370,7 +1370,7 @@ export default function WeeklyMonitoringDashboard() {
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {week.submissionStatus &&
                                 week.submissionStatus.map ? (
-                                  week.submissionStatus.map((status: any) => (
+                                  week.submissionStatus.map((status: WeeklySubmissionStatus) => (
                                     <div
                                       key={status.location}
                                       className={`p-2 rounded text-sm flex items-center gap-2 ${
