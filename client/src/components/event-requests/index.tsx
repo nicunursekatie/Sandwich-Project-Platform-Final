@@ -17,6 +17,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
   Dialog,
@@ -1185,6 +1186,19 @@ const EventRequestsManagementContent: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* AI Assistant */}
+        <FloatingAIChat
+          contextType="events"
+          title="Events Assistant"
+          subtitle="Ask about event requests and scheduling"
+          suggestedQuestions={[
+            "How many events are scheduled this month?",
+            "What events need follow-up?",
+            "Show events by category",
+            "Which events are pending confirmation?",
+          ]}
+        />
       </div>
     </TooltipProvider>
   );
