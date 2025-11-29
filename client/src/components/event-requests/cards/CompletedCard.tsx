@@ -569,8 +569,8 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
       return { id, name };
     });
 
-    // Add van driver if assigned
-    if (request.assignedVanDriverId) {
+    // Add van driver if assigned AND not already in regular drivers (avoid double-counting)
+    if (request.assignedVanDriverId && !regularDrivers.includes(request.assignedVanDriverId)) {
       let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
       if (vanDriverName.startsWith('custom-')) {
         vanDriverName = extractNameFromCustomId(vanDriverName);
@@ -1765,8 +1765,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       return { id, name };
     });
 
-    // Add van driver if assigned
-    if (request.assignedVanDriverId) {
+    // Add van driver if assigned AND not already in regular drivers (avoid double-counting)
+    if (request.assignedVanDriverId && !regularDrivers.includes(request.assignedVanDriverId)) {
       let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
       if (vanDriverName.startsWith('custom-')) {
         vanDriverName = extractNameFromCustomId(vanDriverName);
