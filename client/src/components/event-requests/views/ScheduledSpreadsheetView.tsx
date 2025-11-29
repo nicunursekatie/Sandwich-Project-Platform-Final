@@ -49,6 +49,8 @@ import {
   Eye,
   Plus,
   Trash2,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
