@@ -191,10 +191,17 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   let hasScheduledFollowUp = 0;
   const missingInfoBreakdown: Record<string, number> = {};
 
-  // Get upcoming events (next 30 days)
+  // Get upcoming events at various time horizons
   const now = new Date();
+  const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  let upcomingCount = 0;
+  let upcomingNext7Days = 0;
+  let upcomingNext14Days = 0;
+  let upcomingNext30Days = 0;
+
+  // Track upcoming events with details
+  const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number }[] = [];
 
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
@@ -219,9 +226,24 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       monthlyStats[monthKey].events++;
       monthlyStats[monthKey].sandwiches += sandwichCount;
 
-      // Check if upcoming (next 30 days)
-      if (date >= now && date <= thirtyDaysOut && (e.status === 'scheduled' || e.status === 'in_process')) {
-        upcomingCount++;
+      // Check upcoming events at various time horizons (scheduled or in_process only)
+      if (date >= now && (e.status === 'scheduled' || e.status === 'in_process')) {
+        if (date <= sevenDaysOut) {
+          upcomingNext7Days++;
+          // Add to detailed list for 7-day events
+          upcomingEventsList.push({
+            name: e.organizationName || 'Unknown',
+            date: date.toLocaleDateString(),
+            status: e.status,
+            sandwiches: sandwichCount
+          });
+        }
+        if (date <= fourteenDaysOut) {
+          upcomingNext14Days++;
+        }
+        if (date <= thirtyDaysOut) {
+          upcomingNext30Days++;
+        }
       }
     }
 
@@ -273,7 +295,14 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
-- Upcoming Events (Next 30 Days): ${upcomingCount}
+
+### Upcoming Events
+- Next 7 Days: ${upcomingNext7Days} events
+- Next 14 Days: ${upcomingNext14Days} events
+- Next 30 Days: ${upcomingNext30Days} events
+
+${upcomingEventsList.length > 0 ? `### Events in Next 7 Days (Details)
+${upcomingEventsList.map(e => `- ${e.date}: ${e.name} (${e.status}, ~${e.sandwiches} sandwiches)`).join('\n')}` : ''}
 
 ### Action Items & Alerts
 - Events Missing Critical Info: ${eventsWithMissingInfo}
