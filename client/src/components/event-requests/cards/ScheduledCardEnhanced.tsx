@@ -400,6 +400,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const totalNeeded = driverNeeded + speakerNeeded + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
+  // Check if event is within next 7 days (for urgent staffing badge color)
+  // Note: displayDate is already defined above
+  const isWithin7Days = (() => {
+    if (!displayDate) return false;
+    const eventDate = new Date(displayDate);
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return eventDate <= sevenDaysFromNow && eventDate >= now;
+  })();
+
+  // Staffing badge colors - red (#A31C41) if within 7 days, gold (#FBAD3F) otherwise
+  const staffingBadgeColors = isWithin7Days
+    ? 'bg-[#A31C41] text-white border border-[#A31C41]'
+    : 'bg-[#FBAD3F] text-white border border-[#FBAD3F]';
+
   // Sandwich info
   const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
   let sandwichInfo;
@@ -435,17 +450,77 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
           <div className="flex-1 min-w-0">
             <div className="flex items-center flex-wrap gap-1.5 mb-2">
-              <h2 className="text-2xl font-bold text-[#236383]">
-                {request.organizationName}
-              </h2>
-              {request.department && (
+              {isEditingThisCard && editingField === 'organizationName' ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    className="h-9 text-xl font-bold w-64"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <h2
+                  className={`text-2xl font-bold text-[#236383] ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
+                >
+                  {request.organizationName}
+                  {canEdit && <Edit2 className="w-4 h-4 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
+                </h2>
+              )}
+              {isEditingThisCard && editingField === 'department' ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[#236383]/60">•</span>
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    className="h-8 text-lg w-48"
+                    autoFocus
+                    placeholder="Department"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                    <Save className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : request.department ? (
                 <>
                   <span className="text-[#236383]/60">•</span>
-                  <span className="text-xl text-[#236383]/70 font-medium">
+                  <span
+                    className={`text-xl text-[#236383]/70 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                    onClick={() => canEdit && startEditing('department', request.department || '')}
+                  >
                     {request.department}
+                    {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                   </span>
                 </>
-              )}
+              ) : canEdit ? (
+                <>
+                  <span className="text-[#236383]/60">•</span>
+                  <span
+                    className="text-lg text-gray-400 cursor-pointer hover:text-[#007E8C]"
+                    onClick={() => startEditing('department', '')}
+                  >
+                    + Add Dept
+                  </span>
+                </>
+              ) : null}
             </div>
 
             {/* Status Badges */}
@@ -502,17 +577,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               ) : (
                 <>
                   {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className={`${staffingBadgeColors} font-medium`}>
                       {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className={`${staffingBadgeColors} font-medium`}>
                       {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className={`${staffingBadgeColors} font-medium`}>
                       {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
@@ -520,7 +595,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium">
+                <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
                   <Car className="w-3 h-3 mr-1" />
                   Van Driver Needed
                 </Badge>
@@ -1239,37 +1314,32 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between py-0.5">
-                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Car className="w-3 h-3 mr-1" />No drivers needed</Badge>
-                    {canEdit && (
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('driversNeeded', '1')}
-                          className="h-5 px-2 text-[#007E8C] text-xs"
-                        >
-                          <Edit2 className="w-3 h-3 mr-0.5" />
-                          Set Need
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            startEditing('selfTransport', 'true');
-                            setTimeout(() => saveEdit(), 0);
-                          }}
-                          className="h-5 px-2 text-[#D68319] text-xs"
-                          title="Organization will transport sandwiches themselves"
-                        >
-                          <Car className="w-3 h-3 mr-0.5" />
-                          Self-Transport
-                        </Button>
-                      </div>
-                    )}
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5 gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('driversNeeded', '1')}
+                      className="h-5 px-2 text-[#007E8C] text-xs"
+                    >
+                      <Car className="w-3 h-3 mr-0.5" />
+                      Add Driver Need
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        startEditing('selfTransport', 'true');
+                        setTimeout(() => saveEdit(), 0);
+                      }}
+                      className="h-5 px-2 text-[#D68319] text-xs"
+                      title="Organization will transport sandwiches themselves"
+                    >
+                      <Car className="w-3 h-3 mr-0.5" />
+                      Self-Transport
+                    </Button>
                   </div>
-                )}
+                ) : null}
 
                 {/* Speakers */}
                 {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
@@ -1344,22 +1414,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between py-0.5">
-                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Megaphone className="w-3 h-3 mr-1" />No speakers needed</Badge>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('speakersNeeded', '1')}
-                        className="h-5 px-2 text-[#007E8C] text-xs"
-                      >
-                        <Edit2 className="w-3 h-3 mr-0.5" />
-                        Set Need
-                      </Button>
-                    )}
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('speakersNeeded', '1')}
+                      className="h-5 px-2 text-[#007E8C] text-xs"
+                    >
+                      <Megaphone className="w-3 h-3 mr-0.5" />
+                      Add Speaker Need
+                    </Button>
                   </div>
-                )}
+                ) : null}
 
                 {/* Volunteers */}
                 {(volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
@@ -1417,22 +1484,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between py-0.5">
-                    <Badge variant="outline" className="bg-[#47B3CB]/20 text-[#236383] border-[#47B3CB] font-medium text-xs py-0.5 px-2"><Users className="w-3 h-3 mr-1" />No volunteers needed</Badge>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('volunteersNeeded', '1')}
-                        className="h-5 px-2 text-[#007E8C] text-xs"
-                      >
-                        <Edit2 className="w-3 h-3 mr-0.5" />
-                        Set Need
-                      </Button>
-                    )}
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('volunteersNeeded', '1')}
+                      className="h-5 px-2 text-[#007E8C] text-xs"
+                    >
+                      <Users className="w-3 h-3 mr-0.5" />
+                      Add Volunteer Need
+                    </Button>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
