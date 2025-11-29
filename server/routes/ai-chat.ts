@@ -57,7 +57,68 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
   const allCollections = await db.query.sandwichCollections.findMany();
 
   // Filter out deleted collections
-  const collections = allCollections.filter(c => !c.deletedAt);
+  let collections = allCollections.filter(c => !c.deletedAt);
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  // Apply filters from contextData if provided
+  if (contextData) {
+    // Date range filtering
+    if (contextData.dateRange?.start || contextData.dateRange?.end) {
+      const startDate = contextData.dateRange.start ? new Date(contextData.dateRange.start) : null;
+      const endDate = contextData.dateRange.end ? new Date(contextData.dateRange.end) : null;
+
+      collections = collections.filter(c => {
+        if (!c.collectionDate) return false;
+        const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+        if (startDate && collectionDate < startDate) return false;
+        if (endDate && collectionDate > endDate) return false;
+        return true;
+      });
+
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Date Range: ${startDate?.toLocaleDateString() || 'Any'} to ${endDate?.toLocaleDateString() || 'Any'}\n`;
+    }
+
+    // Host filtering
+    if (contextData.selectedHost) {
+      collections = collections.filter(c => c.hostName === contextData.selectedHost);
+      componentContext += `- Filtered by Host: ${contextData.selectedHost}\n`;
+    }
+
+    // Year type (fiscal vs calendar) for grant metrics
+    if (contextData.yearType) {
+      componentContext += `- Year Type: ${contextData.yearType}\n`;
+    }
+
+    // Selected year
+    if (contextData.selectedYear) {
+      componentContext += `- Selected Year: ${contextData.selectedYear}\n`;
+    }
+
+    // Current view/tab
+    if (contextData.currentView || contextData.activeTab) {
+      componentContext += `- Current View: ${contextData.currentView || contextData.activeTab}\n`;
+    }
+
+    // Any raw data the component wants to share
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+  }
 
   // Calculate metrics
   let totalSandwiches = 0;
@@ -111,7 +172,7 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
 
   return `
 ## Sandwich Collection Data Summary
-
+${componentContext}
 ### Overall Metrics
 - Total Collections: ${collections.length}
 - Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
@@ -182,7 +243,85 @@ function formatEventDate(dateInput: Date | string | null | undefined): string {
 
 // Build context for events
 async function buildEventsContext(contextData?: Record<string, any>): Promise<string> {
-  const allEvents = await db.query.eventRequests.findMany();
+  let allEvents = await db.query.eventRequests.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  // Apply filters from contextData if provided
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      allEvents = allEvents.filter(e => e.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Date range filtering
+    if (contextData.dateRange?.start || contextData.dateRange?.end) {
+      const startDate = contextData.dateRange.start ? new Date(contextData.dateRange.start) : null;
+      const endDate = contextData.dateRange.end ? new Date(contextData.dateRange.end) : null;
+
+      allEvents = allEvents.filter(e => {
+        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        if (!eventDate) return false;
+        const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
+        if (startDate && date < startDate) return false;
+        if (endDate && date > endDate) return false;
+        return true;
+      });
+
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Date Range: ${startDate?.toLocaleDateString() || 'Any'} to ${endDate?.toLocaleDateString() || 'Any'}\n`;
+    }
+
+    // Category filtering
+    if (contextData.categoryFilter) {
+      allEvents = allEvents.filter(e => e.organizationCategory === contextData.categoryFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Category: ${contextData.categoryFilter}\n`;
+    }
+
+    // Current tab/view
+    if (contextData.activeTab || contextData.currentView) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab || contextData.currentView}\n`;
+    }
+
+    // Currently selected event
+    if (contextData.selectedEvent) {
+      componentContext += `\n### Currently Selected Event\n`;
+      const event = contextData.selectedEvent;
+      componentContext += `- Organization: ${event.organizationName || 'Unknown'}\n`;
+      componentContext += `- Status: ${event.status || 'Unknown'}\n`;
+      componentContext += `- Date: ${event.scheduledEventDate || event.desiredEventDate || 'TBD'}\n`;
+      componentContext += `- Sandwiches: ${event.estimatedSandwichCount || event.actualSandwichCount || 'Not specified'}\n`;
+      if (event.notes) componentContext += `- Notes: ${event.notes}\n`;
+    }
+
+    // Any raw data the component wants to share
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+  }
 
   // Calculate metrics
   const categoryStats: Record<string, { events: number; sandwiches: number }> = {};
@@ -346,7 +485,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 
   return `
 ## Event Data Summary
-
+${componentContext}
 ### Overall Metrics
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
@@ -445,8 +584,47 @@ The platform includes:
 }
 
 // Build context for Holding Zone (Team Board)
-async function buildHoldingZoneContext(): Promise<string> {
-  const items = await db.query.teamBoardItems.findMany();
+async function buildHoldingZoneContext(contextData?: Record<string, any>): Promise<string> {
+  let items = await db.query.teamBoardItems.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      items = items.filter(i => i.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Type filtering
+    if (contextData.typeFilter && contextData.typeFilter !== 'all') {
+      items = items.filter(i => i.type === contextData.typeFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Type Filter: ${contextData.typeFilter}\n`;
+    }
+
+    // Currently selected item
+    if (contextData.selectedItem) {
+      componentContext += `\n### Currently Selected Item\n`;
+      componentContext += `- Content: ${contextData.selectedItem.content}\n`;
+      componentContext += `- Type: ${contextData.selectedItem.type}\n`;
+      componentContext += `- Status: ${contextData.selectedItem.status}\n`;
+      if (contextData.selectedItem.isUrgent) componentContext += `- URGENT\n`;
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   // Calculate metrics
   const statusCounts: Record<string, number> = { open: 0, claimed: 0, done: 0 };
@@ -464,7 +642,7 @@ async function buildHoldingZoneContext(): Promise<string> {
 
   return `
 ## Holding Zone Data Summary
-
+${componentContext}
 ### Current Items Overview
 - Total Items: ${items.length}
 - Open Items: ${statusCounts.open}
@@ -491,11 +669,55 @@ The Holding Zone is a collaborative space where team members can:
 }
 
 // Build context for TSP Network
-async function buildNetworkContext(): Promise<string> {
+async function buildNetworkContext(contextData?: Record<string, any>): Promise<string> {
   const hosts = await db.query.hosts.findMany();
   const drivers = await db.query.drivers.findMany();
   const volunteers = await db.query.volunteers.findMany();
   const recipients = await db.query.recipients.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Current tab/view
+    if (contextData.activeTab || contextData.currentView) {
+      componentContext += `\n### Current View\n`;
+      componentContext += `- Active Tab: ${contextData.activeTab || contextData.currentView}\n`;
+    }
+
+    // Currently selected entity
+    if (contextData.selectedHost) {
+      componentContext += `\n### Currently Selected Host\n`;
+      componentContext += `- Name: ${contextData.selectedHost.name}\n`;
+      componentContext += `- Address: ${contextData.selectedHost.address || 'Not specified'}\n`;
+      componentContext += `- Status: ${contextData.selectedHost.isActive ? 'Active' : 'Inactive'}\n`;
+    }
+
+    if (contextData.selectedDriver) {
+      componentContext += `\n### Currently Selected Driver\n`;
+      componentContext += `- Name: ${contextData.selectedDriver.name}\n`;
+      componentContext += `- Status: ${contextData.selectedDriver.isActive ? 'Active' : 'Inactive'}\n`;
+    }
+
+    if (contextData.selectedVolunteer) {
+      componentContext += `\n### Currently Selected Volunteer\n`;
+      componentContext += `- Name: ${contextData.selectedVolunteer.name}\n`;
+    }
+
+    if (contextData.selectedRecipient) {
+      componentContext += `\n### Currently Selected Recipient\n`;
+      componentContext += `- Name: ${contextData.selectedRecipient.name}\n`;
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   const activeHosts = hosts.filter(h => h.isActive !== false).length;
   const activeDrivers = drivers.filter(d => d.isActive !== false).length;
@@ -504,7 +726,7 @@ async function buildNetworkContext(): Promise<string> {
 
   return `
 ## TSP Network Data Summary
-
+${componentContext}
 ### Network Overview
 - Total Hosts: ${hosts.length} (${activeHosts} active)
 - Total Drivers: ${drivers.length} (${activeDrivers} active)
@@ -527,8 +749,58 @@ The TSP Network manages all the people and organizations involved in The Sandwic
 }
 
 // Build context for Projects
-async function buildProjectsContext(): Promise<string> {
-  const projects = await db.query.projects.findMany();
+async function buildProjectsContext(contextData?: Record<string, any>): Promise<string> {
+  let projects = await db.query.projects.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      projects = projects.filter(p => p.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Priority filtering
+    if (contextData.priorityFilter && contextData.priorityFilter !== 'all') {
+      projects = projects.filter(p => p.priority === contextData.priorityFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Priority Filter: ${contextData.priorityFilter}\n`;
+    }
+
+    // Category filtering
+    if (contextData.categoryFilter && contextData.categoryFilter !== 'all') {
+      projects = projects.filter(p => p.category === contextData.categoryFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Category Filter: ${contextData.categoryFilter}\n`;
+    }
+
+    // Currently selected project
+    if (contextData.selectedProject) {
+      componentContext += `\n### Currently Selected Project\n`;
+      const proj = contextData.selectedProject;
+      componentContext += `- Title: ${proj.title || proj.name}\n`;
+      componentContext += `- Status: ${proj.status}\n`;
+      componentContext += `- Priority: ${proj.priority}\n`;
+      if (proj.description) componentContext += `- Description: ${proj.description}\n`;
+      if (proj.dueDate) componentContext += `- Due Date: ${proj.dueDate}\n`;
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   const statusCounts: Record<string, number> = {};
   const priorityCounts: Record<string, number> = {};
@@ -546,7 +818,7 @@ async function buildProjectsContext(): Promise<string> {
 
   return `
 ## Projects Data Summary
-
+${componentContext}
 ### Overview
 - Total Projects: ${projects.length}
 - Active Projects: ${activeProjects.length}
@@ -580,7 +852,7 @@ Projects help track ongoing initiatives for The Sandwich Project:
 }
 
 // Build context for Meetings
-async function buildMeetingsContext(): Promise<string> {
+async function buildMeetingsContext(contextData?: Record<string, any>): Promise<string> {
   const meetings = await db.query.meetings.findMany();
   const agendaItems = await db.query.agendaItems.findMany();
 
@@ -623,7 +895,7 @@ The meeting dashboard helps manage committee meetings:
 }
 
 // Build context for Resources
-async function buildResourcesContext(): Promise<string> {
+async function buildResourcesContext(contextData?: Record<string, any>): Promise<string> {
   const resources = await db.query.resources.findMany();
 
   const categoryStats: Record<string, number> = {};
@@ -667,7 +939,7 @@ Resources is a library of documents and materials for The Sandwich Project:
 }
 
 // Build context for Organizations
-async function buildOrganizationsContext(): Promise<string> {
+async function buildOrganizationsContext(contextData?: Record<string, any>): Promise<string> {
   const organizations = await db.query.organizations.findMany();
   const events = await db.query.eventRequests.findMany();
 
@@ -703,7 +975,7 @@ The Organizations catalog tracks groups that partner with The Sandwich Project:
 }
 
 // Build context for Important Links
-async function buildLinksContext(): Promise<string> {
+async function buildLinksContext(contextData?: Record<string, any>): Promise<string> {
   const links = await db.query.driveLinks.findMany();
 
   const categoryStats: Record<string, number> = {};
@@ -734,7 +1006,7 @@ Important Links is a quick-access hub for frequently used resources:
 }
 
 // Build context for Dashboard
-async function buildDashboardContext(): Promise<string> {
+async function buildDashboardContext(contextData?: Record<string, any>): Promise<string> {
   // Combine key metrics from across the platform
   const collections = (await db.query.sandwichCollections.findMany()).filter(c => !c.deletedAt);
   const events = await db.query.eventRequests.findMany();
@@ -878,7 +1150,7 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     logger.info('AI chat request', { userId: req.user.id, contextType, messageLength: message.length });
 
-    // Build context based on type
+    // Build context based on type - always pass contextData for component-specific context
     let dataSummary: string;
     switch (contextType) {
       case 'collections':
@@ -894,28 +1166,28 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         dataSummary = `${collectionsData}\n\n${eventsData}`;
         break;
       case 'holding-zone':
-        dataSummary = await buildHoldingZoneContext();
+        dataSummary = await buildHoldingZoneContext(contextData);
         break;
       case 'network':
-        dataSummary = await buildNetworkContext();
+        dataSummary = await buildNetworkContext(contextData);
         break;
       case 'projects':
-        dataSummary = await buildProjectsContext();
+        dataSummary = await buildProjectsContext(contextData);
         break;
       case 'meetings':
-        dataSummary = await buildMeetingsContext();
+        dataSummary = await buildMeetingsContext(contextData);
         break;
       case 'resources':
-        dataSummary = await buildResourcesContext();
+        dataSummary = await buildResourcesContext(contextData);
         break;
       case 'organizations':
-        dataSummary = await buildOrganizationsContext();
+        dataSummary = await buildOrganizationsContext(contextData);
         break;
       case 'links':
-        dataSummary = await buildLinksContext();
+        dataSummary = await buildLinksContext(contextData);
         break;
       case 'dashboard':
-        dataSummary = await buildDashboardContext();
+        dataSummary = await buildDashboardContext(contextData);
         break;
       case 'general':
         dataSummary = await buildGeneralContext();

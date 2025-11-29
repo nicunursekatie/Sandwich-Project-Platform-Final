@@ -1251,6 +1251,25 @@ export default function ProjectsClean() {
         contextType="projects"
         title="Projects Assistant"
         subtitle="Ask about projects and tasks"
+        contextData={{
+          activeTab,
+          projectTypeFilter,
+          selectedProject: editingProject ? {
+            title: editingProject.title,
+            status: editingProject.status,
+            priority: editingProject.priority,
+            category: editingProject.category,
+            description: editingProject.description,
+            dueDate: editingProject.dueDate,
+          } : undefined,
+          summaryStats: {
+            totalProjects: allProjects.length,
+            activeProjects: allProjects.filter(p => p.status !== 'completed' && p.status !== 'archived').length,
+            inProgress: allProjects.filter(p => p.status === 'in-progress').length,
+            waiting: allProjects.filter(p => p.status === 'waiting').length,
+            completed: allProjects.filter(p => p.status === 'completed').length,
+          },
+        }}
         suggestedQuestions={[
           "What projects are in progress?",
           "How do I create a new project?",

@@ -2199,6 +2199,26 @@ export default function HoldingZone() {
         contextType="holding-zone"
         title="Holding Zone Assistant"
         subtitle="Ask about your ideas and tasks"
+        contextData={{
+          activeTab,
+          selectedItem: editItem ? {
+            content: editItem.content,
+            type: editItem.type,
+            status: editItem.status,
+            isUrgent: editItem.isUrgent,
+            categoryId: editItem.categoryId,
+          } : undefined,
+          summaryStats: {
+            totalItems: items.length,
+            openItems: items.filter(i => i.status === 'open').length,
+            claimedItems: items.filter(i => i.status === 'claimed').length,
+            doneItems: items.filter(i => i.status === 'done').length,
+            urgentItems: items.filter(i => i.isUrgent).length,
+            tasks: items.filter(i => i.type === 'task').length,
+            notes: items.filter(i => i.type === 'note').length,
+            ideas: items.filter(i => i.type === 'idea').length,
+          },
+        }}
         suggestedQuestions={[
           "What items need attention?",
           "How do I upgrade an idea to a project?",

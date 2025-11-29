@@ -1192,6 +1192,26 @@ const EventRequestsManagementContent: React.FC = () => {
           contextType="events"
           title="Events Assistant"
           subtitle="Ask about event requests and scheduling"
+          contextData={{
+            activeTab,
+            statusFilter,
+            confirmationFilter,
+            searchQuery,
+            selectedEvent: selectedEventRequest ? {
+              organizationName: selectedEventRequest.organizationName,
+              status: selectedEventRequest.status,
+              scheduledEventDate: selectedEventRequest.scheduledEventDate,
+              desiredEventDate: selectedEventRequest.desiredEventDate,
+              estimatedSandwichCount: selectedEventRequest.estimatedSandwichCount,
+              isConfirmed: selectedEventRequest.isConfirmed,
+            } : undefined,
+            summaryStats: {
+              totalEvents: eventRequests.length,
+              scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+              inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
+              newRequests: eventRequests.filter(e => e.status === 'new').length,
+            },
+          }}
           suggestedQuestions={[
             "How many events are scheduled this month?",
             "What events need follow-up?",
