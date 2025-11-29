@@ -388,7 +388,7 @@ export const ScheduledTab: React.FC = () => {
         <ScheduledSpreadsheetView
           onEventDateClick={(event) => {
             setSelectedEventRequest(event);
-            trackClick('scheduled_tab_view_mode_toggle', {
+            trackEvent('scheduled_tab_view_mode_toggle', {
               view_mode: 'card',
               previous_mode: 'spreadsheet',
               source: 'spreadsheet_event_click',
@@ -499,14 +499,14 @@ export const ScheduledTab: React.FC = () => {
         <button
           onClick={() => {
             const newMode = viewMode === 'spreadsheet' ? 'card' : 'spreadsheet';
-            trackClick('scheduled_tab_view_mode_toggle', {
+            trackEvent('scheduled_tab_view_mode_toggle', {
               view_mode: newMode,
               previous_mode: viewMode,
               source: 'floating_action_button',
             });
             setViewMode(newMode);
           }}
-          className="fixed bottom-24 right-8 z-50 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
+          className="fixed bottom-24 right-24 z-40 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
           title={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
           aria-label={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
         >
