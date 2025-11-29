@@ -1251,6 +1251,8 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
+      logger.info(`[PATCH /:id] Request received for event ${id}`);
+      logger.info(`[PATCH /:id] Updates:`, JSON.stringify(updates, null, 2));
 
       // Validate scheduledCallDate if present using z.coerce.date()
       if (updates.scheduledCallDate !== undefined) {
@@ -1420,10 +1422,17 @@ router.patch(
       }
 
       // Always update the updatedAt timestamp
+      logger.info(`[PATCH /:id] Saving to database. Processed updates:`, JSON.stringify(processedUpdates, null, 2));
+
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
       });
+
+      logger.info(`[PATCH /:id] Database update result:`, updatedEventRequest ? 'Success' : 'Not found');
+      if (updatedEventRequest) {
+        logger.info(`[PATCH /:id] Updated desiredEventDate:`, updatedEventRequest.desiredEventDate);
+      }
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
