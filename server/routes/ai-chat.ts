@@ -242,8 +242,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     categoryStats[category].events++;
     categoryStats[category].sandwiches += sandwichCount;
 
-    // Monthly stats
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    // Monthly stats (reuse eventDate from date range tracking above)
     if (eventDate) {
       const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
