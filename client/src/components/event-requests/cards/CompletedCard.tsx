@@ -1804,6 +1804,28 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const speakers = getSpeakers();
   const volunteers = getVolunteers();
 
+  // Calculate staffing gaps
+  const staffingGaps: string[] = [];
+  const driversNeeded = request.driversNeeded || 0;
+  const speakersNeeded = request.speakersNeeded || 0;
+  const volunteersNeeded = request.volunteersNeeded || 0;
+
+  // Count ALL drivers (regular + van driver) for staffing gap calculation, avoiding double-counting
+  const regularDriverIds = parsePostgresArray(request.assignedDriverIds);
+  const regularDriversCount = regularDriverIds.length;
+  const isVanDriverUnique = request.assignedVanDriverId && !regularDriverIds.includes(request.assignedVanDriverId);
+  const totalDriversCount = regularDriversCount + (isVanDriverUnique ? 1 : 0);
+
+  if (driversNeeded > totalDriversCount) {
+    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${totalDriversCount})`);
+  }
+  if (speakersNeeded > speakers.length) {
+    staffingGaps.push(`Needed ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} (had ${speakers.length})`);
+  }
+  if (volunteersNeeded > volunteers.length) {
+    staffingGaps.push(`Needed ${volunteersNeeded} volunteer${volunteersNeeded > 1 ? 's' : ''} (had ${volunteers.length})`);
+  }
+
   // Fetch recipients and hosts for name lookup
   const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/recipients'],
@@ -2276,6 +2298,17 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         {/* Event Summary */}
         <div className="space-y-2 mb-3">
           <div className="bg-white rounded-lg p-2 space-y-2">
+            {/* Staffing Gap Alert */}
+            {staffingGaps.length > 0 && (
+              <div className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <span className="font-semibold">Staffing Gap: </span>
+                  {staffingGaps.join(', ')}
+                </div>
+              </div>
+            )}
+
             {/* Combined Recipients & Team Section */}
             <div className="bg-[#e6f2f5] rounded-lg p-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
