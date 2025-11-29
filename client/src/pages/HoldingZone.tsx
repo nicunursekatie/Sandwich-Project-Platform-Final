@@ -873,7 +873,7 @@ export default function HoldingZone() {
     },
   });
 
-  // Like/Unlike mutation
+  // Like/Unlike mutation - optimized to only invalidate main query since likes are now included
   const toggleLikeMutation = useMutation({
     mutationFn: async ({ itemId, isLiked }: { itemId: number; isLiked: boolean }) => {
       if (isLiked) {
@@ -882,8 +882,8 @@ export default function HoldingZone() {
         return await apiRequest('POST', `/api/team-board/items/${itemId}/like`);
       }
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/team-board/items/${variables.itemId}/likes`] });
+    onSuccess: () => {
+      // Likes are now included in main query, so only need to invalidate that
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
     },
     onError: () => {
@@ -1032,18 +1032,8 @@ export default function HoldingZone() {
     setEditingDetailsContent('');
   };
 
-  // Like Button Component
-  const LikeButton = ({ itemId }: { itemId: number }) => {
-    const { data: likesData } = useQuery({
-      queryKey: [`/api/team-board/items/${itemId}/likes`],
-      queryFn: async () => {
-        return await apiRequest('GET', `/api/team-board/items/${itemId}/likes`);
-      },
-    });
-
-    const isLiked = likesData?.userHasLiked || false;
-    const likeCount = likesData?.likes || 0;
-
+  // Like Button Component - uses data from main items query instead of individual API calls
+  const LikeButton = ({ itemId, likeCount = 0, isLiked = false }: { itemId: number; likeCount?: number; isLiked?: boolean }) => {
     if (!canSubmit) return null;
 
     return (
@@ -1431,7 +1421,7 @@ export default function HoldingZone() {
                 <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                   {canSubmit && (
                     <div className="flex items-center gap-2">
-                      <LikeButton itemId={item.id} />
+                      <LikeButton itemId={item.id} likeCount={item.likeCount} isLiked={item.userHasLiked} />
                       {item.commentCount > 0 && (
                         <span className="text-xs text-gray-500">
                           {item.commentCount} {item.commentCount === 1 ? 'comment' : 'comments'}
