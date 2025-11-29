@@ -330,6 +330,7 @@ export function FloatingAIChat({
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [copiedChartId, setCopiedChartId] = useState<string | null>(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   const questions = suggestedQuestions || DEFAULT_QUESTIONS[contextType];
 
@@ -529,6 +530,17 @@ export function FloatingAIChat({
       setCopiedChartId(chartId);
       setTimeout(() => setCopiedChartId(null), 2000);
       toast({ title: 'Copied to Clipboard', description: 'Data ready to paste into Excel or Google Sheets' });
+    } catch {
+      toast({ title: 'Copy Failed', description: 'Unable to copy to clipboard', variant: 'destructive' });
+    }
+  };
+
+  const copyMessageToClipboard = async (content: string, messageIndex: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageIndex(messageIndex);
+      setTimeout(() => setCopiedMessageIndex(null), 2000);
+      toast({ title: 'Copied', description: 'Response copied to clipboard' });
     } catch {
       toast({ title: 'Copy Failed', description: 'Unable to copy to clipboard', variant: 'destructive' });
     }
@@ -890,6 +902,29 @@ export function FloatingAIChat({
                     renderMarkdown(message.content)
                   )}
                 </div>
+                {message.role === 'assistant' && (
+                  <div className="mt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                      onClick={() => copyMessageToClipboard(message.content, index)}
+                      title="Copy response"
+                    >
+                      {copiedMessageIndex === index ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1 text-green-500" />
+                          <span className="text-green-500">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
                 {message.chart && renderChart(message.chart, index)}
               </div>
             ))}
