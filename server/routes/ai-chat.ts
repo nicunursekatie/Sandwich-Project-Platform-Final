@@ -98,16 +98,16 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
     }
   });
 
-  // Top hosts
-  const topHosts = Object.entries(hostStats)
-    .sort((a, b) => b[1].sandwiches - a[1].sandwiches)
-    .slice(0, 15)
-    .map(([name, stats]) => ({ name, ...stats }));
-
   // Average collection size
   const avgCollectionSize = collections.length > 0
     ? Math.round(totalSandwiches / collections.length)
     : 0;
+
+  // Recent months for trend analysis (last 6 months)
+  const recentMonths = Object.entries(monthlyStats)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 6)
+    .reverse();
 
   return `
 ## Sandwich Collection Data Summary
@@ -116,22 +116,18 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
 - Total Collections: ${collections.length}
 - Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
 - Average Sandwiches Per Collection: ${avgCollectionSize}
-- Unique Hosts: ${Object.keys(hostStats).length}
+- Number of Active Host Locations: ${Object.keys(hostStats).length}
 
-### Top 15 Hosts by Sandwich Count
-${topHosts.map((h, i) => `${i + 1}. ${h.name}: ${h.sandwiches.toLocaleString()} sandwiches (${h.collections} collections)`).join('\n')}
+### Collections by Month (Recent 6 Months)
+${recentMonths.map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`).join('\n')}
 
-### Collections by Month
+### All-Time Monthly Data
 ${Object.entries(monthlyStats)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
 
-### Collections by Day of Week
-${dayNames.map(day => {
-  const stats = dayOfWeekStats[day] || { collections: 0, sandwiches: 0 };
-  return `- ${day}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`;
-}).join('\n')}
+Note: Individual sandwich collections are typically logged on Wednesday or Thursday (weekly collection day is Wednesday). Day-of-week analysis is not meaningful for individual collections.
 `;
 }
 
@@ -202,6 +198,47 @@ ${Object.entries(monthlyStats)
 `;
 }
 
+// Build context for general platform help
+async function buildGeneralContext(): Promise<string> {
+  // Get high-level stats for general context
+  const allCollections = await db.query.sandwichCollections.findMany();
+  const collections = allCollections.filter(c => !c.deletedAt);
+  const allEvents = await db.query.eventRequests.findMany();
+
+  let totalSandwiches = 0;
+  collections.forEach(c => {
+    totalSandwiches += getCollectionSandwichCount(c);
+  });
+
+  const uniqueHosts = new Set(collections.map(c => c.hostName).filter(Boolean));
+
+  return `
+## The Sandwich Project Platform Overview
+
+### Quick Stats
+- Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
+- Number of Collections: ${collections.length}
+- Active Host Locations: ${uniqueHosts.size}
+- Total Event Requests: ${allEvents.length}
+
+### Platform Features
+The platform includes:
+- **Collection Log**: Track weekly sandwich collections from host locations
+- **Event Requests**: Manage requests for sandwich events from organizations
+- **TSP Network**: Manage hosts, drivers, volunteers, and recipients
+- **Projects**: Track ongoing projects and tasks
+- **Meetings**: Schedule and manage committee meetings with agendas
+- **Analytics**: View trends and metrics for collections and events
+- **Grant Metrics**: Access data for grant applications and reporting
+- **Resources**: Access training materials and important documents
+- **Holding Zone**: Capture ideas and tasks before they become projects
+
+### Weekly Collection Schedule
+- Wednesday is the standard weekly collection day
+- Collections are typically logged on Wednesday or Thursday
+`;
+}
+
 // Get system prompt for context type
 function getSystemPrompt(contextType: string, dataSummary: string): string {
   const baseRules = `
@@ -210,6 +247,8 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
 3. If asked about something not in the data, say "That information is not tracked in the current data."
 4. Never make up statistics or trends that aren't directly derivable from the provided data.
+5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
+6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
 
 When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
@@ -228,17 +267,24 @@ Keep responses concise but insightful. Focus on actionable information derived f
 
   const contextDescriptions: Record<string, string> = {
     collections: `You are a data analyst assistant for The Sandwich Project's collection log.
-You help analyze sandwich collection data - who collected sandwiches, when, and how many.
-Collections are submitted by hosts (individuals or groups) who organize sandwich-making events.`,
+You help analyze sandwich collection data - when sandwiches were collected and how many.
+Collections are submitted by hosts (individuals or groups) who organize sandwich-making.
+IMPORTANT: Never rank or compare hosts against each other. Focus on overall totals and trends.`,
 
     events: `You are a data analyst assistant for The Sandwich Project's event management system.
-You help analyze event request data - organizations requesting sandwich-making events, event categories, and scheduling.`,
+You help analyze event request data - organizations requesting sandwich-making events, event categories, and scheduling.
+IMPORTANT: Never rank or compare organizations against each other. Focus on overall trends and categories.`,
 
     'impact-reports': `You are a data analyst assistant for The Sandwich Project's impact reporting.
-You help analyze the overall impact of the organization including events, collections, and sandwich distribution.`,
+You help analyze the overall impact of the organization including events, collections, and sandwich distribution.
+IMPORTANT: Never rank or compare hosts or organizations against each other. Focus on overall impact and growth.`,
+
+    'general': `You are a helpful assistant for The Sandwich Project platform.
+You help users navigate and understand the platform's features for managing sandwich collections, events, volunteers, and organizational data.
+If the user asks about specific data, let them know which section of the platform would have that information.`,
   };
 
-  const contextDesc = contextDescriptions[contextType] || contextDescriptions['collections'];
+  const contextDesc = contextDescriptions[contextType] || contextDescriptions['general'];
 
   return `${contextDesc}
 
@@ -278,8 +324,11 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         const eventsData = await buildEventsContext(contextData);
         dataSummary = `${collectionsData}\n\n${eventsData}`;
         break;
+      case 'general':
+        dataSummary = await buildGeneralContext();
+        break;
       default:
-        dataSummary = await buildCollectionsContext(contextData);
+        dataSummary = await buildGeneralContext();
     }
 
     const systemPrompt = getSystemPrompt(contextType, dataSummary);

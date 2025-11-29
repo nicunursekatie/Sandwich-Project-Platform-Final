@@ -62,14 +62,14 @@ interface AIInsightsChatProps {
 const CHART_COLORS = ['#47B3CB', '#236383', '#FBAD3F', '#007E8C', '#A31C41', '#10B981', '#6366F1', '#F59E0B'];
 
 const SUGGESTED_QUESTIONS = [
-  "Which organization categories are most predictable for planning?",
   "Show me the monthly growth trend",
-  "Which categories have the best retention?",
+  "What's our total sandwich count this year?",
   "What's the typical sandwich count for school events?",
-  "Compare corporate vs nonprofit events",
+  "How do event categories compare overall?",
   "Which month had the highest sandwich collection?",
-  "Show top 10 organizations by sandwich count",
   "What percentage of events are from schools?",
+  "How have we grown year over year?",
+  "Show me events by category breakdown",
 ];
 
 // Simple markdown renderer for AI responses
