@@ -211,10 +211,9 @@ function renderMarkdown(text: string): React.ReactNode {
     if (listItems.length > 0) {
       if (listType === 'ol') {
         elements.push(
-          <ol 
-            key={`list-${elements.length}`} 
+          <ol
+            key={`list-${elements.length}`}
             className="list-decimal list-outside ml-5 space-y-1 my-2"
-            style={{ counterReset: 'list-counter' }}
           >
             {listItems}
           </ol>
