@@ -549,6 +549,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
               {request.isMlkDayEvent && <MlkDayBadge />}
 
+              {/* Self-transport badge */}
+              {request.selfTransport && (
+                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
+                  <Car className="w-3 h-3" />
+                  <span>Driving Own Sandwiches</span>
+                </Badge>
+              )}
+
               {/* Overnight holding badge */}
               {request.overnightHoldingLocation && (
                 <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
@@ -570,41 +578,46 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </Badge>
               )}
 
-              {staffingComplete ? (
-                <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
-                  Fully Staffed
-                </Badge>
-              ) : (
+              {/* Only show staffing badges if NOT self-transport */}
+              {!request.selfTransport && (
                 <>
-                  {driverNeeded > driverAssigned && (
-                    <Badge className={`${staffingBadgeColors} font-medium`}>
-                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                  {staffingComplete ? (
+                    <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
+                      Fully Staffed
+                    </Badge>
+                  ) : (
+                    <>
+                      {driverNeeded > driverAssigned && (
+                        <Badge className={`${staffingBadgeColors} font-medium`}>
+                          {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                        </Badge>
+                      )}
+                      {speakerNeeded > speakerAssigned && (
+                        <Badge className={`${staffingBadgeColors} font-medium`}>
+                          {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                        </Badge>
+                      )}
+                      {volunteerNeeded > volunteerAssigned && (
+                        <Badge className={`${staffingBadgeColors} font-medium`}>
+                          {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                        </Badge>
+                      )}
+                    </>
+                  )}
+
+                  {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                    <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
+                      <Car className="w-3 h-3 mr-1" />
+                      Van Driver Needed
                     </Badge>
                   )}
-                  {speakerNeeded > speakerAssigned && (
-                    <Badge className={`${staffingBadgeColors} font-medium`}>
-                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {volunteerNeeded > volunteerAssigned && (
-                    <Badge className={`${staffingBadgeColors} font-medium`}>
-                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+
+                  {request.assignedVanDriverId && (
+                    <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
+                      🚐 Van Assigned
                     </Badge>
                   )}
                 </>
-              )}
-
-              {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
-                  <Car className="w-3 h-3 mr-1" />
-                  Van Driver Needed
-                </Badge>
-              )}
-
-              {request.assignedVanDriverId && (
-                <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
-                  🚐 Van Assigned
-                </Badge>
               )}
 
               {missingInfo.length > 0 && (
