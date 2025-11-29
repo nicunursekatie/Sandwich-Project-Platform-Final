@@ -1,18 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Project, InsertProject } from '@shared/schema';
+import { Project, InsertProject, ProjectTask } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 
 const TABLED_STATUSES: Array<Project['status']> = ['tabled', 'waiting'];
+
+type ActiveTabType = 'tabled' | 'in_progress' | 'completed' | 'archived' | 'standalone_tasks';
 
 interface ProjectContextValue {
   // Projects data
   projects: Project[];
   archivedProjects: Project[];
+  standaloneTasks: ProjectTask[];
   isLoading: boolean;
 
   // Filter states
-  activeTab: 'tabled' | 'in_progress' | 'completed' | 'archived';
-  setActiveTab: (tab: 'tabled' | 'in_progress' | 'completed' | 'archived') => void;
+  activeTab: ActiveTabType;
+  setActiveTab: (tab: ActiveTabType) => void;
   projectTypeFilter: 'all' | 'meeting' | 'internal';
   setProjectTypeFilter: (filter: 'all' | 'meeting' | 'internal') => void;
   searchQuery: string;
@@ -47,7 +50,11 @@ interface ProjectContextValue {
     archived: number;
     meeting: number;
     internal: number;
+    standaloneTasks: number;
   };
+
+  // Standalone task helpers
+  getFilteredStandaloneTasks: () => ProjectTask[];
 }
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(undefined);
@@ -85,7 +92,7 @@ const initialNewProject: Partial<InsertProject> = {
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   // Core state
-  const [activeTab, setActiveTab] = useState<'tabled' | 'in_progress' | 'completed' | 'archived'>('in_progress');
+  const [activeTab, setActiveTab] = useState<ActiveTabType>('in_progress');
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'meeting' | 'internal'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -110,7 +117,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     queryKey: ['/api/projects/archived'],
   });
 
-  const isLoading = activeLoading || archiveLoading;
+  // Fetch standalone tasks (tasks not tied to any project)
+  const { data: standaloneTasks = [], isLoading: standaloneLoading } = useQuery<ProjectTask[]>({
+    queryKey: ['/api/projects/standalone-tasks'],
+    staleTime: 3 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+
+  const isLoading = activeLoading || archiveLoading || standaloneLoading;
 
   // Combine projects based on active tab
   const projects = activeTab === 'archived' ? archivedProjects : activeProjects;
@@ -157,7 +171,27 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     if (activeTab === 'archived') {
       return getProjectsByStatus('archived');
     }
+    if (activeTab === 'standalone_tasks') {
+      return []; // Return empty for projects when viewing standalone tasks
+    }
     return getProjectsByStatus(activeTab);
+  };
+
+  // Get filtered standalone tasks
+  const getFilteredStandaloneTasks = (): ProjectTask[] => {
+    let filtered = standaloneTasks;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(task =>
+        task.title?.toLowerCase().includes(query) ||
+        task.description?.toLowerCase().includes(query) ||
+        task.assigneeName?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
   };
 
   // Calculate stats
@@ -168,6 +202,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     archived: archivedProjects.length,
     meeting: activeProjects.filter((p) => p.googleSheetRowId).length,
     internal: activeProjects.filter((p) => !p.googleSheetRowId).length,
+    standaloneTasks: standaloneTasks.filter((t) => t.status !== 'completed').length,
   };
 
   // Reset new project form
@@ -179,6 +214,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     // Data
     projects,
     archivedProjects,
+    standaloneTasks,
     isLoading,
 
     // Filters
@@ -209,6 +245,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     // Helpers
     getFilteredProjects,
     getProjectsByStatus,
+    getFilteredStandaloneTasks,
 
     // Stats
     projectStats,

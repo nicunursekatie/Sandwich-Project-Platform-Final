@@ -3,6 +3,7 @@ import { ProjectProvider, useProjectContext } from './context/ProjectContext';
 import { CreateProjectDialog } from './dialogs/CreateProjectDialog';
 import { EditProjectDialog } from './dialogs/EditProjectDialog';
 import { ProjectsTab } from './tabs/ProjectsTab';
+import { StandaloneTasksTab } from './tabs/StandaloneTasksTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import {
   Play,
   CheckCircle2,
   Archive,
-  Filter,
+  ListTodo,
 } from 'lucide-react';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,12 +32,14 @@ const ProjectsManagementContent: React.FC = () => {
     setSearchQuery,
     setShowCreateDialog,
     getFilteredProjects,
+    getFilteredStandaloneTasks,
     projectStats,
   } = useProjectContext();
 
   const { user } = useAuth();
   const { PROJECTS_ADD } = usePermissions(['PROJECTS_ADD']);
   const filteredProjects = getFilteredProjects();
+  const filteredStandaloneTasks = getFilteredStandaloneTasks();
 
   if (isLoading) {
     return (
@@ -154,8 +157,8 @@ const ProjectsManagementContent: React.FC = () => {
                 : 'text-[#007E8C] hover:text-[#007E8C]/80 hover:bg-[#007E8C]/10'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            To-Do Tasks
+            <ListTodo className="w-4 h-4 mr-2" />
+            To-Do Tasks ({projectStats.standaloneTasks})
           </Button>
 
           <Button
@@ -212,17 +215,28 @@ const ProjectsManagementContent: React.FC = () => {
         </div>
       </div>
 
-      {/* Projects Display */}
-      <ProjectsTab
-        projects={filteredProjects}
-        emptyMessage={
-          searchQuery
-            ? `No projects found matching "${searchQuery}"`
-            : activeTab === 'tabled'
-              ? 'No tabled or waiting projects'
-              : `No ${(activeTab || '').replace('_', ' ')} projects`
-        }
-      />
+      {/* Projects/Tasks Display */}
+      {activeTab === 'standalone_tasks' ? (
+        <StandaloneTasksTab
+          tasks={filteredStandaloneTasks}
+          emptyMessage={
+            searchQuery
+              ? `No tasks found matching "${searchQuery}"`
+              : 'No standalone to-do tasks'
+          }
+        />
+      ) : (
+        <ProjectsTab
+          projects={filteredProjects}
+          emptyMessage={
+            searchQuery
+              ? `No projects found matching "${searchQuery}"`
+              : activeTab === 'tabled'
+                ? 'No tabled or waiting projects'
+                : `No ${(activeTab || '').replace('_', ' ')} projects`
+          }
+        />
+      )}
 
       {/* Dialogs */}
       <CreateProjectDialog />
