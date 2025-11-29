@@ -173,6 +173,13 @@ function getEventMissingInfo(event: any): string[] {
   return missing;
 }
 
+// Helper to format event date
+function formatEventDate(dateInput: Date | string | null | undefined): string {
+  if (!dateInput) return 'TBD';
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // Build context for events
 async function buildEventsContext(contextData?: Record<string, any>): Promise<string> {
   const allEvents = await db.query.eventRequests.findMany();
@@ -183,16 +190,20 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   const statusCounts: Record<string, number> = {};
   let totalSandwiches = 0;
 
-  // Track events needing attention
-  let eventsWithMissingInfo = 0;
-  let unconfirmedScheduled = 0;
-  let needsOneDayFollowUp = 0;
-  let needsOneMonthFollowUp = 0;
-  let hasScheduledFollowUp = 0;
+  // Track events needing attention with DETAILS
+  const eventsWithMissingInfoList: { name: string; date: string; missing: string[] }[] = [];
+  const unconfirmedScheduledList: { name: string; date: string; sandwiches: number; address: string }[] = [];
+  const needsOneDayFollowUpList: { name: string; date: string }[] = [];
+  const needsOneMonthFollowUpList: { name: string; date: string }[] = [];
+  const stalledInProcessList: { name: string; daysSinceContact: number; tspContact: string }[] = [];
+  const newRequestsList: { name: string; date: string; sandwiches: number; category: string }[] = [];
+  const inProcessList: { name: string; desiredDate: string; sandwiches: number }[] = [];
+
   const missingInfoBreakdown: Record<string, number> = {};
 
   // Get upcoming events at various time horizons
   const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const fourteenDaysOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -201,7 +212,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   let upcomingNext30Days = 0;
 
   // Track upcoming events with details
-  const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number }[] = [];
+  const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number; confirmed: boolean; address: string }[] = [];
 
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
@@ -230,19 +241,21 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       if (date >= now && (e.status === 'scheduled' || e.status === 'in_process')) {
         if (date <= sevenDaysOut) {
           upcomingNext7Days++;
-          // Add to detailed list for 7-day events
-          upcomingEventsList.push({
-            name: e.organizationName || 'Unknown',
-            date: date.toLocaleDateString(),
-            status: e.status,
-            sandwiches: sandwichCount
-          });
         }
         if (date <= fourteenDaysOut) {
           upcomingNext14Days++;
         }
         if (date <= thirtyDaysOut) {
           upcomingNext30Days++;
+          // Add to detailed list for 30-day events
+          upcomingEventsList.push({
+            name: e.organizationName || 'Unknown',
+            date: formatEventDate(date),
+            status: e.status,
+            sandwiches: sandwichCount,
+            confirmed: e.isConfirmed || false,
+            address: e.eventAddress || e.deliveryDestination || 'No address'
+          });
         }
       }
     }
@@ -251,42 +264,85 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     const status = e.status || 'unknown';
     statusCounts[status] = (statusCounts[status] || 0) + 1;
 
-    // Check for missing critical info (only for active events)
+    // Track new requests with details
+    if (e.status === 'new') {
+      newRequestsList.push({
+        name: e.organizationName || 'Unknown',
+        date: formatEventDate(e.desiredEventDate),
+        sandwiches: sandwichCount,
+        category: e.organizationCategory || 'other'
+      });
+    }
+
+    // Track in_process events
+    if (e.status === 'in_process') {
+      inProcessList.push({
+        name: e.organizationName || 'Unknown',
+        desiredDate: formatEventDate(e.desiredEventDate),
+        sandwiches: sandwichCount
+      });
+
+      // Check if stalled (no contact in 7+ days)
+      const lastContact = e.lastContactAttempt || e.contactedAt || e.createdAt;
+      if (lastContact) {
+        const contactDate = new Date(lastContact);
+        if (contactDate < sevenDaysAgo) {
+          const daysSince = Math.floor((now.getTime() - contactDate.getTime()) / (1000 * 60 * 60 * 24));
+          stalledInProcessList.push({
+            name: e.organizationName || 'Unknown',
+            daysSinceContact: daysSince,
+            tspContact: e.tspContactAssigned || e.tspContact || 'Unassigned'
+          });
+        }
+      }
+    }
+
+    // Check for missing critical info (only for active events) WITH DETAILS
     if (e.status === 'in_process' || e.status === 'scheduled' || e.status === 'new') {
       const missingInfo = getEventMissingInfo(e);
       if (missingInfo.length > 0) {
-        eventsWithMissingInfo++;
+        eventsWithMissingInfoList.push({
+          name: e.organizationName || 'Unknown',
+          date: formatEventDate(e.scheduledEventDate || e.desiredEventDate),
+          missing: missingInfo
+        });
         missingInfo.forEach(item => {
           missingInfoBreakdown[item] = (missingInfoBreakdown[item] || 0) + 1;
         });
       }
     }
 
-    // Check for unconfirmed scheduled events
+    // Check for unconfirmed scheduled events WITH DETAILS
     if (e.status === 'scheduled' && !e.isConfirmed) {
-      unconfirmedScheduled++;
+      unconfirmedScheduledList.push({
+        name: e.organizationName || 'Unknown',
+        date: formatEventDate(e.scheduledEventDate || e.desiredEventDate),
+        sandwiches: sandwichCount,
+        address: e.eventAddress || e.deliveryDestination || 'No address'
+      });
     }
 
-    // Check for completed events needing follow-ups
+    // Check for completed events needing follow-ups WITH DETAILS
     if (e.status === 'completed') {
-      // 1-day follow-up needed (event completed but no 1-day follow-up done)
+      const completedDate = formatEventDate(e.scheduledEventDate || e.desiredEventDate);
       if (!e.followUpOneDayCompleted) {
-        needsOneDayFollowUp++;
+        needsOneDayFollowUpList.push({
+          name: e.organizationName || 'Unknown',
+          date: completedDate
+        });
       }
-      // 1-month follow-up needed (1-day done but not 1-month)
       if (e.followUpOneDayCompleted && !e.followUpOneMonthCompleted) {
-        needsOneMonthFollowUp++;
-      }
-    }
-
-    // Check for events with scheduled follow-up dates
-    if (e.nextFollowUpDate) {
-      const followUpDate = e.nextFollowUpDate instanceof Date ? e.nextFollowUpDate : new Date(e.nextFollowUpDate);
-      if (followUpDate <= thirtyDaysOut) {
-        hasScheduledFollowUp++;
+        needsOneMonthFollowUpList.push({
+          name: e.organizationName || 'Unknown',
+          date: completedDate
+        });
       }
     }
   });
+
+  // Sort lists
+  upcomingEventsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  stalledInProcessList.sort((a, b) => b.daysSinceContact - a.daysSinceContact);
 
   return `
 ## Event Data Summary
@@ -296,27 +352,41 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
 
-### Upcoming Events
-- Next 7 Days: ${upcomingNext7Days} events
-- Next 14 Days: ${upcomingNext14Days} events
-- Next 30 Days: ${upcomingNext30Days} events
-
-${upcomingEventsList.length > 0 ? `### Events in Next 7 Days (Details)
-${upcomingEventsList.map(e => `- ${e.date}: ${e.name} (${e.status}, ~${e.sandwiches} sandwiches)`).join('\n')}` : ''}
-
-### Action Items & Alerts
-- Events Missing Critical Info: ${eventsWithMissingInfo}
-${Object.entries(missingInfoBreakdown).length > 0 ? Object.entries(missingInfoBreakdown).map(([item, count]) => `  - Missing ${item}: ${count}`).join('\n') : '  - None'}
-- Scheduled Events Not Yet Confirmed: ${unconfirmedScheduled}
-- Completed Events Needing 1-Day Follow-Up: ${needsOneDayFollowUp}
-- Completed Events Needing 1-Month Follow-Up: ${needsOneMonthFollowUp}
-- Events with Scheduled Follow-Up (Next 30 Days): ${hasScheduledFollowUp}
-
 ### Events by Status
 ${Object.entries(statusCounts)
   .sort((a, b) => b[1] - a[1])
   .map(([status, count]) => `- ${status}: ${count}`)
   .join('\n')}
+
+### Upcoming Events (Next 30 Days): ${upcomingNext30Days} total
+- Next 7 Days: ${upcomingNext7Days} events
+- Next 14 Days: ${upcomingNext14Days} events
+- Next 30 Days: ${upcomingNext30Days} events
+
+${upcomingEventsList.length > 0 ? `**Upcoming Event Details:**
+${upcomingEventsList.slice(0, 20).map(e => `- ${e.date}: ${e.name} | ${e.status} | ${e.confirmed ? 'CONFIRMED' : 'Pending confirmation'} | ~${e.sandwiches} sandwiches | ${e.address}`).join('\n')}` : ''}
+
+### New Requests: ${newRequestsList.length}
+${newRequestsList.length > 0 ? newRequestsList.slice(0, 10).map(e => `- ${e.name} | Desired: ${e.date} | ~${e.sandwiches} sandwiches | ${e.category}`).join('\n') : 'None'}
+
+### In Process: ${inProcessList.length}
+${inProcessList.length > 0 ? inProcessList.slice(0, 10).map(e => `- ${e.name} | Desired: ${e.desiredDate} | ~${e.sandwiches} sandwiches`).join('\n') : 'None'}
+
+### Stalled Intakes (No contact in 7+ days): ${stalledInProcessList.length}
+${stalledInProcessList.length > 0 ? stalledInProcessList.slice(0, 10).map(e => `- ${e.name} | ${e.daysSinceContact} days since contact | TSP: ${e.tspContact}`).join('\n') : 'None - great job!'}
+
+### Scheduled Events Pending Confirmation: ${unconfirmedScheduledList.length}
+${unconfirmedScheduledList.length > 0 ? unconfirmedScheduledList.map(e => `- ${e.name} | ${e.date} | ~${e.sandwiches} sandwiches | ${e.address}`).join('\n') : 'None - all confirmed!'}
+
+### Events Missing Critical Info: ${eventsWithMissingInfoList.length}
+${Object.entries(missingInfoBreakdown).length > 0 ? Object.entries(missingInfoBreakdown).map(([item, count]) => `  - Missing ${item}: ${count}`).join('\n') : '  - None'}
+${eventsWithMissingInfoList.length > 0 ? `\n**Details:**\n${eventsWithMissingInfoList.slice(0, 15).map(e => `- ${e.name} (${e.date}): Missing ${e.missing.join(', ')}`).join('\n')}` : ''}
+
+### Follow-up Needed
+- Completed Events Needing 1-Day Follow-Up: ${needsOneDayFollowUpList.length}
+${needsOneDayFollowUpList.length > 0 ? needsOneDayFollowUpList.slice(0, 10).map(e => `  - ${e.name} (${e.date})`).join('\n') : '  None'}
+- Completed Events Needing 1-Month Follow-Up: ${needsOneMonthFollowUpList.length}
+${needsOneMonthFollowUpList.length > 0 ? needsOneMonthFollowUpList.slice(0, 10).map(e => `  - ${e.name} (${e.date})`).join('\n') : '  None'}
 
 ### Events by Category
 ${Object.entries(categoryStats)
@@ -324,9 +394,10 @@ ${Object.entries(categoryStats)
   .map(([category, stats]) => `- ${category}: ${stats.events} events, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
 
-### Events by Month
+### Events by Month (Recent)
 ${Object.entries(monthlyStats)
-  .sort(([a], [b]) => a.localeCompare(b))
+  .sort(([a], [b]) => b.localeCompare(a))
+  .slice(0, 6)
   .map(([month, stats]) => `- ${month}: ${stats.events} events, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
 `;
