@@ -214,9 +214,25 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   // Track upcoming events with details
   const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number; confirmed: boolean; address: string }[] = [];
 
+  // Track date range of all events
+  let earliestEventDate: Date | null = null;
+  let latestEventDate: Date | null = null;
+
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
     totalSandwiches += sandwichCount;
+
+    // Track date range
+    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    if (eventDate) {
+      const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
+      if (!earliestEventDate || date < earliestEventDate) {
+        earliestEventDate = date;
+      }
+      if (!latestEventDate || date > latestEventDate) {
+        latestEventDate = date;
+      }
+    }
 
     // Category stats
     const category = e.organizationCategory || 'other';
@@ -344,6 +360,11 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   upcomingEventsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   stalledInProcessList.sort((a, b) => b.daysSinceContact - a.daysSinceContact);
 
+  // Format date range string
+  const dateRangeStr = earliestEventDate && latestEventDate
+    ? `${formatEventDate(earliestEventDate)} to ${formatEventDate(latestEventDate)}`
+    : 'No dates available';
+
   return `
 ## Event Data Summary
 
@@ -351,6 +372,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
+- **Data Time Period: ${dateRangeStr}** (This is the date range spanning all events in the system, from earliest to latest event date)
 
 ### Events by Status
 ${Object.entries(statusCounts)
@@ -781,11 +803,12 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 
 CRITICAL RULES - YOU MUST FOLLOW THESE:
 1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
 2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
-3. If asked about something not in the data, say "That information is not tracked in the current data."
+3. If asked about something truly not present in the data, say "That information is not tracked in the current data." BUT first check carefully - date ranges, time periods, and monthly breakdowns ARE included in the data summary.
 4. Never make up statistics or trends that aren't directly derivable from the provided data.
 5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
 6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
 7. When referring to dates, use today's date (shown above) as your reference point. Do NOT assume it is any date other than today.
+8. When you show a chart and the user asks follow-up questions about that data (like "what time period does this cover?"), answer using the data summary - the time period, date ranges, and breakdown by month are all included in the data. Do NOT say the information isn't tracked when it clearly is.
 
 When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
