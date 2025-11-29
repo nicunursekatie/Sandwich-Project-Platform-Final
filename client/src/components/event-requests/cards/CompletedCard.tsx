@@ -1741,6 +1741,69 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Allow assignment editing when assignment functions are provided
   const canEditAssignments = !!(openAssignmentDialog && handleRemoveAssignment);
 
+  // Helper to parse PostgreSQL arrays
+  const parsePostgresArray = (value: unknown): string[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map(String);
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[{}]/g, '');
+      if (!cleaned) return [];
+      return cleaned.split(',').map(item => item.trim()).filter(item => item);
+    }
+    return [];
+  };
+
+  // Get all team members with names
+  const getDrivers = () => {
+    const regularDrivers = parsePostgresArray(request.assignedDriverIds);
+    const driversList: { id: string; name: string }[] = regularDrivers.map(id => {
+      const detailName = (request.driverDetails as Record<string, { name?: string }>)?.[id]?.name;
+      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
+
+    // Add van driver if assigned
+    if (request.assignedVanDriverId) {
+      let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+      if (vanDriverName.startsWith('custom-')) {
+        vanDriverName = extractNameFromCustomId(vanDriverName);
+      }
+      driversList.push({ id: request.assignedVanDriverId, name: vanDriverName });
+    }
+
+    return driversList;
+  };
+
+  const getSpeakers = () => {
+    const speakerIds = Object.keys(request.speakerDetails || {});
+    return speakerIds.map(id => {
+      const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
+      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
+  };
+
+  const getVolunteers = () => {
+    const volunteerIds = parsePostgresArray(request.assignedVolunteerIds);
+    return volunteerIds.map(id => {
+      let name = resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
+  };
+
+  const drivers = getDrivers();
+  const speakers = getSpeakers();
+  const volunteers = getVolunteers();
+
   // Fetch recipients and hosts for name lookup
   const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/recipients'],
@@ -2213,14 +2276,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         {/* Event Summary */}
         <div className="space-y-2 mb-3">
           <div className="bg-white rounded-lg p-2 space-y-2">
-            {/* Assigned Recipients */}
+            {/* Combined Recipients & Team Section */}
             <div className="bg-[#e6f2f5] rounded-lg p-3">
-              <div className="flex items-start gap-2 text-sm">
-                <Building className="w-4 h-4 text-[#236383] mt-0.5" />
-                <div className="flex-1">
-                  <span className="font-medium text-[#236383]">Recipients & Hosts:</span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                {/* Recipients & Hosts */}
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-[#236383]" />
+                  <span className="font-medium text-[#236383]">Recipients:</span>
                   {isEditingField && editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2 mt-2">
+                    <div className="space-y-2">
                       <MultiRecipientSelector
                         value={editingValue ? JSON.parse(editingValue) : []}
                         onChange={(ids) => setEditingValue(JSON.stringify(ids))}
@@ -2232,20 +2296,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                           <Save className="w-3 h-3 mr-1" />
                           Save
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={cancelEdit}
-                        >
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
                           <X className="w-3 h-3 mr-1" />
                           Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2 mt-1">
+                    <>
                       {assignedRecipientInfo.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 flex-1">
+                        <div className="flex flex-wrap gap-1">
                           {assignedRecipientInfo.map((item, index) => (
                             <Badge
                               key={index}
@@ -2259,23 +2319,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                           ))}
                         </div>
                       ) : (
-                        canEditOrgDetails && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingField('assignedRecipientIds');
-                              setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
-                              setIsEditingField(true);
-                            }}
-                            className="text-[#236383] border-[#236383]/30 hover:bg-[#236383]/10"
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Add Recipients
-                          </Button>
-                        )
+                        <span className="text-gray-500 italic text-xs">(none)</span>
                       )}
-                      {canEditOrgDetails && assignedRecipientInfo.length > 0 && (
+                      {canEditOrgDetails && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -2284,12 +2330,139 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                             setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
                             setIsEditingField(true);
                           }}
-                          className="h-6 px-2 opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                          title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
                       )}
+                    </>
+                  )}
+                </div>
+
+                <span className="text-gray-300">|</span>
+
+                {/* Drivers */}
+                <div className="flex items-center gap-1">
+                  <Car className="w-4 h-4 text-[#236383]" />
+                  <span className="font-medium text-[#236383]">Drivers:</span>
+                  {canEditAssignments && openAssignmentDialog && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openAssignmentDialog('driver')}
+                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                      title="Add driver"
+                    >
+                      <UserPlus className="w-3 h-3 text-[#236383]" />
+                    </Button>
+                  )}
+                  {drivers.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {drivers.map((driver) => (
+                        <Badge
+                          key={driver.id}
+                          variant="secondary"
+                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                        >
+                          {driver.name}
+                          {canEditAssignments && handleRemoveAssignment && (
+                            <button
+                              onClick={() => handleRemoveAssignment('driver', driver.id)}
+                              className="ml-1 text-gray-400 hover:text-red-600"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
                     </div>
+                  ) : (
+                    <span className="text-gray-500 italic text-xs">(none)</span>
+                  )}
+                </div>
+
+                <span className="text-gray-300">|</span>
+
+                {/* Speakers */}
+                <div className="flex items-center gap-1">
+                  <Megaphone className="w-4 h-4 text-[#236383]" />
+                  <span className="font-medium text-[#236383]">Speakers:</span>
+                  {canEditAssignments && openAssignmentDialog && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openAssignmentDialog('speaker')}
+                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                      title="Add speaker"
+                    >
+                      <UserPlus className="w-3 h-3 text-[#236383]" />
+                    </Button>
+                  )}
+                  {speakers.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {speakers.map((speaker) => (
+                        <Badge
+                          key={speaker.id}
+                          variant="secondary"
+                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                        >
+                          {speaker.name}
+                          {canEditAssignments && handleRemoveAssignment && (
+                            <button
+                              onClick={() => handleRemoveAssignment('speaker', speaker.id)}
+                              className="ml-1 text-gray-400 hover:text-red-600"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 italic text-xs">(none)</span>
+                  )}
+                </div>
+
+                <span className="text-gray-300">|</span>
+
+                {/* Volunteers */}
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4 text-[#236383]" />
+                  <span className="font-medium text-[#236383]">Volunteers:</span>
+                  {canEditAssignments && openAssignmentDialog && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openAssignmentDialog('volunteer')}
+                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                      title="Add volunteer"
+                    >
+                      <UserPlus className="w-3 h-3 text-[#236383]" />
+                    </Button>
+                  )}
+                  {volunteers.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {volunteers.map((volunteer) => (
+                        <Badge
+                          key={volunteer.id}
+                          variant="secondary"
+                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                        >
+                          {volunteer.name}
+                          {canEditAssignments && handleRemoveAssignment && (
+                            <button
+                              onClick={() => handleRemoveAssignment('volunteer', volunteer.id)}
+                              className="ml-1 text-gray-400 hover:text-red-600"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 italic text-xs">(none)</span>
                   )}
                 </div>
               </div>
@@ -2373,19 +2546,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               </div>
             )}
           </div>
-
-          {/* Assignments Summary - Always show so staff can be added to completed events */}
-          <CardAssignments
-            request={request}
-            resolveUserName={resolveUserName}
-            canEdit={canEditAssignments}
-            onAssign={openAssignmentDialog}
-            onEditAssignment={openEditAssignmentDialog}
-            onRemoveAssignment={handleRemoveAssignment}
-            onSelfSignup={handleSelfSignup}
-            canSelfSignup={canSelfSignup}
-            isUserSignedUp={isUserSignedUp}
-          />
         </div>
 
         {/* Communication & Notes Section */}
