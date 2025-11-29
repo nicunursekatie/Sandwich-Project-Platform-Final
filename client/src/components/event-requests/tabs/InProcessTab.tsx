@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -7,6 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { InProcessCard } from '../cards/InProcessCard';
+import { Button } from '@/components/ui/button';
+import { EyeOff, Eye, CalendarX } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
@@ -21,6 +24,9 @@ export const InProcessTab: React.FC = () => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
+
+  // Hide past-date events toggle
+  const [hidePastDateEvents, setHidePastDateEvents] = useState(false);
 
   const {
     setSelectedEventRequest,
@@ -47,6 +53,28 @@ export const InProcessTab: React.FC = () => {
   } = useEventRequestContext();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
+
+  // Helper to check if an event's date has passed
+  const isEventDatePast = (request: any): boolean => {
+    const eventDate = request.scheduledEventDate || request.desiredEventDate;
+    if (!eventDate) return false;
+    const date = new Date(eventDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  // Filter and count past-date events
+  const { filteredRequests, pastDateCount } = useMemo(() => {
+    const pastDateEvents = inProcessRequests.filter(isEventDatePast);
+    const pastDateCount = pastDateEvents.length;
+
+    const filteredRequests = hidePastDateEvents
+      ? inProcessRequests.filter(req => !isEventDatePast(req))
+      : inProcessRequests;
+
+    return { filteredRequests, pastDateCount };
+  }, [inProcessRequests, hidePastDateEvents]);
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -181,13 +209,53 @@ export const InProcessTab: React.FC = () => {
 
   return (
     <>
-      {inProcessRequests.length === 0 ? (
+      {/* Toggle button for hiding past-date events */}
+      {pastDateCount > 0 && (
+        <div className="mb-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-amber-800">
+            <CalendarX className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {pastDateCount} event{pastDateCount !== 1 ? 's' : ''} with past dates
+            </span>
+            {hidePastDateEvents && (
+              <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
+                Hidden
+              </Badge>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setHidePastDateEvents(!hidePastDateEvents)}
+            className={hidePastDateEvents
+              ? "border-amber-300 text-amber-700 hover:bg-amber-100"
+              : "border-amber-300 text-amber-700 hover:bg-amber-100"
+            }
+          >
+            {hidePastDateEvents ? (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                Show Past Events
+              </>
+            ) : (
+              <>
+                <EyeOff className="w-4 h-4 mr-2" />
+                Hide Past Events
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {filteredRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No events in process
+          {inProcessRequests.length === 0
+            ? 'No events in process'
+            : 'All past-date events are hidden. Click "Show Past Events" to view them.'}
         </div>
       ) : (
         <div className="space-y-4">
-          {inProcessRequests.map((request) => (
+          {filteredRequests.map((request) => (
             <InProcessCard
               key={request.id}
               request={request}
