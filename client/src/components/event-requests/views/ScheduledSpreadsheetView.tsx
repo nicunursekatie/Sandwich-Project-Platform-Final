@@ -1180,11 +1180,70 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       'eventStartTime', 'eventEndTime', 'pickupTime',
       'estimatedSandwiches', 'sandwichType', 'toolkitSent',
       'tspContact', 'address', 'notes', 'additionalNotes',
-      'eventDate', 'groupName', 'department', 'vanBooked', 
-      'contactName', 'phone', 'email', 'finalSandwiches', 
+      'eventDate', 'groupName', 'department', 'vanBooked',
+      'contactName', 'phone', 'email', 'finalSandwiches',
       'socialPost', 'volunteersNeeded' // This is the combined "Staff Needed" column
     ].includes(column.id);
-    
+
+    // Get the raw value for editing (not the formatted display)
+    // Defined early so it can be used in special column handlers below
+    const getRawValue = (): string => {
+      switch (column.id) {
+        case 'eventDate':
+          // Convert to YYYY-MM-DD format for date input
+          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          if (!eventDate) return '';
+          const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            return dateStr.split('T')[0].split(' ')[0];
+          }
+          return '';
+        case 'eventStartTime':
+          return event.eventStartTime || '';
+        case 'eventEndTime':
+          return event.eventEndTime || '';
+        case 'pickupTime':
+          return event.pickupTime || '';
+        case 'estimatedSandwiches':
+          return event.estimatedSandwichCount?.toString() || '';
+        case 'finalSandwiches':
+          return event.actualSandwichCount?.toString() || '';
+        case 'toolkitSent':
+          return event.toolkitSent ? 'Yes' : 'No';
+        case 'vanBooked':
+          return event.vanDriverNeeded ? 'Yes' : 'No';
+        case 'tspContact':
+          return event.tspContact || event.tspContactAssigned || '';
+        case 'address':
+          return event.eventAddress || '';
+        case 'notes':
+          return event.planningNotes || '';
+        case 'additionalNotes':
+          return event.schedulingNotes || '';
+        case 'groupName':
+          return event.organizationName || '';
+        case 'department':
+          return event.department || '';
+        case 'contactName':
+          return `${event.firstName || ''} ${event.lastName || ''}`.trim();
+        case 'phone':
+          return event.phone || '';
+        case 'email':
+          return event.email || event.updatedEmail || '';
+        case 'volunteersNeeded':
+          // Return combined format for editing: "2 vol, 1 driver, 1 speaker"
+          const parts: string[] = [];
+          if (event.volunteersNeeded && event.volunteersNeeded > 0) parts.push(`${event.volunteersNeeded} vol`);
+          if (event.driversNeeded && event.driversNeeded > 0) parts.push(`${event.driversNeeded} driver`);
+          if (event.speakersNeeded && event.speakersNeeded > 0) parts.push(`${event.speakersNeeded} speaker`);
+          return parts.join(', ') || '';
+        case 'socialPost':
+          return event.socialMediaPostRequested ? 'Requested' : '';
+        default:
+          return '';
+      }
+    };
+
     // Special handling for sandwich type - use dialog instead of inline edit
     if (column.id === 'sandwichType' && !isEditing(event.id, column.id)) {
       const displayValue = getSandwichTypeDisplay(event);
@@ -1606,65 +1665,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     }
     
     const content = typeof renderedContent === 'string' ? renderedContent : String(renderedContent);
-    
-    // Get the raw value for editing (not the formatted display)
-    const getRawValue = () => {
-      switch (column.id) {
-        case 'eventDate':
-          // Convert to YYYY-MM-DD format for date input
-          const eventDate = event.scheduledEventDate || event.desiredEventDate;
-          if (!eventDate) return '';
-          const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
-          if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-            return dateStr.split('T')[0].split(' ')[0];
-          }
-          return '';
-        case 'eventStartTime':
-          return event.eventStartTime || '';
-        case 'eventEndTime':
-          return event.eventEndTime || '';
-        case 'pickupTime':
-          return event.pickupTime || '';
-        case 'estimatedSandwiches':
-          return event.estimatedSandwichCount?.toString() || '';
-        case 'finalSandwiches':
-          return event.actualSandwichCount?.toString() || '';
-        case 'toolkitSent':
-          return event.toolkitSent ? 'Yes' : 'No';
-        case 'vanBooked':
-          return event.vanDriverNeeded ? 'Yes' : 'No';
-        case 'tspContact':
-          return event.tspContact || event.tspContactAssigned || '';
-        case 'address':
-          return event.eventAddress || '';
-        case 'notes':
-          return event.planningNotes || '';
-        case 'additionalNotes':
-          return event.schedulingNotes || '';
-        case 'groupName':
-          return event.organizationName || '';
-        case 'department':
-          return event.department || '';
-        case 'contactName':
-          return `${event.firstName || ''} ${event.lastName || ''}`.trim();
-        case 'phone':
-          return event.phone || '';
-        case 'email':
-          return event.email || event.updatedEmail || '';
-        case 'volunteersNeeded':
-          // Return combined format for editing: "2 vol, 1 driver, 1 speaker"
-          const parts = [];
-          if (event.volunteersNeeded && event.volunteersNeeded > 0) parts.push(`${event.volunteersNeeded} vol`);
-          if (event.driversNeeded && event.driversNeeded > 0) parts.push(`${event.driversNeeded} driver`);
-          if (event.speakersNeeded && event.speakersNeeded > 0) parts.push(`${event.speakersNeeded} speaker`);
-          return parts.join(', ') || '';
-        case 'socialPost':
-          return event.socialMediaPostRequested ? 'Requested' : '';
-        default:
-          return content;
-      }
-    };
-    
+
     // Columns that should wrap text instead of truncating
     const wrapColumns = ['notes', 'additionalNotes', 'address', 'groupName', 'department'];
     const shouldWrap = wrapColumns.includes(column.id);
