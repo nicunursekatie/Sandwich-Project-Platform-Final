@@ -81,6 +81,19 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const totalNeeded = driverNeeded + speakerNeeded + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
+  // Check if event is within next 7 days (for urgent staffing color)
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const isWithin7Days = (() => {
+    if (!displayDate) return false;
+    const eventDate = new Date(displayDate);
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return eventDate <= sevenDaysFromNow && eventDate >= now;
+  })();
+
+  // Staffing text color - red if within 7 days, orange otherwise
+  const staffingNeededColor = isWithin7Days ? 'text-[#A31C41] font-semibold' : 'text-orange-700';
+
   // Get sandwich info
   const sandwichInfo = formatSandwichTypesDisplay(
     request.sandwichTypes,
@@ -200,7 +213,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                 {driverNeeded > 0 && (
                   <div className="flex items-center gap-1">
                     <Car className="w-3 h-3 text-gray-500" />
-                    <span className={driverAssigned >= driverNeeded ? 'text-green-700 font-medium' : 'text-orange-700'}>
+                    <span className={driverAssigned >= driverNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {driverAssigned}/{driverNeeded} drivers
                     </span>
                   </div>
@@ -208,7 +221,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                 {speakerNeeded > 0 && (
                   <div className="flex items-center gap-1">
                     <Megaphone className="w-3 h-3 text-gray-500" />
-                    <span className={speakerAssigned >= speakerNeeded ? 'text-green-700 font-medium' : 'text-orange-700'}>
+                    <span className={speakerAssigned >= speakerNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {speakerAssigned}/{speakerNeeded} speakers
                     </span>
                   </div>
@@ -216,7 +229,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                 {volunteerNeeded > 0 && (
                   <div className="flex items-center gap-1">
                     <UserPlus className="w-3 h-3 text-gray-500" />
-                    <span className={volunteerAssigned >= volunteerNeeded ? 'text-green-700 font-medium' : 'text-orange-700'}>
+                    <span className={volunteerAssigned >= volunteerNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {volunteerAssigned}/{volunteerNeeded} volunteers
                     </span>
                   </div>
