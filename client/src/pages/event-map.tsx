@@ -22,6 +22,8 @@ const clusterTooltipStyles = `
     border-radius: 8px !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
     padding: 0 !important;
+    max-height: 280px !important;
+    overflow-y: auto !important;
   }
   .cluster-tooltip .leaflet-tooltip-tip {
     display: none;
@@ -461,10 +463,10 @@ const calculateTooltipDirection = (
 ): { direction: 'top' | 'bottom' | 'left' | 'right'; offset: L.Point } => {
   const containerPoint = map.latLngToContainerPoint(clusterLatLng);
   const mapSize = map.getSize();
-  
-  // Tooltip dimensions (approximate)
+
+  // Tooltip dimensions (matches CSS max-height constraint)
   const tooltipWidth = 280;
-  const tooltipHeight = 200;
+  const tooltipHeight = 280; // Matches max-height in CSS
   const clusterRadius = 40; // Account for cluster icon size
   const margin = 20; // Margin from edge
   
