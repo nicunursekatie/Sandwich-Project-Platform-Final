@@ -3983,9 +3983,9 @@ export default function SandwichCollectionLog() {
           "What's our total sandwich count this month?",
           "What's our average collection size?",
           "Show collections by month",
-          "Which days have the most collections?",
           "How are we trending compared to last month?",
           "Show monthly trends as a chart",
+          "What was our collection total last week?",
         ]}
       />
     </div>

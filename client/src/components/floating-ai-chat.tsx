@@ -52,7 +52,7 @@ interface ChartData {
   description?: string;
 }
 
-export type AIContextType = 'collections' | 'events' | 'impact-reports';
+export type AIContextType = 'collections' | 'events' | 'impact-reports' | 'general';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
@@ -115,22 +115,28 @@ function getAxisLabel(key: string, chartTitle: string, isYAxis: boolean = false)
 
 const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
   collections: [
-    "Which host collected the most sandwiches?",
+    "What's our total sandwich count this month?",
     "What's our average collection size?",
     "Show collections by month",
-    "Which days have the most collections?",
+    "How are we trending compared to last month?",
   ],
   events: [
-    "Which organizations have the most events?",
+    "How many events do we have scheduled?",
     "Show me events by category",
     "What's our monthly event trend?",
     "Which months are busiest?",
   ],
   'impact-reports': [
     "Show monthly sandwich trends",
-    "Which categories collect the most?",
+    "What's our overall impact this year?",
     "What's our average per event?",
-    "Top organizations by sandwiches",
+    "How have we grown over time?",
+  ],
+  general: [
+    "What can I do on this platform?",
+    "How do I get started?",
+    "What features are available?",
+    "How can I find help?",
   ],
 };
 
