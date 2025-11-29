@@ -52,7 +52,19 @@ interface ChartData {
   description?: string;
 }
 
-export type AIContextType = 'collections' | 'events' | 'impact-reports' | 'general';
+export type AIContextType =
+  | 'collections'
+  | 'events'
+  | 'impact-reports'
+  | 'general'
+  | 'holding-zone'
+  | 'network'
+  | 'projects'
+  | 'meetings'
+  | 'resources'
+  | 'organizations'
+  | 'links'
+  | 'dashboard';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
@@ -137,6 +149,54 @@ const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
     "How do I get started?",
     "What features are available?",
     "How can I find help?",
+  ],
+  'holding-zone': [
+    "What open items need attention?",
+    "How many tasks are claimed?",
+    "Show me urgent items",
+    "What ideas have been submitted?",
+  ],
+  network: [
+    "How many active hosts do we have?",
+    "How many drivers are in the network?",
+    "Show me network overview",
+    "How many recipients do we serve?",
+  ],
+  projects: [
+    "What projects are in progress?",
+    "Show me high priority projects",
+    "How many projects are complete?",
+    "What's the status breakdown?",
+  ],
+  meetings: [
+    "What meetings are coming up?",
+    "How many agenda items are pending?",
+    "Show recent meetings",
+    "When is the next meeting?",
+  ],
+  resources: [
+    "What resources are available?",
+    "Show resources by category",
+    "What types of documents are here?",
+    "How do I find training materials?",
+  ],
+  organizations: [
+    "How many organizations are in the catalog?",
+    "Show organizations by category",
+    "How many have hosted events?",
+    "What types of organizations work with us?",
+  ],
+  links: [
+    "What links are available?",
+    "Show links by category",
+    "How do I find key resources?",
+    "What quick tools are available?",
+  ],
+  dashboard: [
+    "Give me an overview",
+    "What are the key metrics?",
+    "How many upcoming events?",
+    "What needs attention today?",
   ],
 };
 

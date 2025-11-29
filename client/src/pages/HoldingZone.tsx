@@ -2206,7 +2206,7 @@ export default function HoldingZone() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="holding-zone"
         title="Holding Zone Assistant"
         subtitle="Ask about your ideas and tasks"
         suggestedQuestions={[

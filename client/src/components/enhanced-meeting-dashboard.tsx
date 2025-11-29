@@ -981,7 +981,7 @@ export default function EnhancedMeetingDashboard() {
 
       {/* AI Assistant */}
       <FloatingAIChat
-        contextType="general"
+        contextType="meetings"
         title="Meetings Assistant"
         subtitle="Ask about meetings and agendas"
         suggestedQuestions={[
