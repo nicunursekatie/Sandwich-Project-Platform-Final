@@ -2005,32 +2005,51 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
 
-      // Extract city from address (typically the part before the state/zip)
-      // Common formats: "123 Main St, City, ST 12345" or "City, ST"
-      const extractCity = (addr: string): string => {
+      // Extract venue name and city from address
+      // Common formats:
+      // - "Venue Name 123 Main St, City, ST 12345"
+      // - "123 Main St, City, ST 12345"
+      // - "City, ST"
+      const extractVenueAndCity = (addr: string): string => {
         const parts = addr.split(',').map(p => p.trim());
+
+        // Extract city (typically second to last part before state/zip)
+        let city = '';
         if (parts.length >= 2) {
-          // If there's a state abbreviation in the last part, the city is second to last
           const lastPart = parts[parts.length - 1];
           if (/^[A-Z]{2}\s*\d{5}/.test(lastPart) || /^\d{5}/.test(lastPart)) {
             // Last part is "ST 12345" or just zip, so second to last is city
-            return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
-          }
-          // Check if second to last part looks like a city (before state)
-          if (parts.length >= 2) {
+            city = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+          } else if (parts.length >= 2) {
             const secondLast = parts[parts.length - 2];
             // If it doesn't start with numbers, it's likely the city
             if (!/^\d/.test(secondLast)) {
-              return secondLast;
+              city = secondLast;
+            } else {
+              city = parts[1];
             }
           }
-          // Fallback to second part (after street address)
-          return parts[1];
+        } else {
+          city = addr;
         }
-        return addr;
+
+        // Check if first part has a venue name before the street number
+        // A venue name is text before a street number (e.g., "Warren/Holyfield Boys & Girls Club 790 Berne St")
+        const firstPart = parts[0];
+        const venueMatch = firstPart.match(/^(.+?)\s+(\d+\s+\w+)/);
+
+        if (venueMatch) {
+          const venueName = venueMatch[1].trim();
+          // Make sure it's not just a direction like "N" or "NE" before the number
+          if (venueName.length > 2 && !/^[NSEW]{1,2}$/i.test(venueName)) {
+            return `${venueName}, ${city}`;
+          }
+        }
+
+        return city;
       };
 
-      const city = extractCity(fullAddress);
+      const displayLocation = extractVenueAndCity(fullAddress);
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
 
       return (
@@ -2043,7 +2062,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 title="Click to see full address"
               >
                 <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span>{city}</span>
+                <span>{displayLocation}</span>
                 <Eye className="h-3 w-3 opacity-50 group-hover:opacity-100" />
               </button>
             </PopoverTrigger>
