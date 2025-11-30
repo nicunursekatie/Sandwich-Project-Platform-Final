@@ -360,8 +360,8 @@ export default function ProjectsClean() {
         logger.log('🚀 setLocation called with:', `/projects/${project.id}`);
       }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 flex items-start gap-3">
             {/* Project Type Badge */}
             {project.googleSheetRowId ? (
@@ -404,11 +404,14 @@ export default function ProjectsClean() {
                 )}
               </Button>
             )}
-            <div className="flex-1">
-              <h3 className="font-semibold text-brand-primary font-roboto text-lg mb-1 break-words leading-tight">
-                {project.title}
-              </h3>
-              <div className="flex flex-wrap gap-2 mb-2">
+          </div>
+        </div>
+        <CardTitle className="font-semibold text-brand-primary font-roboto text-lg mb-2 break-words leading-tight">
+          {project.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0 pb-4 px-4">
+        <div className="flex flex-wrap gap-2 mb-2">
                 <Badge
                   className={`${getPriorityColor(
                     project.priority

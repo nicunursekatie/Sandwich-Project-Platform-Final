@@ -356,7 +356,7 @@ export const ScheduledTab: React.FC = () => {
     setRescheduleRequest(null);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (scheduledRequests.length === 0) {
       toast({
         title: 'No data to export',
@@ -365,11 +365,19 @@ export const ScheduledTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(scheduledRequests, 'scheduled');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(scheduledRequests, 'scheduled');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

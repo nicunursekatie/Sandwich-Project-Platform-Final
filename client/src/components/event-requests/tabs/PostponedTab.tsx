@@ -29,7 +29,7 @@ export const PostponedTab: React.FC = () => {
 
   const postponedRequests = filterRequestsByStatus('postponed');
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (postponedRequests.length === 0) {
       toast({
         title: 'No data to export',
@@ -38,11 +38,19 @@ export const PostponedTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(postponedRequests, 'postponed');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${postponedRequests.length} postponed event${postponedRequests.length !== 1 ? 's' : ''} to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(postponedRequests, 'postponed');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${postponedRequests.length} postponed event${postponedRequests.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCall = (request: any) => {

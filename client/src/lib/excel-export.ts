@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import type { EventRequest } from '@shared/schema';
 
 // Format date for Excel display
@@ -146,11 +145,14 @@ const columnConfigs: Record<string, Array<{ header: string; key: string; formatt
 };
 
 // Export event requests to Excel
-export function exportEventRequestsToExcel(
+export async function exportEventRequestsToExcel(
   events: EventRequest[],
   tabType: string,
   filename?: string
-): void {
+): Promise<void> {
+  // Dynamically import xlsx to avoid issues with React module loading
+  const XLSX = await import('xlsx');
+
   // Get column configuration for this tab type
   const columns = columnConfigs[tabType] || columnConfigs.new;
 
