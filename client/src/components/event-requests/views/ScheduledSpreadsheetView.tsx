@@ -1948,7 +1948,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             >
               -
             </button>
-            <span className="w-4 text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
             <button
               onClick={() => updateStaffCount('driversNeeded', 1)}
               className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
@@ -1967,7 +1967,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             >
               -
             </button>
-            <span className="w-4 text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
             <button
               onClick={() => updateStaffCount('speakersNeeded', 1)}
               className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
@@ -1986,7 +1986,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             >
               -
             </button>
-            <span className="w-4 text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
             <button
               onClick={() => updateStaffCount('volunteersNeeded', 1)}
               className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
