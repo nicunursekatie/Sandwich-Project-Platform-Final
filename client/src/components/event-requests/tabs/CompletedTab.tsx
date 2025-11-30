@@ -42,7 +42,7 @@ export const CompletedTab: React.FC = () => {
 
   const completedRequests = filterRequestsByStatus('completed') || [];
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (completedRequests.length === 0) {
       toast({
         title: 'No data to export',
@@ -51,11 +51,19 @@ export const CompletedTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(completedRequests, 'completed');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''} to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(completedRequests, 'completed');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

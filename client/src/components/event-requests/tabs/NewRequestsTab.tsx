@@ -142,7 +142,7 @@ export const NewRequestsTab: React.FC = () => {
     setEditingValue('');
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (newRequests.length === 0) {
       toast({
         title: 'No data to export',
@@ -151,11 +151,19 @@ export const NewRequestsTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(newRequests, 'new');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''} to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(newRequests, 'new');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export requests. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

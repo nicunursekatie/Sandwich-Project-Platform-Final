@@ -31,7 +31,7 @@ export const DeclinedTab: React.FC = () => {
   const cancelledRequests = filterRequestsByStatus('cancelled');
   const allDeclinedOrCancelled = [...declinedRequests, ...cancelledRequests];
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (allDeclinedOrCancelled.length === 0) {
       toast({
         title: 'No data to export',
@@ -40,11 +40,19 @@ export const DeclinedTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(allDeclinedOrCancelled, 'declined');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''} to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(allDeclinedOrCancelled, 'declined');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCall = (request: any) => {

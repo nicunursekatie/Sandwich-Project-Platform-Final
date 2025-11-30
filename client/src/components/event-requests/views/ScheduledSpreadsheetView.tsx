@@ -720,13 +720,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   };
 
   const getRowColor = (index: number) => {
-    // Use brand colors with light opacity for alternating rows
-    const colors = [
-      'bg-white',
-      'bg-[#47B3CB]/5', // Light teal
-      'bg-[#FBAD3F]/5', // Light orange
-    ];
-    return colors[index % 3];
+    // Google Sheets-like alternating rows: white and very light gray
+    return index % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]';
   };
 
   // Handle clicking on event date to navigate to card view
@@ -796,7 +791,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#007E8C] hover:underline flex items-center gap-1"
+            className="text-[#1a73e8] hover:text-[#1557b0] hover:underline flex items-center gap-1"
             onClick={(e) => e.stopPropagation()}
           >
             <MapPin className="h-3 w-3 flex-shrink-0" />
@@ -1263,7 +1258,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           className="flex items-center gap-0.5 group min-h-[20px]"
           onDoubleClick={() => openSandwichDialog(event)}
         >
-          <span className="text-base truncate flex-1 leading-tight font-medium">{displayValue || '-'}</span>
+          <span className="text-sm truncate flex-1 leading-relaxed font-normal">{displayValue || '-'}</span>
           <button
             onClick={() => openSandwichDialog(event)}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
@@ -1526,7 +1521,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               e.stopPropagation();
               handleEventDateClick(event);
             }}
-            className="text-base font-medium text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer flex-1 text-left"
+            className="text-sm font-normal text-[#1a73e8] hover:text-[#1557b0] hover:underline cursor-pointer flex-1 text-left"
             title="Click to view event details in card view"
           >
             {dateText}
@@ -1563,7 +1558,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       // Fallback if no address - still show edit button
       return (
         <div className="flex items-center gap-0.5 group min-h-[20px]">
-          <span className="text-base text-gray-400 flex-1">-</span>
+          <span className="text-sm text-gray-400 flex-1">-</span>
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
@@ -1579,7 +1574,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'assignedStaff' && typeof renderedContent === 'object' && renderedContent !== null && 'fullText' in renderedContent) {
       const staffData = renderedContent as { fullText: string; hasContent: boolean };
       if (!staffData.hasContent || !staffData.fullText) {
-        return <span className="text-base text-gray-400">-</span>;
+        return <span className="text-sm text-gray-400">-</span>;
       }
 
       // Enable wrapping for staff assignments
@@ -1596,7 +1591,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 >
                   <div className="flex items-center gap-1 min-w-0 w-full">
                     <span
-                      className="text-base font-medium leading-tight block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
+                      className="text-sm font-normal leading-relaxed block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
                       title={staffData.fullText}
                     >
                       {staffData.fullText}
@@ -1620,7 +1615,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="text-base font-medium leading-tight block whitespace-normal break-words">
+            <span className="text-sm font-normal leading-relaxed block whitespace-normal break-words">
               {staffData.fullText}
             </span>
           )}
@@ -1632,7 +1627,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
-        return <span className="text-base text-gray-400">-</span>;
+        return <span className="text-sm text-gray-400">-</span>;
       }
 
       // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
@@ -1682,7 +1677,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         className="flex items-center gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className="text-base font-medium truncate flex-1 leading-tight">{content || '-'}</span>
+        <span className="text-sm font-normal truncate flex-1 leading-relaxed">{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
@@ -1797,10 +1792,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       </div>
 
       {/* Table Container with Horizontal and Vertical Scroll */}
-      <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto' }}>
           <table className="w-full border-collapse">
-            <thead className="bg-[#007E8C] border-b-2 border-[#236383] sticky top-0 z-10">
+            <thead className="bg-[#e8eaed] border-b border-gray-300 sticky top-0 z-10">
               <tr>
                 {columns.map((column, index) => {
                   const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
@@ -1812,14 +1807,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`px-1.5 py-1 text-left text-sm font-semibold text-white border-r border-[#236383] whitespace-nowrap cursor-move select-none group relative ${
-                        draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#236383]'
+                      className={`px-2 py-2.5 text-left text-xs font-semibold text-gray-700 border-r border-gray-300 whitespace-nowrap cursor-move select-none group relative ${
+                        draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#dadce0]'
                       }`}
                       style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px` }}
                       title="Drag to reorder columns"
                     >
                       <div className="flex items-center gap-1">
-                        <GripVertical className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        <GripVertical className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                         <span className="flex-1">{column.label}</span>
                         {column.sortable && (() => {
                           const columnSortField = getSortFieldForColumn(column.id);
@@ -1831,17 +1826,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                                   handleSort(columnSortField);
                                 }
                               }}
-                              className="hover:bg-[#236383] rounded p-1 md:p-0.5 ml-0.5 touch-manipulation"
+                              className="hover:bg-[#dadce0] rounded p-1 md:p-0.5 ml-0.5 touch-manipulation"
                               title={`Sort by ${column.label}`}
                             >
                               {isActive ? (
                                 sortDirection === 'asc' ? (
-                                  <ArrowUp className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
+                                  <ArrowUp className="h-5 w-5 md:h-2.5 md:w-2.5 text-gray-700" />
                                 ) : (
-                                  <ArrowDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white" />
+                                  <ArrowDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-gray-700" />
                                 )
                               ) : (
-                                <ArrowUpDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-white/70" />
+                                <ArrowUpDown className="h-5 w-5 md:h-2.5 md:w-2.5 text-gray-500" />
                               )}
                             </button>
                           );
@@ -1849,7 +1844,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                       </div>
                       {/* Resize Handle */}
                       <div
-                        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-white/30 active:bg-white/50"
+                        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-gray-400 active:bg-gray-500"
                         onMouseDown={(e) => handleResizeStart(e, column.id)}
                         onClick={(e) => e.stopPropagation()}
                         title="Drag to resize column"
@@ -1863,14 +1858,15 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#47B3CB]/10 transition-colors h-10`}
+                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#e8eaed] transition-colors`}
+                  style={{ minHeight: '48px' }}
                 >
                   {columns.map((column) => {
                     const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
                     return (
                       <td
                         key={column.id}
-                        className="px-1.5 py-1 border-r border-gray-200 text-base leading-tight overflow-hidden"
+                        className="px-2 py-2.5 border-r border-gray-200 text-sm leading-relaxed overflow-hidden align-top"
                         style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
                       >
                         {renderCell(event, column)}

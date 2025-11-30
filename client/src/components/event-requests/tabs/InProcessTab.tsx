@@ -208,7 +208,7 @@ export const InProcessTab: React.FC = () => {
     setEditingValue('');
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (inProcessRequests.length === 0) {
       toast({
         title: 'No data to export',
@@ -217,11 +217,19 @@ export const InProcessTab: React.FC = () => {
       });
       return;
     }
-    exportEventRequestsToExcel(inProcessRequests, 'in_process');
-    toast({
-      title: 'Export complete',
-      description: `Exported ${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process to Excel.`,
-    });
+    try {
+      await exportEventRequestsToExcel(inProcessRequests, 'in_process');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
