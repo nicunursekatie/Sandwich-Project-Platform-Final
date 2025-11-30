@@ -1697,6 +1697,16 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       );
     }
 
+    // Special handling for groupName column (allow text wrapping)
+    if (column.id === 'groupName') {
+      const groupName = event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A';
+      return (
+        <span className="text-base font-medium text-[#236383] whitespace-normal break-words leading-snug">
+          {groupName}
+        </span>
+      );
+    }
+
     // Special handling for address column (returns JSX with link and make it editable)
     if (column.id === 'address') {
       if (React.isValidElement(renderedContent)) {
