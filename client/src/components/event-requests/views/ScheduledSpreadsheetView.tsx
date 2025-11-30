@@ -1396,7 +1396,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           className="flex items-center gap-0.5 group min-h-[20px]"
           onDoubleClick={() => openSandwichDialog(event)}
         >
-          <span className="text-sm truncate flex-1 leading-relaxed font-normal">{displayValue || '-'}</span>
+          <span className="text-base truncate flex-1 leading-relaxed font-normal">{displayValue || '-'}</span>
           <button
             onClick={() => openSandwichDialog(event)}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
@@ -1659,7 +1659,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               e.stopPropagation();
               handleEventDateClick(event);
             }}
-            className="text-sm font-normal text-[#1a73e8] hover:text-[#1557b0] hover:underline cursor-pointer flex-1 text-left"
+            className="text-lg font-bold text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer flex-1 text-left"
             title="Click to view event details in card view"
           >
             {dateText}
@@ -1718,7 +1718,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       // Fallback if no address - still show edit button
       return (
         <div className="flex items-center gap-0.5 group min-h-[20px]">
-          <span className="text-sm text-[#47B3CB]/60 flex-1">-</span>
+          <span className="text-base text-[#47B3CB]/60 flex-1">-</span>
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
@@ -1838,7 +1838,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
           {/* Assigned names (if any) */}
           {staffText && (
-            <div className="text-xs text-[#236383]/80 truncate" title={staffText}>
+            <div className="text-sm text-[#236383]/80 truncate" title={staffText}>
               {staffText}
             </div>
           )}
@@ -1850,7 +1850,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'allDetails') {
       const detailsData = renderedContent as { fullText: string; hasContent: boolean };
       if (!detailsData.hasContent || !detailsData) {
-        return <span className="text-sm text-[#47B3CB]/60">-</span>;
+        return <span className="text-base text-[#47B3CB]/60">-</span>;
       }
 
       // Check if text is truncated (will be truncated if longer than ~80 characters in a 150px column)
@@ -1900,7 +1900,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         className="flex items-center gap-0.5 group min-h-[20px]"
         onDoubleClick={() => isEditable && startEditing(event.id, column.id, getRawValue())}
       >
-        <span className="text-sm font-normal truncate flex-1 leading-relaxed">{content || '-'}</span>
+        <span className="text-base font-normal truncate flex-1 leading-relaxed">{content || '-'}</span>
         {isEditable && (
           <button
             onClick={() => startEditing(event.id, column.id, getRawValue())}
@@ -2089,7 +2089,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     return (
                       <td
                         key={column.id}
-                        className="px-2 py-2.5 border-r border-[#47B3CB]/20 text-sm leading-relaxed overflow-hidden align-top"
+                        className="px-2 py-2.5 border-r border-[#47B3CB]/20 text-base leading-relaxed overflow-hidden align-top"
                         style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
                       >
                         {renderCell(event, column)}
