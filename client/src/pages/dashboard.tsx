@@ -958,7 +958,7 @@ export default function Dashboard({
         <GuidedTour />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
-        {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'organizations'].includes(activeSection) && (
+        {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (
           <FloatingAIChat
             contextType="dashboard"
             title="TSP Assistant"
