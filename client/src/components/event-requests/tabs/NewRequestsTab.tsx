@@ -7,6 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { NewRequestCard } from '../cards/NewRequestCard';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
@@ -139,8 +142,41 @@ export const NewRequestsTab: React.FC = () => {
     setEditingValue('');
   };
 
+  const handleExport = () => {
+    if (newRequests.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'There are no new requests to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    exportEventRequestsToExcel(newRequests, 'new');
+    toast({
+      title: 'Export complete',
+      description: `Exported ${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''} to Excel.`,
+    });
+  };
+
   return (
     <>
+      {/* Header with count and export button */}
+      <div className="flex items-center justify-between mb-4 px-4">
+        <div className="text-sm text-gray-600">
+          {newRequests.length} new request{newRequests.length !== 1 ? 's' : ''}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          disabled={newRequests.length === 0}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export to Excel
+        </Button>
+      </div>
+
       {newRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No new event requests

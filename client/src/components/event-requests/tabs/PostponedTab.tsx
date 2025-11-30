@@ -6,6 +6,9 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PostponedCard } from '../cards/PostponedCard';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 
 export const PostponedTab: React.FC = () => {
   const { toast } = useToast();
@@ -25,6 +28,22 @@ export const PostponedTab: React.FC = () => {
   } = useEventRequestContext();
 
   const postponedRequests = filterRequestsByStatus('postponed');
+
+  const handleExport = () => {
+    if (postponedRequests.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'There are no postponed events to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    exportEventRequestsToExcel(postponedRequests, 'postponed');
+    toast({
+      title: 'Export complete',
+      description: `Exported ${postponedRequests.length} postponed event${postponedRequests.length !== 1 ? 's' : ''} to Excel.`,
+    });
+  };
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -48,13 +67,31 @@ export const PostponedTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {postponedRequests.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No postponed events
+    <>
+      {/* Header with count and export button */}
+      <div className="flex items-center justify-between mb-4 px-4">
+        <div className="text-sm text-gray-600">
+          {postponedRequests.length} postponed event{postponedRequests.length !== 1 ? 's' : ''}
         </div>
-      ) : (
-        postponedRequests.map((request) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          disabled={postponedRequests.length === 0}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export to Excel
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        {postponedRequests.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No postponed events
+          </div>
+        ) : (
+          postponedRequests.map((request) => (
           <PostponedCard
             key={request.id}
             request={request}
@@ -88,8 +125,9 @@ export const PostponedTab: React.FC = () => {
               setShowLogContactDialog(true);
             }}
           />
-        ))
-      )}
-    </div>
+          ))
+        )}
+      </div>
+    </>
   );
 };
