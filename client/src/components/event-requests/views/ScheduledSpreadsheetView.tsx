@@ -719,9 +719,97 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return `${hours12}:${minutes} ${period}`;
   };
 
-  const getRowColor = (index: number) => {
-    // Google Sheets-like alternating rows: white and very light gray
-    return index % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]';
+  // Get the Monday of the week for a given date
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    // Adjust to Monday (day 1), if Sunday (day 0), go back 6 days
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  // Week color palettes - alternating light/dark shades for each week
+  const weekColorPalettes = [
+    // Week 1: Blue shades
+    { light: 'bg-blue-50', dark: 'bg-blue-100' },
+    // Week 2: Green shades
+    { light: 'bg-emerald-50', dark: 'bg-emerald-100' },
+    // Week 3: Purple shades
+    { light: 'bg-purple-50', dark: 'bg-purple-100' },
+    // Week 4: Amber/Orange shades
+    { light: 'bg-amber-50', dark: 'bg-amber-100' },
+    // Week 5: Rose/Pink shades
+    { light: 'bg-rose-50', dark: 'bg-rose-100' },
+    // Week 6: Cyan shades
+    { light: 'bg-cyan-50', dark: 'bg-cyan-100' },
+    // Week 7: Slate shades (fallback)
+    { light: 'bg-slate-50', dark: 'bg-slate-100' },
+  ];
+
+  // Calculate week indices for all events to determine row colors
+  const eventWeekIndices = useMemo(() => {
+    const weekMap = new Map<string, number>();
+    let weekCounter = 0;
+    let lastWeekStart: string | null = null;
+
+    // Events are already sorted by date, so we can iterate through them
+    sortedEvents.forEach(event => {
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      if (!eventDate) return;
+
+      // Parse the date safely
+      const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
+      let dateObj: Date;
+
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        const dateOnly = dateStr.split(' ')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        const dateOnly = dateStr.split('T')[0];
+        dateObj = new Date(dateOnly + 'T12:00:00');
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        dateObj = new Date(dateStr + 'T12:00:00');
+      } else {
+        const tempDate = new Date(dateStr);
+        if (isNaN(tempDate.getTime())) return;
+        dateObj = tempDate;
+      }
+
+      const weekStart = getWeekStart(dateObj);
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+
+      if (lastWeekStart !== weekStartStr) {
+        if (lastWeekStart !== null) {
+          weekCounter++;
+        }
+        lastWeekStart = weekStartStr;
+      }
+
+      weekMap.set(`${event.id}`, weekCounter);
+    });
+
+    return weekMap;
+  }, [sortedEvents]);
+
+  // Track row index within each week for alternating colors
+  const getRowColor = (event: EventRequest, rowIndex: number) => {
+    const weekIndex = eventWeekIndices.get(`${event.id}`) || 0;
+    const palette = weekColorPalettes[weekIndex % weekColorPalettes.length];
+
+    // Count how many rows of this week we've seen before this one
+    let rowWithinWeek = 0;
+    for (let i = 0; i < rowIndex; i++) {
+      const prevEvent = sortedEvents[i];
+      const prevWeekIndex = eventWeekIndices.get(`${prevEvent.id}`) || 0;
+      if (prevWeekIndex === weekIndex) {
+        rowWithinWeek++;
+      }
+    }
+
+    // Alternate light/dark within the week
+    return rowWithinWeek % 2 === 0 ? palette.light : palette.dark;
   };
 
   // Handle clicking on event date to navigate to card view
@@ -1858,7 +1946,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(index)} border-b border-gray-200 hover:bg-[#e8eaed] transition-colors`}
+                  className={`${getRowColor(event, index)} border-b border-gray-200 hover:bg-[#e8eaed] transition-colors`}
                   style={{ minHeight: '48px' }}
                 >
                   {columns.map((column) => {
