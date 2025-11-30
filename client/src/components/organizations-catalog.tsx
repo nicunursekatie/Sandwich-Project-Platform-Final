@@ -1075,22 +1075,18 @@ export default function GroupCatalog({
                                           )}
                                         </div>
                                       </div>
-                                      <span className="text-gray-600 font-medium">
-                                        {org.totalRequests} {org.totalRequests === 1 ? 'request' : 'requests'}
-                                      </span>
+                                      {org.totalRequests > 1 && (
+                                        <span className="text-gray-600 font-medium">
+                                          {org.totalRequests} requests
+                                        </span>
+                                      )}
                                     </div>
 
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center space-x-1.5">
                                         <span className="text-lg">🥪</span>
                                         <span className="font-semibold text-orange-700 text-base">
-                                          {org.actualSandwichTotal || org.totalSandwiches || 0}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center space-x-1.5">
-                                        <span className="text-lg">📦</span>
-                                        <span className="font-semibold text-brand-primary text-base">
-                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                          {org.actualSandwichTotal || org.totalSandwiches || 0} sandwiches
                                         </span>
                                       </div>
                                     </div>
