@@ -745,13 +745,26 @@ export default function ImportantLinks() {
         contextType="links"
         title="Quick Tools Assistant"
         subtitle="Ask about spreadsheets and tools"
+        contextData={{
+          currentView: 'important-links',
+          // Pass available tools and links info
+          rawData: [
+            { name: 'Inventory Calculator', url: inventoryCalculatorUrl, type: 'tool' },
+            { name: 'Event Estimator', url: eventEstimatorUrl, type: 'tool' },
+            { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
+            ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
+          ],
+          summaryStats: {
+            totalTools: 3,
+            totalFlyers: flyers.length,
+          },
+        }}
         suggestedQuestions={[
-          "How do I use the events calendar?",
-          "What's in the historical records?",
-          "How do I add data to the spreadsheet?",
-          "Where can I find event details?",
-          "How do I export data?",
           "What tools are available?",
+          "How do I use the inventory calculator?",
+          "What flyers can I print?",
+          "How do I use the event estimator?",
+          "What's in the event toolkit?",
         ]}
       />
     </div>

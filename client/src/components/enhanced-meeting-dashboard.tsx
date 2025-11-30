@@ -984,12 +984,39 @@ export default function EnhancedMeetingDashboard() {
         contextType="meetings"
         title="Meetings Assistant"
         subtitle="Ask about meetings and agendas"
+        contextData={{
+          currentView: viewMode,
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: safeMeetings.map(m => ({
+            id: m.id,
+            title: m.title,
+            date: m.date,
+            time: m.time,
+            type: m.type,
+            location: m.location,
+            description: m.description,
+            status: m.status,
+          })),
+          selectedItem: selectedMeeting ? {
+            id: selectedMeeting.id,
+            title: selectedMeeting.title,
+            date: selectedMeeting.date,
+            type: selectedMeeting.type,
+          } : undefined,
+          summaryStats: {
+            totalMeetings: safeMeetings.length,
+            upcomingMeetings: safeMeetings.filter(m => new Date(m.date) >= new Date()).length,
+            pastMeetings: safeMeetings.filter(m => new Date(m.date) < new Date()).length,
+            agendaItemsCount: agendaItems?.length || 0,
+            projectsForReview: projectsForReview?.length || 0,
+          },
+        }}
         suggestedQuestions={[
           "What meetings are coming up?",
-          "How do I add an agenda item?",
-          "Show me past meeting notes",
-          "Who is attending the next meeting?",
-          "How do I schedule a new meeting?",
+          "How many meetings do we have?",
+          "What's on the agenda?",
+          "What projects need review?",
+          "Show me upcoming meetings",
           "What action items are pending?",
         ]}
       />

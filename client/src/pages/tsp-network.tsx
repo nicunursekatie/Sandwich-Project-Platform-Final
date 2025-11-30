@@ -122,18 +122,21 @@ export default function TSPNetwork() {
         </p>
       </div>
 
-      {/* AI Assistant */}
+      {/* AI Assistant - This is a navigation page, so rawData comes from backend */}
       <FloatingAIChat
         contextType="network"
         title="Network Assistant"
         subtitle="Ask about hosts, drivers, and volunteers"
+        contextData={{
+          currentView: 'tsp-network-overview',
+          // Note: This is a navigation page - actual data is loaded by backend
+        }}
         suggestedQuestions={[
           "How many active hosts do we have?",
-          "How do I add a new volunteer?",
-          "What drivers are available?",
-          "Show me recent network changes",
-          "How do I update host information?",
+          "How many drivers are in the network?",
+          "How many volunteers do we have?",
           "What recipients are we serving?",
+          "Show me network overview",
         ]}
       />
     </div>

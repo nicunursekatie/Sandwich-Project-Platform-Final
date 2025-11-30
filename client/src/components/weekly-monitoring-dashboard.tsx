@@ -1608,6 +1608,29 @@ export default function WeeklyMonitoringDashboard() {
         contextType="collections"
         title="Monitoring Assistant"
         subtitle="Ask about weekly submissions"
+        contextData={{
+          currentView: 'weekly-monitoring',
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: Array.isArray(submissionStatus) ? submissionStatus.map((s: WeeklySubmissionStatus) => ({
+            location: s.location,
+            hasSubmitted: s.hasSubmitted,
+            lastSubmissionDate: s.lastSubmissionDate,
+            missingSince: s.missingSince,
+            submittedBy: s.submittedBy,
+          })) : [],
+          filters: {
+            selectedWeek,
+          },
+          summaryStats: {
+            totalLocations: stats?.totalExpectedLocations || 0,
+            submittedLocations: stats?.submittedLocations || 0,
+            missingLocations: stats?.missingLocations || 0,
+            currentWeek: stats?.currentWeek || '',
+            submissionRate: stats?.totalExpectedLocations
+              ? Math.round((stats.submittedLocations / stats.totalExpectedLocations) * 100)
+              : 0,
+          },
+        }}
         suggestedQuestions={[
           "Which locations haven't submitted yet?",
           "Show me this week's progress",

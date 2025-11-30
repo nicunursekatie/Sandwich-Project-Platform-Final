@@ -796,13 +796,43 @@ export function Resources() {
         contextType="resources"
         title="Resources Assistant"
         subtitle="Ask about documents and links"
+        contextData={{
+          currentView: 'resources',
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: resources.map(r => ({
+            id: r.resource.id,
+            title: r.resource.title,
+            description: r.resource.description,
+            type: r.resource.type,
+            category: r.resource.category,
+            url: r.resource.url,
+            accessCount: r.resource.accessCount,
+            isFavorite: r.isFavorite,
+            tags: r.tags.map(t => t.name),
+          })),
+          filters: {
+            searchTerm: searchTerm || undefined,
+            selectedCategory,
+            selectedTags,
+            sortBy,
+          },
+          summaryStats: {
+            totalResources: resources.length,
+            favoriteCount: favorites.length,
+            recentCount: recentResources.length,
+            categoryCounts: CATEGORIES.reduce((acc, cat) => {
+              acc[cat.label] = resources.filter(r => r.resource.category === cat.id).length;
+              return acc;
+            }, {} as Record<string, number>),
+          },
+        }}
         suggestedQuestions={[
           "What resources are available?",
-          "How do I add a new resource?",
+          "How many resources do we have?",
           "Show me training materials",
-          "Where are the templates?",
-          "What documents do I need?",
-          "How do I find specific resources?",
+          "What are the most accessed resources?",
+          "Show resources by category",
+          "What templates are available?",
         ]}
       />
     </div>
