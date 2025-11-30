@@ -63,6 +63,8 @@ interface Column {
   width?: string;
   sortable?: boolean;
   hideOnMobile?: boolean;
+  frozen?: boolean;
+  center?: boolean;
   render?: (event: EventRequest) => React.ReactNode | string | { fullText: string; hasContent: boolean };
 }
 
@@ -73,6 +75,157 @@ interface ScheduledSpreadsheetViewProps {
   onEventDateClick?: (event: EventRequest) => void;
   openAssignmentDialog?: (eventId: number, type: 'drivers' | 'speakers' | 'volunteers') => void;
 }
+
+// US state abbreviations for address parsing
+const US_STATES: Record<string, string> = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+  'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+  'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+  'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO',
+  'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+  'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH',
+  'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT',
+  'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY',
+  'district of columbia': 'DC', 'dc': 'DC',
+};
+
+// Format address input into proper "Street, City, ST ZIP" format
+const formatAddress = (input: string): string => {
+  if (!input || input.trim() === '') return '';
+
+  let address = input.trim();
+
+  // If already looks well-formatted, just clean it up
+  if (/^\d+\s+[\w\s]+,\s*[\w\s]+,\s*[A-Z]{2}\s*\d{5}(-\d{4})?$/.test(address)) {
+    return address;
+  }
+
+  // Split by common delimiters: commas, multiple spaces, or newlines
+  let parts = address
+    .replace(/\n/g, ', ')
+    .split(/[,]+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  // If only one part, try splitting on multiple spaces
+  if (parts.length === 1) {
+    parts = address.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+  }
+
+  // Extract ZIP code from anywhere in the address
+  let zipCode = '';
+  const zipMatch = address.match(/\b(\d{5})(-\d{4})?\b/);
+  if (zipMatch) {
+    zipCode = zipMatch[0];
+    // Remove ZIP from parts to avoid duplication
+    parts = parts.map(p => p.replace(/\b\d{5}(-\d{4})?\b/, '').trim()).filter(p => p.length > 0);
+  }
+
+  // Find and normalize state abbreviation or full state name
+  let stateAbbr = '';
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i].toLowerCase();
+
+    // Check for 2-letter state abbreviation
+    if (/^[a-z]{2}$/i.test(parts[i].trim())) {
+      const abbr = parts[i].trim().toUpperCase();
+      if (Object.values(US_STATES).includes(abbr)) {
+        stateAbbr = abbr;
+        parts.splice(i, 1);
+        break;
+      }
+    }
+
+    // Check for full state name
+    for (const [stateName, abbr] of Object.entries(US_STATES)) {
+      if (part.includes(stateName)) {
+        stateAbbr = abbr;
+        parts[i] = parts[i].toLowerCase().replace(stateName, '').trim();
+        if (parts[i].length === 0) parts.splice(i, 1);
+        break;
+      }
+    }
+    if (stateAbbr) break;
+
+    // Check if state abbr is attached to city (e.g., "Dallas TX")
+    const stateAtEnd = parts[i].match(/\s+([A-Z]{2})$/i);
+    if (stateAtEnd) {
+      const possibleAbbr = stateAtEnd[1].toUpperCase();
+      if (Object.values(US_STATES).includes(possibleAbbr)) {
+        stateAbbr = possibleAbbr;
+        parts[i] = parts[i].replace(/\s+[A-Z]{2}$/i, '').trim();
+        break;
+      }
+    }
+  }
+
+  // Capitalize street type abbreviations properly
+  const streetTypes: Record<string, string> = {
+    'st': 'St', 'street': 'St', 'str': 'St',
+    'ave': 'Ave', 'avenue': 'Ave', 'av': 'Ave',
+    'blvd': 'Blvd', 'boulevard': 'Blvd',
+    'rd': 'Rd', 'road': 'Rd',
+    'dr': 'Dr', 'drive': 'Dr',
+    'ln': 'Ln', 'lane': 'Ln',
+    'ct': 'Ct', 'court': 'Ct',
+    'pl': 'Pl', 'place': 'Pl',
+    'cir': 'Cir', 'circle': 'Cir',
+    'way': 'Way',
+    'pkwy': 'Pkwy', 'parkway': 'Pkwy',
+    'hwy': 'Hwy', 'highway': 'Hwy',
+  };
+
+  // Directional abbreviations
+  const directions: Record<string, string> = {
+    'n': 'N', 'north': 'N',
+    's': 'S', 'south': 'S',
+    'e': 'E', 'east': 'E',
+    'w': 'W', 'west': 'W',
+    'ne': 'NE', 'northeast': 'NE',
+    'nw': 'NW', 'northwest': 'NW',
+    'se': 'SE', 'southeast': 'SE',
+    'sw': 'SW', 'southwest': 'SW',
+  };
+
+  // Title case each part and normalize abbreviations
+  const titleCase = (str: string): string => {
+    return str.replace(/\b\w+\b/g, (word) => {
+      const lower = word.toLowerCase();
+
+      // Check for street type
+      if (streetTypes[lower]) return streetTypes[lower];
+
+      // Check for direction
+      if (directions[lower]) return directions[lower];
+
+      // Regular title case
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+  };
+
+  // Process parts
+  parts = parts.map(p => titleCase(p));
+
+  // Reconstruct address
+  if (parts.length === 0) return address; // Return original if we couldn't parse
+
+  let formattedAddress = parts.join(', ');
+
+  // Add state and zip if we found them
+  if (stateAbbr) {
+    if (zipCode) {
+      formattedAddress += `, ${stateAbbr} ${zipCode}`;
+    } else {
+      formattedAddress += `, ${stateAbbr}`;
+    }
+  } else if (zipCode) {
+    formattedAddress += ` ${zipCode}`;
+  }
+
+  return formattedAddress;
+};
 
 export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick, openAssignmentDialog }) => {
   const {
@@ -517,6 +670,15 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           value: dateValue,
         });
       }
+      // Handle address formatting
+      else if (dbField === 'eventAddress') {
+        const formattedAddress = formatAddress(editingValue);
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: dbField,
+          value: formattedAddress,
+        });
+      }
       else {
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
@@ -607,7 +769,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         dateObj = new Date(`${year}-${month}-${day}T12:00:00`);
       }
       
-      return format(dateObj, 'M/d/yyyy');
+      return format(dateObj, 'M/d/yy');
     } catch {
       return '';
     }
@@ -812,14 +974,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return rowWithinWeek % 2 === 0 ? palette.light : palette.dark;
   };
 
-  // Day border colors - using brand color scheme for visibility
-  // #236383, #fbad3f, #007e8c, #47b3cb, #a31c41
+  // Day border colors - using high-contrast alternating colors for clear day distinction
+  // Alternating between warm and cool colors for maximum visibility
   const dayBorderColors = [
     '#236383', // dark teal
     '#fbad3f', // orange/gold
-    '#007e8c', // teal
-    '#47b3cb', // light teal
     '#a31c41', // burgundy/red
+    '#007e8c', // teal
+    '#9333ea', // purple (added for more variety)
   ];
 
   // Helper to get the date string for an event (for comparing same-day events)
@@ -853,17 +1015,41 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return currentDateStr !== prevDateStr;
   };
 
+  // Calculate day indices for border colors - each unique day gets an index
+  const eventDayIndices = useMemo(() => {
+    const dayMap = new Map<string, number>();
+    const dateToIndex = new Map<string, number>();
+    let dayCounter = 0;
+
+    sortedEvents.forEach(event => {
+      const dateStr = getEventDateString(event);
+      if (!dateStr) return;
+
+      // If we haven't seen this date yet, assign it a new index
+      if (!dateToIndex.has(dateStr)) {
+        dateToIndex.set(dateStr, dayCounter);
+        dayCounter++;
+      }
+
+      // Map event ID to its day index
+      dayMap.set(`${event.id}`, dateToIndex.get(dateStr)!);
+    });
+
+    return dayMap;
+  }, [sortedEvents]);
+
   // Get the left border style for a row (returns inline style object)
+  // All events on the same day get the same color
   const getLeftBorderStyle = (event: EventRequest, rowIndex: number): React.CSSProperties => {
-    const weekIndex = eventWeekIndices.get(`${event.id}`) || 0;
-    const borderColor = dayBorderColors[weekIndex % dayBorderColors.length];
+    const dayIndex = eventDayIndices.get(`${event.id}`) || 0;
+    const borderColor = dayBorderColors[dayIndex % dayBorderColors.length];
 
     if (isFirstEventOfDay(event, rowIndex)) {
       // First event of the day: thick left border with brand color
       return { borderLeft: `5px solid ${borderColor}` };
     }
-    // Same day as previous: transparent border to maintain alignment
-    return { borderLeft: '5px solid transparent' };
+    // Same day as previous: same color border to show continuity
+    return { borderLeft: `5px solid ${borderColor}` };
   };
 
   // Handle clicking on event date to navigate to card view
@@ -883,37 +1069,44 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   // Define default columns - ordered by workflow priority
   // Note: resolveUserName is used in the render functions, so columns must be defined after resolveUserName is available
   // Note: handleEventDateClick is used in renderCell, but we define it outside useMemo since it's stable
+  // Frozen columns: eventDate, dayOfWeek, groupName, department stay fixed when scrolling horizontally
   const defaultColumns: Column[] = useMemo(() => [
-    // 1. Event date
+    // 1. Event date (FROZEN)
     {
       id: 'eventDate',
-      label: 'Event Date',
-      width: '85px',
+      label: 'Date',
+      width: '68px',
       sortable: true,
+      frozen: true,
+      center: true,
       render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
     },
-    // 2. Day of week (rendering handled in renderCell for proper JSX support)
+    // 2. Day of week (FROZEN) - rendering handled in renderCell for proper JSX support
     {
       id: 'dayOfWeek',
       label: 'Day',
-      width: '50px',
+      width: '45px',
+      frozen: true,
+      center: true,
     },
-    // 3. Group name
+    // 3. Group name (FROZEN)
     {
       id: 'groupName',
       label: 'Group',
       width: '150px',
       sortable: true,
+      frozen: true,
       render: (event) => {
         return event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A';
       },
     },
-    // 3b. Department
+    // 3b. Department (FROZEN)
     {
       id: 'department',
       label: 'Dept',
       width: '100px',
       hideOnMobile: true,
+      frozen: true,
       render: (event) => event.department || '',
     },
     // 4. Location (with Google map link)
@@ -941,32 +1134,36 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // 5. Times - start, end, pickup
     {
       id: 'eventStartTime',
-      label: 'Start Time',
-      width: '100px',
+      label: 'Start',
+      width: '70px',
       sortable: true,
+      center: true,
       render: (event) => formatTime(event.eventStartTime),
     },
     {
       id: 'eventEndTime',
-      label: 'End Time',
-      width: '100px',
+      label: 'End',
+      width: '70px',
       hideOnMobile: true,
+      center: true,
       render: (event) => formatTime(event.eventEndTime),
     },
     {
       id: 'pickupTime',
-      label: 'Pickup Time',
-      width: '100px',
+      label: 'Pickup',
+      width: '70px',
       sortable: true,
       hideOnMobile: true,
+      center: true,
       render: (event) => formatTime(event.pickupTime),
     },
     // 6. Sandwiches # and type
     {
       id: 'estimatedSandwiches',
-      label: '# Sandwiches',
-      width: '100px',
+      label: '# Sand.',
+      width: '70px',
       sortable: true,
+      center: true,
       render: (event) => {
         const count = event.estimatedSandwichCount;
         const min = event.estimatedSandwichCountMin;
@@ -978,7 +1175,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'sandwichType',
       label: 'Type',
-      width: '100px',
+      width: '80px',
+      center: true,
       hideOnMobile: true,
       render: (event) => getSandwichTypeDisplay(event),
     },
@@ -1077,37 +1275,38 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // 10. Van booked
     {
       id: 'vanBooked',
-      label: 'Van Booked?',
-      width: '100px',
+      label: 'Van?',
+      width: '55px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
     },
     // 11. Contact name, #, and email for organization
     {
       id: 'contactName',
-      label: 'Contact Name',
-      width: '140px',
+      label: 'Contact',
+      width: '120px',
       hideOnMobile: true,
       render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
     },
     {
       id: 'phone',
-      label: 'Contact #',
-      width: '120px',
+      label: 'Phone',
+      width: '110px',
       hideOnMobile: true,
       render: (event) => event.phone || '',
     },
     {
       id: 'email',
       label: 'Email',
-      width: '180px',
+      width: '160px',
       hideOnMobile: true,
       render: (event) => event.email || event.updatedEmail || '',
     },
     // 12. The rest (all details, etc.)
     {
       id: 'allDetails',
-      label: 'ALL DETAILS',
+      label: 'Details',
       width: '150px',
       hideOnMobile: true,
       render: (event) => {
@@ -1122,16 +1321,18 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     },
     {
       id: 'toolkitSent',
-      label: 'Toolkit Sent',
-      width: '100px',
+      label: 'Toolkit',
+      width: '65px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.toolkitSent ? 'Yes' : 'No',
     },
     {
       id: 'finalSandwiches',
-      label: 'Final # Made',
-      width: '100px',
+      label: 'Final #',
+      width: '60px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.actualSandwichCount?.toString() || '',
     },
     {
@@ -1143,18 +1344,19 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     },
     {
       id: 'additionalNotes',
-      label: 'Add\'l Notes',
-      width: '150px',
+      label: 'Add\'l',
+      width: '120px',
       hideOnMobile: true,
       render: (event) => event.schedulingNotes || '',
     },
     {
       id: 'socialPost',
-      label: 'Social Post',
-      width: '100px',
+      label: 'Social',
+      width: '60px',
       hideOnMobile: true,
+      center: true,
       render: (event) => {
-        if (event.socialMediaPostCompleted) return '✓ Done';
+        if (event.socialMediaPostCompleted) return '✓';
         if (event.socialMediaPostRequested) return 'Req';
         return '';
       },
@@ -1707,14 +1909,103 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       );
     }
 
-    // Special handling for address column (returns JSX with link and make it editable)
+    // Special handling for department column (allow text wrapping)
+    if (column.id === 'department') {
+      const dept = event.department || '';
+      if (!dept) return <span className="text-base text-[#47B3CB]/60">-</span>;
+      return (
+        <span className="text-base whitespace-normal break-words leading-snug">
+          {dept}
+        </span>
+      );
+    }
+
+    // Special handling for volunteersNeeded (Staff Needed) column - quick increment/decrement
+    if (column.id === 'volunteersNeeded') {
+      const driversNeeded = event.driversNeeded || 0;
+      const speakersNeeded = event.speakersNeeded || 0;
+      const volunteersNeeded = event.volunteersNeeded || 0;
+
+      const updateStaffCount = (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => {
+        const currentValue = event[field] || 0;
+        const newValue = Math.max(0, currentValue + delta);
+        updateScheduledFieldMutation.mutate({
+          id: event.id,
+          field,
+          value: newValue,
+        });
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          {/* Drivers */}
+          <div className="flex items-center gap-0.5" title="Drivers needed">
+            <Car className="h-3.5 w-3.5 text-[#236383]" />
+            <button
+              onClick={() => updateStaffCount('driversNeeded', -1)}
+              disabled={driversNeeded === 0}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
+            >
+              -
+            </button>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
+            <button
+              onClick={() => updateStaffCount('driversNeeded', 1)}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Speakers */}
+          <div className="flex items-center gap-0.5" title="Speakers needed">
+            <Megaphone className="h-3.5 w-3.5 text-[#236383]" />
+            <button
+              onClick={() => updateStaffCount('speakersNeeded', -1)}
+              disabled={speakersNeeded === 0}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
+            >
+              -
+            </button>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
+            <button
+              onClick={() => updateStaffCount('speakersNeeded', 1)}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Volunteers */}
+          <div className="flex items-center gap-0.5" title="Volunteers needed">
+            <UserPlus className="h-3.5 w-3.5 text-[#236383]" />
+            <button
+              onClick={() => updateStaffCount('volunteersNeeded', -1)}
+              disabled={volunteersNeeded === 0}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
+            >
+              -
+            </button>
+            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
+            <button
+              onClick={() => updateStaffCount('volunteersNeeded', 1)}
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Special handling for address column - show city with popover for full address
     if (column.id === 'address') {
-      if (React.isValidElement(renderedContent)) {
+      const fullAddress = event.eventAddress || '';
+
+      if (!fullAddress) {
         return (
-          <div className="flex items-center gap-0.5 group min-h-[20px] overflow-hidden">
-            <div className="flex-1 min-w-0">
-              {renderedContent}
-            </div>
+          <div className="flex items-center gap-0.5 group min-h-[20px]">
+            <span className="text-base text-[#47B3CB]/60 flex-1">-</span>
             <button
               onClick={() => startEditing(event.id, column.id, getRawValue())}
               className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
@@ -1725,17 +2016,99 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           </div>
         );
       }
-      // Fallback if no address - still show edit button
+
+      // Extract venue name and city from address
+      // Common formats:
+      // - "Venue Name 123 Main St, City, ST 12345"
+      // - "123 Main St, City, ST 12345"
+      // - "City, ST"
+      const extractVenueAndCity = (addr: string): string => {
+        const parts = addr.split(',').map(p => p.trim());
+
+        // Extract city (typically second to last part before state/zip)
+        let city = '';
+        if (parts.length >= 2) {
+          const lastPart = parts[parts.length - 1];
+          if (/^[A-Z]{2}\s*\d{5}/.test(lastPart) || /^\d{5}/.test(lastPart)) {
+            // Last part is "ST 12345" or just zip, so second to last is city
+            city = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+          } else if (parts.length >= 2) {
+            const secondLast = parts[parts.length - 2];
+            // If it doesn't start with numbers, it's likely the city
+            if (!/^\d/.test(secondLast)) {
+              city = secondLast;
+            } else {
+              city = parts[1];
+            }
+          }
+        } else {
+          city = addr;
+        }
+
+        // Check if first part has a venue name before the street number
+        // A venue name is text before a street number (e.g., "Warren/Holyfield Boys & Girls Club 790 Berne St")
+        const firstPart = parts[0];
+        const venueMatch = firstPart.match(/^(.+?)\s+(\d+\s+\w+)/);
+
+        if (venueMatch) {
+          const venueName = venueMatch[1].trim();
+          // Make sure it's not just a direction like "N" or "NE" before the number
+          if (venueName.length > 2 && !/^[NSEW]{1,2}$/i.test(venueName)) {
+            return `${venueName}, ${city}`;
+          }
+        }
+
+        return city;
+      };
+
+      const displayLocation = extractVenueAndCity(fullAddress);
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+
       return (
-        <div className="flex items-center gap-0.5 group min-h-[20px]">
-          <span className="text-base text-[#47B3CB]/60 flex-1">-</span>
-          <button
-            onClick={() => startEditing(event.id, column.id, getRawValue())}
-            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-11 w-11 md:h-auto md:w-auto flex items-center justify-center touch-manipulation"
-            title="Edit address"
-          >
-            <Edit2 className="h-6 w-6 md:h-3 md:w-3 text-[#007E8C]" />
-          </button>
+        <div className="flex items-center gap-1 group min-h-[20px]">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="flex items-center gap-1 text-base text-[#007E8C] hover:text-[#236383] hover:underline cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+                title="Click to see full address"
+              >
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span>{displayLocation}</span>
+                <Eye className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-80"
+              side="right"
+              align="start"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-[#236383]">Full Address</h4>
+                <p className="text-base text-[#236383]">{fullAddress}</p>
+                <div className="flex gap-2">
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#007E8C] text-white text-sm rounded hover:bg-[#236383] transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MapPin className="h-3 w-3" />
+                    Open in Maps
+                  </a>
+                  <button
+                    onClick={() => startEditing(event.id, column.id, fullAddress)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-[#007E8C] text-[#007E8C] text-sm rounded hover:bg-[#007E8C]/10 transition-colors"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       );
     }
@@ -1784,73 +2157,83 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
       const staffText = assigned.join(' • ');
 
+      // Check if any roles are needed
+      const hasAnyNeeds = driversNeeded > 0 || speakersNeeded > 0 || volunteersNeeded > 0;
+
       return (
         <div className="w-full space-y-1">
-          {/* Assignment buttons row */}
-          <div className="flex items-center gap-1 flex-wrap">
-            {/* Drivers button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                openAssignmentDialog?.(event.id, 'drivers');
-              }}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                driversAssigned >= driversNeeded && driversNeeded > 0
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : driversNeeded > 0
-                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
-              }`}
-              title={`${driversAssigned}/${driversNeeded} drivers assigned. Click to manage.`}
-            >
-              <Car className="h-3 w-3" />
-              {driversAssigned}/{driversNeeded}
-            </button>
+          {/* Assignment buttons row - only show buttons for roles that are needed */}
+          {hasAnyNeeds && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {/* Drivers button - only show if drivers needed */}
+              {driversNeeded > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog?.(event.id, 'drivers');
+                  }}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    driversAssigned >= driversNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  }`}
+                  title={`${driversAssigned}/${driversNeeded} drivers assigned. Click to manage.`}
+                >
+                  <Car className="h-3 w-3" />
+                  {driversAssigned}/{driversNeeded}
+                </button>
+              )}
 
-            {/* Speakers button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                openAssignmentDialog?.(event.id, 'speakers');
-              }}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                speakersAssigned >= speakersNeeded && speakersNeeded > 0
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : speakersNeeded > 0
-                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
-              }`}
-              title={`${speakersAssigned}/${speakersNeeded} speakers assigned. Click to manage.`}
-            >
-              <Megaphone className="h-3 w-3" />
-              {speakersAssigned}/{speakersNeeded}
-            </button>
+              {/* Speakers button - only show if speakers needed */}
+              {speakersNeeded > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog?.(event.id, 'speakers');
+                  }}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    speakersAssigned >= speakersNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  }`}
+                  title={`${speakersAssigned}/${speakersNeeded} speakers assigned. Click to manage.`}
+                >
+                  <Megaphone className="h-3 w-3" />
+                  {speakersAssigned}/{speakersNeeded}
+                </button>
+              )}
 
-            {/* Volunteers button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                openAssignmentDialog?.(event.id, 'volunteers');
-              }}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                volunteersAssigned >= volunteersNeeded && volunteersNeeded > 0
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : volunteersNeeded > 0
-                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
-              }`}
-              title={`${volunteersAssigned}/${volunteersNeeded} volunteers assigned. Click to manage.`}
-            >
-              <UserPlus className="h-3 w-3" />
-              {volunteersAssigned}/{volunteersNeeded}
-            </button>
-          </div>
+              {/* Volunteers button - only show if volunteers needed */}
+              {volunteersNeeded > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog?.(event.id, 'volunteers');
+                  }}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    volunteersAssigned >= volunteersNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  }`}
+                  title={`${volunteersAssigned}/${volunteersNeeded} volunteers assigned. Click to manage.`}
+                >
+                  <UserPlus className="h-3 w-3" />
+                  {volunteersAssigned}/{volunteersNeeded}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Assigned names (if any) */}
           {staffText && (
             <div className="text-sm text-[#236383]/80 truncate" title={staffText}>
               {staffText}
             </div>
+          )}
+
+          {/* Show dash if no needs and no assignments */}
+          {!hasAnyNeeds && !staffText && (
+            <span className="text-base text-[#47B3CB]/60">-</span>
           )}
         </div>
       );
@@ -2028,27 +2411,53 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto' }}>
           <table className="w-full border-collapse">
-            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-10">
+            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-20">
               <tr>
-                {columns.map((column, index) => {
+                {columns.map((column, colIndex) => {
                   const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
+
+                  // Calculate left offset for frozen columns
+                  let leftOffset = 0;
+                  if (column.frozen) {
+                    for (let i = 0; i < colIndex; i++) {
+                      if (columns[i].frozen) {
+                        leftOffset += columnWidths[columns[i].id] || parseInt(columns[i].width?.replace('px', '') || '150');
+                      }
+                    }
+                  }
+
+                  // Check if this is the last frozen column (for shadow)
+                  const isLastFrozen = column.frozen && (colIndex === columns.length - 1 || !columns[colIndex + 1]?.frozen);
+
                   return (
                     <th
                       key={column.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index)}
+                      draggable={!column.frozen}
+                      onDragStart={(e) => !column.frozen && handleDragStart(e, colIndex)}
                       onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, index)}
+                      onDrop={(e) => handleDrop(e, colIndex)}
                       onDragEnd={handleDragEnd}
-                      className={`px-2 py-2.5 text-left text-xs font-semibold text-white border-r border-[#007E8C]/50 whitespace-nowrap cursor-move select-none group relative ${
-                        draggedColumnIndex === index ? 'opacity-50' : 'hover:bg-[#007E8C]'
+                      className={`px-1.5 py-2 ${column.center ? 'text-center' : 'text-left'} text-xs font-semibold text-white border-r border-[#007E8C]/50 select-none group relative ${
+                        column.frozen ? 'sticky z-30 bg-[#236383]' : 'cursor-move'
+                      } ${draggedColumnIndex === colIndex ? 'opacity-50' : 'hover:bg-[#007E8C]'} ${
+                        isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] border-r-2 border-r-[#47B3CB]/30' : ''
                       }`}
-                      style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px` }}
-                      title="Drag to reorder columns"
+                      style={{
+                        width: `${columnWidth}px`,
+                        minWidth: `${columnWidth}px`,
+                        maxWidth: `${columnWidth}px`,
+                        ...(column.frozen ? {
+                          left: `${leftOffset}px`,
+                          // Extend background slightly to cover sub-pixel gaps
+                          paddingRight: '9px',
+                          marginRight: '-1px',
+                        } : {})
+                      }}
+                      title={column.frozen ? column.label : "Drag to reorder columns"}
                     >
-                      <div className="flex items-center gap-1">
-                        <GripVertical className="h-3 w-3 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                        <span className="flex-1">{column.label}</span>
+                      <div className={`flex items-center gap-0.5 ${column.center ? 'justify-center' : ''}`}>
+                        {!column.center && <GripVertical className="h-3 w-3 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
+                        <span className={`leading-tight ${column.center ? '' : 'flex-1'}`}>{column.label}</span>
                         {column.sortable && (() => {
                           const columnSortField = getSortFieldForColumn(column.id);
                           const isActive = columnSortField && sortField === columnSortField;
@@ -2088,19 +2497,50 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               </tr>
             </thead>
             <tbody>
-              {sortedEvents.map((event, index) => (
+              {sortedEvents.map((event, rowIndex) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(event, index)} border-b border-[#47B3CB]/20 hover:bg-[#47B3CB]/10 transition-colors`}
-                  style={{ minHeight: '48px', ...getLeftBorderStyle(event, index) }}
+                  className={`${getRowColor(event, rowIndex)} border-b border-[#47B3CB]/20 hover:bg-[#47B3CB]/10 transition-colors`}
+                  style={{ minHeight: '48px', ...getLeftBorderStyle(event, rowIndex) }}
                 >
-                  {columns.map((column) => {
+                  {columns.map((column, colIndex) => {
                     const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
+
+                    // Calculate left offset for frozen columns
+                    let leftOffset = 0;
+                    if (column.frozen) {
+                      for (let i = 0; i < colIndex; i++) {
+                        if (columns[i].frozen) {
+                          leftOffset += columnWidths[columns[i].id] || parseInt(columns[i].width?.replace('px', '') || '150');
+                        }
+                      }
+                    }
+
+                    // Check if this is the last frozen column (for shadow)
+                    const isLastFrozen = column.frozen && (colIndex === columns.length - 1 || !columns[colIndex + 1]?.frozen);
+
+                    // Get the row background color for frozen cells
+                    const rowBgColor = getRowColor(event, rowIndex);
+
                     return (
                       <td
                         key={column.id}
-                        className="px-2 py-2.5 border-r border-[#47B3CB]/20 text-base leading-relaxed overflow-hidden align-top"
-                        style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
+                        className={`px-1.5 py-2 border-r border-[#47B3CB]/20 text-base leading-relaxed overflow-hidden ${
+                          column.center ? 'text-center' : 'align-top'
+                        } ${
+                          column.frozen ? `sticky z-20 ${rowBgColor}` : ''
+                        } ${isLastFrozen ? 'border-r-2 border-r-[#47B3CB]/30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)]' : ''}`}
+                        style={{
+                          width: `${columnWidth}px`,
+                          minWidth: `${columnWidth}px`,
+                          maxWidth: `${columnWidth}px`,
+                          ...(column.frozen ? {
+                            left: `${leftOffset}px`,
+                            // Extend background slightly to cover sub-pixel gaps
+                            paddingRight: '9px',
+                            marginRight: '-1px',
+                          } : {})
+                        }}
                       >
                         {renderCell(event, column)}
                       </td>
