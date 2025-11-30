@@ -2196,12 +2196,12 @@ export default function HoldingZone() {
         subtitle="Ask about your ideas and tasks"
         contextData={{
           activeTab,
-          selectedItem: editItem ? {
-            content: editItem.content,
-            type: editItem.type,
-            status: editItem.status,
-            isUrgent: editItem.isUrgent,
-            categoryId: editItem.categoryId,
+          selectedItem: itemToEdit ? {
+            content: itemToEdit.content,
+            type: itemToEdit.type,
+            status: itemToEdit.status,
+            isUrgent: itemToEdit.isUrgent,
+            categoryId: itemToEdit.categoryId,
           } : undefined,
           summaryStats: {
             totalItems: items.length,
