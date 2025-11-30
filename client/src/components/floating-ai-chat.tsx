@@ -152,7 +152,7 @@ const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
   ],
   'holding-zone': [
     "What open items need attention?",
-    "How many tasks are claimed?",
+    "How many tasks are there?",
     "Show me urgent items",
     "What ideas have been submitted?",
   ],

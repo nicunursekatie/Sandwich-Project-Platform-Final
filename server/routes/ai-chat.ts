@@ -470,12 +470,13 @@ async function buildHoldingZoneContext(): Promise<string> {
   const items = await db.query.teamBoardItems.findMany();
 
   // Calculate metrics
-  const statusCounts: Record<string, number> = { open: 0, claimed: 0, done: 0 };
+  const statusCounts: Record<string, number> = { open: 0, done: 0 };
   const typeCounts: Record<string, number> = { task: 0, note: 0, idea: 0 };
   const urgentCount = items.filter(i => i.isUrgent).length;
 
   items.forEach(item => {
-    statusCounts[item.status || 'open']++;
+    const status = item.status === 'done' ? 'done' : 'open';
+    statusCounts[status]++;
     typeCounts[item.type || 'task']++;
   });
 
@@ -489,7 +490,6 @@ async function buildHoldingZoneContext(): Promise<string> {
 ### Current Items Overview
 - Total Items: ${items.length}
 - Open Items: ${statusCounts.open}
-- Claimed Items: ${statusCounts.claimed}
 - Completed Items: ${statusCounts.done}
 - Urgent Items: ${urgentCount}
 
