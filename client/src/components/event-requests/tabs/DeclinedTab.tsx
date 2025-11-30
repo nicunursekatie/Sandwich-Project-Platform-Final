@@ -6,6 +6,9 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DeclinedCard } from '../cards/DeclinedCard';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 
 export const DeclinedTab: React.FC = () => {
   const { toast } = useToast();
@@ -26,6 +29,23 @@ export const DeclinedTab: React.FC = () => {
 
   const declinedRequests = filterRequestsByStatus('declined');
   const cancelledRequests = filterRequestsByStatus('cancelled');
+  const allDeclinedOrCancelled = [...declinedRequests, ...cancelledRequests];
+
+  const handleExport = () => {
+    if (allDeclinedOrCancelled.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'There are no declined or cancelled events to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    exportEventRequestsToExcel(allDeclinedOrCancelled, 'declined');
+    toast({
+      title: 'Export complete',
+      description: `Exported ${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''} to Excel.`,
+    });
+  };
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -49,8 +69,26 @@ export const DeclinedTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {declinedRequests.length === 0 && cancelledRequests.length === 0 ? (
+    <>
+      {/* Header with count and export button */}
+      <div className="flex items-center justify-between mb-4 px-4">
+        <div className="text-sm text-gray-600">
+          {allDeclinedOrCancelled.length} declined/cancelled event{allDeclinedOrCancelled.length !== 1 ? 's' : ''}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          disabled={allDeclinedOrCancelled.length === 0}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export to Excel
+        </Button>
+      </div>
+
+      <div className="space-y-6">
+        {declinedRequests.length === 0 && cancelledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No declined or cancelled events
         </div>
@@ -146,7 +184,8 @@ export const DeclinedTab: React.FC = () => {
             </div>
           )}
         </>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
