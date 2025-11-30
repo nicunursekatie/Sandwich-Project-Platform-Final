@@ -88,18 +88,58 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
     }
 
     // Year type (fiscal vs calendar) for grant metrics
+    const yearType = contextData.yearType || 'calendar';
     if (contextData.yearType) {
       componentContext += `- Year Type: ${contextData.yearType}\n`;
     }
 
-    // Selected year
-    if (contextData.selectedYear) {
-      componentContext += `- Selected Year: ${contextData.selectedYear}\n`;
+    // Selected year - actually filter the data
+    if (contextData.selectedYear && contextData.selectedYear !== 'all') {
+      const selectedYear = parseInt(contextData.selectedYear);
+      if (!isNaN(selectedYear)) {
+        collections = collections.filter(c => {
+          if (!c.collectionDate) return false;
+          const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+
+          if (yearType === 'fiscal') {
+            // Fiscal year runs July 1 to June 30
+            // FY2024 = July 1, 2023 - June 30, 2024
+            const month = collectionDate.getMonth(); // 0-11
+            const calYear = collectionDate.getFullYear();
+            const fiscalYear = month >= 6 ? calYear + 1 : calYear; // July+ is next fiscal year
+            return fiscalYear === selectedYear;
+          } else {
+            // Calendar year
+            return collectionDate.getFullYear() === selectedYear;
+          }
+        });
+        componentContext += `- Selected Year: ${contextData.selectedYear}\n`;
+      }
     }
 
-    // Selected quarter
-    if (contextData.selectedQuarter) {
-      componentContext += `- Selected Quarter: ${contextData.selectedQuarter}\n`;
+    // Selected quarter - actually filter the data
+    if (contextData.selectedQuarter && contextData.selectedQuarter !== 'all') {
+      const quarter = contextData.selectedQuarter; // e.g., 'Q1', 'Q2', 'Q3', 'Q4'
+      const quarterNum = parseInt(quarter.replace('Q', ''));
+
+      if (!isNaN(quarterNum) && quarterNum >= 1 && quarterNum <= 4) {
+        collections = collections.filter(c => {
+          if (!c.collectionDate) return false;
+          const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+          const month = collectionDate.getMonth(); // 0-11
+
+          if (yearType === 'fiscal') {
+            // Fiscal quarters: Q1=Jul-Sep, Q2=Oct-Dec, Q3=Jan-Mar, Q4=Apr-Jun
+            const fiscalQuarter = month >= 6 ? Math.floor((month - 6) / 3) + 1 : Math.floor((month + 6) / 3) + 1;
+            return fiscalQuarter === quarterNum;
+          } else {
+            // Calendar quarters: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+            const calendarQuarter = Math.floor(month / 3) + 1;
+            return calendarQuarter === quarterNum;
+          }
+        });
+        componentContext += `- Selected Quarter: ${contextData.selectedQuarter}\n`;
+      }
     }
 
     // Current view/tab
