@@ -1131,71 +1131,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       },
     },
-    // 5. Times - start, end, pickup
-    {
-      id: 'eventStartTime',
-      label: 'Start',
-      width: '70px',
-      sortable: true,
-      center: true,
-      render: (event) => formatTime(event.eventStartTime),
-    },
-    {
-      id: 'eventEndTime',
-      label: 'End',
-      width: '70px',
-      hideOnMobile: true,
-      center: true,
-      render: (event) => formatTime(event.eventEndTime),
-    },
-    {
-      id: 'pickupTime',
-      label: 'Pickup',
-      width: '70px',
-      sortable: true,
-      hideOnMobile: true,
-      center: true,
-      render: (event) => formatTime(event.pickupTime),
-    },
-    // 6. Sandwiches # and type
-    {
-      id: 'estimatedSandwiches',
-      label: '# Sand.',
-      width: '70px',
-      sortable: true,
-      center: true,
-      render: (event) => {
-        const count = event.estimatedSandwichCount;
-        const min = event.estimatedSandwichCountMin;
-        const max = event.estimatedSandwichCountMax;
-        if (min && max) return `${min}-${max}`;
-        return count?.toString() || '';
-      },
-    },
-    {
-      id: 'sandwichType',
-      label: 'Type',
-      width: '80px',
-      center: true,
-      hideOnMobile: true,
-      render: (event) => getSandwichTypeDisplay(event),
-    },
-    // 7. Assigned staff (TSP Contact)
-    {
-      id: 'tspContact',
-      label: 'TSP Contact',
-      width: '140px',
-      sortable: true,
-      hideOnMobile: true,
-      render: (event) => {
-        const contacts = [];
-        if (event.tspContact) contacts.push(resolveUserName(event.tspContact));
-        if (event.tspContactAssigned) contacts.push(resolveUserName(event.tspContactAssigned));
-        if (event.customTspContact) contacts.push(event.customTspContact); // Custom is already text
-        return contacts.filter(c => c && c !== 'Not assigned').join(', ') || '';
-      },
-    },
-    // 8. Driver/speaker/volunteer need (only show unfilled positions)
+    // 5. Driver/speaker/volunteer need (only show unfilled positions)
     {
       id: 'volunteersNeeded',
       label: 'Staff Needed',
@@ -1220,7 +1156,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return needs.join(', ') || '✓';
       },
     },
-    // 9. Assigned Staff (who is actually assigned)
+    // 6. Assigned Staff (who is actually assigned)
     {
       id: 'assignedStaff',
       label: 'Assigned Staff',
@@ -1270,6 +1206,70 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           fullText,
           hasContent: assigned.length > 0
         };
+      },
+    },
+    // 7. Times - start, end, pickup
+    {
+      id: 'eventStartTime',
+      label: 'Start',
+      width: '70px',
+      sortable: true,
+      center: true,
+      render: (event) => formatTime(event.eventStartTime),
+    },
+    {
+      id: 'eventEndTime',
+      label: 'End',
+      width: '70px',
+      hideOnMobile: true,
+      center: true,
+      render: (event) => formatTime(event.eventEndTime),
+    },
+    {
+      id: 'pickupTime',
+      label: 'Pickup',
+      width: '70px',
+      sortable: true,
+      hideOnMobile: true,
+      center: true,
+      render: (event) => formatTime(event.pickupTime),
+    },
+    // 8. Sandwiches # and type
+    {
+      id: 'estimatedSandwiches',
+      label: '# Sand.',
+      width: '70px',
+      sortable: true,
+      center: true,
+      render: (event) => {
+        const count = event.estimatedSandwichCount;
+        const min = event.estimatedSandwichCountMin;
+        const max = event.estimatedSandwichCountMax;
+        if (min && max) return `${min}-${max}`;
+        return count?.toString() || '';
+      },
+    },
+    {
+      id: 'sandwichType',
+      label: 'Type',
+      width: '80px',
+      center: true,
+      hideOnMobile: true,
+      render: (event) => getSandwichTypeDisplay(event),
+    },
+    // 9. Assigned staff (TSP Contact)
+    {
+      id: 'tspContact',
+      label: 'TSP Contact',
+      width: '140px',
+      sortable: true,
+      hideOnMobile: true,
+      render: (event) => {
+        const contacts = [];
+        if (event.tspContact) contacts.push(resolveUserName(event.tspContact));
+        if (event.tspContactAssigned) contacts.push(resolveUserName(event.tspContactAssigned));
+        if (event.customTspContact) contacts.push(event.customTspContact); // Custom is already text
+        return contacts.filter(c => c && c !== 'Not assigned').join(', ') || '';
       },
     },
     // 10. Van booked
