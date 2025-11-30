@@ -2446,7 +2446,12 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                         width: `${columnWidth}px`,
                         minWidth: `${columnWidth}px`,
                         maxWidth: `${columnWidth}px`,
-                        ...(column.frozen ? { left: `${leftOffset}px` } : {})
+                        ...(column.frozen ? {
+                          left: `${leftOffset}px`,
+                          // Extend background slightly to cover sub-pixel gaps
+                          paddingRight: '9px',
+                          marginRight: '-1px',
+                        } : {})
                       }}
                       title={column.frozen ? column.label : "Drag to reorder columns"}
                     >
@@ -2524,12 +2529,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                           column.center ? 'text-center' : 'align-top'
                         } ${
                           column.frozen ? `sticky z-20 ${rowBgColor}` : ''
-                        } ${isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] border-r-2 border-r-[#47B3CB]/30' : ''}`}
+                        } ${isLastFrozen ? 'border-r-2 border-r-[#47B3CB]/30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)]' : ''}`}
                         style={{
                           width: `${columnWidth}px`,
                           minWidth: `${columnWidth}px`,
                           maxWidth: `${columnWidth}px`,
-                          ...(column.frozen ? { left: `${leftOffset}px` } : {})
+                          ...(column.frozen ? {
+                            left: `${leftOffset}px`,
+                            // Extend background slightly to cover sub-pixel gaps
+                            paddingRight: '9px',
+                            marginRight: '-1px',
+                          } : {})
                         }}
                       >
                         {renderCell(event, column)}

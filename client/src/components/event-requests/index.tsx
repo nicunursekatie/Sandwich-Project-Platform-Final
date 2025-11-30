@@ -777,6 +777,12 @@ const EventRequestsManagementContent: React.FC = () => {
           onAssign={async (assignees: string[]) => {
             if (!assignmentEventId || !assignmentType) return;
 
+            // Prevent double submission
+            if (updateEventRequestMutation.isPending) {
+              logger.log('=== ASSIGNMENT SUBMIT BLOCKED (already pending) ===');
+              return;
+            }
+
             logger.log('=== ASSIGNMENT SUBMIT ===');
             logger.log('Event ID:', assignmentEventId);
             logger.log('Assignment Type:', assignmentType);
