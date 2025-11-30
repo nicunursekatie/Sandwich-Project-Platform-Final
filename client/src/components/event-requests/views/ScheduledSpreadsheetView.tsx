@@ -812,15 +812,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return rowWithinWeek % 2 === 0 ? palette.light : palette.dark;
   };
 
-  // Day border colors - matching the week palettes but darker for visibility
+  // Day border colors - using brand color scheme for visibility
+  // #236383, #fbad3f, #007e8c, #47b3cb, #a31c41
   const dayBorderColors = [
-    'border-l-blue-400',
-    'border-l-emerald-400',
-    'border-l-purple-400',
-    'border-l-amber-400',
-    'border-l-rose-400',
-    'border-l-cyan-400',
-    'border-l-slate-400',
+    '#236383', // dark teal
+    '#fbad3f', // orange/gold
+    '#007e8c', // teal
+    '#47b3cb', // light teal
+    '#a31c41', // burgundy/red
   ];
 
   // Helper to get the date string for an event (for comparing same-day events)
@@ -854,17 +853,17 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return currentDateStr !== prevDateStr;
   };
 
-  // Get the left border class for a row
-  const getLeftBorderClass = (event: EventRequest, rowIndex: number): string => {
+  // Get the left border style for a row (returns inline style object)
+  const getLeftBorderStyle = (event: EventRequest, rowIndex: number): React.CSSProperties => {
     const weekIndex = eventWeekIndices.get(`${event.id}`) || 0;
     const borderColor = dayBorderColors[weekIndex % dayBorderColors.length];
 
     if (isFirstEventOfDay(event, rowIndex)) {
-      // First event of the day: thick left border
-      return `border-l-4 ${borderColor}`;
+      // First event of the day: thick left border with brand color
+      return { borderLeft: `5px solid ${borderColor}` };
     }
-    // Same day as previous: no left border (or thin transparent to maintain alignment)
-    return 'border-l-4 border-l-transparent';
+    // Same day as previous: transparent border to maintain alignment
+    return { borderLeft: '5px solid transparent' };
   };
 
   // Handle clicking on event date to navigate to card view
@@ -893,26 +892,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       sortable: true,
       render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
     },
-    // 2. Day of week
+    // 2. Day of week (rendering handled in renderCell for proper JSX support)
     {
       id: 'dayOfWeek',
       label: 'Day',
       width: '50px',
-      render: (event) => {
-        const day = formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
-        if (!day) return '';
-        // Convert to short abbreviations: M, Tu, W, Th, F, Sa, Su
-        const dayMap: Record<string, string> = {
-          'Monday': 'M',
-          'Tuesday': 'Tu',
-          'Wednesday': 'W',
-          'Thursday': 'Th',
-          'Friday': 'F',
-          'Saturday': 'Sa',
-          'Sunday': 'Su',
-        };
-        return <span className="text-lg font-bold text-[#236383]">{dayMap[day] || day.substring(0, 2)}</span>;
-      },
     },
     // 3. Group name
     {
@@ -1690,7 +1674,29 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         </div>
       );
     }
-    
+
+    // Special handling for dayOfWeek column (render the large abbreviation)
+    if (column.id === 'dayOfWeek') {
+      const day = formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
+      if (!day) return <span className="text-[#47B3CB]/60">-</span>;
+
+      const dayMap: Record<string, string> = {
+        'Monday': 'M',
+        'Tuesday': 'Tu',
+        'Wednesday': 'W',
+        'Thursday': 'Th',
+        'Friday': 'F',
+        'Saturday': 'Sa',
+        'Sunday': 'Su',
+      };
+
+      return (
+        <span className="text-lg font-bold text-[#236383]">
+          {dayMap[day] || day.substring(0, 2)}
+        </span>
+      );
+    }
+
     // Special handling for address column (returns JSX with link and make it editable)
     if (column.id === 'address') {
       if (React.isValidElement(renderedContent)) {
@@ -1724,54 +1730,117 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       );
     }
     
-    // Special handling for assignedStaff column
-    if (column.id === 'assignedStaff' && typeof renderedContent === 'object' && renderedContent !== null && 'fullText' in renderedContent) {
-      const staffData = renderedContent as { fullText: string; hasContent: boolean };
-      if (!staffData.hasContent || !staffData.fullText) {
-        return <span className="text-sm text-[#47B3CB]/60">-</span>;
+    // Special handling for assignedStaff column - with assignment buttons
+    if (column.id === 'assignedStaff') {
+      // Calculate current assignments
+      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+      const speakersAssigned = event.assignedSpeakerIds?.length || 0;
+      const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+
+      // Calculate needs
+      const driversNeeded = event.driversNeeded || 0;
+      const speakersNeeded = event.speakersNeeded || 0;
+      const volunteersNeeded = event.volunteersNeeded || 0;
+
+      // Build assigned text
+      const assigned: string[] = [];
+      if (event.assignedVanDriverId) {
+        assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
+      }
+      if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
+        const driverNames = event.assignedDriverIds
+          .map(id => resolveUserName(id))
+          .filter(name => name && name !== 'Not assigned');
+        if (driverNames.length > 0) {
+          assigned.push(`🚗 ${driverNames.join(', ')}`);
+        }
+      }
+      if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
+        const speakerNames = event.assignedSpeakerIds
+          .map(id => resolveUserName(id))
+          .filter(name => name && name !== 'Not assigned');
+        if (speakerNames.length > 0) {
+          assigned.push(`🎤 ${speakerNames.join(', ')}`);
+        }
+      }
+      if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
+        const volunteerNames = event.assignedVolunteerIds
+          .map(id => resolveUserName(id))
+          .filter(name => name && name !== 'Not assigned');
+        if (volunteerNames.length > 0) {
+          assigned.push(`👥 ${volunteerNames.join(', ')}`);
+        }
       }
 
-      // Enable wrapping for staff assignments
-      const isTruncated = staffData.fullText.length > 60;
+      const staffText = assigned.join(' • ');
 
       return (
-        <div className="w-full">
-          {isTruncated ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className="w-full text-left hover:bg-[#47B3CB]/5 rounded px-1 py-0.5 transition-colors group cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-1 min-w-0 w-full">
-                    <span
-                      className="text-sm font-normal leading-relaxed block overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0"
-                      title={staffData.fullText}
-                    >
-                      {staffData.fullText}
-                    </span>
-                    <Eye className="h-3 w-3 text-[#007E8C] opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Click to view all staff" />
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-80 max-h-96 overflow-y-auto"
-                side="right"
-                align="start"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm text-[#236383] mb-2">Assigned Staff</h4>
-                  <div className="text-sm text-[#236383] whitespace-pre-wrap break-words">
-                    {staffData.fullText || 'No staff assigned'}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <span className="text-sm font-normal leading-relaxed block whitespace-normal break-words">
-              {staffData.fullText}
-            </span>
+        <div className="w-full space-y-1">
+          {/* Assignment buttons row */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Drivers button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openAssignmentDialog?.(event.id, 'drivers');
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                driversAssigned >= driversNeeded && driversNeeded > 0
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  : driversNeeded > 0
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
+              }`}
+              title={`${driversAssigned}/${driversNeeded} drivers assigned. Click to manage.`}
+            >
+              <Car className="h-3 w-3" />
+              {driversAssigned}/{driversNeeded}
+            </button>
+
+            {/* Speakers button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openAssignmentDialog?.(event.id, 'speakers');
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                speakersAssigned >= speakersNeeded && speakersNeeded > 0
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  : speakersNeeded > 0
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
+              }`}
+              title={`${speakersAssigned}/${speakersNeeded} speakers assigned. Click to manage.`}
+            >
+              <Megaphone className="h-3 w-3" />
+              {speakersAssigned}/{speakersNeeded}
+            </button>
+
+            {/* Volunteers button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openAssignmentDialog?.(event.id, 'volunteers');
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                volunteersAssigned >= volunteersNeeded && volunteersNeeded > 0
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  : volunteersNeeded > 0
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  : 'bg-[#47B3CB]/10 text-[#236383] hover:bg-[#47B3CB]/20'
+              }`}
+              title={`${volunteersAssigned}/${volunteersNeeded} volunteers assigned. Click to manage.`}
+            >
+              <UserPlus className="h-3 w-3" />
+              {volunteersAssigned}/{volunteersNeeded}
+            </button>
+          </div>
+
+          {/* Assigned names (if any) */}
+          {staffText && (
+            <div className="text-xs text-[#236383]/80 truncate" title={staffText}>
+              {staffText}
+            </div>
           )}
         </div>
       );
@@ -2012,8 +2081,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               {sortedEvents.map((event, index) => (
                 <tr
                   key={event.id}
-                  className={`${getRowColor(event, index)} ${getLeftBorderClass(event, index)} border-b border-[#47B3CB]/20 hover:bg-[#47B3CB]/10 transition-colors`}
-                  style={{ minHeight: '48px' }}
+                  className={`${getRowColor(event, index)} border-b border-[#47B3CB]/20 hover:bg-[#47B3CB]/10 transition-colors`}
+                  style={{ minHeight: '48px', ...getLeftBorderStyle(event, index) }}
                 >
                   {columns.map((column) => {
                     const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
