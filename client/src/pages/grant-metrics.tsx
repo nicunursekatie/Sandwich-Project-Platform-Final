@@ -2021,6 +2021,17 @@ export default function GrantMetrics() {
         contextType="collections"
         title="Grant Metrics Assistant"
         subtitle="Ask about impact metrics and data"
+        contextData={{
+          yearType,
+          selectedYear: selectedFiscalYear,
+          selectedQuarter,
+          currentView: 'grant-metrics',
+          summaryStats: {
+            totalCollections: collections.length,
+            totalSandwiches: stats?.totalSandwiches || 0,
+            activeHosts: stats?.totalHosts || 0,
+          },
+        }}
         suggestedQuestions={[
           "What are our key impact metrics?",
           "Show me year-over-year growth",
