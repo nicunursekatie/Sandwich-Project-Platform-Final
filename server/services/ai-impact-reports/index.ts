@@ -109,18 +109,14 @@ export async function generateImpactReport(
 }
 
 /**
- * Calculate total sandwich count from a collection record
- * This properly sums individualSandwiches + groupCollections (or legacy group columns as fallback)
- * Matches client logic: use groupCollections if available, otherwise fall back to legacy columns
+ * Calculate GROUP sandwich count from a collection record
+ * This only counts group sandwiches (from organizations/schools/churches), NOT individual sandwiches
+ * The Event Impact Report measures the impact of group participation specifically
  */
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
 
-  // Individual sandwiches
-  total += collection.individualSandwiches || 0;
-
-  // Group collections: use JSONB column if available, otherwise fall back to legacy columns
-  // This matches the client's if/else pattern to avoid double-counting
+  // Group collections ONLY: use JSONB column if available, otherwise fall back to legacy columns
   const hasGroupCollections = collection.groupCollections &&
     Array.isArray(collection.groupCollections) &&
     collection.groupCollections.length > 0;
