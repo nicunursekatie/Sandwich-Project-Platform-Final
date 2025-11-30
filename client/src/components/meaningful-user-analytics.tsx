@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -143,20 +143,6 @@ export default function MeaningfulUserAnalytics() {
             daysActive: 25,
             lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
             totalContributionValue: 88,
-          },
-          {
-            userId: 'coordinator_1',
-            userName: 'Sarah Martinez',
-            email: 'sarah@sandwich.project',
-            role: 'Coordinator',
-            sandwichDataEntered: 22,
-            volunteersManaged: 15,
-            reportsGenerated: 3,
-            messagesPosted: 31,
-            meetingsScheduled: 2,
-            daysActive: 20,
-            lastActive: new Date(Date.now() - 6 * 60 * 60 * 1000),
-            totalContributionValue: 78,
           },
         ];
       }

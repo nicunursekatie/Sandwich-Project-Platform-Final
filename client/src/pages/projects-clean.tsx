@@ -116,6 +116,13 @@ export default function ProjectsClean() {
     queryKey: ['/api/projects/archived'],
   });
 
+  // Fetch standalone tasks (one-off tasks not attached to projects)
+  const { data: standaloneTasks = [], isLoading: tasksLoading } = useQuery({
+    queryKey: ['/api/projects/standalone-tasks'],
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    refetchOnWindowFocus: true,
+  });
+
   // Track that user has viewed projects page
   useEffect(() => {
     track('view_projects');
@@ -794,6 +801,78 @@ export default function ProjectsClean() {
           projects.map(renderProjectCard)
         )}
       </div>
+
+      {/* One-Off Tasks Section (standalone tasks not attached to projects) */}
+      {activeTab === 'active' && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-brand-primary font-roboto">
+              One-Off Tasks
+            </h2>
+            <span className="text-sm text-gray-600 font-roboto">
+              {tasksLoading ? 'Loading...' : `${standaloneTasks.filter((t: any) => t.status !== 'completed' && t.status !== 'archived').length} active`}
+            </span>
+          </div>
+          {tasksLoading ? (
+            <div className="text-center py-8 text-gray-600 font-roboto">
+              Loading tasks...
+            </div>
+          ) : standaloneTasks.filter((t: any) => t.status !== 'completed' && t.status !== 'archived').length === 0 ? (
+            <div className="text-center py-8 text-gray-500 font-roboto bg-white rounded-lg border border-gray-200">
+              No one-off tasks. Tasks converted from the holding zone will appear here.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {standaloneTasks
+                .filter((t: any) => t.status !== 'completed' && t.status !== 'archived')
+                .map((task: any) => (
+                  <div
+                    key={task.id}
+                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-brand-primary font-roboto text-lg">
+                        {task.title}
+                      </h3>
+                      <Badge
+                        variant={
+                          task.priority === 'high'
+                            ? 'destructive'
+                            : task.priority === 'medium'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className="ml-2"
+                      >
+                        {task.priority}
+                      </Badge>
+                    </div>
+                    {task.description && (
+                      <p className="text-gray-600 text-sm mb-3 font-roboto line-clamp-2">
+                        {task.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="font-roboto">
+                        Status: {task.status || 'pending'}
+                      </span>
+                      {task.dueDate && (
+                        <span className="font-roboto">
+                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                    {task.assigneeNames && task.assigneeNames.length > 0 && (
+                      <div className="mt-2 text-xs text-gray-600 font-roboto">
+                        Assigned to: {Array.isArray(task.assigneeNames) ? task.assigneeNames.join(', ') : task.assigneeNames}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Create Project Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
