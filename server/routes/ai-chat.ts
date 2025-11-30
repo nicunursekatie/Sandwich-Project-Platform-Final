@@ -97,6 +97,11 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
       componentContext += `- Selected Year: ${contextData.selectedYear}\n`;
     }
 
+    // Selected quarter
+    if (contextData.selectedQuarter) {
+      componentContext += `- Selected Quarter: ${contextData.selectedQuarter}\n`;
+    }
+
     // Current view/tab
     if (contextData.currentView || contextData.activeTab) {
       componentContext += `- Current View: ${contextData.currentView || contextData.activeTab}\n`;
@@ -284,6 +289,19 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
         componentContext += `\n### Current View Filters\n`;
       }
       componentContext += `- Category: ${contextData.categoryFilter}\n`;
+    }
+
+    // Confirmation filter
+    if (contextData.confirmationFilter && contextData.confirmationFilter !== 'all') {
+      if (contextData.confirmationFilter === 'confirmed') {
+        allEvents = allEvents.filter(e => e.isConfirmed === true);
+      } else if (contextData.confirmationFilter === 'unconfirmed') {
+        allEvents = allEvents.filter(e => e.isConfirmed !== true);
+      }
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Confirmation Filter: ${contextData.confirmationFilter}\n`;
     }
 
     // Current tab/view
@@ -637,6 +655,22 @@ async function buildHoldingZoneContext(contextData?: Record<string, any>): Promi
       if (contextData.selectedItem.isUrgent) componentContext += `- URGENT\n`;
     }
 
+    // Active tab/view
+    if (contextData.activeTab) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab}\n`;
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+
     // Raw data from component
     if (contextData.rawData) {
       componentContext += `\n### Component-Specific Data\n`;
@@ -802,6 +836,27 @@ async function buildProjectsContext(contextData?: Record<string, any>): Promise<
       componentContext += `- Category Filter: ${contextData.categoryFilter}\n`;
     }
 
+    // Project type filtering (meeting vs internal projects)
+    if (contextData.projectTypeFilter && contextData.projectTypeFilter !== 'all') {
+      if (contextData.projectTypeFilter === 'meeting') {
+        projects = projects.filter(p => p.googleSheetRowId != null);
+      } else if (contextData.projectTypeFilter === 'internal') {
+        projects = projects.filter(p => p.googleSheetRowId == null);
+      }
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Project Type: ${contextData.projectTypeFilter}\n`;
+    }
+
+    // Active tab/view
+    if (contextData.activeTab) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab}\n`;
+    }
+
     // Currently selected project
     if (contextData.selectedProject) {
       componentContext += `\n### Currently Selected Project\n`;
@@ -811,6 +866,14 @@ async function buildProjectsContext(contextData?: Record<string, any>): Promise<
       componentContext += `- Priority: ${proj.priority}\n`;
       if (proj.description) componentContext += `- Description: ${proj.description}\n`;
       if (proj.dueDate) componentContext += `- Due Date: ${proj.dueDate}\n`;
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
     }
 
     // Raw data from component
