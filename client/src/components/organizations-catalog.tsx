@@ -132,6 +132,14 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
   return colors[category] || 'bg-gray-100 text-gray-700';
 };
 
+// Helper function to determine if an event is in the future
+function isFutureEvent(org: OrganizationContact): boolean {
+  if (!org.eventDate) return false;
+  const eventDate = new Date(org.eventDate);
+  const now = new Date();
+  return (org.status === 'scheduled' || org.status === 'in_process') && eventDate > now;
+}
+
 export default function GroupCatalog({
   onNavigateToEventPlanning: _onNavigateToEventPlanning,
 }: GroupCatalogProps = {}) {
@@ -1085,8 +1093,59 @@ export default function GroupCatalog({
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center space-x-1.5">
                                         <span className="text-lg">🥪</span>
-                                        <span className="font-semibold text-orange-700 text-base">
-                                          {org.actualSandwichTotal || org.totalSandwiches || 0} sandwiches
+                                        {(() => {
+                                          const isFuture = isFutureEvent(org);
+                                          const estimatedCount = org.totalSandwiches || 0;
+                                          const actualCount = org.actualSandwichTotal || 0;
+                                          
+                                          // For future events: show estimated with "planned" label, only if > 0
+                                          if (isFuture) {
+                                            if (estimatedCount > 0) {
+                                              return (
+                                                <span className="font-semibold text-orange-700 text-base italic">
+                                                  {estimatedCount} <span className="text-xs not-italic text-gray-600">planned</span>
+                                                </span>
+                                              );
+                                            }
+                                            // Don't show anything for future events without estimates
+                                            return null;
+                                          }
+                                          
+                                          // For past/completed events: prioritize actual count
+                                          if (actualCount > 0) {
+                                            return (
+                                              <span className="font-semibold text-orange-700 text-base">
+                                                {actualCount}
+                                              </span>
+                                            );
+                                          }
+                                          
+                                          // Show estimated if available for past events
+                                          if (estimatedCount > 0) {
+                                            return (
+                                              <span className="font-semibold text-orange-700 text-base">
+                                                {estimatedCount}
+                                              </span>
+                                            );
+                                          }
+                                          
+                                          // Show 0 only if actualSandwichTotal is explicitly 0 (completed event with 0 sandwiches)
+                                          if (org.actualSandwichTotal !== undefined && org.actualSandwichTotal === 0) {
+                                            return (
+                                              <span className="font-semibold text-orange-700 text-base">
+                                                0
+                                              </span>
+                                            );
+                                          }
+                                          
+                                          // Don't show anything if no count available
+                                          return null;
+                                        })()}
+                                      </div>
+                                      <div className="flex items-center space-x-1.5">
+                                        <span className="text-lg">📦</span>
+                                        <span className="font-semibold text-brand-primary text-base">
+                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
                                         </span>
                                       </div>
                                     </div>
@@ -1318,17 +1377,64 @@ export default function GroupCatalog({
                                     >
                                       {getStatusText(org.status)}
                                     </Badge>
-                                    <span className="text-gray-500">
-                                      {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
-                                    </span>
+                                    {org.totalRequests > 1 && (
+                                      <span className="text-gray-500">
+                                        {org.totalRequests} requests
+                                      </span>
+                                    )}
                                   </div>
 
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-1">
                                       <span>🥪</span>
-                                      <span className="font-semibold text-orange-700">
-                                        {org.actualSandwichTotal || org.totalSandwiches || 0}
-                                      </span>
+                                      {(() => {
+                                        const isFuture = isFutureEvent(org);
+                                        const estimatedCount = org.totalSandwiches || 0;
+                                        const actualCount = org.actualSandwichTotal || 0;
+                                        
+                                        // For future events: show estimated with "planned" label, only if > 0
+                                        if (isFuture) {
+                                          if (estimatedCount > 0) {
+                                            return (
+                                              <span className="font-semibold text-orange-700 italic">
+                                                {estimatedCount} <span className="text-xs not-italic text-gray-600">planned</span>
+                                              </span>
+                                            );
+                                          }
+                                          // Don't show anything for future events without estimates
+                                          return null;
+                                        }
+                                        
+                                        // For past/completed events: prioritize actual count
+                                        if (actualCount > 0) {
+                                          return (
+                                            <span className="font-semibold text-orange-700">
+                                              {actualCount}
+                                            </span>
+                                          );
+                                        }
+                                        
+                                        // Show estimated if available for past events
+                                        if (estimatedCount > 0) {
+                                          return (
+                                            <span className="font-semibold text-orange-700">
+                                              {estimatedCount}
+                                            </span>
+                                          );
+                                        }
+                                        
+                                        // Show 0 only if actualSandwichTotal is explicitly 0 (completed event with 0 sandwiches)
+                                        if (org.actualSandwichTotal !== undefined && org.actualSandwichTotal === 0) {
+                                          return (
+                                            <span className="font-semibold text-orange-700">
+                                              0
+                                            </span>
+                                          );
+                                        }
+                                        
+                                        // Don't show anything if no count available
+                                        return null;
+                                      })()}
                                     </div>
                                     <div className="flex items-center space-x-1">
                                       <span>📦</span>
@@ -2034,15 +2140,15 @@ export default function GroupCatalog({
       {/* AI Assistant */}
       <FloatingAIChat
         contextType="organizations"
-        title="Organizations Assistant"
-        subtitle="Ask about groups and organizations"
+        title="Groups Assistant"
+        subtitle="Ask about partner organizations"
         suggestedQuestions={[
-          "How many organizations are in the catalog?",
-          "Show me organizations by category",
-          "How do I update organization details?",
-          "What organization types do we have?",
-          "How do I add a new organization?",
-          "Which organizations have upcoming events?",
+          "Which organizations have had the most events?",
+          "How many schools vs churches do we partner with?",
+          "What organizations haven't had events yet?",
+          "Show me the breakdown by category",
+          "Which organizations were recently added?",
+          "How many religious organizations do we work with?",
         ]}
       />
     </div>
