@@ -64,7 +64,8 @@ export type AIContextType =
   | 'resources'
   | 'organizations'
   | 'links'
-  | 'dashboard';
+  | 'dashboard'
+  | 'volunteer-calendar';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
@@ -197,6 +198,12 @@ const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
     "What are the key metrics?",
     "How many upcoming events?",
     "What needs attention today?",
+  ],
+  'volunteer-calendar': [
+    "Who is unavailable this week?",
+    "What events are scheduled for this month?",
+    "When are most volunteers unavailable?",
+    "Show me upcoming unavailability",
   ],
 };
 
