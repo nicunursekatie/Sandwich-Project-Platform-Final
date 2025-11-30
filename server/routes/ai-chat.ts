@@ -835,6 +835,106 @@ Important Links is a quick-access hub for frequently used resources:
 `;
 }
 
+// Build context for Volunteer Calendar
+async function buildVolunteerCalendarContext(): Promise<string> {
+  try {
+    // Get events for the next 30 days
+    const now = new Date();
+    const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Fetch calendar events from Google Calendar API
+    const { google } = await import('googleapis');
+    const auth = new google.auth.GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    });
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    let events: any[] = [];
+    try {
+      const response = await calendar.events.list({
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+        timeMin: now.toISOString(),
+        timeMax: thirtyDaysOut.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 100,
+      });
+      events = response.data.items || [];
+    } catch (calError) {
+      logger.warn('Could not fetch Google Calendar events for AI context', { error: calError });
+    }
+
+    // Categorize events
+    const unavailabilityKeywords = ['unavailable', 'unavail', 'out of town', 'away', 'vacation', 'travel', 'pto', 'off'];
+    const unavailabilityEvents: any[] = [];
+    const otherEvents: any[] = [];
+
+    events.forEach(event => {
+      const summary = (event.summary || '').toLowerCase();
+      const isUnavailability = unavailabilityKeywords.some(keyword => summary.includes(keyword));
+
+      if (isUnavailability) {
+        unavailabilityEvents.push(event);
+      } else {
+        otherEvents.push(event);
+      }
+    });
+
+    // Group unavailability by person (extract name from event summary if possible)
+    const unavailabilityByPerson: Record<string, string[]> = {};
+    unavailabilityEvents.forEach(event => {
+      const summary = event.summary || 'Unknown';
+      // Try to extract person name (often format is "Name - Unavailable" or "Name OOO")
+      const personMatch = summary.match(/^([^-–]+)/);
+      const person = personMatch ? personMatch[1].trim() : 'Team Member';
+
+      const startDate = event.start?.date || event.start?.dateTime?.split('T')[0] || 'TBD';
+      const endDate = event.end?.date || event.end?.dateTime?.split('T')[0] || startDate;
+
+      if (!unavailabilityByPerson[person]) {
+        unavailabilityByPerson[person] = [];
+      }
+      unavailabilityByPerson[person].push(`${startDate} to ${endDate}`);
+    });
+
+    // Format upcoming events
+    const upcomingEventsList = otherEvents.slice(0, 15).map(event => {
+      const startDate = event.start?.date || event.start?.dateTime?.split('T')[0] || 'TBD';
+      return `- ${event.summary || 'Untitled'} (${startDate})`;
+    });
+
+    return `
+## Volunteer Calendar Data Summary
+
+### Overview (Next 30 Days)
+- Total Calendar Events: ${events.length}
+- Unavailability Events: ${unavailabilityEvents.length}
+- Other Events: ${otherEvents.length}
+
+### Upcoming Unavailability
+${Object.entries(unavailabilityByPerson)
+  .map(([person, dates]) => `- ${person}: ${dates.join(', ')}`)
+  .join('\n') || '- No unavailability marked'}
+
+### Upcoming Events (Next 15)
+${upcomingEventsList.join('\n') || '- No upcoming events'}
+
+### About the Volunteer Calendar
+The Volunteer Calendar shows team availability pulled from Google Calendar:
+- Unavailability entries (vacations, PTO, travel)
+- Team events and meetings
+- Color-coded by Google Calendar categories
+- Helps coordinate scheduling around team availability
+`;
+  } catch (error) {
+    logger.error('Error building volunteer calendar context', { error });
+    return `
+## Volunteer Calendar Data Summary
+Unable to load calendar data. The calendar shows volunteer availability from Google Calendar.
+`;
+  }
+}
+
 // Build context for Dashboard
 async function buildDashboardContext(): Promise<string> {
   // Combine key metrics from across the platform
@@ -951,6 +1051,10 @@ You help users understand the organization database and event relationships.`,
 Important Links provides quick access to frequently used documents and external resources.
 You help users find and navigate to key resources.`,
 
+    'volunteer-calendar': `You are a helpful assistant for The Sandwich Project's Volunteer Availability Calendar.
+The calendar shows team availability from Google Calendar, including vacations, PTO, and unavailability.
+You help users understand who is available when and coordinate scheduling around team availability.`,
+
     'dashboard': `You are a helpful assistant for The Sandwich Project's dashboard.
 The dashboard provides an overview of all platform activities and key metrics.
 You help users understand the overall status and navigate to different sections.`,
@@ -1016,6 +1120,9 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         break;
       case 'links':
         dataSummary = await buildLinksContext();
+        break;
+      case 'volunteer-calendar':
+        dataSummary = await buildVolunteerCalendarContext();
         break;
       case 'dashboard':
         dataSummary = await buildDashboardContext();
