@@ -700,6 +700,10 @@ export default function Dashboard({
                         e.stopPropagation();
                         logger.log(`${item.label} button clicked`);
                         trackButtonClick(item.id, 'dashboard_header');
+                        // Dismiss the "NEW" badge when clicked
+                        if (showNewBadge) {
+                          localStorage.setItem('navigation_update_2024_v2_seen', 'true');
+                        }
                         if (item.href === 'help') {
                           setLocation('/help');
                         } else {
