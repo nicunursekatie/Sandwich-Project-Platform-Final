@@ -65,7 +65,7 @@ interface HoldingZoneItem {
   id: number;
   content: string;
   type: 'task' | 'note' | 'idea';
-  status: 'open' | 'claimed' | 'done';
+  status: 'open' | 'done';
   createdBy: string;
   createdByName: string;
   assignedTo: string[] | null;
@@ -684,7 +684,7 @@ export default function HoldingZone() {
 
   // Update item status mutation
   const updateItemMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: 'open' | 'claimed' | 'done' }) => {
+    mutationFn: async ({ id, status }: { id: number; status: 'open' | 'done' }) => {
       return await apiRequest('PATCH', `/api/team-board/${id}`, { status });
     },
     onSuccess: () => {
@@ -1142,7 +1142,6 @@ export default function HoldingZone() {
                   <SelectItem value="archived">Archived</SelectItem>
                   <SelectItem value="all">All Items</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="claimed">Claimed</SelectItem>
                   <SelectItem value="done">Done</SelectItem>
                 </SelectContent>
               </Select>
@@ -1244,11 +1243,6 @@ export default function HoldingZone() {
                         <Badge variant="default" className="gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Done
-                        </Badge>
-                      )}
-                      {item.status === 'claimed' && (
-                        <Badge variant="secondary" className="capitalize">
-                          Claimed
                         </Badge>
                       )}
                     </div>
