@@ -314,10 +314,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         endDate.setDate(today.getDate() + 14);
         break;
       case 'nextMonth':
-        // Next 30 days
-        startDate = new Date(today);
-        endDate = new Date(today);
-        endDate.setDate(today.getDate() + 30);
+        // Next calendar month (e.g., if today is Nov 30, show all of December)
+        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // Last day of next month
         break;
     }
     
