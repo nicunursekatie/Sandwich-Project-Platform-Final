@@ -60,7 +60,7 @@ interface PlatformImpact {
   recentCoordination: number;
 }
 
-export default function MeaningfulUserAnalytics() {
+export default function MeaningfulUserAnalytics(): React.ReactElement {
   const [selectedTimeframe, setSelectedTimeframe] = useState('30');
   const [sortBy, setSortBy] = useState('contribution');
 
