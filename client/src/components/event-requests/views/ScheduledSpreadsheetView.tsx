@@ -75,6 +75,157 @@ interface ScheduledSpreadsheetViewProps {
   openAssignmentDialog?: (eventId: number, type: 'drivers' | 'speakers' | 'volunteers') => void;
 }
 
+// US state abbreviations for address parsing
+const US_STATES: Record<string, string> = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+  'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+  'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+  'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO',
+  'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+  'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH',
+  'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT',
+  'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY',
+  'district of columbia': 'DC', 'dc': 'DC',
+};
+
+// Format address input into proper "Street, City, ST ZIP" format
+const formatAddress = (input: string): string => {
+  if (!input || input.trim() === '') return '';
+
+  let address = input.trim();
+
+  // If already looks well-formatted, just clean it up
+  if (/^\d+\s+[\w\s]+,\s*[\w\s]+,\s*[A-Z]{2}\s*\d{5}(-\d{4})?$/.test(address)) {
+    return address;
+  }
+
+  // Split by common delimiters: commas, multiple spaces, or newlines
+  let parts = address
+    .replace(/\n/g, ', ')
+    .split(/[,]+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  // If only one part, try splitting on multiple spaces
+  if (parts.length === 1) {
+    parts = address.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+  }
+
+  // Extract ZIP code from anywhere in the address
+  let zipCode = '';
+  const zipMatch = address.match(/\b(\d{5})(-\d{4})?\b/);
+  if (zipMatch) {
+    zipCode = zipMatch[0];
+    // Remove ZIP from parts to avoid duplication
+    parts = parts.map(p => p.replace(/\b\d{5}(-\d{4})?\b/, '').trim()).filter(p => p.length > 0);
+  }
+
+  // Find and normalize state abbreviation or full state name
+  let stateAbbr = '';
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i].toLowerCase();
+
+    // Check for 2-letter state abbreviation
+    if (/^[a-z]{2}$/i.test(parts[i].trim())) {
+      const abbr = parts[i].trim().toUpperCase();
+      if (Object.values(US_STATES).includes(abbr)) {
+        stateAbbr = abbr;
+        parts.splice(i, 1);
+        break;
+      }
+    }
+
+    // Check for full state name
+    for (const [stateName, abbr] of Object.entries(US_STATES)) {
+      if (part.includes(stateName)) {
+        stateAbbr = abbr;
+        parts[i] = parts[i].toLowerCase().replace(stateName, '').trim();
+        if (parts[i].length === 0) parts.splice(i, 1);
+        break;
+      }
+    }
+    if (stateAbbr) break;
+
+    // Check if state abbr is attached to city (e.g., "Dallas TX")
+    const stateAtEnd = parts[i].match(/\s+([A-Z]{2})$/i);
+    if (stateAtEnd) {
+      const possibleAbbr = stateAtEnd[1].toUpperCase();
+      if (Object.values(US_STATES).includes(possibleAbbr)) {
+        stateAbbr = possibleAbbr;
+        parts[i] = parts[i].replace(/\s+[A-Z]{2}$/i, '').trim();
+        break;
+      }
+    }
+  }
+
+  // Capitalize street type abbreviations properly
+  const streetTypes: Record<string, string> = {
+    'st': 'St', 'street': 'St', 'str': 'St',
+    'ave': 'Ave', 'avenue': 'Ave', 'av': 'Ave',
+    'blvd': 'Blvd', 'boulevard': 'Blvd',
+    'rd': 'Rd', 'road': 'Rd',
+    'dr': 'Dr', 'drive': 'Dr',
+    'ln': 'Ln', 'lane': 'Ln',
+    'ct': 'Ct', 'court': 'Ct',
+    'pl': 'Pl', 'place': 'Pl',
+    'cir': 'Cir', 'circle': 'Cir',
+    'way': 'Way',
+    'pkwy': 'Pkwy', 'parkway': 'Pkwy',
+    'hwy': 'Hwy', 'highway': 'Hwy',
+  };
+
+  // Directional abbreviations
+  const directions: Record<string, string> = {
+    'n': 'N', 'north': 'N',
+    's': 'S', 'south': 'S',
+    'e': 'E', 'east': 'E',
+    'w': 'W', 'west': 'W',
+    'ne': 'NE', 'northeast': 'NE',
+    'nw': 'NW', 'northwest': 'NW',
+    'se': 'SE', 'southeast': 'SE',
+    'sw': 'SW', 'southwest': 'SW',
+  };
+
+  // Title case each part and normalize abbreviations
+  const titleCase = (str: string): string => {
+    return str.replace(/\b\w+\b/g, (word) => {
+      const lower = word.toLowerCase();
+
+      // Check for street type
+      if (streetTypes[lower]) return streetTypes[lower];
+
+      // Check for direction
+      if (directions[lower]) return directions[lower];
+
+      // Regular title case
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+  };
+
+  // Process parts
+  parts = parts.map(p => titleCase(p));
+
+  // Reconstruct address
+  if (parts.length === 0) return address; // Return original if we couldn't parse
+
+  let formattedAddress = parts.join(', ');
+
+  // Add state and zip if we found them
+  if (stateAbbr) {
+    if (zipCode) {
+      formattedAddress += `, ${stateAbbr} ${zipCode}`;
+    } else {
+      formattedAddress += `, ${stateAbbr}`;
+    }
+  } else if (zipCode) {
+    formattedAddress += ` ${zipCode}`;
+  }
+
+  return formattedAddress;
+};
+
 export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick, openAssignmentDialog }) => {
   const {
     eventRequests,
@@ -518,6 +669,15 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           value: dateValue,
         });
       }
+      // Handle address formatting
+      else if (dbField === 'eventAddress') {
+        const formattedAddress = formatAddress(editingValue);
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: dbField,
+          value: formattedAddress,
+        });
+      }
       else {
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
@@ -813,14 +973,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     return rowWithinWeek % 2 === 0 ? palette.light : palette.dark;
   };
 
-  // Day border colors - using brand color scheme for visibility
-  // #236383, #fbad3f, #007e8c, #47b3cb, #a31c41
+  // Day border colors - using high-contrast alternating colors for clear day distinction
+  // Alternating between warm and cool colors for maximum visibility
   const dayBorderColors = [
     '#236383', // dark teal
     '#fbad3f', // orange/gold
-    '#007e8c', // teal
-    '#47b3cb', // light teal
     '#a31c41', // burgundy/red
+    '#007e8c', // teal
+    '#9333ea', // purple (added for more variety)
   ];
 
   // Helper to get the date string for an event (for comparing same-day events)

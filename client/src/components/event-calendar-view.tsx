@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -112,6 +113,51 @@ const getStaffingIndicators = (event: EventRequest) => {
   return indicators;
 };
 
+// Helper function to get assigned staff names for an event
+const getAssignedStaffNames = (event: EventRequest, resolveUserName: (id: string | undefined) => string) => {
+  const assigned = [];
+
+  // Van driver
+  if (event.assignedVanDriverId) {
+    const name = resolveUserName(event.assignedVanDriverId);
+    if (name && name !== 'Not assigned') {
+      assigned.push({ type: 'van', name, icon: '🚐' });
+    }
+  }
+
+  // Drivers
+  if (event.assignedDriverIds && Array.isArray(event.assignedDriverIds) && event.assignedDriverIds.length > 0) {
+    event.assignedDriverIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'driver', name, icon: '🚗' });
+      }
+    });
+  }
+
+  // Speakers
+  if (event.assignedSpeakerIds && Array.isArray(event.assignedSpeakerIds) && event.assignedSpeakerIds.length > 0) {
+    event.assignedSpeakerIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'speaker', name, icon: '🎤' });
+      }
+    });
+  }
+
+  // Volunteers
+  if (event.assignedVolunteerIds && Array.isArray(event.assignedVolunteerIds) && event.assignedVolunteerIds.length > 0) {
+    event.assignedVolunteerIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'volunteer', name, icon: '👥' });
+      }
+    });
+  }
+
+  return assigned;
+};
+
 // Helper function to get sandwich information for an event
 const getSandwichInfo = (event: EventRequest) => {
   const sandwichInfo = [];
@@ -190,6 +236,9 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     'completed',
     'cancelled',
   ]);
+
+  // Get resolveUserName function for displaying assigned staff names
+  const { resolveUserName } = useEventAssignments();
 
   // Fetch all event requests if not provided
   const { data: fetchedEvents = [] } = useQuery<EventRequest[]>({
@@ -457,6 +506,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   {(isExpanded ? dayEvents : dayEvents.slice(0, 3)).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
+                    const assignedStaff = getAssignedStaffNames(event, resolveUserName);
 
                     return (
                       <button
@@ -502,6 +552,21 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           </div>
                         )}
 
+                        {/* Assigned staff names */}
+                        {assignedStaff.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {assignedStaff.slice(0, 3).map((staff, idx) => (
+                              <div key={idx} className="text-[10px] truncate flex items-center gap-1">
+                                <span>{staff.icon}</span>
+                                <span className="font-medium">{staff.name}</span>
+                              </div>
+                            ))}
+                            {assignedStaff.length > 3 && (
+                              <div className="text-[10px] opacity-75">+{assignedStaff.length - 3} more</div>
+                            )}
+                          </div>
+                        )}
+
                         {/* Sandwich information - single icon with compact info */}
                         {sandwichInfo.length > 0 && (
                           <div className="mt-1">
@@ -516,15 +581,20 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                                         // Process sandwich type name
                                         let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
 
-                                        // Handle deli_turkey, deli_ham formats
+                                        // Handle deli_turkey, deli_ham formats - convert to "turkey sandwiches"
                                         if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
-                                          displayType = 'turkey';
+                                          displayType = 'turkey sandwiches';
                                         } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
-                                          displayType = 'ham';
+                                          displayType = 'ham sandwiches';
                                         } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
-                                          displayType = 'deli';
+                                          displayType = 'deli sandwiches';
                                         } else if (displayType === 'pbj' || displayType === 'pb&j') {
-                                          displayType = 'PB&J';
+                                          displayType = 'PB&J sandwiches';
+                                        } else {
+                                          // Add "sandwiches" suffix if not already present
+                                          if (!displayType.includes('sandwich')) {
+                                            displayType = `${displayType} sandwiches`;
+                                          }
                                         }
 
                                         return (
