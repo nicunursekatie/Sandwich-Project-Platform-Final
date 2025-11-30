@@ -64,6 +64,7 @@ interface Column {
   sortable?: boolean;
   hideOnMobile?: boolean;
   frozen?: boolean;
+  center?: boolean;
   render?: (event: EventRequest) => React.ReactNode | string | { fullText: string; hasContent: boolean };
 }
 
@@ -1073,18 +1074,20 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // 1. Event date (FROZEN)
     {
       id: 'eventDate',
-      label: 'Event Date',
-      width: '85px',
+      label: 'Date',
+      width: '80px',
       sortable: true,
       frozen: true,
+      center: true,
       render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
     },
     // 2. Day of week (FROZEN) - rendering handled in renderCell for proper JSX support
     {
       id: 'dayOfWeek',
       label: 'Day',
-      width: '50px',
+      width: '45px',
       frozen: true,
+      center: true,
     },
     // 3. Group name (FROZEN)
     {
@@ -1131,32 +1134,36 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // 5. Times - start, end, pickup
     {
       id: 'eventStartTime',
-      label: 'Start Time',
-      width: '100px',
+      label: 'Start',
+      width: '70px',
       sortable: true,
+      center: true,
       render: (event) => formatTime(event.eventStartTime),
     },
     {
       id: 'eventEndTime',
-      label: 'End Time',
-      width: '100px',
+      label: 'End',
+      width: '70px',
       hideOnMobile: true,
+      center: true,
       render: (event) => formatTime(event.eventEndTime),
     },
     {
       id: 'pickupTime',
-      label: 'Pickup Time',
-      width: '100px',
+      label: 'Pickup',
+      width: '70px',
       sortable: true,
       hideOnMobile: true,
+      center: true,
       render: (event) => formatTime(event.pickupTime),
     },
     // 6. Sandwiches # and type
     {
       id: 'estimatedSandwiches',
-      label: '# Sandwiches',
-      width: '100px',
+      label: '# Sand.',
+      width: '70px',
       sortable: true,
+      center: true,
       render: (event) => {
         const count = event.estimatedSandwichCount;
         const min = event.estimatedSandwichCountMin;
@@ -1168,7 +1175,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'sandwichType',
       label: 'Type',
-      width: '100px',
+      width: '80px',
+      center: true,
       hideOnMobile: true,
       render: (event) => getSandwichTypeDisplay(event),
     },
@@ -1267,37 +1275,38 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // 10. Van booked
     {
       id: 'vanBooked',
-      label: 'Van Booked?',
-      width: '100px',
+      label: 'Van?',
+      width: '55px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
     },
     // 11. Contact name, #, and email for organization
     {
       id: 'contactName',
-      label: 'Contact Name',
-      width: '140px',
+      label: 'Contact',
+      width: '120px',
       hideOnMobile: true,
       render: (event) => `${event.firstName || ''} ${event.lastName || ''}`.trim() || 'N/A',
     },
     {
       id: 'phone',
-      label: 'Contact #',
-      width: '120px',
+      label: 'Phone',
+      width: '110px',
       hideOnMobile: true,
       render: (event) => event.phone || '',
     },
     {
       id: 'email',
       label: 'Email',
-      width: '180px',
+      width: '160px',
       hideOnMobile: true,
       render: (event) => event.email || event.updatedEmail || '',
     },
     // 12. The rest (all details, etc.)
     {
       id: 'allDetails',
-      label: 'ALL DETAILS',
+      label: 'Details',
       width: '150px',
       hideOnMobile: true,
       render: (event) => {
@@ -1312,16 +1321,18 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     },
     {
       id: 'toolkitSent',
-      label: 'Toolkit Sent',
-      width: '100px',
+      label: 'Toolkit',
+      width: '65px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.toolkitSent ? 'Yes' : 'No',
     },
     {
       id: 'finalSandwiches',
-      label: 'Final # Made',
-      width: '100px',
+      label: 'Final #',
+      width: '60px',
       hideOnMobile: true,
+      center: true,
       render: (event) => event.actualSandwichCount?.toString() || '',
     },
     {
@@ -1333,18 +1344,19 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     },
     {
       id: 'additionalNotes',
-      label: 'Add\'l Notes',
-      width: '150px',
+      label: 'Add\'l',
+      width: '120px',
       hideOnMobile: true,
       render: (event) => event.schedulingNotes || '',
     },
     {
       id: 'socialPost',
-      label: 'Social Post',
-      width: '100px',
+      label: 'Social',
+      width: '60px',
       hideOnMobile: true,
+      center: true,
       render: (event) => {
-        if (event.socialMediaPostCompleted) return '✓ Done';
+        if (event.socialMediaPostCompleted) return '✓';
         if (event.socialMediaPostRequested) return 'Req';
         return '';
       },
@@ -1925,59 +1937,59 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       };
 
       return (
-        <div className="flex flex-col gap-1.5">
-          {/* Drivers row */}
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {/* Drivers */}
+          <div className="flex items-center gap-0.5" title="Drivers needed">
             <Car className="h-3.5 w-3.5 text-[#236383]" />
             <button
               onClick={() => updateStaffCount('driversNeeded', -1)}
               disabled={driversNeeded === 0}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
             >
               -
             </button>
-            <span className="w-6 text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
+            <span className="w-4 text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
             <button
               onClick={() => updateStaffCount('driversNeeded', 1)}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
             >
               +
             </button>
           </div>
 
-          {/* Speakers row */}
-          <div className="flex items-center gap-1">
+          {/* Speakers */}
+          <div className="flex items-center gap-0.5" title="Speakers needed">
             <Megaphone className="h-3.5 w-3.5 text-[#236383]" />
             <button
               onClick={() => updateStaffCount('speakersNeeded', -1)}
               disabled={speakersNeeded === 0}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
             >
               -
             </button>
-            <span className="w-6 text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
+            <span className="w-4 text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
             <button
               onClick={() => updateStaffCount('speakersNeeded', 1)}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
             >
               +
             </button>
           </div>
 
-          {/* Volunteers row */}
-          <div className="flex items-center gap-1">
+          {/* Volunteers */}
+          <div className="flex items-center gap-0.5" title="Volunteers needed">
             <UserPlus className="h-3.5 w-3.5 text-[#236383]" />
             <button
               onClick={() => updateStaffCount('volunteersNeeded', -1)}
               disabled={volunteersNeeded === 0}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
             >
               -
             </button>
-            <span className="w-6 text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
+            <span className="w-4 text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
             <button
               onClick={() => updateStaffCount('volunteersNeeded', 1)}
-              className="w-6 h-6 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold"
+              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
             >
               +
             </button>
@@ -2425,21 +2437,22 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, colIndex)}
                       onDragEnd={handleDragEnd}
-                      className={`px-2 py-2.5 text-left text-xs font-semibold text-white border-r border-[#007E8C]/50 whitespace-nowrap select-none group relative ${
+                      className={`px-1.5 py-2 ${column.center ? 'text-center' : 'text-left'} text-xs font-semibold text-white border-r border-[#007E8C]/50 select-none group relative ${
                         column.frozen ? 'sticky z-30 bg-[#236383]' : 'cursor-move'
                       } ${draggedColumnIndex === colIndex ? 'opacity-50' : 'hover:bg-[#007E8C]'} ${
-                        isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)]' : ''
+                        isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] border-r-2 border-r-[#47B3CB]/30' : ''
                       }`}
                       style={{
                         width: `${columnWidth}px`,
                         minWidth: `${columnWidth}px`,
+                        maxWidth: `${columnWidth}px`,
                         ...(column.frozen ? { left: `${leftOffset}px` } : {})
                       }}
                       title={column.frozen ? column.label : "Drag to reorder columns"}
                     >
-                      <div className="flex items-center gap-1">
-                        <GripVertical className="h-3 w-3 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                        <span className="flex-1">{column.label}</span>
+                      <div className={`flex items-center gap-0.5 ${column.center ? 'justify-center' : ''}`}>
+                        {!column.center && <GripVertical className="h-3 w-3 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
+                        <span className={`leading-tight ${column.center ? '' : 'flex-1'}`}>{column.label}</span>
                         {column.sortable && (() => {
                           const columnSortField = getSortFieldForColumn(column.id);
                           const isActive = columnSortField && sortField === columnSortField;
@@ -2507,9 +2520,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     return (
                       <td
                         key={column.id}
-                        className={`px-2 py-2.5 border-r border-[#47B3CB]/20 text-base leading-relaxed overflow-hidden align-top ${
-                          column.frozen ? `sticky z-10 ${rowBgColor}` : ''
-                        } ${isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
+                        className={`px-1.5 py-2 border-r border-[#47B3CB]/20 text-base leading-relaxed overflow-hidden ${
+                          column.center ? 'text-center' : 'align-top'
+                        } ${
+                          column.frozen ? `sticky z-20 ${rowBgColor}` : ''
+                        } ${isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] border-r-2 border-r-[#47B3CB]/30' : ''}`}
                         style={{
                           width: `${columnWidth}px`,
                           minWidth: `${columnWidth}px`,

@@ -458,6 +458,59 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         </div>
       </CardHeader>
       <CardContent>
+        {/* Legend */}
+        <div className="mb-6 pb-4 border-b space-y-4">
+          {/* Status Legend */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-semibold text-gray-800">Status:</span>
+            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
+              New
+            </Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
+              In Process
+            </Badge>
+            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
+              Scheduled
+            </Badge>
+            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
+              Completed
+            </Badge>
+            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
+              Cancelled
+            </Badge>
+          </div>
+
+          {/* Staffing Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Staffing Needed:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Car className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-700">Drivers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mic className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-700">Speakers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-gray-700">Volunteers</span>
+            </div>
+          </div>
+
+          {/* Sandwich Information Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Sandwiches:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
+              <span className="text-xs text-gray-700">Count & Types</span>
+            </div>
+          </div>
+        </div>
+
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
           {/* Day headers */}
@@ -647,59 +700,6 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
               </div>
             );
           })}
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 pt-4 border-t space-y-4">
-          {/* Status Legend */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <span className="text-sm font-semibold text-gray-800">Status:</span>
-            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
-              New
-            </Badge>
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
-              In Process
-            </Badge>
-            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
-              Scheduled
-            </Badge>
-            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
-              Completed
-            </Badge>
-            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
-              Cancelled
-            </Badge>
-          </div>
-
-          {/* Staffing Indicators Legend */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-semibold text-gray-800">
-              Staffing Needed:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Car className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-700">Drivers</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Mic className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-700">Speakers</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-700">Volunteers</span>
-            </div>
-          </div>
-
-          {/* Sandwich Information Legend */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-semibold text-gray-800">
-              Sandwiches:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
-              <span className="text-xs text-gray-700">Count & Types</span>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
