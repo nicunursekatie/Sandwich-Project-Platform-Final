@@ -2195,7 +2195,21 @@ export default function HoldingZone() {
         title="Holding Zone Assistant"
         subtitle="Ask about your ideas and tasks"
         contextData={{
-          activeTab,
+          currentView: activeTab,
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: items.map(item => ({
+            id: item.id,
+            content: item.content,
+            type: item.type,
+            status: item.status,
+            isUrgent: item.isUrgent,
+            categoryId: item.categoryId,
+            category: item.category?.name || null,
+            createdByName: item.createdByName,
+            assignedToNames: item.assignedToNames,
+            dueDate: item.dueDate,
+            commentCount: item.commentCount,
+          })),
           selectedItem: itemToEdit ? {
             content: itemToEdit.content,
             type: itemToEdit.type,
@@ -2216,10 +2230,10 @@ export default function HoldingZone() {
         }}
         suggestedQuestions={[
           "What items need attention?",
-          "How do I upgrade an idea to a project?",
+          "How many urgent items are there?",
           "Show me items by category",
-          "What's the difference between ideas and tasks?",
-          "How do I prioritize items?",
+          "What tasks are open?",
+          "What ideas have been submitted?",
           "What items are due soon?",
         ]}
       />

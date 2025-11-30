@@ -1199,11 +1199,30 @@ const EventRequestsManagementContent: React.FC = () => {
           title="Events Assistant"
           subtitle="Ask about event requests and scheduling"
           contextData={{
-            activeTab,
-            statusFilter,
-            confirmationFilter,
-            searchQuery,
-            selectedEvent: selectedEventRequest ? {
+            currentView: activeTab,
+            // Pass raw data so AI sees exactly what the component displays
+            rawData: eventRequests.map(e => ({
+              id: e.id,
+              organizationName: e.organizationName,
+              status: e.status,
+              scheduledEventDate: e.scheduledEventDate,
+              desiredEventDate: e.desiredEventDate,
+              estimatedSandwichCount: e.estimatedSandwichCount,
+              actualSandwichCount: e.actualSandwichCount,
+              isConfirmed: e.isConfirmed,
+              category: e.category,
+              eventStartTime: e.eventStartTime,
+              eventEndTime: e.eventEndTime,
+              driversNeeded: e.driversNeeded,
+              speakersNeeded: e.speakersNeeded,
+              volunteersNeeded: e.volunteersNeeded,
+            })),
+            filters: {
+              statusFilter,
+              confirmationFilter,
+              searchQuery,
+            },
+            selectedItem: selectedEventRequest ? {
               organizationName: selectedEventRequest.organizationName,
               status: selectedEventRequest.status,
               scheduledEventDate: selectedEventRequest.scheduledEventDate,
@@ -1216,13 +1235,16 @@ const EventRequestsManagementContent: React.FC = () => {
               scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
               inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
               newRequests: eventRequests.filter(e => e.status === 'new').length,
+              completedEvents: eventRequests.filter(e => e.status === 'completed').length,
+              confirmedEvents: eventRequests.filter(e => e.isConfirmed).length,
             },
           }}
           suggestedQuestions={[
             "How many events are scheduled this month?",
             "What events need follow-up?",
-            "Show events by category",
+            "Show events by status",
             "Which events are pending confirmation?",
+            "What's our total sandwich count for scheduled events?",
           ]}
         />
       </div>

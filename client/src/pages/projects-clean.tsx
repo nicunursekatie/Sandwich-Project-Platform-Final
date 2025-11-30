@@ -1334,9 +1334,24 @@ export default function ProjectsClean() {
         title="Projects Assistant"
         subtitle="Ask about projects and tasks"
         contextData={{
-          activeTab,
-          projectTypeFilter,
-          selectedProject: editingProject ? {
+          currentView: activeTab,
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: allProjects.map(p => ({
+            id: p.id,
+            title: p.title,
+            status: p.status,
+            priority: p.priority,
+            category: p.category,
+            description: p.description,
+            dueDate: p.dueDate,
+            assigneeId: p.assigneeId,
+            projectType: p.projectType,
+          })),
+          filters: {
+            activeTab,
+            projectTypeFilter,
+          },
+          selectedItem: editingProject ? {
             title: editingProject.title,
             status: editingProject.status,
             priority: editingProject.priority,
@@ -1350,15 +1365,16 @@ export default function ProjectsClean() {
             inProgress: allProjects.filter(p => p.status === 'in-progress').length,
             waiting: allProjects.filter(p => p.status === 'waiting').length,
             completed: allProjects.filter(p => p.status === 'completed').length,
+            highPriority: allProjects.filter(p => p.priority === 'high' || p.priority === 'critical').length,
           },
         }}
         suggestedQuestions={[
           "What projects are in progress?",
-          "How do I create a new project?",
+          "How many projects are high priority?",
           "Show me overdue projects",
-          "Who is assigned to what?",
+          "What projects are waiting?",
           "What projects need attention?",
-          "How do I update project status?",
+          "Show projects by status",
         ]}
       />
     </div>

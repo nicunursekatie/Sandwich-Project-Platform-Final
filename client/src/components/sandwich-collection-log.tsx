@@ -3981,12 +3981,27 @@ export default function SandwichCollectionLog() {
         subtitle="Ask about your collection data"
         contextData={{
           currentView: 'collection-log',
-          dateRange: {
-            start: searchFilters.collectionDateFrom || undefined,
-            end: searchFilters.collectionDateTo || undefined,
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: collections.map(c => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+          filters: {
+            dateRange: {
+              start: searchFilters.collectionDateFrom || undefined,
+              end: searchFilters.collectionDateTo || undefined,
+            },
+            selectedHost: searchFilters.hostName || undefined,
+            searchQuery: searchFilters.globalSearch || undefined,
           },
-          selectedHost: searchFilters.hostName || undefined,
-          searchQuery: searchFilters.globalSearch || undefined,
           summaryStats: {
             totalCollections: totalStats?.totalCollections || totalItems,
             totalSandwiches: totalStats?.totalSandwiches || 0,
