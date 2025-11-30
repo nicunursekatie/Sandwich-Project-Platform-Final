@@ -13,7 +13,8 @@ import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
 import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Table2 } from 'lucide-react';
+import { LayoutGrid, Table2, Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -355,6 +356,30 @@ export const ScheduledTab: React.FC = () => {
     setRescheduleRequest(null);
   };
 
+  const handleExport = async () => {
+    if (scheduledRequests.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'There are no scheduled events to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      await exportEventRequestsToExcel(scheduledRequests, 'scheduled');
+      toast({
+        title: 'Export complete',
+        description: `Exported ${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export events. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       {/* View Toggle - Always visible on scheduled tab */}
@@ -363,6 +388,16 @@ export const ScheduledTab: React.FC = () => {
           {scheduledRequests.length} scheduled event{scheduledRequests.length !== 1 ? 's' : ''}
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={scheduledRequests.length === 0}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
           <Button
             variant={viewMode === 'card' ? 'default' : 'outline'}
             size="sm"

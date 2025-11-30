@@ -274,20 +274,20 @@ export const useEventFilters = () => {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'event_date_desc':
-          // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
-          const newestDateA = (a.status === 'completed' && a.scheduledEventDate)
+          // Use scheduledEventDate if available, otherwise desiredEventDate
+          const newestDateA = a.scheduledEventDate
             ? new Date(a.scheduledEventDate).getTime()
             : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-          const newestDateB = (b.status === 'completed' && b.scheduledEventDate)
+          const newestDateB = b.scheduledEventDate
             ? new Date(b.scheduledEventDate).getTime()
             : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return newestDateB - newestDateA;
         case 'event_date_asc':
-          // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
-          const oldestDateA = (a.status === 'completed' && a.scheduledEventDate)
+          // Use scheduledEventDate if available, otherwise desiredEventDate
+          const oldestDateA = a.scheduledEventDate
             ? new Date(a.scheduledEventDate).getTime()
             : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-          const oldestDateB = (b.status === 'completed' && b.scheduledEventDate)
+          const oldestDateB = b.scheduledEventDate
             ? new Date(b.scheduledEventDate).getTime()
             : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return oldestDateA - oldestDateB;
@@ -387,20 +387,20 @@ export const useEventFilters = () => {
       .sort((a: EventRequest, b: EventRequest) => {
         switch (sortBy) {
           case 'event_date_desc':
-            // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
-            const dateDescA = (status === 'completed' && a.scheduledEventDate) 
+            // Use scheduledEventDate if available, otherwise desiredEventDate
+            const dateDescA = a.scheduledEventDate
               ? new Date(a.scheduledEventDate).getTime()
               : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-            const dateDescB = (status === 'completed' && b.scheduledEventDate)
+            const dateDescB = b.scheduledEventDate
               ? new Date(b.scheduledEventDate).getTime()
               : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
             return dateDescB - dateDescA;
           case 'event_date_asc':
-            // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
-            const dateAscA = (status === 'completed' && a.scheduledEventDate)
+            // Use scheduledEventDate if available, otherwise desiredEventDate
+            const dateAscA = a.scheduledEventDate
               ? new Date(a.scheduledEventDate).getTime()
               : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-            const dateAscB = (status === 'completed' && b.scheduledEventDate)
+            const dateAscB = b.scheduledEventDate
               ? new Date(b.scheduledEventDate).getTime()
               : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
             return dateAscA - dateAscB;

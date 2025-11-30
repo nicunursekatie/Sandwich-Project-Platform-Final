@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -112,6 +113,51 @@ const getStaffingIndicators = (event: EventRequest) => {
   return indicators;
 };
 
+// Helper function to get assigned staff names for an event
+const getAssignedStaffNames = (event: EventRequest, resolveUserName: (id: string | undefined) => string) => {
+  const assigned = [];
+
+  // Van driver
+  if (event.assignedVanDriverId) {
+    const name = resolveUserName(event.assignedVanDriverId);
+    if (name && name !== 'Not assigned') {
+      assigned.push({ type: 'van', name, icon: '🚐' });
+    }
+  }
+
+  // Drivers
+  if (event.assignedDriverIds && Array.isArray(event.assignedDriverIds) && event.assignedDriverIds.length > 0) {
+    event.assignedDriverIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'driver', name, icon: '🚗' });
+      }
+    });
+  }
+
+  // Speakers
+  if (event.assignedSpeakerIds && Array.isArray(event.assignedSpeakerIds) && event.assignedSpeakerIds.length > 0) {
+    event.assignedSpeakerIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'speaker', name, icon: '🎤' });
+      }
+    });
+  }
+
+  // Volunteers
+  if (event.assignedVolunteerIds && Array.isArray(event.assignedVolunteerIds) && event.assignedVolunteerIds.length > 0) {
+    event.assignedVolunteerIds.forEach((id) => {
+      const name = resolveUserName(id);
+      if (name && name !== 'Not assigned') {
+        assigned.push({ type: 'volunteer', name, icon: '👥' });
+      }
+    });
+  }
+
+  return assigned;
+};
+
 // Helper function to get sandwich information for an event
 const getSandwichInfo = (event: EventRequest) => {
   const sandwichInfo = [];
@@ -190,6 +236,9 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     'completed',
     'cancelled',
   ]);
+
+  // Get resolveUserName function for displaying assigned staff names
+  const { resolveUserName } = useEventAssignments();
 
   // Fetch all event requests if not provided
   const { data: fetchedEvents = [] } = useQuery<EventRequest[]>({
@@ -409,6 +458,59 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         </div>
       </CardHeader>
       <CardContent>
+        {/* Legend */}
+        <div className="mb-6 pb-4 border-b space-y-4">
+          {/* Status Legend */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-semibold text-gray-800">Status:</span>
+            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
+              New
+            </Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
+              In Process
+            </Badge>
+            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
+              Scheduled
+            </Badge>
+            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
+              Completed
+            </Badge>
+            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
+              Cancelled
+            </Badge>
+          </div>
+
+          {/* Staffing Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Staffing Needed:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Car className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-700">Drivers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mic className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-700">Speakers</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-gray-700">Volunteers</span>
+            </div>
+          </div>
+
+          {/* Sandwich Information Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Sandwiches:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
+              <span className="text-xs text-gray-700">Count & Types</span>
+            </div>
+          </div>
+        </div>
+
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
           {/* Day headers */}
@@ -457,6 +559,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   {(isExpanded ? dayEvents : dayEvents.slice(0, 3)).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
+                    const assignedStaff = getAssignedStaffNames(event, resolveUserName);
 
                     return (
                       <button
@@ -502,6 +605,21 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           </div>
                         )}
 
+                        {/* Assigned staff names */}
+                        {assignedStaff.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {assignedStaff.slice(0, 3).map((staff, idx) => (
+                              <div key={idx} className="text-[10px] truncate flex items-center gap-1">
+                                <span>{staff.icon}</span>
+                                <span className="font-medium">{staff.name}</span>
+                              </div>
+                            ))}
+                            {assignedStaff.length > 3 && (
+                              <div className="text-[10px] opacity-75">+{assignedStaff.length - 3} more</div>
+                            )}
+                          </div>
+                        )}
+
                         {/* Sandwich information - single icon with compact info */}
                         {sandwichInfo.length > 0 && (
                           <div className="mt-1">
@@ -516,15 +634,20 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                                         // Process sandwich type name
                                         let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
 
-                                        // Handle deli_turkey, deli_ham formats
+                                        // Handle deli_turkey, deli_ham formats - convert to "turkey sandwiches"
                                         if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
-                                          displayType = 'turkey';
+                                          displayType = 'turkey sandwiches';
                                         } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
-                                          displayType = 'ham';
+                                          displayType = 'ham sandwiches';
                                         } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
-                                          displayType = 'deli';
+                                          displayType = 'deli sandwiches';
                                         } else if (displayType === 'pbj' || displayType === 'pb&j') {
-                                          displayType = 'PB&J';
+                                          displayType = 'PB&J sandwiches';
+                                        } else {
+                                          // Add "sandwiches" suffix if not already present
+                                          if (!displayType.includes('sandwich')) {
+                                            displayType = `${displayType} sandwiches`;
+                                          }
                                         }
 
                                         return (
@@ -577,59 +700,6 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
               </div>
             );
           })}
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 pt-4 border-t space-y-4">
-          {/* Status Legend */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <span className="text-sm font-semibold text-gray-800">Status:</span>
-            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
-              New
-            </Badge>
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
-              In Process
-            </Badge>
-            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
-              Scheduled
-            </Badge>
-            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
-              Completed
-            </Badge>
-            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
-              Cancelled
-            </Badge>
-          </div>
-
-          {/* Staffing Indicators Legend */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-semibold text-gray-800">
-              Staffing Needed:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Car className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-700">Drivers</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Mic className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-700">Speakers</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-700">Volunteers</span>
-            </div>
-          </div>
-
-          {/* Sandwich Information Legend */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-semibold text-gray-800">
-              Sandwiches:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
-              <span className="text-xs text-gray-700">Count & Types</span>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>

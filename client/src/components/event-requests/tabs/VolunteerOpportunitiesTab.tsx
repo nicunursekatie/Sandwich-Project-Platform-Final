@@ -22,31 +22,44 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     resolveUserName,
   } = useEventAssignments();
 
-  const [roleFilter, setRoleFilter] = useState<'all' | 'speaker' | 'volunteer'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'speaker' | 'volunteer' | 'driver'>('all');
   const [viewMode, setViewMode] = useState<'card' | 'calendar' | 'map'>('card');
+
+  // Helper to calculate unfilled needs for an event
+  const getUnfilledNeeds = (request: EventRequest) => {
+    // Speakers: count needed vs assigned (using speakerDetails object)
+    const speakersNeededCount = request.speakersNeeded ?? 0;
+    const speakersAssignedCount = Object.keys(request.speakerDetails || {}).length;
+    const needsSpeaker = speakersNeededCount > speakersAssignedCount;
+
+    // Volunteers: count needed vs assigned (using assignedVolunteerIds array)
+    const volunteersNeededCount = request.volunteersNeeded ?? 0;
+    const volunteersAssignedCount = request.assignedVolunteerIds?.length || 0;
+    const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
+
+    // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
+    const driversNeededCount = request.driversNeeded ?? 0;
+    const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0);
+    const needsDriver = driversNeededCount > driversAssignedCount;
+
+    return { needsSpeaker, needsVolunteer, needsDriver };
+  };
 
   // Get ONLY scheduled events
   const scheduledRequests = filterRequestsByStatus('scheduled');
 
-  // Filter events that need volunteers or speakers
+  // Filter events that need volunteers, speakers, or drivers
   const opportunities = useMemo(() => {
     return scheduledRequests.filter((request: EventRequest) => {
-      // Check if event actually needs speakers (speakersNeeded > 0) and if one is not assigned
-      const speakersNeeded = (request.speakersNeeded ?? 0) > 0;
-      const speakerNotAssigned = !request.speakerId || request.speakerId === null || request.speakerId === '';
-      const needsSpeaker = speakersNeeded && speakerNotAssigned;
-
-      // Check if event actually needs volunteers (volunteersNeeded > 0) and if one is not assigned
-      const volunteersNeeded = (request.volunteersNeeded ?? 0) > 0;
-      const volunteerNotAssigned = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
-      const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
+      const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
 
       // Filter by role selection
       if (roleFilter === 'speaker' && !needsSpeaker) return false;
       if (roleFilter === 'volunteer' && !needsVolunteer) return false;
+      if (roleFilter === 'driver' && !needsDriver) return false;
 
-      // Show if either role is needed (both the need exists AND it's not filled)
-      return needsSpeaker || needsVolunteer;
+      // Show if any role is needed and unfilled
+      return needsSpeaker || needsVolunteer || needsDriver;
     });
   }, [scheduledRequests, roleFilter]);
 
@@ -151,6 +164,15 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
             >
               Volunteer Needed
             </Button>
+            <Button
+              variant={roleFilter === 'driver' ? 'default' : 'outline'}
+              onClick={() => setRoleFilter('driver')}
+              size="default"
+              className="text-base px-4 py-5"
+              style={roleFilter === 'driver' ? { backgroundColor: '#007E8C' } : {}}
+            >
+              Driver Needed
+            </Button>
           </div>
         </div>
       </div>
@@ -206,18 +228,17 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {opportunities.map((request: EventRequest) => {
-            // Check if event actually needs speakers and if one is not assigned
-            const speakersNeeded = (request.speakersNeeded ?? 0) > 0;
-            const speakerNotAssigned = !request.speakerId || request.speakerId === null || request.speakerId === '';
-            const needsSpeaker = speakersNeeded && speakerNotAssigned;
+            // Use helper to get unfilled needs
+            const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
 
-            // Check if event actually needs volunteers and if one is not assigned
-            const volunteersNeeded = (request.volunteersNeeded ?? 0) > 0;
-            const volunteerNotAssigned = !request.volunteerId || request.volunteerId === null || request.volunteerId === '';
-            const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
-
-            const isSpeakerSignedUp = request.speakerId === user?.id;
-            const isVolunteerSignedUp = request.volunteerId === user?.id;
+            // Check if current user is already signed up
+            const speakerDetails = request.speakerDetails || {};
+            const isSpeakerSignedUp = user?.id ? Object.keys(speakerDetails).includes(user.id) : false;
+            const isVolunteerSignedUp = user?.id ? (request.assignedVolunteerIds || []).includes(user.id) : false;
+            const isDriverSignedUp = user?.id ? (
+              (request.assignedDriverIds || []).includes(user.id) ||
+              request.assignedVanDriverId === user.id
+            ) : false;
 
             return (
               <Card
@@ -249,6 +270,11 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                         {needsVolunteer && (
                           <Badge className="bg-green-600 text-white hover:bg-green-700 text-base px-4 py-2 font-semibold">
                             Volunteer Needed
+                          </Badge>
+                        )}
+                        {needsDriver && (
+                          <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-base px-4 py-2 font-semibold">
+                            Driver Needed
                           </Badge>
                         )}
                         {request.isConfirmed && (
@@ -340,60 +366,98 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Sign Up Actions - Large, Prominent Buttons */}
-                  <div className="flex gap-4 pt-6 border-t-4" style={{ borderColor: '#007E8C' }}>
-                    {needsSpeaker && (
-                      <Button
-                        onClick={() => handleSelfSignup(request.id, 'speaker')}
-                        disabled={isSpeakerSignedUp || !canSelfSignup('speaker')}
-                        className="flex-1 text-xl py-8 font-bold rounded-lg"
-                        style={
-                          isSpeakerSignedUp
-                            ? { backgroundColor: '#e0e0e0', color: '#666' }
-                            : { backgroundColor: '#007E8C', color: 'white' }
-                        }
-                      >
-                        {isSpeakerSignedUp ? (
-                          <>✓ You're signed up as Speaker</>
-                        ) : (
-                          <>Sign Up as Speaker</>
-                        )}
-                      </Button>
-                    )}
-                    {needsVolunteer && (
-                      <Button
-                        onClick={() => handleSelfSignup(request.id, 'volunteer')}
-                        disabled={isVolunteerSignedUp || !canSelfSignup('volunteer')}
-                        className="flex-1 text-xl py-8 font-bold rounded-lg"
-                        style={
-                          isVolunteerSignedUp
-                            ? { backgroundColor: '#e0e0e0', color: '#666' }
-                            : { backgroundColor: '#007E8C', color: 'white' }
-                        }
-                      >
-                        {isVolunteerSignedUp ? (
-                          <>✓ You're signed up as Volunteer</>
-                        ) : (
-                          <>Sign Up as Volunteer</>
-                        )}
-                      </Button>
-                    )}
-                  </div>
+                  {/* Sign Up Actions - Large, Prominent Buttons - Only show if there are unfilled needs */}
+                  {(needsSpeaker || needsVolunteer || needsDriver) && (
+                    <div className="flex gap-4 pt-6 border-t-4 flex-wrap" style={{ borderColor: '#007E8C' }}>
+                      {needsSpeaker && (
+                        <Button
+                          onClick={() => handleSelfSignup(request.id, 'speaker')}
+                          disabled={isSpeakerSignedUp || !canSelfSignup('speaker')}
+                          className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
+                          style={
+                            isSpeakerSignedUp
+                              ? { backgroundColor: '#e0e0e0', color: '#666' }
+                              : { backgroundColor: '#007E8C', color: 'white' }
+                          }
+                        >
+                          {isSpeakerSignedUp ? (
+                            <>✓ You're signed up as Speaker</>
+                          ) : (
+                            <>Sign Up as Speaker</>
+                          )}
+                        </Button>
+                      )}
+                      {needsVolunteer && (
+                        <Button
+                          onClick={() => handleSelfSignup(request.id, 'volunteer')}
+                          disabled={isVolunteerSignedUp || !canSelfSignup('volunteer')}
+                          className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
+                          style={
+                            isVolunteerSignedUp
+                              ? { backgroundColor: '#e0e0e0', color: '#666' }
+                              : { backgroundColor: '#007E8C', color: 'white' }
+                          }
+                        >
+                          {isVolunteerSignedUp ? (
+                            <>✓ You're signed up as Volunteer</>
+                          ) : (
+                            <>Sign Up as Volunteer</>
+                          )}
+                        </Button>
+                      )}
+                      {needsDriver && (
+                        <Button
+                          onClick={() => handleSelfSignup(request.id, 'driver')}
+                          disabled={isDriverSignedUp || !canSelfSignup('driver')}
+                          className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
+                          style={
+                            isDriverSignedUp
+                              ? { backgroundColor: '#e0e0e0', color: '#666' }
+                              : { backgroundColor: '#007E8C', color: 'white' }
+                          }
+                        >
+                          {isDriverSignedUp ? (
+                            <>✓ You're signed up as Driver</>
+                          ) : (
+                            <>Sign Up as Driver</>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
-                  {/* Show who else is assigned (if anyone) */}
-                  {(request.speakerId || request.volunteerId) && (
+                  {/* Show who is currently assigned (if anyone) */}
+                  {(Object.keys(speakerDetails).length > 0 ||
+                    (request.assignedVolunteerIds?.length || 0) > 0 ||
+                    (request.assignedDriverIds?.length || 0) > 0 ||
+                    request.assignedVanDriverId) && (
                     <div className="text-base text-gray-700 pt-4 border-t-2 border-gray-300 bg-gray-50 p-5 rounded-lg">
                       <div className="flex gap-6 flex-wrap">
-                        {request.speakerId && (
+                        {Object.keys(speakerDetails).length > 0 && (
                           <div>
-                            <span className="font-bold text-lg">Speaker:</span>{' '}
-                            <span className="font-semibold text-lg">{resolveUserName(request.speakerId)}</span>
+                            <span className="font-bold text-lg">Speakers:</span>{' '}
+                            <span className="font-semibold text-lg">
+                              {Object.keys(speakerDetails).map(id => resolveUserName(id)).join(', ')}
+                            </span>
                           </div>
                         )}
-                        {request.volunteerId && (
+                        {(request.assignedVolunteerIds?.length || 0) > 0 && (
                           <div>
-                            <span className="font-bold text-lg">Volunteer:</span>{' '}
-                            <span className="font-semibold text-lg">{resolveUserName(request.volunteerId)}</span>
+                            <span className="font-bold text-lg">Volunteers:</span>{' '}
+                            <span className="font-semibold text-lg">
+                              {request.assignedVolunteerIds?.map(id => resolveUserName(id)).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        {((request.assignedDriverIds?.length || 0) > 0 || request.assignedVanDriverId) && (
+                          <div>
+                            <span className="font-bold text-lg">Drivers:</span>{' '}
+                            <span className="font-semibold text-lg">
+                              {[
+                                ...(request.assignedDriverIds || []).map(id => resolveUserName(id)),
+                                ...(request.assignedVanDriverId ? [resolveUserName(request.assignedVanDriverId) + ' (Van)'] : [])
+                              ].join(', ')}
+                            </span>
                           </div>
                         )}
                       </div>

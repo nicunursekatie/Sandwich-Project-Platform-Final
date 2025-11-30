@@ -64,7 +64,8 @@ export type AIContextType =
   | 'resources'
   | 'organizations'
   | 'links'
-  | 'dashboard';
+  | 'dashboard'
+  | 'volunteer-calendar';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
@@ -152,7 +153,7 @@ const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
   ],
   'holding-zone': [
     "What open items need attention?",
-    "How many tasks are claimed?",
+    "How many tasks are there?",
     "Show me urgent items",
     "What ideas have been submitted?",
   ],
@@ -197,6 +198,12 @@ const DEFAULT_QUESTIONS: Record<AIContextType, string[]> = {
     "What are the key metrics?",
     "How many upcoming events?",
     "What needs attention today?",
+  ],
+  'volunteer-calendar': [
+    "Who is unavailable this week?",
+    "What events are scheduled for this month?",
+    "When are most volunteers unavailable?",
+    "Show me upcoming unavailability",
   ],
 };
 
@@ -496,6 +503,10 @@ export function FloatingAIChat({
   const clearConversation = () => {
     setMessages([]);
     setShowSuggestions(true);
+  };
+
+  const toggleSuggestions = () => {
+    setShowSuggestions(!showSuggestions);
   };
 
   const exportAsCSV = (chart: ChartData) => {
@@ -851,11 +862,6 @@ export function FloatingAIChat({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {messages.length > 0 && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={clearConversation} title="Clear chat">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
             <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={() => setIsMinimized(true)}>
               <Minimize2 className="h-4 w-4" />
             </Button>
@@ -867,10 +873,10 @@ export function FloatingAIChat({
 
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full p-4" ref={scrollRef}>
-            {messages.length === 0 && showSuggestions && (
-              <div className="space-y-3">
+            {showSuggestions && (
+              <div className={`space-y-3 ${messages.length > 0 ? 'mb-4 pb-4 border-b border-gray-200' : ''}`}>
                 <p className="text-sm text-gray-600 text-center mb-4">
-                  I can help you understand your data. Try asking:
+                  {messages.length === 0 ? 'I can help you understand your data. Try asking:' : 'Suggested questions:'}
                 </p>
                 {questions.map((question, index) => (
                   <Button
@@ -939,6 +945,24 @@ export function FloatingAIChat({
         </div>
 
         <div className="p-3 border-t bg-gray-50 rounded-b-lg flex-shrink-0">
+          {/* Quick actions row */}
+          {messages.length > 0 && (
+            <div className="flex items-center justify-between mb-2 text-xs">
+              <button
+                onClick={toggleSuggestions}
+                className="text-[#47B3CB] hover:text-[#236383] hover:underline"
+              >
+                {showSuggestions ? 'Hide suggestions' : 'Need ideas?'}
+              </button>
+              <button
+                onClick={clearConversation}
+                className="text-gray-400 hover:text-red-500 flex items-center gap-1"
+              >
+                <Trash2 className="h-3 w-3" />
+                New chat
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
             <Input
               ref={inputRef}

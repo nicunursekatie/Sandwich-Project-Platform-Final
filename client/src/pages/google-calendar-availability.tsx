@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye, EyeOff, Calen
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 interface CalendarEvent {
   id: string;
@@ -406,6 +407,19 @@ export default function GoogleCalendarAvailability() {
           </span>
         </div>
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="volunteer-calendar"
+        title="Availability Assistant"
+        subtitle="Ask about volunteer availability"
+        suggestedQuestions={[
+          "Who is unavailable this week?",
+          "What events are scheduled for this month?",
+          "When are most volunteers unavailable?",
+          "Show me upcoming unavailability",
+        ]}
+      />
     </div>
   );
 }

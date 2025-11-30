@@ -1706,7 +1706,7 @@ export const teamBoardItems = pgTable('team_board_items', {
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
   assignedToNames: text('assigned_to_names').array(), // Array of display names - supports multiple assignees
-  status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
+  status: varchar('status').notNull().default('open'), // 'open', 'done'
   // HOLDING ZONE FIELDS
   categoryId: integer('category_id').references(() => holdingZoneCategories.id), // Category for organization
   isUrgent: boolean('is_urgent').notNull().default(false), // Urgent flag for priority items

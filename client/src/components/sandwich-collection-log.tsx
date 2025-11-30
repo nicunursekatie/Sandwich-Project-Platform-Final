@@ -3979,6 +3979,21 @@ export default function SandwichCollectionLog() {
         contextType="collections"
         title="Collection Insights"
         subtitle="Ask about your collection data"
+        contextData={{
+          currentView: 'collection-log',
+          dateRange: {
+            start: searchFilters.collectionDateFrom || undefined,
+            end: searchFilters.collectionDateTo || undefined,
+          },
+          selectedHost: searchFilters.hostName || undefined,
+          searchQuery: searchFilters.globalSearch || undefined,
+          summaryStats: {
+            totalCollections: totalStats?.totalCollections || totalItems,
+            totalSandwiches: totalStats?.totalSandwiches || 0,
+            activeHosts: totalStats?.totalHosts || 0,
+            displayedCollections: collections.length,
+          },
+        }}
         suggestedQuestions={[
           "What's our total sandwich count this month?",
           "What's our average collection size?",

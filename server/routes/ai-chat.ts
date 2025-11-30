@@ -57,7 +57,113 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
   const allCollections = await db.query.sandwichCollections.findMany();
 
   // Filter out deleted collections
-  const collections = allCollections.filter(c => !c.deletedAt);
+  let collections = allCollections.filter(c => !c.deletedAt);
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  // Apply filters from contextData if provided
+  if (contextData) {
+    // Date range filtering
+    if (contextData.dateRange?.start || contextData.dateRange?.end) {
+      const startDate = contextData.dateRange.start ? new Date(contextData.dateRange.start) : null;
+      const endDate = contextData.dateRange.end ? new Date(contextData.dateRange.end) : null;
+
+      collections = collections.filter(c => {
+        if (!c.collectionDate) return false;
+        const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+        if (startDate && collectionDate < startDate) return false;
+        if (endDate && collectionDate > endDate) return false;
+        return true;
+      });
+
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Date Range: ${startDate?.toLocaleDateString() || 'Any'} to ${endDate?.toLocaleDateString() || 'Any'}\n`;
+    }
+
+    // Host filtering
+    if (contextData.selectedHost) {
+      collections = collections.filter(c => c.hostName === contextData.selectedHost);
+      componentContext += `- Filtered by Host: ${contextData.selectedHost}\n`;
+    }
+
+    // Year type (fiscal vs calendar) for grant metrics
+    const yearType = contextData.yearType || 'calendar';
+    if (contextData.yearType) {
+      componentContext += `- Year Type: ${contextData.yearType}\n`;
+    }
+
+    // Selected year - actually filter the data
+    if (contextData.selectedYear && contextData.selectedYear !== 'all') {
+      const selectedYear = parseInt(contextData.selectedYear);
+      if (!isNaN(selectedYear)) {
+        collections = collections.filter(c => {
+          if (!c.collectionDate) return false;
+          const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+
+          if (yearType === 'fiscal') {
+            // Fiscal year runs July 1 to June 30
+            // FY2024 = July 1, 2023 - June 30, 2024
+            const month = collectionDate.getMonth(); // 0-11
+            const calYear = collectionDate.getFullYear();
+            const fiscalYear = month >= 6 ? calYear + 1 : calYear; // July+ is next fiscal year
+            return fiscalYear === selectedYear;
+          } else {
+            // Calendar year
+            return collectionDate.getFullYear() === selectedYear;
+          }
+        });
+        componentContext += `- Selected Year: ${contextData.selectedYear}\n`;
+      }
+    }
+
+    // Selected quarter - actually filter the data
+    if (contextData.selectedQuarter && contextData.selectedQuarter !== 'all') {
+      const quarter = contextData.selectedQuarter; // e.g., 'Q1', 'Q2', 'Q3', 'Q4'
+      const quarterNum = parseInt(quarter.replace('Q', ''));
+
+      if (!isNaN(quarterNum) && quarterNum >= 1 && quarterNum <= 4) {
+        collections = collections.filter(c => {
+          if (!c.collectionDate) return false;
+          const collectionDate = new Date(c.collectionDate + 'T12:00:00');
+          const month = collectionDate.getMonth(); // 0-11
+
+          if (yearType === 'fiscal') {
+            // Fiscal quarters: Q1=Jul-Sep, Q2=Oct-Dec, Q3=Jan-Mar, Q4=Apr-Jun
+            const fiscalQuarter = month >= 6 ? Math.floor((month - 6) / 3) + 1 : Math.floor((month + 6) / 3) + 1;
+            return fiscalQuarter === quarterNum;
+          } else {
+            // Calendar quarters: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+            const calendarQuarter = Math.floor(month / 3) + 1;
+            return calendarQuarter === quarterNum;
+          }
+        });
+        componentContext += `- Selected Quarter: ${contextData.selectedQuarter}\n`;
+      }
+    }
+
+    // Current view/tab
+    if (contextData.currentView || contextData.activeTab) {
+      componentContext += `- Current View: ${contextData.currentView || contextData.activeTab}\n`;
+    }
+
+    // Any raw data the component wants to share
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+  }
 
   // Calculate metrics
   let totalSandwiches = 0;
@@ -111,7 +217,7 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
 
   return `
 ## Sandwich Collection Data Summary
-
+${componentContext}
 ### Overall Metrics
 - Total Collections: ${collections.length}
 - Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
@@ -182,7 +288,98 @@ function formatEventDate(dateInput: Date | string | null | undefined): string {
 
 // Build context for events
 async function buildEventsContext(contextData?: Record<string, any>): Promise<string> {
-  const allEvents = await db.query.eventRequests.findMany();
+  let allEvents = await db.query.eventRequests.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  // Apply filters from contextData if provided
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      allEvents = allEvents.filter(e => e.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Date range filtering
+    if (contextData.dateRange?.start || contextData.dateRange?.end) {
+      const startDate = contextData.dateRange.start ? new Date(contextData.dateRange.start) : null;
+      const endDate = contextData.dateRange.end ? new Date(contextData.dateRange.end) : null;
+
+      allEvents = allEvents.filter(e => {
+        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        if (!eventDate) return false;
+        const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
+        if (startDate && date < startDate) return false;
+        if (endDate && date > endDate) return false;
+        return true;
+      });
+
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Date Range: ${startDate?.toLocaleDateString() || 'Any'} to ${endDate?.toLocaleDateString() || 'Any'}\n`;
+    }
+
+    // Category filtering
+    if (contextData.categoryFilter) {
+      allEvents = allEvents.filter(e => e.organizationCategory === contextData.categoryFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Category: ${contextData.categoryFilter}\n`;
+    }
+
+    // Confirmation filter
+    if (contextData.confirmationFilter && contextData.confirmationFilter !== 'all') {
+      if (contextData.confirmationFilter === 'confirmed') {
+        allEvents = allEvents.filter(e => e.isConfirmed === true);
+      } else if (contextData.confirmationFilter === 'unconfirmed') {
+        allEvents = allEvents.filter(e => e.isConfirmed !== true);
+      }
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Confirmation Filter: ${contextData.confirmationFilter}\n`;
+    }
+
+    // Current tab/view
+    if (contextData.activeTab || contextData.currentView) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab || contextData.currentView}\n`;
+    }
+
+    // Currently selected event
+    if (contextData.selectedEvent) {
+      componentContext += `\n### Currently Selected Event\n`;
+      const event = contextData.selectedEvent;
+      componentContext += `- Organization: ${event.organizationName || 'Unknown'}\n`;
+      componentContext += `- Status: ${event.status || 'Unknown'}\n`;
+      componentContext += `- Date: ${event.scheduledEventDate || event.desiredEventDate || 'TBD'}\n`;
+      componentContext += `- Sandwiches: ${event.estimatedSandwichCount || event.actualSandwichCount || 'Not specified'}\n`;
+      if (event.notes) componentContext += `- Notes: ${event.notes}\n`;
+    }
+
+    // Any raw data the component wants to share
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+  }
 
   // Calculate metrics
   const categoryStats: Record<string, { events: number; sandwiches: number }> = {};
@@ -214,9 +411,25 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   // Track upcoming events with details
   const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number; confirmed: boolean; address: string }[] = [];
 
+  // Track date range of all events
+  let earliestEventDate: Date | null = null;
+  let latestEventDate: Date | null = null;
+
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
     totalSandwiches += sandwichCount;
+
+    // Track date range
+    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    if (eventDate) {
+      const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
+      if (!earliestEventDate || date < earliestEventDate) {
+        earliestEventDate = date;
+      }
+      if (!latestEventDate || date > latestEventDate) {
+        latestEventDate = date;
+      }
+    }
 
     // Category stats
     const category = e.organizationCategory || 'other';
@@ -226,8 +439,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     categoryStats[category].events++;
     categoryStats[category].sandwiches += sandwichCount;
 
-    // Monthly stats
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    // Monthly stats (reuse eventDate from date range tracking above)
     if (eventDate) {
       const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -344,13 +556,19 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   upcomingEventsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   stalledInProcessList.sort((a, b) => b.daysSinceContact - a.daysSinceContact);
 
+  // Format date range string
+  const dateRangeStr = earliestEventDate && latestEventDate
+    ? `${formatEventDate(earliestEventDate)} to ${formatEventDate(latestEventDate)}`
+    : 'No dates available';
+
   return `
 ## Event Data Summary
-
+${componentContext}
 ### Overall Metrics
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
+- **Data Time Period: ${dateRangeStr}** (This is the date range spanning all events in the system, from earliest to latest event date)
 
 ### Events by Status
 ${Object.entries(statusCounts)
@@ -445,16 +663,72 @@ The platform includes:
 }
 
 // Build context for Holding Zone (Team Board)
-async function buildHoldingZoneContext(): Promise<string> {
-  const items = await db.query.teamBoardItems.findMany();
+async function buildHoldingZoneContext(contextData?: Record<string, any>): Promise<string> {
+  let items = await db.query.teamBoardItems.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      items = items.filter(i => i.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Type filtering
+    if (contextData.typeFilter && contextData.typeFilter !== 'all') {
+      items = items.filter(i => i.type === contextData.typeFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Type Filter: ${contextData.typeFilter}\n`;
+    }
+
+    // Currently selected item
+    if (contextData.selectedItem) {
+      componentContext += `\n### Currently Selected Item\n`;
+      componentContext += `- Content: ${contextData.selectedItem.content}\n`;
+      componentContext += `- Type: ${contextData.selectedItem.type}\n`;
+      componentContext += `- Status: ${contextData.selectedItem.status}\n`;
+      if (contextData.selectedItem.isUrgent) componentContext += `- URGENT\n`;
+    }
+
+    // Active tab/view
+    if (contextData.activeTab) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab}\n`;
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   // Calculate metrics
-  const statusCounts: Record<string, number> = { open: 0, claimed: 0, done: 0 };
+  const statusCounts: Record<string, number> = { open: 0, done: 0 };
   const typeCounts: Record<string, number> = { task: 0, note: 0, idea: 0 };
   const urgentCount = items.filter(i => i.isUrgent).length;
 
   items.forEach(item => {
-    statusCounts[item.status || 'open']++;
+    const status = item.status === 'done' ? 'done' : 'open';
+    statusCounts[status]++;
     typeCounts[item.type || 'task']++;
   });
 
@@ -464,11 +738,10 @@ async function buildHoldingZoneContext(): Promise<string> {
 
   return `
 ## Holding Zone Data Summary
-
+${componentContext}
 ### Current Items Overview
 - Total Items: ${items.length}
 - Open Items: ${statusCounts.open}
-- Claimed Items: ${statusCounts.claimed}
 - Completed Items: ${statusCounts.done}
 - Urgent Items: ${urgentCount}
 
@@ -491,11 +764,55 @@ The Holding Zone is a collaborative space where team members can:
 }
 
 // Build context for TSP Network
-async function buildNetworkContext(): Promise<string> {
+async function buildNetworkContext(contextData?: Record<string, any>): Promise<string> {
   const hosts = await db.query.hosts.findMany();
   const drivers = await db.query.drivers.findMany();
   const volunteers = await db.query.volunteers.findMany();
   const recipients = await db.query.recipients.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Current tab/view
+    if (contextData.activeTab || contextData.currentView) {
+      componentContext += `\n### Current View\n`;
+      componentContext += `- Active Tab: ${contextData.activeTab || contextData.currentView}\n`;
+    }
+
+    // Currently selected entity
+    if (contextData.selectedHost) {
+      componentContext += `\n### Currently Selected Host\n`;
+      componentContext += `- Name: ${contextData.selectedHost.name}\n`;
+      componentContext += `- Address: ${contextData.selectedHost.address || 'Not specified'}\n`;
+      componentContext += `- Status: ${contextData.selectedHost.isActive ? 'Active' : 'Inactive'}\n`;
+    }
+
+    if (contextData.selectedDriver) {
+      componentContext += `\n### Currently Selected Driver\n`;
+      componentContext += `- Name: ${contextData.selectedDriver.name}\n`;
+      componentContext += `- Status: ${contextData.selectedDriver.isActive ? 'Active' : 'Inactive'}\n`;
+    }
+
+    if (contextData.selectedVolunteer) {
+      componentContext += `\n### Currently Selected Volunteer\n`;
+      componentContext += `- Name: ${contextData.selectedVolunteer.name}\n`;
+    }
+
+    if (contextData.selectedRecipient) {
+      componentContext += `\n### Currently Selected Recipient\n`;
+      componentContext += `- Name: ${contextData.selectedRecipient.name}\n`;
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   const activeHosts = hosts.filter(h => h.isActive !== false).length;
   const activeDrivers = drivers.filter(d => d.isActive !== false).length;
@@ -504,7 +821,7 @@ async function buildNetworkContext(): Promise<string> {
 
   return `
 ## TSP Network Data Summary
-
+${componentContext}
 ### Network Overview
 - Total Hosts: ${hosts.length} (${activeHosts} active)
 - Total Drivers: ${drivers.length} (${activeDrivers} active)
@@ -527,8 +844,87 @@ The TSP Network manages all the people and organizations involved in The Sandwic
 }
 
 // Build context for Projects
-async function buildProjectsContext(): Promise<string> {
-  const projects = await db.query.projects.findMany();
+async function buildProjectsContext(contextData?: Record<string, any>): Promise<string> {
+  let projects = await db.query.projects.findMany();
+
+  // Build component-specific context section
+  let componentContext = '';
+
+  if (contextData) {
+    // Status filtering
+    if (contextData.statusFilter && contextData.statusFilter !== 'all') {
+      projects = projects.filter(p => p.status === contextData.statusFilter);
+      componentContext += `\n### Current View Filters\n`;
+      componentContext += `- Status Filter: ${contextData.statusFilter}\n`;
+    }
+
+    // Priority filtering
+    if (contextData.priorityFilter && contextData.priorityFilter !== 'all') {
+      projects = projects.filter(p => p.priority === contextData.priorityFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Priority Filter: ${contextData.priorityFilter}\n`;
+    }
+
+    // Category filtering
+    if (contextData.categoryFilter && contextData.categoryFilter !== 'all') {
+      projects = projects.filter(p => p.category === contextData.categoryFilter);
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Category Filter: ${contextData.categoryFilter}\n`;
+    }
+
+    // Project type filtering (meeting vs internal projects)
+    if (contextData.projectTypeFilter && contextData.projectTypeFilter !== 'all') {
+      if (contextData.projectTypeFilter === 'meeting') {
+        projects = projects.filter(p => p.googleSheetRowId != null);
+      } else if (contextData.projectTypeFilter === 'internal') {
+        projects = projects.filter(p => p.googleSheetRowId == null);
+      }
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Project Type: ${contextData.projectTypeFilter}\n`;
+    }
+
+    // Active tab/view
+    if (contextData.activeTab) {
+      if (!componentContext.includes('Current View Filters')) {
+        componentContext += `\n### Current View Filters\n`;
+      }
+      componentContext += `- Active Tab: ${contextData.activeTab}\n`;
+    }
+
+    // Currently selected project
+    if (contextData.selectedProject) {
+      componentContext += `\n### Currently Selected Project\n`;
+      const proj = contextData.selectedProject;
+      componentContext += `- Title: ${proj.title || proj.name}\n`;
+      componentContext += `- Status: ${proj.status}\n`;
+      componentContext += `- Priority: ${proj.priority}\n`;
+      if (proj.description) componentContext += `- Description: ${proj.description}\n`;
+      if (proj.dueDate) componentContext += `- Due Date: ${proj.dueDate}\n`;
+    }
+
+    // Summary stats from the component
+    if (contextData.summaryStats) {
+      componentContext += `\n### Current Summary (from component)\n`;
+      Object.entries(contextData.summaryStats).forEach(([key, value]) => {
+        componentContext += `- ${key}: ${value}\n`;
+      });
+    }
+
+    // Raw data from component
+    if (contextData.rawData) {
+      componentContext += `\n### Component-Specific Data\n`;
+      componentContext += typeof contextData.rawData === 'string'
+        ? contextData.rawData
+        : JSON.stringify(contextData.rawData, null, 2);
+      componentContext += '\n';
+    }
+  }
 
   const statusCounts: Record<string, number> = {};
   const priorityCounts: Record<string, number> = {};
@@ -546,7 +942,7 @@ async function buildProjectsContext(): Promise<string> {
 
   return `
 ## Projects Data Summary
-
+${componentContext}
 ### Overview
 - Total Projects: ${projects.length}
 - Active Projects: ${activeProjects.length}
@@ -580,7 +976,7 @@ Projects help track ongoing initiatives for The Sandwich Project:
 }
 
 // Build context for Meetings
-async function buildMeetingsContext(): Promise<string> {
+async function buildMeetingsContext(contextData?: Record<string, any>): Promise<string> {
   const meetings = await db.query.meetings.findMany();
   const agendaItems = await db.query.agendaItems.findMany();
 
@@ -623,7 +1019,7 @@ The meeting dashboard helps manage committee meetings:
 }
 
 // Build context for Resources
-async function buildResourcesContext(): Promise<string> {
+async function buildResourcesContext(contextData?: Record<string, any>): Promise<string> {
   const resources = await db.query.resources.findMany();
 
   const categoryStats: Record<string, number> = {};
@@ -667,25 +1063,84 @@ Resources is a library of documents and materials for The Sandwich Project:
 }
 
 // Build context for Organizations
-async function buildOrganizationsContext(): Promise<string> {
-  const organizations = await db.query.organizations.findMany();
-  const events = await db.query.eventRequests.findMany();
+async function buildOrganizationsContext(contextData?: Record<string, any>): Promise<string> {
+  try {
+    const organizations = await db.query.organizations.findMany();
+    const events = await db.query.eventRequests.findMany();
 
-  const categoryStats: Record<string, number> = {};
-  organizations.forEach(org => {
-    const category = org.category || 'other';
-    categoryStats[category] = (categoryStats[category] || 0) + 1;
-  });
+    // Category stats
+    const categoryStats: Record<string, number> = {};
+    // School classification stats
+    const schoolClassificationStats: Record<string, number> = {};
+    // Religious vs non-religious
+    let religiousCount = 0;
+    let nonReligiousCount = 0;
 
-  // Count events per organization
-  const orgsWithEvents = new Set(events.map(e => e.organizationName).filter(Boolean));
+    organizations.forEach(org => {
+      const category = org.category || 'other';
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
 
-  return `
+      if (org.schoolClassification) {
+        schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
+      }
+
+      if (org.isReligious) {
+        religiousCount++;
+      } else {
+        nonReligiousCount++;
+      }
+    });
+
+    // Count events per organization
+    const eventsByOrg: Record<string, number> = {};
+    const sandwichesByOrg: Record<string, number> = {};
+    events.forEach(e => {
+      const orgName = e.organizationName;
+      if (orgName) {
+        eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
+        sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      }
+    });
+
+    const orgsWithEvents = Object.keys(eventsByOrg).length;
+
+    // Top organizations by event count
+    const topOrgsByEvents = Object.entries(eventsByOrg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
+
+    // Recent organizations (by createdAt if available)
+    const recentOrgs = organizations
+      .filter(org => org.createdAt)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Organizations without events
+    const orgsWithoutEvents = organizations
+      .filter(org => !eventsByOrg[org.name])
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Full organization list for reference (limited to avoid token limits)
+    const orgList = organizations
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .slice(0, 50)
+      .map(org => {
+        const evCount = eventsByOrg[org.name] || 0;
+        return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
+      });
+
+    return `
 ## Organizations Data Summary
 
 ### Overview
-- Total Organizations: ${organizations.length}
-- Organizations with Events: ${orgsWithEvents.size}
+- Total Organizations in Catalog: ${organizations.length}
+- Organizations with Events: ${orgsWithEvents}
+- Organizations without Events: ${organizations.length - orgsWithEvents}
+- Religious Organizations: ${religiousCount}
+- Non-Religious Organizations: ${nonReligiousCount}
 
 ### Organizations by Category
 ${Object.entries(categoryStats)
@@ -693,17 +1148,39 @@ ${Object.entries(categoryStats)
   .map(([category, count]) => `- ${category}: ${count}`)
   .join('\n') || '- No categories defined'}
 
-### About Organizations
-The Organizations catalog tracks groups that partner with The Sandwich Project:
-- Schools, churches, businesses, and community groups
-- Contact information and key contacts
-- Event history and relationships
-- Notes and special requirements
+### School Classifications
+${Object.entries(schoolClassificationStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([classification, count]) => `- ${classification}: ${count}`)
+  .join('\n') || '- No school classifications'}
+
+### Top Organizations by Event Count
+${topOrgsByEvents.join('\n') || '- No events recorded'}
+
+### Recently Added Organizations
+${recentOrgs.join('\n') || '- No recent organizations'}
+
+### Organizations Without Events (sample)
+${orgsWithoutEvents.join('\n') || '- All organizations have events'}
+
+### Organization Directory (first 50 alphabetically)
+${orgList.join('\n')}
+
+### About This Data
+The Organizations catalog (also called Groups Catalog) tracks all groups that partner with The Sandwich Project for sandwich-making events, including schools, churches, businesses, and community organizations.
 `;
+  } catch (error) {
+    logger.error('Error building organizations context', { error });
+    return `
+## Organizations Data Summary
+Error loading organizations data. Please try again.
+`;
+  }
 }
 
+
 // Build context for Important Links
-async function buildLinksContext(): Promise<string> {
+async function buildLinksContext(contextData?: Record<string, any>): Promise<string> {
   const links = await db.query.driveLinks.findMany();
 
   const categoryStats: Record<string, number> = {};
@@ -733,8 +1210,108 @@ Important Links is a quick-access hub for frequently used resources:
 `;
 }
 
+// Build context for Volunteer Calendar
+async function buildVolunteerCalendarContext(): Promise<string> {
+  try {
+    // Get events for the next 30 days
+    const now = new Date();
+    const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Fetch calendar events from Google Calendar API
+    const { google } = await import('googleapis');
+    const auth = new google.auth.GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    });
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    let events: any[] = [];
+    try {
+      const response = await calendar.events.list({
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+        timeMin: now.toISOString(),
+        timeMax: thirtyDaysOut.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 100,
+      });
+      events = response.data.items || [];
+    } catch (calError) {
+      logger.warn('Could not fetch Google Calendar events for AI context', { error: calError });
+    }
+
+    // Categorize events
+    const unavailabilityKeywords = ['unavailable', 'unavail', 'out of town', 'away', 'vacation', 'travel', 'pto', 'off'];
+    const unavailabilityEvents: any[] = [];
+    const otherEvents: any[] = [];
+
+    events.forEach(event => {
+      const summary = (event.summary || '').toLowerCase();
+      const isUnavailability = unavailabilityKeywords.some(keyword => summary.includes(keyword));
+
+      if (isUnavailability) {
+        unavailabilityEvents.push(event);
+      } else {
+        otherEvents.push(event);
+      }
+    });
+
+    // Group unavailability by person (extract name from event summary if possible)
+    const unavailabilityByPerson: Record<string, string[]> = {};
+    unavailabilityEvents.forEach(event => {
+      const summary = event.summary || 'Unknown';
+      // Try to extract person name (often format is "Name - Unavailable" or "Name OOO")
+      const personMatch = summary.match(/^([^-–]+)/);
+      const person = personMatch ? personMatch[1].trim() : 'Team Member';
+
+      const startDate = event.start?.date || event.start?.dateTime?.split('T')[0] || 'TBD';
+      const endDate = event.end?.date || event.end?.dateTime?.split('T')[0] || startDate;
+
+      if (!unavailabilityByPerson[person]) {
+        unavailabilityByPerson[person] = [];
+      }
+      unavailabilityByPerson[person].push(`${startDate} to ${endDate}`);
+    });
+
+    // Format upcoming events
+    const upcomingEventsList = otherEvents.slice(0, 15).map(event => {
+      const startDate = event.start?.date || event.start?.dateTime?.split('T')[0] || 'TBD';
+      return `- ${event.summary || 'Untitled'} (${startDate})`;
+    });
+
+    return `
+## Volunteer Calendar Data Summary
+
+### Overview (Next 30 Days)
+- Total Calendar Events: ${events.length}
+- Unavailability Events: ${unavailabilityEvents.length}
+- Other Events: ${otherEvents.length}
+
+### Upcoming Unavailability
+${Object.entries(unavailabilityByPerson)
+  .map(([person, dates]) => `- ${person}: ${dates.join(', ')}`)
+  .join('\n') || '- No unavailability marked'}
+
+### Upcoming Events (Next 15)
+${upcomingEventsList.join('\n') || '- No upcoming events'}
+
+### About the Volunteer Calendar
+The Volunteer Calendar shows team availability pulled from Google Calendar:
+- Unavailability entries (vacations, PTO, travel)
+- Team events and meetings
+- Color-coded by Google Calendar categories
+- Helps coordinate scheduling around team availability
+`;
+  } catch (error) {
+    logger.error('Error building volunteer calendar context', { error });
+    return `
+## Volunteer Calendar Data Summary
+Unable to load calendar data. The calendar shows volunteer availability from Google Calendar.
+`;
+  }
+}
+
 // Build context for Dashboard
-async function buildDashboardContext(): Promise<string> {
+async function buildDashboardContext(contextData?: Record<string, any>): Promise<string> {
   // Combine key metrics from across the platform
   const collections = (await db.query.sandwichCollections.findMany()).filter(c => !c.deletedAt);
   const events = await db.query.eventRequests.findMany();
@@ -781,11 +1358,12 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 
 CRITICAL RULES - YOU MUST FOLLOW THESE:
 1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
 2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
-3. If asked about something not in the data, say "That information is not tracked in the current data."
+3. If asked about something truly not present in the data, say "That information is not tracked in the current data." BUT first check carefully - date ranges, time periods, and monthly breakdowns ARE included in the data summary.
 4. Never make up statistics or trends that aren't directly derivable from the provided data.
 5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
 6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
 7. When referring to dates, use today's date (shown above) as your reference point. Do NOT assume it is any date other than today.
+8. When you show a chart and the user asks follow-up questions about that data (like "what time period does this cover?"), answer using the data summary - the time period, date ranges, and breakdown by month are all included in the data. Do NOT say the information isn't tracked when it clearly is.
 
 When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
@@ -848,6 +1426,10 @@ You help users understand the organization database and event relationships.`,
 Important Links provides quick access to frequently used documents and external resources.
 You help users find and navigate to key resources.`,
 
+    'volunteer-calendar': `You are a helpful assistant for The Sandwich Project's Volunteer Availability Calendar.
+The calendar shows team availability from Google Calendar, including vacations, PTO, and unavailability.
+You help users understand who is available when and coordinate scheduling around team availability.`,
+
     'dashboard': `You are a helpful assistant for The Sandwich Project's dashboard.
 The dashboard provides an overview of all platform activities and key metrics.
 You help users understand the overall status and navigate to different sections.`,
@@ -878,7 +1460,7 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     logger.info('AI chat request', { userId: req.user.id, contextType, messageLength: message.length });
 
-    // Build context based on type
+    // Build context based on type - always pass contextData for component-specific context
     let dataSummary: string;
     switch (contextType) {
       case 'collections':
@@ -894,28 +1476,31 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         dataSummary = `${collectionsData}\n\n${eventsData}`;
         break;
       case 'holding-zone':
-        dataSummary = await buildHoldingZoneContext();
+        dataSummary = await buildHoldingZoneContext(contextData);
         break;
       case 'network':
-        dataSummary = await buildNetworkContext();
+        dataSummary = await buildNetworkContext(contextData);
         break;
       case 'projects':
-        dataSummary = await buildProjectsContext();
+        dataSummary = await buildProjectsContext(contextData);
         break;
       case 'meetings':
-        dataSummary = await buildMeetingsContext();
+        dataSummary = await buildMeetingsContext(contextData);
         break;
       case 'resources':
-        dataSummary = await buildResourcesContext();
+        dataSummary = await buildResourcesContext(contextData);
         break;
       case 'organizations':
-        dataSummary = await buildOrganizationsContext();
+        dataSummary = await buildOrganizationsContext(contextData);
         break;
       case 'links':
-        dataSummary = await buildLinksContext();
+        dataSummary = await buildLinksContext(contextData);
+        break;
+      case 'volunteer-calendar':
+        dataSummary = await buildVolunteerCalendarContext();
         break;
       case 'dashboard':
-        dataSummary = await buildDashboardContext();
+        dataSummary = await buildDashboardContext(contextData);
         break;
       case 'general':
         dataSummary = await buildGeneralContext();
