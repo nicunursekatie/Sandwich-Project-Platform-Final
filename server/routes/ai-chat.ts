@@ -52,6 +52,154 @@ function getCollectionSandwichCount(collection: any): number {
   return total;
 }
 
+// Format raw data from component into AI-readable context
+// This is the preferred path - components pass their actual displayed data
+function formatRawDataForAI(contextType: string, contextData: Record<string, any>): string {
+  const { rawData, summaryStats, filters, selectedItem, currentView } = contextData;
+
+  let context = `## ${getContextTitle(contextType)} Data\n\n`;
+
+  // Add current view/filter context
+  if (currentView) {
+    context += `**Current View:** ${currentView}\n`;
+  }
+  if (filters && Object.keys(filters).length > 0) {
+    context += `**Active Filters:** ${JSON.stringify(filters)}\n`;
+  }
+  if (selectedItem) {
+    context += `**Currently Selected:** ${JSON.stringify(selectedItem)}\n`;
+  }
+  context += '\n';
+
+  // Add summary stats if provided
+  if (summaryStats) {
+    context += `### Summary Statistics\n`;
+    for (const [key, value] of Object.entries(summaryStats)) {
+      const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      if (typeof value === 'object' && value !== null) {
+        context += `- ${formattedKey}:\n`;
+        for (const [subKey, subValue] of Object.entries(value)) {
+          context += `  - ${subKey}: ${subValue}\n`;
+        }
+      } else {
+        context += `- ${formattedKey}: ${value}\n`;
+      }
+    }
+    context += '\n';
+  }
+
+  // Format raw data based on context type
+  if (rawData) {
+    if (Array.isArray(rawData)) {
+      context += `### Data (${rawData.length} items)\n`;
+
+      // Limit to prevent token overflow - take sample for large datasets
+      const sampleSize = 100;
+      const items = rawData.length > sampleSize
+        ? rawData.slice(0, sampleSize)
+        : rawData;
+
+      if (rawData.length > sampleSize) {
+        context += `(Showing first ${sampleSize} of ${rawData.length} items)\n\n`;
+      }
+
+      // Format each item
+      items.forEach((item: any, index: number) => {
+        context += formatDataItem(item, contextType, index);
+      });
+    } else if (typeof rawData === 'object') {
+      context += `### Data\n`;
+      context += JSON.stringify(rawData, null, 2);
+    }
+  }
+
+  return context;
+}
+
+// Get display title for context type
+function getContextTitle(contextType: string): string {
+  const titles: Record<string, string> = {
+    'collections': 'Sandwich Collections',
+    'events': 'Event Requests',
+    'organizations': 'Groups Catalog',
+    'holding-zone': 'Holding Zone',
+    'network': 'TSP Network',
+    'projects': 'Projects',
+    'meetings': 'Meetings',
+    'resources': 'Resources',
+    'links': 'Important Links',
+    'dashboard': 'Dashboard',
+    'volunteer-calendar': 'Volunteer Calendar',
+    'impact-reports': 'Impact Reports',
+    'general': 'Platform',
+  };
+  return titles[contextType] || 'Data';
+}
+
+// Format individual data item for AI context
+function formatDataItem(item: any, contextType: string, index: number): string {
+  // Skip null/undefined items
+  if (!item) return '';
+
+  // For groups/organizations catalog
+  if (contextType === 'organizations') {
+    const name = item.organizationName || item.name || item.groupName || 'Unknown';
+    const status = item.status || '';
+    const events = item.eventCount || item.totalRequests || 0;
+    const sandwiches = item.actualSandwichTotal || item.sandwichCount || 0;
+    const category = item.category || '';
+    const hasHosted = item.hasHostedEvent ? 'Yes' : 'No';
+
+    return `${index + 1}. **${name}**${category ? ` [${category}]` : ''} - Status: ${status}, Events: ${events}, Sandwiches: ${sandwiches.toLocaleString()}, Has Hosted: ${hasHosted}\n`;
+  }
+
+  // For event requests
+  if (contextType === 'events') {
+    const org = item.organizationName || 'Unknown';
+    const status = item.status || '';
+    const date = item.scheduledEventDate || item.desiredEventDate || '';
+    const sandwiches = item.estimatedSandwichCount || item.actualSandwichCount || 0;
+
+    return `${index + 1}. **${org}** - Date: ${date}, Status: ${status}, Sandwiches: ${sandwiches}\n`;
+  }
+
+  // For collections
+  if (contextType === 'collections') {
+    const host = item.hostName || 'Unknown';
+    const date = item.collectionDate || '';
+    const count = getCollectionSandwichCount(item);
+
+    return `${index + 1}. **${host}** - Date: ${date}, Sandwiches: ${count}\n`;
+  }
+
+  // For projects
+  if (contextType === 'projects') {
+    const title = item.title || 'Untitled';
+    const status = item.status || '';
+    const priority = item.priority || '';
+
+    return `${index + 1}. **${title}** - Status: ${status}, Priority: ${priority}\n`;
+  }
+
+  // For holding zone items
+  if (contextType === 'holding-zone') {
+    const content = item.content || item.title || 'No content';
+    const type = item.type || '';
+    const status = item.status || '';
+
+    return `${index + 1}. [${type}] **${content.substring(0, 100)}**${content.length > 100 ? '...' : ''} - Status: ${status}\n`;
+  }
+
+  // Default: show key fields
+  const keyFields = ['name', 'title', 'status', 'type', 'date', 'count'];
+  const relevantFields = Object.entries(item)
+    .filter(([key]) => keyFields.some(kf => key.toLowerCase().includes(kf)))
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(', ');
+
+  return `${index + 1}. ${relevantFields || JSON.stringify(item).substring(0, 200)}\n`;
+}
+
 // Build context for collections
 async function buildCollectionsContext(contextData?: Record<string, any>): Promise<string> {
   const allCollections = await db.query.sandwichCollections.findMany();
@@ -1062,118 +1210,185 @@ Resources is a library of documents and materials for The Sandwich Project:
 `;
 }
 
-// Build context for Organizations
+// Build context for Organizations (Groups Catalog)
+// Data comes from event requests and sandwich collections, NOT the organizations table
 async function buildOrganizationsContext(contextData?: Record<string, any>): Promise<string> {
   try {
-    const organizations = await db.query.organizations.findMany();
     const events = await db.query.eventRequests.findMany();
+    const collections = await db.query.sandwichCollections.findMany();
 
-    // Category stats
-    const categoryStats: Record<string, number> = {};
-    // School classification stats
-    const schoolClassificationStats: Record<string, number> = {};
-    // Religious vs non-religious
-    let religiousCount = 0;
-    let nonReligiousCount = 0;
+    // Build unique organizations from event requests
+    const orgDataMap = new Map<string, {
+      name: string;
+      eventCount: number;
+      sandwichCount: number;
+      hasHostedEvent: boolean;
+      latestEventDate: Date | null;
+      statuses: Set<string>;
+    }>();
 
-    organizations.forEach(org => {
-      const category = org.category || 'other';
-      categoryStats[category] = (categoryStats[category] || 0) + 1;
-
-      if (org.schoolClassification) {
-        schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
-      }
-
-      if (org.isReligious) {
-        religiousCount++;
-      } else {
-        nonReligiousCount++;
-      }
-    });
-
-    // Count events per organization
-    const eventsByOrg: Record<string, number> = {};
-    const sandwichesByOrg: Record<string, number> = {};
+    // Process event requests
     events.forEach(e => {
-      const orgName = e.organizationName;
-      if (orgName) {
-        eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
-        sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      const orgName = e.organizationName?.trim();
+      if (!orgName) return;
+
+      if (!orgDataMap.has(orgName)) {
+        orgDataMap.set(orgName, {
+          name: orgName,
+          eventCount: 0,
+          sandwichCount: 0,
+          hasHostedEvent: false,
+          latestEventDate: null,
+          statuses: new Set(),
+        });
+      }
+
+      const org = orgDataMap.get(orgName)!;
+      org.eventCount += 1;
+      org.sandwichCount += (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+
+      if (e.status) {
+        org.statuses.add(e.status);
+      }
+
+      if (e.status === 'completed' || e.status === 'contact_completed') {
+        org.hasHostedEvent = true;
+      }
+
+      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      if (eventDate) {
+        const date = new Date(eventDate);
+        if (!org.latestEventDate || date > org.latestEventDate) {
+          org.latestEventDate = date;
+        }
       }
     });
 
-    const orgsWithEvents = Object.keys(eventsByOrg).length;
+    // Process sandwich collections to find additional organizations
+    collections.forEach(c => {
+      const processOrgFromCollection = (orgName: string, count: number) => {
+        if (!orgName || orgName === 'Group' || orgName === 'Groups' || !orgName.trim()) return;
+
+        const cleanName = orgName.trim();
+        if (!orgDataMap.has(cleanName)) {
+          orgDataMap.set(cleanName, {
+            name: cleanName,
+            eventCount: 0,
+            sandwichCount: 0,
+            hasHostedEvent: true, // If in collections, they hosted
+            latestEventDate: c.collectionDate ? new Date(c.collectionDate) : null,
+            statuses: new Set(['completed']),
+          });
+        }
+
+        const org = orgDataMap.get(cleanName)!;
+        org.sandwichCount += (count || 0);
+        org.hasHostedEvent = true;
+      };
+
+      // Check legacy group fields
+      if (c.group1Name && c.group1Count) {
+        processOrgFromCollection(c.group1Name, c.group1Count);
+      }
+      if (c.group2Name && c.group2Count) {
+        processOrgFromCollection(c.group2Name, c.group2Count);
+      }
+
+      // Check JSON group collections
+      if (c.groupCollections && Array.isArray(c.groupCollections)) {
+        c.groupCollections.forEach((group: any) => {
+          if (group.name && group.count) {
+            processOrgFromCollection(group.name, group.count);
+          }
+        });
+      }
+    });
+
+    // Convert to array and calculate stats
+    const allOrgs = Array.from(orgDataMap.values());
+    const totalOrganizations = allOrgs.length;
+    const orgsWithEvents = allOrgs.filter(o => o.hasHostedEvent).length;
+    const orgsWithoutEvents = totalOrganizations - orgsWithEvents;
+
+    // Count by status
+    const statusCounts: Record<string, number> = {};
+    allOrgs.forEach(org => {
+      org.statuses.forEach(status => {
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+    });
 
     // Top organizations by event count
-    const topOrgsByEvents = Object.entries(eventsByOrg)
-      .sort((a, b) => b[1] - a[1])
+    const topOrgsByEvents = allOrgs
+      .filter(o => o.eventCount > 0)
+      .sort((a, b) => b.eventCount - a.eventCount)
       .slice(0, 10)
-      .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
+      .map(o => `- ${o.name}: ${o.eventCount} events, ${o.sandwichCount.toLocaleString()} sandwiches`);
 
-    // Recent organizations (by createdAt if available)
-    const recentOrgs = organizations
-      .filter(org => org.createdAt)
-      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+    // Top organizations by sandwich count
+    const topOrgsBySandwiches = allOrgs
+      .filter(o => o.sandwichCount > 0)
+      .sort((a, b) => b.sandwichCount - a.sandwichCount)
       .slice(0, 10)
-      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+      .map(o => `- ${o.name}: ${o.sandwichCount.toLocaleString()} sandwiches`);
 
-    // Organizations without events
-    const orgsWithoutEvents = organizations
-      .filter(org => !eventsByOrg[org.name])
+    // Recent organizations (by latest event date)
+    const recentOrgs = allOrgs
+      .filter(o => o.latestEventDate)
+      .sort((a, b) => (b.latestEventDate?.getTime() || 0) - (a.latestEventDate?.getTime() || 0))
       .slice(0, 10)
-      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+      .map(o => `- ${o.name} (${o.latestEventDate?.toLocaleDateString() || 'unknown date'})`);
 
     // Full organization list for reference (limited to avoid token limits)
-    const orgList = organizations
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    const orgList = allOrgs
+      .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 50)
-      .map(org => {
-        const evCount = eventsByOrg[org.name] || 0;
-        return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
-      });
+      .map(o => `- ${o.name}${o.eventCount > 0 ? ` - ${o.eventCount} events` : ''}${o.sandwichCount > 0 ? `, ${o.sandwichCount.toLocaleString()} sandwiches` : ''}`);
+
+    // Use contextData from the component if available
+    const componentStats = contextData?.summaryStats;
 
     return `
-## Organizations Data Summary
+## Groups Catalog Data Summary
 
 ### Overview
-- Total Organizations in Catalog: ${organizations.length}
-- Organizations with Events: ${orgsWithEvents}
-- Organizations without Events: ${organizations.length - orgsWithEvents}
-- Religious Organizations: ${religiousCount}
-- Non-Religious Organizations: ${nonReligiousCount}
+- Total Groups/Organizations in Catalog: ${componentStats?.totalOrganizations || totalOrganizations}
+- Total Contact Entries: ${componentStats?.totalContacts || totalOrganizations}
+- Groups that have Hosted Events: ${componentStats?.organizationsWithEvents || orgsWithEvents}
+- Groups without Events Yet: ${componentStats?.organizationsWithoutEvents || orgsWithoutEvents}
 
-### Organizations by Category
-${Object.entries(categoryStats)
+### Groups by Status
+${Object.entries(statusCounts)
   .sort((a, b) => b[1] - a[1])
-  .map(([category, count]) => `- ${category}: ${count}`)
-  .join('\n') || '- No categories defined'}
+  .map(([status, count]) => `- ${status}: ${count}`)
+  .join('\n') || '- No status data available'}
 
-### School Classifications
-${Object.entries(schoolClassificationStats)
-  .sort((a, b) => b[1] - a[1])
-  .map(([classification, count]) => `- ${classification}: ${count}`)
-  .join('\n') || '- No school classifications'}
+${componentStats?.categoryCounts ? `### Groups by Category
+${Object.entries(componentStats.categoryCounts)
+  .sort((a, b) => (b[1] as number) - (a[1] as number))
+  .map(([category, count]) => `- ${category || 'uncategorized'}: ${count}`)
+  .join('\n')}` : ''}
 
-### Top Organizations by Event Count
+### Top Groups by Event Count
 ${topOrgsByEvents.join('\n') || '- No events recorded'}
 
-### Recently Added Organizations
-${recentOrgs.join('\n') || '- No recent organizations'}
+### Top Groups by Sandwich Count
+${topOrgsBySandwiches.join('\n') || '- No sandwich data'}
 
-### Organizations Without Events (sample)
-${orgsWithoutEvents.join('\n') || '- All organizations have events'}
+### Recently Active Groups
+${recentOrgs.join('\n') || '- No recent activity'}
 
-### Organization Directory (first 50 alphabetically)
+### Groups Directory (first 50 alphabetically)
 ${orgList.join('\n')}
 
 ### About This Data
-The Organizations catalog (also called Groups Catalog) tracks all groups that partner with The Sandwich Project for sandwich-making events, including schools, churches, businesses, and community organizations.
+The Groups Catalog tracks all partner organizations that work with The Sandwich Project for sandwich-making events, including schools, churches, businesses, nonprofits, and community organizations. Data is derived from event requests and sandwich collection logs.
 `;
   } catch (error) {
     logger.error('Error building organizations context', { error });
     return `
-## Organizations Data Summary
-Error loading organizations data. Please try again.
+## Groups Catalog Data Summary
+Error loading groups data. Please try again.
 `;
   }
 }
@@ -1460,9 +1675,18 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     logger.info('AI chat request', { userId: req.user.id, contextType, messageLength: message.length });
 
-    // Build context based on type - always pass contextData for component-specific context
+    // PRIORITY: If component passes raw data, format it directly instead of querying DB
+    // This ensures AI sees the same data the component displays
     let dataSummary: string;
-    switch (contextType) {
+
+    if (contextData?.rawData) {
+      // Component provided its actual data - use it directly
+      dataSummary = formatRawDataForAI(contextType, contextData);
+      logger.info('Using component-provided raw data for AI context', { contextType });
+    } else {
+      // Fallback: Build context from database (legacy behavior)
+      logger.info('No raw data provided, falling back to database query', { contextType });
+      switch (contextType) {
       case 'collections':
         dataSummary = await buildCollectionsContext(contextData);
         break;
@@ -1507,6 +1731,7 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         break;
       default:
         dataSummary = await buildGeneralContext();
+      }
     }
 
     const systemPrompt = getSystemPrompt(contextType, dataSummary);

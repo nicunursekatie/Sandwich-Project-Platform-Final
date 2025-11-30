@@ -2144,13 +2144,27 @@ export default function GroupCatalog({
         subtitle="Ask about partner organizations"
         contextData={{
           currentView: 'groups-catalog',
-          searchTerm: searchTerm || undefined,
+          // Pass raw data so AI sees exactly what the component displays
+          rawData: sortedActiveGroups.flatMap(group =>
+            group.departments.map(dept => ({
+              organizationName: group.groupName,
+              category: organizationCategoryMap.get(group.groupName)?.category || null,
+              status: dept.status,
+              hasHostedEvent: dept.hasHostedEvent,
+              totalRequests: dept.totalRequests,
+              actualSandwichTotal: dept.actualSandwichTotal,
+              eventDate: dept.eventDate,
+              contactName: dept.contactName,
+              department: dept.department,
+            }))
+          ),
           filters: {
+            searchTerm: searchTerm || undefined,
             status: filters.status,
             category: filters.category,
             hostedEvents: filters.hostedEvents,
           },
-          selectedOrganization: selectedOrganization ? {
+          selectedItem: selectedOrganization ? {
             organizationName: selectedOrganization.organizationName,
             contactName: selectedOrganization.contactName,
             category: selectedOrganization.category,
@@ -2175,12 +2189,12 @@ export default function GroupCatalog({
           },
         }}
         suggestedQuestions={[
-          "Which organizations have had the most events?",
+          "How many groups are in our catalog?",
+          "Which groups have had the most events?",
           "How many schools vs churches do we partner with?",
-          "What organizations haven't had events yet?",
+          "What groups haven't hosted events yet?",
           "Show me the breakdown by category",
-          "Which organizations were recently added?",
-          "How many religious organizations do we work with?",
+          "Which groups were recently active?",
         ]}
       />
     </div>
