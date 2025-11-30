@@ -55,7 +55,7 @@ const createItemSchema = insertTeamBoardItemSchema
   });
 
 const updateItemSchema = z.object({
-  status: z.enum(['open', 'claimed', 'done']).optional(),
+  status: z.enum(['open', 'done']).optional(),
   assignedTo: z.array(z.string()).nullable().optional(),
   assignedToNames: z.array(z.string()).nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
@@ -239,7 +239,7 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
       userHasLiked: userLikedSet.has(item.id),
     }));
 
-    // Sort: open/claimed items first, then done items
+    // Sort: open items first, then done items
     const sortedItems = itemsWithCounts.sort((a, b) => {
       if (a.status === 'done' && b.status !== 'done') return 1;
       if (a.status !== 'done' && b.status === 'done') return -1;

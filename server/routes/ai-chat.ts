@@ -353,9 +353,25 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   // Track upcoming events with details
   const upcomingEventsList: { name: string; date: string; status: string; sandwiches: number; confirmed: boolean; address: string }[] = [];
 
+  // Track date range of all events
+  let earliestEventDate: Date | null = null;
+  let latestEventDate: Date | null = null;
+
   allEvents.forEach(e => {
     const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
     totalSandwiches += sandwichCount;
+
+    // Track date range
+    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    if (eventDate) {
+      const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
+      if (!earliestEventDate || date < earliestEventDate) {
+        earliestEventDate = date;
+      }
+      if (!latestEventDate || date > latestEventDate) {
+        latestEventDate = date;
+      }
+    }
 
     // Category stats
     const category = e.organizationCategory || 'other';
@@ -365,8 +381,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     categoryStats[category].events++;
     categoryStats[category].sandwiches += sandwichCount;
 
-    // Monthly stats
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    // Monthly stats (reuse eventDate from date range tracking above)
     if (eventDate) {
       const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -483,6 +498,11 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   upcomingEventsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   stalledInProcessList.sort((a, b) => b.daysSinceContact - a.daysSinceContact);
 
+  // Format date range string
+  const dateRangeStr = earliestEventDate && latestEventDate
+    ? `${formatEventDate(earliestEventDate)} to ${formatEventDate(latestEventDate)}`
+    : 'No dates available';
+
   return `
 ## Event Data Summary
 ${componentContext}
@@ -490,6 +510,7 @@ ${componentContext}
 - Total Events: ${allEvents.length}
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Average Per Event: ${allEvents.length > 0 ? Math.round(totalSandwiches / allEvents.length) : 0}
+- **Data Time Period: ${dateRangeStr}** (This is the date range spanning all events in the system, from earliest to latest event date)
 
 ### Events by Status
 ${Object.entries(statusCounts)
@@ -627,12 +648,13 @@ async function buildHoldingZoneContext(contextData?: Record<string, any>): Promi
   }
 
   // Calculate metrics
-  const statusCounts: Record<string, number> = { open: 0, claimed: 0, done: 0 };
+  const statusCounts: Record<string, number> = { open: 0, done: 0 };
   const typeCounts: Record<string, number> = { task: 0, note: 0, idea: 0 };
   const urgentCount = items.filter(i => i.isUrgent).length;
 
   items.forEach(item => {
-    statusCounts[item.status || 'open']++;
+    const status = item.status === 'done' ? 'done' : 'open';
+    statusCounts[status]++;
     typeCounts[item.type || 'task']++;
   });
 
@@ -646,7 +668,6 @@ ${componentContext}
 ### Current Items Overview
 - Total Items: ${items.length}
 - Open Items: ${statusCounts.open}
-- Claimed Items: ${statusCounts.claimed}
 - Completed Items: ${statusCounts.done}
 - Urgent Items: ${urgentCount}
 
@@ -940,24 +961,83 @@ Resources is a library of documents and materials for The Sandwich Project:
 
 // Build context for Organizations
 async function buildOrganizationsContext(contextData?: Record<string, any>): Promise<string> {
-  const organizations = await db.query.organizations.findMany();
-  const events = await db.query.eventRequests.findMany();
+  try {
+    const organizations = await db.query.organizations.findMany();
+    const events = await db.query.eventRequests.findMany();
 
-  const categoryStats: Record<string, number> = {};
-  organizations.forEach(org => {
-    const category = org.category || 'other';
-    categoryStats[category] = (categoryStats[category] || 0) + 1;
-  });
+    // Category stats
+    const categoryStats: Record<string, number> = {};
+    // School classification stats
+    const schoolClassificationStats: Record<string, number> = {};
+    // Religious vs non-religious
+    let religiousCount = 0;
+    let nonReligiousCount = 0;
 
-  // Count events per organization
-  const orgsWithEvents = new Set(events.map(e => e.organizationName).filter(Boolean));
+    organizations.forEach(org => {
+      const category = org.category || 'other';
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
 
-  return `
+      if (org.schoolClassification) {
+        schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
+      }
+
+      if (org.isReligious) {
+        religiousCount++;
+      } else {
+        nonReligiousCount++;
+      }
+    });
+
+    // Count events per organization
+    const eventsByOrg: Record<string, number> = {};
+    const sandwichesByOrg: Record<string, number> = {};
+    events.forEach(e => {
+      const orgName = e.organizationName;
+      if (orgName) {
+        eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
+        sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      }
+    });
+
+    const orgsWithEvents = Object.keys(eventsByOrg).length;
+
+    // Top organizations by event count
+    const topOrgsByEvents = Object.entries(eventsByOrg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
+
+    // Recent organizations (by createdAt if available)
+    const recentOrgs = organizations
+      .filter(org => org.createdAt)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Organizations without events
+    const orgsWithoutEvents = organizations
+      .filter(org => !eventsByOrg[org.name])
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Full organization list for reference (limited to avoid token limits)
+    const orgList = organizations
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .slice(0, 50)
+      .map(org => {
+        const evCount = eventsByOrg[org.name] || 0;
+        return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
+      });
+
+    return `
 ## Organizations Data Summary
 
 ### Overview
-- Total Organizations: ${organizations.length}
-- Organizations with Events: ${orgsWithEvents.size}
+- Total Organizations in Catalog: ${organizations.length}
+- Organizations with Events: ${orgsWithEvents}
+- Organizations without Events: ${organizations.length - orgsWithEvents}
+- Religious Organizations: ${religiousCount}
+- Non-Religious Organizations: ${nonReligiousCount}
 
 ### Organizations by Category
 ${Object.entries(categoryStats)
@@ -965,14 +1045,36 @@ ${Object.entries(categoryStats)
   .map(([category, count]) => `- ${category}: ${count}`)
   .join('\n') || '- No categories defined'}
 
-### About Organizations
-The Organizations catalog tracks groups that partner with The Sandwich Project:
-- Schools, churches, businesses, and community groups
-- Contact information and key contacts
-- Event history and relationships
-- Notes and special requirements
+### School Classifications
+${Object.entries(schoolClassificationStats)
+  .sort((a, b) => b[1] - a[1])
+  .map(([classification, count]) => `- ${classification}: ${count}`)
+  .join('\n') || '- No school classifications'}
+
+### Top Organizations by Event Count
+${topOrgsByEvents.join('\n') || '- No events recorded'}
+
+### Recently Added Organizations
+${recentOrgs.join('\n') || '- No recent organizations'}
+
+### Organizations Without Events (sample)
+${orgsWithoutEvents.join('\n') || '- All organizations have events'}
+
+### Organization Directory (first 50 alphabetically)
+${orgList.join('\n')}
+
+### About This Data
+The Organizations catalog (also called Groups Catalog) tracks all groups that partner with The Sandwich Project for sandwich-making events, including schools, churches, businesses, and community organizations.
 `;
+  } catch (error) {
+    logger.error('Error building organizations context', { error });
+    return `
+## Organizations Data Summary
+Error loading organizations data. Please try again.
+`;
+  }
 }
+
 
 // Build context for Important Links
 async function buildLinksContext(contextData?: Record<string, any>): Promise<string> {
@@ -1053,11 +1155,12 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 
 CRITICAL RULES - YOU MUST FOLLOW THESE:
 1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
 2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
-3. If asked about something not in the data, say "That information is not tracked in the current data."
+3. If asked about something truly not present in the data, say "That information is not tracked in the current data." BUT first check carefully - date ranges, time periods, and monthly breakdowns ARE included in the data summary.
 4. Never make up statistics or trends that aren't directly derivable from the provided data.
 5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
 6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
 7. When referring to dates, use today's date (shown above) as your reference point. Do NOT assume it is any date other than today.
+8. When you show a chart and the user asks follow-up questions about that data (like "what time period does this cover?"), answer using the data summary - the time period, date ranges, and breakdown by month are all included in the data. Do NOT say the information isn't tracked when it clearly is.
 
 When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
 \`\`\`chart
