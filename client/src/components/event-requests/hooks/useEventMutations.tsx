@@ -39,6 +39,7 @@ export const useEventMutations = () => {
               try {
                 await apiRequest('POST', `/api/event-requests/${deletedId}/restore`);
                 queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
                 dismiss();
                 toast({
                   title: 'Event request restored',
@@ -59,6 +60,7 @@ export const useEventMutations = () => {
         ),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
       setShowEventDetails(false);
       setSelectedEventRequest(null);
     },
@@ -90,6 +92,11 @@ export const useEventMutations = () => {
 
       await queryClient.invalidateQueries({
         queryKey: ['/api/event-requests'],
+        refetchType: 'all'
+      });
+      // Also invalidate the v2 query key used by the context
+      await queryClient.invalidateQueries({
+        queryKey: ['/api/event-requests', 'v2'],
         refetchType: 'all'
       });
 
@@ -137,9 +144,16 @@ export const useEventMutations = () => {
         queryKey: ['/api/event-requests'],
         refetchType: 'all'
       });
+      await queryClient.invalidateQueries({
+        queryKey: ['/api/event-requests', 'v2'],
+        refetchType: 'all'
+      });
 
       await queryClient.refetchQueries({
         queryKey: ['/api/event-requests']
+      });
+      await queryClient.refetchQueries({
+        queryKey: ['/api/event-requests', 'v2']
       });
 
       setShowEventDetails(false);
@@ -176,6 +190,7 @@ export const useEventMutations = () => {
         description: 'Event status updated to "In Process".',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -215,6 +230,7 @@ export const useEventMutations = () => {
         description: 'Call has been scheduled successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -254,6 +270,7 @@ export const useEventMutations = () => {
         description: 'Event field has been updated successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -290,6 +307,7 @@ export const useEventMutations = () => {
         description: 'Follow-up has been marked as completed.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -325,6 +343,7 @@ export const useEventMutations = () => {
         description: 'Follow-up has been marked as completed.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -358,6 +377,7 @@ export const useEventMutations = () => {
         description: 'The event date has been updated successfully.',
       });
       await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
     },
     onError: () => {
       toast({
@@ -387,6 +407,7 @@ export const useEventMutations = () => {
 
       // Invalidate and refetch event requests
       await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
@@ -434,6 +455,7 @@ export const useEventMutations = () => {
 
       // Invalidate and refetch event requests
       await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
