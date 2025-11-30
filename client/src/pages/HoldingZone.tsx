@@ -799,6 +799,7 @@ export default function HoldingZone() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/standalone-tasks'] });
       setPromoteDialogOpen(false);
       setItemToPromote(null);
       setPromotePriority('medium');

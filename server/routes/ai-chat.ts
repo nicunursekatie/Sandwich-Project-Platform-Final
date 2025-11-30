@@ -689,89 +689,83 @@ Resources is a library of documents and materials for The Sandwich Project:
 
 // Build context for Organizations
 async function buildOrganizationsContext(): Promise<string> {
-  const organizations = await db.query.organizations.findMany();
-  const events = await db.query.eventRequests.findMany();
+  try {
+    const organizations = await db.query.organizations.findMany();
+    const events = await db.query.eventRequests.findMany();
 
-  // Category stats
-  const categoryStats: Record<string, number> = {};
-  // School classification stats
-  const schoolClassificationStats: Record<string, number> = {};
-  // Religious vs non-religious
-  let religiousCount = 0;
-  let nonReligiousCount = 0;
-  // Track organizations with notes
-  let orgsWithNotes = 0;
+    // Category stats
+    const categoryStats: Record<string, number> = {};
+    // School classification stats
+    const schoolClassificationStats: Record<string, number> = {};
+    // Religious vs non-religious
+    let religiousCount = 0;
+    let nonReligiousCount = 0;
 
-  organizations.forEach(org => {
-    const category = org.category || 'other';
-    categoryStats[category] = (categoryStats[category] || 0) + 1;
+    organizations.forEach(org => {
+      const category = org.category || 'other';
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
 
-    if (org.schoolClassification) {
-      schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
-    }
+      if (org.schoolClassification) {
+        schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
+      }
 
-    if (org.isReligious) {
-      religiousCount++;
-    } else {
-      nonReligiousCount++;
-    }
-
-    if (org.notes && org.notes.trim()) {
-      orgsWithNotes++;
-    }
-  });
-
-  // Count events per organization
-  const eventsByOrg: Record<string, number> = {};
-  const sandwichesByOrg: Record<string, number> = {};
-  events.forEach(e => {
-    const orgName = e.organizationName;
-    if (orgName) {
-      eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
-      sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
-    }
-  });
-
-  const orgsWithEvents = Object.keys(eventsByOrg).length;
-
-  // Top organizations by event count
-  const topOrgsByEvents = Object.entries(eventsByOrg)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
-
-  // Recent organizations (by createdAt if available, or just list some)
-  const recentOrgs = organizations
-    .filter(org => org.createdAt)
-    .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
-    .slice(0, 10)
-    .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
-
-  // Organizations without events
-  const orgsWithoutEvents = organizations
-    .filter(org => !eventsByOrg[org.name])
-    .slice(0, 10)
-    .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
-
-  // Full organization list for reference (limited to avoid token limits)
-  const orgList = organizations
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    .slice(0, 50)
-    .map(org => {
-      const evCount = eventsByOrg[org.name] || 0;
-      return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
+      if (org.isReligious) {
+        religiousCount++;
+      } else {
+        nonReligiousCount++;
+      }
     });
 
-  return `
+    // Count events per organization
+    const eventsByOrg: Record<string, number> = {};
+    const sandwichesByOrg: Record<string, number> = {};
+    events.forEach(e => {
+      const orgName = e.organizationName;
+      if (orgName) {
+        eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
+        sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      }
+    });
+
+    const orgsWithEvents = Object.keys(eventsByOrg).length;
+
+    // Top organizations by event count
+    const topOrgsByEvents = Object.entries(eventsByOrg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
+
+    // Recent organizations (by createdAt if available)
+    const recentOrgs = organizations
+      .filter(org => org.createdAt)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Organizations without events
+    const orgsWithoutEvents = organizations
+      .filter(org => !eventsByOrg[org.name])
+      .slice(0, 10)
+      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+
+    // Full organization list for reference (limited to avoid token limits)
+    const orgList = organizations
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .slice(0, 50)
+      .map(org => {
+        const evCount = eventsByOrg[org.name] || 0;
+        return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
+      });
+
+    return `
 ## Organizations Data Summary
 
 ### Overview
-- Total Organizations: ${organizations.length}
+- Total Organizations in Catalog: ${organizations.length}
 - Organizations with Events: ${orgsWithEvents}
 - Organizations without Events: ${organizations.length - orgsWithEvents}
 - Religious Organizations: ${religiousCount}
 - Non-Religious Organizations: ${nonReligiousCount}
-- Organizations with Notes: ${orgsWithNotes}
 
 ### Organizations by Category
 ${Object.entries(categoryStats)
@@ -797,16 +791,16 @@ ${orgsWithoutEvents.join('\n') || '- All organizations have events'}
 ### Organization Directory (first 50 alphabetically)
 ${orgList.join('\n')}
 
-### About Organizations
-The Organizations catalog tracks groups that partner with The Sandwich Project:
-- Schools (elementary, middle, high school, college)
-- Churches and religious organizations
-- Businesses and corporate partners
-- Community groups and nonprofits
-- Contact information and key contacts
-- Event history and sandwich delivery records
-- Notes and special requirements
+### About This Data
+The Organizations catalog (also called Groups Catalog) tracks all groups that partner with The Sandwich Project for sandwich-making events, including schools, churches, businesses, and community organizations.
 `;
+  } catch (error) {
+    logger.error('Error building organizations context', { error });
+    return `
+## Organizations Data Summary
+Error loading organizations data. Please try again.
+`;
+  }
 }
 
 
