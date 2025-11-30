@@ -769,7 +769,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         dateObj = new Date(`${year}-${month}-${day}T12:00:00`);
       }
       
-      return format(dateObj, 'M/d/yyyy');
+      return format(dateObj, 'M/d/yy');
     } catch {
       return '';
     }
@@ -1075,7 +1075,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'eventDate',
       label: 'Date',
-      width: '80px',
+      width: '68px',
       sortable: true,
       frozen: true,
       center: true,
