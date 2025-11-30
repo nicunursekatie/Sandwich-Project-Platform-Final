@@ -585,11 +585,16 @@ Thank you for helping us spread the word about our mission!`,
               <p>A new social media graphic is now available for you to share!</p>
               <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="margin-top: 0; color: #007E8C;">${graphic.title}</h3>
+                ${graphic.fileType?.startsWith('image/') ? `
+                  <div style="text-align: center; margin: 15px 0;">
+                    <img src="${graphic.imageUrl}" alt="${graphic.title}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                  </div>
+                ` : ''}
                 <p style="color: #333;"><strong>Description:</strong> ${graphic.description}</p>
                 ${graphic.intendedUseDate ? `<p style="color: #333;"><strong>Intended Use Date:</strong> ${new Date(graphic.intendedUseDate).toLocaleDateString()}</p>` : ''}
                 <p style="color: #666; font-size: 0.9em;"><strong>Uploaded by:</strong> ${graphic.uploadedByName}</p>
               </div>
-              <p>Please log in to the platform to view and download the graphic.</p>
+              <p>Please log in to the platform to view and download the full-resolution graphic.</p>
               <p>Thank you for helping us spread the word about our mission!</p>
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.8em;">
                 <p>This is an automated message from the Sandwich Project Platform.</p>
