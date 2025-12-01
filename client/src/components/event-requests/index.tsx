@@ -1246,14 +1246,48 @@ const EventRequestsManagementContent: React.FC = () => {
               confirmationFilter,
               searchQuery,
             },
-            summaryStats: {
-              totalEvents: eventRequests.length,
-              scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
-              inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
-              newRequests: eventRequests.filter(e => e.status === 'new').length,
-              completedEvents: eventRequests.filter(e => e.status === 'completed').length,
-              confirmedEvents: eventRequests.filter(e => e.isConfirmed).length,
-            },
+            summaryStats: (() => {
+              // Calculate this week's events (Mon-Sun)
+              const now = new Date();
+              const dayOfWeek = now.getDay();
+              const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+              const monday = new Date(now);
+              monday.setDate(now.getDate() + mondayOffset);
+              monday.setHours(0, 0, 0, 0);
+              const sunday = new Date(monday);
+              sunday.setDate(monday.getDate() + 6);
+              sunday.setHours(23, 59, 59, 999);
+
+              const thisWeekEvents = eventRequests.filter(e => {
+                const eventDate = e.scheduledEventDate || e.desiredEventDate;
+                if (!eventDate) return false;
+                const date = new Date(eventDate);
+                return date >= monday && date <= sunday && ['scheduled', 'in_process'].includes(e.status);
+              });
+
+              const thisWeekSandwiches = thisWeekEvents.reduce((sum, e) =>
+                sum + (e.estimatedSandwichCount || e.actualSandwichCount || 0), 0
+              );
+
+              return {
+                totalEvents: eventRequests.length,
+                scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+                inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
+                newRequests: eventRequests.filter(e => e.status === 'new').length,
+                completedEvents: eventRequests.filter(e => e.status === 'completed').length,
+                confirmedEvents: eventRequests.filter(e => e.isConfirmed).length,
+                // Pre-calculated weekly stats so AI doesn't have to count from truncated data
+                thisWeekDateRange: `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+                thisWeekEventCount: thisWeekEvents.length,
+                thisWeekSandwichTotal: thisWeekSandwiches,
+                thisWeekEventsList: thisWeekEvents.map(e => ({
+                  name: e.organizationName,
+                  date: new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                  sandwiches: e.estimatedSandwichCount || e.actualSandwichCount || 0,
+                  status: e.status,
+                })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+              };
+            })(),
           }}
           getFullContext={() => ({
             rawData: eventRequests.map(e => ({

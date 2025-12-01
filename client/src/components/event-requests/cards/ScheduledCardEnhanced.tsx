@@ -475,16 +475,62 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     setIsExportingToSheet(true);
 
     try {
-      // Build staffing summary
+      // Build staffing string in the format the spreadsheet expects:
+      // D = driver needed, D: Name = driver assigned
+      // S = speaker needed, S: Name = speaker assigned
+      // V = volunteer needed, V: Name = volunteer assigned
+      // VD = van driver needed, VD: Name = van driver assigned
       const staffingParts: string[] = [];
-      if (driverNeeded > 0) {
-        staffingParts.push(`${driverAssigned}/${driverNeeded} drivers`);
+
+      // Drivers
+      const assignedDriverIds = parsePostgresArray(request.assignedDriverIds);
+      const driversNeededCount = request.driversNeeded || 0;
+      assignedDriverIds.forEach(id => {
+        const name = extractCustomName(id) || resolveUserName(id);
+        staffingParts.push(name ? `D: ${name}` : 'D');
+      });
+      // Add unfilled driver slots
+      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
+      for (let i = 0; i < unfilledDrivers; i++) {
+        staffingParts.push('D');
       }
-      if (speakerNeeded > 0) {
-        staffingParts.push(`${speakerAssigned}/${speakerNeeded} speakers`);
+
+      // Van Driver (separate from regular drivers)
+      if (request.assignedVanDriverId) {
+        const name = resolveUserName(request.assignedVanDriverId);
+        staffingParts.push(name ? `VD: ${name}` : 'VD');
+      } else if (request.vanDriverNeeded) {
+        staffingParts.push('VD');
       }
-      if (volunteerNeeded > 0) {
-        staffingParts.push(`${volunteerAssigned}/${volunteerNeeded} volunteers`);
+
+      // Speakers
+      const speakerDetails = request.speakerDetails as Record<string, { name?: string }> | null;
+      const assignedSpeakerIds = speakerDetails ? Object.keys(speakerDetails) : [];
+      const speakersNeededCount = request.speakersNeeded || 0;
+      assignedSpeakerIds.forEach(id => {
+        const detailName = speakerDetails?.[id]?.name;
+        const customName = extractCustomName(id);
+        const userName = resolveUserName(id);
+        const name = detailName || customName || userName;
+        staffingParts.push(name ? `S: ${name}` : 'S');
+      });
+      // Add unfilled speaker slots
+      const unfilledSpeakers = Math.max(0, speakersNeededCount - assignedSpeakerIds.length);
+      for (let i = 0; i < unfilledSpeakers; i++) {
+        staffingParts.push('S');
+      }
+
+      // Volunteers
+      const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
+      const volunteersNeededCount = request.volunteersNeeded || 0;
+      assignedVolunteerIds.forEach(id => {
+        const name = extractCustomName(id) || resolveUserName(id);
+        staffingParts.push(name ? `V: ${name}` : 'V');
+      });
+      // Add unfilled volunteer slots
+      const unfilledVolunteers = Math.max(0, volunteersNeededCount - assignedVolunteerIds.length);
+      for (let i = 0; i < unfilledVolunteers; i++) {
+        staffingParts.push('V');
       }
 
       // Build details from various notes
