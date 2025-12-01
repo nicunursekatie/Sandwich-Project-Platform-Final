@@ -562,13 +562,44 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         }
       }
 
-      // Get TSP contact name
-      const tspContactName = request.customTspContact ||
-        (request.tspContact ? resolveUserName(request.tspContact) : '');
+      // Get TSP contact name - check multiple possible fields
+      let tspContactName = request.customTspContact || '';
+      if (!tspContactName && request.tspContactAssigned) {
+        tspContactName = resolveUserName(request.tspContactAssigned);
+      }
+      if (!tspContactName && request.tspContact) {
+        tspContactName = resolveUserName(request.tspContact);
+      }
 
       // Get recipient/host info
       const recipientIds = parsePostgresArray(request.assignedRecipientIds);
       const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
+
+      // Determine van booked status
+      let vanBookedStatus = '';
+      if (request.assignedVanDriverId || request.customVanDriverName) {
+        vanBookedStatus = 'Yes';
+      } else if (request.vanDriverNeeded) {
+        vanBookedStatus = 'Needed';
+      } else if (request.selfTransport) {
+        vanBookedStatus = 'Self Transport';
+      }
+
+      // Debug logging for troubleshooting
+      console.log('Add to Sheet data:', {
+        sandwichTotal,
+        sandwichTypeStr,
+        tspContactName,
+        vanBookedStatus,
+        rawSandwichTypes: request.sandwichTypes,
+        parsedTypes,
+        estimatedSandwichCount: request.estimatedSandwichCount,
+        tspContactAssigned: request.tspContactAssigned,
+        tspContact: request.tspContact,
+        customTspContact: request.customTspContact,
+        vanDriverNeeded: request.vanDriverNeeded,
+        assignedVanDriverId: request.assignedVanDriverId,
+      });
 
       const result = await addEventToGoogleSheet({
         // Required
@@ -584,14 +615,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         staffing: staffingParts.join(', '),
         estimate: sandwichTotal ? String(sandwichTotal) : '',
         sandwichType: sandwichTypeStr,
-        // Contact info
-        contactName: request.contactName || '',
-        contactEmail: request.contactEmail || '',
-        contactPhone: request.contactPhone || '',
+        // Contact info - use submitter contact fields
+        contactName: [request.firstName, request.lastName].filter(Boolean).join(' ') || '',
+        contactEmail: request.email || '',
+        contactPhone: request.phone || '',
         tspContact: tspContactName,
         // Location
         address: request.eventAddress || '',
-        vanBooked: request.assignedVanDriverId ? 'Yes' : (request.vanDriverNeeded ? 'Needed' : ''),
+        vanBooked: vanBookedStatus,
         // Notes
         notes: request.followUpNotes || '',
         additionalNotes: request.duplicateNotes || '',
