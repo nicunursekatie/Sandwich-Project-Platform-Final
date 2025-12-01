@@ -80,7 +80,7 @@ export const useEventMutations = () => {
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
       return apiRequest('PATCH', `/api/event-requests/${id}`, data);
     },
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       logger.log('=== UPDATE SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
       logger.log('Variables:', variables);
@@ -90,14 +90,15 @@ export const useEventMutations = () => {
         description: 'The event request has been successfully updated.',
       });
 
-      await queryClient.invalidateQueries({
+      // Don't await - let queries refetch in background for faster UI response
+      // Use 'active' to only refetch mounted queries, not all cached queries
+      queryClient.invalidateQueries({
         queryKey: ['/api/event-requests'],
-        refetchType: 'all'
+        refetchType: 'active'
       });
-      // Also invalidate the v2 query key used by the context
-      await queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: ['/api/event-requests', 'v2'],
-        refetchType: 'all'
+        refetchType: 'active'
       });
 
       setShowEventDetails(false);
