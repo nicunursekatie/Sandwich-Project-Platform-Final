@@ -434,7 +434,7 @@ export function PlanningTab({
           </DialogHeader>
 
           <div className="space-y-6 mt-6">
-            <SandwichForecastWidget />
+            <SandwichForecastWidget hideHeader />
 
             <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
               <h4 className="font-semibold text-[#1A2332] mb-2 flex items-center gap-2">
@@ -487,7 +487,7 @@ export function PlanningTab({
           </DialogHeader>
 
           <div className="space-y-6 mt-6">
-            <StaffingForecastWidget />
+            <StaffingForecastWidget hideHeader />
 
             <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
               <h4 className="font-semibold text-[#1A2332] mb-2 flex items-center gap-2">

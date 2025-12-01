@@ -43,7 +43,11 @@ interface WeeklyStaffing {
   };
 }
 
-export default function StaffingForecastWidget() {
+interface StaffingForecastWidgetProps {
+  hideHeader?: boolean;
+}
+
+export default function StaffingForecastWidget({ hideHeader = false }: StaffingForecastWidgetProps) {
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
 
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
@@ -231,20 +235,22 @@ export default function StaffingForecastWidget() {
 
   return (
     <TooltipProvider>
-      <Card className="border-2 border-orange-200">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-brand-orange flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Weekly Staffing Planning
-          </CardTitle>
-          <p className="text-sm text-[#646464] mt-1">
-            Track driver, speaker, and volunteer needs for upcoming events requiring staffing.
-          </p>
-          <p className="text-xs text-brand-orange mt-1 font-medium">
-            👥 Focus on scheduled events that need volunteers
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <Card className={hideHeader ? "border-0 shadow-none" : "border-2 border-orange-200"}>
+        {!hideHeader && (
+          <CardHeader className="pb-3">
+            <CardTitle className="text-brand-orange flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Weekly Staffing Planning
+            </CardTitle>
+            <p className="text-sm text-[#646464] mt-1">
+              Track driver, speaker, and volunteer needs for upcoming events requiring staffing.
+            </p>
+            <p className="text-xs text-brand-orange mt-1 font-medium">
+              👥 Focus on scheduled events that need volunteers
+            </p>
+          </CardHeader>
+        )}
+        <CardContent className={hideHeader ? "p-0 space-y-6" : "space-y-6"}>
           {/* Week Navigation */}
           <div className="flex items-center justify-between mb-4">
             <Button

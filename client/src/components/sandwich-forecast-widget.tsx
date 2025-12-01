@@ -11,7 +11,11 @@ import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate } from '@/components/event-requests/utils';
 
-export default function SandwichForecastWidget() {
+interface SandwichForecastWidgetProps {
+  hideHeader?: boolean;
+}
+
+export default function SandwichForecastWidget({ hideHeader = false }: SandwichForecastWidgetProps) {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests?all=true'],
   });
@@ -346,47 +350,49 @@ export default function SandwichForecastWidget() {
   }
 
   return (
-    <Card className="border-2 border-brand-primary/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-brand-primary flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Weekly Sandwich Planning
-            </CardTitle>
-            <p className="text-sm text-[#646464] mt-1">
-              Events grouped by Thursday distribution date. {useWeekendAfter ? 'Wed/Thu events use weekend AFTER.' : 'Tue/Wed/Thu events use same week.'}
-            </p>
-            <p className="text-xs text-brand-primary mt-1 font-medium">
-              📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
-            </p>
-          </div>
-          <div className="flex flex-col gap-1 items-end ml-4">
-            <label className="text-xs font-medium text-[#646464]">Wed/Thu Sandwiches</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={useWeekendAfter ? 'outline' : 'default'}
-                onClick={() => setUseWeekendAfter(false)}
-                className="text-xs h-7"
-              >
-                Weekend Before
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={useWeekendAfter ? 'default' : 'outline'}
-                onClick={() => setUseWeekendAfter(true)}
-                className="text-xs h-7"
-              >
-                Weekend After
-              </Button>
+    <Card className={hideHeader ? "border-0 shadow-none" : "border-2 border-brand-primary/20"}>
+      {!hideHeader && (
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-brand-primary flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Weekly Sandwich Planning
+              </CardTitle>
+              <p className="text-sm text-[#646464] mt-1">
+                Events grouped by Thursday distribution date. {useWeekendAfter ? 'Wed/Thu events use weekend AFTER.' : 'Tue/Wed/Thu events use same week.'}
+              </p>
+              <p className="text-xs text-brand-primary mt-1 font-medium">
+                📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 items-end ml-4">
+              <label className="text-xs font-medium text-[#646464]">Wed/Thu Sandwiches</label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={useWeekendAfter ? 'outline' : 'default'}
+                  onClick={() => setUseWeekendAfter(false)}
+                  className="text-xs h-7"
+                >
+                  Weekend Before
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={useWeekendAfter ? 'default' : 'outline'}
+                  onClick={() => setUseWeekendAfter(true)}
+                  className="text-xs h-7"
+                >
+                  Weekend After
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </CardHeader>
+      )}
+      <CardContent className={hideHeader ? "p-0 space-y-6" : "space-y-6"}>
         {/* Week Navigation */}
         <div className="flex items-center justify-between mb-4">
           <Button
