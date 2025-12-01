@@ -19,6 +19,7 @@ import {
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { formatEventDate } from '@/components/event-requests/utils';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -356,28 +357,8 @@ export default function StaffingForecastWidget() {
                               // Use scheduledEventDate first, fall back to desiredEventDate
                               const dateStr = event.scheduledEventDate || event.desiredEventDate;
                               if (!dateStr) return 'Date TBD';
-
-                              // Handle various date formats
-                              let date: Date;
-                              if (typeof dateStr === 'string') {
-                                // If it's just a date (YYYY-MM-DD), append noon to avoid timezone issues
-                                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                                  date = new Date(dateStr + 'T12:00:00');
-                                } else {
-                                  // Full ISO string or other format
-                                  date = new Date(dateStr);
-                                }
-                              } else {
-                                date = new Date(dateStr);
-                              }
-
-                              if (isNaN(date.getTime())) return 'Date TBD';
-
-                              return date.toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric'
-                              });
+                              const dateInfo = formatEventDate(dateStr.toString());
+                              return dateInfo.text || 'Date TBD';
                             })()}
                           </div>
                         </div>
