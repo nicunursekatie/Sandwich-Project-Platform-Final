@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { formatEventDate } from '@/components/event-requests/utils';
 
 export default function SandwichForecastWidget() {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
@@ -493,13 +494,13 @@ export default function SandwichForecastWidget() {
               {distributionEvents.map(event => {
                 // Use scheduledEventDate first, fall back to desiredEventDate
                 const dateStr = event.scheduledEventDate || event.desiredEventDate;
-                const eventDate = dateStr ? parseEventDate(dateStr) : null;
+                const dateInfo = dateStr ? formatEventDate(dateStr.toString()) : null;
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate ? eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Date TBD'}
+                        {dateInfo ? dateInfo.text : 'Date TBD'}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -566,13 +567,13 @@ export default function SandwichForecastWidget() {
               {otherEvents.map(event => {
                 // Use scheduledEventDate first, fall back to desiredEventDate
                 const dateStr = event.scheduledEventDate || event.desiredEventDate;
-                const eventDate = dateStr ? parseEventDate(dateStr) : null;
+                const dateInfo = dateStr ? formatEventDate(dateStr.toString()) : null;
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate ? eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Date TBD'}
+                        {dateInfo ? dateInfo.text : 'Date TBD'}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
