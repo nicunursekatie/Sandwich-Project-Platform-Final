@@ -552,6 +552,23 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Message from Event Request */}
+            {request.message && request.message.trim() && (
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm uppercase font-bold tracking-wide text-blue-700 mb-1">
+                      Message from Request:
+                    </p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                      {request.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Contact Info */}

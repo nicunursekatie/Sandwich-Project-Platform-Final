@@ -28,26 +28,46 @@ export class BackgroundSyncService {
     logger.log('🚀 Starting background Google Sheets sync service...');
     logger.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
     logger.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
+    logger.log('🔄 CRITICAL: Sync will continue running even if individual syncs fail');
     this.isRunning = true;
 
     // Run sync immediately on startup with error handling
-    this.performSync().catch((error) => {
-      syncLogger.error('Initial background sync failed', { error });
-      logger.error('❌ Initial background sync failed:', error);
-    });
+    this.performSync()
+      .then(() => {
+        logger.log('✅ Initial background sync completed successfully');
+        syncLogger.info('Initial background sync completed');
+      })
+      .catch((error) => {
+        syncLogger.error('Initial background sync failed', { 
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        logger.error('❌ Initial background sync failed:', error);
+        logger.log('⚠️ Background sync service will continue running and retry on next interval');
+        // CRITICAL: Don't stop the service - it will retry on the next interval
+      });
 
     // Set up recurring sync every 5 minutes
+    // CRITICAL: Use a wrapper that ensures sync continues even if errors occur
     this.syncInterval = setInterval(
       () => {
-        this.performSync().catch((error) => {
-          syncLogger.error('Scheduled background sync failed', { error });
-          logger.error('❌ Scheduled background sync failed:', error);
-        });
+        this.performSync()
+          .catch((error) => {
+            syncLogger.error('Scheduled background sync failed', { error });
+            logger.error('❌ Scheduled background sync failed:', error);
+            // CRITICAL: Log but don't stop - sync will retry on next interval
+            logger.log('⚠️ Background sync will retry on next interval (every 5 minutes)');
+          })
+          .finally(() => {
+            // Ensure we always log that we're still running
+            syncLogger.debug('Background sync cycle completed, will retry in 5 minutes');
+          });
       },
       5 * 60 * 1000
     ); // 5 minutes
 
     logger.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
+    logger.log('🔄 Sync will continue running even if individual syncs fail - errors are logged but service continues');
   }
 
   /**
@@ -114,9 +134,12 @@ export class BackgroundSyncService {
         syncLogger.error('Background sync failed during execution', {
           lockKey: SYNC_LOCK_KEY,
           duration: `${duration}ms`,
-          error: syncError
+          error: syncError instanceof Error ? error.message : String(syncError),
+          stack: syncError instanceof Error ? syncError.stack : undefined
         });
         logger.error('❌ Background sync failed:', syncError);
+        // CRITICAL: Don't rethrow - we want the service to keep running
+        // The error is logged, and sync will retry on the next interval
 
       } finally {
         // Always release the lock when done
@@ -163,23 +186,39 @@ export class BackgroundSyncService {
       );
 
       if (!eventRequestsSyncService) {
-        logger.log(
+        logger.warn(
           '⚠ Event requests sync skipped: Google Sheets service not configured'
         );
+        syncLogger.warn('Google Sheets service not available - check environment variables');
         return;
       }
 
+      syncLogger.info('Starting event requests sync from Google Sheets');
       const result = await eventRequestsSyncService.syncFromGoogleSheets();
 
       if (result.success) {
+        const created = result.created || 0;
+        const updated = result.updated || 0;
         logger.log(
-          `📝 Event requests sync: ${result.updated || 0} updated, ${result.created || 0} created`
+          `📝 Event requests sync: ${updated} skipped (existing), ${created} created`
         );
+        syncLogger.info('Event requests sync completed', { created, updated });
+        
+        if (created > 0) {
+          logger.log(`✅ ${created} new event request(s) imported from Google Sheets`);
+        }
       } else {
-        logger.log('⚠ Event requests sync skipped:', result.message);
+        logger.warn('⚠ Event requests sync returned failure:', result.message);
+        syncLogger.warn('Event requests sync failed', { message: result.message });
       }
     } catch (error) {
+      // CRITICAL: Log error but don't throw - we want sync to continue on next interval
       logger.error('❌ Event requests sync error:', error);
+      syncLogger.error('Event requests sync threw exception', { 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      // Don't rethrow - let the service continue running
     }
   }
 

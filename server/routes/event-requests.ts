@@ -2204,6 +2204,42 @@ router.post(
   }
 );
 
+// Get sync status and health check
+router.get(
+  '/sync/status',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const { getBackgroundSyncService } = await import('../background-sync-service');
+      const syncService = getBackgroundSyncService();
+      
+      if (!syncService) {
+        return res.json({
+          running: false,
+          message: 'Background sync service not initialized',
+        });
+      }
+
+      const status = syncService.getStatus();
+      return res.json({
+        running: status.isRunning,
+        nextSyncIn: status.nextSyncIn,
+        message: status.isRunning 
+          ? 'Background sync is running' 
+          : 'Background sync is not running',
+      });
+    } catch (error) {
+      logger.error('Error getting sync status:', error);
+      return res.status(500).json({
+        running: false,
+        message: 'Failed to get sync status',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
 // Analyze Google Sheets structure
 router.get(
   '/sync/analyze',
