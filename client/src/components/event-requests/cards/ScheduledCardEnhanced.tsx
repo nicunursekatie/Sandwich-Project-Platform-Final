@@ -1782,10 +1782,59 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         </div>
 
+        {/* Scheduling Notes - Always Visible */}
+        {request.schedulingNotes && (
+          <div className="bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg p-4 mb-4 border-l-4 border-green-500 border-t border-r border-b border-green-200 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-green-600" />
+                <h3 className="text-sm uppercase font-bold tracking-wide text-green-700">
+                  Scheduling Notes
+                </h3>
+              </div>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
+                  className="h-6 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
+                  aria-label="Edit scheduling notes"
+                >
+                  <Edit2 className="w-3 h-3" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+            {isEditingThisCard && editingField === 'schedulingNotes' ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                  placeholder="Add scheduling notes..."
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={saveEdit}>
+                    <Save className="w-3 h-3 mr-1" />
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    <X className="w-3 h-3 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-2 border-green-400 whitespace-pre-wrap">
+                {request.schedulingNotes}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Notes & Requirements Section */}
         {(request.message ||
           request.planningNotes ||
-          request.schedulingNotes ||
           request.additionalRequirements ||
           request.volunteerNotes ||
           request.driverNotes ||
@@ -1867,49 +1916,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   ) : (
                     <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/30 to-[#47B3CB]/15 p-3 rounded border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 whitespace-pre-wrap">
                       {request.planningNotes}
-                    </p>
-                  )}
-                </div>
-              )}
-              {request.schedulingNotes && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-gray-900">Scheduling Notes:</p>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
-                        className="h-6 px-2"
-                        aria-label="Edit scheduling notes"
-                      >
-                        <Edit2 className="w-3 h-3" aria-hidden="true" />
-                      </Button>
-                    )}
-                  </div>
-                  {isEditingThisCard && editingField === 'schedulingNotes' ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
-                        placeholder="Add scheduling notes..."
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-green-400 whitespace-pre-wrap">
-                      {request.schedulingNotes}
                     </p>
                   )}
                 </div>
