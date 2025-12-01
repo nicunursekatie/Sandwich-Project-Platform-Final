@@ -39,9 +39,10 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
     host = hostname;
     logger.log('Detected Replit production environment, using host without port:', host);
   } else if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('spock.replit.dev')) {
-    // Replit development environments - use port 5000
-    host = `${hostname}:5000`;
-    logger.log('Detected Replit dev environment, using host with port:', host);
+    // Replit development environments - DO NOT add port, proxy handles routing
+    // Adding :5000 causes "Invalid frame header" errors as Replit's proxy corrupts WebSocket frames
+    host = hostname;
+    logger.log('Detected Replit dev environment, using host without port:', host);
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - force port 5000 if no port specified
     const resolvedPort = port || '5000';
