@@ -266,31 +266,65 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
     );
   }, [weeklySandwichForecast]);
 
-  // Find the current or next week index
-  const getCurrentWeekIndex = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Find the first week that hasn't passed yet (Thursday >= today)
-    const currentIndex = weeklySandwichForecast.findIndex(week => {
-      const weekDate = new Date(week.weekKey);
-      return weekDate >= today;
-    });
-    
-    // If all weeks are in the past, show the last week
-    // If all weeks are in the future, show the first week
-    return currentIndex === -1 ? Math.max(0, weeklySandwichForecast.length - 1) : currentIndex;
-  };
-
   // Add state for current week index, starting at current/next week
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
 
   // Update index when forecast data changes (using useEffect instead of useMemo)
   useEffect(() => {
-    if (weeklySandwichForecast.length > 0) {
-      setCurrentWeekIndex(getCurrentWeekIndex());
+    if (weeklySandwichForecast.length === 0) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Helper to get week Monday from weekKey
+    const getWeekMonday = (weekKey: string) => {
+      const d = new Date(weekKey);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+    
+    // Helper to get week Sunday from Monday
+    const getWeekSunday = (monday: Date) => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + 6);
+      return d;
+    };
+    
+    // Helper to get next Wednesday after Sunday
+    const getNextWednesday = (sunday: Date) => {
+      const d = new Date(sunday);
+      d.setDate(d.getDate() + 3);
+      return d;
+    };
+    
+    // Find the week that contains today
+    const currentIndex = weeklySandwichForecast.findIndex(week => {
+      const weekMonday = getWeekMonday(week.weekKey);
+      const weekSunday = getWeekSunday(weekMonday);
+      const weekEndDate = includeUntilNextCollection
+        ? getNextWednesday(weekSunday)
+        : weekSunday;
+      weekEndDate.setHours(23, 59, 59, 999);
+      
+      // Check if today falls within this week's range
+      return today >= weekMonday && today <= weekEndDate;
+    });
+    
+    // If today is not in any week, find the first future week
+    if (currentIndex === -1) {
+      const futureIndex = weeklySandwichForecast.findIndex(week => {
+        const weekMonday = getWeekMonday(week.weekKey);
+        return weekMonday > today;
+      });
+      
+      // If all weeks are in the past, show the last week
+      // If all weeks are in the future, show the first week
+      const finalIndex = futureIndex === -1 ? Math.max(0, weeklySandwichForecast.length - 1) : futureIndex;
+      setCurrentWeekIndex(finalIndex);
+    } else {
+      setCurrentWeekIndex(currentIndex);
     }
-  }, [weeklySandwichForecast]);
+  }, [weeklySandwichForecast, includeUntilNextCollection]);
 
   // Only show one week at a time
   const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
