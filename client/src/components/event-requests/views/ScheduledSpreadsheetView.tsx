@@ -1394,14 +1394,30 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, colIndex?: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    // Count frozen columns
+    const frozenCount = columns.filter(col => col.frozen).length;
+    // Show not-allowed cursor if trying to drop in frozen zone
+    if (colIndex !== undefined && colIndex < frozenCount) {
+      e.dataTransfer.dropEffect = 'none';
+    } else {
+      e.dataTransfer.dropEffect = 'move';
+    }
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) {
+      setDraggedColumnIndex(null);
+      return;
+    }
+
+    // Count frozen columns - drops must be after all frozen columns
+    const frozenCount = columns.filter(col => col.frozen).length;
+
+    // Prevent dropping into the frozen column zone
+    if (dropIndex < frozenCount) {
       setDraggedColumnIndex(null);
       return;
     }
@@ -2433,7 +2449,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                       key={column.id}
                       draggable={!column.frozen}
                       onDragStart={(e) => !column.frozen && handleDragStart(e, colIndex)}
-                      onDragOver={handleDragOver}
+                      onDragOver={(e) => handleDragOver(e, colIndex)}
                       onDrop={(e) => handleDrop(e, colIndex)}
                       onDragEnd={handleDragEnd}
                       className={`px-1.5 py-2 ${column.center ? 'text-center' : 'text-left'} text-xs font-semibold text-white border-r border-[#007E8C]/50 select-none group relative ${
