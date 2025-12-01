@@ -2023,19 +2023,6 @@ export default function GrantMetrics() {
         subtitle="Ask about impact metrics and data"
         contextData={{
           currentView: 'grant-metrics',
-          // Pass raw data so AI sees exactly what the component displays
-          rawData: collections.map((c: any) => ({
-            id: c.id,
-            hostName: c.hostName,
-            collectionDate: c.collectionDate,
-            individualSandwiches: c.individualSandwiches,
-            group1Name: c.group1Name,
-            group1Count: c.group1Count,
-            group2Name: c.group2Name,
-            group2Count: c.group2Count,
-            groupCollections: c.groupCollections,
-            totalSandwiches: calculateTotalSandwiches(c),
-          })),
           filters: {
             yearType,
             selectedYear: selectedFiscalYear,
@@ -2048,6 +2035,20 @@ export default function GrantMetrics() {
             uniqueGroups: stats?.uniqueGroups || 0,
           },
         }}
+        getFullContext={() => ({
+          rawData: collections.map((c: any) => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+        })}
         suggestedQuestions={[
           "What are our key impact metrics?",
           "Show me year-over-year growth",

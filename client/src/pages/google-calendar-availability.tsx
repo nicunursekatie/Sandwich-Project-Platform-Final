@@ -415,14 +415,6 @@ export default function GoogleCalendarAvailability() {
         subtitle="Ask about volunteer availability"
         contextData={{
           currentView: viewMode,
-          // Pass raw data so AI sees exactly what the component displays
-          rawData: filteredEvents.map(event => ({
-            id: event.id,
-            summary: event.summary,
-            description: event.description,
-            startDate: event.start.dateTime || event.start.date,
-            endDate: event.end.dateTime || event.end.date,
-          })),
           filters: {
             eventFilter,
             currentMonth: currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
@@ -430,9 +422,17 @@ export default function GoogleCalendarAvailability() {
           summaryStats: {
             totalEvents: events.length,
             filteredEvents: filteredEvents.length,
-            currentView: viewMode,
           },
         }}
+        getFullContext={() => ({
+          rawData: filteredEvents.map(event => ({
+            id: event.id,
+            summary: event.summary,
+            description: event.description,
+            startDate: event.start.dateTime || event.start.date,
+            endDate: event.end.dateTime || event.end.date,
+          })),
+        })}
         suggestedQuestions={[
           "Who is unavailable this week?",
           "What events are scheduled for this month?",

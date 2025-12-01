@@ -2142,9 +2142,24 @@ export default function GroupCatalog({
         contextType="organizations"
         title="Groups Assistant"
         subtitle="Ask about partner organizations"
+        // Lightweight context - computed every render but cheap
         contextData={{
           currentView: 'groups-catalog',
-          // Pass raw data so AI sees exactly what the component displays
+          filters: {
+            searchTerm: searchTerm || undefined,
+            status: filters.status,
+            category: filters.category,
+            hostedEvents: filters.hostedEvents,
+          },
+          summaryStats: {
+            totalOrganizations: sortedActiveGroups.length,
+            totalContacts: allOrganizations.length,
+            organizationsWithEvents: sortedActiveGroups.filter(g => g.hasHostedEvent).length,
+            organizationsWithoutEvents: sortedActiveGroups.filter(g => !g.hasHostedEvent).length,
+          },
+        }}
+        // Heavy context - only computed when user sends a message
+        getFullContext={() => ({
           rawData: sortedActiveGroups.flatMap(group =>
             group.departments.map(dept => ({
               organizationName: group.groupName,
@@ -2158,12 +2173,6 @@ export default function GroupCatalog({
               department: dept.department,
             }))
           ),
-          filters: {
-            searchTerm: searchTerm || undefined,
-            status: filters.status,
-            category: filters.category,
-            hostedEvents: filters.hostedEvents,
-          },
           selectedItem: selectedOrganization ? {
             organizationName: selectedOrganization.organizationName,
             contactName: selectedOrganization.contactName,
@@ -2172,22 +2181,7 @@ export default function GroupCatalog({
             hasHostedEvent: selectedOrganization.hasHostedEvent,
             totalRequests: selectedOrganization.totalRequests,
           } : undefined,
-          summaryStats: {
-            totalOrganizations: sortedActiveGroups.length,
-            totalContacts: allOrganizations.length,
-            organizationsWithEvents: sortedActiveGroups.filter(g => g.hasHostedEvent).length,
-            organizationsWithoutEvents: sortedActiveGroups.filter(g => !g.hasHostedEvent).length,
-            categoryCounts: Object.fromEntries(
-              Array.from(
-                sortedActiveGroups.reduce((acc, group) => {
-                  const cat = organizationCategoryMap.get(group.groupName)?.category || 'uncategorized';
-                  acc.set(cat, (acc.get(cat) || 0) + 1);
-                  return acc;
-                }, new Map<string, number>())
-              )
-            ),
-          },
-        }}
+        })}
         suggestedQuestions={[
           "How many groups are in our catalog?",
           "Which groups have had the most events?",

@@ -688,7 +688,20 @@ export default function AnalyticsDashboard() {
         subtitle="Ask about collection trends and data"
         contextData={{
           currentView: 'analytics-dashboard',
-          // Pass raw data so AI sees exactly what the component displays
+          filters: {
+            selectedPeriod,
+          },
+          summaryStats: analyticsData ? {
+            totalSandwiches: analyticsData.totalSandwiches,
+            totalCollections: analyticsData.totalCollections,
+            activeLocations: analyticsData.activeLocations,
+            totalHosts: analyticsData.totalHosts,
+            activeHosts: analyticsData.activeHosts,
+            weeklyAverage: analyticsData.avgWeekly,
+            recordWeek: analyticsData.recordWeek,
+          } : undefined,
+        }}
+        getFullContext={() => ({
           rawData: (collections || []).map((c: SandwichCollection) => ({
             id: c.id,
             hostName: c.hostName,
@@ -701,24 +714,12 @@ export default function AnalyticsDashboard() {
             groupCollections: c.groupCollections,
             totalSandwiches: calculateTotalSandwiches(c),
           })),
-          filters: {
-            selectedPeriod,
-          },
-          summaryStats: analyticsData ? {
-            totalSandwiches: analyticsData.totalSandwiches,
-            totalCollections: analyticsData.totalCollections,
-            activeLocations: analyticsData.activeLocations,
-            totalHosts: analyticsData.totalHosts,
-            activeHosts: analyticsData.activeHosts,
-            weeklyAverage: analyticsData.avgWeekly,
-            recordWeek: analyticsData.recordWeek,
-            yearlyBreakdown: analyticsData.yearlyBreakdown?.map((y: any) => ({
-              year: y.year,
-              totalSandwiches: y.totalSandwiches,
-              totalCollections: y.totalCollections,
-            })),
-          } : undefined,
-        }}
+          yearlyBreakdown: analyticsData?.yearlyBreakdown?.map((y: any) => ({
+            year: y.year,
+            totalSandwiches: y.totalSandwiches,
+            totalCollections: y.totalCollections,
+          })),
+        })}
         suggestedQuestions={[
           "What's our total sandwich count?",
           "Show me monthly trends",
