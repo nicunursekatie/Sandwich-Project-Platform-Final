@@ -414,7 +414,23 @@ export function FloatingAIChat({
       // Only compute full context (with rawData) at the moment of sending
       // This prevents expensive computation on every render
       const fullContext = getFullContext ? getFullContext() : {};
-      const mergedContext = { ...contextData, ...fullContext };
+
+      // Limit rawData to prevent 413 errors (request too large)
+      // AI doesn't need all records - a sample + summary stats is enough
+      const MAX_RAW_DATA_ITEMS = 100;
+      let limitedContext = { ...contextData, ...fullContext };
+
+      if (limitedContext.rawData && Array.isArray(limitedContext.rawData)) {
+        const totalCount = limitedContext.rawData.length;
+        if (totalCount > MAX_RAW_DATA_ITEMS) {
+          // Take first 100 items as sample, add note about total
+          limitedContext = {
+            ...limitedContext,
+            rawData: limitedContext.rawData.slice(0, MAX_RAW_DATA_ITEMS),
+            _dataNote: `Showing ${MAX_RAW_DATA_ITEMS} of ${totalCount} total records. Summary stats reflect full dataset.`,
+          };
+        }
+      }
 
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
@@ -423,7 +439,7 @@ export function FloatingAIChat({
         body: JSON.stringify({
           message,
           contextType,
-          contextData: mergedContext,
+          contextData: limitedContext,
           conversationHistory: messages.map(m => ({
             role: m.role,
             content: m.content,
