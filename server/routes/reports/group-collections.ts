@@ -53,7 +53,12 @@ groupCollectionsRouter.get('/', async (req, res) => {
     const groupCollectionsList: GroupCollection[] = [];
 
     for (const collection of collections) {
-      if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+      // Check if groupCollections has actual entries (not just an empty array)
+      const hasGroupCollections = collection.groupCollections &&
+        Array.isArray(collection.groupCollections) &&
+        collection.groupCollections.length > 0;
+
+      if (hasGroupCollections) {
         // Process new format (groupCollections JSON array)
         for (const group of collection.groupCollections) {
           if (group && group.name && group.count) {
@@ -74,6 +79,7 @@ groupCollectionsRouter.get('/', async (req, res) => {
         }
       } else if (collection.group1Name && collection.group1Count) {
         // Process legacy format (group1/group2 fields)
+        // This now correctly handles cases where groupCollections is an empty array
         groupCollectionsList.push({
           id: collection.id,
           collectionDate: collection.collectionDate,
