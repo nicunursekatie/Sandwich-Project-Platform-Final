@@ -73,7 +73,7 @@ type SortDirection = 'asc' | 'desc';
 
 interface ScheduledSpreadsheetViewProps {
   onEventDateClick?: (event: EventRequest) => void;
-  openAssignmentDialog?: (eventId: number, type: 'drivers' | 'speakers' | 'volunteers') => void;
+  openAssignmentDialog?: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => void;
 }
 
 // US state abbreviations for address parsing
@@ -2185,7 +2185,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openAssignmentDialog?.(event.id, 'drivers');
+                    openAssignmentDialog?.(event.id, 'driver');
                   }}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
                     driversAssigned >= driversNeeded
@@ -2204,7 +2204,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openAssignmentDialog?.(event.id, 'speakers');
+                    openAssignmentDialog?.(event.id, 'speaker');
                   }}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
                     speakersAssigned >= speakersNeeded
@@ -2223,7 +2223,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openAssignmentDialog?.(event.id, 'volunteers');
+                    openAssignmentDialog?.(event.id, 'volunteer');
                   }}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
                     volunteersAssigned >= volunteersNeeded
