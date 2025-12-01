@@ -19,7 +19,7 @@ import {
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
-import { formatEventDate } from '@/components/event-requests/utils';
+import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -351,6 +351,10 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                   const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
                   const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
 
+                  // Get sandwich count
+                  const sandwichInfo = getSandwichTypesSummary(event);
+                  const sandwichCount = sandwichInfo.total || event.estimatedSandwichCount || 0;
+
                   return (
                     <div key={event.id} className="bg-white border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
@@ -366,6 +370,19 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                               const dateInfo = formatEventDate(dateStr.toString());
                               return dateInfo.text || 'Date TBD';
                             })()}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                            {event.eventStartTime && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {formatTime12Hour(event.eventStartTime)}
+                              </span>
+                            )}
+                            {sandwichCount > 0 && (
+                              <span className="flex items-center gap-1">
+                                🥪 {sandwichCount.toLocaleString()} sandwiches
+                              </span>
+                            )}
                           </div>
                         </div>
                         <Badge
