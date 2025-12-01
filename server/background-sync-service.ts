@@ -12,6 +12,12 @@ const syncLogger = createServiceLogger('background-sync');
 export class BackgroundSyncService {
   private syncInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
+  private lastSuccessfulSync: Date | null = null;
+  private consecutiveFailures = 0;
+  private lastAlertSent: Date | null = null;
+  private readonly ALERT_COOLDOWN_MINUTES = 60; // Don't spam emails - max one per hour
+  private readonly FAILURE_THRESHOLD = 3; // Alert after 3 consecutive failures
+  private readonly STALE_SYNC_THRESHOLD_MINUTES = 20; // Alert if no successful sync in 20 minutes
 
   constructor(private storage: IStorage) {}
 
@@ -61,6 +67,10 @@ export class BackgroundSyncService {
           .finally(() => {
             // Ensure we always log that we're still running
             syncLogger.debug('Background sync cycle completed, will retry in 5 minutes');
+            // Check for stale sync even if sync attempt failed
+            this.checkStaleSync().catch(err => {
+              logger.error('Error checking stale sync:', err);
+            });
           });
       },
       5 * 60 * 1000
@@ -73,13 +83,95 @@ export class BackgroundSyncService {
   /**
    * Stop the background sync
    */
-  stop() {
+  async stop() {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
+    const wasRunning = this.isRunning;
     this.isRunning = false;
     logger.log('🛑 Background sync service stopped');
+    
+    // Send alert if service was running and is being stopped
+    if (wasRunning) {
+      await this.sendServiceStoppedAlert();
+    }
+  }
+
+  /**
+   * Send email alert when sync service stops
+   */
+  private async sendServiceStoppedAlert() {
+    try {
+      const { sendEmail } = await import('./sendgrid');
+      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      
+      const lastSuccessTime = this.lastSuccessfulSync 
+        ? this.lastSuccessfulSync.toLocaleString()
+        : 'Never';
+      
+      await sendEmail({
+        to: adminEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        subject: '🚨 CRITICAL: Event Requests Sync Service Stopped',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #d32f2f;">🚨 Event Requests Sync Service Stopped</h2>
+            <p><strong>The background sync service has been stopped!</strong></p>
+            <p>New event requests from Google Sheets will NOT be automatically imported until the service is restarted.</p>
+            
+            <div style="background-color: #ffebee; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #c62828;">Details:</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Service Status:</strong> Stopped</li>
+                <li><strong>Last Successful Sync:</strong> ${lastSuccessTime}</li>
+                <li><strong>Consecutive Failures:</strong> ${this.consecutiveFailures}</li>
+                <li><strong>Stopped At:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+            </div>
+            
+            <p><strong>Action Required:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Restart the server to restart the sync service</li>
+              <li>Or manually trigger syncs until service is restarted</li>
+              <li>Check server logs to understand why service stopped</li>
+              <li>Manually sync: <code>POST /api/event-requests/sync/from-sheets</code></li>
+            </ol>
+            
+            <p style="color: #d32f2f; font-weight: bold; margin-top: 20px;">
+              ⚠️ No new event requests will be imported automatically until the service is restarted!
+            </p>
+          </div>
+        `,
+        text: `
+🚨 CRITICAL: Event Requests Sync Service Stopped
+
+The background sync service has been stopped!
+
+New event requests from Google Sheets will NOT be automatically imported until the service is restarted.
+
+Details:
+- Service Status: Stopped
+- Last Successful Sync: ${lastSuccessTime}
+- Consecutive Failures: ${this.consecutiveFailures}
+- Stopped At: ${new Date().toLocaleString()}
+
+Action Required:
+1. Restart the server to restart the sync service
+2. Or manually trigger syncs until service is restarted
+3. Check server logs to understand why service stopped
+4. Manually sync: POST /api/event-requests/sync/from-sheets
+
+⚠️ No new event requests will be imported automatically until the service is restarted!
+        `,
+      });
+
+      logger.error(`📧 Sent sync service stopped alert email to ${adminEmail}`);
+      syncLogger.info('Sync service stopped alert sent');
+    } catch (emailError) {
+      logger.error('❌ Failed to send sync stopped alert email:', emailError);
+      syncLogger.error('Failed to send stopped alert email', { error: emailError });
+    }
   }
 
   /**
@@ -204,22 +296,47 @@ export class BackgroundSyncService {
         );
         syncLogger.info('Event requests sync completed', { created, updated });
         
+        // Reset failure counter on success
+        this.consecutiveFailures = 0;
+        this.lastSuccessfulSync = new Date();
+        
         if (created > 0) {
           logger.log(`✅ ${created} new event request(s) imported from Google Sheets`);
         }
       } else {
+        this.consecutiveFailures++;
         logger.warn('⚠ Event requests sync returned failure:', result.message);
-        syncLogger.warn('Event requests sync failed', { message: result.message });
+        syncLogger.warn('Event requests sync failed', { 
+          message: result.message,
+          consecutiveFailures: this.consecutiveFailures
+        });
+        
+        // Check if we should send alert
+        if (this.consecutiveFailures >= this.FAILURE_THRESHOLD) {
+          await this.sendFailureAlert(result.message || 'Unknown error');
+        }
       }
     } catch (error) {
       // CRITICAL: Log error but don't throw - we want sync to continue on next interval
+      this.consecutiveFailures++;
       logger.error('❌ Event requests sync error:', error);
       syncLogger.error('Event requests sync threw exception', { 
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        consecutiveFailures: this.consecutiveFailures
       });
+      
+      // Check if we should send alert
+      if (this.consecutiveFailures >= this.FAILURE_THRESHOLD) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await this.sendFailureAlert(errorMessage);
+      }
+      
       // Don't rethrow - let the service continue running
     }
+    
+    // Check if sync is stale (no successful sync in threshold time)
+    await this.checkStaleSync();
   }
 
   /**
@@ -289,12 +406,209 @@ export class BackgroundSyncService {
   }
 
   /**
+   * Check if sync is stale and send alert if needed
+   */
+  private async checkStaleSync() {
+    if (!this.lastSuccessfulSync) {
+      // First sync hasn't completed yet - don't alert
+      return;
+    }
+
+    const minutesSinceLastSuccess = (Date.now() - this.lastSuccessfulSync.getTime()) / (1000 * 60);
+    
+    if (minutesSinceLastSuccess > this.STALE_SYNC_THRESHOLD_MINUTES) {
+      const shouldAlert = !this.lastAlertSent || 
+        (Date.now() - this.lastAlertSent.getTime()) > (this.ALERT_COOLDOWN_MINUTES * 60 * 1000);
+      
+      if (shouldAlert) {
+        await this.sendStaleSyncAlert(minutesSinceLastSuccess);
+      }
+    }
+  }
+
+  /**
+   * Send email alert when sync fails multiple times
+   */
+  private async sendFailureAlert(errorMessage: string) {
+    const shouldAlert = !this.lastAlertSent || 
+      (Date.now() - this.lastAlertSent.getTime()) > (this.ALERT_COOLDOWN_MINUTES * 60 * 1000);
+    
+    if (!shouldAlert) {
+      return; // Still in cooldown period
+    }
+
+    try {
+      const { sendEmail } = await import('./sendgrid');
+      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      
+      const lastSuccessTime = this.lastSuccessfulSync 
+        ? this.lastSuccessfulSync.toLocaleString()
+        : 'Never';
+      
+      await sendEmail({
+        to: adminEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        subject: '🚨 CRITICAL: Event Requests Sync Failing',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #d32f2f;">🚨 Event Requests Sync Alert</h2>
+            <p><strong>The background sync for event requests from Google Sheets is failing!</strong></p>
+            
+            <div style="background-color: #ffebee; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #c62828;">Details:</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Consecutive Failures:</strong> ${this.consecutiveFailures}</li>
+                <li><strong>Last Successful Sync:</strong> ${lastSuccessTime}</li>
+                <li><strong>Error:</strong> ${errorMessage}</li>
+                <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+            </div>
+            
+            <p><strong>Action Required:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Check server logs for detailed error information</li>
+              <li>Verify Google Sheets API credentials are valid</li>
+              <li>Check if Google Sheet structure has changed</li>
+              <li>Manually trigger sync via: <code>POST /api/event-requests/sync/from-sheets</code></li>
+              <li>Check sync status via: <code>GET /api/event-requests/sync/status</code></li>
+            </ol>
+            
+            <p style="color: #666; font-size: 0.9em; margin-top: 30px;">
+              This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unless the issue persists.
+            </p>
+          </div>
+        `,
+        text: `
+🚨 CRITICAL: Event Requests Sync Failing
+
+The background sync for event requests from Google Sheets is failing!
+
+Details:
+- Consecutive Failures: ${this.consecutiveFailures}
+- Last Successful Sync: ${lastSuccessTime}
+- Error: ${errorMessage}
+- Time: ${new Date().toLocaleString()}
+
+Action Required:
+1. Check server logs for detailed error information
+2. Verify Google Sheets API credentials are valid
+3. Check if Google Sheet structure has changed
+4. Manually trigger sync via: POST /api/event-requests/sync/from-sheets
+5. Check sync status via: GET /api/event-requests/sync/status
+
+This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unless the issue persists.
+        `,
+      });
+
+      this.lastAlertSent = new Date();
+      logger.error(`📧 Sent sync failure alert email to ${adminEmail}`);
+      syncLogger.info('Sync failure alert sent', { 
+        consecutiveFailures: this.consecutiveFailures,
+        errorMessage 
+      });
+    } catch (emailError) {
+      logger.error('❌ Failed to send sync failure alert email:', emailError);
+      syncLogger.error('Failed to send alert email', { error: emailError });
+    }
+  }
+
+  /**
+   * Send email alert when sync hasn't run successfully in a while
+   */
+  private async sendStaleSyncAlert(minutesSinceLastSuccess: number) {
+    try {
+      const { sendEmail } = await import('./sendgrid');
+      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      
+      const lastSuccessTime = this.lastSuccessfulSync 
+        ? this.lastSuccessfulSync.toLocaleString()
+        : 'Never';
+      
+      await sendEmail({
+        to: adminEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        subject: '⚠️ WARNING: Event Requests Sync Stale',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #f57c00;">⚠️ Event Requests Sync Stale</h2>
+            <p><strong>The background sync hasn't completed successfully in ${Math.round(minutesSinceLastSuccess)} minutes.</strong></p>
+            
+            <div style="background-color: #fff3e0; border-left: 4px solid #f57c00; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #e65100;">Details:</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Last Successful Sync:</strong> ${lastSuccessTime}</li>
+                <li><strong>Time Since Last Success:</strong> ${Math.round(minutesSinceLastSuccess)} minutes</li>
+                <li><strong>Consecutive Failures:</strong> ${this.consecutiveFailures}</li>
+                <li><strong>Sync Service Running:</strong> ${this.isRunning ? 'Yes' : 'No'}</li>
+                <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+            </div>
+            
+            <p><strong>Action Required:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Check if sync service is still running</li>
+              <li>Review recent server logs for errors</li>
+              <li>Check sync status: <code>GET /api/event-requests/sync/status</code></li>
+              <li>Manually trigger sync: <code>POST /api/event-requests/sync/from-sheets</code></li>
+            </ol>
+            
+            <p style="color: #666; font-size: 0.9em; margin-top: 30px;">
+              This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unless the issue persists.
+            </p>
+          </div>
+        `,
+        text: `
+⚠️ WARNING: Event Requests Sync Stale
+
+The background sync hasn't completed successfully in ${Math.round(minutesSinceLastSuccess)} minutes.
+
+Details:
+- Last Successful Sync: ${lastSuccessTime}
+- Time Since Last Success: ${Math.round(minutesSinceLastSuccess)} minutes
+- Consecutive Failures: ${this.consecutiveFailures}
+- Sync Service Running: ${this.isRunning ? 'Yes' : 'No'}
+- Time: ${new Date().toLocaleString()}
+
+Action Required:
+1. Check if sync service is still running
+2. Review recent server logs for errors
+3. Check sync status: GET /api/event-requests/sync/status
+4. Manually trigger sync: POST /api/event-requests/sync/from-sheets
+
+This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unless the issue persists.
+        `,
+      });
+
+      this.lastAlertSent = new Date();
+      logger.warn(`📧 Sent stale sync alert email to ${adminEmail}`);
+      syncLogger.info('Stale sync alert sent', { 
+        minutesSinceLastSuccess,
+        consecutiveFailures: this.consecutiveFailures
+      });
+    } catch (emailError) {
+      logger.error('❌ Failed to send stale sync alert email:', emailError);
+      syncLogger.error('Failed to send stale alert email', { error: emailError });
+    }
+  }
+
+  /**
    * Get sync status
    */
   getStatus() {
+    const minutesSinceLastSuccess = this.lastSuccessfulSync
+      ? Math.round((Date.now() - this.lastSuccessfulSync.getTime()) / (1000 * 60))
+      : null;
+
     return {
       isRunning: this.isRunning,
       nextSyncIn: this.syncInterval ? '5 minutes' : 'Not scheduled',
+      lastSuccessfulSync: this.lastSuccessfulSync?.toISOString() || null,
+      minutesSinceLastSuccess,
+      consecutiveFailures: this.consecutiveFailures,
+      isHealthy: this.isRunning && 
+        this.lastSuccessfulSync !== null && 
+        minutesSinceLastSuccess !== null && 
+        minutesSinceLastSuccess < this.STALE_SYNC_THRESHOLD_MINUTES,
     };
   }
 }
@@ -310,9 +624,9 @@ export function startBackgroundSync(storage: IStorage) {
   return backgroundSyncService;
 }
 
-export function stopBackgroundSync() {
+export async function stopBackgroundSync() {
   if (backgroundSyncService) {
-    backgroundSyncService.stop();
+    await backgroundSyncService.stop();
   }
 }
 

@@ -2225,8 +2225,14 @@ router.get(
       return res.json({
         running: status.isRunning,
         nextSyncIn: status.nextSyncIn,
+        lastSuccessfulSync: status.lastSuccessfulSync,
+        minutesSinceLastSuccess: status.minutesSinceLastSuccess,
+        consecutiveFailures: status.consecutiveFailures,
+        isHealthy: status.isHealthy,
         message: status.isRunning 
-          ? 'Background sync is running' 
+          ? (status.isHealthy 
+              ? 'Background sync is running and healthy' 
+              : `Background sync is running but stale (${status.minutesSinceLastSuccess} minutes since last success)`)
           : 'Background sync is not running',
       });
     } catch (error) {
