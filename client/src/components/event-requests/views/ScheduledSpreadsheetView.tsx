@@ -2410,7 +2410,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto', willChange: 'scroll-position' }}>
           <table className="w-full border-collapse">
-            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-20" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
+            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-30" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
               <tr>
                 {columns.map((column, colIndex) => {
                   const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
@@ -2437,7 +2437,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                       onDrop={(e) => handleDrop(e, colIndex)}
                       onDragEnd={handleDragEnd}
                       className={`px-1.5 py-2 ${column.center ? 'text-center' : 'text-left'} text-xs font-semibold text-white border-r border-[#007E8C]/50 select-none group relative ${
-                        column.frozen ? 'sticky z-30 bg-[#236383]' : 'cursor-move'
+                        column.frozen ? 'sticky z-40 bg-[#236383]' : 'cursor-move'
                       } ${draggedColumnIndex === colIndex ? 'opacity-50' : 'hover:bg-[#007E8C]'} ${
                         isLastFrozen ? 'shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] border-r-2 border-r-[#47B3CB]/30' : ''
                       }`}
