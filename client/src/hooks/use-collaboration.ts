@@ -228,10 +228,21 @@ export function useCollaboration({
     if (!user || !resourceId) return;
 
     // Use current origin for Socket.IO connection (or env variable if provided)
-    // Properly handle port to avoid "undefined" in WebSocket URL
+    // For Replit environments, don't include port - the proxy handles routing
     const socketUrl = import.meta.env.VITE_SOCKET_URL || (() => {
       const protocol = window.location.protocol;
       const hostname = window.location.hostname;
+
+      // Check if we're in a Replit environment - don't add port as proxy handles it
+      const isReplit = hostname.includes('replit.dev') ||
+                       hostname.includes('replit.app') ||
+                       hostname.includes('replit.com');
+
+      if (isReplit) {
+        return `${protocol}//${hostname}`;
+      }
+
+      // For local development, include the port
       const port = window.location.port || (protocol === 'https:' ? '443' : '80');
       return `${protocol}//${hostname}:${port}`;
     })();

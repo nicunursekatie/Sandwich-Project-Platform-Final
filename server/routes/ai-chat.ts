@@ -32,6 +32,13 @@ function toDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Helper to format event date for display
+function formatEventDate(dateInput: Date | string | null | undefined): string {
+  if (!dateInput) return 'TBD';
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // Helper to calculate sandwich count from collection
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
@@ -157,7 +164,8 @@ function formatDataItem(item: any, contextType: string, index: number): string {
   if (contextType === 'events') {
     const org = item.organizationName || 'Unknown';
     const status = item.status || '';
-    const date = item.scheduledEventDate || item.desiredEventDate || '';
+    const dateInput = item.scheduledEventDate || item.desiredEventDate;
+    const date = formatEventDate(dateInput);
     const sandwiches = item.estimatedSandwichCount || item.actualSandwichCount || 0;
 
     return `${index + 1}. **${org}** - Date: ${date}, Status: ${status}, Sandwiches: ${sandwiches}\n`;
@@ -425,13 +433,6 @@ function getEventMissingInfo(event: any): string[] {
   }
 
   return missing;
-}
-
-// Helper to format event date
-function formatEventDate(dateInput: Date | string | null | undefined): string {
-  if (!dateInput) return 'TBD';
-  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 // Build context for events
@@ -1603,7 +1604,15 @@ IMPORTANT: Never rank or compare hosts against each other. Focus on overall tota
 
     events: `You are a data analyst assistant for The Sandwich Project's event management system.
 You help analyze event request data - organizations requesting sandwich-making events, event categories, and scheduling.
-IMPORTANT: Never rank or compare organizations against each other. Focus on overall trends and categories.`,
+IMPORTANT: Never rank or compare organizations against each other. Focus on overall trends and categories.
+
+CRITICAL FOR DATE QUERIES:
+- When asked about events on a specific date (e.g., "12/1", "December 1", "Dec 1"), you MUST check BOTH:
+  1. Events with status "scheduled" 
+  2. Events with status "in_process" (these are events that are being planned but may already have a scheduled date)
+- Dates in the data are formatted as "Dec 1, 2024" (month abbreviation, day, year)
+- When matching dates, be flexible: "12/1" = "Dec 1" = "December 1" (all refer to the same date)
+- Always include ALL events scheduled for that date, regardless of status (scheduled or in_process)`,
 
     'impact-reports': `You are a data analyst assistant for The Sandwich Project's impact reporting.
 You help analyze the overall impact of the organization including events, collections, and sandwich distribution.

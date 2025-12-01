@@ -61,6 +61,7 @@ export function useMessaging() {
   };
 
   // Fix WebSocket URL construction with better port handling
+  // Note: This function is kept for reference but we use createWebSocketConnection from websocket-helper.ts
   const getWebSocketUrl = () => {
     if (typeof window === 'undefined') return '';
 
@@ -70,9 +71,9 @@ export function useMessaging() {
 
     // Handle different deployment scenarios
     if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app')) {
-      // Replit environment - use current host with port
-      const host = port ? `${hostname}:${port}` : hostname;
-      return `${protocol}//${host}/notifications`;
+      // Replit environment - DO NOT add port, proxy handles routing
+      // Adding port causes "Invalid frame header" errors
+      return `${protocol}//${hostname}/notifications`;
     } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
       // Local development - always use port 5000 explicitly
       return `${protocol}//${hostname}:5000/notifications`;
