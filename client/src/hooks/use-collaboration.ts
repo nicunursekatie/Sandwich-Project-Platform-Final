@@ -225,7 +225,16 @@ export function useCollaboration({
   // ==================== Socket Connection ====================
 
   useEffect(() => {
-    if (!user || !resourceId) return;
+    if (!user || !resourceId) {
+      // Clean up socket if user or resource becomes unavailable
+      if (socket) {
+        logger.log('[Collaboration] Cleaning up socket: user or resource unavailable');
+        socket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
+      }
+      return;
+    }
 
     // Use current origin for Socket.IO connection (or env variable if provided)
     // For Replit environments, use current origin (with port if present)
@@ -289,15 +298,37 @@ export function useCollaboration({
       newSocket.emit(joinEvent, payload);
     });
 
-    newSocket.on('disconnect', () => {
-      logger.log('[Collaboration] ❌ Disconnected');
+    newSocket.on('disconnect', (reason) => {
+      logger.log(`[Collaboration] ❌ Disconnected: ${reason}`);
       setIsConnected(false);
+      
+      // If disconnected due to server error or transport error, don't auto-reconnect
+      // User will need to refresh or manually reconnect
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        logger.warn('[Collaboration] Server-initiated disconnect - auto-reconnect disabled');
+        setError('Connection lost. Please refresh the page to reconnect.');
+        newSocket.io.opts.reconnection = false;
+      }
     });
 
     newSocket.on('connect_error', (err) => {
       logger.error('[Collaboration] Connection error:', err);
       setIsConnected(false);
-      setError('Failed to connect to collaboration server');
+      
+      // Provide more specific error messages
+      if (err.message.includes('Authentication') || err.message.includes('User not found') || err.message.includes('User ID mismatch')) {
+        setError('Authentication failed. Please refresh the page.');
+      } else if (err.message.includes('CORS') || err.message.includes('Not allowed')) {
+        setError('Connection blocked. Please check your network settings.');
+      } else {
+        setError('Failed to connect to collaboration server. Real-time features may be unavailable.');
+      }
+      
+      // Don't spam reconnection attempts if auth is failing
+      if (err.message.includes('Authentication') || err.message.includes('User not found') || err.message.includes('User ID mismatch')) {
+        // Disable auto-reconnection for auth errors - user needs to refresh
+        newSocket.io.opts.reconnection = false;
+      }
     });
 
     // ==================== Resource State ====================
@@ -509,7 +540,15 @@ export function useCollaboration({
 
     newSocket.on('error', (data: { message: string }) => {
       logger.error('[Collaboration] Error:', data.message);
-      setError(data.message);
+      
+      // Categorize errors for better user feedback
+      if (data.message.includes('Authentication') || data.message.includes('permission') || data.message.includes('access')) {
+        setError('Authentication error. Please refresh the page.');
+      } else if (data.message.includes('not found') || data.message.includes('does not exist')) {
+        setError('Resource not found. The event may have been deleted.');
+      } else {
+        setError(data.message || 'An error occurred with real-time collaboration.');
+      }
     });
 
     setSocket(newSocket);
@@ -922,9 +961,37 @@ export function useCollaboration({
   const reconnect = useCallback(() => {
     if (socket) {
       logger.log('[Collaboration] Manual reconnection requested');
+      
+      // Re-enable reconnection if it was disabled
+      if (!socket.io.opts.reconnection) {
+        socket.io.opts.reconnection = true;
+        socket.io.opts.reconnectionDelay = 1000;
+        socket.io.opts.reconnectionDelayMax = 5000;
+        socket.io.opts.reconnectionAttempts = 5;
+      }
+      
+      // Clear any previous errors
+      setError(null);
+      
+      // Ensure auth credentials are still valid
+      if (!user?.id || !user?.email) {
+        logger.error('[Collaboration] Cannot reconnect: User not available');
+        setError('Cannot reconnect: User session expired. Please refresh the page.');
+        return;
+      }
+      
+      // Update auth credentials before reconnecting
+      socket.auth = {
+        userId: user.id,
+        userEmail: user.email,
+      };
+      
       socket.connect();
+    } else {
+      logger.warn('[Collaboration] Cannot reconnect: Socket not initialized');
+      setError('Socket not initialized. Please refresh the page.');
     }
-  }, [socket]);
+  }, [socket, user]);
 
   // ==================== Return Hook API ====================
 
