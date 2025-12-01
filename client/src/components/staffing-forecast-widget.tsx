@@ -494,18 +494,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
               {/* Events List */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-brand-primary">Events Requiring Staffing:</h4>
-                {[...currentWeek.events]
-                  .sort((a, b) => {
-                    // Sort by date (earliest first)
-                    const dateA = a.scheduledEventDate || a.desiredEventDate;
-                    const dateB = b.scheduledEventDate || b.desiredEventDate;
-                    if (!dateA && !dateB) return 0;
-                    if (!dateA) return 1;
-                    if (!dateB) return -1;
-                    return new Date(dateA).getTime() - new Date(dateB).getTime();
-                  })
-                  .map((event) => {
+                <h4 className="font-semibold text-brand-primary">Events with Unmet Staffing Needs:</h4>
+                {(() => {
                   // Helper function to safely get array length for PostgreSQL arrays
                   const getAssignmentCount = (assignments: any) => {
                     if (!assignments) return 0;
@@ -544,11 +534,41 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                     return 0;
                   };
 
-                  const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-                  const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
-                  const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
-                  const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
-                  const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
+                  // Filter events to only show those with unmet staffing needs
+                  const eventsWithUnmetNeeds = currentWeek.events.filter((event) => {
+                    const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
+                    const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
+                    const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
+                    const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                    const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
+                    return totalUnfulfilled > 0;
+                  });
+
+                  if (eventsWithUnmetNeeds.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                        <p className="text-gray-600">All staffing needs have been met for this week!</p>
+                      </div>
+                    );
+                  }
+
+                  return eventsWithUnmetNeeds
+                    .sort((a, b) => {
+                      // Sort by date (earliest first)
+                      const dateA = a.scheduledEventDate || a.desiredEventDate;
+                      const dateB = b.scheduledEventDate || b.desiredEventDate;
+                      if (!dateA && !dateB) return 0;
+                      if (!dateA) return 1;
+                      if (!dateB) return -1;
+                      return new Date(dateA).getTime() - new Date(dateB).getTime();
+                    })
+                    .map((event) => {
+                      const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
+                      const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
+                      const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
+                      const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                      const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
 
                   // Get sandwich count
                   const sandwichInfo = getSandwichTypesSummary(event);
@@ -638,7 +658,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                       )}
                     </div>
                   );
-                })}
+                    });
+                })()}
               </div>
             </div>
           ) : (

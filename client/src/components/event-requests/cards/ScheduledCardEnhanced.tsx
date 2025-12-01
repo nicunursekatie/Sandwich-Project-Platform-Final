@@ -575,10 +575,32 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const recipientIds = parsePostgresArray(request.assignedRecipientIds);
       const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
 
-      // Determine van booked status
+      // Determine van booked status with AM/PM based on event start time
       let vanBookedStatus = '';
       if (request.assignedVanDriverId || request.customVanDriverName) {
-        vanBookedStatus = 'Yes';
+        // Van is booked - determine AM/PM/All Day from event start time
+        if (request.eventStartTime) {
+          // Parse time string (could be "14:00", "2:00 PM", etc.)
+          const timeStr = request.eventStartTime;
+          let hour = 0;
+
+          // Try parsing HH:MM format
+          const match24 = timeStr.match(/^(\d{1,2}):(\d{2})/);
+          if (match24) {
+            hour = parseInt(match24[1], 10);
+          }
+          // Check for PM indicator in 12-hour format
+          if (timeStr.toLowerCase().includes('pm') && hour < 12) {
+            hour += 12;
+          } else if (timeStr.toLowerCase().includes('am') && hour === 12) {
+            hour = 0;
+          }
+
+          vanBookedStatus = hour < 12 ? 'AM' : 'PM';
+        } else {
+          // No start time specified
+          vanBookedStatus = 'All Day';
+        }
       } else if (request.vanDriverNeeded) {
         vanBookedStatus = 'Needed';
       } else if (request.selfTransport) {
