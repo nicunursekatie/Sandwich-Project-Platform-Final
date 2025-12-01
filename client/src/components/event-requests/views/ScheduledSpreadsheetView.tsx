@@ -1134,7 +1134,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     {
       id: 'volunteersNeeded',
       label: 'Staff Needed',
-      width: '140px',
+      width: '180px',
       hideOnMobile: true,
       render: (event) => {
         // Calculate assigned counts
