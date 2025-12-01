@@ -73,6 +73,42 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       return now > endDate;
     };
 
+    // Helper function to safely parse dates without timezone issues
+    const parseEventDate = (dateString: string | null | undefined): Date | null => {
+      if (!dateString) return null;
+      
+      try {
+        let date: Date;
+        const dateStr = dateString.toString().trim();
+        
+        // Handle different date formats
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // YYYY-MM-DD format - parse at noon to avoid timezone shift
+          date = new Date(dateStr + 'T12:00:00');
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+          // Database timestamp format: "2024-12-01 00:00:00" - extract date part
+          const dateOnly = dateStr.split(' ')[0];
+          date = new Date(dateOnly + 'T12:00:00');
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+          // ISO format with midnight time - extract date part
+          const dateOnly = dateStr.split('T')[0];
+          date = new Date(dateOnly + 'T12:00:00');
+        } else {
+          // Other formats - parse and normalize to local date at midnight
+          date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            // Normalize to local midnight to avoid timezone issues
+            date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          }
+        }
+        
+        if (isNaN(date.getTime())) return null;
+        return date;
+      } catch (error) {
+        return null;
+      }
+    };
+
     // Get current date for filtering events
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -80,6 +116,15 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
     // Calculate date range: 4 weeks ago to 12 weeks forward
     const fourWeeksAgo = new Date(today);
     fourWeeksAgo.setDate(today.getDate() - 28);
+    fourWeeksAgo.setHours(0, 0, 0, 0);
+
+    // Debug: Log current date information
+    logger.log('📅 Sandwich Planning - Date Info:', {
+      today: today.toISOString().split('T')[0],
+      todayFormatted: today.toLocaleDateString('en-US'),
+      fourWeeksAgo: fourWeeksAgo.toISOString().split('T')[0],
+      fourWeeksAgoFormatted: fourWeeksAgo.toLocaleDateString('en-US'),
+    });
 
     // Process events with dates and estimated sandwich counts (past and future)
     const relevantEvents = eventRequests.filter((request) => {
@@ -101,11 +146,31 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       }
 
       try {
-        const eventDate = new Date(request.desiredEventDate);
-        if (isNaN(eventDate.getTime())) return false;
+        const eventDate = parseEventDate(request.desiredEventDate);
+        if (!eventDate) return false;
+        
+        // Normalize event date to midnight for proper comparison
+        const eventDateNormalized = new Date(eventDate);
+        eventDateNormalized.setHours(0, 0, 0, 0);
 
         // Include events from 4 weeks ago onwards
-        return eventDate >= fourWeeksAgo;
+        const isIncluded = eventDateNormalized >= fourWeeksAgo;
+        
+        // Debug: Log events from today to help diagnose
+        const eventDateStr = eventDateNormalized.toISOString().split('T')[0];
+        const todayStr = today.toISOString().split('T')[0];
+        if (eventDateStr === todayStr) {
+          logger.log('📅 Event on today\'s date:', {
+            org: request.organizationName,
+            eventDate: eventDateStr,
+            eventDateRaw: request.desiredEventDate,
+            parsedDate: eventDateNormalized.toISOString(),
+            isIncluded,
+            fourWeeksAgo: fourWeeksAgo.toISOString().split('T')[0],
+          });
+        }
+        
+        return isIncluded;
       } catch (error) {
         return false;
       }
@@ -113,7 +178,8 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
 
     relevantEvents.forEach((request) => {
       try {
-        const eventDate = new Date(request.desiredEventDate!);
+        const eventDate = parseEventDate(request.desiredEventDate!);
+        if (!eventDate) return;
         const weekMonday = getWeekMonday(eventDate);
         const weekSunday = getWeekSunday(weekMonday);
 
