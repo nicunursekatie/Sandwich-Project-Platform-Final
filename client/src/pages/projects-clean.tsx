@@ -429,13 +429,11 @@ export default function ProjectsClean() {
                     {getCategoryIcon(project.category)} {project.category}
                   </Badge>
                 )}
-              </div>
-            </div>
-          </div>
+        </div>
 
-          {canEditProject(user, project) && (
-            <div className="flex gap-1">
-              <DropdownMenu>
+        {canEditProject(user, project) && (
+          <div className="flex gap-1">
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -475,10 +473,9 @@ export default function ProjectsClean() {
                     variant="destructive"
                   />
                 </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
+            </DropdownMenu>
+          </div>
+        )}
 
         {project.description && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2 font-roboto">

@@ -85,7 +85,8 @@ export function isOriginAllowed(origin: string | undefined): boolean {
   
   // Allow any replit.dev domain (both development and production)
   // Replit uses dynamic .replit.dev domains for deployments
-  if (origin.includes('.replit.dev')) {
+  // Also allow replit.dev with port 5000 for Vite dev server
+  if (origin.includes('.replit.dev') || origin.includes('.replit.app') || origin.includes('.spock.replit')) {
     return true;
   }
 
