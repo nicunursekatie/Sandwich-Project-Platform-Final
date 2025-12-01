@@ -38,6 +38,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
     - **Always** use the provided utility functions: `parseDateOnly()`, `formatDateDisplay()`, `formatDateForInput()`, `normalizeDate()`, etc.
     - These rules prevent timezone conversion issues that can shift dates by one day
 -   **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
+-   **Event Impact Report Data Source** (CRITICAL - see `server/services/ai-impact-reports/index.ts`):
+    - The Event Impact Report ONLY counts sandwiches from actual `sandwichCollections` records
+    - It does NOT fall back to estimated/planned counts from `eventRequests` when no collection is linked
+    - This ensures consistency with the Group Collections Viewer (`server/routes/reports/group-collections.ts`)
+    - Both reports use `sandwichCollections` as the single source of truth for actual sandwich counts
+    - The `getCollectionSandwichCount()` function only counts group sandwiches (from organizations/schools/churches), not individual sandwiches
 
 ### External Dependencies
 -   **Database**: `@neondatabase/serverless`, `drizzle-orm`
