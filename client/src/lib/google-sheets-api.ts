@@ -7,15 +7,37 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzR0WlK4UoHYrPv0L7EzIfO
 const API_KEY = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
 
 export interface GoogleSheetEventData {
-  date: string;           // Required. Format: 'YYYY-MM-DD'
-  groupName: string;      // Required. Name of the group
-  startTime?: string;     // Optional. e.g., '10:00 AM'
-  endTime?: string;       // Optional. e.g., '12:00 PM'
-  pickupTime?: string;    // Optional. e.g., '9:30 AM'
-  details?: string;       // Optional. Any notes
-  socialPost?: string;    // Optional.
-  staffing?: string;      // Optional.
-  estimate?: string;      // Optional. Sandwich count estimate
+  // Required fields
+  date: string;              // Format: 'YYYY-MM-DD'
+  groupName: string;         // Group Name (Column C)
+
+  // Event timing
+  startTime?: string;        // Event Start time (Column D)
+  endTime?: string;          // Event end time (Column E)
+  pickupTime?: string;       // Pick up time (Column F)
+
+  // Event details
+  details?: string;          // ALL DETAILS (Column G)
+  socialPost?: string;       // Social Post (Column H)
+  staffing?: string;         // Staffing (Column I)
+  estimate?: string;         // Estimate # sandwiches (Column J)
+  sandwichType?: string;     // Deli or PBJ? (Column K)
+
+  // Contact info
+  contactName?: string;      // Contact Name (Column N)
+  contactEmail?: string;     // Email Address (Column O)
+  contactPhone?: string;     // Contact Cell Number (Column P)
+  tspContact?: string;       // TSP Contact (Column Q)
+
+  // Location/logistics
+  address?: string;          // Address (Column R)
+  vanBooked?: string;        // Van Booked? (Column S)
+
+  // Notes
+  notes?: string;            // Notes (Column T)
+  additionalNotes?: string;  // Add'l Notes (Column U)
+  waitingOn?: string;        // Waiting On (Column V)
+  recipientHost?: string;    // Planned Recipient/Host Home (Column W)
 }
 
 export interface GoogleSheetResponse {
@@ -41,15 +63,32 @@ export async function addEventToGoogleSheet(eventData: GoogleSheetEventData): Pr
       headers: { 'Content-Type': 'text/plain' }, // Required for Apps Script CORS
       body: JSON.stringify({
         apiKey: API_KEY,
+        // Required
         date: eventData.date,
         groupName: eventData.groupName,
+        // Timing
         startTime: eventData.startTime || '',
         endTime: eventData.endTime || '',
         pickupTime: eventData.pickupTime || '',
+        // Details
         details: eventData.details || '',
         socialPost: eventData.socialPost || '',
         staffing: eventData.staffing || '',
-        estimate: eventData.estimate || ''
+        estimate: eventData.estimate || '',
+        sandwichType: eventData.sandwichType || '',
+        // Contact
+        contactName: eventData.contactName || '',
+        contactEmail: eventData.contactEmail || '',
+        contactPhone: eventData.contactPhone || '',
+        tspContact: eventData.tspContact || '',
+        // Location/logistics
+        address: eventData.address || '',
+        vanBooked: eventData.vanBooked || '',
+        // Notes
+        notes: eventData.notes || '',
+        additionalNotes: eventData.additionalNotes || '',
+        waitingOn: eventData.waitingOn || '',
+        recipientHost: eventData.recipientHost || '',
       })
     });
 
