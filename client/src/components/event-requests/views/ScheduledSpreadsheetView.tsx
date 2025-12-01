@@ -2408,9 +2408,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
       {/* Table Container with Horizontal and Vertical Scroll */}
       <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto' }}>
+        <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto', willChange: 'scroll-position' }}>
           <table className="w-full border-collapse">
-            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-20">
+            <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-20" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
               <tr>
                 {columns.map((column, colIndex) => {
                   const columnWidth = columnWidths[column.id] || parseInt(column.width?.replace('px', '') || '150');
@@ -2447,9 +2447,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                         maxWidth: `${columnWidth}px`,
                         ...(column.frozen ? {
                           left: `${leftOffset}px`,
-                          // Extend background slightly to cover sub-pixel gaps
-                          paddingRight: '9px',
-                          marginRight: '-1px',
+                          transform: 'translateZ(0)',
+                          backfaceVisibility: 'hidden' as const,
                         } : {})
                       }}
                       title={column.frozen ? column.label : "Drag to reorder columns"}
@@ -2535,9 +2534,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                           maxWidth: `${columnWidth}px`,
                           ...(column.frozen ? {
                             left: `${leftOffset}px`,
-                            // Extend background slightly to cover sub-pixel gaps
-                            paddingRight: '9px',
-                            marginRight: '-1px',
+                            transform: 'translateZ(0)',
+                            backfaceVisibility: 'hidden' as const,
                           } : {})
                         }}
                       >
