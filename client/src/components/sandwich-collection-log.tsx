@@ -3981,19 +3981,6 @@ export default function SandwichCollectionLog() {
         subtitle="Ask about your collection data"
         contextData={{
           currentView: 'collection-log',
-          // Pass raw data so AI sees exactly what the component displays
-          rawData: collections.map(c => ({
-            id: c.id,
-            hostName: c.hostName,
-            collectionDate: c.collectionDate,
-            individualSandwiches: c.individualSandwiches,
-            group1Name: c.group1Name,
-            group1Count: c.group1Count,
-            group2Name: c.group2Name,
-            group2Count: c.group2Count,
-            groupCollections: c.groupCollections,
-            totalSandwiches: calculateTotalSandwiches(c),
-          })),
           filters: {
             dateRange: {
               start: searchFilters.collectionDateFrom || undefined,
@@ -4009,6 +3996,20 @@ export default function SandwichCollectionLog() {
             displayedCollections: collections.length,
           },
         }}
+        getFullContext={() => ({
+          rawData: collections.map(c => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+        })}
         suggestedQuestions={[
           "What's our total sandwich count this month?",
           "What's our average collection size?",

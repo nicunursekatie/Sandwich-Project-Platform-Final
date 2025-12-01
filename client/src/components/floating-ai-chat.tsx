@@ -69,7 +69,10 @@ export type AIContextType =
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
+  /** Lightweight context - just filters and summary stats (computed on every render) */
   contextData?: Record<string, any>;
+  /** Heavy context with rawData - only called when chat is opened and message is sent */
+  getFullContext?: () => Record<string, any>;
   suggestedQuestions?: string[];
   title?: string;
   subtitle?: string;
@@ -324,6 +327,7 @@ function renderMarkdown(text: string): React.ReactNode {
 export function FloatingAIChat({
   contextType,
   contextData,
+  getFullContext,
   suggestedQuestions,
   title = 'AI Assistant',
   subtitle = 'Ask questions about your data',
@@ -407,6 +411,11 @@ export function FloatingAIChat({
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
+      // Only compute full context (with rawData) at the moment of sending
+      // This prevents expensive computation on every render
+      const fullContext = getFullContext ? getFullContext() : {};
+      const mergedContext = { ...contextData, ...fullContext };
+
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,7 +423,7 @@ export function FloatingAIChat({
         body: JSON.stringify({
           message,
           contextType,
-          contextData,
+          contextData: mergedContext,
           conversationHistory: messages.map(m => ({
             role: m.role,
             content: m.content,

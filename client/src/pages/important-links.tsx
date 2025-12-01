@@ -747,18 +747,19 @@ export default function ImportantLinks() {
         subtitle="Ask about spreadsheets and tools"
         contextData={{
           currentView: 'important-links',
-          // Pass available tools and links info
+          summaryStats: {
+            totalTools: 3,
+            totalFlyers: flyers.length,
+          },
+        }}
+        getFullContext={() => ({
           rawData: [
             { name: 'Inventory Calculator', url: inventoryCalculatorUrl, type: 'tool' },
             { name: 'Event Estimator', url: eventEstimatorUrl, type: 'tool' },
             { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
             ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
           ],
-          summaryStats: {
-            totalTools: 3,
-            totalFlyers: flyers.length,
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What tools are available?",
           "How do I use the inventory calculator?",

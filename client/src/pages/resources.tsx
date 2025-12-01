@@ -798,7 +798,19 @@ export function Resources() {
         subtitle="Ask about documents and links"
         contextData={{
           currentView: 'resources',
-          // Pass raw data so AI sees exactly what the component displays
+          filters: {
+            searchTerm: searchTerm || undefined,
+            selectedCategory,
+            selectedTags,
+            sortBy,
+          },
+          summaryStats: {
+            totalResources: resources.length,
+            favoriteCount: favorites.length,
+            recentCount: recentResources.length,
+          },
+        }}
+        getFullContext={() => ({
           rawData: resources.map(r => ({
             id: r.resource.id,
             title: r.resource.title,
@@ -810,22 +822,7 @@ export function Resources() {
             isFavorite: r.isFavorite,
             tags: r.tags.map(t => t.name),
           })),
-          filters: {
-            searchTerm: searchTerm || undefined,
-            selectedCategory,
-            selectedTags,
-            sortBy,
-          },
-          summaryStats: {
-            totalResources: resources.length,
-            favoriteCount: favorites.length,
-            recentCount: recentResources.length,
-            categoryCounts: CATEGORIES.reduce((acc, cat) => {
-              acc[cat.label] = resources.filter(r => r.resource.category === cat.id).length;
-              return acc;
-            }, {} as Record<string, number>),
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What resources are available?",
           "How many resources do we have?",

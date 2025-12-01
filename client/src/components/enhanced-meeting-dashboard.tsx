@@ -986,7 +986,15 @@ export default function EnhancedMeetingDashboard() {
         subtitle="Ask about meetings and agendas"
         contextData={{
           currentView: viewMode,
-          // Pass raw data so AI sees exactly what the component displays
+          summaryStats: {
+            totalMeetings: safeMeetings.length,
+            upcomingMeetings: safeMeetings.filter(m => new Date(m.date) >= new Date()).length,
+            pastMeetings: safeMeetings.filter(m => new Date(m.date) < new Date()).length,
+            agendaItemsCount: agendaItems?.length || 0,
+            projectsForReview: projectsForReview?.length || 0,
+          },
+        }}
+        getFullContext={() => ({
           rawData: safeMeetings.map(m => ({
             id: m.id,
             title: m.title,
@@ -1003,14 +1011,7 @@ export default function EnhancedMeetingDashboard() {
             date: selectedMeeting.date,
             type: selectedMeeting.type,
           } : undefined,
-          summaryStats: {
-            totalMeetings: safeMeetings.length,
-            upcomingMeetings: safeMeetings.filter(m => new Date(m.date) >= new Date()).length,
-            pastMeetings: safeMeetings.filter(m => new Date(m.date) < new Date()).length,
-            agendaItemsCount: agendaItems?.length || 0,
-            projectsForReview: projectsForReview?.length || 0,
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What meetings are coming up?",
           "How many meetings do we have?",

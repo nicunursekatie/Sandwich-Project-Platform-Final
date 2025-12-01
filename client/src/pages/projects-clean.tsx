@@ -1335,7 +1335,20 @@ export default function ProjectsClean() {
         subtitle="Ask about projects and tasks"
         contextData={{
           currentView: activeTab,
-          // Pass raw data so AI sees exactly what the component displays
+          filters: {
+            activeTab,
+            projectTypeFilter,
+          },
+          summaryStats: {
+            totalProjects: allProjects.length,
+            activeProjects: allProjects.filter(p => p.status !== 'completed' && p.status !== 'archived').length,
+            inProgress: allProjects.filter(p => p.status === 'in-progress').length,
+            waiting: allProjects.filter(p => p.status === 'waiting').length,
+            completed: allProjects.filter(p => p.status === 'completed').length,
+            highPriority: allProjects.filter(p => p.priority === 'high' || p.priority === 'critical').length,
+          },
+        }}
+        getFullContext={() => ({
           rawData: allProjects.map(p => ({
             id: p.id,
             title: p.title,
@@ -1347,10 +1360,6 @@ export default function ProjectsClean() {
             assigneeId: p.assigneeId,
             projectType: p.projectType,
           })),
-          filters: {
-            activeTab,
-            projectTypeFilter,
-          },
           selectedItem: editingProject ? {
             title: editingProject.title,
             status: editingProject.status,
@@ -1359,15 +1368,7 @@ export default function ProjectsClean() {
             description: editingProject.description,
             dueDate: editingProject.dueDate,
           } : undefined,
-          summaryStats: {
-            totalProjects: allProjects.length,
-            activeProjects: allProjects.filter(p => p.status !== 'completed' && p.status !== 'archived').length,
-            inProgress: allProjects.filter(p => p.status === 'in-progress').length,
-            waiting: allProjects.filter(p => p.status === 'waiting').length,
-            completed: allProjects.filter(p => p.status === 'completed').length,
-            highPriority: allProjects.filter(p => p.priority === 'high' || p.priority === 'critical').length,
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What projects are in progress?",
           "How many projects are high priority?",

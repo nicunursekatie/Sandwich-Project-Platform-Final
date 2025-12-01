@@ -2196,7 +2196,18 @@ export default function HoldingZone() {
         subtitle="Ask about your ideas and tasks"
         contextData={{
           currentView: activeTab,
-          // Pass raw data so AI sees exactly what the component displays
+          summaryStats: {
+            totalItems: items.length,
+            openItems: items.filter(i => i.status === 'open').length,
+            claimedItems: items.filter(i => i.status === 'claimed').length,
+            doneItems: items.filter(i => i.status === 'done').length,
+            urgentItems: items.filter(i => i.isUrgent).length,
+            tasks: items.filter(i => i.type === 'task').length,
+            notes: items.filter(i => i.type === 'note').length,
+            ideas: items.filter(i => i.type === 'idea').length,
+          },
+        }}
+        getFullContext={() => ({
           rawData: items.map(item => ({
             id: item.id,
             content: item.content,
@@ -2217,17 +2228,7 @@ export default function HoldingZone() {
             isUrgent: itemToEdit.isUrgent,
             categoryId: itemToEdit.categoryId,
           } : undefined,
-          summaryStats: {
-            totalItems: items.length,
-            openItems: items.filter(i => i.status === 'open').length,
-            claimedItems: items.filter(i => i.status === 'claimed').length,
-            doneItems: items.filter(i => i.status === 'done').length,
-            urgentItems: items.filter(i => i.isUrgent).length,
-            tasks: items.filter(i => i.type === 'task').length,
-            notes: items.filter(i => i.type === 'note').length,
-            ideas: items.filter(i => i.type === 'idea').length,
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What items need attention?",
           "How many urgent items are there?",
