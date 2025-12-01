@@ -417,17 +417,39 @@ export function FloatingAIChat({
 
       // Limit rawData to prevent 413 errors (request too large)
       // AI doesn't need all records - a sample + summary stats is enough
-      const MAX_RAW_DATA_ITEMS = 100;
+      const MAX_RAW_DATA_ITEMS = 150;
       let limitedContext = { ...contextData, ...fullContext };
 
       if (limitedContext.rawData && Array.isArray(limitedContext.rawData)) {
         const totalCount = limitedContext.rawData.length;
         if (totalCount > MAX_RAW_DATA_ITEMS) {
-          // Take first 100 items as sample, add note about total
+          // For events, prioritize upcoming scheduled/in_process events
+          // Sort by date so we don't miss important upcoming events
+          const sortedData = [...limitedContext.rawData].sort((a, b) => {
+            // Prioritize scheduled and in_process events
+            const statusPriority = (status: string) => {
+              if (status === 'scheduled') return 0;
+              if (status === 'in_process') return 1;
+              if (status === 'new') return 2;
+              return 3;
+            };
+            const aPriority = statusPriority(a.status);
+            const bPriority = statusPriority(b.status);
+            if (aPriority !== bPriority) return aPriority - bPriority;
+
+            // Then sort by date (upcoming first)
+            const aDate = a.scheduledEventDate || a.desiredEventDate || a.collectionDate;
+            const bDate = b.scheduledEventDate || b.desiredEventDate || b.collectionDate;
+            if (!aDate && !bDate) return 0;
+            if (!aDate) return 1;
+            if (!bDate) return -1;
+            return new Date(aDate).getTime() - new Date(bDate).getTime();
+          });
+
           limitedContext = {
             ...limitedContext,
-            rawData: limitedContext.rawData.slice(0, MAX_RAW_DATA_ITEMS),
-            _dataNote: `Showing ${MAX_RAW_DATA_ITEMS} of ${totalCount} total records. Summary stats reflect full dataset.`,
+            rawData: sortedData.slice(0, MAX_RAW_DATA_ITEMS),
+            _dataNote: `Showing ${MAX_RAW_DATA_ITEMS} of ${totalCount} total records (prioritized by status and date). Summary stats reflect full dataset.`,
           };
         }
       }

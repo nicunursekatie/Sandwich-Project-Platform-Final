@@ -1610,7 +1610,12 @@ Focus on overall totals and trends rather than comparing individual hosts.`,
     events: `You're helping with The Sandwich Project's event management - tracking organizations requesting sandwich-making events, scheduling, and categories.
 Focus on overall trends rather than comparing organizations.
 
-For date queries: Check both "scheduled" and "in_process" events (in_process events may already have scheduled dates). Be flexible with date formats - "12/1", "Dec 1", and "December 1" all mean the same thing.`,
+IMPORTANT for sandwich counting and weekly totals:
+- Include BOTH "scheduled" AND "in_process" status events - they're all upcoming events that need sandwiches
+- When someone asks "how many sandwiches this week" or "scheduled events this week", include ALL events with dates in that range regardless of status (scheduled, in_process)
+- The sandwich planning widget counts scheduled + in_process + completed events for the week
+- Be flexible with date formats: "12/1" = "Dec 1" = "December 1" all mean the same date
+- If your count doesn't match what the user is seeing, double-check you're including in_process events too`,
 
     'impact-reports': `You're helping with The Sandwich Project's impact reporting - looking at the overall impact including events, collections, and sandwich distribution.
 Focus on overall impact and growth rather than comparing hosts or organizations.`,
