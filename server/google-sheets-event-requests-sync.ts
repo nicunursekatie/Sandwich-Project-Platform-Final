@@ -603,22 +603,46 @@ export class EventRequestsGoogleSheetsService {
       let skippedNoExternalId = 0;
 
       logger.log(`Starting Google Sheets sync: Processing ${sheetRows.length} rows`);
+      
+      if (sheetRows.length === 0) {
+        logger.warn('⚠️ No rows found in Google Sheet - check if sheet is empty or range is correct');
+        return {
+          success: true,
+          message: 'No rows to sync - sheet appears empty',
+          created: 0,
+          updated: 0,
+        };
+      }
+
+      let rowsWithExternalId = 0;
+      let rowsWithoutExternalId = 0;
 
       for (const row of sheetRows) {
         // UPDATED: External ID is now optional - generate one if missing
         if (!row.externalId || !row.externalId.trim()) {
+          rowsWithoutExternalId++;
           // Generate a STABLE identifier based on email + submittedOn + organization
           // NOTE: No timestamp - must be deterministic so the same row always gets the same ID
+          // Normalize values to ensure consistency (trim, lowercase email)
+          const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
+          const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
+          const normalizedOrg = (row.organizationName || 'no-org').trim();
+          const normalizedName = (row.contactName || 'no-name').trim();
+          
           const uniqueParts = [
-            row.email || 'no-email',
-            row.submittedOn || 'no-date',
-            row.organizationName || 'no-org',
-            row.contactName || 'no-name'
+            normalizedEmail,
+            normalizedSubmittedOn,
+            normalizedOrg,
+            normalizedName
           ].join('|');
           
           // Create a stable hash-like identifier (no timestamp!)
           const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
           row.externalId = `auto-${hash}`;
+          
+          logger.debug(`Generated externalId for row ${row.rowIndex}: ${row.externalId} (org: ${normalizedOrg})`);
+        } else {
+          rowsWithExternalId++;
         }
 
         const externalIdTrimmed = row.externalId.trim();
@@ -699,12 +723,25 @@ export class EventRequestsGoogleSheetsService {
           }
         } catch (error) {
           logger.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          logger.error(`❌ Row details:`, {
+            rowIndex: row.rowIndex,
+            externalId: row.externalId,
+            organizationName: row.organizationName,
+            email: row.email,
+            submittedOn: row.submittedOn
+          });
           logger.error(`❌ Error details:`, error);
           // Continue processing other records
         }
       }
 
       logger.log(`Sync complete: ${createdCount} created, ${updatedCount} skipped`);
+      logger.log(`External ID stats: ${rowsWithExternalId} rows had externalId, ${rowsWithoutExternalId} rows had auto-generated externalId`);
+      
+      if (createdCount === 0 && sheetRows.length > 0) {
+        logger.warn(`⚠️ No new records created from ${sheetRows.length} rows - all may already exist in database`);
+        logger.warn(`⚠️ This could indicate: 1) All rows already imported, 2) External ID generation issue, or 3) Conflict detection too aggressive`);
+      }
 
       return {
         success: true,
@@ -973,8 +1010,32 @@ export class EventRequestsGoogleSheetsService {
 
     const rows = response.data.values || [];
     logger.log(`Reading ${rows.length} rows from Google Sheets`);
+    
+    if (rows.length === 0) {
+      logger.warn('⚠️ No data rows found in Google Sheet - check if sheet has data or range is correct');
+      return [];
+    }
+    
+    // Filter out completely empty rows
+    const nonEmptyRows = rows.filter((row: string[]) => {
+      return row && row.some((cell: string) => cell && cell.trim().length > 0);
+    });
+    
+    if (nonEmptyRows.length < rows.length) {
+      logger.log(`Filtered out ${rows.length - nonEmptyRows.length} empty rows`);
+    }
+    
+    logger.log(`Processing ${nonEmptyRows.length} non-empty rows`);
 
-    return rows.map((row: string[], index: number) => {
+    // Track original row indices for proper rowIndex calculation
+    let originalRowIndex = 1; // Start at 1 (row 2 in sheet, since row 1 is header)
+    
+    return nonEmptyRows.map((row: string[], index: number) => {
+      // Calculate actual row number in sheet (accounting for header row)
+      // We need to find which original row this corresponds to
+      const actualRowNumber = originalRowIndex + 1; // +1 for header row
+      originalRowIndex++;
+      
       // ACTUALLY USE the dynamic column mapping computed above!
       const getFieldValue = (colIndex: number, defaultValue = '') => {
         if (colIndex < 0) {
@@ -1066,7 +1127,7 @@ export class EventRequestsGoogleSheetsService {
         lastUpdated: new Date().toISOString(),
         duplicateCheck: 'No',
         notes: getFieldValue(columnMapping.previouslyHosted), // Use same as previouslyHosted for notes
-        rowIndex: index + 2, // Data starts from row 2 (index 0 = row 2)
+        rowIndex: actualRowNumber, // Actual row number in Google Sheet
       };
 
       return result;
