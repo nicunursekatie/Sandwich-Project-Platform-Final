@@ -71,6 +71,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread } from '@/components/collaboration';
+import { useToast } from '@/hooks/use-toast';
+import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
+import { Sheet } from 'lucide-react';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -214,7 +217,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [tempEndTime, setTempEndTime] = useState('');
   const [tempPickupTime, setTempPickupTime] = useState('');
   const [tempOvernightHolding, setTempOvernightHolding] = useState('');
+  const [isExportingToSheet, setIsExportingToSheet] = useState(false);
 
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Mutation for updating event request fields
@@ -445,6 +450,87 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     dateFieldToEdit = 'scheduledEventDate';
     dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
+
+  // Handler to export event to Google Sheet
+  const handleExportToGoogleSheet = async () => {
+    const eventDate = request.scheduledEventDate || request.desiredEventDate;
+    if (!eventDate) {
+      toast({
+        title: 'Missing Date',
+        description: 'Cannot export event without a date.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!request.organizationName) {
+      toast({
+        title: 'Missing Organization Name',
+        description: 'Cannot export event without an organization name.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsExportingToSheet(true);
+
+    try {
+      // Build staffing summary
+      const staffingParts: string[] = [];
+      if (driverNeeded > 0) {
+        staffingParts.push(`${driverAssigned}/${driverNeeded} drivers`);
+      }
+      if (speakerNeeded > 0) {
+        staffingParts.push(`${speakerAssigned}/${speakerNeeded} speakers`);
+      }
+      if (volunteerNeeded > 0) {
+        staffingParts.push(`${volunteerAssigned}/${volunteerNeeded} volunteers`);
+      }
+
+      // Build details from various notes
+      const detailParts: string[] = [];
+      if (request.specialRequirements) detailParts.push(request.specialRequirements);
+      if (request.distributionNotes) detailParts.push(request.distributionNotes);
+      if (request.eventAddress) detailParts.push(`Location: ${request.eventAddress}`);
+
+      const result = await addEventToGoogleSheet({
+        date: formatDateForGoogleSheet(eventDate),
+        groupName: request.organizationName,
+        startTime: request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '',
+        endTime: request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '',
+        pickupTime: request.pickupTime ? formatTime12Hour(request.pickupTime) : '',
+        details: detailParts.join(' | '),
+        socialPost: request.socialMediaPostNotes || '',
+        staffing: staffingParts.join(', '),
+        estimate: String(request.estimatedSandwichCount || ''),
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Added to Google Sheet',
+          description: result.message,
+        });
+        // Mark as added to official sheet
+        if (!request.addedToOfficialSheet) {
+          quickToggleBoolean('addedToOfficialSheet', false);
+        }
+      } else {
+        toast({
+          title: 'Export Failed',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Export Error',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingToSheet(false);
+    }
+  };
 
   return (
     <Card 
@@ -2112,6 +2198,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               Assign TSP Contact
             </Button>
           )}
+
+          {/* Export to Google Sheet button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExportToGoogleSheet}
+            disabled={isExportingToSheet || request.addedToOfficialSheet}
+            className={`border-green-500/30 text-green-600 hover:bg-green-50 ${
+              request.addedToOfficialSheet ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={request.addedToOfficialSheet ? 'Already added to sheet' : 'Add event to TSP Google Sheet'}
+          >
+            {isExportingToSheet ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Sheet className="w-4 h-4 mr-1" />
+                {request.addedToOfficialSheet ? 'On Sheet' : 'Add to Sheet'}
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Activity History Toggle */}
