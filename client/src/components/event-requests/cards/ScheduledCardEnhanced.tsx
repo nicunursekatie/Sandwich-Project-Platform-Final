@@ -585,23 +585,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         vanBookedStatus = 'Self Transport';
       }
 
-      // Debug logging for troubleshooting
-      console.log('Add to Sheet data:', {
-        sandwichTotal,
-        sandwichTypeStr,
-        tspContactName,
-        vanBookedStatus,
-        rawSandwichTypes: request.sandwichTypes,
-        parsedTypes,
-        estimatedSandwichCount: request.estimatedSandwichCount,
-        tspContactAssigned: request.tspContactAssigned,
-        tspContact: request.tspContact,
-        customTspContact: request.customTspContact,
-        vanDriverNeeded: request.vanDriverNeeded,
-        assignedVanDriverId: request.assignedVanDriverId,
-      });
-
-      const result = await addEventToGoogleSheet({
+      // Build the payload for Google Sheets
+      const sheetPayload = {
         // Required
         date: formatDateForGoogleSheet(eventDate),
         groupName: request.organizationName,
@@ -626,9 +611,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         // Notes
         notes: request.followUpNotes || '',
         additionalNotes: request.duplicateNotes || '',
-        waitingOn: '', // Could be populated if there's a relevant field
+        waitingOn: '',
         recipientHost: recipientNames,
-      });
+      };
+
+      // Debug logging - show exactly what's being sent to Google Sheets
+      console.log('=== GOOGLE SHEETS PAYLOAD ===');
+      console.log('estimate (Column J):', sheetPayload.estimate);
+      console.log('sandwichType (Column K):', sheetPayload.sandwichType);
+      console.log('tspContact (Column Q):', sheetPayload.tspContact);
+      console.log('vanBooked (Column S):', sheetPayload.vanBooked);
+      console.log('Full payload:', sheetPayload);
+
+      const result = await addEventToGoogleSheet(sheetPayload);
 
       if (result.success) {
         toast({
