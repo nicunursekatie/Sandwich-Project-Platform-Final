@@ -533,16 +533,33 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         staffingParts.push('V');
       }
 
-      // Build details from various notes
+      // Build details from various notes (planning notes go here)
       const detailParts: string[] = [];
+      if (request.planningNotes) detailParts.push(request.planningNotes);
+      if (request.schedulingNotes) detailParts.push(request.schedulingNotes);
       if (request.specialRequirements) detailParts.push(request.specialRequirements);
       if (request.distributionNotes) detailParts.push(request.distributionNotes);
 
-      // Determine sandwich type (Deli or PBJ)
+      // Determine sandwich type (Deli or PBJ) and calculate total from sandwichTypes if needed
       let sandwichTypeStr = '';
-      if (request.sandwichTypes && Array.isArray(request.sandwichTypes)) {
-        const types = request.sandwichTypes as Array<{ type: string; quantity: number }>;
-        sandwichTypeStr = types.map(t => t.type).join(', ');
+      let sandwichTotal = request.estimatedSandwichCount || 0;
+      const parsedTypes = parseSandwichTypes(request.sandwichTypes);
+      if (parsedTypes && parsedTypes.length > 0) {
+        // Filter out unknown types and format type names nicely
+        const validTypes = parsedTypes.filter(t => t.type.toLowerCase() !== 'unknown' && t.quantity > 0);
+        sandwichTypeStr = validTypes.map(t => {
+          // Format type name: capitalize first letter, handle special cases
+          const typeName = t.type.toLowerCase();
+          if (typeName === 'pbj' || typeName === 'pb&j') return 'PB&J';
+          if (typeName === 'deli') return 'Deli';
+          return t.type.charAt(0).toUpperCase() + t.type.slice(1);
+        }).join(', ');
+        // Calculate total from sandwichTypes
+        const typesTotal = validTypes.reduce((sum, t) => sum + (t.quantity || 0), 0);
+        // Use the larger of estimatedSandwichCount or calculated total
+        if (typesTotal > sandwichTotal) {
+          sandwichTotal = typesTotal;
+        }
       }
 
       // Get TSP contact name
@@ -565,7 +582,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         details: detailParts.join(' | '),
         socialPost: request.socialMediaPostNotes || '',
         staffing: staffingParts.join(', '),
-        estimate: String(request.estimatedSandwichCount || ''),
+        estimate: sandwichTotal ? String(sandwichTotal) : '',
         sandwichType: sandwichTypeStr,
         // Contact info
         contactName: request.contactName || '',
