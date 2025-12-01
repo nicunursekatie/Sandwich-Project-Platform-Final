@@ -119,5 +119,19 @@ export default defineConfig({
       // Ignore node_modules and .git to improve performance
       ignored: ['**/node_modules/**', '**/.git/**'],
     },
+    // Proxy API and Socket.IO requests to the backend server
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Enable WebSocket proxying
+      },
+    },
   },
 });

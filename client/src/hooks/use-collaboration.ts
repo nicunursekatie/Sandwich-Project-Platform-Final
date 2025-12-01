@@ -228,23 +228,30 @@ export function useCollaboration({
     if (!user || !resourceId) return;
 
     // Use current origin for Socket.IO connection (or env variable if provided)
-    // For Replit environments, don't include port - the proxy handles routing
+    // For Replit environments, use current origin (with port if present)
     const socketUrl = import.meta.env.VITE_SOCKET_URL || (() => {
       const protocol = window.location.protocol;
       const hostname = window.location.hostname;
+      const port = window.location.port;
 
-      // Check if we're in a Replit environment - don't add port as proxy handles it
+      // Check if we're in a Replit environment
       const isReplit = hostname.includes('replit.dev') ||
                        hostname.includes('replit.app') ||
-                       hostname.includes('replit.com');
+                       hostname.includes('replit.com') ||
+                       hostname.includes('spock.replit');
 
       if (isReplit) {
+        // In Replit dev mode (port 5000), still connect to the same origin
+        // The Vite proxy should forward socket.io requests to the backend
+        if (port && port !== '443' && port !== '80') {
+          return `${protocol}//${hostname}:${port}`;
+        }
         return `${protocol}//${hostname}`;
       }
 
       // For local development, include the port
-      const port = window.location.port || (protocol === 'https:' ? '443' : '80');
-      return `${protocol}//${hostname}:${port}`;
+      const devPort = port || (protocol === 'https:' ? '443' : '80');
+      return `${protocol}//${hostname}:${devPort}`;
     })();
     logger.log(`[Collaboration] Connecting to: ${socketUrl}${namespace}`);
 
