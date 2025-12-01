@@ -4,17 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
-  Users, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Users,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   Truck,
   UserCheck,
   Megaphone,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MapPin
 } from 'lucide-react';
 
 import type { EventRequest } from '@shared/schema';
@@ -384,6 +385,19 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                               </span>
                             )}
                           </div>
+                          {event.eventAddress && (
+                            <div className="mt-1">
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-sm text-[#236383] hover:text-[#007E8C] hover:underline"
+                              >
+                                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                                <span className="line-clamp-1">{event.eventAddress}</span>
+                              </a>
+                            </div>
+                          )}
                         </div>
                         <Badge
                           variant="secondary"

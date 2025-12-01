@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
-import { formatEventDate } from '@/components/event-requests/utils';
+import { formatEventDate, formatTime12Hour } from '@/components/event-requests/utils';
 
 interface SandwichForecastWidgetProps {
   hideHeader?: boolean;
@@ -315,9 +315,11 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       return isOtherEvent(e.desiredEventDate);
     })
     .sort((a, b) => {
-      // Sort by date (earliest first)
-      const dateA = parseEventDate(a.desiredEventDate!).getTime();
-      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      // Sort by date (earliest first) - use scheduledEventDate if available
+      const dateStrA = a.scheduledEventDate || a.desiredEventDate;
+      const dateStrB = b.scheduledEventDate || b.desiredEventDate;
+      const dateA = dateStrA ? parseEventDate(dateStrA).getTime() : 0;
+      const dateB = dateStrB ? parseEventDate(dateStrB).getTime() : 0;
       return dateA - dateB;
     });
 
@@ -507,6 +509,11 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
                         {dateInfo ? dateInfo.text : 'Date TBD'}
+                        {event.eventStartTime && (
+                          <span className="ml-2 text-gray-500">
+                            @ {formatTime12Hour(event.eventStartTime)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -580,6 +587,11 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
                         {dateInfo ? dateInfo.text : 'Date TBD'}
+                        {event.eventStartTime && (
+                          <span className="ml-2 text-gray-500">
+                            @ {formatTime12Hour(event.eventStartTime)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
