@@ -16,7 +16,7 @@ import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -53,6 +53,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -180,6 +181,31 @@ const EventRequestsManagementContent: React.FC = () => {
     updateEventRequestMutation,
   } = useEventMutations();
 
+  const queryClient = useQueryClient();
+  
+  // Sync from Google Sheets mutation
+  const syncFromSheetsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/event-requests/sync/from-sheets', {});
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: 'Sync Complete',
+        description: result.message || `Synced: ${result.created || 0} created, ${result.updated || 0} skipped`,
+      });
+      // Refresh event requests
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Sync Failed',
+        description: error?.message || 'Failed to sync from Google Sheets',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const { users, drivers, hostsWithContacts } = useEventQueries();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -193,6 +219,10 @@ const EventRequestsManagementContent: React.FC = () => {
   const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
   const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
   const [showFloatingTip, setShowFloatingTip] = React.useState(false);
+
+  // Check if user has permission to manage event requests (required for sync)
+  const canManageEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_MANAGE) ||
+    user?.role === 'admin' || user?.role === 'super_admin';
 
   // Support both old and new permission strings for backward compatibility
   const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
@@ -422,6 +452,17 @@ const EventRequestsManagementContent: React.FC = () => {
                 <Users className="w-4 h-4" />
                 {isMobile ? 'Opportunities' : 'Volunteer Opportunities'}
               </button>
+              {canManageEvents && (
+                <button
+                  onClick={() => syncFromSheetsMutation.mutate()}
+                  disabled={syncFromSheetsMutation.isPending}
+                  className="premium-btn-outline"
+                  title="Sync new event requests from Google Sheets (safe - won't create duplicates)"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncFromSheetsMutation.isPending ? 'animate-spin' : ''}`} />
+                  {isMobile ? 'Sync' : 'Sync from Sheets'}
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
