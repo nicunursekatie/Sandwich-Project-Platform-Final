@@ -353,8 +353,26 @@ export default function StaffingForecastWidget() {
                           </div>
                           <div className="text-sm text-gray-600">
                             {(() => {
-                              // Parse as local time by appending noon to avoid timezone issues
-                              const date = new Date(event.desiredEventDate + 'T12:00:00');
+                              // Use scheduledEventDate first, fall back to desiredEventDate
+                              const dateStr = event.scheduledEventDate || event.desiredEventDate;
+                              if (!dateStr) return 'Date TBD';
+
+                              // Handle various date formats
+                              let date: Date;
+                              if (typeof dateStr === 'string') {
+                                // If it's just a date (YYYY-MM-DD), append noon to avoid timezone issues
+                                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                                  date = new Date(dateStr + 'T12:00:00');
+                                } else {
+                                  // Full ISO string or other format
+                                  date = new Date(dateStr);
+                                }
+                              } else {
+                                date = new Date(dateStr);
+                              }
+
+                              if (isNaN(date.getTime())) return 'Date TBD';
+
                               return date.toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
@@ -363,9 +381,10 @@ export default function StaffingForecastWidget() {
                             })()}
                           </div>
                         </div>
-                        <Badge 
-                          variant={totalUnfulfilled === 0 ? "secondary" : "destructive"}
-                          className="ml-2"
+                        <Badge
+                          variant="secondary"
+                          className={`ml-2 ${totalUnfulfilled === 0 ? 'bg-green-100 text-green-800' : 'text-white'}`}
+                          style={totalUnfulfilled > 0 ? { backgroundColor: '#A31C41' } : undefined}
                           data-testid={`badge-event-${event.id}-staffing`}
                         >
                           {totalUnfulfilled === 0 ? 'Fully Staffed' : `${totalUnfulfilled} needed`}
