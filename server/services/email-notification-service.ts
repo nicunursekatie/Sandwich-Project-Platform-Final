@@ -1,6 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users, eventRequests } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
@@ -783,6 +783,186 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       }
     } catch (error) {
       logger.error('Error processing team board comment for mentions:', error);
+    }
+  }
+
+  /**
+   * Send email notification when a comment is left on an event request
+   * Notifies the TSP contact(s) assigned to that event
+   */
+  static async sendEventCommentNotification(
+    eventId: number,
+    commenterFirstName: string,
+    commenterId: string,
+    commentContent: string,
+    commentCreatedAt: Date
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping event comment notification');
+      return false;
+    }
+
+    try {
+      // Fetch the event request to get TSP contact info and event details
+      const [event] = await db
+        .select()
+        .from(eventRequests)
+        .where(eq(eventRequests.id, eventId))
+        .limit(1);
+
+      if (!event) {
+        logger.warn(`Event ${eventId} not found - cannot send comment notification`);
+        return false;
+      }
+
+      // Collect all TSP contact user IDs (primary + additional contacts)
+      const tspContactIds: string[] = [];
+      if (event.tspContact) tspContactIds.push(event.tspContact);
+      if (event.tspContactAssigned && event.tspContactAssigned !== event.tspContact) {
+        tspContactIds.push(event.tspContactAssigned);
+      }
+      if (event.additionalContact1) tspContactIds.push(event.additionalContact1);
+      if (event.additionalContact2) tspContactIds.push(event.additionalContact2);
+
+      // Remove duplicates and filter out the commenter (don't notify yourself)
+      const uniqueContactIds = [...new Set(tspContactIds)].filter(id => id !== commenterId);
+
+      if (uniqueContactIds.length === 0) {
+        logger.log(`No TSP contacts to notify for event ${eventId} (or commenter is the only contact)`);
+        return false;
+      }
+
+      // Fetch user details for all TSP contacts
+      const tspUsers = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, uniqueContactIds));
+
+      if (tspUsers.length === 0) {
+        logger.warn(`No valid TSP contact users found for event ${eventId}`);
+        return false;
+      }
+
+      // Format event date
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const formattedEventDate = eventDate
+        ? new Date(eventDate + 'T12:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : 'Date to be determined';
+
+      // Format comment timestamp
+      const formattedCommentTime = commentCreatedAt.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+      // Generate event URL
+      const eventUrl = this.getEventUrl(eventId);
+      const organizationName = event.organizationName || 'Unknown Organization';
+
+      // Send email to each TSP contact
+      for (const user of tspUsers) {
+        if (!user.email) {
+          logger.warn(`User ${user.id} has no email - cannot send comment notification`);
+          continue;
+        }
+
+        const userEmail = user.preferredEmail || user.email;
+        const userName = user.displayName || user.firstName || userEmail.split('@')[0];
+
+        // Truncate comment if too long
+        const displayComment = commentContent.length > 500
+          ? commentContent.substring(0, 500) + '...'
+          : commentContent;
+
+        const msg = {
+          to: userEmail,
+          from: 'katie@thesandwichproject.org',
+          subject: `New comment on ${organizationName} event - The Sandwich Project`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+                .event-details { background: #e6f7f9; padding: 12px; border-left: 4px solid #47B3CB; margin: 15px 0; font-size: 14px; }
+                .comment-box { background: white; padding: 15px; border-left: 4px solid #236383; margin: 15px 0; }
+                .comment-meta { color: #666; font-size: 13px; margin-bottom: 8px; }
+                .btn { display: inline-block; background: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+                .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>💬 New Comment on Event</h1>
+                </div>
+                <div class="content">
+                  <p>Hello ${userName}!</p>
+                  <p>A new comment has been added to an event you're assigned to:</p>
+
+                  <div class="event-details">
+                    <strong>Organization:</strong> ${organizationName}<br>
+                    <strong>Event Date:</strong> ${formattedEventDate}
+                  </div>
+
+                  <div class="comment-box">
+                    <div class="comment-meta">
+                      <strong>${commenterFirstName}</strong> commented on ${formattedCommentTime}:
+                    </div>
+                    "${displayComment}"
+                  </div>
+
+                  <p>Click the button below to view the event and respond:</p>
+                  <a href="${eventUrl}" class="btn">View Event Details</a>
+
+                  ${EMAIL_FOOTER_HTML}
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+          text: `
+Hello ${userName}!
+
+A new comment has been added to an event you're assigned to:
+
+Organization: ${organizationName}
+Event Date: ${formattedEventDate}
+
+${commenterFirstName} commented on ${formattedCommentTime}:
+"${displayComment}"
+
+View event details and respond: ${eventUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+          `.trim(),
+        };
+
+        await sgMail.send(msg);
+        logger.log(`Event comment notification sent to ${userEmail} for event ${eventId}`);
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Error sending event comment notification:', error);
+      return false;
     }
   }
 

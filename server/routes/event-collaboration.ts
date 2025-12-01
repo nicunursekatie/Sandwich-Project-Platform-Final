@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { logger } from '../utils/production-safe-logger';
 import type { RouterDependencies } from '../types';
+import { EmailNotificationService } from '../services/email-notification-service';
 
 /**
  * Event Collaboration API Routes
@@ -101,6 +102,18 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
         userName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email || 'Unknown User',
         content: validatedData.content,
         parentCommentId: validatedData.parentCommentId,
+      });
+
+      // Send email notification to TSP contacts (async, don't block response)
+      const commenterFirstName = req.user.firstName || req.user.email?.split('@')[0] || 'Someone';
+      EmailNotificationService.sendEventCommentNotification(
+        eventId,
+        commenterFirstName,
+        req.user.id,
+        validatedData.content,
+        new Date()
+      ).catch(err => {
+        logger.error('[Event Collaboration] Error sending comment notification:', err);
       });
 
       res.status(201).json({ comment });
