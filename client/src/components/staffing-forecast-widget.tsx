@@ -495,7 +495,17 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               {/* Events List */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-brand-primary">Events Requiring Staffing:</h4>
-                {currentWeek.events.map((event) => {
+                {[...currentWeek.events]
+                  .sort((a, b) => {
+                    // Sort by date (earliest first)
+                    const dateA = a.scheduledEventDate || a.desiredEventDate;
+                    const dateB = b.scheduledEventDate || b.desiredEventDate;
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    return new Date(dateA).getTime() - new Date(dateB).getTime();
+                  })
+                  .map((event) => {
                   // Helper function to safely get array length for PostgreSQL arrays
                   const getAssignmentCount = (assignments: any) => {
                     if (!assignments) return 0;
