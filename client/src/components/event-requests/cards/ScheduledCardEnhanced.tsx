@@ -491,18 +491,49 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const detailParts: string[] = [];
       if (request.specialRequirements) detailParts.push(request.specialRequirements);
       if (request.distributionNotes) detailParts.push(request.distributionNotes);
-      if (request.eventAddress) detailParts.push(`Location: ${request.eventAddress}`);
+
+      // Determine sandwich type (Deli or PBJ)
+      let sandwichTypeStr = '';
+      if (request.sandwichTypes && Array.isArray(request.sandwichTypes)) {
+        const types = request.sandwichTypes as Array<{ type: string; quantity: number }>;
+        sandwichTypeStr = types.map(t => t.type).join(', ');
+      }
+
+      // Get TSP contact name
+      const tspContactName = request.customTspContact ||
+        (request.tspContact ? resolveUserName(request.tspContact) : '');
+
+      // Get recipient/host info
+      const recipientIds = parsePostgresArray(request.assignedRecipientIds);
+      const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
 
       const result = await addEventToGoogleSheet({
+        // Required
         date: formatDateForGoogleSheet(eventDate),
         groupName: request.organizationName,
+        // Timing
         startTime: request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '',
         endTime: request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '',
         pickupTime: request.pickupTime ? formatTime12Hour(request.pickupTime) : '',
+        // Details
         details: detailParts.join(' | '),
         socialPost: request.socialMediaPostNotes || '',
         staffing: staffingParts.join(', '),
         estimate: String(request.estimatedSandwichCount || ''),
+        sandwichType: sandwichTypeStr,
+        // Contact info
+        contactName: request.contactName || '',
+        contactEmail: request.contactEmail || '',
+        contactPhone: request.contactPhone || '',
+        tspContact: tspContactName,
+        // Location
+        address: request.eventAddress || '',
+        vanBooked: request.assignedVanDriverId ? 'Yes' : (request.vanDriverNeeded ? 'Needed' : ''),
+        // Notes
+        notes: request.followUpNotes || '',
+        additionalNotes: request.duplicateNotes || '',
+        waitingOn: '', // Could be populated if there's a relevant field
+        recipientHost: recipientNames,
       });
 
       if (result.success) {
