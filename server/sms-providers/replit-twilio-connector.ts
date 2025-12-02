@@ -76,7 +76,13 @@ async function getCredentials(): Promise<TwilioCredentials> {
       phoneNumber: connectionSettings.settings.phone_number || ''
     };
 
+    // Debug: Log credential info (not the secrets themselves)
     logger.log('✅ Twilio credentials loaded from Replit connection');
+    logger.log(`📱 Twilio Account SID prefix: ${cachedCredentials.accountSid?.substring(0, 8)}...`);
+    logger.log(`📱 Twilio API Key prefix: ${cachedCredentials.apiKey?.substring(0, 8)}...`);
+    logger.log(`📱 Twilio API Key Secret length: ${cachedCredentials.apiKeySecret?.length || 0}`);
+    logger.log(`📱 Twilio Phone Number: ${cachedCredentials.phoneNumber}`);
+    
     return cachedCredentials;
   } catch (error) {
     logger.error('Failed to load Twilio credentials from Replit connection:', error);
@@ -127,6 +133,15 @@ export async function isTwilioConnected(): Promise<boolean> {
  * Clear cached credentials (for testing or reconnection)
  */
 export function clearTwilioCache(): void {
+  logger.log('🔄 Clearing Twilio cache...');
   cachedCredentials = null;
   cachedClient = null;
+}
+
+/**
+ * Force reload credentials (bypasses cache)
+ */
+export async function reloadCredentials(): Promise<TwilioCredentials> {
+  clearTwilioCache();
+  return getCredentials();
 }
