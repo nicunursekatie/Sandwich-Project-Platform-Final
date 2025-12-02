@@ -4343,4 +4343,77 @@ router.post('/admin/auto-complete-passed', isAuthenticated, requirePermission('A
   }
 });
 
+/**
+ * Check for scheduling conflicts for an event
+ * POST /api/event-requests/check-conflicts
+ *
+ * Body:
+ * - id?: number (if editing existing event)
+ * - scheduledEventDate: string (ISO date)
+ * - eventStartTime?: string
+ * - eventEndTime?: string
+ * - vanBooked?: string
+ * - driverName?: string
+ * - recipientId?: number
+ * - organizationName?: string
+ *
+ * Returns conflicts/warnings without blocking event creation
+ */
+router.post('/check-conflicts', isAuthenticated, async (req, res) => {
+  try {
+    const { checkEventConflicts } = await import('../services/event-conflict-detection');
+
+    const eventData = {
+      id: req.body.id,
+      scheduledEventDate: req.body.scheduledEventDate,
+      eventStartTime: req.body.eventStartTime,
+      eventEndTime: req.body.eventEndTime,
+      vanBooked: req.body.vanBooked,
+      driverName: req.body.driverName,
+      recipientId: req.body.recipientId,
+      organizationName: req.body.organizationName,
+    };
+
+    const result = await checkEventConflicts(eventData);
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Error checking event conflicts:', error);
+    res.status(500).json({
+      hasConflicts: false,
+      warnings: [],
+      summary: 'Error checking conflicts',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * Get all conflicts for a specific date
+ * GET /api/event-requests/conflicts-for-date?date=2024-01-15
+ */
+router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
+  try {
+    const dateStr = req.query.date as string;
+    if (!dateStr) {
+      return res.status(400).json({ error: 'Date parameter required' });
+    }
+
+    const { getConflictsForDate } = await import('../services/event-conflict-detection');
+    const date = new Date(dateStr);
+
+    if (isNaN(date.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    const result = await getConflictsForDate(date);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error getting conflicts for date:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;
