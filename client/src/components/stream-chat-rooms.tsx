@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Chat,
   Channel,
@@ -14,6 +14,8 @@ import { StreamChat, Channel as ChannelType } from 'stream-chat';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import {
   Hash,
   Shield,
@@ -21,7 +23,19 @@ import {
   Heart,
   Truck,
   MessageSquare,
+  Plus,
+  Search,
+  UserPlus,
+  X,
+  MessageCircle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Import Stream Chat styles
 import 'stream-chat-react/dist/css/v2/index.css';
@@ -97,6 +111,158 @@ export default function StreamChatRooms() {
   const [client, setClient] = useState<StreamChat | null>(null);
   const [activeChannel, setActiveChannel] = useState<ChannelType | null>(null);
   const [userRooms, setUserRooms] = useState<typeof CHAT_ROOMS>([]);
+  const [streamUserId, setStreamUserId] = useState<string>('');
+  const [directMessages, setDirectMessages] = useState<ChannelType[]>([]);
+  const [groupChats, setGroupChats] = useState<ChannelType[]>([]);
+  const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
+  const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [groupName, setGroupName] = useState('');
+  const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>('rooms');
+
+  // Fetch all users for DM/group creation
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: () => apiRequest('GET', '/api/users'),
+  });
+
+  // Filter users for search
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return allUsers;
+    const query = searchQuery.toLowerCase();
+    return allUsers.filter((u: any) =>
+      u.firstName?.toLowerCase().includes(query) ||
+      u.lastName?.toLowerCase().includes(query) ||
+      u.email?.toLowerCase().includes(query)
+    );
+  }, [allUsers, searchQuery]);
+
+  // Get user display name
+  const getUserDisplayName = (u: any) => {
+    if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
+    if (u.firstName) return u.firstName;
+    return u.email;
+  };
+
+  // Get user initials
+  const getUserInitials = (u: any) => {
+    if (u.firstName && u.lastName) return `${u.firstName[0]}${u.lastName[0]}`.toUpperCase();
+    if (u.firstName) return u.firstName[0].toUpperCase();
+    return u.email?.[0]?.toUpperCase() || '?';
+  };
+
+  // Load DMs and group chats
+  const loadUserChannels = async (chatClient: StreamChat, currentStreamUserId: string) => {
+    try {
+      // Query for direct message channels (1:1)
+      const dmFilter = {
+        type: 'messaging',
+        members: { $in: [currentStreamUserId] },
+        member_count: 2,
+      };
+      const dmChannels = await chatClient.queryChannels(dmFilter, { last_message_at: -1 }, { limit: 20 });
+      setDirectMessages(dmChannels);
+
+      // Query for group chats (3+ members)
+      const groupFilter = {
+        type: 'messaging',
+        members: { $in: [currentStreamUserId] },
+        member_count: { $gt: 2 },
+      };
+      const groupChannels = await chatClient.queryChannels(groupFilter, { last_message_at: -1 }, { limit: 20 });
+      setGroupChats(groupChannels);
+    } catch (error) {
+      logger.error('Failed to load user channels:', error);
+    }
+  };
+
+  // Create a new DM
+  const createDirectMessage = async (targetUserId: string) => {
+    if (!client || !streamUserId) return;
+
+    try {
+      const targetStreamUserId = `user_${targetUserId}`;
+
+      // Create or get existing DM channel
+      const channel = client.channel('messaging', undefined, {
+        members: [streamUserId, targetStreamUserId],
+      });
+
+      await channel.create();
+      await channel.watch();
+
+      setActiveChannel(channel);
+      setActiveSection('dms');
+      setShowNewMessageDialog(false);
+      setSearchQuery('');
+
+      // Refresh DM list
+      await loadUserChannels(client, streamUserId);
+
+      toast({
+        title: 'Conversation started',
+        description: 'You can now send messages.',
+      });
+    } catch (error) {
+      logger.error('Failed to create DM:', error);
+      toast({
+        title: 'Failed to start conversation',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Create a new group chat
+  const createGroupChat = async () => {
+    if (!client || !streamUserId || selectedUsers.length < 2) return;
+
+    try {
+      const memberIds = [streamUserId, ...selectedUsers.map(id => `user_${id}`)];
+
+      const channelData: Record<string, any> = {
+        members: memberIds,
+        name: groupName || `Group Chat (${memberIds.length} members)`,
+        created_by_id: streamUserId,
+      };
+      const channel = client.channel('messaging', undefined, channelData);
+
+      await channel.create();
+      await channel.watch();
+
+      setActiveChannel(channel);
+      setActiveSection('groups');
+      setShowNewGroupDialog(false);
+      setSelectedUsers([]);
+      setGroupName('');
+      setSearchQuery('');
+
+      // Refresh group list
+      await loadUserChannels(client, streamUserId);
+
+      toast({
+        title: 'Group created',
+        description: `Group chat with ${memberIds.length} members created.`,
+      });
+    } catch (error) {
+      logger.error('Failed to create group:', error);
+      toast({
+        title: 'Failed to create group',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Toggle user selection for group chat
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
   // Initialize Stream Chat client
   useEffect(() => {
@@ -125,9 +291,8 @@ export default function StreamChatRooms() {
         await chatClient.connectUser(
           {
             id: streamUserId,
-            name: (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : undefined) || user.email,
-            email: user.email,
-          },
+            name: (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email) || user.email || 'User',
+          } as any,
           userToken
         );
 
@@ -140,12 +305,17 @@ export default function StreamChatRooms() {
         });
 
         setClient(chatClient);
+        setStreamUserId(streamUserId);
+
+        // Load DMs and group chats
+        await loadUserChannels(chatClient, streamUserId);
 
         // Filter rooms based on user permissions
         const accessibleRooms = CHAT_ROOMS.filter(room => {
           // Check if user has permission for this room
-          if (!user.permissions) return false;
-          return user.permissions.includes(room.permission);
+          const permissions = user.permissions as string[] | undefined;
+          if (!permissions || !Array.isArray(permissions)) return false;
+          return permissions.includes(room.permission);
         });
 
         setUserRooms(accessibleRooms);
@@ -224,59 +394,237 @@ export default function StreamChatRooms() {
     );
   }
 
+  // Helper to get channel display name for DMs
+  const getDMDisplayName = (channel: ChannelType) => {
+    const members = Object.values(channel.state?.members || {});
+    const otherMember = members.find((m: any) => m.user_id !== streamUserId);
+    return otherMember?.user?.name || otherMember?.user?.id || 'Unknown';
+  };
+
+  // Helper to get channel initials for DMs
+  const getDMInitials = (channel: ChannelType) => {
+    const name = getDMDisplayName(channel);
+    const parts = name.split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name[0]?.toUpperCase() || '?';
+  };
+
   return (
     <>
       <style>{customChatStyles}</style>
       <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border">
         <Chat client={client}>
-        {/* Sidebar - Room List */}
-        <div className="w-64 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col">
-          <div className="p-4 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
-            <h2 className="text-lg font-semibold">Chat Rooms</h2>
-            <p className="text-xs text-white/80 mt-1">
-              {userRooms.length} room{userRooms.length !== 1 ? 's' : ''} available
-            </p>
+        {/* Sidebar */}
+        <div className="w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col">
+          {/* Header with section tabs */}
+          <div className="p-3 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
+            <h2 className="text-lg font-semibold mb-2">Messages</h2>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setActiveSection('rooms')}
+                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  activeSection === 'rooms'
+                    ? 'bg-white text-[#236383]'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                Rooms ({userRooms.length})
+              </button>
+              <button
+                onClick={() => setActiveSection('dms')}
+                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  activeSection === 'dms'
+                    ? 'bg-white text-[#236383]'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                DMs ({directMessages.length})
+              </button>
+              <button
+                onClick={() => setActiveSection('groups')}
+                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  activeSection === 'groups'
+                    ? 'bg-white text-[#236383]'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                Groups ({groupChats.length})
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            {userRooms.map((room) => {
-              const Icon = room.icon;
-              return (
-                <div
-                  key={room.id}
-                  className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
-                    activeChannel?.id === room.id
-                      ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
-                      : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
-                  }`}
-                  onClick={async () => {
-                    try {
-                      const channel = client.channel('team', room.id);
-                      await channel.watch();
-                      setActiveChannel(channel);
-                    } catch (error) {
-                      logger.error(`Failed to switch to channel ${room.id}:`, error);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      activeChannel?.id === room.id
-                        ? 'bg-[#236383] text-white'
-                        : 'bg-[#47B3CB]/20 text-[#007E8C]'
-                    }`}>
-                      <Icon className="w-4 h-4" />
+          <ScrollArea className="flex-1">
+            {/* Team Rooms Section */}
+            {activeSection === 'rooms' && (
+              <div>
+                {userRooms.map((room) => {
+                  const Icon = room.icon;
+                  const isActive = activeChannel?.id === room.id && activeChannel?.type === 'team';
+                  return (
+                    <div
+                      key={room.id}
+                      className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
+                        isActive
+                          ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
+                          : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                      }`}
+                      onClick={async () => {
+                        try {
+                          const channel = client.channel('team', room.id);
+                          await channel.watch();
+                          setActiveChannel(channel);
+                        } catch (error) {
+                          logger.error(`Failed to switch to channel ${room.id}:`, error);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          isActive
+                            ? 'bg-[#236383] text-white'
+                            : 'bg-[#47B3CB]/20 text-[#007E8C]'
+                        }`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium truncate">
+                            {room.name}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium truncate">
-                        {room.name}
-                      </span>
-                    </div>
-                  </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Direct Messages Section */}
+            {activeSection === 'dms' && (
+              <div>
+                <div className="p-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-[#47B3CB] text-[#007E8C] hover:bg-[#47B3CB]/10"
+                    onClick={() => setShowNewMessageDialog(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Message
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
+                {directMessages.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 text-sm">
+                    No direct messages yet
+                  </div>
+                ) : (
+                  directMessages.map((channel) => {
+                    const isActive = activeChannel?.cid === channel.cid;
+                    const unreadCount = channel.countUnread();
+                    return (
+                      <div
+                        key={channel.cid}
+                        className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
+                          isActive
+                            ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
+                            : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                        }`}
+                        onClick={async () => {
+                          await channel.watch();
+                          setActiveChannel(channel);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback className={isActive ? 'bg-[#236383] text-white' : 'bg-[#47B3CB]/20 text-[#007E8C]'}>
+                              {getDMInitials(channel)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate block">
+                              {getDMDisplayName(channel)}
+                            </span>
+                            {channel.state?.messages?.length > 0 && (
+                              <span className="text-xs text-gray-500 truncate block">
+                                {channel.state.messages[channel.state.messages.length - 1]?.text?.substring(0, 30)}...
+                              </span>
+                            )}
+                          </div>
+                          {unreadCount > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Group Chats Section */}
+            {activeSection === 'groups' && (
+              <div>
+                <div className="p-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-[#47B3CB] text-[#007E8C] hover:bg-[#47B3CB]/10"
+                    onClick={() => setShowNewGroupDialog(true)}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    New Group
+                  </Button>
+                </div>
+                {groupChats.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 text-sm">
+                    No group chats yet
+                  </div>
+                ) : (
+                  groupChats.map((channel) => {
+                    const isActive = activeChannel?.cid === channel.cid;
+                    const unreadCount = channel.countUnread();
+                    const memberCount = Object.keys(channel.state?.members || {}).length;
+                    return (
+                      <div
+                        key={channel.cid}
+                        className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
+                          isActive
+                            ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
+                            : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                        }`}
+                        onClick={async () => {
+                          await channel.watch();
+                          setActiveChannel(channel);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                            isActive ? 'bg-[#236383] text-white' : 'bg-[#47B3CB]/20 text-[#007E8C]'
+                          }`}>
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate block">
+                              {(channel.data as any)?.name || `Group (${memberCount})`}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {memberCount} members
+                            </span>
+                          </div>
+                          {unreadCount > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </ScrollArea>
         </div>
 
         {/* Main Chat Area */}
@@ -303,6 +651,139 @@ export default function StreamChatRooms() {
         </div>
       </Chat>
     </div>
+
+    {/* New Direct Message Dialog */}
+    <Dialog open={showNewMessageDialog} onOpenChange={setShowNewMessageDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New Direct Message</DialogTitle>
+          <DialogDescription>
+            Search for a team member to start a conversation
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <ScrollArea className="h-64">
+            {filteredUsers
+              .filter((u: any) => u.id !== user?.id)
+              .map((u: any) => (
+                <div
+                  key={u.id}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                  onClick={() => createDirectMessage(u.id)}
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C]">
+                      {getUserInitials(u)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{getUserDisplayName(u)}</div>
+                    <div className="text-xs text-gray-500">{u.email}</div>
+                  </div>
+                  <MessageCircle className="w-4 h-4 text-gray-400" />
+                </div>
+              ))}
+            {filteredUsers.filter((u: any) => u.id !== user?.id).length === 0 && (
+              <div className="text-center text-gray-500 py-4">
+                No users found
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* New Group Chat Dialog */}
+    <Dialog open={showNewGroupDialog} onOpenChange={setShowNewGroupDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Group Chat</DialogTitle>
+          <DialogDescription>
+            Select team members to add to your group
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input
+            placeholder="Group name (optional)"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {selectedUsers.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedUsers.map((userId) => {
+                const selectedUser = allUsers.find((u: any) => u.id === userId);
+                return selectedUser ? (
+                  <Badge
+                    key={userId}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    {getUserDisplayName(selectedUser)}
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => toggleUserSelection(userId)}
+                    />
+                  </Badge>
+                ) : null;
+              })}
+            </div>
+          )}
+          <ScrollArea className="h-48">
+            {filteredUsers
+              .filter((u: any) => u.id !== user?.id)
+              .map((u: any) => (
+                <div
+                  key={u.id}
+                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
+                    selectedUsers.includes(u.id) ? 'bg-[#47B3CB]/20' : 'hover:bg-gray-100'
+                  }`}
+                  onClick={() => toggleUserSelection(u.id)}
+                >
+                  <Checkbox
+                    checked={selectedUsers.includes(u.id)}
+                    onCheckedChange={() => toggleUserSelection(u.id)}
+                  />
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C] text-xs">
+                      {getUserInitials(u)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{getUserDisplayName(u)}</div>
+                    <div className="text-xs text-gray-500">{u.email}</div>
+                  </div>
+                </div>
+              ))}
+          </ScrollArea>
+          <Button
+            className="w-full bg-[#007E8C] hover:bg-[#236383]"
+            disabled={selectedUsers.length < 2}
+            onClick={createGroupChat}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Create Group ({selectedUsers.length + 1} members)
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

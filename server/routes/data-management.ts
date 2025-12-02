@@ -6,8 +6,8 @@ import { AuditLogger } from '../audit-logger';
 import { z } from 'zod';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { db } from '../db';
-import { sandwichCollections, hosts } from '@shared/schema';
-import { sql, eq, desc } from 'drizzle-orm';
+import { sandwichCollections, hosts, teamBoardItems, teamBoardComments, teamBoardItemLikes, holdingZoneCategories, teamBoardAssignments } from '@shared/schema';
+import { sql, eq, desc, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 
 export function createDataManagementRouter(deps: RouterDependencies) {
@@ -388,6 +388,305 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   } catch (error) {
     logger.error('Fix data corruption failed:', error);
     res.status(500).json({ error: 'Failed to fix data corruption' });
+  }
+});
+
+// ==========================================
+// HOLDING ZONE BACKUP ENDPOINTS
+// ==========================================
+
+// Export all holding zone items with their categories, comments, likes, and assignments
+router.get('/export/holding-zone', async (req: any, res) => {
+  try {
+    const { format = 'json' } = req.query;
+
+    // Fetch all data
+    const items = await db.select().from(teamBoardItems).orderBy(desc(teamBoardItems.createdAt));
+    const categories = await db.select().from(holdingZoneCategories);
+    const comments = await db.select().from(teamBoardComments);
+    const likes = await db.select().from(teamBoardItemLikes);
+    const assignments = await db.select().from(teamBoardAssignments);
+
+    const backup = {
+      exportDate: new Date().toISOString(),
+      version: '1.0',
+      counts: {
+        items: items.length,
+        categories: categories.length,
+        comments: comments.length,
+        likes: likes.length,
+        assignments: assignments.length,
+      },
+      data: {
+        categories,
+        items,
+        comments,
+        likes,
+        assignments,
+      },
+    };
+
+    if (format === 'csv') {
+      // For CSV, only export items (main data)
+      const csvHeaders = [
+        'id', 'content', 'type', 'status', 'createdBy', 'createdByName',
+        'categoryId', 'isUrgent', 'isPrivate', 'details', 'dueDate',
+        'createdAt', 'completedAt'
+      ];
+
+      const csvRows = items.map(item => [
+        item.id,
+        `"${(item.content || '').replace(/"/g, '""')}"`,
+        item.type,
+        item.status,
+        item.createdBy,
+        `"${(item.createdByName || '').replace(/"/g, '""')}"`,
+        item.categoryId || '',
+        item.isUrgent ? 'true' : 'false',
+        item.isPrivate ? 'true' : 'false',
+        `"${(item.details || '').replace(/"/g, '""')}"`,
+        item.dueDate || '',
+        item.createdAt,
+        item.completedAt || '',
+      ].join(','));
+
+      const csv = [csvHeaders.join(','), ...csvRows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="holding_zone_backup_${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+
+    // JSON format (default)
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="holding_zone_backup_${new Date().toISOString().split('T')[0]}.json"`);
+    res.json(backup);
+  } catch (error) {
+    logger.error('Holding zone export failed:', error);
+    res.status(500).json({ error: 'Holding zone export failed' });
+  }
+});
+
+// Export just the holding zone categories
+router.get('/export/holding-zone-categories', async (req, res) => {
+  try {
+    const categories = await db.select().from(holdingZoneCategories);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="holding_zone_categories_${new Date().toISOString().split('T')[0]}.json"`);
+    res.json({
+      exportDate: new Date().toISOString(),
+      count: categories.length,
+      categories,
+    });
+  } catch (error) {
+    logger.error('Holding zone categories export failed:', error);
+    res.status(500).json({ error: 'Holding zone categories export failed' });
+  }
+});
+
+// Import/restore holding zone items from backup
+router.post('/import/holding-zone', async (req: any, res) => {
+  try {
+    const { data, options = {} } = req.body;
+    const { replaceExisting = false, importCategories = true, importItems = true, importComments = true } = options;
+
+    if (!data) {
+      return res.status(400).json({ error: 'No backup data provided' });
+    }
+
+    const results = {
+      categoriesImported: 0,
+      itemsImported: 0,
+      commentsImported: 0,
+      likesImported: 0,
+      assignmentsImported: 0,
+      errors: [] as string[],
+    };
+
+    // Start a transaction-like approach
+    try {
+      // If replacing existing, clear current data first (in reverse dependency order)
+      if (replaceExisting) {
+        await db.delete(teamBoardItemLikes);
+        await db.delete(teamBoardComments);
+        await db.delete(teamBoardAssignments);
+        await db.delete(teamBoardItems);
+        await db.delete(holdingZoneCategories);
+        logger.info('Cleared existing holding zone data for replacement');
+      }
+
+      // Import categories first (if they have foreign key relationships)
+      if (importCategories && data.categories && data.categories.length > 0) {
+        for (const cat of data.categories) {
+          try {
+            const categoryData: any = {
+              name: cat.name,
+              color: cat.color,
+              description: cat.description,
+            };
+            if (replaceExisting && cat.id) {
+              categoryData.id = cat.id;
+            }
+            await db.insert(holdingZoneCategories).values(categoryData).onConflictDoNothing();
+            results.categoriesImported++;
+          } catch (catError: any) {
+            results.errors.push(`Category "${cat.name}": ${catError.message}`);
+          }
+        }
+      }
+
+      // Import items
+      if (importItems && data.items && data.items.length > 0) {
+        for (const item of data.items) {
+          try {
+            const itemData: any = {
+              content: item.content,
+              type: item.type || 'task',
+              createdBy: item.createdBy,
+              createdByName: item.createdByName,
+              status: item.status || 'open',
+              categoryId: item.categoryId,
+              isUrgent: item.isUrgent || false,
+              isPrivate: item.isPrivate || false,
+              details: item.details,
+              dueDate: item.dueDate,
+              assignedTo: item.assignedTo,
+              assignedToNames: item.assignedToNames,
+              createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+              completedAt: item.completedAt ? new Date(item.completedAt) : null,
+            };
+            if (replaceExisting && item.id) {
+              itemData.id = item.id;
+            }
+            await db.insert(teamBoardItems).values(itemData).onConflictDoNothing();
+            results.itemsImported++;
+          } catch (itemError: any) {
+            results.errors.push(`Item #${item.id}: ${itemError.message}`);
+          }
+        }
+      }
+
+      // Import comments
+      if (importComments && data.comments && data.comments.length > 0) {
+        for (const comment of data.comments) {
+          try {
+            const commentData: any = {
+              itemId: comment.itemId,
+              userId: comment.userId,
+              userName: comment.userName,
+              content: comment.content,
+              createdAt: comment.createdAt ? new Date(comment.createdAt) : new Date(),
+            };
+            if (replaceExisting && comment.id) {
+              commentData.id = comment.id;
+            }
+            await db.insert(teamBoardComments).values(commentData).onConflictDoNothing();
+            results.commentsImported++;
+          } catch (commentError: any) {
+            results.errors.push(`Comment #${comment.id}: ${commentError.message}`);
+          }
+        }
+      }
+
+      // Import likes
+      if (data.likes && data.likes.length > 0) {
+        for (const like of data.likes) {
+          try {
+            const likeData: any = {
+              itemId: like.itemId,
+              userId: like.userId,
+              createdAt: like.createdAt ? new Date(like.createdAt) : new Date(),
+            };
+            if (replaceExisting && like.id) {
+              likeData.id = like.id;
+            }
+            await db.insert(teamBoardItemLikes).values(likeData).onConflictDoNothing();
+            results.likesImported++;
+          } catch (likeError: any) {
+            // Likes conflicts are common, don't report as errors
+          }
+        }
+      }
+
+      // Import assignments
+      if (data.assignments && data.assignments.length > 0) {
+        for (const assignment of data.assignments) {
+          try {
+            const assignData: any = {
+              itemId: assignment.itemId,
+              userId: assignment.userId,
+              userName: assignment.userName,
+              addedAt: assignment.addedAt ? new Date(assignment.addedAt) : new Date(),
+            };
+            if (replaceExisting && assignment.id) {
+              assignData.id = assignment.id;
+            }
+            await db.insert(teamBoardAssignments).values(assignData).onConflictDoNothing();
+            results.assignmentsImported++;
+          } catch (assignError: any) {
+            // Assignment conflicts are common, don't report as errors
+          }
+        }
+      }
+
+      logger.info('Holding zone import completed:', results);
+      res.json({
+        success: true,
+        message: 'Holding zone data imported successfully',
+        results,
+      });
+    } catch (importError: any) {
+      logger.error('Import transaction failed:', importError);
+      res.status(500).json({
+        error: 'Import failed',
+        message: importError.message,
+        partialResults: results,
+      });
+    }
+  } catch (error) {
+    logger.error('Holding zone import failed:', error);
+    res.status(500).json({ error: 'Holding zone import failed' });
+  }
+});
+
+// Get holding zone backup summary/stats
+router.get('/holding-zone-stats', async (req, res) => {
+  try {
+    const [itemsResult] = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems);
+    const [categoriesResult] = await db.select({ count: sql<number>`count(*)` }).from(holdingZoneCategories);
+    const [commentsResult] = await db.select({ count: sql<number>`count(*)` }).from(teamBoardComments);
+    const [likesResult] = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItemLikes);
+    const [assignmentsResult] = await db.select({ count: sql<number>`count(*)` }).from(teamBoardAssignments);
+
+    // Get items by status
+    const openItems = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems).where(eq(teamBoardItems.status, 'open'));
+    const doneItems = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems).where(eq(teamBoardItems.status, 'done'));
+
+    // Get items by type
+    const taskItems = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems).where(eq(teamBoardItems.type, 'task'));
+    const noteItems = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems).where(eq(teamBoardItems.type, 'note'));
+    const ideaItems = await db.select({ count: sql<number>`count(*)` }).from(teamBoardItems).where(eq(teamBoardItems.type, 'idea'));
+
+    res.json({
+      totalItems: Number(itemsResult?.count || 0),
+      totalCategories: Number(categoriesResult?.count || 0),
+      totalComments: Number(commentsResult?.count || 0),
+      totalLikes: Number(likesResult?.count || 0),
+      totalAssignments: Number(assignmentsResult?.count || 0),
+      itemsByStatus: {
+        open: Number(openItems[0]?.count || 0),
+        done: Number(doneItems[0]?.count || 0),
+      },
+      itemsByType: {
+        task: Number(taskItems[0]?.count || 0),
+        note: Number(noteItems[0]?.count || 0),
+        idea: Number(ideaItems[0]?.count || 0),
+      },
+    });
+  } catch (error) {
+    logger.error('Holding zone stats failed:', error);
+    res.status(500).json({ error: 'Failed to get holding zone stats' });
   }
 });
 

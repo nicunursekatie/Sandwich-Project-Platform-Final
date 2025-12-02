@@ -36,6 +36,13 @@
       "when": 1764102123081,
       "tag": "0004_add_attendance_breakdown",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1764704716867,
+      "tag": "0005_add_recipient_tracking_fields",
+      "breakpoints": true
     }
   ]
 }
