@@ -47,6 +47,7 @@ import {
   MessageCircle,
   FileText,
   RotateCcw,
+  Pencil,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { hasPermission } from '@shared/auth-utils';
@@ -124,7 +125,9 @@ export default function PromotionGraphics() {
   const { trackView } = useActivityTracker();
   const [selectedGraphic, setSelectedGraphic] = useState<PromotionGraphic | null>(null);
   const [messageGraphic, setMessageGraphic] = useState<PromotionGraphic | null>(null);
+  const [editingGraphic, setEditingGraphic] = useState<PromotionGraphic | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -282,6 +285,35 @@ export default function PromotionGraphics() {
     },
   });
 
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      return apiRequest('PUT', `/api/promotion-graphics/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/promotion-graphics'] });
+      setShowEditDialog(false);
+      setEditingGraphic(null);
+      // Reset form fields
+      setTitle('');
+      setDescription('');
+      setIntendedUseDate('');
+      setTargetAudience('hosts');
+      toast({
+        title: 'Success',
+        description: 'Graphic updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      logger.error('Failed to update graphic', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update graphic. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // View tracking mutation
   const trackViewMutation = useMutation({
     mutationFn: (id: number) => {
@@ -294,6 +326,36 @@ export default function PromotionGraphics() {
       logger.error('Failed to track view', error);
     },
   });
+
+  // Handle opening edit dialog
+  const handleEditClick = (graphic: PromotionGraphic) => {
+    setEditingGraphic(graphic);
+    setTitle(graphic.title);
+    setDescription(graphic.description || '');
+    setIntendedUseDate(graphic.intendedUseDate ? format(new Date(graphic.intendedUseDate), 'yyyy-MM-dd') : '');
+    setTargetAudience(graphic.targetAudience || 'hosts');
+    setShowEditDialog(true);
+  };
+
+  // Handle edit form submission
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGraphic) return;
+
+    const updateData: any = {
+      title,
+      description,
+      targetAudience,
+    };
+
+    if (intendedUseDate) {
+      updateData.intendedUseDate = intendedUseDate;
+    } else {
+      updateData.intendedUseDate = null;
+    }
+
+    updateMutation.mutate({ id: editingGraphic.id, data: updateData });
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -608,6 +670,99 @@ export default function PromotionGraphics() {
         )}
       </div>
 
+      {/* Edit Dialog */}
+      {canUpload && (
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Graphic</DialogTitle>
+              <DialogDescription>
+                Update the details of this social media graphic
+              </DialogDescription>
+            </DialogHeader>
+            {editingGraphic && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title">Title *</Label>
+                  <Input
+                    id="edit-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g., Spring 2024 Fundraiser"
+                    maxLength={200}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-description">Description *</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe what this graphic is for and how it should be used..."
+                    rows={4}
+                    maxLength={1000}
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    {description.length}/1000 characters
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-intended-use-date">Intended Use Date (Optional)</Label>
+                  <Input
+                    id="edit-intended-use-date"
+                    type="date"
+                    value={intendedUseDate}
+                    onChange={(e) => setIntendedUseDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-target-audience">Target Audience</Label>
+                  <Select value={targetAudience} onValueChange={setTargetAudience}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hosts">Hosts</SelectItem>
+                      <SelectItem value="volunteers">All Volunteers</SelectItem>
+                      <SelectItem value="all">Everyone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowEditDialog(false);
+                      setEditingGraphic(null);
+                      setTitle('');
+                      setDescription('');
+                      setIntendedUseDate('');
+                      setTargetAudience('hosts');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={updateMutation.isPending || !title || !description}
+                    style={{ backgroundColor: '#007E8C', color: 'white' }}
+                  >
+                    {updateMutation.isPending ? 'Updating...' : 'Update Graphic'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Search and Filter Controls */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex-1">
@@ -778,6 +933,16 @@ export default function PromotionGraphics() {
                       >
                         <MessageCircle className="h-4 w-4" />
                       </Button>
+                      {canUpload && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(graphic)}
+                          title="Edit this graphic"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       {canDelete && (
                         <Button
                           variant="outline"
@@ -905,6 +1070,16 @@ export default function PromotionGraphics() {
                         <Download className="h-4 w-4 mr-1" />
                         Download
                       </Button>
+                      {canUpload && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(graphic)}
+                          title="Edit this graphic"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       {canDelete && (
                         <>
                           <Button

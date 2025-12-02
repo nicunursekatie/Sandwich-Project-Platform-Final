@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import { useMessaging } from '@/hooks/useMessaging';
+import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
@@ -31,6 +32,7 @@ export default function SimpleNav({
     const { user } = useAuth();
     const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
+    const { totalUnread: streamChatUnread } = useStreamChatUnread();
 
     // State for collapsible sections
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -162,8 +164,8 @@ export default function SimpleNav({
         case 'gmail-inbox':
           return gmailUnreadCount;
         case 'chat':
-          // Only show actual chat room unread count, not suggestions/projects/tasks
-          return unreadCounts.total || 0;
+          // Use Stream Chat unread count for team chat
+          return streamChatUnread || 0;
         case 'suggestions':
           return unreadCounts.suggestions || 0;
         case 'event-reminders':
