@@ -930,6 +930,32 @@ export const recipients = pgTable('recipients', {
   // Social media post tracking fields
   hasSharedPost: boolean('has_shared_post').notNull().default(false), // Whether recipient has shared a post about TSP on their social media
   sharedPostDate: timestamp('shared_post_date'), // When the post was shared (nullable)
+
+  // People served tracking
+  averagePeopleServed: integer('average_people_served'), // Average number of people they serve
+  peopleServedFrequency: text('people_served_frequency'), // 'daily', 'weekly', 'monthly'
+
+  // Partnership tracking
+  partnershipStartDate: timestamp('partnership_start_date'), // When they started partnering with TSP
+  partnershipYears: integer('partnership_years'), // How many years they've been partnered (can be computed or manually entered)
+
+  // Fruit/Snacks program
+  receivingFruit: boolean('receiving_fruit').notNull().default(false), // Currently receiving fruit from TSP
+  receivingSnacks: boolean('receiving_snacks').notNull().default(false), // Currently receiving snacks from TSP
+  wantsFruit: boolean('wants_fruit').notNull().default(false), // Would like to receive fruit but isn't yet
+  wantsSnacks: boolean('wants_snacks').notNull().default(false), // Would like to receive snacks but isn't yet
+  fruitSnacksNotes: text('fruit_snacks_notes'), // Notes about fruit/snacks preferences or requirements
+
+  // Seasonal needs tracking
+  hasSeasonalChanges: boolean('has_seasonal_changes').notNull().default(false), // Whether their needs change seasonally
+  seasonalChangesDescription: text('seasonal_changes_description'), // Description of how needs change by season
+  summerNeeds: text('summer_needs'), // Summer-specific needs
+  winterNeeds: text('winter_needs'), // Winter/holiday-specific needs
+
+  // Multiple collection schedules (stored as JSON arrays)
+  collectionSchedules: jsonb('collection_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
+  feedingSchedules: jsonb('feeding_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
+
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
