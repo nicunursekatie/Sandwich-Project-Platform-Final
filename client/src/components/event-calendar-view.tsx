@@ -28,6 +28,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 
 interface EventCalendarViewProps {
@@ -503,6 +509,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   };
 
   return (
+    <TooltipProvider>
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -635,6 +642,25 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
               <span className="text-xs text-gray-700">Count & Types</span>
             </div>
           </div>
+
+          {/* Conflict Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Scheduling Alerts:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-red-600" />
+              <span className="text-xs text-gray-700">Van Conflict</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-red-600" />
+              <span className="text-xs text-gray-700">Driver Conflict</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              <span className="text-xs text-gray-700">Busy Day (3+ events)</span>
+            </div>
+          </div>
         </div>
 
         {/* Calendar Grid */}
@@ -683,25 +709,54 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   >
                     {date.getDate()}
                   </div>
-                  {/* Conflict indicator */}
+                  {/* Conflict indicator with tooltip */}
                   {dayConflicts.hasConflicts && (
-                    <div
-                      className={cn(
-                        'flex items-center gap-0.5',
-                        dayConflicts.vanConflicts > 0 ? 'text-red-600' : 'text-yellow-600'
-                      )}
-                      title={dayConflicts.tooltip}
-                    >
-                      {dayConflicts.vanConflicts > 0 && (
-                        <Truck className="w-3.5 h-3.5" />
-                      )}
-                      {dayConflicts.driverConflicts > 0 && (
-                        <Users className="w-3.5 h-3.5" />
-                      )}
-                      {dayConflicts.highVolume && (
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                      )}
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={cn(
+                            'flex items-center gap-0.5 cursor-help',
+                            dayConflicts.vanConflicts > 0 ? 'text-red-600' : 'text-yellow-600'
+                          )}
+                        >
+                          {dayConflicts.vanConflicts > 0 && (
+                            <Truck className="w-3.5 h-3.5" />
+                          )}
+                          {dayConflicts.driverConflicts > 0 && (
+                            <Users className="w-3.5 h-3.5" />
+                          )}
+                          {dayConflicts.highVolume && (
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px]">
+                        <div className="space-y-1 text-xs">
+                          <div className="font-semibold text-sm">Scheduling Alerts</div>
+                          {dayConflicts.vanConflicts > 0 && (
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <Truck className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>Van conflict - multiple events need the van</span>
+                            </div>
+                          )}
+                          {dayConflicts.driverConflicts > 0 && (
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>Driver conflict - same driver assigned to overlapping events</span>
+                            </div>
+                          )}
+                          {dayConflicts.highVolume && (
+                            <div className="flex items-center gap-1.5 text-yellow-600">
+                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{dayConflicts.tooltip}</span>
+                            </div>
+                          )}
+                          <div className="text-muted-foreground pt-1 border-t mt-1">
+                            Consider suggesting alternate dates for new requests
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -852,5 +907,6 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }
