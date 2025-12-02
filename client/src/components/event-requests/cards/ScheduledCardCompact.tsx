@@ -29,6 +29,12 @@ import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ScheduledCardCompactProps {
   request: EventRequest;
@@ -245,52 +251,84 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowDetails(!showDetails)}
-              className="h-8"
-            >
-              {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onContact}
-              className="h-8 bg-[#236383] text-white border-[#236383] hover:bg-[#007E8C]"
-            >
-              <Mail className="w-4 h-4" />
-            </Button>
-            {canEdit && (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  className="h-8"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  }
-                  title="Delete Event"
-                  description={`Delete the event from ${request.organizationName}?`}
-                  confirmText="Delete"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
-              </>
-            )}
-          </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-2 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="h-8"
+                  >
+                    {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{showDetails ? 'Hide details' : 'Show details'}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onContact}
+                    className="h-8 bg-[#236383] text-white border-[#236383] hover:bg-[#007E8C]"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contact organizer</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {canEdit && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onEdit}
+                        className="h-8"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <ConfirmationDialog
+                    trigger={
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete event</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    }
+                    title="Delete Event"
+                    description={`Delete the event from ${request.organizationName}?`}
+                    confirmText="Delete"
+                    onConfirm={onDelete}
+                    variant="destructive"
+                  />
+                </>
+              )}
+            </div>
+          </TooltipProvider>
         </div>
 
         {/* Expandable Details */}

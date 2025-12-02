@@ -36,6 +36,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface DeclinedCardProps {
   request: EventRequest;
@@ -400,77 +406,128 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onReactivate}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Reactivate Request
-          </Button>
-
-          <Button size="sm" variant="outline" onClick={onView} className="h-8">
-            <Eye className="w-4 h-4 mr-1" />
-            View Details
-          </Button>
-
-          {request.phone && (
-            <Button size="sm" variant="outline" onClick={onCall} className="h-8">
-              <Phone className="w-4 h-4 mr-1" />
-              Call
-            </Button>
-          )}
-
-          <Button size="sm" variant="outline" onClick={onContact} className="h-8">
-            <Mail className="w-4 h-4 mr-1" />
-            Email
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-          >
-            <FileText className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-
-          <div className="flex-1" />
-
-          <Button
-            size="sm"
-            onClick={() => setShowMessageDialog(true)}
-            variant="ghost"
-            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-            aria-label="Message about this event"
-          >
-            <MessageSquare className="w-4 h-4" aria-hidden="true" />
-          </Button>
-
-          {canDelete && (
-            <ConfirmationDialog
-              trigger={
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="text-red-600 hover:text-red-700 h-8"
-                  data-testid="button-delete-request"
+                  variant="default"
+                  onClick={onReactivate}
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Reactivate Request
                 </Button>
-              }
-              title="Delete Declined Event"
-              description={`Are you sure you want to delete the declined event request from ${request.organizationName}? This action cannot be undone.`}
-              confirmText="Delete Request"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reactivate this declined request</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onView} className="h-8">
+                  <Eye className="w-4 h-4 mr-1" />
+                  View Details
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View event details</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {request.phone && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onCall} className="h-8">
+                    <Phone className="w-4 h-4 mr-1" />
+                    Call
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Call the organizer</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onContact} className="h-8">
+                  <Mail className="w-4 h-4 mr-1" />
+                  Email
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Email the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                >
+                  <FileText className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex-1" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => setShowMessageDialog(true)}
+                  variant="ghost"
+                  className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                  aria-label="Message about this event"
+                >
+                  <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message about this event</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {canDelete && (
+              <ConfirmationDialog
+                trigger={
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 h-8"
+                        data-testid="button-delete-request"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete this event request</p>
+                    </TooltipContent>
+                  </Tooltip>
+                }
+                title="Delete Declined Event"
+                description={`Are you sure you want to delete the declined event request from ${request.organizationName}? This action cannot be undone.`}
+                confirmText="Delete Request"
+                cancelText="Cancel"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
+            )}
+          </div>
+        </TooltipProvider>
       </CardContent>
 
       {/* Message Composer Dialog */}

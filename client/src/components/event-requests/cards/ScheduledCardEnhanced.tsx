@@ -74,6 +74,12 @@ import { CommentThread } from '@/components/collaboration';
 import { useToast } from '@/hooks/use-toast';
 import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -899,64 +905,101 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Action Buttons Section */}
-        <div className="mb-3">
-          <div className="flex gap-2">
-            {/* Message - always visible */}
-            <Button
-              size="sm"
-              onClick={() => setShowMessageDialog(true)}
-              variant="ghost"
-              className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-              aria-label="Message about this event"
-            >
-              <MessageSquare className="w-4 h-4" aria-hidden="true" />
-            </Button>
+        <TooltipProvider>
+          <div className="mb-3">
+            <div className="flex gap-2">
+              {/* Message - always visible */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowMessageDialog(true)}
+                    variant="ghost"
+                    className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                    aria-label="Message about this event"
+                  >
+                    <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Message about this event</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {canEdit && (
-              <>
-                {canSendSMS && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() => setShowSendSmsDialog(true)}
-                      variant="ghost"
-                      className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
-                      aria-label="Send event details via SMS"
-                      data-testid="button-send-sms-card"
-                    >
-                      <Phone className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setShowSendCorrectionDialog(true)}
-                      variant="ghost"
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
-                      aria-label="Send correction SMS"
-                      data-testid="button-send-correction-card"
-                    >
-                      <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                  </>
-                )}
-                <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
-                  <Edit2 className="w-4 h-4" aria-hidden="true" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
-                    <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                  }
-                  title="Delete Event"
-                  description={`Delete ${request.organizationName}?`}
-                  confirmText="Delete"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
-              </>
-            )}
+              {canEdit && (
+                <>
+                  {canSendSMS && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowSendSmsDialog(true)}
+                            variant="ghost"
+                            className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
+                            aria-label="Send event details via SMS"
+                            data-testid="button-send-sms-card"
+                          >
+                            <Phone className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send event details via SMS</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowSendCorrectionDialog(true)}
+                            variant="ghost"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
+                            aria-label="Send correction SMS"
+                            data-testid="button-send-correction-card"
+                          >
+                            <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send correction SMS</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
+                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <ConfirmationDialog
+                    trigger={
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete event</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    }
+                    title="Delete Event"
+                    description={`Delete ${request.organizationName}?`}
+                    confirmText="Delete"
+                    onConfirm={onDelete}
+                    variant="destructive"
+                  />
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </TooltipProvider>
 
         {/* Main Info Section - 3 Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
