@@ -125,17 +125,17 @@ export async function checkEventConflicts(
 
   try {
     // Find all other events on the same day (excluding current event if editing)
-    // Include new, in_process, scheduled, confirmed for high volume detection
+    // Include new, in_process, scheduled, followed_up for high volume detection
+    // Note: Valid statuses are: 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
     const allRelevantConditions = [
       gte(eventRequests.scheduledEventDate, startOfDay),
       lte(eventRequests.scheduledEventDate, endOfDay),
-      // Include new, in_process, scheduled, and confirmed events (not cancelled/completed/postponed)
+      // Include new, followed_up, in_process, and scheduled events (not cancelled/completed/postponed/declined)
       or(
         eq(eventRequests.status, 'new'),
+        eq(eventRequests.status, 'followed_up'),
         eq(eventRequests.status, 'in_process'),
-        eq(eventRequests.status, 'scheduled'),
-        eq(eventRequests.status, 'confirmed'),
-        eq(eventRequests.status, 'pending')
+        eq(eventRequests.status, 'scheduled')
       ),
     ];
 
@@ -148,9 +148,9 @@ export async function checkEventConflicts(
       .from(eventRequests)
       .where(and(...allRelevantConditions));
 
-    // Separate scheduled/confirmed events for van/driver conflict checking
+    // Separate scheduled events for van/driver conflict checking (events with locked-in dates)
     const eventsOnSameDay = allEventsOnSameDay.filter(
-      e => e.status === 'scheduled' || e.status === 'confirmed'
+      e => e.status === 'scheduled'
     );
 
     // Check 1: High volume day warning (count all relevant events including new/in_process)
@@ -299,7 +299,8 @@ export async function getConflictsForDate(date: Date): Promise<{
   const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
 
   try {
-    // Get all relevant events (new, in_process, scheduled, confirmed) for high volume
+    // Get all relevant events (new, followed_up, in_process, scheduled) for high volume
+    // Note: Valid statuses are: 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
     const allEvents = await db
       .select()
       .from(eventRequests)
@@ -309,16 +310,16 @@ export async function getConflictsForDate(date: Date): Promise<{
           lte(eventRequests.scheduledEventDate, endOfDay),
           or(
             eq(eventRequests.status, 'new'),
+            eq(eventRequests.status, 'followed_up'),
             eq(eventRequests.status, 'in_process'),
-            eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'confirmed')
+            eq(eventRequests.status, 'scheduled')
           )
         )
       );
 
-    // For van/driver conflicts, only check scheduled/confirmed events
+    // For van/driver conflicts, only check scheduled events (with locked-in dates)
     const scheduledEvents = allEvents.filter(
-      e => e.status === 'scheduled' || e.status === 'confirmed'
+      e => e.status === 'scheduled'
     );
 
     const vanConflicts: Array<{ event1: any; event2: any }> = [];
