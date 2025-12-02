@@ -72,6 +72,17 @@ const getStatusColor = (status: string) => {
 const getStaffingIndicators = (event: EventRequest) => {
   const indicators = [];
 
+  // Self-transport indicator - group is handling their own transportation
+  if (event.selfTransport) {
+    indicators.push({
+      icon: null,
+      emoji: '📦',
+      count: null,
+      color: 'text-amber-600',
+      tooltip: 'Self-transport - group will pick up sandwiches',
+    });
+  }
+
   if (event.driversNeeded && event.driversNeeded > 0) {
     indicators.push({
       icon: Car,
@@ -566,12 +577,12 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
                         className={cn(
-                          'w-full text-left text-xs p-1.5 rounded border truncate hover:shadow-md transition-shadow',
+                          'w-full text-left text-xs p-1.5 rounded border hover:shadow-md transition-shadow',
                           getStatusColor(event.status)
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold truncate mb-1 text-[14px]">
+                        <div className="font-semibold mb-1 text-[14px] break-words leading-tight">
                           {event.organizationName}
                         </div>
 
@@ -631,23 +642,21 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                                   {sandwichInfo.map((info, idx) => (
                                     info.showTypes && info.types ? (
                                       info.types.slice(0, 2).map((type, typeIdx) => {
-                                        // Process sandwich type name
-                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
+                                        // Process sandwich type name - keep it short
+                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').replace('sandwich', '').trim();
 
-                                        // Handle deli_turkey, deli_ham formats - convert to "turkey sandwiches"
+                                        // Handle deli_turkey, deli_ham formats
                                         if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
-                                          displayType = 'turkey sandwiches';
+                                          displayType = 'turkey';
                                         } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
-                                          displayType = 'ham sandwiches';
+                                          displayType = 'ham';
                                         } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
-                                          displayType = 'deli sandwiches';
+                                          displayType = 'deli';
                                         } else if (displayType === 'pbj' || displayType === 'pb&j') {
-                                          displayType = 'PB&J sandwiches';
+                                          displayType = 'PB&J';
                                         } else {
-                                          // Add "sandwiches" suffix if not already present
-                                          if (!displayType.includes('sandwich')) {
-                                            displayType = `${displayType} sandwiches`;
-                                          }
+                                          // Capitalize first letter
+                                          displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1);
                                         }
 
                                         return (
