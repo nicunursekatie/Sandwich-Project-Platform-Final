@@ -5,6 +5,7 @@ import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
 import { TollFreeVerificationPanel } from '@/components/toll-free-verification-panel';
+import { SMSTestPanel } from '@/components/sms-test-panel';
 import SpreadsheetAnalyticsDashboard from '@/components/spreadsheet-analytics-dashboard';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
@@ -169,7 +170,10 @@ export default function AdminSettings() {
           </TabsContent>
 
           <TabsContent value="sms-settings" className="space-y-8">
-            <TollFreeVerificationPanel />
+            <div className="grid gap-8 lg:grid-cols-2">
+              <SMSTestPanel />
+              <TollFreeVerificationPanel />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
