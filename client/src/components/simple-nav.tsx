@@ -162,7 +162,8 @@ export default function SimpleNav({
         case 'gmail-inbox':
           return gmailUnreadCount;
         case 'chat':
-          return totalUnread;
+          // Only show actual chat room unread count, not suggestions/projects/tasks
+          return unreadCounts.total || 0;
         case 'suggestions':
           return unreadCounts.suggestions || 0;
         case 'event-reminders':
