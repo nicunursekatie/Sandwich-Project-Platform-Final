@@ -248,7 +248,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<'thisWeek' | 'nextWeek' | 'next2Weeks' | 'nextMonth' | 'all'>('next2Weeks');
+  const [dateRange, setDateRange] = useState<'thisWeek' | 'nextWeek' | 'next2Weeks' | 'thisMonth' | 'nextMonth' | 'all'>('next2Weeks');
   const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     // Load saved column order from localStorage
@@ -312,6 +312,11 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         startDate = new Date(today);
         endDate = new Date(today);
         endDate.setDate(today.getDate() + 14);
+        break;
+      case 'thisMonth':
+        // Current calendar month (1st to last day of current month)
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
         break;
       case 'nextMonth':
         // Next calendar month (e.g., if today is Nov 30, show all of December)
@@ -2402,6 +2407,14 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             className={dateRange === 'next2Weeks' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
           >
             Next 2 Weeks
+          </Button>
+          <Button
+            variant={dateRange === 'thisMonth' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateRange('thisMonth')}
+            className={dateRange === 'thisMonth' ? 'bg-[#007E8C] hover:bg-[#236383] text-white' : 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'}
+          >
+            This Month
           </Button>
           <Button
             variant={dateRange === 'nextMonth' ? 'default' : 'outline'}
