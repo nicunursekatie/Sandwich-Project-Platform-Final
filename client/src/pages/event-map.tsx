@@ -111,6 +111,7 @@ if (typeof document !== 'undefined') {
 }
 import { format } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { formatTime12Hour } from '@/components/event-requests/utils';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -602,6 +603,17 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
           <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
           <span className="text-base text-gray-800 font-medium">{getEventDate(event)}</span>
         </div>
+
+        {(event.eventStartTime || event.eventEndTime) && (
+          <div className="flex items-center gap-2">
+            <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-base text-gray-800 font-medium">
+              {event.eventStartTime && formatTime12Hour(event.eventStartTime)}
+              {event.eventStartTime && event.eventEndTime && ' - '}
+              {event.eventEndTime && formatTime12Hour(event.eventEndTime)}
+            </span>
+          </div>
+        )}
 
         {event.estimatedSandwichCount && (
           <div className="flex items-center gap-2">
