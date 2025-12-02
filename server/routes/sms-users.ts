@@ -480,7 +480,9 @@ router.post('/sms/webhook', async (req, res) => {
     }
     
     // Construct the full webhook URL that matches Twilio console configuration
-    const protocol = req.secure ? 'https' : 'http';
+    // Use x-forwarded-proto header for proxy environments (Replit, Heroku, etc.)
+    // SSL terminates at the proxy level, so req.secure is false even for HTTPS connections
+    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
     const host = req.get('host');
     const webhookUrl = `${protocol}://${host}${req.originalUrl}`;
     
