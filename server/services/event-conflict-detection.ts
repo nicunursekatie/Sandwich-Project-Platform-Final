@@ -125,11 +125,14 @@ export async function checkEventConflicts(
 
   try {
     // Find all other events on the same day (excluding current event if editing)
-    const conditions = [
+    // Include new, in_process, scheduled, confirmed for high volume detection
+    const allRelevantConditions = [
       gte(eventRequests.scheduledEventDate, startOfDay),
       lte(eventRequests.scheduledEventDate, endOfDay),
-      // Only include events that are scheduled, not cancelled/postponed
+      // Include new, in_process, scheduled, and confirmed events (not cancelled/completed/postponed)
       or(
+        eq(eventRequests.status, 'new'),
+        eq(eventRequests.status, 'in_process'),
         eq(eventRequests.status, 'scheduled'),
         eq(eventRequests.status, 'confirmed'),
         eq(eventRequests.status, 'pending')
@@ -137,26 +140,46 @@ export async function checkEventConflicts(
     ];
 
     if (eventData.id) {
-      conditions.push(ne(eventRequests.id, eventData.id));
+      allRelevantConditions.push(ne(eventRequests.id, eventData.id));
     }
 
-    const eventsOnSameDay = await db
+    const allEventsOnSameDay = await db
       .select()
       .from(eventRequests)
-      .where(and(...conditions));
+      .where(and(...allRelevantConditions));
 
-    // Check 1: High volume day warning
-    if (eventsOnSameDay.length >= 2) {
+    // Separate scheduled/confirmed events for van/driver conflict checking
+    const eventsOnSameDay = allEventsOnSameDay.filter(
+      e => e.status === 'scheduled' || e.status === 'confirmed'
+    );
+
+    // Check 1: High volume day warning (count all relevant events including new/in_process)
+    if (allEventsOnSameDay.length >= 2) {
+      const scheduledCount = eventsOnSameDay.length;
+      const pendingCount = allEventsOnSameDay.length - scheduledCount;
+
+      let message: string;
+      if (pendingCount > 0 && scheduledCount > 0) {
+        message = `${scheduledCount} scheduled + ${pendingCount} pending event(s) for ${scheduledDate.toLocaleDateString()}`;
+      } else if (pendingCount > 0) {
+        message = `${pendingCount} pending event(s) already being planned for ${scheduledDate.toLocaleDateString()}`;
+      } else {
+        message = `${scheduledCount} event(s) already scheduled for ${scheduledDate.toLocaleDateString()}`;
+      }
+
       warnings.push({
         type: 'high_volume_day',
-        severity: eventsOnSameDay.length >= 4 ? 'critical' : 'warning',
-        message: `${eventsOnSameDay.length} other event(s) already scheduled for ${scheduledDate.toLocaleDateString()}`,
+        severity: allEventsOnSameDay.length >= 4 ? 'critical' : 'warning',
+        message,
         details: {
-          eventCount: eventsOnSameDay.length + 1, // Include the new event
-          events: eventsOnSameDay.map(e => ({
+          eventCount: allEventsOnSameDay.length + 1, // Include the new event
+          scheduledCount,
+          pendingCount,
+          events: allEventsOnSameDay.map(e => ({
             id: e.id,
             name: e.organizationName,
             time: e.eventStartTime,
+            status: e.status,
           })),
         },
       });
@@ -276,7 +299,8 @@ export async function getConflictsForDate(date: Date): Promise<{
   const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
 
   try {
-    const events = await db
+    // Get all relevant events (new, in_process, scheduled, confirmed) for high volume
+    const allEvents = await db
       .select()
       .from(eventRequests)
       .where(
@@ -284,18 +308,25 @@ export async function getConflictsForDate(date: Date): Promise<{
           gte(eventRequests.scheduledEventDate, startOfDay),
           lte(eventRequests.scheduledEventDate, endOfDay),
           or(
+            eq(eventRequests.status, 'new'),
+            eq(eventRequests.status, 'in_process'),
             eq(eventRequests.status, 'scheduled'),
             eq(eventRequests.status, 'confirmed')
           )
         )
       );
 
+    // For van/driver conflicts, only check scheduled/confirmed events
+    const scheduledEvents = allEvents.filter(
+      e => e.status === 'scheduled' || e.status === 'confirmed'
+    );
+
     const vanConflicts: Array<{ event1: any; event2: any }> = [];
     const driverGroups: Map<string, any[]> = new Map();
 
-    // Check each pair of events
-    for (let i = 0; i < events.length; i++) {
-      const event1 = events[i];
+    // Check each pair of scheduled events
+    for (let i = 0; i < scheduledEvents.length; i++) {
+      const event1 = scheduledEvents[i];
 
       // Track drivers
       if (event1.driverName) {
@@ -306,8 +337,8 @@ export async function getConflictsForDate(date: Date): Promise<{
         driverGroups.get(driverKey)!.push(event1);
       }
 
-      for (let j = i + 1; j < events.length; j++) {
-        const event2 = events[j];
+      for (let j = i + 1; j < scheduledEvents.length; j++) {
+        const event2 = scheduledEvents[j];
 
         // Check van conflict
         const van1 = event1.vanBooked?.toLowerCase() !== 'no';
@@ -334,8 +365,8 @@ export async function getConflictsForDate(date: Date): Promise<{
     return {
       vanConflicts,
       driverConflicts,
-      highVolume: events.length >= 3,
-      eventCount: events.length,
+      highVolume: allEvents.length >= 3, // Count all relevant events for high volume
+      eventCount: allEvents.length,
     };
   } catch (error) {
     logger.error('Error getting conflicts for date:', error);
