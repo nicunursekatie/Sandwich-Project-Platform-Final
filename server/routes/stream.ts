@@ -184,7 +184,7 @@ streamRoutes.post('/credentials', async (req, res) => {
   }
 });
 
-// Create a channel for messaging
+// Create a channel for messaging (DMs and group chats)
 streamRoutes.post('/channels', async (req, res) => {
   try {
     const user = req.user || req.session?.user;
@@ -192,29 +192,66 @@ streamRoutes.post('/channels', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { participants, channelType = 'messaging' } = req.body;
+    const { participants, channelType = 'messaging', channelName } = req.body;
 
     if (!streamServerClient) {
-      return res.status(500).json({ error: 'Stream Chat not initialized' });
+      streamServerClient = initializeStreamServer();
+      if (!streamServerClient) {
+        return res.status(500).json({ error: 'Stream Chat not initialized' });
+      }
     }
 
     const streamUserId = `user_${user.id}`;
 
-    // Create channel
-    const channel = streamServerClient.channel(channelType, {
-      members: [streamUserId, ...participants.map((p: string) => `user_${p}`)],
+    // First, ensure all participants are registered with Stream Chat
+    // We need to get user details from the database
+    const { storage } = await import('../storage-wrapper');
+
+    for (const participantId of participants) {
+      try {
+        const participantUser = await storage.getUser(participantId);
+        if (participantUser) {
+          const participantStreamId = `user_${participantId}`;
+          await streamServerClient.upsertUser({
+            id: participantStreamId,
+            name: participantUser.firstName && participantUser.lastName
+              ? `${participantUser.firstName} ${participantUser.lastName}`
+              : participantUser.email,
+            email: participantUser.email,
+            role: 'user',
+          });
+          logger.log(`✅ Registered user ${participantUser.email} with Stream Chat`);
+        }
+      } catch (upsertError) {
+        logger.error(`Failed to upsert participant ${participantId}:`, upsertError);
+      }
+    }
+
+    // Create the channel with all members
+    const memberIds = [streamUserId, ...participants.map((p: string) => `user_${p}`)];
+
+    const channelData: Record<string, any> = {
+      members: memberIds,
       created_by_id: streamUserId,
-    });
+    };
+
+    // Add channel name if provided (for group chats)
+    if (channelName) {
+      channelData.name = channelName;
+    }
+
+    const channel = streamServerClient.channel(channelType, undefined, channelData);
 
     await channel.create();
 
     res.json({
       channelId: channel.id,
+      channelCid: channel.cid,
       channelType: channel.type,
-      members: channel.data?.members || [],
+      members: memberIds,
     });
   } catch (error) {
     logger.error('Channel creation error:', error);
-    res.status(500).json({ error: 'Failed to create channel' });
+    res.status(500).json({ error: 'Failed to create channel', message: error.message });
   }
 });
