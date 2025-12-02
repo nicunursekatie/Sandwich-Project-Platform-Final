@@ -12,6 +12,10 @@ const { validateRequest } = twilio;
 
 const router = Router();
 
+// Separate router for Twilio webhooks - NO authentication required
+// These endpoints use Twilio signature validation instead of user auth
+const webhookRouter = Router();
+
 const smsOptInSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   consent: z.boolean(),
@@ -463,8 +467,9 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
 /**
  * Twilio webhook endpoint for incoming SMS messages
  * SECURITY: Validates Twilio request signature to prevent spoofing
+ * NOTE: This is on webhookRouter (not router) - NO auth middleware, just Twilio signature validation
  */
-router.post('/sms/webhook', async (req, res) => {
+webhookRouter.post('/sms/webhook', async (req, res) => {
   try {
     // SECURITY VALIDATION: Verify Twilio request signature
     const twilioSignature = req.headers['x-twilio-signature'] as string;
@@ -844,8 +849,9 @@ router.post('/sms/webhook', async (req, res) => {
 /**
  * Twilio status webhook endpoint for message delivery status
  * This endpoint tracks delivery status of outbound SMS messages
+ * NOTE: This is on webhookRouter (not router) - NO auth middleware, Twilio callback
  */
-router.post('/users/sms-webhook/status', async (req, res) => {
+webhookRouter.post('/sms-webhook/status', async (req, res) => {
   try {
     logger.log('📱 Received Twilio status webhook:', req.body);
 
@@ -1070,4 +1076,7 @@ router.post('/users/send-sms-instructions', isAuthenticated, async (req, res) =>
   }
 });
 
-export { router as smsUserRoutes };
+// Export both routers:
+// - smsUserRoutes: authenticated routes for user-facing SMS settings
+// - smsWebhookRoutes: unauthenticated Twilio webhook callbacks (signature-validated)
+export { router as smsUserRoutes, webhookRouter as smsWebhookRoutes };
