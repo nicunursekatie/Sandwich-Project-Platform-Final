@@ -10,7 +10,7 @@
  * Conflicts are flagged but don't prevent event creation.
  */
 
-import { db } from '../database-storage';
+import { db } from '../db';
 import { eventRequests } from '@shared/schema';
 import { eq, and, ne, gte, lte, or, sql } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
