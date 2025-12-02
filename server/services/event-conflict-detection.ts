@@ -14,7 +14,7 @@
 
 import { db } from '../db';
 import { eventRequests, drivers } from '@shared/schema';
-import { eq, and, ne, gte, lte, or, sql, inArray } from 'drizzle-orm';
+import { eq, and, ne, gte, lte, or, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 
 export interface ConflictWarning {
@@ -203,11 +203,11 @@ export async function checkEventConflicts(
 
     // Determine if current event needs van (using proper schema fields)
     // Support both new schema fields and legacy vanBooked field for backwards compatibility
-    const currentNeedsVan = eventData.vanDriverNeeded === true && eventData.selfTransport !== true ||
+    const currentNeedsVan = (eventData.vanDriverNeeded === true && eventData.selfTransport !== true) ||
       (eventData.vanBooked && eventData.vanBooked.toLowerCase() !== 'no' && eventData.vanBooked.toLowerCase() !== 'false');
 
-    // Get van driver ID (new field or legacy driverName)
-    const currentVanDriverId = eventData.assignedVanDriverId || eventData.driverName || null;
+    // Get van driver ID (new field only; legacy driverName not used for ID logic)
+    const currentVanDriverId = eventData.assignedVanDriverId || null;
 
     // Get speaker IDs (array)
     const currentSpeakerIds = eventData.assignedSpeakerIds || [];
@@ -260,6 +260,7 @@ export async function checkEventConflicts(
     const reportedDriverConflicts = new Set<string>();
     const reportedSpeakerConflicts = new Set<string>();
     const reportedRecipientConflicts = new Set<string>();
+    const reportedPickupConflicts = new Set<number>();
 
     // Check each event for specific conflicts
     for (const existingEvent of eventsOnSameDay) {
@@ -350,11 +351,12 @@ export async function checkEventConflicts(
       // Check 6: Pickup time conflict (same driver has pickups within 30 minutes of each other)
       // Only matters if the same driver is assigned to both events
       if (currentVanDriverId && existingVanDriverId && currentVanDriverId === existingVanDriverId) {
-        if (currentPickup !== null && existingPickup !== null) {
+        if (currentPickup !== null && existingPickup !== null && !reportedPickupConflicts.has(existingEvent.id)) {
           const pickupDifference = Math.abs(currentPickup - existingPickup);
           const PICKUP_CONFLICT_THRESHOLD = 30; // 30 minutes
 
-          if (pickupDifference <= PICKUP_CONFLICT_THRESHOLD && pickupDifference > 0) {
+          if (pickupDifference < PICKUP_CONFLICT_THRESHOLD && pickupDifference > 0) {
+            reportedPickupConflicts.add(existingEvent.id);
             const driverDisplayName = driverNamesMap.get(currentVanDriverId) || `Driver #${currentVanDriverId}`;
             warnings.push({
               type: 'pickup_conflict',

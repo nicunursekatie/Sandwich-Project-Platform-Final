@@ -118,8 +118,8 @@ export function EventConflictWarnings({
       vanDriverNeeded,
       selfTransport,
       assignedVanDriverId,
-      JSON.stringify(assignedSpeakerIds),
-      JSON.stringify(assignedRecipientIds),
+      JSON.stringify(assignedSpeakerIds ? [...assignedSpeakerIds].sort() : []),
+      JSON.stringify(assignedRecipientIds ? [...assignedRecipientIds].sort() : []),
       // Legacy fields for cache key
       vanBooked,
       driverName,
@@ -264,8 +264,8 @@ export function useEventConflicts(eventData: EventConflictWarningsProps) {
       eventData.vanDriverNeeded,
       eventData.selfTransport,
       eventData.assignedVanDriverId,
-      JSON.stringify(eventData.assignedSpeakerIds),
-      JSON.stringify(eventData.assignedRecipientIds),
+      JSON.stringify(eventData.assignedSpeakerIds ? [...eventData.assignedSpeakerIds].sort() : []),
+      JSON.stringify(eventData.assignedRecipientIds ? [...eventData.assignedRecipientIds].sort() : []),
       // Legacy fields
       eventData.vanBooked,
       eventData.driverName,
