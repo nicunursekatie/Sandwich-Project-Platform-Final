@@ -131,7 +131,7 @@ export class SMSProviderFactory {
       const isReplitConnected = await isTwilioConnected();
 
       if (isReplitConnected) {
-        logger.log('🔗 Using Replit Twilio integration');
+        logger.log('🔗 Using Replit Twilio integration (useReplitIntegration=true)');
         config.twilio = {
           accountSid: '', // Will be loaded from Replit integration
           authToken: '',  // Will be loaded from Replit integration

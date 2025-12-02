@@ -173,6 +173,8 @@ export class TwilioProvider implements SMSProvider {
       const client = await this.getClient();
       const phoneNumber = await this.getPhoneNumber();
 
+      logger.log(`📱 SMS Debug: useReplitIntegration=${this.useReplitIntegration}, hasClient=${!!client}, phoneNumber=${phoneNumber}`);
+
       if (!client) {
         return {
           success: false,
@@ -188,6 +190,8 @@ export class TwilioProvider implements SMSProvider {
           error: 'MISSING_PHONE'
         };
       }
+
+      logger.log(`📱 Attempting to send SMS from ${phoneNumber} to ${message.to}`);
 
       const result = await client.messages.create({
         body: message.body,
