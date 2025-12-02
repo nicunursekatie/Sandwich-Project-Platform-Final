@@ -647,11 +647,11 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_EDIT');
         if (!editPermission.granted) {
           const errorMsg = 'Insufficient permissions to edit events';
           socket.emit('error', { message: errorMsg });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           if (callback) callback({ success: false, error: errorMsg });
           return;
         }
@@ -793,10 +793,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_EDIT');
         if (!editPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to edit events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           return;
         }
 
