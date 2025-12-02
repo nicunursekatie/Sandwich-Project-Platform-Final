@@ -15,6 +15,8 @@ import {
   UserCheck,
   Sandwich,
   Filter,
+  AlertTriangle,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
@@ -235,6 +237,107 @@ const getSandwichInfo = (event: EventRequest) => {
   }
 
   return sandwichInfo;
+};
+
+// Helper function to parse time string to minutes since midnight
+const parseTimeToMinutes = (timeStr: string | null | undefined): number | null => {
+  if (!timeStr) return null;
+
+  // Try parsing "HH:MM AM/PM" format
+  const amPmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (amPmMatch) {
+    let hours = parseInt(amPmMatch[1], 10);
+    const minutes = parseInt(amPmMatch[2], 10);
+    const period = amPmMatch[3]?.toUpperCase();
+
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
+  }
+
+  return null;
+};
+
+// Helper function to check if two time ranges overlap
+const timesOverlap = (
+  start1: number | null,
+  end1: number | null,
+  start2: number | null,
+  end2: number | null
+): boolean => {
+  if (start1 === null || end1 === null || start2 === null || end2 === null) {
+    return true; // Conservative: assume overlap if we can't determine
+  }
+  return start1 < end2 && start2 < end1;
+};
+
+// Helper function to detect conflicts within a day's events
+interface DayConflicts {
+  hasConflicts: boolean;
+  vanConflicts: number;
+  driverConflicts: number;
+  highVolume: boolean;
+  tooltip: string;
+}
+
+const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
+  const scheduledEvents = dayEvents.filter(
+    e => e.status === 'scheduled' || e.status === 'confirmed'
+  );
+
+  let vanConflicts = 0;
+  let driverConflicts = 0;
+  const tooltipParts: string[] = [];
+
+  // Check for high volume day
+  const highVolume = scheduledEvents.length >= 3;
+  if (highVolume) {
+    tooltipParts.push(`${scheduledEvents.length} events scheduled`);
+  }
+
+  // Check each pair for conflicts
+  for (let i = 0; i < scheduledEvents.length; i++) {
+    const event1 = scheduledEvents[i];
+    const start1 = parseTimeToMinutes(event1.eventStartTime);
+    const end1 = parseTimeToMinutes(event1.eventEndTime);
+
+    for (let j = i + 1; j < scheduledEvents.length; j++) {
+      const event2 = scheduledEvents[j];
+      const start2 = parseTimeToMinutes(event2.eventStartTime);
+      const end2 = parseTimeToMinutes(event2.eventEndTime);
+
+      const hasTimeOverlap = timesOverlap(start1, end1, start2, end2);
+
+      // Check van conflict
+      const event1NeedsVan = event1.assignedVanDriverId || (event1.vanBooked && event1.vanBooked.toLowerCase() !== 'no');
+      const event2NeedsVan = event2.assignedVanDriverId || (event2.vanBooked && event2.vanBooked.toLowerCase() !== 'no');
+
+      if (event1NeedsVan && event2NeedsVan && hasTimeOverlap) {
+        vanConflicts++;
+        if (vanConflicts === 1) {
+          tooltipParts.push('Van conflict detected');
+        }
+      }
+
+      // Check driver conflict
+      if (event1.assignedVanDriverId && event2.assignedVanDriverId &&
+          event1.assignedVanDriverId === event2.assignedVanDriverId && hasTimeOverlap) {
+        driverConflicts++;
+        if (driverConflicts === 1) {
+          tooltipParts.push('Same driver assigned to multiple events');
+        }
+      }
+    }
+  }
+
+  return {
+    hasConflicts: vanConflicts > 0 || driverConflicts > 0 || highVolume,
+    vanConflicts,
+    driverConflicts,
+    highVolume,
+    tooltip: tooltipParts.join(' • ') || 'No conflicts',
+  };
 };
 
 export function EventCalendarView({ onEventClick, events: providedEvents, filterByNeeds = false }: EventCalendarViewProps) {
@@ -541,6 +644,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDay = isToday(date);
             const isExpanded = expandedDates.has(dateKey);
+            const dayConflicts = detectDayConflicts(dayEvents);
 
             return (
               <div
@@ -550,19 +654,43 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
-                  isTodayDay && 'ring-2 ring-blue-500'
+                  isTodayDay && 'ring-2 ring-blue-500',
+                  dayConflicts.vanConflicts > 0 && 'border-red-300 bg-red-50/50',
+                  dayConflicts.highVolume && !dayConflicts.vanConflicts && 'border-yellow-300 bg-yellow-50/30'
                 )}
               >
-                {/* Date number */}
-                <div
-                  className={cn(
-                    'text-sm font-semibold mb-1',
-                    isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
-                    isTodayDay &&
-                      'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                {/* Date number and conflict indicator */}
+                <div className="flex items-center justify-between mb-1">
+                  <div
+                    className={cn(
+                      'text-sm font-semibold',
+                      isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
+                      isTodayDay &&
+                        'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                    )}
+                  >
+                    {date.getDate()}
+                  </div>
+                  {/* Conflict indicator */}
+                  {dayConflicts.hasConflicts && (
+                    <div
+                      className={cn(
+                        'flex items-center gap-0.5',
+                        dayConflicts.vanConflicts > 0 ? 'text-red-600' : 'text-yellow-600'
+                      )}
+                      title={dayConflicts.tooltip}
+                    >
+                      {dayConflicts.vanConflicts > 0 && (
+                        <Truck className="w-3.5 h-3.5" />
+                      )}
+                      {dayConflicts.driverConflicts > 0 && (
+                        <Users className="w-3.5 h-3.5" />
+                      )}
+                      {dayConflicts.highVolume && (
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      )}
+                    </div>
                   )}
-                >
-                  {date.getDate()}
                 </div>
 
                 {/* Events for this day */}
