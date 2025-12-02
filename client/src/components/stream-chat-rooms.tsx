@@ -105,12 +105,23 @@ const CHAT_ROOMS = [
   { id: 'recipient', name: 'Recipient Chat', icon: MessageSquare, permission: 'CHAT_RECIPIENT' },
 ];
 
+// Extended room type with member info
+interface RoomWithMembers {
+  id: string;
+  name: string;
+  icon: any;
+  permission: string;
+  memberCount: number;
+  channel?: ChannelType;
+}
+
 export default function StreamChatRooms() {
   const { user } = useAuth();
   const { track } = useOnboardingTracker();
   const [client, setClient] = useState<StreamChat | null>(null);
   const [activeChannel, setActiveChannel] = useState<ChannelType | null>(null);
   const [userRooms, setUserRooms] = useState<typeof CHAT_ROOMS>([]);
+  const [teamRoomChannels, setTeamRoomChannels] = useState<Map<string, RoomWithMembers>>(new Map());
   const [streamUserId, setStreamUserId] = useState<string>('');
   const [directMessages, setDirectMessages] = useState<ChannelType[]>([]);
   const [groupChats, setGroupChats] = useState<ChannelType[]>([]);
@@ -342,22 +353,80 @@ export default function StreamChatRooms() {
 
         setUserRooms(accessibleRooms);
 
-        // Join channels for accessible rooms (channels are created server-side)
-        // Don't try to create them here - just watch them
-        for (const room of accessibleRooms) {
-          try {
-            const channel = chatClient.channel('team', room.id);
-            await channel.watch();
-          } catch (error) {
-            logger.error(`Failed to join channel ${room.id}:`, error);
+        // Query all team channels to get proper member counts
+        const roomChannelsMap = new Map<string, RoomWithMembers>();
+
+        // Query channels with full member data
+        const teamChannelFilter = {
+          type: 'team',
+          id: { $in: accessibleRooms.map(r => r.id) }
+        };
+
+        try {
+          const channels = await chatClient.queryChannels(
+            teamChannelFilter,
+            { created_at: -1 },
+            {
+              limit: 20,
+              state: true,
+              watch: true,
+            }
+          );
+
+          // Map channels to rooms with member counts
+          for (const room of accessibleRooms) {
+            const channel = channels.find(c => c.id === room.id);
+            if (channel) {
+              const memberCount = Object.keys(channel.state?.members || {}).length;
+              roomChannelsMap.set(room.id, {
+                ...room,
+                memberCount,
+                channel
+              });
+              logger.log(`Channel ${room.id} has ${memberCount} members`);
+            } else {
+              // Channel doesn't exist yet, just watch it
+              const newChannel = chatClient.channel('team', room.id);
+              await newChannel.watch();
+              const memberCount = Object.keys(newChannel.state?.members || {}).length;
+              roomChannelsMap.set(room.id, {
+                ...room,
+                memberCount,
+                channel: newChannel
+              });
+            }
+          }
+        } catch (queryError) {
+          logger.error('Failed to query team channels:', queryError);
+          // Fallback: just watch each channel individually
+          for (const room of accessibleRooms) {
+            try {
+              const channel = chatClient.channel('team', room.id);
+              await channel.watch();
+              const memberCount = Object.keys(channel.state?.members || {}).length;
+              roomChannelsMap.set(room.id, {
+                ...room,
+                memberCount,
+                channel
+              });
+            } catch (error) {
+              logger.error(`Failed to join channel ${room.id}:`, error);
+            }
           }
         }
 
+        setTeamRoomChannels(roomChannelsMap);
+
         // Set first accessible room as active
         if (accessibleRooms.length > 0) {
-          const firstChannel = chatClient.channel('team', accessibleRooms[0].id);
-          await firstChannel.watch();
-          setActiveChannel(firstChannel);
+          const firstRoomData = roomChannelsMap.get(accessibleRooms[0].id);
+          if (firstRoomData?.channel) {
+            setActiveChannel(firstRoomData.channel);
+          } else {
+            const firstChannel = chatClient.channel('team', accessibleRooms[0].id);
+            await firstChannel.watch();
+            setActiveChannel(firstChannel);
+          }
 
           // Track that user has viewed team chat messages
           track('chat_read_messages');
@@ -485,6 +554,8 @@ export default function StreamChatRooms() {
                 {userRooms.map((room) => {
                   const Icon = room.icon;
                   const isActive = activeChannel?.id === room.id && activeChannel?.type === 'team';
+                  const roomData = teamRoomChannels.get(room.id);
+                  const memberCount = roomData?.memberCount || 0;
                   return (
                     <div
                       key={room.id}
@@ -495,9 +566,9 @@ export default function StreamChatRooms() {
                       }`}
                       onClick={async () => {
                         try {
-                          const channel = client.channel('team', room.id);
-                          await channel.watch();
-                          setActiveChannel(channel);
+                          const existingChannel = roomData?.channel || client.channel('team', room.id);
+                          await existingChannel.watch();
+                          setActiveChannel(existingChannel);
                         } catch (error) {
                           logger.error(`Failed to switch to channel ${room.id}:`, error);
                         }
@@ -512,8 +583,11 @@ export default function StreamChatRooms() {
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">
+                          <span className="text-sm font-medium truncate block">
                             {room.name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {memberCount} member{memberCount !== 1 ? 's' : ''}
                           </span>
                         </div>
                       </div>
