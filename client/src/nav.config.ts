@@ -485,7 +485,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Service Hours Form',
     icon: FileText,
     href: 'generate-service-hours',
-    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    permission: PERMISSIONS.NAV_SERVICE_HOURS_FORM,
     group: 'admin',
   },
 

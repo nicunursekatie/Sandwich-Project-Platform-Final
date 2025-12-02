@@ -313,6 +313,7 @@ export const PERMISSIONS = {
   NAV_EXPENSES: 'NAV_EXPENSES', // Access to Expenses & Receipts tab
   NAV_RESOURCES: 'NAV_RESOURCES', // Access to Resources tab
   NAV_AUTO_FORM_FILLER: 'NAV_AUTO_FORM_FILLER', // Access to Auto Form Filler tab
+  NAV_SERVICE_HOURS_FORM: 'NAV_SERVICE_HOURS_FORM', // Access to Service Hours Form Generator
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
