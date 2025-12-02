@@ -282,13 +282,14 @@ interface DayConflicts {
 }
 
 const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
-  // Include new, in_process, scheduled, and confirmed events for conflict detection
+  // Include new, followed_up, in_process, and scheduled events for conflict detection
+  // Note: Valid statuses are: 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
   const relevantEvents = dayEvents.filter(
-    e => e.status === 'new' || e.status === 'in_process' || e.status === 'scheduled' || e.status === 'confirmed'
+    e => e.status === 'new' || e.status === 'followed_up' || e.status === 'in_process' || e.status === 'scheduled'
   );
-  // For van/driver conflicts, only check scheduled/confirmed (locked in dates)
+  // For van/driver conflicts, only check scheduled events (locked in dates)
   const scheduledEvents = dayEvents.filter(
-    e => e.status === 'scheduled' || e.status === 'confirmed'
+    e => e.status === 'scheduled'
   );
 
   let vanConflicts = 0;
