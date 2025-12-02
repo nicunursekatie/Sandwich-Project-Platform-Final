@@ -750,8 +750,82 @@ router.post('/sms/webhook', async (req, res) => {
       // Return empty TwiML response
       res.type('text/xml');
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
-    } else {
-      logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
+    }
+    // Handle STOP/UNSUBSCRIBE messages
+    else if (['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'].includes(messageBody)) {
+      logger.log(`🛑 STOP request received from ${redactedPhone}`);
+      // Twilio handles STOP automatically, just log it
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    }
+    // Handle IDEA submissions for Holding Zone
+    else if (messageBody.startsWith('IDEA ') || messageBody.startsWith('IDEA:')) {
+      logger.log(`💡 Holding Zone idea received from ${redactedPhone}`);
+
+      // Extract the idea content (remove "IDEA " or "IDEA:" prefix)
+      const ideaContent = Body.trim().replace(/^IDEA[:\s]+/i, '').trim();
+
+      if (ideaContent.length < 3) {
+        logger.log(`❌ Idea too short from ${redactedPhone}`);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Your idea is too short. Please text: IDEA followed by your suggestion (at least 3 characters).</Message></Response>`);
+      }
+
+      try {
+        // Find user by phone number to attribute the idea
+        const allUsers = await storage.getAllUsers();
+        const senderUser = allUsers.find((user) => {
+          const metadata = user.metadata as any || {};
+          const smsConsent = metadata.smsConsent || {};
+          return smsConsent.phoneNumber === phoneNumber;
+        });
+
+        const submittedBy = senderUser
+          ? (senderUser.firstName && senderUser.lastName
+              ? `${senderUser.firstName} ${senderUser.lastName}`
+              : senderUser.email)
+          : `SMS: ${redactedPhone}`;
+
+        // Create holding zone item
+        const holdingZoneItem = await storage.createTeamBoardItem({
+          title: ideaContent.substring(0, 100), // Limit title length
+          description: ideaContent.length > 100 ? ideaContent : null,
+          category: 'idea',
+          priority: 'medium',
+          status: 'open',
+          submittedBy: submittedBy,
+          submittedByUserId: senderUser?.id || null,
+          isAnonymous: !senderUser,
+          metadata: {
+            source: 'sms',
+            phoneNumber: redactedPhone, // Store redacted for reference
+            receivedAt: new Date().toISOString(),
+          },
+        });
+
+        logger.log(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
+
+        // Send confirmation
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks! Your idea has been added to the TSP Holding Zone. 🥪</Message></Response>`);
+      } catch (createError) {
+        logger.error('Failed to create Holding Zone item from SMS:', createError);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
+      }
+    }
+    // Handle HELP requests
+    else if (messageBody === 'HELP' || messageBody === '?') {
+      logger.log(`❓ Help request from ${redactedPhone}`);
+      res.type('text/xml');
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe from messages\n• HELP - Show this message</Message></Response>`);
+    }
+    else {
+      logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);
+
+      // Send helpful response for unrecognized messages
+      res.type('text/xml');
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To submit an idea to the TSP Holding Zone, text: IDEA followed by your suggestion. Text HELP for more commands.</Message></Response>`);
     }
 
     // Always respond with TwiML (empty response for unrecognized messages)
