@@ -182,14 +182,18 @@ export default function StreamChatRooms() {
     if (!client || !streamUserId) return;
 
     try {
-      const targetStreamUserId = `user_${targetUserId}`;
-
-      // Create or get existing DM channel
-      const channel = client.channel('messaging', undefined, {
-        members: [streamUserId, targetStreamUserId],
+      // Use the server endpoint to create the channel (ensures users are registered with Stream)
+      const response = await apiRequest('POST', '/api/stream/channels', {
+        participants: [targetUserId],
+        channelType: 'messaging',
       });
 
-      await channel.create();
+      if (!response?.channelCid) {
+        throw new Error('Failed to create channel');
+      }
+
+      // Now watch the channel from the client
+      const channel = client.channel('messaging', response.channelId);
       await channel.watch();
 
       setActiveChannel(channel);
@@ -219,16 +223,19 @@ export default function StreamChatRooms() {
     if (!client || !streamUserId || selectedUsers.length < 2) return;
 
     try {
-      const memberIds = [streamUserId, ...selectedUsers.map(id => `user_${id}`)];
+      // Use the server endpoint to create the channel (ensures all users are registered with Stream)
+      const response = await apiRequest('POST', '/api/stream/channels', {
+        participants: selectedUsers,
+        channelType: 'messaging',
+        channelName: groupName || `Group Chat (${selectedUsers.length + 1} members)`,
+      });
 
-      const channelData: Record<string, any> = {
-        members: memberIds,
-        name: groupName || `Group Chat (${memberIds.length} members)`,
-        created_by_id: streamUserId,
-      };
-      const channel = client.channel('messaging', undefined, channelData);
+      if (!response?.channelCid) {
+        throw new Error('Failed to create channel');
+      }
 
-      await channel.create();
+      // Now watch the channel from the client
+      const channel = client.channel('messaging', response.channelId);
       await channel.watch();
 
       setActiveChannel(channel);
@@ -243,7 +250,7 @@ export default function StreamChatRooms() {
 
       toast({
         title: 'Group created',
-        description: `Group chat with ${memberIds.length} members created.`,
+        description: `Group chat with ${selectedUsers.length + 1} members created.`,
       });
     } catch (error) {
       logger.error('Failed to create group:', error);
