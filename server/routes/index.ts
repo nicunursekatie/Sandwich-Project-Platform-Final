@@ -31,7 +31,7 @@ import meRouter from './me';
 import availabilityRouter from './availability';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
-import { smsUserRoutes } from './sms-users';
+import { smsUserRoutes, smsWebhookRoutes } from './sms-users';
 import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
 import quickSmsRouter from './quick-sms';
@@ -95,6 +95,16 @@ export function createMainRoutes(deps: RouterDependencies) {
   smartSearchService.loadIndex().catch(err => {
     console.error('Failed to load smart search index:', err);
   });
+
+  // ========================================================================
+  // CRITICAL: Twilio SMS webhooks - MUST be registered FIRST (before any auth)
+  // These endpoints use Twilio signature validation instead of user authentication
+  // ========================================================================
+  router.use(
+    '/api',
+    ...createPublicMiddleware(),
+    smsWebhookRoutes
+  );
 
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
@@ -495,9 +505,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/group-engagement', createErrorHandler('group-engagement'));
 
-  // Service hours PDF generation
+  // Service hours PDF generation - use specific path to avoid intercepting other /api routes
   router.use(
-    '/api',
+    '/api/generate-service-hours-pdf',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
     serviceHoursRouter
@@ -513,9 +523,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/me', createErrorHandler('me'));
 
-  // SMS notification routes - SMS users router already includes /users prefix
-  // Note: Individual routes in smsUserRoutes have their own auth middleware
-  // The /sms/webhook endpoint must remain public for Twilio callbacks
+  // SMS user routes - authenticated user-facing SMS settings
+  // Note: Twilio webhooks are registered separately at the TOP of this file (smsWebhookRoutes)
+  // Individual routes in smsUserRoutes have their own isAuthenticated middleware
   router.use(
     '/api',
     ...createStandardMiddleware(),

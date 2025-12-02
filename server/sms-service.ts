@@ -484,7 +484,7 @@ export async function sendConfirmationSMS(
         to: formattedPhone,
         // Add status callback to track delivery
         statusCallback: process.env.REPLIT_DOMAIN
-          ? `https://${process.env.REPLIT_DOMAIN}/api/users/sms-webhook/status`
+          ? `https://${process.env.REPLIT_DOMAIN}/api/sms-webhook/status`
           : undefined,
       });
 
