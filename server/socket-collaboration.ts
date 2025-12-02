@@ -493,10 +493,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to view events
-        const viewPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        const viewPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_VIEW');
         if (!viewPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to view events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_VIEW`);
           return;
         }
 
@@ -647,11 +647,11 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_EDIT');
         if (!editPermission.granted) {
           const errorMsg = 'Insufficient permissions to edit events';
           socket.emit('error', { message: errorMsg });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           if (callback) callback({ success: false, error: errorMsg });
           return;
         }
@@ -793,10 +793,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to edit events
-        const editPermission = checkPermission(authenticatedUser, 'UPDATE_EVENTS');
+        const editPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_EDIT');
         if (!editPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to edit events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: UPDATE_EVENTS`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_EDIT`);
           return;
         }
 
@@ -958,10 +958,10 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         }
 
         // SECURITY: Check if user has permission to comment on events
-        const commentPermission = checkPermission(authenticatedUser, 'VIEW_EVENTS');
+        const commentPermission = checkPermission(authenticatedUser, 'EVENT_REQUESTS_VIEW');
         if (!commentPermission.granted) {
           socket.emit('error', { message: 'Insufficient permissions to comment on events' });
-          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: VIEW_EVENTS (comment)`);
+          logger.error(`[Collaboration] Permission denied for user ${authenticatedUser.email}: EVENT_REQUESTS_VIEW (comment)`);
           return;
         }
 
