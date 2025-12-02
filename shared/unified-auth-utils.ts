@@ -96,15 +96,13 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 3.5: Admin backward compatibility for new navigation and event permissions
+  // Step 3.5: Admin backward compatibility - only for ADMIN_PANEL_ACCESS
+  // NAV_ permissions are now individually controlled per user
   if (user.role === 'admin') {
-    if (permission.startsWith('NAV_') || 
-        permission === 'ADMIN_PANEL_ACCESS' ||
-        permission.startsWith('EVENT_REQUESTS_') ||
-        permission.startsWith('DOCUMENTS_')) {
+    if (permission === 'ADMIN_PANEL_ACCESS') {
       return {
         granted: true,
-        reason: 'Admin role automatic access (backward compatibility)',
+        reason: 'Admin role automatic access to admin panel',
         userRole: user.role,
         userPermissions: userPermissions
       };
