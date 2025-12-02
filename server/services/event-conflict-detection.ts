@@ -157,12 +157,14 @@ export async function checkEventConflicts(
       .from(eventRequests)
       .where(and(...allRelevantConditions));
 
-    // Separate scheduled events for van/driver conflict checking (events with locked-in dates)
+    // Only check against SCHEDULED events for resource conflicts
+    // Scheduled events take precedence - new/in_process events need to work around them
     const eventsOnSameDay = allEventsOnSameDay.filter(
       e => e.status === 'scheduled'
     );
 
     // Check 1: High volume day warning (count all relevant events including new/in_process)
+    // This still shows all events for awareness, even if they're not scheduled yet
     if (allEventsOnSameDay.length >= 2) {
       const scheduledCount = eventsOnSameDay.length;
       const pendingCount = allEventsOnSameDay.length - scheduledCount;
@@ -345,25 +347,31 @@ export async function checkEventConflicts(
         }
       }
 
-      // Check 6: Pickup time conflict (multiple events with pickups within 30 minutes of each other)
-      if (currentPickup !== null && existingPickup !== null) {
-        const pickupDifference = Math.abs(currentPickup - existingPickup);
-        const PICKUP_CONFLICT_THRESHOLD = 30; // 30 minutes
+      // Check 6: Pickup time conflict (same driver has pickups within 30 minutes of each other)
+      // Only matters if the same driver is assigned to both events
+      if (currentVanDriverId && existingVanDriverId && currentVanDriverId === existingVanDriverId) {
+        if (currentPickup !== null && existingPickup !== null) {
+          const pickupDifference = Math.abs(currentPickup - existingPickup);
+          const PICKUP_CONFLICT_THRESHOLD = 30; // 30 minutes
 
-        if (pickupDifference <= PICKUP_CONFLICT_THRESHOLD && pickupDifference > 0) {
-          warnings.push({
-            type: 'pickup_conflict',
-            severity: 'warning',
-            message: `Pickup times are within 30 minutes of "${existingEvent.organizationName}" (${existingEvent.pickupTime || existingEvent.driverPickupTime || 'TBD'}). Coordinate logistics carefully.`,
-            conflictingEventId: existingEvent.id,
-            conflictingEventName: existingEvent.organizationName || 'Unknown',
-            conflictingEventTime: existingEvent.pickupTime || existingEvent.driverPickupTime || undefined,
-            details: {
-              currentPickupTime: eventData.pickupTime,
-              existingPickupTime: existingEvent.pickupTime || existingEvent.driverPickupTime,
-              timeDifferenceMinutes: pickupDifference,
-            },
-          });
+          if (pickupDifference <= PICKUP_CONFLICT_THRESHOLD && pickupDifference > 0) {
+            const driverDisplayName = driverNamesMap.get(currentVanDriverId) || `Driver #${currentVanDriverId}`;
+            warnings.push({
+              type: 'pickup_conflict',
+              severity: 'warning',
+              message: `${driverDisplayName} has another pickup within ${pickupDifference} minutes for "${existingEvent.organizationName}" (${existingEvent.pickupTime || existingEvent.driverPickupTime || 'TBD'})`,
+              conflictingEventId: existingEvent.id,
+              conflictingEventName: existingEvent.organizationName || 'Unknown',
+              conflictingEventTime: existingEvent.pickupTime || existingEvent.driverPickupTime || undefined,
+              details: {
+                driverName: driverDisplayName,
+                driverId: currentVanDriverId,
+                currentPickupTime: eventData.pickupTime,
+                existingPickupTime: existingEvent.pickupTime || existingEvent.driverPickupTime,
+                timeDifferenceMinutes: pickupDifference,
+              },
+            });
+          }
         }
       }
     }
