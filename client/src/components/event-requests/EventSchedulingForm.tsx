@@ -49,6 +49,7 @@ import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { PresenceAvatars, FieldLockIndicator, CommentThread } from '@/components/collaboration';
+import { EventConflictWarnings } from './EventConflictWarnings';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -990,6 +991,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Event Schedule */}
           <div className="space-y-4">
             <Label className="text-lg font-semibold">Event Schedule</Label>
+
+            {/* Conflict Warnings */}
+            <EventConflictWarnings
+              eventId={eventRequest?.id}
+              scheduledEventDate={formData.eventDate || null}
+              eventStartTime={formData.eventStartTime || null}
+              eventEndTime={formData.eventEndTime || null}
+              vanBooked={formData.vanDriverNeeded && !formData.selfTransport ? 'yes' : 'no'}
+              driverName={formData.assignedVanDriverId || null}
+              recipientId={formData.assignedRecipientIds?.[0] ? parseInt(formData.assignedRecipientIds[0]) : null}
+              organizationName={formData.organizationName || eventRequest?.organizationName || null}
+              enabled={!!formData.eventDate}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="eventDate">Event Date</Label>
