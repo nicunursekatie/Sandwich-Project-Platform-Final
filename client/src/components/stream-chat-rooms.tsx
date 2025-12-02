@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Chat,
   Channel,
@@ -120,6 +120,7 @@ export default function StreamChatRooms() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [groupName, setGroupName] = useState('');
   const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>('rooms');
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch all users for DM/group creation
   const { data: allUsers = [] } = useQuery({
@@ -314,6 +315,20 @@ export default function StreamChatRooms() {
         setClient(chatClient);
         setStreamUserId(streamUserId);
 
+        // Send heartbeat to mark user as online (for notification suppression)
+        const sendHeartbeat = () => {
+          fetch('/api/stream/heartbeat', {
+            method: 'POST',
+            credentials: 'include',
+          }).catch(() => {}); // Ignore errors
+        };
+
+        // Send initial heartbeat
+        sendHeartbeat();
+
+        // Send heartbeat every 2 minutes while chat is open
+        heartbeatIntervalRef.current = setInterval(sendHeartbeat, 2 * 60 * 1000);
+
         // Load DMs and group chats
         await loadUserChannels(chatClient, streamUserId);
 
@@ -363,6 +378,9 @@ export default function StreamChatRooms() {
     return () => {
       if (client) {
         client.disconnectUser();
+      }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
       }
     };
   }, [user]);
