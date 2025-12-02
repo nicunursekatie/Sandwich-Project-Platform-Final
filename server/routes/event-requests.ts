@@ -2125,7 +2125,7 @@ router.get('/debug/auth', (req, res) => {
 router.post(
   '/sync/to-sheets',
   isAuthenticated,
-  requirePermission('EVENT_REQUESTS_MANAGE'),
+  requirePermission('EVENT_REQUESTS_SYNC'),
   async (req, res) => {
     try {
       const user = req.user;
@@ -2167,7 +2167,7 @@ router.post(
 router.post(
   '/sync/from-sheets',
   isAuthenticated,
-  requirePermission('EVENT_REQUESTS_MANAGE'),
+  requirePermission('EVENT_REQUESTS_SYNC'),
   async (req, res) => {
     try {
       const user = req.user;
@@ -4323,7 +4323,7 @@ We apologize for any confusion!`;
 });
 
 // Manually trigger auto-complete for past events (admin only)
-router.post('/admin/auto-complete-passed', isAuthenticated, requirePermission('ADMIN'), async (req, res) => {
+router.post('/admin/auto-complete-passed', isAuthenticated, requirePermission('ADMIN_ACCESS'), async (req, res) => {
   try {
     const { autoCompletePassedEvents } = await import('../services/cron-jobs');
     const result = await autoCompletePassedEvents();

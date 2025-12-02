@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Run sandwich range fields migration
-router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: any, res: any) => {
+router.post('/sandwich-range-fields', requirePermission('ADMIN_ACCESS'), async (req: any, res: any) => {
   try {
     const DATABASE_URL = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
 
