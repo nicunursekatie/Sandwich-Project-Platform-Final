@@ -282,6 +282,11 @@ interface DayConflicts {
 }
 
 const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
+  // Include new, in_process, scheduled, and confirmed events for conflict detection
+  const relevantEvents = dayEvents.filter(
+    e => e.status === 'new' || e.status === 'in_process' || e.status === 'scheduled' || e.status === 'confirmed'
+  );
+  // For van/driver conflicts, only check scheduled/confirmed (locked in dates)
   const scheduledEvents = dayEvents.filter(
     e => e.status === 'scheduled' || e.status === 'confirmed'
   );
@@ -290,10 +295,16 @@ const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
   let driverConflicts = 0;
   const tooltipParts: string[] = [];
 
-  // Check for high volume day
-  const highVolume = scheduledEvents.length >= 3;
+  // Check for high volume day (count all relevant events including new and in-process)
+  const highVolume = relevantEvents.length >= 3;
   if (highVolume) {
-    tooltipParts.push(`${scheduledEvents.length} events scheduled`);
+    const scheduledCount = scheduledEvents.length;
+    const pendingCount = relevantEvents.length - scheduledCount;
+    if (pendingCount > 0) {
+      tooltipParts.push(`${scheduledCount} scheduled + ${pendingCount} pending = ${relevantEvents.length} events`);
+    } else {
+      tooltipParts.push(`${relevantEvents.length} events scheduled`);
+    }
   }
 
   // Check each pair for conflicts
