@@ -429,6 +429,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
       }
 
       // Store authenticated user in socket data
+      // IMPORTANT: permissions must be an array, not an object, for checkPermission to work
       socket.data.user = {
         id: user.id,
         email: user.email,
@@ -436,7 +437,7 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
         lastName: user.lastName || undefined,
         displayName: user.displayName || undefined,
         role: user.role || 'volunteer',
-        permissions: user.permissions || {},
+        permissions: Array.isArray(user.permissions) ? user.permissions : [],
         isActive: user.isActive,
       };
 
