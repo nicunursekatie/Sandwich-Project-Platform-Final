@@ -47,6 +47,12 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -670,105 +676,165 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
-          {/* TSP Contact Assignment - only show if not already assigned */}
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+            {/* TSP Contact Assignment - only show if not already assigned */}
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* AI Date Suggestion - show if there are dates to analyze */}
-          {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiSuggest}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
-              data-testid="button-ai-suggest-date"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Date Suggest
-            </Button>
-          )}
+            {/* AI Date Suggestion - show if there are dates to analyze */}
+            {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiSuggest}
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
+                    data-testid="button-ai-suggest-date"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Date Suggest
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get AI suggestions for the best event date</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* AI Intake Assistant - always available */}
-          {onAiIntakeAssist && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiIntakeAssist}
-              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
-              data-testid="button-ai-intake-assist"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Intake Check
-            </Button>
-          )}
+            {/* AI Intake Assistant - always available */}
+            {onAiIntakeAssist && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiIntakeAssist}
+                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
+                    data-testid="button-ai-intake-assist"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Intake Check
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Use AI to check intake information</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onToolkit}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
-          >
-            <Package className="w-4 h-4 mr-1" />
-            Send Toolkit
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onScheduleCall}
-            className="h-8"
-          >
-            <Phone className="w-4 h-4 mr-1" />
-            Schedule Call
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-
-          <div className="flex-1" />
-
-          {/* Edit/Delete */}
-          {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
-              <Edit className="w-4 h-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <ConfirmationDialog
-              trigger={
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="text-red-600 hover:text-red-700 h-8"
-                  data-testid="button-delete-request"
+                  variant="default"
+                  onClick={onToolkit}
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Package className="w-4 h-4 mr-1" />
+                  Send Toolkit
                 </Button>
-              }
-              title="Delete Event Request"
-              description={`Are you sure you want to delete the event request from ${request.organizationName}? This action cannot be undone.`}
-              confirmText="Delete Request"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Send toolkit email to the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onScheduleCall}
+                  className="h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Schedule Call
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Schedule a call with the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex-1" />
+
+            {/* Edit/Delete */}
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <ConfirmationDialog
+                trigger={
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 h-8"
+                        data-testid="button-delete-request"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete this event request</p>
+                    </TooltipContent>
+                  </Tooltip>
+                }
+                title="Delete Event Request"
+                description={`Are you sure you want to delete the event request from ${request.organizationName}? This action cannot be undone.`}
+                confirmText="Delete Request"
+                cancelText="Cancel"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Audit Log Section */}
         <div className="mt-4 border-t border-gray-200 pt-4">

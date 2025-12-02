@@ -69,6 +69,12 @@ import {
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import SendKudosButton from '@/components/send-kudos-button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -2642,118 +2648,197 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
-          <Button size="sm" variant="outline" onClick={onView}>
-            <Eye className="w-4 h-4 mr-1" />
-            View Details
-          </Button>
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onView}>
+                  <Eye className="w-4 h-4 mr-1" />
+                  View Details
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View event details</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <Button size="sm" variant="outline" onClick={onEdit}>
-            <Edit2 className="w-4 h-4 mr-1" />
-            Edit Event
-          </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onEdit}>
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Event
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit this event</p>
+              </TooltipContent>
+            </Tooltip>
 
-          {!request.followUpOneDayCompleted && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onFollowUp1Day}
-              className="bg-brand-primary-lighter hover:bg-brand-primary-light"
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              1-Day Follow-up
-            </Button>
-          )}
+            {!request.followUpOneDayCompleted && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onFollowUp1Day}
+                    className="bg-brand-primary-lighter hover:bg-brand-primary-light"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    1-Day Follow-up
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Send 1-day follow-up message</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {!request.followUpOneMonthCompleted && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onFollowUp1Month}
-              className="bg-purple-50 hover:bg-purple-100"
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              1-Month Follow-up
-            </Button>
-          )}
+            {!request.followUpOneMonthCompleted && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onFollowUp1Month}
+                    className="bg-purple-50 hover:bg-purple-100"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    1-Month Follow-up
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Send 1-month follow-up message</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {onViewCollectionLog && (
-            <Button size="sm" variant="outline" onClick={onViewCollectionLog}>
-              <FileText className="w-4 h-4 mr-1" />
-              Collection Log
-            </Button>
-          )}
+            {onViewCollectionLog && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onViewCollectionLog}>
+                    <FileText className="w-4 h-4 mr-1" />
+                    Collection Log
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View collection log for this event</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          <Button size="sm" variant="outline" onClick={onContact}>
-            <Mail className="w-4 h-4 mr-1" />
-            Contact
-          </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onContact}>
+                  <Mail className="w-4 h-4 mr-1" />
+                  Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Contact the organizer</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-          >
-            <FileText className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                  className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                >
+                  <FileText className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
 
-          {/* TSP Contact Assignment - only show if not already assigned */}
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
+            {/* TSP Contact Assignment - only show if not already assigned */}
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          <Button
-            size="sm"
-            onClick={() => setShowMessageDialog(true)}
-            variant="ghost"
-            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-            aria-label="Message about this event"
-          >
-            <MessageSquare className="w-4 h-4" aria-hidden="true" />
-          </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => setShowMessageDialog(true)}
+                  variant="ghost"
+                  className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                  aria-label="Message about this event"
+                >
+                  <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message about this event</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onReschedule}
-            title="Create new event based on this one"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-
-          {canDelete && (
-            <ConfirmationDialog
-              trigger={
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
-                  data-testid="button-delete-request"
+                  onClick={onReschedule}
+                  title="Create new event based on this one"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
-              }
-              title="Delete Completed Event"
-              description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
-              confirmText="Delete Event"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Create new event based on this one</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {canDelete && (
+              <ConfirmationDialog
+                trigger={
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700"
+                        data-testid="button-delete-request"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete this event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                }
+                title="Delete Completed Event"
+                description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
+                confirmText="Delete Event"
+                cancelText="Cancel"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Audit Log Section */}
         <div className="mt-3 border-t border-gray-200 pt-2">

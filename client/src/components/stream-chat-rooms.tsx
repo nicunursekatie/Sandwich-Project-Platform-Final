@@ -609,7 +609,22 @@ export default function StreamChatRooms() {
                   groupChats.map((channel) => {
                     const isActive = activeChannel?.cid === channel.cid;
                     const unreadCount = channel.countUnread();
-                    const memberCount = Object.keys(channel.state?.members || {}).length;
+                    const members = Object.values(channel.state?.members || {});
+                    const memberCount = members.length;
+                    // Get member names (excluding current user, limit to first 3)
+                    const memberNames = members
+                      .filter((m: any) => m.user_id !== streamUserId)
+                      .slice(0, 3)
+                      .map((m: any) => {
+                        const name = m.user?.name || m.user_id;
+                        // Get first name only for brevity
+                        return name.split(' ')[0];
+                      });
+                    const additionalCount = memberCount - 1 - memberNames.length; // -1 for current user
+                    const memberDisplay = additionalCount > 0
+                      ? `${memberNames.join(', ')} +${additionalCount}`
+                      : memberNames.join(', ');
+
                     return (
                       <div
                         key={channel.cid}
@@ -633,8 +648,8 @@ export default function StreamChatRooms() {
                             <span className="text-sm font-medium truncate block">
                               {(channel.data as any)?.name || `Group (${memberCount})`}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              {memberCount} members
+                            <span className="text-xs text-gray-500 truncate block" title={memberDisplay}>
+                              {memberDisplay || `${memberCount} members`}
                             </span>
                           </div>
                           {unreadCount > 0 && (

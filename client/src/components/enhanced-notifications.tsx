@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { NotificationActionButton } from './NotificationActionButton';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
+import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 
 interface Notification {
   id: number;
@@ -108,6 +109,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
 
   // Connect to Socket.IO for real-time notification updates
   const { connected: socketConnected } = useNotificationSocket();
+
+  // Get Stream Chat unread counts
+  const { totalUnread: streamChatUnread, roomsUnread, dmsUnread, groupsUnread } = useStreamChatUnread();
 
   // Keyboard navigation support
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
@@ -242,7 +246,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   };
 
   const notifications = notificationsData?.notifications || [];
-  const unreadCount = counts?.total || 0;
+  const systemUnreadCount = counts?.total || 0;
+  // Combined count includes both system notifications and chat messages
+  const totalUnreadCount = systemUnreadCount + (streamChatUnread || 0);
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -252,19 +258,19 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
           size="sm"
           className="relative h-9 w-9 p-0"
           data-testid="button-notifications-enhanced"
-          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+          aria-label={`Notifications ${totalUnreadCount > 0 ? `(${totalUnreadCount} unread)` : ''}`}
           aria-expanded={isOpen}
           aria-haspopup="menu"
         >
           <Bell className="h-4 w-4" aria-hidden="true" />
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
               data-testid="badge-notification-count"
-              aria-label={`${unreadCount} unread notifications`}
+              aria-label={`${totalUnreadCount} unread notifications`}
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
             </Badge>
           )}
         </Button>
@@ -290,7 +296,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
             >
               <Filter className="h-3 w-3" />
             </Button>
-            {unreadCount > 0 && (
+            {systemUnreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -332,16 +338,94 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
         <Separator />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 m-2 mb-0">
+          <TabsList className="grid w-full grid-cols-3 m-2 mb-0">
             <TabsTrigger value="all" className="text-xs" data-testid="tab-all">
               All
             </TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs" data-testid="tab-chat">
+              Chat {streamChatUnread > 0 && `(${streamChatUnread})`}
+            </TabsTrigger>
             <TabsTrigger value="unread" className="text-xs" data-testid="tab-unread">
-              Unread ({unreadCount})
+              Unread ({systemUnreadCount})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={currentTab} className="mt-2">
+          {/* Chat Tab Content */}
+          <TabsContent value="chat" className="mt-2">
+            <ScrollArea className="max-h-64">
+              {streamChatUnread === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No unread chat messages
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {roomsUnread > 0 && (
+                    <div
+                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all bg-brand-primary-lighter/50"
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = '/dashboard?section=chat';
+                      }}
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        <Users className="h-4 w-4 text-[#236383]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">Team Rooms</p>
+                        <p className="text-xs text-muted-foreground">
+                          {roomsUnread} unread message{roomsUnread !== 1 ? 's' : ''} in team rooms
+                        </p>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">{roomsUnread}</Badge>
+                    </div>
+                  )}
+                  {dmsUnread > 0 && (
+                    <div
+                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all bg-brand-primary-lighter/50"
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = '/dashboard?section=chat';
+                      }}
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        <MessageCircle className="h-4 w-4 text-[#236383]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">Direct Messages</p>
+                        <p className="text-xs text-muted-foreground">
+                          {dmsUnread} unread direct message{dmsUnread !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">{dmsUnread}</Badge>
+                    </div>
+                  )}
+                  {groupsUnread > 0 && (
+                    <div
+                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all bg-brand-primary-lighter/50"
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = '/dashboard?section=chat';
+                      }}
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        <Users className="h-4 w-4 text-[#236383]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">Group Chats</p>
+                        <p className="text-xs text-muted-foreground">
+                          {groupsUnread} unread message{groupsUnread !== 1 ? 's' : ''} in group chats
+                        </p>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">{groupsUnread}</Badge>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          {/* All/Unread Tab Content */}
+          <TabsContent value="all" className="mt-2">
             <ScrollArea className="max-h-64">
               {isLoading ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
@@ -349,7 +433,131 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  {currentTab === 'unread' ? 'No unread notifications' : 'No notifications'}
+                  No notifications
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {notifications.map((notification: Notification, index: number) => (
+                    <div
+                      key={notification.id}
+                      className={cn(
+                        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out",
+                        "animate-in fade-in slide-in-from-right-2",
+                        !notification.isRead && "bg-brand-primary-lighter/50"
+                      )}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                      onClick={() => handleNotificationClick(notification)}
+                      data-testid={`notification-${notification.id}`}
+                      role="menuitem"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getCategoryIcon(notification.category)}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-sm truncate">
+                            {notification.title}
+                          </p>
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {notification.message}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge
+                            className={cn("text-xs", getPriorityBadgeColor(notification.priority))}
+                          >
+                            {notification.priority}
+                          </Badge>
+
+                          {notification.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {notification.category}
+                            </Badge>
+                          )}
+
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+
+                        {notification.actionText && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                            <NotificationActionButton
+                              notificationId={notification.id}
+                              actionType={notification.actionText.toLowerCase().replace(/\s+/g, '_')}
+                              actionText={notification.actionText}
+                              actionUrl={notification.actionUrl}
+                              onSuccess={() => {
+                                // Notification list will auto-refresh via query invalidation
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`button-notification-menu-${notification.id}`}
+                          >
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {!notification.isRead && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAsReadMutation.mutate(notification.id);
+                              }}
+                              data-testid={`button-mark-read-${notification.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark as read
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={(e) => handleArchive(notification, e)}
+                            data-testid={`button-archive-${notification.id}`}
+                          >
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="unread" className="mt-2">
+            <ScrollArea className="max-h-64">
+              {isLoading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Loading notifications...
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No unread notifications
                 </div>
               ) : (
                 <div className="space-y-1">

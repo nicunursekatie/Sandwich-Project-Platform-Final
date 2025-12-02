@@ -1927,66 +1927,122 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-gray-200`}>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onContact}
-            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
-          >
-            Contact Organizer
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-          {canSendSMS && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSendSmsDialog(true)}
-                className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-                data-testid="button-send-sms-card"
-              >
-                <Phone className="w-4 h-4 mr-1" />
-                Send SMS Details
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSendCorrectionDialog(true)}
-                className="border-orange-600 text-orange-600 hover:bg-orange-100"
-                data-testid="button-send-correction-card"
-              >
-                <AlertTriangle className="w-4 h-4 mr-1" />
-                Send Correction
-              </Button>
-            </>
-          )}
-          <Button size="sm" variant="outline" onClick={onReschedule}>
-            Reschedule
-          </Button>
-          <Button size="sm" onClick={onFollowUp}>
-            Follow Up
-          </Button>
+        <TooltipProvider>
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-gray-200`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onContact}
+                  className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
+                >
+                  Contact Organizer
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Contact the event organizer</p>
+              </TooltipContent>
+            </Tooltip>
 
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {canSendSMS && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendSmsDialog(true)}
+                      className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-send-sms-card"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Send SMS Details
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send event details via SMS to organizer</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendCorrectionDialog(true)}
+                      className="border-orange-600 text-orange-600 hover:bg-orange-100"
+                      data-testid="button-send-correction-card"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Send Correction
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send correction SMS to organizer</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onReschedule}>
+                  Reschedule
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reschedule this event</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" onClick={onFollowUp}>
+                  Follow Up
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Follow up with the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Activity History */}
         <div className="border-t border-gray-200 pt-4">
