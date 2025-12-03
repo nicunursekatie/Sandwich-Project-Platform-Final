@@ -150,6 +150,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [mlkDayAsked, setMlkDayAsked] = useState(false);
   const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
   const [showCollaboration, setShowCollaboration] = useState(false);
+  const [showVanConflictDialog, setShowVanConflictDialog] = useState(false);
+  const [vanConflictDetails, setVanConflictDetails] = useState<{
+    conflictingEvents: Array<{ id: number; name: string; time?: string }>;
+    acknowledged: boolean;
+  } | null>(null);
+  const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -452,7 +458,66 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Helper to check if event likely needs van based on user's criteria
+  const eventLikelyNeedsVan = (): boolean => {
+    // Check if van driver is explicitly needed
+    if (formData.vanDriverNeeded && !formData.selfTransport) return true;
+    
+    // Check if sandwich count > 500 (implies van needed)
+    const sandwichCount = sandwichMode === 'total' 
+      ? formData.totalSandwichCount 
+      : sandwichMode === 'range' 
+        ? (formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0)
+        : formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    if (sandwichCount > 500) return true;
+    
+    // Check if "van" is mentioned in notes
+    const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
+    if (notes.includes('van') && !notes.includes('van-approved') && !notes.includes('van approved')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Check for van conflicts before submission
+  const checkVanConflicts = async (): Promise<boolean> => {
+    if (!formData.eventDate || !eventLikelyNeedsVan()) return true; // No check needed
+    
+    try {
+      const response = await fetch(`/api/event-requests/conflicts-for-date?date=${formData.eventDate}`);
+      if (!response.ok) return true; // Allow submission if check fails
+      
+      const data = await response.json();
+      
+      if (data.vanConflicts && data.vanConflicts.length > 0) {
+        // There are van conflicts - show warning dialog
+        const conflictingEvents = data.vanConflicts.flatMap((c: any) => [
+          { id: c.event1?.id, name: c.event1?.organizationName, time: c.event1?.eventStartTime },
+          { id: c.event2?.id, name: c.event2?.organizationName, time: c.event2?.eventStartTime },
+        ]).filter((e: any) => e.id !== eventRequest?.id);
+        
+        // Remove duplicates
+        const uniqueEvents = Array.from(new Map(conflictingEvents.map((e: any) => [e.id, e])).values());
+        
+        if (uniqueEvents.length > 0) {
+          setVanConflictDetails({
+            conflictingEvents: uniqueEvents as Array<{ id: number; name: string; time?: string }>,
+            acknowledged: false,
+          });
+          setShowVanConflictDialog(true);
+          return false; // Block submission until acknowledged
+        }
+      }
+      
+      return true; // No conflicts, proceed
+    } catch (error) {
+      console.error('Error checking van conflicts:', error);
+      return true; // Allow submission if check fails
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Check if event is in MLK Day week and we haven't asked yet
@@ -460,6 +525,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setShowMlkDayDialog(true);
       setMlkDayAsked(true);
       return; // Stop submission until user responds
+    }
+
+    // Check for van conflicts if event needs van and hasn't been checked yet
+    if (eventLikelyNeedsVan() && !vanConflictChecked) {
+      const canProceed = await checkVanConflicts();
+      if (!canProceed) return; // Wait for user to acknowledge
     }
 
     // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
@@ -1018,6 +1089,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   onChange={(e) => {
                     // Always update the display value immediately (no confirmation on keystroke)
                     setFormData(prev => ({ ...prev, eventDate: e.target.value }));
+                    // Reset van conflict check when date changes
+                    setVanConflictChecked(false);
                   }}
                   onBlur={(e) => {
                     const newDate = e.target.value;
@@ -2326,6 +2399,56 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         onSkip={handleMlkDaySkip}
         eventDate={formData.eventDate}
       />
+
+      {/* Van Conflict Warning Dialog */}
+      <AlertDialog open={showVanConflictDialog} onOpenChange={setShowVanConflictDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Van Already Booked
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                The van appears to already be booked for another event on this date:
+              </p>
+              {vanConflictDetails && (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {vanConflictDetails.conflictingEvents.map((event, i) => (
+                    <li key={event.id || i}>
+                      <strong>{event.name}</strong>
+                      {event.time && <span className="text-muted-foreground"> at {event.time}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="font-medium text-amber-700">
+                Please confirm you have verified the van is available for the time you need it.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowVanConflictDialog(false);
+              setVanConflictChecked(false);
+            }}>
+              Go Back & Check
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                setShowVanConflictDialog(false);
+                setVanConflictChecked(true);
+                // Re-trigger submit now that conflict is acknowledged
+                const submitBtn = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+                if (submitBtn) submitBtn.click();
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              I've Verified Van Availability
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

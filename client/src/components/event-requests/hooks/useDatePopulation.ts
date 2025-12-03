@@ -5,8 +5,8 @@ import type { EventRequest } from '@shared/schema';
 export interface DatePopulationInfo {
   totalEvents: number;
   eventsWithDriverNeeds: number;
-  // Warning level: 'none' | 'busy' (gold) | 'critical' (red)
-  warningLevel: 'none' | 'busy' | 'critical';
+  // Warning level: 'none' | 'info' (blue) | 'busy' (gold) | 'critical' (red)
+  warningLevel: 'none' | 'info' | 'busy' | 'critical';
   warningColor: string;
   warningMessage: string;
 }
@@ -108,9 +108,10 @@ export function useDatePopulation() {
 
     // Determine warning level
     // Critical (red #A31C41): 2+ events with driver/van needs on this date (driver scheduling conflict)
-    // Busy (gold #FBAD3F): 2+ total events on this date (but no driver conflict)
-    // None: 0-1 events
-    let warningLevel: 'none' | 'busy' | 'critical' = 'none';
+    // Busy (gold #FBAD3F): 3+ total events on this date (high volume)
+    // Info (blue #007E8C): 1-2 other events on this date (informational)
+    // None: 0 other events
+    let warningLevel: 'none' | 'info' | 'busy' | 'critical' = 'none';
     let warningColor = '';
     let warningMessage = '';
 
@@ -118,10 +119,14 @@ export function useDatePopulation() {
       warningLevel = 'critical';
       warningColor = '#A31C41';
       warningMessage = `${withDriverNeeds} events need drivers on this date`;
-    } else if (total >= 2) {
+    } else if (total >= 3) {
       warningLevel = 'busy';
       warningColor = '#FBAD3F';
-      warningMessage = `${total} events scheduled for this date`;
+      warningMessage = `${total} events scheduled for this date - high volume day`;
+    } else if (total >= 1) {
+      warningLevel = 'info';
+      warningColor = '#007E8C';
+      warningMessage = `${total} other event${total > 1 ? 's' : ''} on this date`;
     }
 
     return {
