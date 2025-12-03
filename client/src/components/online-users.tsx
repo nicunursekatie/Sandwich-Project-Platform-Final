@@ -1,14 +1,14 @@
-import React from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Users } from 'lucide-react';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
+import { Users, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface OnlineUser {
   id: string;
@@ -58,6 +58,8 @@ function getTimeAgo(lastActiveAt: string | null): string {
 }
 
 export function OnlineUsers() {
+  const [isOpen, setIsOpen] = useState(false);
+
   const { data: onlineUsers = [], isLoading } = useQuery<OnlineUser[]>({
     queryKey: ['/api/users/online'],
     queryFn: async () => {
@@ -70,8 +72,8 @@ export function OnlineUsers() {
   const count = onlineUsers.length;
 
   return (
-    <HoverCard openDelay={200} closeDelay={100}>
-      <HoverCardTrigger asChild>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
         <button
           className="p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] text-teal-600 hover:bg-teal-50 hover:text-teal-800 flex items-center gap-1"
           title={`${count} user${count !== 1 ? 's' : ''} online`}
@@ -87,20 +89,28 @@ export function OnlineUsers() {
             </Badge>
           )}
         </button>
-      </HoverCardTrigger>
-      <HoverCardContent
+      </PopoverTrigger>
+      <PopoverContent
         className="w-72 p-0"
         align="end"
         sideOffset={8}
       >
-        <div className="p-3 border-b bg-gradient-to-r from-teal-50 to-cyan-50">
-          <h4 className="font-semibold text-teal-800 flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            Online Now
-          </h4>
-          <p className="text-xs text-teal-600 mt-0.5">
-            {count} team member{count !== 1 ? 's' : ''} active
-          </p>
+        <div className="p-3 border-b bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between">
+          <div>
+            <h4 className="font-semibold text-teal-800 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              Online Now
+            </h4>
+            <p className="text-xs text-teal-600 mt-0.5">
+              {count} team member{count !== 1 ? 's' : ''} active
+            </p>
+          </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-1 rounded hover:bg-teal-100 text-teal-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
         <div className="max-h-64 overflow-y-auto">
           {isLoading ? (
@@ -140,8 +150,8 @@ export function OnlineUsers() {
             </ul>
           )}
         </div>
-      </HoverCardContent>
-    </HoverCard>
+      </PopoverContent>
+    </Popover>
   );
 }
 
