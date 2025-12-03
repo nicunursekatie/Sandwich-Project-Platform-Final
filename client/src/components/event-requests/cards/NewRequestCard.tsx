@@ -311,24 +311,35 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <span className="text-[#007E8C] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
                   </span>
-                  {/* Date Population Badge */}
-                  {datePopulationInfo && datePopulationInfo.warningLevel !== 'none' && (
+                  {/* Date Population Badges */}
+                  {datePopulationInfo && datePopulationInfo.isOpen && (
                     <Badge
                       className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
-                      style={{ backgroundColor: datePopulationInfo.warningColor }}
-                      title={datePopulationInfo.warningMessage}
+                      style={{ backgroundColor: '#47B3CB' }}
+                      title="No other events scheduled or in process on this date"
                     >
-                      {datePopulationInfo.warningLevel === 'open' ? (
-                        <>
-                          <CalendarCheck className="w-3 h-3" />
-                          Open date
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle className="w-3 h-3" />
-                          {datePopulationInfo.totalEvents} events
-                        </>
-                      )}
+                      <CalendarCheck className="w-3 h-3" />
+                      Open date
+                    </Badge>
+                  )}
+                  {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: '#FBAD3F' }}
+                      title={`${datePopulationInfo.scheduledCount} scheduled event${datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date`}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      {datePopulationInfo.scheduledCount} scheduled
+                    </Badge>
+                  )}
+                  {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: '#007E8C' }}
+                      title={`${datePopulationInfo.inProcessCount} in-process event${datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date`}
+                    >
+                      <Calendar className="w-3 h-3" />
+                      {datePopulationInfo.inProcessCount} in process
                     </Badge>
                   )}
                   {canEdit && startEditing && (

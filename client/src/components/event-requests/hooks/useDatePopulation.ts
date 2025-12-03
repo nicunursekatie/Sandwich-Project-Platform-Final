@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 
 export interface DatePopulationInfo {
-  totalEvents: number;
-  // Warning level: 'none' | 'open' (teal - good!) | 'busy' (gold)
-  warningLevel: 'none' | 'open' | 'busy';
-  warningColor: string;
-  warningMessage: string;
+  scheduledCount: number;
+  inProcessCount: number;
+  // Whether there are no scheduled or in-process events (open date)
+  isOpen: boolean;
 }
 
 // Normalize date to YYYY-MM-DD string for comparison
@@ -19,22 +18,28 @@ const normalizeDate = (dateInput: string | Date | null | undefined): string | nu
   return match ? match[1] : null;
 };
 
+interface DateCounts {
+  scheduled: number;
+  inProcess: number;
+}
+
 /**
  * Hook to get date population information for event cards
  * Returns a function to check any date's population
+ * Only counts scheduled and in_process events (ignores new requests)
  */
 export function useDatePopulation() {
   const { eventRequests } = useEventRequestContext();
 
   // Pre-compute date population map for efficiency
   const datePopulationMap = useMemo(() => {
-    const map = new Map<string, number>();
-
-    // Only count active events (not completed, declined, cancelled, or postponed)
-    const activeStatuses = ['new', 'in_process', 'scheduled'];
+    const map = new Map<string, DateCounts>();
 
     for (const event of eventRequests) {
-      if (!activeStatuses.includes(event.status || '')) continue;
+      const status = event.status || '';
+
+      // Only count scheduled and in_process events
+      if (status !== 'scheduled' && status !== 'in_process') continue;
 
       // Use scheduledEventDate if available, otherwise desiredEventDate
       const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -42,8 +47,15 @@ export function useDatePopulation() {
 
       if (!normalizedDate) continue;
 
-      const current = map.get(normalizedDate) || 0;
-      map.set(normalizedDate, current + 1);
+      const current = map.get(normalizedDate) || { scheduled: 0, inProcess: 0 };
+
+      if (status === 'scheduled') {
+        current.scheduled += 1;
+      } else if (status === 'in_process') {
+        current.inProcess += 1;
+      }
+
+      map.set(normalizedDate, current);
     }
 
     return map;
@@ -62,15 +74,17 @@ export function useDatePopulation() {
 
     if (!normalizedDate) {
       return {
-        totalEvents: 0,
-        warningLevel: 'none',
-        warningColor: '',
-        warningMessage: '',
+        scheduledCount: 0,
+        inProcessCount: 0,
+        isOpen: true,
       };
     }
 
-    // Get base count from the map
-    let total = datePopulationMap.get(normalizedDate) || 0;
+    // Get base counts from the map
+    let { scheduled, inProcess } = datePopulationMap.get(normalizedDate) || {
+      scheduled: 0,
+      inProcess: 0,
+    };
 
     // If excluding an event (e.g., don't count the current event when showing its own warning)
     if (excludeEventId) {
@@ -80,34 +94,19 @@ export function useDatePopulation() {
           excludedEvent.scheduledEventDate || excludedEvent.desiredEventDate
         );
         if (excludedDate === normalizedDate) {
-          total = Math.max(0, total - 1);
+          if (excludedEvent.status === 'scheduled') {
+            scheduled = Math.max(0, scheduled - 1);
+          } else if (excludedEvent.status === 'in_process') {
+            inProcess = Math.max(0, inProcess - 1);
+          }
         }
       }
     }
 
-    // Determine warning level
-    // Open (teal #47B3CB): 0 other events on this date - good, prioritize filling gaps!
-    // Busy (gold #FBAD3F): 2+ other events on this date - busy day warning
-    // None: 1 other event - neutral
-    let warningLevel: 'none' | 'open' | 'busy' = 'none';
-    let warningColor = '';
-    let warningMessage = '';
-
-    if (total === 0) {
-      warningLevel = 'open';
-      warningColor = '#47B3CB';
-      warningMessage = 'Open date - no other events scheduled';
-    } else if (total >= 2) {
-      warningLevel = 'busy';
-      warningColor = '#FBAD3F';
-      warningMessage = `${total} other events on this date`;
-    }
-
     return {
-      totalEvents: total,
-      warningLevel,
-      warningColor,
-      warningMessage,
+      scheduledCount: scheduled,
+      inProcessCount: inProcess,
+      isOpen: scheduled === 0 && inProcess === 0,
     };
   };
 
