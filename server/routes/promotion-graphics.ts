@@ -494,6 +494,18 @@ async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
       targetAudience: graphic.targetAudience
     });
 
+    // Generate a signed URL for the image so it can be viewed in emails
+    // The signed URL is valid for 7 days (604800 seconds)
+    let imageUrlForEmail = graphic.imageUrl;
+    if (graphic.imageUrl && graphic.fileType?.startsWith('image/')) {
+      try {
+        imageUrlForEmail = await objectStorageService.getSignedViewUrl(graphic.imageUrl, 604800);
+        logger.info('Generated signed URL for email image', { graphicId: graphic.id });
+      } catch (urlError) {
+        logger.error('Failed to generate signed URL for email, using original URL', { error: urlError });
+      }
+    }
+
     // Determine which users to notify based on target audience
     let targetUsers: any[] = [];
 
@@ -587,7 +599,7 @@ Thank you for helping us spread the word about our mission!`,
                 <h3 style="margin-top: 0; color: #007E8C;">${graphic.title}</h3>
                 ${graphic.fileType?.startsWith('image/') ? `
                   <div style="text-align: center; margin: 15px 0;">
-                    <img src="${graphic.imageUrl}" alt="${graphic.title}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                    <img src="${imageUrlForEmail}" alt="${graphic.title}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
                   </div>
                 ` : ''}
                 <p style="color: #333;"><strong>Description:</strong> ${graphic.description}</p>

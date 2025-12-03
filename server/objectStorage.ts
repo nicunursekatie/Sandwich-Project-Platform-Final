@@ -181,6 +181,39 @@ export class ObjectStorageService {
       throw new Error('Failed to upload file to object storage');
     }
   }
+
+  // Get a signed URL for viewing a file (for use in emails, etc.)
+  async getSignedViewUrl(storageUrl: string, ttlSeconds: number = 604800): Promise<string> {
+    try {
+      // Parse the storage URL to extract bucket and object name
+      // URL format: https://storage.googleapis.com/bucket-name/object-path
+      const url = new URL(storageUrl);
+      const pathParts = url.pathname.split('/').filter(p => p.length > 0);
+      
+      if (pathParts.length < 2) {
+        throw new Error('Invalid storage URL format');
+      }
+      
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join('/');
+      
+      logger.info('Generating signed URL for email', { bucketName, objectName, ttlSeconds });
+      
+      // Generate a signed URL that's valid for the specified TTL (default 7 days)
+      const signedUrl = await signObjectURL({
+        bucketName,
+        objectName,
+        method: 'GET',
+        ttlSec: ttlSeconds,
+      });
+      
+      return signedUrl;
+    } catch (error) {
+      logger.error('Error generating signed URL', { error, storageUrl });
+      // Return the original URL as fallback (may not work for private buckets)
+      return storageUrl;
+    }
+  }
 }
 
 // Export a singleton instance for convenience
