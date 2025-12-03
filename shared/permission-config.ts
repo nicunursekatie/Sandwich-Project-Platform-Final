@@ -389,6 +389,7 @@ export function getPermissionLabel(permission: string): string {
   // Custom labels for specific permissions
   const customLabels: Record<string, string> = {
     [PERMISSIONS.NAV_IMPORTANT_LINKS]: 'Nav Quick Tools',
+    [PERMISSIONS.NAV_PROMOTION]: 'Nav Social Media Graphics',
   };
 
   // Return custom label if exists
