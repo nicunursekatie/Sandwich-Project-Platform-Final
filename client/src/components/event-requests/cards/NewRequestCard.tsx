@@ -346,7 +346,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words min-w-0"
+                className="text-[#236383] hover:text-[#1a4a63] underline text-base break-words min-w-0"
               >
                 {request.eventAddress}
               </a>
