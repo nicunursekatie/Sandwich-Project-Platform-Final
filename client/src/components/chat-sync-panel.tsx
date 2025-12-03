@@ -153,6 +153,12 @@ export function ChatSyncPanel() {
 
             {syncResult.success && syncResult.summary ? (
               <div className="space-y-4">
+                {/* Refresh notice */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800 font-medium">
+                    Refresh the Team Chat page to see the updated member counts.
+                  </p>
+                </div>
                 {/* Summary Stats */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">

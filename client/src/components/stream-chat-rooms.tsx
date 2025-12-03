@@ -377,18 +377,19 @@ export default function StreamChatRooms() {
           for (const room of accessibleRooms) {
             const channel = channels.find(c => c.id === room.id);
             if (channel) {
-              const memberCount = Object.keys(channel.state?.members || {}).length;
+              // Use channel.data.member_count for accurate server-side count
+              const memberCount = (channel.data?.member_count as number) || Object.keys(channel.state?.members || {}).length;
               roomChannelsMap.set(room.id, {
                 ...room,
                 memberCount,
                 channel
               });
-              logger.log(`Channel ${room.id} has ${memberCount} members`);
+              logger.log(`Channel ${room.id} has ${memberCount} members (data.member_count: ${channel.data?.member_count})`);
             } else {
               // Channel doesn't exist yet, just watch it
               const newChannel = chatClient.channel('team', room.id);
               await newChannel.watch();
-              const memberCount = Object.keys(newChannel.state?.members || {}).length;
+              const memberCount = (newChannel.data?.member_count as number) || Object.keys(newChannel.state?.members || {}).length;
               roomChannelsMap.set(room.id, {
                 ...room,
                 memberCount,
@@ -403,7 +404,7 @@ export default function StreamChatRooms() {
             try {
               const channel = chatClient.channel('team', room.id);
               await channel.watch();
-              const memberCount = Object.keys(channel.state?.members || {}).length;
+              const memberCount = (channel.data?.member_count as number) || Object.keys(channel.state?.members || {}).length;
               roomChannelsMap.set(room.id, {
                 ...room,
                 memberCount,
