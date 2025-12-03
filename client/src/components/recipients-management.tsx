@@ -494,6 +494,10 @@ export default function RecipientsManagement() {
     // Convert data types to match schema expectations
     const submissionData = {
       ...newRecipient,
+      // Ensure website has protocol
+      website: newRecipient.website && !newRecipient.website.startsWith('http://') && !newRecipient.website.startsWith('https://')
+        ? `https://${newRecipient.website}`
+        : newRecipient.website,
       // Convert estimatedSandwiches from string to number (or null if empty)
       estimatedSandwiches: newRecipient.estimatedSandwiches
         ? parseInt(newRecipient.estimatedSandwiches, 10)
@@ -2517,7 +2521,11 @@ export default function RecipientsManagement() {
                       />
                     </svg>
                     <a
-                      href={(recipient as any).website}
+                      href={
+                        (recipient as any).website.startsWith('http://') || (recipient as any).website.startsWith('https://')
+                          ? (recipient as any).website
+                          : `https://${(recipient as any).website}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-brand-primary underline"
