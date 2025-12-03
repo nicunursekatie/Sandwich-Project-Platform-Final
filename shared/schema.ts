@@ -953,8 +953,8 @@ export const recipients = pgTable('recipients', {
   winterNeeds: text('winter_needs'), // Winter/holiday-specific needs
 
   // Communication preferences
-  preferredContactMethod: text('preferred_contact_method'), // 'email', 'sms', 'phone_call' - their preferred method
-  allowedContactMethods: jsonb('allowed_contact_methods').$type<string[]>().default(['email', 'phone_call']), // Methods they consent to receive
+  preferredContactMethods: jsonb('preferred_contact_methods').$type<string[]>().default([]), // 'text', 'email', 'call', 'whatsapp', 'facebook' - their preferred methods (can select multiple)
+  allowedContactMethods: jsonb('allowed_contact_methods').$type<string[]>().default(['text', 'email']), // Methods they consent to receive
   doNotContact: boolean('do_not_contact').notNull().default(false), // Opt-out of all contact
   contactMethodNotes: text('contact_method_notes'), // Special instructions for contacting (e.g., "Only call before 2pm")
 

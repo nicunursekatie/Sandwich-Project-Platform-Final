@@ -170,7 +170,7 @@ export default function RecipientsManagement() {
     summerNeeds: '',
     winterNeeds: '',
     // Communication Preferences fields
-    preferredContactMethod: '',
+    preferredContactMethods: [] as string[],
     allowedContactMethods: [] as string[],
     doNotContact: false,
     contactMethodNotes: '',
@@ -394,7 +394,7 @@ export default function RecipientsManagement() {
         summerNeeds: '',
         winterNeeds: '',
         // Reset Communication Preferences fields
-        preferredContactMethod: '',
+        preferredContactMethods: [],
         allowedContactMethods: [],
         doNotContact: false,
         contactMethodNotes: '',
@@ -535,9 +535,20 @@ export default function RecipientsManagement() {
       focusAreas = [(recipient as any).focusArea];
     }
 
+    // Normalize preferredContactMethods - handle migration from old single preferredContactMethod
+    let preferredContactMethods: string[] = [];
+    if (Array.isArray((recipient as any).preferredContactMethods) && (recipient as any).preferredContactMethods.length > 0) {
+      preferredContactMethods = (recipient as any).preferredContactMethods;
+    } else if ((recipient as any).preferredContactMethod && typeof (recipient as any).preferredContactMethod === 'string') {
+      // Migrate old single preferredContactMethod to array
+      preferredContactMethods = [(recipient as any).preferredContactMethod];
+    }
+
     const normalizedRecipient = {
       ...recipient,
       focusAreas,
+      // Normalize preferredContactMethods
+      preferredContactMethods,
       // Normalize allowedContactMethods - default to text and email if not set
       allowedContactMethods: Array.isArray((recipient as any).allowedContactMethods) 
         ? (recipient as any).allowedContactMethods 
@@ -1836,29 +1847,81 @@ export default function RecipientsManagement() {
                         <CollapsibleContent className="mt-3">
                           <div className="space-y-3">
                             <div>
-                              <Label htmlFor="preferredContactMethod">
-                                Preferred contact method
+                              <Label className="text-sm font-medium mb-2 block">
+                                Preferred contact methods
                               </Label>
-                              <Select
-                                value={newRecipient.preferredContactMethod}
-                                onValueChange={(value) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    preferredContactMethod: value,
-                                  })
-                                }
-                              >
-                                <SelectTrigger data-testid="select-preferred-contact-method">
-                                  <SelectValue placeholder="Select method" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="text">Text</SelectItem>
-                                  <SelectItem value="email">Email</SelectItem>
-                                  <SelectItem value="call">Call</SelectItem>
-                                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                                  <SelectItem value="facebook">Facebook</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <div className="flex flex-wrap gap-4">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="preferText"
+                                    checked={newRecipient.preferredContactMethods.includes('text')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.preferredContactMethods, 'text']
+                                        : newRecipient.preferredContactMethods.filter(m => m !== 'text');
+                                      setNewRecipient({ ...newRecipient, preferredContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-prefer-text"
+                                  />
+                                  <Label htmlFor="preferText" className="text-sm">Text</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="preferEmail"
+                                    checked={newRecipient.preferredContactMethods.includes('email')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.preferredContactMethods, 'email']
+                                        : newRecipient.preferredContactMethods.filter(m => m !== 'email');
+                                      setNewRecipient({ ...newRecipient, preferredContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-prefer-email"
+                                  />
+                                  <Label htmlFor="preferEmail" className="text-sm">Email</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="preferCall"
+                                    checked={newRecipient.preferredContactMethods.includes('call')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.preferredContactMethods, 'call']
+                                        : newRecipient.preferredContactMethods.filter(m => m !== 'call');
+                                      setNewRecipient({ ...newRecipient, preferredContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-prefer-call"
+                                  />
+                                  <Label htmlFor="preferCall" className="text-sm">Call</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="preferWhatsapp"
+                                    checked={newRecipient.preferredContactMethods.includes('whatsapp')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.preferredContactMethods, 'whatsapp']
+                                        : newRecipient.preferredContactMethods.filter(m => m !== 'whatsapp');
+                                      setNewRecipient({ ...newRecipient, preferredContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-prefer-whatsapp"
+                                  />
+                                  <Label htmlFor="preferWhatsapp" className="text-sm">WhatsApp</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="preferFacebook"
+                                    checked={newRecipient.preferredContactMethods.includes('facebook')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.preferredContactMethods, 'facebook']
+                                        : newRecipient.preferredContactMethods.filter(m => m !== 'facebook');
+                                      setNewRecipient({ ...newRecipient, preferredContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-prefer-facebook"
+                                  />
+                                  <Label htmlFor="preferFacebook" className="text-sm">Facebook</Label>
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <Label className="text-sm font-medium mb-2 block">
@@ -3900,29 +3963,86 @@ export default function RecipientsManagement() {
                   <CollapsibleContent className="mt-3">
                     <div className="space-y-3">
                       <div>
-                        <Label htmlFor="edit-preferredContactMethod">
-                          Preferred contact method
+                        <Label className="text-sm font-medium mb-2 block">
+                          Preferred contact methods
                         </Label>
-                        <Select
-                          value={(editingRecipient as any).preferredContactMethod || ''}
-                          onValueChange={(value) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              preferredContactMethod: value,
-                            })
-                          }
-                        >
-                          <SelectTrigger data-testid="select-edit-preferred-contact-method">
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Text</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="call">Call</SelectItem>
-                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                            <SelectItem value="facebook">Facebook</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-preferText"
+                              checked={((editingRecipient as any).preferredContactMethods || []).includes('text')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).preferredContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'text']
+                                  : methods.filter((m: string) => m !== 'text');
+                                setEditingRecipient({ ...editingRecipient, preferredContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-prefer-text"
+                            />
+                            <Label htmlFor="edit-preferText" className="text-sm">Text</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-preferEmail"
+                              checked={((editingRecipient as any).preferredContactMethods || []).includes('email')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).preferredContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'email']
+                                  : methods.filter((m: string) => m !== 'email');
+                                setEditingRecipient({ ...editingRecipient, preferredContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-prefer-email"
+                            />
+                            <Label htmlFor="edit-preferEmail" className="text-sm">Email</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-preferCall"
+                              checked={((editingRecipient as any).preferredContactMethods || []).includes('call')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).preferredContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'call']
+                                  : methods.filter((m: string) => m !== 'call');
+                                setEditingRecipient({ ...editingRecipient, preferredContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-prefer-call"
+                            />
+                            <Label htmlFor="edit-preferCall" className="text-sm">Call</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-preferWhatsapp"
+                              checked={((editingRecipient as any).preferredContactMethods || []).includes('whatsapp')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).preferredContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'whatsapp']
+                                  : methods.filter((m: string) => m !== 'whatsapp');
+                                setEditingRecipient({ ...editingRecipient, preferredContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-prefer-whatsapp"
+                            />
+                            <Label htmlFor="edit-preferWhatsapp" className="text-sm">WhatsApp</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-preferFacebook"
+                              checked={((editingRecipient as any).preferredContactMethods || []).includes('facebook')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).preferredContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'facebook']
+                                  : methods.filter((m: string) => m !== 'facebook');
+                                setEditingRecipient({ ...editingRecipient, preferredContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-prefer-facebook"
+                            />
+                            <Label htmlFor="edit-preferFacebook" className="text-sm">Facebook</Label>
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <Label className="text-sm font-medium mb-2 block">
