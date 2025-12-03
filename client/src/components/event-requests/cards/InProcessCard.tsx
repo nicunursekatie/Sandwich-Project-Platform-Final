@@ -322,6 +322,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               Needs follow-up
             </Badge>
           )}
+          {/* Past Date Warning Badge */}
+          {isPast && (
+            <Badge
+              className="bg-[#A31C41] text-white px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap"
+            >
+              <Clock className="w-3 h-3 mr-1" />
+              Date Passed
+            </Badge>
+          )}
 
           {/* Validation badges for missing intake info */}
           {(() => {

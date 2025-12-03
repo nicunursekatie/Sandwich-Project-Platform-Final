@@ -521,6 +521,140 @@ async function sendVolunteerReminders(): Promise<{
 }
 
 /**
+ * Notify TSP contacts about in-process events whose date has passed
+ * Runs daily to alert TSP contacts that they need to follow up
+ */
+export async function notifyPastDateInProcessEvents(): Promise<{
+  notificationsSent: number;
+  eventsProcessed: number;
+  errors: number;
+  timestamp: Date;
+}> {
+  const now = new Date();
+  let notificationsSent = 0;
+  let eventsProcessed = 0;
+  let errors = 0;
+
+  try {
+    // Get the start of today (midnight) to compare against event dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find all in-process events where the date has passed and notification hasn't been sent
+    const pastDateEvents = await db
+      .select()
+      .from(eventRequests)
+      .where(
+        and(
+          eq(eventRequests.status, 'in_process'),
+          isNull(eventRequests.pastDateNotificationSentAt),
+          or(
+            // Check scheduled date if set, otherwise check desired date
+            sql`${eventRequests.scheduledEventDate} IS NOT NULL AND ${eventRequests.scheduledEventDate} < ${today}`,
+            sql`${eventRequests.scheduledEventDate} IS NULL AND ${eventRequests.desiredEventDate} IS NOT NULL AND ${eventRequests.desiredEventDate} < ${today}`
+          )
+        )
+      );
+
+    cronLogger.info(`Found ${pastDateEvents.length} in-process events with passed dates to notify`);
+
+    for (const event of pastDateEvents) {
+      eventsProcessed++;
+
+      try {
+        // Get the TSP contact(s) to notify
+        const tspContactIds: string[] = [];
+
+        if (event.tspContact) tspContactIds.push(event.tspContact);
+        if (event.tspContactAssigned) tspContactIds.push(event.tspContactAssigned);
+
+        // Parse additional TSP contacts
+        if (event.additionalTspContacts) {
+          try {
+            const additional = typeof event.additionalTspContacts === 'string'
+              ? JSON.parse(event.additionalTspContacts)
+              : event.additionalTspContacts;
+
+            if (Array.isArray(additional)) {
+              tspContactIds.push(...additional);
+            }
+          } catch (e) {
+            // If parsing fails, skip additional contacts
+          }
+        }
+
+        // Add additionalContact1 and additionalContact2 if set
+        if (event.additionalContact1) tspContactIds.push(event.additionalContact1);
+        if (event.additionalContact2) tspContactIds.push(event.additionalContact2);
+
+        // Get unique contact IDs
+        const uniqueContactIds = [...new Set(tspContactIds)];
+
+        if (uniqueContactIds.length === 0) {
+          cronLogger.warn(`No TSP contacts found for event ${event.id} (${event.organizationName})`);
+          continue;
+        }
+
+        // Determine which date to use
+        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+
+        // Send notification to each TSP contact
+        for (const contactId of uniqueContactIds) {
+          try {
+            const [contact] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, contactId))
+              .limit(1);
+
+            if (!contact || !contact.email) continue;
+
+            const contactName = contact.displayName || contact.firstName || 'TSP Contact';
+            const contactEmail = contact.preferredEmail || contact.email;
+
+            const sent = await EmailNotificationService.sendPastDateNotification(
+              contactEmail,
+              contactName,
+              event.id,
+              event.organizationName || 'Unknown Organization',
+              eventDate!
+            );
+
+            if (sent) {
+              notificationsSent++;
+              cronLogger.info(`Past date notification sent to ${contactEmail} for event ${event.id}`);
+            }
+          } catch (error) {
+            errors++;
+            cronLogger.error(`Error sending past date notification to contact ${contactId}:`, error);
+          }
+        }
+
+        // Mark the notification as sent for this event
+        await db
+          .update(eventRequests)
+          .set({ pastDateNotificationSentAt: new Date() })
+          .where(eq(eventRequests.id, event.id));
+
+      } catch (error) {
+        errors++;
+        cronLogger.error(`Error processing past date notification for event ${event.id}:`, error);
+      }
+    }
+  } catch (error) {
+    cronLogger.error('Error in notifyPastDateInProcessEvents:', error);
+    throw error;
+  }
+
+  return {
+    notificationsSent,
+    eventsProcessed,
+    errors,
+    timestamp: now,
+  };
+}
+
+/**
  * Auto-complete scheduled events whose event date has passed
  * Runs nightly to move events from "scheduled" to "completed" status
  * Exported so it can be called manually if needed
@@ -775,12 +909,45 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Past date in-process notification job - runs daily at 9:30 AM
+  // Notifies TSP contacts about in-process events whose date has passed
+  // Cron format: minute hour day-of-month month day-of-week
+  // '30 9 * * *' = At 9:30 AM every day
+  const pastDateNotificationJob = cron.schedule('30 9 * * *', async () => {
+    cronLogger.info('Running past date notification check for in-process events...');
+    try {
+      const result = await notifyPastDateInProcessEvents();
+      cronLogger.info('Past date notification job completed', {
+        notificationsSent: result.notificationsSent,
+        eventsProcessed: result.eventsProcessed,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running past date notification cron job',
+        undefined,
+        { jobType: 'past-date-notification' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Past date notification job scheduled successfully', {
+    schedule: 'Daily at 9:30 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
     volunteerReminderJob,
     impactReportJob,
     autoCompleteJob,
+    pastDateNotificationJob,
   };
 }
 
@@ -793,5 +960,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.volunteerReminderJob.stop();
   jobs.impactReportJob.stop();
   jobs.autoCompleteJob.stop();
+  jobs.pastDateNotificationJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

@@ -2064,6 +2064,9 @@ export const eventRequests = pgTable(
       createdByName?: string;
     }>>(), // Structured log of all contact attempts with metadata for editing/deleting
 
+    // Past date notification tracking for in-process events
+    pastDateNotificationSentAt: timestamp('past_date_notification_sent_at'), // When TSP contact was notified about passed event date
+
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
     externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention

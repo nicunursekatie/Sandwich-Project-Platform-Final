@@ -43,6 +43,13 @@
       "when": 1764704716867,
       "tag": "0005_add_recipient_tracking_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1764784754906,
+      "tag": "0006_add_past_date_notification",
+      "breakpoints": true
     }
   ]
 }

@@ -1063,4 +1063,129 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       throw error;
     }
   }
+
+  /**
+   * Send notification to TSP contact when an in-process event's date has passed
+   */
+  static async sendPastDateNotification(
+    tspContactEmail: string,
+    tspContactName: string,
+    eventId: number,
+    organizationName: string,
+    eventDate: Date | string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping past date notification');
+      return false;
+    }
+
+    try {
+      // Format event date
+      const eventDateTime = new Date(eventDate);
+      const formattedDate = eventDateTime.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Calculate how many days ago
+      const now = new Date();
+      const diffTime = now.getTime() - eventDateTime.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const daysAgoText = diffDays === 1 ? 'yesterday' : `${diffDays} days ago`;
+
+      // Generate event URL
+      const eventUrl = this.getEventUrl(eventId);
+
+      const msg = {
+        to: tspContactEmail,
+        from: 'katie@thesandwichproject.org',
+        subject: `Action Required: Event date passed for ${organizationName} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #A31C41; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .alert-box { background-color: #FEE2E2; border: 1px solid #EF4444; padding: 15px; border-radius: 6px; margin: 15px 0; }
+              .event-details { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #A31C41; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+              .actions { background-color: #F0FDF4; padding: 15px; border-radius: 6px; margin: 15px 0; }
+              .actions ul { margin: 10px 0; padding-left: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Event Date Has Passed</h1>
+              </div>
+              <div class="content">
+                <p>Hello ${tspContactName},</p>
+
+                <div class="alert-box">
+                  <strong>This event's requested date has passed and requires your attention.</strong>
+                </div>
+
+                <div class="event-details">
+                  <strong>Organization:</strong> ${organizationName}<br>
+                  <strong>Requested Date:</strong> ${formattedDate} (${daysAgoText})<br>
+                  <strong>Status:</strong> Still In Process
+                </div>
+
+                <div class="actions">
+                  <strong>📋 Please take one of the following actions:</strong>
+                  <ul>
+                    <li><strong>Reschedule:</strong> Contact the organization to set a new event date</li>
+                    <li><strong>Postpone:</strong> Mark as postponed if they need more time</li>
+                    <li><strong>Decline:</strong> Mark as declined if the event is no longer happening</li>
+                  </ul>
+                </div>
+
+                <p>Click the button below to review the event and update its status:</p>
+                <a href="${eventUrl}" class="btn">Review Event</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+Hello ${tspContactName},
+
+⚠️ EVENT DATE HAS PASSED - ACTION REQUIRED
+
+This event's requested date has passed and requires your attention:
+
+Organization: ${organizationName}
+Requested Date: ${formattedDate} (${daysAgoText})
+Status: Still In Process
+
+Please take one of the following actions:
+• Reschedule: Contact the organization to set a new event date
+• Postpone: Mark as postponed if they need more time
+• Decline: Mark as declined if the event is no longer happening
+
+Review event: ${eventUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+        `.trim(),
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Past date notification sent to ${tspContactEmail} for event ${eventId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending past date notification:', error);
+      return false;
+    }
+  }
 }
