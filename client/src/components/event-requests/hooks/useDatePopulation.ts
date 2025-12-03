@@ -21,12 +21,12 @@ const normalizeDate = (dateInput: string | Date | null | undefined): string | nu
   return match ? match[1] : null;
 };
 
-// Check if an event has driver needs (driversNeeded > 0 and not self-transport)
+// Check if an event has driver needs (driversNeeded > 0 OR vanDriverNeeded, and not self-transport)
 const hasDriverNeeds = (event: EventRequest): boolean => {
   // If self-transport is true, they don't need TSP drivers
   if (event.selfTransport) return false;
-  // Check if driversNeeded is set and > 0
-  return (event.driversNeeded ?? 0) > 0;
+  // Check if driversNeeded > 0 OR vanDriverNeeded is true
+  return (event.driversNeeded ?? 0) > 0 || event.vanDriverNeeded === true;
 };
 
 /**
@@ -107,14 +107,14 @@ export function useDatePopulation() {
     }
 
     // Determine warning level
-    // Critical (red #A31C41): 3+ events with driver needs on this date
-    // Busy (gold #FBAD3F): 2+ total events on this date
+    // Critical (red #A31C41): 2+ events with driver/van needs on this date (driver scheduling conflict)
+    // Busy (gold #FBAD3F): 2+ total events on this date (but no driver conflict)
     // None: 0-1 events
     let warningLevel: 'none' | 'busy' | 'critical' = 'none';
     let warningColor = '';
     let warningMessage = '';
 
-    if (withDriverNeeds >= 3) {
+    if (withDriverNeeds >= 2) {
       warningLevel = 'critical';
       warningColor = '#A31C41';
       warningMessage = `${withDriverNeeds} events need drivers on this date`;
