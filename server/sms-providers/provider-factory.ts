@@ -127,36 +127,36 @@ export class SMSProviderFactory {
         timeout: parseInt(process.env.PHONE_GATEWAY_TIMEOUT || '30000', 10)
       };
     } else if (provider === 'twilio') {
-      // Priority 1: Check if manual environment variables are set (Auth Token authentication)
-      // This takes priority over Replit integration for flexibility
-      const hasManualCredentials = 
-        process.env.TWILIO_ACCOUNT_SID && 
-        process.env.TWILIO_AUTH_TOKEN && 
-        process.env.TWILIO_PHONE_NUMBER;
+      // Priority 1: Check if Replit Twilio integration is connected (API Key authentication)
+      // This is preferred as it uses secure API key auth and is managed by Replit
+      const isReplitConnected = await isTwilioConnected();
 
-      if (hasManualCredentials) {
-        logger.log('📝 Using manual Twilio environment variables (Auth Token authentication)');
+      if (isReplitConnected) {
+        logger.log('🔗 Using Replit Twilio integration (API Key authentication)');
         config.twilio = {
-          accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-          authToken: process.env.TWILIO_AUTH_TOKEN || '',
-          phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
-          useReplitIntegration: false
+          accountSid: '', // Will be loaded from Replit integration
+          authToken: '',  // Will be loaded from Replit integration
+          phoneNumber: '', // Will be loaded from Replit integration
+          useReplitIntegration: true
         };
       } else {
-        // Priority 2: Check if Replit Twilio integration is connected (API Key authentication)
-        const isReplitConnected = await isTwilioConnected();
+        // Priority 2: Fallback to manual environment variables (Auth Token authentication)
+        const hasManualCredentials = 
+          process.env.TWILIO_ACCOUNT_SID && 
+          process.env.TWILIO_AUTH_TOKEN && 
+          process.env.TWILIO_PHONE_NUMBER;
 
-        if (isReplitConnected) {
-          logger.log('🔗 Using Replit Twilio integration (API Key authentication)');
+        if (hasManualCredentials) {
+          logger.log('📝 Using manual Twilio environment variables (Auth Token authentication)');
           config.twilio = {
-            accountSid: '', // Will be loaded from Replit integration
-            authToken: '',  // Will be loaded from Replit integration
-            phoneNumber: '', // Will be loaded from Replit integration
-            useReplitIntegration: true
+            accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+            authToken: process.env.TWILIO_AUTH_TOKEN || '',
+            phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+            useReplitIntegration: false
           };
         } else {
           // No credentials available
-          logger.log('⚠️ No Twilio credentials found (set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)');
+          logger.log('⚠️ No Twilio credentials found (configure Replit Twilio integration or set manual env vars)');
           config.twilio = {
             accountSid: '',
             authToken: '',

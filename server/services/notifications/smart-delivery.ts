@@ -25,16 +25,30 @@ import { SMSProviderFactory } from '../../sms-providers/provider-factory';
 
 const deliveryLogger = logger.child({ service: 'smart-delivery' });
 
-// Initialize SMS provider
+// SMS provider will be lazily initialized to avoid timing issues with Replit integration
 let smsProvider: any = null;
-try {
-  const factory = SMSProviderFactory.getInstance();
-  smsProvider = factory.getProvider();
-  if (smsProvider.isConfigured()) {
-    deliveryLogger.info(`${smsProvider.name} SMS provider initialized for smart delivery`);
+let smsProviderInitialized = false;
+
+async function getSMSProvider(): Promise<any> {
+  if (smsProviderInitialized) {
+    return smsProvider;
   }
-} catch (error) {
-  deliveryLogger.warn('SMS provider initialization failed', { error: (error as Error).message });
+  
+  try {
+    const factory = SMSProviderFactory.getInstance();
+    await factory.ensureInitialized();
+    smsProvider = factory.getProvider();
+    smsProviderInitialized = true;
+    
+    if (smsProvider.isConfigured()) {
+      deliveryLogger.info(`${smsProvider.name} SMS provider initialized for smart delivery`);
+    }
+    return smsProvider;
+  } catch (error) {
+    deliveryLogger.warn('SMS provider initialization failed', { error: (error as Error).message });
+    smsProviderInitialized = true; // Mark as initialized to avoid repeated failures
+    return null;
+  }
 }
 
 export interface DeliveryOptions {
@@ -399,8 +413,11 @@ export class SmartDeliveryService {
    */
   private async deliverSMS(notification: any): Promise<void> {
     try {
+      // Get SMS provider (lazily initialized)
+      const provider = await getSMSProvider();
+      
       // Check if SMS provider is configured
-      if (!smsProvider || !smsProvider.isConfigured()) {
+      if (!provider || !provider.isConfigured()) {
         deliveryLogger.warn('SMS provider not configured, notification not sent', {
           notificationId: notification.id,
           userId: notification.userId
@@ -455,7 +472,8 @@ export class SmartDeliveryService {
       }
 
       // Send SMS using provider
-      const result = await smsProvider.sendSMS({
+      const provider = await getSMSProvider();
+      const result = await provider.sendSMS({
         to: formattedPhone,
         body: smsBody
       });
@@ -468,7 +486,7 @@ export class SmartDeliveryService {
         notificationId: notification.id,
         phoneNumber: formattedPhone.replace(/\d(?=\d{4})/g, '*'),
         messageId: result.messageId,
-        provider: smsProvider.name
+        provider: provider.name
       });
 
     } catch (error) {
