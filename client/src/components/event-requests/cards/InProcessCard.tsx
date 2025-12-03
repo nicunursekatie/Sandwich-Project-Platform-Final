@@ -40,6 +40,7 @@ import {
   formatEventDate,
   formatToolkitDate,
 } from '@/components/event-requests/utils';
+import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import {
   statusColors,
@@ -113,6 +114,7 @@ interface CardHeaderProps {
   setEditingValue?: (value: string) => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
+  datePopulationInfo?: DatePopulationInfo;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -130,6 +132,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   setEditingValue,
   presentUsers = [],
   currentUserId = '',
+  datePopulationInfo,
 }) => {
   const isMobile = useIsMobile();
   const StatusIcon =
@@ -375,7 +378,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 group">
+          <div className="flex items-center gap-2 group flex-wrap">
             <span className="text-base font-bold break-words" data-testid="text-date-value">
               {displayDate && dateInfo ? dateInfo.text : 'No date set'}
             </span>
@@ -383,6 +386,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <span className="text-sm opacity-80">
                 ({getRelativeTime(displayDate.toString())})
               </span>
+            )}
+            {/* Date Population Warning */}
+            {datePopulationInfo && datePopulationInfo.warningLevel !== 'none' && (
+              <Badge
+                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                style={{ backgroundColor: datePopulationInfo.warningColor }}
+                title={datePopulationInfo.warningMessage}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                {datePopulationInfo.warningLevel === 'critical'
+                  ? `${datePopulationInfo.eventsWithDriverNeeds} driver needs`
+                  : `${datePopulationInfo.totalEvents} events`}
+              </Badge>
             )}
             {canEdit && startEditing && (
               <Button
@@ -539,6 +555,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const datePopulationInfo = getDatePopulation(
+    request.scheduledEventDate || request.desiredEventDate,
+    request.id
+  );
+
   // Check if user has permission to edit organization details
   const canEditOrgDetails =
     (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
@@ -560,6 +583,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     setEditingValue,
     presentUsers: collaboration.presentUsers,
     currentUserId: user?.id,
+    datePopulationInfo,
   });
 
   return (

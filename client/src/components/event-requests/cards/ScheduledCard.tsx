@@ -49,6 +49,7 @@ import {
   formatTimeForInput,
   formatEventDate,
 } from '@/components/event-requests/utils';
+import { useDatePopulation } from '@/components/event-requests/hooks/useDatePopulation';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import {
   SANDWICH_TYPES,
@@ -324,6 +325,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
+
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const datePopulationInfo = getDatePopulation(
+    request.scheduledEventDate || request.desiredEventDate,
+    request.id
+  );
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -1112,12 +1120,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 group">
+            <div className="flex items-center gap-2 group flex-wrap">
               <Calendar className="w-4 h-4 text-[#47B3CB]" />
               <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
               </span>
+              {/* Date Population Warning */}
+              {datePopulationInfo && datePopulationInfo.warningLevel !== 'none' && (
+                <Badge
+                  className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                  style={{ backgroundColor: datePopulationInfo.warningColor }}
+                  title={datePopulationInfo.warningMessage}
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  {datePopulationInfo.warningLevel === 'critical'
+                    ? `${datePopulationInfo.eventsWithDriverNeeds} driver needs`
+                    : `${datePopulationInfo.totalEvents} events`}
+                </Badge>
+              )}
               {canEdit && (
                 <Button
                   size="sm"

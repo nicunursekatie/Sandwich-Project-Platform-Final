@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
@@ -106,10 +107,11 @@ interface CardHeaderProps {
   handleConfirmToggleClick?: () => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
+  datePopulationInfo?: DatePopulationInfo;
 }
 
-const CardHeader: React.FC<CardHeaderProps> = ({ 
-  request, 
+const CardHeader: React.FC<CardHeaderProps> = ({
+  request,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -122,6 +124,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   handleConfirmToggleClick,
   presentUsers = [],
   currentUserId = '',
+  datePopulationInfo,
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -247,7 +250,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 group">
+                <div className="flex items-center gap-2 group flex-wrap">
                   <span data-testid="text-date-label" className="text-sm uppercase text-gray-600">
                     {dateLabel}: {' '}
                     <strong className="text-base font-bold text-[#236383]" data-testid="text-date-value">
@@ -257,6 +260,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <span className="text-[#007E8C] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
                   </span>
+                  {/* Date Population Warning */}
+                  {datePopulationInfo && datePopulationInfo.warningLevel !== 'none' && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: datePopulationInfo.warningColor }}
+                      title={datePopulationInfo.warningMessage}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      {datePopulationInfo.warningLevel === 'critical'
+                        ? `${datePopulationInfo.eventsWithDriverNeeds} driver needs`
+                        : `${datePopulationInfo.totalEvents} events`}
+                    </Badge>
+                  )}
                   {canEdit && startEditing && (
                     <Button
                       size="sm"
@@ -404,6 +420,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const datePopulationInfo = getDatePopulation(displayDate, request.id);
+
   // Mutation for toggling date confirmation
   const toggleConfirmMutation = useMutation({
     mutationFn: async (newValue: boolean) => {
@@ -469,6 +490,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           handleConfirmToggleClick={handleConfirmToggleClick}
           presentUsers={collaboration.presentUsers}
           currentUserId={user?.id}
+          datePopulationInfo={datePopulationInfo}
         />
 
         {/* Main Content Grid */}
