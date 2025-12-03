@@ -286,8 +286,11 @@ export function useCollaboration({
       setIsConnected(true);
       setError(null);
 
-      // Join resource room
-      const userName = user.display_name || `${user.first_name} ${user.last_name}` || user.email || 'Anonymous';
+      // Join resource room - safely build user name
+      const fullName = user.first_name && user.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : (user.first_name || user.last_name || null);
+      const userName = user.display_name || fullName || user.email || 'Anonymous';
       
       // Use resource-specific event names
       const joinEvent = resourceType === 'event' ? 'join-event' : 'join-resource';
