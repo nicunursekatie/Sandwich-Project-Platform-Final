@@ -14,10 +14,14 @@ export class BackgroundSyncService {
   private isRunning = false;
   private lastSuccessfulSync: Date | null = null;
   private consecutiveFailures = 0;
+  private consecutiveSkips = 0; // Track skipped syncs (e.g., stuck locks)
   private lastAlertSent: Date | null = null;
+  private serviceStartTime: Date | null = null; // Track when service started
   private readonly ALERT_COOLDOWN_MINUTES = 60; // Don't spam emails - max one per hour
   private readonly FAILURE_THRESHOLD = 3; // Alert after 3 consecutive failures
+  private readonly SKIP_THRESHOLD = 3; // Alert after 3 consecutive skips
   private readonly STALE_SYNC_THRESHOLD_MINUTES = 20; // Alert if no successful sync in 20 minutes
+  private readonly STARTUP_GRACE_PERIOD_MINUTES = 15; // Grace period before alerting on no initial sync
 
   constructor(private storage: IStorage) {}
 
@@ -36,6 +40,8 @@ export class BackgroundSyncService {
     logger.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     logger.log('🔄 CRITICAL: Sync will continue running even if individual syncs fail');
     this.isRunning = true;
+    this.serviceStartTime = new Date();
+    this.consecutiveSkips = 0;
 
     // Run sync immediately on startup with error handling
     this.performSync()
@@ -384,22 +390,120 @@ Action Required:
 
   /**
    * Check if sync is stale and send alert if needed
+   * Also checks if sync has NEVER completed after the startup grace period
    */
   private async checkStaleSync() {
-    if (!this.lastSuccessfulSync) {
-      // First sync hasn't completed yet - don't alert
-      return;
+    const shouldAlert = !this.lastAlertSent || 
+      (Date.now() - this.lastAlertSent.getTime()) > (this.ALERT_COOLDOWN_MINUTES * 60 * 1000);
+    
+    if (!shouldAlert) {
+      return; // Still in cooldown period
     }
 
-    const minutesSinceLastSuccess = (Date.now() - this.lastSuccessfulSync.getTime()) / (1000 * 60);
-    
-    if (minutesSinceLastSuccess > this.STALE_SYNC_THRESHOLD_MINUTES) {
-      const shouldAlert = !this.lastAlertSent || 
-        (Date.now() - this.lastAlertSent.getTime()) > (this.ALERT_COOLDOWN_MINUTES * 60 * 1000);
+    // Check if sync has NEVER completed after grace period
+    if (!this.lastSuccessfulSync && this.serviceStartTime) {
+      const minutesSinceStart = (Date.now() - this.serviceStartTime.getTime()) / (1000 * 60);
       
-      if (shouldAlert) {
+      if (minutesSinceStart > this.STARTUP_GRACE_PERIOD_MINUTES) {
+        await this.sendNoSyncEverAlert(minutesSinceStart);
+        return;
+      }
+    }
+
+    // Check if last successful sync is stale
+    if (this.lastSuccessfulSync) {
+      const minutesSinceLastSuccess = (Date.now() - this.lastSuccessfulSync.getTime()) / (1000 * 60);
+      
+      if (minutesSinceLastSuccess > this.STALE_SYNC_THRESHOLD_MINUTES) {
         await this.sendStaleSyncAlert(minutesSinceLastSuccess);
       }
+    }
+  }
+
+  /**
+   * Send alert when sync has NEVER completed after startup
+   * This catches stuck locks, configuration issues, etc.
+   */
+  private async sendNoSyncEverAlert(minutesSinceStart: number) {
+    try {
+      const { sendEmail } = await import('./sendgrid');
+      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      
+      await sendEmail({
+        to: adminEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        subject: '🚨 CRITICAL: Event Requests Sync Has Never Completed',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #d32f2f;">🚨 Event Requests Sync Has Never Completed</h2>
+            <p><strong>The background sync has been running for ${Math.round(minutesSinceStart)} minutes but has NEVER successfully synced!</strong></p>
+            <p>This usually indicates a serious configuration issue or stuck process.</p>
+            
+            <div style="background-color: #ffebee; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #c62828;">Details:</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Service Started:</strong> ${this.serviceStartTime?.toLocaleString()}</li>
+                <li><strong>Minutes Since Start:</strong> ${Math.round(minutesSinceStart)}</li>
+                <li><strong>Consecutive Failures:</strong> ${this.consecutiveFailures}</li>
+                <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+            </div>
+            
+            <p><strong>Possible Causes:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              <li>Google Sheets API credentials invalid or expired</li>
+              <li>Database connection issues</li>
+              <li>Stuck database locks (common with serverless databases)</li>
+              <li>Google Sheet ID incorrect or sheet deleted</li>
+            </ul>
+            
+            <p><strong>Action Required:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Check server logs for detailed error information</li>
+              <li>Restart the server to clear any stuck processes</li>
+              <li>Verify Google Sheets API credentials</li>
+              <li>Check sync status via: <code>GET /api/event-requests/sync/status</code></li>
+            </ol>
+            
+            <p style="color: #d32f2f; font-weight: bold; margin-top: 20px;">
+              ⚠️ No new event requests are being imported until this is fixed!
+            </p>
+          </div>
+        `,
+        text: `
+🚨 CRITICAL: Event Requests Sync Has Never Completed
+
+The background sync has been running for ${Math.round(minutesSinceStart)} minutes but has NEVER successfully synced!
+
+Details:
+- Service Started: ${this.serviceStartTime?.toLocaleString()}
+- Minutes Since Start: ${Math.round(minutesSinceStart)}
+- Consecutive Failures: ${this.consecutiveFailures}
+
+Possible Causes:
+- Google Sheets API credentials invalid or expired
+- Database connection issues
+- Stuck database locks
+- Google Sheet ID incorrect
+
+Action Required:
+1. Check server logs for detailed error information
+2. Restart the server to clear any stuck processes
+3. Verify Google Sheets API credentials
+
+⚠️ No new event requests are being imported until this is fixed!
+        `,
+      });
+
+      this.lastAlertSent = new Date();
+      logger.error(`📧 Sent no-sync-ever alert email to ${adminEmail}`);
+      syncLogger.info('No sync ever alert sent', { 
+        minutesSinceStart,
+        consecutiveFailures: this.consecutiveFailures
+      });
+    } catch (emailError) {
+      logger.error('❌ Failed to send no-sync-ever alert email:', emailError);
+      syncLogger.error('Failed to send no-sync-ever alert email', { error: emailError });
     }
   }
 

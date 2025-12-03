@@ -67,3 +67,22 @@ The SMS system uses Replit's managed Twilio connection for secure API Key authen
 -   `server/services/notifications/smart-delivery.ts` - Uses lazy async initialization via `getSMSProvider()`
 
 **Important**: The SMS provider uses lazy async initialization to avoid timing issues during server startup. The `smart-delivery.ts` module calls `getSMSProvider()` instead of synchronously accessing the provider at module load time. This ensures the Replit Twilio connection is properly fetched before any SMS operations occur.
+
+### Google Sheets Sync Monitoring & Alerts
+
+The background sync service (`server/background-sync-service.ts`) includes comprehensive monitoring and email alerts:
+
+**Alert Types:**
+1. **No Sync Ever Alert** - Triggers if sync has NEVER completed after 15 minutes of server startup. Catches stuck locks, configuration issues, etc.
+2. **Stale Sync Alert** - Triggers if no successful sync in 20 minutes (after at least one successful sync)
+3. **Failure Alert** - Triggers after 3 consecutive sync failures
+4. **Service Stopped Alert** - Triggers when sync service is explicitly stopped
+
+**Key Settings:**
+- `STARTUP_GRACE_PERIOD_MINUTES = 15` - Grace period before alerting on initial sync issues
+- `STALE_SYNC_THRESHOLD_MINUTES = 20` - Time without sync before stale alert
+- `FAILURE_THRESHOLD = 3` - Consecutive failures before alert
+- `ALERT_COOLDOWN_MINUTES = 60` - Prevent email spam (max one per hour)
+
+**Critical Fix (December 2025):**
+PostgreSQL advisory locks (`pg_try_advisory_lock`) don't work with Neon's serverless connection pooling. Replaced with in-memory locking in `google-sheets-event-requests-sync.ts`. This fixed a 2+ month sync outage where the lock was stuck and no events were being imported.
