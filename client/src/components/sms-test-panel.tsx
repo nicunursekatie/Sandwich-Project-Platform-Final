@@ -50,7 +50,7 @@ export function SMSTestPanel() {
   const loadConfig = async () => {
     setLoadingConfig(true);
     try {
-      const response = await apiRequest('GET', '/api/testing/sms/config');
+      const response = await apiRequest('GET', '/api/sms-testing/sms/config');
       setConfig(response);
     } catch (error: any) {
       console.error('Failed to load SMS config:', error);
@@ -113,7 +113,7 @@ export function SMSTestPanel() {
     setTestResult(null);
 
     try {
-      const response = await apiRequest('POST', '/api/testing/sms/test', {
+      const response = await apiRequest('POST', '/api/sms-testing/sms/test', {
         phoneNumber: '+' + digits,
       });
 
