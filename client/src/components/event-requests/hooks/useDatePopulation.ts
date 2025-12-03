@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
-import type { EventRequest } from '@shared/schema';
 
 export interface DatePopulationInfo {
   totalEvents: number;
-  eventsWithDriverNeeds: number;
-  // Warning level: 'none' | 'info' (blue) | 'busy' (gold) | 'critical' (red)
-  warningLevel: 'none' | 'info' | 'busy' | 'critical';
+  // Warning level: 'none' | 'open' (teal - good!) | 'busy' (gold)
+  warningLevel: 'none' | 'open' | 'busy';
   warningColor: string;
   warningMessage: string;
 }
@@ -21,14 +19,6 @@ const normalizeDate = (dateInput: string | Date | null | undefined): string | nu
   return match ? match[1] : null;
 };
 
-// Check if an event has driver needs (driversNeeded > 0 OR vanDriverNeeded, and not self-transport)
-const hasDriverNeeds = (event: EventRequest): boolean => {
-  // If self-transport is true, they don't need TSP drivers
-  if (event.selfTransport) return false;
-  // Check if driversNeeded > 0 OR vanDriverNeeded is true
-  return (event.driversNeeded ?? 0) > 0 || event.vanDriverNeeded === true;
-};
-
 /**
  * Hook to get date population information for event cards
  * Returns a function to check any date's population
@@ -38,7 +28,7 @@ export function useDatePopulation() {
 
   // Pre-compute date population map for efficiency
   const datePopulationMap = useMemo(() => {
-    const map = new Map<string, { total: number; withDriverNeeds: number }>();
+    const map = new Map<string, number>();
 
     // Only count active events (not completed, declined, cancelled, or postponed)
     const activeStatuses = ['new', 'in_process', 'scheduled'];
@@ -52,12 +42,8 @@ export function useDatePopulation() {
 
       if (!normalizedDate) continue;
 
-      const current = map.get(normalizedDate) || { total: 0, withDriverNeeds: 0 };
-      current.total += 1;
-      if (hasDriverNeeds(event)) {
-        current.withDriverNeeds += 1;
-      }
-      map.set(normalizedDate, current);
+      const current = map.get(normalizedDate) || 0;
+      map.set(normalizedDate, current + 1);
     }
 
     return map;
@@ -77,18 +63,14 @@ export function useDatePopulation() {
     if (!normalizedDate) {
       return {
         totalEvents: 0,
-        eventsWithDriverNeeds: 0,
         warningLevel: 'none',
         warningColor: '',
         warningMessage: '',
       };
     }
 
-    // Get base counts from the map
-    let { total, withDriverNeeds } = datePopulationMap.get(normalizedDate) || {
-      total: 0,
-      withDriverNeeds: 0,
-    };
+    // Get base count from the map
+    let total = datePopulationMap.get(normalizedDate) || 0;
 
     // If excluding an event (e.g., don't count the current event when showing its own warning)
     if (excludeEventId) {
@@ -99,39 +81,30 @@ export function useDatePopulation() {
         );
         if (excludedDate === normalizedDate) {
           total = Math.max(0, total - 1);
-          if (hasDriverNeeds(excludedEvent)) {
-            withDriverNeeds = Math.max(0, withDriverNeeds - 1);
-          }
         }
       }
     }
 
     // Determine warning level
-    // Critical (red #A31C41): 2+ events with driver/van needs on this date (driver scheduling conflict)
-    // Busy (gold #FBAD3F): 3+ total events on this date (high volume)
-    // Info (blue #007E8C): 1-2 other events on this date (informational)
-    // None: 0 other events
-    let warningLevel: 'none' | 'info' | 'busy' | 'critical' = 'none';
+    // Open (teal #47B3CB): 0 other events on this date - good, prioritize filling gaps!
+    // Busy (gold #FBAD3F): 2+ other events on this date - busy day warning
+    // None: 1 other event - neutral
+    let warningLevel: 'none' | 'open' | 'busy' = 'none';
     let warningColor = '';
     let warningMessage = '';
 
-    if (withDriverNeeds >= 2) {
-      warningLevel = 'critical';
-      warningColor = '#A31C41';
-      warningMessage = `${withDriverNeeds} events need drivers on this date`;
-    } else if (total >= 3) {
+    if (total === 0) {
+      warningLevel = 'open';
+      warningColor = '#47B3CB';
+      warningMessage = 'Open date - no other events scheduled';
+    } else if (total >= 2) {
       warningLevel = 'busy';
       warningColor = '#FBAD3F';
-      warningMessage = `${total} events scheduled for this date - high volume day`;
-    } else if (total >= 1) {
-      warningLevel = 'info';
-      warningColor = '#007E8C';
-      warningMessage = `${total} other event${total > 1 ? 's' : ''} on this date`;
+      warningMessage = `${total} other events on this date`;
     }
 
     return {
       totalEvents: total,
-      eventsWithDriverNeeds: withDriverNeeds,
       warningLevel,
       warningColor,
       warningMessage,

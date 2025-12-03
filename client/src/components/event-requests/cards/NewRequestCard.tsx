@@ -23,6 +23,7 @@ import {
   UserPlus,
   Building,
   AlertTriangle,
+  CalendarCheck,
   Edit2,
   Save,
   X,
@@ -260,17 +261,24 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <span className="text-[#007E8C] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
                   </span>
-                  {/* Date Population Warning */}
+                  {/* Date Population Badge */}
                   {datePopulationInfo && datePopulationInfo.warningLevel !== 'none' && (
                     <Badge
                       className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
                       style={{ backgroundColor: datePopulationInfo.warningColor }}
                       title={datePopulationInfo.warningMessage}
                     >
-                      <AlertTriangle className="w-3 h-3" />
-                      {datePopulationInfo.warningLevel === 'critical'
-                        ? `${datePopulationInfo.eventsWithDriverNeeds} driver needs`
-                        : `${datePopulationInfo.totalEvents} events`}
+                      {datePopulationInfo.warningLevel === 'open' ? (
+                        <>
+                          <CalendarCheck className="w-3 h-3" />
+                          Open date
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-3 h-3" />
+                          {datePopulationInfo.totalEvents} events
+                        </>
+                      )}
                     </Badge>
                   )}
                   {canEdit && startEditing && (
