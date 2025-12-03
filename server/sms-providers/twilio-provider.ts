@@ -62,8 +62,23 @@ export class TwilioProvider implements SMSProvider {
   /**
    * Get phone number (lazy-loads from Replit integration if enabled)
    * Caches the result onto this.phoneNumber for subsequent synchronous access
+   * 
+   * Priority:
+   * 1. TWILIO_PHONE_NUMBER env var (allows override even when using Replit integration)
+   * 2. Replit integration phone number (if useReplitIntegration is true)
+   * 3. Constructor-provided phone number
    */
   private async getPhoneNumber(): Promise<string> {
+    // Priority 1: Check for env var override (allows using different number with Replit auth)
+    const envPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+    if (envPhoneNumber) {
+      if (this.phoneNumber !== envPhoneNumber) {
+        logger.log(`📱 Using TWILIO_PHONE_NUMBER env var override: ${envPhoneNumber}`);
+        this.phoneNumber = envPhoneNumber;
+      }
+      return this.phoneNumber;
+    }
+
     if (this.useReplitIntegration) {
       // Check if already cached from previous async call
       if (this.phoneNumber) {
