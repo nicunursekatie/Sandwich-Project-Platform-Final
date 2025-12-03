@@ -351,6 +351,9 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               activityDetails = `Deleted ${feature.toLowerCase()}${idMatch ? ` (ID: ${idMatch[1]})` : ''}`;
             }
 
+            // Update user's last active timestamp for online status tracking
+            await options.storage.updateUserLastActive(user.id);
+
             // Create detailed activity log entry
             await options.storage.logUserActivity({
               userId: user.id,

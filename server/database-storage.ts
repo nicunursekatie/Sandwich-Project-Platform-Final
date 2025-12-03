@@ -249,6 +249,37 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // User activity tracking
+  async updateUserLastActive(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ lastActiveAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getOnlineUsers(sinceMinutes: number = 5): Promise<Pick<User, 'id' | 'firstName' | 'lastName' | 'displayName' | 'email' | 'profileImageUrl' | 'lastActiveAt'>[]> {
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    const onlineUsers = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+        email: users.email,
+        profileImageUrl: users.profileImageUrl,
+        lastActiveAt: users.lastActiveAt,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.isActive, true),
+          gte(users.lastActiveAt, cutoff)
+        )
+      )
+      .orderBy(desc(users.lastActiveAt));
+    return onlineUsers;
+  }
+
   // Legacy user methods (for backwards compatibility)
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db

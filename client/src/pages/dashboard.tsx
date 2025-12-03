@@ -47,6 +47,7 @@ import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
+import { OnlineUsers } from '@/components/online-users';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -678,6 +679,9 @@ export default function Dashboard({
               >
                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
+
+              {/* Online Users Indicator */}
+              <OnlineUsers />
 
               {/* Enhanced In-App Notifications - the main notification bell */}
               {typeof window !== 'undefined' && (

@@ -48,6 +48,7 @@ export const users = pgTable('users', {
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in
+  lastActiveAt: timestamp('last_active_at'), // Track when user was last active (updated on API requests)
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   passwordBackup20241023: text('password_backup_20241023'),

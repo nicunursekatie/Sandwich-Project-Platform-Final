@@ -135,6 +135,10 @@ export interface IStorage {
   findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined>;
   getUsersByNameOrEmail(searchTerms: string[]): Promise<User[]>;
 
+  // User activity tracking
+  updateUserLastActive(userId: string): Promise<void>;
+  getOnlineUsers(sinceMinutes?: number): Promise<Pick<User, 'id' | 'firstName' | 'lastName' | 'displayName' | 'email' | 'profileImageUrl' | 'lastActiveAt'>[]>;
+
   // Legacy user methods (for backwards compatibility)
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -1034,6 +1038,30 @@ export class MemStorage implements IStorage {
       return true;
     }
     return false;
+  }
+
+  // User activity tracking
+  async updateUserLastActive(userId: string): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.lastActiveAt = new Date();
+      this.users.set(userId, user);
+    }
+  }
+
+  async getOnlineUsers(sinceMinutes: number = 5): Promise<Pick<User, 'id' | 'firstName' | 'lastName' | 'displayName' | 'email' | 'profileImageUrl' | 'lastActiveAt'>[]> {
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    return Array.from(this.users.values())
+      .filter(user => user.isActive && user.lastActiveAt && user.lastActiveAt > cutoff)
+      .map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl,
+        lastActiveAt: user.lastActiveAt,
+      }));
   }
 
   // Legacy user methods (for backwards compatibility)
