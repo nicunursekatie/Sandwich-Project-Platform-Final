@@ -47,6 +47,8 @@ export default function ImportantLinks() {
     'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
   const eventToolkitUrl =
     'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
+  const donationReceiptUrl =
+    'https://nicunursekatie.github.io/sandwichinventory/donation-receipt.html';
   // Flyers configuration - add more flyers here as they become available
   const flyers = [
     {
@@ -186,7 +188,7 @@ export default function ImportantLinks() {
       </div>
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="toolkit" className="flex items-center gap-2">
             📦 Event Toolkit
           </TabsTrigger>
@@ -197,12 +199,15 @@ export default function ImportantLinks() {
             <Calculator className="h-4 w-4" />
             Inventory Calculator
           </TabsTrigger>
+          <TabsTrigger value="donation-receipt" className="flex items-center gap-2">
+            🧾 Donation Receipt
+          </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             📅 Events Sheet
           </TabsTrigger>
           <TabsTrigger value="user-sheet" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
-            Historical Collections Record
+            Historical Collections
           </TabsTrigger>
         </TabsList>
 
@@ -459,6 +464,74 @@ export default function ImportantLinks() {
                       height: '100%',
                     }}
                     title="Inventory Calculator"
+                    loading="eager"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Donation Receipt Tab */}
+        <TabsContent value="donation-receipt" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🧾 Donation Receipt Generator
+              </CardTitle>
+              <CardDescription>
+                Generate donation receipts for in-kind donations to The Sandwich Project
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1 flex flex-col">
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => window.open(donationReceiptUrl, '_blank')}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 text-base flex-1"
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Donation Receipt Generator
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(donationReceiptUrl);
+                        alert('Link copied to clipboard!');
+                      } catch (error) {
+                        logger.error('Failed to copy:', error);
+                      }
+                    }}
+                    className="border-green-600 text-green-600 hover:bg-green-50 px-6 py-3 font-medium"
+                  >
+                    📋 Copy Link
+                  </Button>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-green-900 mb-2">Shareable Link:</h3>
+                  <code className="text-sm bg-white px-3 py-2 rounded border border-green-200 block break-all">
+                    {donationReceiptUrl}
+                  </code>
+                  <p className="text-sm text-green-700 mt-2">
+                    Use this tool to generate tax-deductible donation receipts for in-kind donations
+                  </p>
+                </div>
+
+                {/* Embedded Donation Receipt Generator */}
+                <div className="border rounded-lg overflow-hidden flex-1">
+                  <iframe
+                    src={donationReceiptUrl}
+                    className="w-full h-full border-0"
+                    style={{
+                      minHeight: '800px',
+                      height: '100%',
+                    }}
+                    title="Donation Receipt Generator"
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
@@ -748,7 +821,7 @@ export default function ImportantLinks() {
         contextData={{
           currentView: 'important-links',
           summaryStats: {
-            totalTools: 3,
+            totalTools: 4,
             totalFlyers: flyers.length,
           },
         }}
@@ -757,14 +830,15 @@ export default function ImportantLinks() {
             { name: 'Inventory Calculator', url: inventoryCalculatorUrl, type: 'tool' },
             { name: 'Event Estimator', url: eventEstimatorUrl, type: 'tool' },
             { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
+            { name: 'Donation Receipt Generator', url: donationReceiptUrl, type: 'tool', description: 'Generate tax-deductible donation receipts for in-kind donations' },
             ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
           ],
         })}
         suggestedQuestions={[
           "What tools are available?",
           "How do I use the inventory calculator?",
+          "How do I generate a donation receipt?",
           "What flyers can I print?",
-          "How do I use the event estimator?",
           "What's in the event toolkit?",
         ]}
       />
