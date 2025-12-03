@@ -8,13 +8,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building, Mic, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ConflictWarning {
-  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap';
+  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict';
   severity: 'warning' | 'critical';
   message: string;
   conflictingEventId?: number;
@@ -34,11 +34,18 @@ interface EventConflictWarningsProps {
   scheduledEventDate?: Date | string | null;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
+  pickupTime?: string | null;
+  vanDriverNeeded?: boolean | null;
+  selfTransport?: boolean | null;
+  assignedVanDriverId?: string | null;
+  assignedSpeakerIds?: string[] | null;
+  assignedRecipientIds?: string[] | null;
+  organizationName?: string | null;
+  enabled?: boolean;
+  // Legacy props for backwards compatibility
   vanBooked?: string | null;
   driverName?: string | null;
   recipientId?: number | null;
-  organizationName?: string | null;
-  enabled?: boolean;
 }
 
 const getWarningIcon = (type: ConflictWarning['type']) => {
@@ -51,6 +58,10 @@ const getWarningIcon = (type: ConflictWarning['type']) => {
       return <Calendar className="h-4 w-4" />;
     case 'recipient_conflict':
       return <Building className="h-4 w-4" />;
+    case 'speaker_conflict':
+      return <Mic className="h-4 w-4" />;
+    case 'pickup_conflict':
+      return <Clock className="h-4 w-4" />;
     default:
       return <AlertCircle className="h-4 w-4" />;
   }
@@ -66,6 +77,10 @@ const getWarningLabel = (type: ConflictWarning['type']) => {
       return 'Busy Day';
     case 'recipient_conflict':
       return 'Recipient Conflict';
+    case 'speaker_conflict':
+      return 'Speaker Conflict';
+    case 'pickup_conflict':
+      return 'Pickup Timing';
     default:
       return 'Conflict';
   }
@@ -76,11 +91,18 @@ export function EventConflictWarnings({
   scheduledEventDate,
   eventStartTime,
   eventEndTime,
+  pickupTime,
+  vanDriverNeeded,
+  selfTransport,
+  assignedVanDriverId,
+  assignedSpeakerIds,
+  assignedRecipientIds,
+  organizationName,
+  enabled = true,
+  // Legacy props
   vanBooked,
   driverName,
   recipientId,
-  organizationName,
-  enabled = true,
 }: EventConflictWarningsProps) {
   // Only check conflicts if we have a scheduled date
   const hasDate = !!scheduledEventDate;
@@ -92,6 +114,13 @@ export function EventConflictWarnings({
       scheduledEventDate?.toString(),
       eventStartTime,
       eventEndTime,
+      pickupTime,
+      vanDriverNeeded,
+      selfTransport,
+      assignedVanDriverId,
+      JSON.stringify(assignedSpeakerIds),
+      JSON.stringify(assignedRecipientIds),
+      // Legacy fields for cache key
       vanBooked,
       driverName,
       recipientId,
@@ -104,10 +133,17 @@ export function EventConflictWarnings({
           : null,
         eventStartTime,
         eventEndTime,
+        pickupTime,
+        vanDriverNeeded,
+        selfTransport,
+        assignedVanDriverId,
+        assignedSpeakerIds,
+        assignedRecipientIds,
+        organizationName,
+        // Pass legacy fields for backwards compatibility
         vanBooked,
         driverName,
         recipientId,
-        organizationName,
       });
       return response;
     },
@@ -224,6 +260,13 @@ export function useEventConflicts(eventData: EventConflictWarningsProps) {
       eventData.scheduledEventDate?.toString(),
       eventData.eventStartTime,
       eventData.eventEndTime,
+      eventData.pickupTime,
+      eventData.vanDriverNeeded,
+      eventData.selfTransport,
+      eventData.assignedVanDriverId,
+      JSON.stringify(eventData.assignedSpeakerIds),
+      JSON.stringify(eventData.assignedRecipientIds),
+      // Legacy fields
       eventData.vanBooked,
       eventData.driverName,
       eventData.recipientId,
@@ -238,10 +281,17 @@ export function useEventConflicts(eventData: EventConflictWarningsProps) {
           : null,
         eventStartTime: eventData.eventStartTime,
         eventEndTime: eventData.eventEndTime,
+        pickupTime: eventData.pickupTime,
+        vanDriverNeeded: eventData.vanDriverNeeded,
+        selfTransport: eventData.selfTransport,
+        assignedVanDriverId: eventData.assignedVanDriverId,
+        assignedSpeakerIds: eventData.assignedSpeakerIds,
+        assignedRecipientIds: eventData.assignedRecipientIds,
+        organizationName: eventData.organizationName,
+        // Legacy fields for backwards compatibility
         vanBooked: eventData.vanBooked,
         driverName: eventData.driverName,
         recipientId: eventData.recipientId,
-        organizationName: eventData.organizationName,
       });
       return response;
     },
