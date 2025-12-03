@@ -76,3 +76,4 @@ Desktop.ini*_session.txt
 *_test.txt
 *.txt
 attached_assets/*.json
+attached_assets/
