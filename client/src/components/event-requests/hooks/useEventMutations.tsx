@@ -61,6 +61,7 @@ export const useEventMutations = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       setShowEventDetails(false);
       setSelectedEventRequest(null);
     },
@@ -98,6 +99,11 @@ export const useEventMutations = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/event-requests', 'v2'],
+        refetchType: 'active'
+      });
+      // Invalidate event map if address or coordinates might have changed
+      queryClient.invalidateQueries({
+        queryKey: ['/api/event-map'],
         refetchType: 'active'
       });
 
@@ -147,6 +153,10 @@ export const useEventMutations = () => {
       });
       await queryClient.invalidateQueries({
         queryKey: ['/api/event-requests', 'v2'],
+        refetchType: 'all'
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['/api/event-map'],
         refetchType: 'all'
       });
 

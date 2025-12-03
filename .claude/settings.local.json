@@ -22,7 +22,8 @@
       "Bash(NODE_ENV=development npx tsx:*)",
       "Bash(node -e:*)",
       "Bash(timeout 5 npm run dev:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

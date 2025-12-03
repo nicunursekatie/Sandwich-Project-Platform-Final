@@ -385,6 +385,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
@@ -415,6 +416,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'The new event request has been created.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
@@ -437,6 +439,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'The event request has been deleted.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
     },

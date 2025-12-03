@@ -898,6 +898,8 @@ export default function EventMapView() {
       if (!response.ok) throw new Error('Failed to fetch event map data');
       return response.json();
     },
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   // Update address mutation
@@ -1177,7 +1179,7 @@ export default function EventMapView() {
               className="pl-10"
             />
           </div>
-          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
+          <Select value={upcomingFilter} onValueChange={(value) => setUpcomingFilter(value as UpcomingFilterOption)}>
             <SelectTrigger className="w-full md:w-48">
               <Clock className="w-4 h-4 mr-2" />
               <SelectValue />
