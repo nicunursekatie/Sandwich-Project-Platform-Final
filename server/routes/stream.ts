@@ -5,6 +5,8 @@ import { logger } from '../utils/production-safe-logger';
 import { storage } from '../storage-wrapper';
 import { NotificationService } from '../notification-service';
 import { getUserMetadata } from '@shared/types';
+import { requirePermission } from '../middleware/auth';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 export const streamRoutes = Router();
 
@@ -454,17 +456,11 @@ const TEAM_ROOMS = [
  * Sync all users to their appropriate Stream Chat channels based on permissions
  * This ensures member counts are accurate even if users haven't opened chat yet
  */
-streamRoutes.post('/sync-members', async (req, res) => {
+streamRoutes.post('/sync-members', requirePermission(PERMISSIONS.ADMIN_PANEL_ACCESS), async (req, res) => {
   try {
     const user = req.user || req.session?.user;
     if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Check for admin permission
-    const permissions = user.permissions || [];
-    if (!permissions.includes('ADMIN_PANEL_ACCESS') && !permissions.includes('admin')) {
-      return res.status(403).json({ error: 'Admin access required' });
     }
 
     if (!streamServerClient) {
