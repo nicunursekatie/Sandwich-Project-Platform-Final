@@ -454,7 +454,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'admin',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
-    topNav: true,
   },
   {
     id: 'user-management',
