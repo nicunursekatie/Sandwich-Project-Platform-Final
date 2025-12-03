@@ -177,74 +177,51 @@ Action Required:
   /**
    * Perform sync for event requests only
    * Projects are no longer synced to Google Sheets - managed entirely in-app
-   * Uses database coordination to ensure only one instance syncs at a time
+   * NOTE: Advisory locks don't work well with Neon serverless connection pooling
+   * Using in-memory locking for single-instance protection instead
    */
+  private syncInProgress = false;
+  
   private async performSync() {
-    const SYNC_LOCK_KEY = 1001; // Advisory lock key for Google Sheets sync
     const startTime = Date.now();
 
+    // Simple in-memory lock - works for single server instance
+    if (this.syncInProgress) {
+      syncLogger.debug('Background sync skipped - already in progress');
+      return;
+    }
+
+    this.syncInProgress = true;
+    
     try {
-      // Try to acquire the advisory lock (non-blocking)
-      const lockResult = await db.execute(
-        sql`SELECT pg_try_advisory_lock(${SYNC_LOCK_KEY}) as acquired`
-      );
-
-      const acquired = lockResult.rows?.[0]?.acquired;
-
-      if (!acquired) {
-        syncLogger.debug('Background sync skipped - another instance is running it', {
-          lockKey: SYNC_LOCK_KEY
-        });
-        return;
-      }
-
-      syncLogger.info('Background sync acquired lock - starting execution', {
-        lockKey: SYNC_LOCK_KEY
-      });
+      syncLogger.info('Background sync starting');
       logger.log('📊 Starting automated background sync...');
 
-      try {
-        // DISABLED: Projects sync from Google Sheets
-        // Projects are now managed entirely within the app to prevent sync conflicts
-        // await this.syncProjects();
+      // Sync Event Requests from Google Sheets
+      await this.syncEventRequests();
 
-        // Sync Event Requests from Google Sheets
-        await this.syncEventRequests();
+      // Auto-transition scheduled events to completed if their date has passed
+      await this.autoTransitionPastEvents();
 
-        // Auto-transition scheduled events to completed if their date has passed
-        await this.autoTransitionPastEvents();
-
-        const duration = Date.now() - startTime;
-        syncLogger.info('Background sync completed successfully', {
-          lockKey: SYNC_LOCK_KEY,
-          duration: `${duration}ms`
-        });
-        logger.log('✅ Background sync completed successfully');
-
-      } catch (syncError) {
-        const duration = Date.now() - startTime;
-        syncLogger.error('Background sync failed during execution', {
-          lockKey: SYNC_LOCK_KEY,
-          duration: `${duration}ms`,
-          error: syncError instanceof Error ? error.message : String(syncError),
-          stack: syncError instanceof Error ? syncError.stack : undefined
-        });
-        logger.error('❌ Background sync failed:', syncError);
-        // CRITICAL: Don't rethrow - we want the service to keep running
-        // The error is logged, and sync will retry on the next interval
-
-      } finally {
-        // Always release the lock when done
-        await db.execute(sql`SELECT pg_advisory_unlock(${SYNC_LOCK_KEY})`);
-        syncLogger.debug('Released lock for background sync', { lockKey: SYNC_LOCK_KEY });
-      }
-
-    } catch (coordinationError) {
-      syncLogger.error('Background sync coordination failed', {
-        lockKey: SYNC_LOCK_KEY,
-        error: coordinationError
+      const duration = Date.now() - startTime;
+      syncLogger.info('Background sync completed successfully', {
+        duration: `${duration}ms`
       });
-      logger.error('❌ Background sync coordination failed:', coordinationError);
+      logger.log('✅ Background sync completed successfully');
+
+    } catch (syncError) {
+      const duration = Date.now() - startTime;
+      syncLogger.error('Background sync failed during execution', {
+        duration: `${duration}ms`,
+        error: syncError instanceof Error ? syncError.message : String(syncError),
+        stack: syncError instanceof Error ? syncError.stack : undefined
+      });
+      logger.error('❌ Background sync failed:', syncError);
+      // CRITICAL: Don't rethrow - we want the service to keep running
+      // The error is logged, and sync will retry on the next interval
+
+    } finally {
+      this.syncInProgress = false;
     }
   }
 
