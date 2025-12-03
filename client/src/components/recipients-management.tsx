@@ -538,10 +538,10 @@ export default function RecipientsManagement() {
     const normalizedRecipient = {
       ...recipient,
       focusAreas,
-      // Normalize allowedContactMethods - default to email and phone_call if not set
+      // Normalize allowedContactMethods - default to text and email if not set
       allowedContactMethods: Array.isArray((recipient as any).allowedContactMethods) 
         ? (recipient as any).allowedContactMethods 
-        : ['email', 'phone_call'],
+        : ['text', 'email'],
       // Normalize impactStories - default to empty array if not set
       impactStories: Array.isArray((recipient as any).impactStories) 
         ? (recipient as any).impactStories 
@@ -1852,9 +1852,11 @@ export default function RecipientsManagement() {
                                   <SelectValue placeholder="Select method" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="text">Text</SelectItem>
                                   <SelectItem value="email">Email</SelectItem>
-                                  <SelectItem value="sms">SMS/Text</SelectItem>
-                                  <SelectItem value="phone_call">Phone Call</SelectItem>
+                                  <SelectItem value="call">Call</SelectItem>
+                                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                                  <SelectItem value="facebook">Facebook</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1863,6 +1865,20 @@ export default function RecipientsManagement() {
                                 Allowed contact methods
                               </Label>
                               <div className="flex flex-wrap gap-4">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="allowText"
+                                    checked={newRecipient.allowedContactMethods.includes('text')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.allowedContactMethods, 'text']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'text');
+                                      setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-allow-text"
+                                  />
+                                  <Label htmlFor="allowText" className="text-sm">Text</Label>
+                                </div>
                                 <div className="flex items-center space-x-2">
                                   <Checkbox
                                     id="allowEmail"
@@ -1879,31 +1895,45 @@ export default function RecipientsManagement() {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Checkbox
-                                    id="allowSms"
-                                    checked={newRecipient.allowedContactMethods.includes('sms')}
+                                    id="allowCall"
+                                    checked={newRecipient.allowedContactMethods.includes('call')}
                                     onCheckedChange={(checked) => {
                                       const methods = checked
-                                        ? [...newRecipient.allowedContactMethods, 'sms']
-                                        : newRecipient.allowedContactMethods.filter(m => m !== 'sms');
+                                        ? [...newRecipient.allowedContactMethods, 'call']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'call');
                                       setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
                                     }}
-                                    data-testid="checkbox-allow-sms"
+                                    data-testid="checkbox-allow-call"
                                   />
-                                  <Label htmlFor="allowSms" className="text-sm">SMS/Text</Label>
+                                  <Label htmlFor="allowCall" className="text-sm">Call</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Checkbox
-                                    id="allowPhoneCall"
-                                    checked={newRecipient.allowedContactMethods.includes('phone_call')}
+                                    id="allowWhatsapp"
+                                    checked={newRecipient.allowedContactMethods.includes('whatsapp')}
                                     onCheckedChange={(checked) => {
                                       const methods = checked
-                                        ? [...newRecipient.allowedContactMethods, 'phone_call']
-                                        : newRecipient.allowedContactMethods.filter(m => m !== 'phone_call');
+                                        ? [...newRecipient.allowedContactMethods, 'whatsapp']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'whatsapp');
                                       setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
                                     }}
-                                    data-testid="checkbox-allow-phone-call"
+                                    data-testid="checkbox-allow-whatsapp"
                                   />
-                                  <Label htmlFor="allowPhoneCall" className="text-sm">Phone Call</Label>
+                                  <Label htmlFor="allowWhatsapp" className="text-sm">WhatsApp</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="allowFacebook"
+                                    checked={newRecipient.allowedContactMethods.includes('facebook')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.allowedContactMethods, 'facebook']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'facebook');
+                                      setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-allow-facebook"
+                                  />
+                                  <Label htmlFor="allowFacebook" className="text-sm">Facebook</Label>
                                 </div>
                               </div>
                             </div>
@@ -3886,9 +3916,11 @@ export default function RecipientsManagement() {
                             <SelectValue placeholder="Select method" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
                             <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="sms">SMS/Text</SelectItem>
-                            <SelectItem value="phone_call">Phone Call</SelectItem>
+                            <SelectItem value="call">Call</SelectItem>
+                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            <SelectItem value="facebook">Facebook</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -3897,6 +3929,21 @@ export default function RecipientsManagement() {
                           Allowed contact methods
                         </Label>
                         <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-allowText"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('text')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).allowedContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'text']
+                                  : methods.filter((m: string) => m !== 'text');
+                                setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-allow-text"
+                            />
+                            <Label htmlFor="edit-allowText" className="text-sm">Text</Label>
+                          </div>
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="edit-allowEmail"
@@ -3914,33 +3961,48 @@ export default function RecipientsManagement() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id="edit-allowSms"
-                              checked={((editingRecipient as any).allowedContactMethods || []).includes('sms')}
+                              id="edit-allowCall"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('call')}
                               onCheckedChange={(checked) => {
                                 const methods = (editingRecipient as any).allowedContactMethods || [];
                                 const updated = checked
-                                  ? [...methods, 'sms']
-                                  : methods.filter((m: string) => m !== 'sms');
+                                  ? [...methods, 'call']
+                                  : methods.filter((m: string) => m !== 'call');
                                 setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
                               }}
-                              data-testid="checkbox-edit-allow-sms"
+                              data-testid="checkbox-edit-allow-call"
                             />
-                            <Label htmlFor="edit-allowSms" className="text-sm">SMS/Text</Label>
+                            <Label htmlFor="edit-allowCall" className="text-sm">Call</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id="edit-allowPhoneCall"
-                              checked={((editingRecipient as any).allowedContactMethods || []).includes('phone_call')}
+                              id="edit-allowWhatsapp"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('whatsapp')}
                               onCheckedChange={(checked) => {
                                 const methods = (editingRecipient as any).allowedContactMethods || [];
                                 const updated = checked
-                                  ? [...methods, 'phone_call']
-                                  : methods.filter((m: string) => m !== 'phone_call');
+                                  ? [...methods, 'whatsapp']
+                                  : methods.filter((m: string) => m !== 'whatsapp');
                                 setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
                               }}
-                              data-testid="checkbox-edit-allow-phone-call"
+                              data-testid="checkbox-edit-allow-whatsapp"
                             />
-                            <Label htmlFor="edit-allowPhoneCall" className="text-sm">Phone Call</Label>
+                            <Label htmlFor="edit-allowWhatsapp" className="text-sm">WhatsApp</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-allowFacebook"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('facebook')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).allowedContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'facebook']
+                                  : methods.filter((m: string) => m !== 'facebook');
+                                setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-allow-facebook"
+                            />
+                            <Label htmlFor="edit-allowFacebook" className="text-sm">Facebook</Label>
                           </div>
                         </div>
                       </div>
