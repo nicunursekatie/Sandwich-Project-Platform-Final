@@ -537,7 +537,15 @@ export default function RecipientsManagement() {
 
     const normalizedRecipient = {
       ...recipient,
-      focusAreas
+      focusAreas,
+      // Normalize allowedContactMethods - default to email and phone_call if not set
+      allowedContactMethods: Array.isArray((recipient as any).allowedContactMethods) 
+        ? (recipient as any).allowedContactMethods 
+        : ['email', 'phone_call'],
+      // Normalize impactStories - default to empty array if not set
+      impactStories: Array.isArray((recipient as any).impactStories) 
+        ? (recipient as any).impactStories 
+        : [],
     };
     setEditingRecipient(normalizedRecipient as Recipient);
   };
