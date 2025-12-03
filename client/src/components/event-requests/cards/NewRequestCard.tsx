@@ -93,6 +93,56 @@ interface User {
   role?: string;
 }
 
+// Helper to linkify addresses in text
+// Matches patterns like "123 Main St" or "123 Main Street, City, ST 12345"
+const LinkifyAddresses: React.FC<{ text: string }> = ({ text }) => {
+  // Regex to match common US address patterns
+  // Matches: number + street name (+ optional suite/apt) + optional city, state zip
+  const addressRegex = /(\d+\s+[\w\s]+(?:St(?:reet)?|Ave(?:nue)?|Blvd|Boulevard|Dr(?:ive)?|Rd|Road|Ln|Lane|Way|Pl(?:ace)?|Ct|Court|Cir(?:cle)?|Pkwy|Parkway|Hwy|Highway)\.?(?:\s*(?:#|Suite|Ste|Apt|Unit)\s*[\w-]+)?(?:\s*,?\s*[\w\s]+,?\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?)?)/gi;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  // Reset regex state
+  addressRegex.lastIndex = 0;
+
+  while ((match = addressRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    // Add the address as a link
+    const address = match[1];
+    parts.push(
+      <a
+        key={match.index}
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#236383] hover:text-[#1a4a63] underline"
+      >
+        {address}
+      </a>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  // If no addresses found, return original text
+  if (parts.length === 0) {
+    return <>{text}</>;
+  }
+
+  return <>{parts}</>;
+};
+
 // CardHeader component - copied from shared
 interface CardHeaderProps {
   request: EventRequest;
@@ -599,7 +649,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                       Message from Request:
                     </p>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                      {request.message}
+                      <LinkifyAddresses text={request.message} />
                     </p>
                   </div>
                 </div>
