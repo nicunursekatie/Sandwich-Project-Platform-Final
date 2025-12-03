@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -93,11 +94,23 @@ export default function RecipientsManagement() {
     secondContact: false,
     operational: false,
     socialMedia: false,
+    peopleServed: false,
+    partnership: false,
+    fruitSnacks: false,
+    seasonalChanges: false,
+    communicationPreferences: false,
+    impactStories: false,
     editBasicInfo: true,
     editContact: true,
     editSecondContact: false,
     editOperational: false,
     editSocialMedia: false,
+    editPeopleServed: false,
+    editPartnership: false,
+    editFruitSnacks: false,
+    editSeasonalChanges: false,
+    editCommunicationPreferences: false,
+    editImpactStories: false,
   });
 
   const updateSection = (section: keyof typeof sections, open: boolean) => {
@@ -139,6 +152,30 @@ export default function RecipientsManagement() {
     // Social media post tracking fields
     hasSharedPost: false,
     sharedPostDate: '',
+    // People Served fields
+    averagePeopleServed: '',
+    peopleServedFrequency: '',
+    // Partnership fields
+    partnershipStartDate: '',
+    partnershipYears: '',
+    // Fruit/Snacks Program fields
+    receivingFruit: false,
+    receivingSnacks: false,
+    wantsFruit: false,
+    wantsSnacks: false,
+    fruitSnacksNotes: '',
+    // Seasonal Changes fields
+    hasSeasonalChanges: false,
+    seasonalChangesDescription: '',
+    summerNeeds: '',
+    winterNeeds: '',
+    // Communication Preferences fields
+    preferredContactMethod: '',
+    allowedContactMethods: [] as string[],
+    doNotContact: false,
+    contactMethodNotes: '',
+    // Impact Stories field
+    impactStories: [] as Array<{ story: string; date: string; source: string }>,
   });
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
@@ -339,6 +376,30 @@ export default function RecipientsManagement() {
         // Reset social media post tracking fields
         hasSharedPost: false,
         sharedPostDate: '',
+        // Reset People Served fields
+        averagePeopleServed: '',
+        peopleServedFrequency: '',
+        // Reset Partnership fields
+        partnershipStartDate: '',
+        partnershipYears: '',
+        // Reset Fruit/Snacks Program fields
+        receivingFruit: false,
+        receivingSnacks: false,
+        wantsFruit: false,
+        wantsSnacks: false,
+        fruitSnacksNotes: '',
+        // Reset Seasonal Changes fields
+        hasSeasonalChanges: false,
+        seasonalChangesDescription: '',
+        summerNeeds: '',
+        winterNeeds: '',
+        // Reset Communication Preferences fields
+        preferredContactMethod: '',
+        allowedContactMethods: [],
+        doNotContact: false,
+        contactMethodNotes: '',
+        // Reset Impact Stories field
+        impactStories: [],
       });
       toast({
         title: 'Success',
@@ -445,6 +506,18 @@ export default function RecipientsManagement() {
       sharedPostDate: (newRecipient as any).sharedPostDate
         ? new Date((newRecipient as any).sharedPostDate)
         : null,
+      // Convert averagePeopleServed from string to number (or null if empty)
+      averagePeopleServed: newRecipient.averagePeopleServed
+        ? parseInt(newRecipient.averagePeopleServed, 10)
+        : null,
+      // Convert partnershipStartDate from string to Date (or null if empty)
+      partnershipStartDate: newRecipient.partnershipStartDate
+        ? new Date(newRecipient.partnershipStartDate)
+        : null,
+      // Convert partnershipYears from string to number (or null if empty)
+      partnershipYears: newRecipient.partnershipYears
+        ? parseInt(newRecipient.partnershipYears, 10)
+        : null,
     };
 
     createRecipientMutation.mutate(submissionData);
@@ -482,6 +555,18 @@ export default function RecipientsManagement() {
       // Convert contractSignedDate from string to Date (or null if empty)
       contractSignedDate: (editingRecipient as any).contractSignedDate
         ? new Date((editingRecipient as any).contractSignedDate)
+        : null,
+      // Convert averagePeopleServed from string to number (or null if empty)
+      averagePeopleServed: (editingRecipient as any).averagePeopleServed
+        ? parseInt((editingRecipient as any).averagePeopleServed, 10)
+        : null,
+      // Convert partnershipStartDate from string to Date (or null if empty)
+      partnershipStartDate: (editingRecipient as any).partnershipStartDate
+        ? new Date((editingRecipient as any).partnershipStartDate)
+        : null,
+      // Convert partnershipYears from string to number (or null if empty)
+      partnershipYears: (editingRecipient as any).partnershipYears
+        ? parseInt((editingRecipient as any).partnershipYears, 10)
         : null,
     };
 
@@ -1364,6 +1449,604 @@ export default function RecipientsManagement() {
                                 />
                               </div>
                             )}
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* People Served Section */}
+                    <Collapsible
+                      open={sections.peopleServed}
+                      onOpenChange={(open) => updateSection('peopleServed', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              People Served
+                            </h4>
+                            {sections.peopleServed ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor="averagePeopleServed">
+                                Average # of people served
+                              </Label>
+                              <Input
+                                id="averagePeopleServed"
+                                type="number"
+                                value={newRecipient.averagePeopleServed}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    averagePeopleServed: e.target.value,
+                                  })
+                                }
+                                placeholder="Enter number"
+                                data-testid="input-average-people-served"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="peopleServedFrequency">
+                                How often
+                              </Label>
+                              <Select
+                                value={newRecipient.peopleServedFrequency}
+                                onValueChange={(value) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    peopleServedFrequency: value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger data-testid="select-people-served-frequency">
+                                  <SelectValue placeholder="Select frequency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Partnership Section */}
+                    <Collapsible
+                      open={sections.partnership}
+                      onOpenChange={(open) => updateSection('partnership', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Partnership
+                            </h4>
+                            {sections.partnership ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor="partnershipStartDate">
+                                Partnership start date
+                              </Label>
+                              <Input
+                                id="partnershipStartDate"
+                                type="date"
+                                value={newRecipient.partnershipStartDate}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    partnershipStartDate: e.target.value,
+                                  })
+                                }
+                                data-testid="input-partnership-start-date"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnershipYears">
+                                Years partnered
+                              </Label>
+                              <Input
+                                id="partnershipYears"
+                                type="number"
+                                value={newRecipient.partnershipYears}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    partnershipYears: e.target.value,
+                                  })
+                                }
+                                placeholder="Number of years"
+                                data-testid="input-partnership-years"
+                              />
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Fruit/Snacks Program Section */}
+                    <Collapsible
+                      open={sections.fruitSnacks}
+                      onOpenChange={(open) => updateSection('fruitSnacks', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Fruit/Snacks Program
+                            </h4>
+                            {sections.fruitSnacks ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="receivingFruit"
+                                  checked={newRecipient.receivingFruit}
+                                  onCheckedChange={(checked) =>
+                                    setNewRecipient({
+                                      ...newRecipient,
+                                      receivingFruit: !!checked,
+                                    })
+                                  }
+                                  data-testid="checkbox-receiving-fruit"
+                                />
+                                <Label htmlFor="receivingFruit" className="text-sm">
+                                  Currently receiving fruit
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="receivingSnacks"
+                                  checked={newRecipient.receivingSnacks}
+                                  onCheckedChange={(checked) =>
+                                    setNewRecipient({
+                                      ...newRecipient,
+                                      receivingSnacks: !!checked,
+                                    })
+                                  }
+                                  data-testid="checkbox-receiving-snacks"
+                                />
+                                <Label htmlFor="receivingSnacks" className="text-sm">
+                                  Currently receiving snacks
+                                </Label>
+                              </div>
+                            </div>
+                            {!newRecipient.receivingFruit && (
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="wantsFruit"
+                                  checked={newRecipient.wantsFruit}
+                                  onCheckedChange={(checked) =>
+                                    setNewRecipient({
+                                      ...newRecipient,
+                                      wantsFruit: !!checked,
+                                    })
+                                  }
+                                  data-testid="checkbox-wants-fruit"
+                                />
+                                <Label htmlFor="wantsFruit" className="text-sm">
+                                  Interested in receiving fruit
+                                </Label>
+                              </div>
+                            )}
+                            {!newRecipient.receivingSnacks && (
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="wantsSnacks"
+                                  checked={newRecipient.wantsSnacks}
+                                  onCheckedChange={(checked) =>
+                                    setNewRecipient({
+                                      ...newRecipient,
+                                      wantsSnacks: !!checked,
+                                    })
+                                  }
+                                  data-testid="checkbox-wants-snacks"
+                                />
+                                <Label htmlFor="wantsSnacks" className="text-sm">
+                                  Interested in receiving snacks
+                                </Label>
+                              </div>
+                            )}
+                            <div>
+                              <Label htmlFor="fruitSnacksNotes">
+                                Fruit/snacks notes
+                              </Label>
+                              <Textarea
+                                id="fruitSnacksNotes"
+                                value={newRecipient.fruitSnacksNotes}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    fruitSnacksNotes: e.target.value,
+                                  })
+                                }
+                                placeholder="Additional notes about fruit/snacks preferences..."
+                                rows={2}
+                                data-testid="textarea-fruit-snacks-notes"
+                              />
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Seasonal Changes Section */}
+                    <Collapsible
+                      open={sections.seasonalChanges}
+                      onOpenChange={(open) => updateSection('seasonalChanges', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Seasonal Changes
+                            </h4>
+                            {sections.seasonalChanges ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="hasSeasonalChanges"
+                                checked={newRecipient.hasSeasonalChanges}
+                                onCheckedChange={(checked) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    hasSeasonalChanges: !!checked,
+                                  })
+                                }
+                                data-testid="checkbox-has-seasonal-changes"
+                              />
+                              <Label htmlFor="hasSeasonalChanges" className="text-sm">
+                                Has seasonal changes
+                              </Label>
+                            </div>
+                            {newRecipient.hasSeasonalChanges && (
+                              <>
+                                <div>
+                                  <Label htmlFor="seasonalChangesDescription">
+                                    Describe seasonal changes
+                                  </Label>
+                                  <Textarea
+                                    id="seasonalChangesDescription"
+                                    value={newRecipient.seasonalChangesDescription}
+                                    onChange={(e) =>
+                                      setNewRecipient({
+                                        ...newRecipient,
+                                        seasonalChangesDescription: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Describe how needs change seasonally..."
+                                    rows={2}
+                                    data-testid="textarea-seasonal-changes-description"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="summerNeeds">
+                                    Summer needs
+                                  </Label>
+                                  <Textarea
+                                    id="summerNeeds"
+                                    value={newRecipient.summerNeeds}
+                                    onChange={(e) =>
+                                      setNewRecipient({
+                                        ...newRecipient,
+                                        summerNeeds: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Specific needs during summer months..."
+                                    rows={2}
+                                    data-testid="textarea-summer-needs"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="winterNeeds">
+                                    Winter needs
+                                  </Label>
+                                  <Textarea
+                                    id="winterNeeds"
+                                    value={newRecipient.winterNeeds}
+                                    onChange={(e) =>
+                                      setNewRecipient({
+                                        ...newRecipient,
+                                        winterNeeds: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Specific needs during winter months..."
+                                    rows={2}
+                                    data-testid="textarea-winter-needs"
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Communication Preferences Section */}
+                    <Collapsible
+                      open={sections.communicationPreferences}
+                      onOpenChange={(open) => updateSection('communicationPreferences', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Communication Preferences
+                            </h4>
+                            {sections.communicationPreferences ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="space-y-3">
+                            <div>
+                              <Label htmlFor="preferredContactMethod">
+                                Preferred contact method
+                              </Label>
+                              <Select
+                                value={newRecipient.preferredContactMethod}
+                                onValueChange={(value) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    preferredContactMethod: value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger data-testid="select-preferred-contact-method">
+                                  <SelectValue placeholder="Select method" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="email">Email</SelectItem>
+                                  <SelectItem value="sms">SMS/Text</SelectItem>
+                                  <SelectItem value="phone_call">Phone Call</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">
+                                Allowed contact methods
+                              </Label>
+                              <div className="flex flex-wrap gap-4">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="allowEmail"
+                                    checked={newRecipient.allowedContactMethods.includes('email')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.allowedContactMethods, 'email']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'email');
+                                      setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-allow-email"
+                                  />
+                                  <Label htmlFor="allowEmail" className="text-sm">Email</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="allowSms"
+                                    checked={newRecipient.allowedContactMethods.includes('sms')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.allowedContactMethods, 'sms']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'sms');
+                                      setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-allow-sms"
+                                  />
+                                  <Label htmlFor="allowSms" className="text-sm">SMS/Text</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="allowPhoneCall"
+                                    checked={newRecipient.allowedContactMethods.includes('phone_call')}
+                                    onCheckedChange={(checked) => {
+                                      const methods = checked
+                                        ? [...newRecipient.allowedContactMethods, 'phone_call']
+                                        : newRecipient.allowedContactMethods.filter(m => m !== 'phone_call');
+                                      setNewRecipient({ ...newRecipient, allowedContactMethods: methods });
+                                    }}
+                                    data-testid="checkbox-allow-phone-call"
+                                  />
+                                  <Label htmlFor="allowPhoneCall" className="text-sm">Phone Call</Label>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="doNotContact"
+                                checked={newRecipient.doNotContact}
+                                onCheckedChange={(checked) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    doNotContact: !!checked,
+                                  })
+                                }
+                                data-testid="checkbox-do-not-contact"
+                              />
+                              <Label htmlFor="doNotContact" className="text-sm text-red-600">
+                                Do not contact
+                              </Label>
+                            </div>
+                            <div>
+                              <Label htmlFor="contactMethodNotes">
+                                Contact notes
+                              </Label>
+                              <Textarea
+                                id="contactMethodNotes"
+                                value={newRecipient.contactMethodNotes}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    contactMethodNotes: e.target.value,
+                                  })
+                                }
+                                placeholder="E.g., Only call before 2pm, Best reached on Tuesdays..."
+                                rows={2}
+                                data-testid="textarea-contact-method-notes"
+                              />
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Impact Stories Section */}
+                    <Collapsible
+                      open={sections.impactStories}
+                      onOpenChange={(open) => updateSection('impactStories', open)}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Impact Stories
+                            </h4>
+                            {sections.impactStories ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="space-y-4">
+                            {newRecipient.impactStories.map((story, index) => (
+                              <div key={index} className="border rounded-lg p-3 space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium text-slate-600">
+                                    Story {index + 1}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = newRecipient.impactStories.filter((_, i) => i !== index);
+                                      setNewRecipient({ ...newRecipient, impactStories: updated });
+                                    }}
+                                    className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
+                                    data-testid={`button-remove-story-${index}`}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`story-${index}`}>Story</Label>
+                                  <Textarea
+                                    id={`story-${index}`}
+                                    value={story.story}
+                                    onChange={(e) => {
+                                      const updated = [...newRecipient.impactStories];
+                                      updated[index] = { ...updated[index], story: e.target.value };
+                                      setNewRecipient({ ...newRecipient, impactStories: updated });
+                                    }}
+                                    placeholder="Share an impact story..."
+                                    rows={3}
+                                    data-testid={`textarea-story-${index}`}
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <Label htmlFor={`story-date-${index}`}>Date collected</Label>
+                                    <Input
+                                      id={`story-date-${index}`}
+                                      type="date"
+                                      value={story.date}
+                                      onChange={(e) => {
+                                        const updated = [...newRecipient.impactStories];
+                                        updated[index] = { ...updated[index], date: e.target.value };
+                                        setNewRecipient({ ...newRecipient, impactStories: updated });
+                                      }}
+                                      data-testid={`input-story-date-${index}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`story-source-${index}`}>Source</Label>
+                                    <Input
+                                      id={`story-source-${index}`}
+                                      value={story.source}
+                                      onChange={(e) => {
+                                        const updated = [...newRecipient.impactStories];
+                                        updated[index] = { ...updated[index], source: e.target.value };
+                                        setNewRecipient({ ...newRecipient, impactStories: updated });
+                                      }}
+                                      placeholder="Who provided this story"
+                                      data-testid={`input-story-source-${index}`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setNewRecipient({
+                                  ...newRecipient,
+                                  impactStories: [
+                                    ...newRecipient.impactStories,
+                                    { story: '', date: '', source: '' }
+                                  ]
+                                });
+                              }}
+                              className="w-full"
+                              data-testid="button-add-impact-story"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Impact Story
+                            </Button>
                           </div>
                         </CollapsibleContent>
                       </div>
@@ -2800,6 +3483,607 @@ export default function RecipientsManagement() {
                           />
                         </div>
                       )}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* People Served Section */}
+              <Collapsible
+                open={sections.editPeopleServed}
+                onOpenChange={(open) => updateSection('editPeopleServed', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        People Served
+                      </h4>
+                      {sections.editPeopleServed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="edit-averagePeopleServed">
+                          Average # of people served
+                        </Label>
+                        <Input
+                          id="edit-averagePeopleServed"
+                          type="number"
+                          value={(editingRecipient as any).averagePeopleServed || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              averagePeopleServed: e.target.value,
+                            })
+                          }
+                          placeholder="Enter number"
+                          data-testid="input-edit-average-people-served"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-peopleServedFrequency">
+                          How often
+                        </Label>
+                        <Select
+                          value={(editingRecipient as any).peopleServedFrequency || ''}
+                          onValueChange={(value) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              peopleServedFrequency: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger data-testid="select-edit-people-served-frequency">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Partnership Section */}
+              <Collapsible
+                open={sections.editPartnership}
+                onOpenChange={(open) => updateSection('editPartnership', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Partnership
+                      </h4>
+                      {sections.editPartnership ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="edit-partnershipStartDate">
+                          Partnership start date
+                        </Label>
+                        <Input
+                          id="edit-partnershipStartDate"
+                          type="date"
+                          value={(editingRecipient as any).partnershipStartDate || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              partnershipStartDate: e.target.value,
+                            })
+                          }
+                          data-testid="input-edit-partnership-start-date"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-partnershipYears">
+                          Years partnered
+                        </Label>
+                        <Input
+                          id="edit-partnershipYears"
+                          type="number"
+                          value={(editingRecipient as any).partnershipYears || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              partnershipYears: e.target.value,
+                            })
+                          }
+                          placeholder="Number of years"
+                          data-testid="input-edit-partnership-years"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Fruit/Snacks Program Section */}
+              <Collapsible
+                open={sections.editFruitSnacks}
+                onOpenChange={(open) => updateSection('editFruitSnacks', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Fruit/Snacks Program
+                      </h4>
+                      {sections.editFruitSnacks ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-receivingFruit"
+                            checked={(editingRecipient as any).receivingFruit || false}
+                            onCheckedChange={(checked) =>
+                              setEditingRecipient({
+                                ...editingRecipient,
+                                receivingFruit: !!checked,
+                              })
+                            }
+                            data-testid="checkbox-edit-receiving-fruit"
+                          />
+                          <Label htmlFor="edit-receivingFruit" className="text-sm">
+                            Currently receiving fruit
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-receivingSnacks"
+                            checked={(editingRecipient as any).receivingSnacks || false}
+                            onCheckedChange={(checked) =>
+                              setEditingRecipient({
+                                ...editingRecipient,
+                                receivingSnacks: !!checked,
+                              })
+                            }
+                            data-testid="checkbox-edit-receiving-snacks"
+                          />
+                          <Label htmlFor="edit-receivingSnacks" className="text-sm">
+                            Currently receiving snacks
+                          </Label>
+                        </div>
+                      </div>
+                      {!(editingRecipient as any).receivingFruit && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-wantsFruit"
+                            checked={(editingRecipient as any).wantsFruit || false}
+                            onCheckedChange={(checked) =>
+                              setEditingRecipient({
+                                ...editingRecipient,
+                                wantsFruit: !!checked,
+                              })
+                            }
+                            data-testid="checkbox-edit-wants-fruit"
+                          />
+                          <Label htmlFor="edit-wantsFruit" className="text-sm">
+                            Interested in receiving fruit
+                          </Label>
+                        </div>
+                      )}
+                      {!(editingRecipient as any).receivingSnacks && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-wantsSnacks"
+                            checked={(editingRecipient as any).wantsSnacks || false}
+                            onCheckedChange={(checked) =>
+                              setEditingRecipient({
+                                ...editingRecipient,
+                                wantsSnacks: !!checked,
+                              })
+                            }
+                            data-testid="checkbox-edit-wants-snacks"
+                          />
+                          <Label htmlFor="edit-wantsSnacks" className="text-sm">
+                            Interested in receiving snacks
+                          </Label>
+                        </div>
+                      )}
+                      <div>
+                        <Label htmlFor="edit-fruitSnacksNotes">
+                          Fruit/snacks notes
+                        </Label>
+                        <Textarea
+                          id="edit-fruitSnacksNotes"
+                          value={(editingRecipient as any).fruitSnacksNotes || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              fruitSnacksNotes: e.target.value,
+                            })
+                          }
+                          placeholder="Additional notes about fruit/snacks preferences..."
+                          rows={2}
+                          data-testid="textarea-edit-fruit-snacks-notes"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Seasonal Changes Section */}
+              <Collapsible
+                open={sections.editSeasonalChanges}
+                onOpenChange={(open) => updateSection('editSeasonalChanges', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Seasonal Changes
+                      </h4>
+                      {sections.editSeasonalChanges ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="edit-hasSeasonalChanges"
+                          checked={(editingRecipient as any).hasSeasonalChanges || false}
+                          onCheckedChange={(checked) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              hasSeasonalChanges: !!checked,
+                            })
+                          }
+                          data-testid="checkbox-edit-has-seasonal-changes"
+                        />
+                        <Label htmlFor="edit-hasSeasonalChanges" className="text-sm">
+                          Has seasonal changes
+                        </Label>
+                      </div>
+                      {(editingRecipient as any).hasSeasonalChanges && (
+                        <>
+                          <div>
+                            <Label htmlFor="edit-seasonalChangesDescription">
+                              Describe seasonal changes
+                            </Label>
+                            <Textarea
+                              id="edit-seasonalChangesDescription"
+                              value={(editingRecipient as any).seasonalChangesDescription || ''}
+                              onChange={(e) =>
+                                setEditingRecipient({
+                                  ...editingRecipient,
+                                  seasonalChangesDescription: e.target.value,
+                                })
+                              }
+                              placeholder="Describe how needs change seasonally..."
+                              rows={2}
+                              data-testid="textarea-edit-seasonal-changes-description"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-summerNeeds">
+                              Summer needs
+                            </Label>
+                            <Textarea
+                              id="edit-summerNeeds"
+                              value={(editingRecipient as any).summerNeeds || ''}
+                              onChange={(e) =>
+                                setEditingRecipient({
+                                  ...editingRecipient,
+                                  summerNeeds: e.target.value,
+                                })
+                              }
+                              placeholder="Specific needs during summer months..."
+                              rows={2}
+                              data-testid="textarea-edit-summer-needs"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-winterNeeds">
+                              Winter needs
+                            </Label>
+                            <Textarea
+                              id="edit-winterNeeds"
+                              value={(editingRecipient as any).winterNeeds || ''}
+                              onChange={(e) =>
+                                setEditingRecipient({
+                                  ...editingRecipient,
+                                  winterNeeds: e.target.value,
+                                })
+                              }
+                              placeholder="Specific needs during winter months..."
+                              rows={2}
+                              data-testid="textarea-edit-winter-needs"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Communication Preferences Section */}
+              <Collapsible
+                open={sections.editCommunicationPreferences}
+                onOpenChange={(open) => updateSection('editCommunicationPreferences', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Communication Preferences
+                      </h4>
+                      {sections.editCommunicationPreferences ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="edit-preferredContactMethod">
+                          Preferred contact method
+                        </Label>
+                        <Select
+                          value={(editingRecipient as any).preferredContactMethod || ''}
+                          onValueChange={(value) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              preferredContactMethod: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger data-testid="select-edit-preferred-contact-method">
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="sms">SMS/Text</SelectItem>
+                            <SelectItem value="phone_call">Phone Call</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">
+                          Allowed contact methods
+                        </Label>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-allowEmail"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('email')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).allowedContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'email']
+                                  : methods.filter((m: string) => m !== 'email');
+                                setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-allow-email"
+                            />
+                            <Label htmlFor="edit-allowEmail" className="text-sm">Email</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-allowSms"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('sms')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).allowedContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'sms']
+                                  : methods.filter((m: string) => m !== 'sms');
+                                setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-allow-sms"
+                            />
+                            <Label htmlFor="edit-allowSms" className="text-sm">SMS/Text</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="edit-allowPhoneCall"
+                              checked={((editingRecipient as any).allowedContactMethods || []).includes('phone_call')}
+                              onCheckedChange={(checked) => {
+                                const methods = (editingRecipient as any).allowedContactMethods || [];
+                                const updated = checked
+                                  ? [...methods, 'phone_call']
+                                  : methods.filter((m: string) => m !== 'phone_call');
+                                setEditingRecipient({ ...editingRecipient, allowedContactMethods: updated });
+                              }}
+                              data-testid="checkbox-edit-allow-phone-call"
+                            />
+                            <Label htmlFor="edit-allowPhoneCall" className="text-sm">Phone Call</Label>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="edit-doNotContact"
+                          checked={(editingRecipient as any).doNotContact || false}
+                          onCheckedChange={(checked) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              doNotContact: !!checked,
+                            })
+                          }
+                          data-testid="checkbox-edit-do-not-contact"
+                        />
+                        <Label htmlFor="edit-doNotContact" className="text-sm text-red-600">
+                          Do not contact
+                        </Label>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-contactMethodNotes">
+                          Contact notes
+                        </Label>
+                        <Textarea
+                          id="edit-contactMethodNotes"
+                          value={(editingRecipient as any).contactMethodNotes || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              contactMethodNotes: e.target.value,
+                            })
+                          }
+                          placeholder="E.g., Only call before 2pm, Best reached on Tuesdays..."
+                          rows={2}
+                          data-testid="textarea-edit-contact-method-notes"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Impact Stories Section */}
+              <Collapsible
+                open={sections.editImpactStories}
+                onOpenChange={(open) => updateSection('editImpactStories', open)}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Impact Stories
+                      </h4>
+                      {sections.editImpactStories ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="space-y-4">
+                      {((editingRecipient as any).impactStories || []).map((story: { story: string; date: string; source: string }, index: number) => (
+                        <div key={index} className="border rounded-lg p-3 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-slate-600">
+                              Story {index + 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updated = ((editingRecipient as any).impactStories || []).filter((_: any, i: number) => i !== index);
+                                setEditingRecipient({ ...editingRecipient, impactStories: updated });
+                              }}
+                              className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
+                              data-testid={`button-edit-remove-story-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div>
+                            <Label htmlFor={`edit-story-${index}`}>Story</Label>
+                            <Textarea
+                              id={`edit-story-${index}`}
+                              value={story.story}
+                              onChange={(e) => {
+                                const updated = [...((editingRecipient as any).impactStories || [])];
+                                updated[index] = { ...updated[index], story: e.target.value };
+                                setEditingRecipient({ ...editingRecipient, impactStories: updated });
+                              }}
+                              placeholder="Share an impact story..."
+                              rows={3}
+                              data-testid={`textarea-edit-story-${index}`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor={`edit-story-date-${index}`}>Date collected</Label>
+                              <Input
+                                id={`edit-story-date-${index}`}
+                                type="date"
+                                value={story.date}
+                                onChange={(e) => {
+                                  const updated = [...((editingRecipient as any).impactStories || [])];
+                                  updated[index] = { ...updated[index], date: e.target.value };
+                                  setEditingRecipient({ ...editingRecipient, impactStories: updated });
+                                }}
+                                data-testid={`input-edit-story-date-${index}`}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-story-source-${index}`}>Source</Label>
+                              <Input
+                                id={`edit-story-source-${index}`}
+                                value={story.source}
+                                onChange={(e) => {
+                                  const updated = [...((editingRecipient as any).impactStories || [])];
+                                  updated[index] = { ...updated[index], source: e.target.value };
+                                  setEditingRecipient({ ...editingRecipient, impactStories: updated });
+                                }}
+                                placeholder="Who provided this story"
+                                data-testid={`input-edit-story-source-${index}`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingRecipient({
+                            ...editingRecipient,
+                            impactStories: [
+                              ...((editingRecipient as any).impactStories || []),
+                              { story: '', date: '', source: '' }
+                            ]
+                          });
+                        }}
+                        className="w-full"
+                        data-testid="button-edit-add-impact-story"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Impact Story
+                      </Button>
                     </div>
                   </CollapsibleContent>
                 </div>
