@@ -6,6 +6,7 @@ import { DashboardDocumentSelector } from '@/components/dashboard-document-selec
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
 import { TollFreeVerificationPanel } from '@/components/toll-free-verification-panel';
 import { SMSTestPanel } from '@/components/sms-test-panel';
+import { ChatSyncPanel } from '@/components/chat-sync-panel';
 import SpreadsheetAnalyticsDashboard from '@/components/spreadsheet-analytics-dashboard';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
@@ -139,13 +140,13 @@ export default function AdminSettings() {
               Onboarding Kudos
             </TabsTrigger>
             <TabsTrigger
-              value="sms-settings"
+              value="communications"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
-              data-testid="tab-sms-settings"
-              onClick={() => trackClick('SMS Settings Tab', 'Admin', 'Tab Navigation', 'Switched to SMS settings tab')}
+              data-testid="tab-communications"
+              onClick={() => trackClick('Communications Tab', 'Admin', 'Tab Navigation', 'Switched to communications tab')}
             >
               <MessageSquare className="h-4 w-4" />
-              SMS Settings
+              Communications
             </TabsTrigger>
           </TabsList>
 
@@ -169,10 +170,21 @@ export default function AdminSettings() {
             <AdminOnboardingKudos />
           </TabsContent>
 
-          <TabsContent value="sms-settings" className="space-y-8">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <SMSTestPanel />
-              <TollFreeVerificationPanel />
+          <TabsContent value="communications" className="space-y-8">
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">SMS Settings</h2>
+                <div className="grid gap-8 lg:grid-cols-2">
+                  <SMSTestPanel />
+                  <TollFreeVerificationPanel />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Team Chat</h2>
+                <div className="grid gap-8 lg:grid-cols-2">
+                  <ChatSyncPanel />
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

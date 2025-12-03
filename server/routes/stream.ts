@@ -435,3 +435,134 @@ streamRoutes.post('/webhook', async (req, res) => {
     res.status(200).json({ success: false, error: 'Internal error' });
   }
 });
+
+// Team room definitions (same as client-side)
+const TEAM_ROOMS = [
+  { id: 'general', name: 'General Chat', permission: 'CHAT_GENERAL' },
+  { id: 'core-team', name: 'Core Team', permission: 'CHAT_CORE_TEAM' },
+  { id: 'grants-committee', name: 'Grants Committee', permission: 'CHAT_GRANTS_COMMITTEE' },
+  { id: 'events-committee', name: 'Events Committee', permission: 'CHAT_EVENTS_COMMITTEE' },
+  { id: 'board-chat', name: 'Board Chat', permission: 'CHAT_BOARD' },
+  { id: 'web-committee', name: 'Web Committee', permission: 'CHAT_WEB_COMMITTEE' },
+  { id: 'volunteer-management', name: 'Volunteer Management', permission: 'CHAT_VOLUNTEER_MANAGEMENT' },
+  { id: 'host', name: 'Host Chat', permission: 'CHAT_HOST' },
+  { id: 'driver', name: 'Driver Chat', permission: 'CHAT_DRIVER' },
+  { id: 'recipient', name: 'Recipient Chat', permission: 'CHAT_RECIPIENT' },
+];
+
+/**
+ * Sync all users to their appropriate Stream Chat channels based on permissions
+ * This ensures member counts are accurate even if users haven't opened chat yet
+ */
+streamRoutes.post('/sync-members', async (req, res) => {
+  try {
+    const user = req.user || req.session?.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Check for admin permission
+    const permissions = user.permissions || [];
+    if (!permissions.includes('ADMIN_PANEL_ACCESS') && !permissions.includes('admin')) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    if (!streamServerClient) {
+      initializeStreamServer();
+    }
+
+    if (!streamServerClient) {
+      return res.status(500).json({ error: 'Stream Chat not configured' });
+    }
+
+    logger.log('🔄 Starting Stream Chat member sync...');
+
+    // Get all active users
+    const allUsers = await storage.getAllUsers();
+    const activeUsers = allUsers.filter(u => u.isActive !== false);
+
+    logger.log(`Found ${activeUsers.length} active users to process`);
+
+    const results: Record<string, { added: number; errors: number; members: string[] }> = {};
+
+    // Process each team room
+    for (const room of TEAM_ROOMS) {
+      results[room.id] = { added: 0, errors: 0, members: [] };
+
+      // Get or create the channel
+      const channel = streamServerClient.channel('team', room.id, {
+        name: room.name,
+        created_by_id: 'system',
+      });
+
+      try {
+        await channel.getOrCreate();
+      } catch (createError) {
+        logger.error(`Failed to get/create channel ${room.id}:`, createError);
+        continue;
+      }
+
+      // Find users with permission for this room
+      const eligibleUsers = activeUsers.filter(u => {
+        const userPermissions = u.permissions as string[] | undefined;
+        return userPermissions && Array.isArray(userPermissions) && userPermissions.includes(room.permission);
+      });
+
+      logger.log(`Channel ${room.id}: ${eligibleUsers.length} eligible users`);
+
+      // Add each eligible user to the channel
+      for (const eligibleUser of eligibleUsers) {
+        const streamUserId = `user_${eligibleUser.id}`;
+
+        try {
+          // First ensure user exists in Stream
+          await streamServerClient.upsertUser({
+            id: streamUserId,
+            name: eligibleUser.firstName && eligibleUser.lastName
+              ? `${eligibleUser.firstName} ${eligibleUser.lastName}`
+              : eligibleUser.email || 'User',
+            email: eligibleUser.email,
+          });
+
+          // Add user as member
+          await channel.addMembers([streamUserId]);
+          results[room.id].added++;
+          results[room.id].members.push(eligibleUser.email || streamUserId);
+        } catch (addError: any) {
+          if (addError.message?.includes('already a member')) {
+            // Already a member, still count them
+            results[room.id].members.push(eligibleUser.email || streamUserId);
+          } else {
+            logger.error(`Failed to add ${eligibleUser.email} to ${room.id}:`, addError.message);
+            results[room.id].errors++;
+          }
+        }
+      }
+
+      logger.log(`✅ Channel ${room.id}: ${results[room.id].members.length} members total`);
+    }
+
+    // Calculate summary
+    const summary = {
+      totalChannels: TEAM_ROOMS.length,
+      totalUsersProcessed: activeUsers.length,
+      channelResults: Object.entries(results).map(([channelId, data]) => ({
+        channelId,
+        memberCount: data.members.length,
+        newlyAdded: data.added,
+        errors: data.errors,
+      })),
+    };
+
+    logger.log('🎉 Stream Chat member sync complete!', summary);
+
+    res.json({
+      success: true,
+      message: 'Member sync completed',
+      summary,
+    });
+  } catch (error) {
+    logger.error('Stream Chat member sync error:', error);
+    res.status(500).json({ error: 'Failed to sync members' });
+  }
+});
