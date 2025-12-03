@@ -502,10 +502,14 @@ streamRoutes.post('/sync-members', requirePermission(PERMISSIONS.ADMIN_PANEL_ACC
       });
 
       try {
-        await channel.getOrCreate();
-      } catch (createError) {
-        logger.error(`Failed to get/create channel ${room.id}:`, createError);
-        continue;
+        // Use create() which creates if not exists, or returns existing
+        await channel.create();
+      } catch (createError: any) {
+        // If channel already exists, that's fine - continue with adding members
+        if (!createError.message?.includes('already exists')) {
+          logger.error(`Failed to get/create channel ${room.id}:`, createError);
+          continue;
+        }
       }
 
       // Find users with permission for this room
