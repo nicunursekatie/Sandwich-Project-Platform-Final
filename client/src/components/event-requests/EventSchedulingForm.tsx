@@ -998,9 +998,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               scheduledEventDate={formData.eventDate || null}
               eventStartTime={formData.eventStartTime || null}
               eventEndTime={formData.eventEndTime || null}
-              vanBooked={formData.vanDriverNeeded && !formData.selfTransport ? 'yes' : 'no'}
-              driverName={formData.assignedVanDriverId || null}
-              recipientId={formData.assignedRecipientIds?.[0] ? parseInt(formData.assignedRecipientIds[0]) : null}
+              pickupTime={formData.pickupTime || null}
+              vanDriverNeeded={formData.vanDriverNeeded}
+              selfTransport={formData.selfTransport}
+              assignedVanDriverId={formData.assignedVanDriverId || null}
+              assignedSpeakerIds={(eventRequest as any)?.assignedSpeakerIds || null}
+              assignedRecipientIds={formData.assignedRecipientIds || null}
               organizationName={formData.organizationName || eventRequest?.organizationName || null}
               enabled={!!formData.eventDate}
             />
