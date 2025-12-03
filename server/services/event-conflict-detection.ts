@@ -209,15 +209,8 @@ export async function checkEventConflicts(
     // Get van driver ID (new field or legacy driverName)
     const currentVanDriverId = eventData.assignedVanDriverId || eventData.driverName || null;
 
-    // Get speaker IDs (array)
-    const currentSpeakerIds = eventData.assignedSpeakerIds || [];
-
-    // Get recipient IDs (array) - support both new array format and legacy single recipientId
-    const currentRecipientIds = eventData.assignedRecipientIds && eventData.assignedRecipientIds.length > 0
-      ? eventData.assignedRecipientIds
-      : (eventData.recipientId ? [String(eventData.recipientId)] : []);
-
-    // Helper to normalize PostgreSQL array format to JS array
+    // Helper to normalize PostgreSQL array format to JS array of strings
+    // This ensures consistent string comparison for IDs
     const normalizeArrayField = (field: any): string[] => {
       if (!field) return [];
       if (Array.isArray(field)) return field.filter(Boolean).map(String);
@@ -229,6 +222,15 @@ export async function checkEventConflicts(
       }
       return [String(field)];
     };
+
+    // Get speaker IDs (array) - normalize to strings for consistent comparison
+    const currentSpeakerIds = normalizeArrayField(eventData.assignedSpeakerIds);
+
+    // Get recipient IDs (array) - support both new array format and legacy single recipientId
+    // Normalize to strings for consistent comparison with database values
+    const currentRecipientIds = eventData.assignedRecipientIds && eventData.assignedRecipientIds.length > 0
+      ? normalizeArrayField(eventData.assignedRecipientIds)
+      : (eventData.recipientId ? [String(eventData.recipientId)] : []);
 
     // Fetch driver names for better messaging
     const driverNamesMap = new Map<string, string>();
