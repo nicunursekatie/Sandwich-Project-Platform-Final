@@ -146,8 +146,8 @@ streamRoutes.post('/credentials', async (req, res) => {
               created_by_id: streamUserId,
             });
 
-            // Use getOrCreate to handle both new and existing channels
-            await channel.getOrCreate();
+            // Use create() which creates if not exists, or returns existing
+            await channel.create();
 
             // Add user as member (this works for both new and existing channels)
             try {
