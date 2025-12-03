@@ -131,6 +131,7 @@ export default function StreamChatRooms() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [groupName, setGroupName] = useState('');
   const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>('rooms');
+  const [unreadCounts, setUnreadCounts] = useState<{ rooms: number; dms: number; groups: number }>({ rooms: 0, dms: 0, groups: 0 });
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch all users for DM/group creation
@@ -164,8 +165,16 @@ export default function StreamChatRooms() {
     return u.email?.[0]?.toUpperCase() || '?';
   };
 
-  // Load DMs and group chats
-  const loadUserChannels = async (chatClient: StreamChat, currentStreamUserId: string) => {
+  // Calculate and update unread counts for all sections
+  const updateUnreadCounts = (dmChannels: ChannelType[], groupChannels: ChannelType[], roomChannelsMap: Map<string, RoomWithMembers>) => {
+    const dmsUnread = dmChannels.reduce((sum, ch) => sum + (ch.countUnread() || 0), 0);
+    const groupsUnread = groupChannels.reduce((sum, ch) => sum + (ch.countUnread() || 0), 0);
+    const roomsUnread = Array.from(roomChannelsMap.values()).reduce((sum, r) => sum + (r.channel?.countUnread() || 0), 0);
+    setUnreadCounts({ rooms: roomsUnread, dms: dmsUnread, groups: groupsUnread });
+  };
+
+  // Load DMs and group chats - returns arrays for unread count calculation
+  const loadUserChannels = async (chatClient: StreamChat, currentStreamUserId: string): Promise<{ dmChannels: ChannelType[]; groupChannels: ChannelType[] }> => {
     try {
       // Query for direct message channels (1:1)
       const dmFilter = {
@@ -184,8 +193,11 @@ export default function StreamChatRooms() {
       };
       const groupChannels = await chatClient.queryChannels(groupFilter, { last_message_at: -1 }, { limit: 20 });
       setGroupChats(groupChannels);
+
+      return { dmChannels, groupChannels };
     } catch (error) {
       logger.error('Failed to load user channels:', error);
+      return { dmChannels: [], groupChannels: [] };
     }
   };
 
@@ -341,7 +353,7 @@ export default function StreamChatRooms() {
         heartbeatIntervalRef.current = setInterval(sendHeartbeat, 2 * 60 * 1000);
 
         // Load DMs and group chats
-        await loadUserChannels(chatClient, streamUserId);
+        const { dmChannels, groupChannels } = await loadUserChannels(chatClient, streamUserId);
 
         // Filter rooms based on user permissions
         const accessibleRooms = CHAT_ROOMS.filter(room => {
@@ -418,6 +430,9 @@ export default function StreamChatRooms() {
 
         setTeamRoomChannels(roomChannelsMap);
 
+        // Update unread counts for all sections
+        updateUnreadCounts(dmChannels, groupChannels, roomChannelsMap);
+
         // Set first accessible room as active
         if (accessibleRooms.length > 0) {
           const firstRoomData = roomChannelsMap.get(accessibleRooms[0].id);
@@ -454,6 +469,30 @@ export default function StreamChatRooms() {
       }
     };
   }, [user]);
+
+  // Real-time unread count updates
+  useEffect(() => {
+    if (!client) return;
+
+    const handleMessageEvent = () => {
+      // Recalculate unread counts from current state
+      const dmsUnread = directMessages.reduce((sum, ch) => sum + (ch.countUnread() || 0), 0);
+      const groupsUnread = groupChats.reduce((sum, ch) => sum + (ch.countUnread() || 0), 0);
+      const roomsUnread = Array.from(teamRoomChannels.values()).reduce((sum, r) => sum + (r.channel?.countUnread() || 0), 0);
+      setUnreadCounts({ rooms: roomsUnread, dms: dmsUnread, groups: groupsUnread });
+    };
+
+    // Listen for message events to update unread counts
+    client.on('message.new', handleMessageEvent);
+    client.on('message.read', handleMessageEvent);
+    client.on('notification.mark_read', handleMessageEvent);
+
+    return () => {
+      client.off('message.new', handleMessageEvent);
+      client.off('message.read', handleMessageEvent);
+      client.off('notification.mark_read', handleMessageEvent);
+    };
+  }, [client, directMessages, groupChats, teamRoomChannels]);
 
   if (!user) {
     return (
@@ -517,33 +556,48 @@ export default function StreamChatRooms() {
             <div className="flex gap-1">
               <button
                 onClick={() => setActiveSection('rooms')}
-                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                className={`relative flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeSection === 'rooms'
                     ? 'bg-white text-[#236383]'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
-                Rooms ({userRooms.length})
+                Rooms
+                {unreadCounts.rooms > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadCounts.rooms > 99 ? '99+' : unreadCounts.rooms}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveSection('dms')}
-                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                className={`relative flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeSection === 'dms'
                     ? 'bg-white text-[#236383]'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
-                DMs ({directMessages.length})
+                DMs
+                {unreadCounts.dms > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadCounts.dms > 99 ? '99+' : unreadCounts.dms}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveSection('groups')}
-                className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                className={`relative flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeSection === 'groups'
                     ? 'bg-white text-[#236383]'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
-                Groups ({groupChats.length})
+                Groups
+                {unreadCounts.groups > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadCounts.groups > 99 ? '99+' : unreadCounts.groups}
+                  </span>
+                )}
               </button>
             </div>
           </div>
