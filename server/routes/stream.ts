@@ -479,6 +479,16 @@ streamRoutes.post('/sync-members', requirePermission(PERMISSIONS.ADMIN_PANEL_ACC
 
     logger.log(`Found ${activeUsers.length} active users to process`);
 
+    // Debug: Log first user's permissions to understand the format
+    if (activeUsers.length > 0) {
+      const sampleUser = activeUsers[0];
+      logger.log(`Sample user permissions for ${sampleUser.email}:`, {
+        permissions: sampleUser.permissions,
+        type: typeof sampleUser.permissions,
+        isArray: Array.isArray(sampleUser.permissions),
+      });
+    }
+
     const results: Record<string, { added: number; errors: number; members: string[] }> = {};
 
     // Process each team room
@@ -500,8 +510,23 @@ streamRoutes.post('/sync-members', requirePermission(PERMISSIONS.ADMIN_PANEL_ACC
 
       // Find users with permission for this room
       const eligibleUsers = activeUsers.filter(u => {
-        const userPermissions = u.permissions as string[] | undefined;
-        return userPermissions && Array.isArray(userPermissions) && userPermissions.includes(room.permission);
+        let userPermissions = u.permissions;
+
+        // Handle case where permissions might be a JSON string
+        if (typeof userPermissions === 'string') {
+          try {
+            userPermissions = JSON.parse(userPermissions);
+          } catch {
+            return false;
+          }
+        }
+
+        // Check if it's an array and includes the permission
+        if (Array.isArray(userPermissions)) {
+          return userPermissions.includes(room.permission);
+        }
+
+        return false;
       });
 
       logger.log(`Channel ${room.id}: ${eligibleUsers.length} eligible users`);
