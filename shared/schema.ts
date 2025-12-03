@@ -952,6 +952,15 @@ export const recipients = pgTable('recipients', {
   summerNeeds: text('summer_needs'), // Summer-specific needs
   winterNeeds: text('winter_needs'), // Winter/holiday-specific needs
 
+  // Communication preferences
+  preferredContactMethod: text('preferred_contact_method'), // 'email', 'sms', 'phone_call' - their preferred method
+  allowedContactMethods: jsonb('allowed_contact_methods').$type<string[]>().default(['email', 'phone_call']), // Methods they consent to receive
+  doNotContact: boolean('do_not_contact').notNull().default(false), // Opt-out of all contact
+  contactMethodNotes: text('contact_method_notes'), // Special instructions for contacting (e.g., "Only call before 2pm")
+
+  // Impact stories - quotes and stories from recipients about TSP's impact
+  impactStories: jsonb('impact_stories').$type<Array<{story: string; date?: string; source?: string}>>().default([]),
+
   // Multiple collection schedules (stored as JSON arrays)
   collectionSchedules: jsonb('collection_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
   feedingSchedules: jsonb('feeding_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
