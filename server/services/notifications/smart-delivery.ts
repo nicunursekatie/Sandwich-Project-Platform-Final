@@ -471,8 +471,7 @@ export class SmartDeliveryService {
         smsBody = smsBody.substring(0, 157) + '...';
       }
 
-      // Send SMS using provider
-      const provider = await getSMSProvider();
+      // Send SMS using provider (reuse provider from top of function)
       const result = await provider.sendSMS({
         to: formattedPhone,
         body: smsBody
