@@ -57,4 +57,13 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **File Uploads**: `multer`
 -   **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
 -   **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
--   **SMS**: `twilio`
+-   **SMS**: `twilio` (using Replit Twilio integration with API Key authentication)
+
+### Twilio SMS Configuration
+The SMS system uses Replit's managed Twilio connection for secure API Key authentication. Key files:
+-   `server/sms-providers/provider-factory.ts` - Prioritizes Replit integration over manual env vars
+-   `server/sms-providers/replit-twilio-connector.ts` - Fetches credentials from Replit's connection API
+-   `server/sms-providers/twilio-provider.ts` - Twilio SDK wrapper supporting both auth methods
+-   `server/services/notifications/smart-delivery.ts` - Uses lazy async initialization via `getSMSProvider()`
+
+**Important**: The SMS provider uses lazy async initialization to avoid timing issues during server startup. The `smart-delivery.ts` module calls `getSMSProvider()` instead of synchronously accessing the provider at module load time. This ensures the Replit Twilio connection is properly fetched before any SMS operations occur.
