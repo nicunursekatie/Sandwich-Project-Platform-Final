@@ -23,7 +23,9 @@
       "Bash(node -e:*)",
       "Bash(timeout 5 npm run dev:*)",
       "Bash(xargs kill:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
