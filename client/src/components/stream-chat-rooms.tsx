@@ -60,9 +60,11 @@ const CustomMessage = () => {
   // Get read receipts - Stream Chat tracks reads in readBy array
   const readers = readBy || [];
   const hasReaders = readers.length > 0;
-  
+
   // Get channel member count to determine if all have read
-  const memberCount = channel?.state?.members ? Object.keys(channel.state.members).length - 1 : 0; // -1 to exclude sender
+  // Ensure memberCount is never negative (edge case when members object is empty or undefined)
+  const rawMemberCount = channel?.state?.members ? Object.keys(channel.state.members).length - 1 : 0; // -1 to exclude sender
+  const memberCount = Math.max(0, rawMemberCount);
   const allRead = memberCount > 0 && readers.length >= memberCount;
   
   return (
@@ -86,14 +88,18 @@ const CustomMessage = () => {
                 <TooltipContent side="top" className="max-w-xs">
                   <div className="text-xs">
                     <p className="font-medium mb-1">
-                      {allRead ? 'Read by everyone' : `Read by ${readers.length} of ${memberCount}`}
+                      {memberCount === 0
+                        ? 'Read'
+                        : allRead
+                          ? 'Read by everyone'
+                          : `Read by ${readers.length} of ${memberCount}`}
                     </p>
                     {readers.length > 0 && (
                       <div className="space-y-1">
-                        {readers.slice(0, 5).map((reader: any) => {
+                        {readers.slice(0, 5).map((reader: any, index: number) => {
                           const readerName = reader.user?.name || reader.user?.id || 'Someone';
                           return (
-                            <p key={reader.user?.id || reader} className="text-gray-300">
+                            <p key={reader.user?.id || `reader-${index}`} className="text-gray-300">
                               {readerName}
                             </p>
                           );
