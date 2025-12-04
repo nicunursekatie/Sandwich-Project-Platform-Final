@@ -2,10 +2,9 @@ import { useLocation } from 'wouter';
 import {
   Home,
   ClipboardList,
-  MessageCircle,
   Calendar,
   Menu,
-  StickyNote,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOBILE_NAV_ITEMS } from '../types';
@@ -14,10 +13,9 @@ import { MOBILE_NAV_ITEMS } from '../types';
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Home,
   ClipboardList,
-  MessageCircle,
   Calendar,
   Menu,
-  StickyNote,
+  Truck,
 };
 
 /**

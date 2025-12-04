@@ -19,9 +19,9 @@ export interface MobileRoute {
 // Bottom navigation items - keep to 4-5 max for thumb reach
 export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   { id: 'home', label: 'Home', icon: 'Home', href: '/m' },
+  { id: 'events', label: 'Events', icon: 'Calendar', href: '/m/events' },
+  { id: 'drivers', label: 'Drivers', icon: 'Truck', href: '/m/driver-planning' },
   { id: 'collections', label: 'Log', icon: 'ClipboardList', href: '/m/collections' },
-  { id: 'holding', label: 'Holding', icon: 'StickyNote', href: '/m/holding-zone' },
-  { id: 'chat', label: 'Chat', icon: 'MessageCircle', href: '/m/chat' },
   { id: 'more', label: 'More', icon: 'Menu', href: '/m/more' },
 ];
 

@@ -2,21 +2,20 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import {
   User,
-  Settings,
   HelpCircle,
   LogOut,
   ChevronRight,
-  Truck,
   FileText,
   Bell,
   Moon,
   Sun,
   ExternalLink,
   Monitor,
-  Calendar,
   FolderOpen,
   Wrench,
   Inbox,
+  StickyNote,
+  MessageCircle,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
@@ -47,10 +46,10 @@ export function MobileMore() {
 
   const menuSections: MenuSection[] = [
     {
-      title: 'Planning & Coordination',
+      title: 'Communication',
       items: [
-        { id: 'events', label: 'Event Requests', icon: Calendar, href: '/m/events' },
-        { id: 'driver-planning', label: 'Driver Planning', icon: Truck, href: '/m/driver-planning' },
+        { id: 'holding-zone', label: 'Holding Zone', icon: StickyNote, href: '/m/holding-zone' },
+        { id: 'chat', label: 'Team Chat', icon: MessageCircle, href: '/m/chat' },
         { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/m/inbox' },
       ],
     },
