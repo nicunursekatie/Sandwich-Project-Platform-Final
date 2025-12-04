@@ -325,6 +325,7 @@ export default function EventOperationalDashboard() {
   }, [events, users]);
 
   // Calculate request volume for selected date range
+  // Uses createdAt which reflects when the form was submitted to Google Sheets
   const requestVolumeData = useMemo(() => {
     const now = new Date();
     const days = parseInt(volumeDateRange, 10);
@@ -700,6 +701,9 @@ export default function EventOperationalDashboard() {
                 No request data available for the {requestVolumeData.rangeLabel.toLowerCase()}
               </p>
             )}
+            <p className="text-xs text-gray-400 mt-4 text-center">
+              Based on form submission dates from Google Sheets
+            </p>
           </CardContent>
         </Card>
       </div>
