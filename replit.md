@@ -111,3 +111,29 @@ await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type
 - `assignRecipientsMutation` / `assignTspContactMutation` - assignments
 
 This ensures the UI immediately reflects saved changes.
+
+### Recipient Geocoding & Driver Planning Map Integration
+
+**Added (December 2025):** Recipients now have geocoding support for display on the Driver Planning map.
+
+**Database Schema Changes:**
+- `recipients` table has new columns: `latitude` (decimal), `longitude` (decimal), `geocodedAt` (timestamp)
+- Migration: `migrations/0008_add_recipient_geocoding.sql`
+
+**Geocoding Behavior:**
+- Automatic: When creating or updating a recipient with an address, geocoding happens asynchronously after the response
+- Uses existing `server/utils/geocoding.ts` (OpenStreetMap primary, Google fallback) with 1 req/sec rate limiting
+- Backfill endpoint: `POST /api/recipients/geocode-all` geocodes all recipients without coordinates (respects rate limits)
+
+**API Endpoints:**
+- `GET /api/recipients/map` - Returns active recipients with coordinates for map display
+- Response includes: id, name, address, region, latitude, longitude, estimatedSandwiches, collectionDay, collectionTime, focusAreas, contactPersonName, phone
+
+**Driver Planning Map Integration (`client/src/pages/driver-planning.tsx`):**
+- Purple markers for recipients (distinct from blue events, green hosts)
+- "Nearby Recipients" section in right panel showing recipients within 15 miles of selected event
+- Marker legend updated to include recipients
+
+**Route Ordering (CRITICAL):**
+- Specific routes (`/map`, `/geocode-all`, `/export-csv`) MUST come before parameterized routes (`/:id`)
+- This prevents "map" or "geocode-all" from being parsed as recipient IDs
