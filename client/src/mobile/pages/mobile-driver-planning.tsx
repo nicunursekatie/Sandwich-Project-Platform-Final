@@ -17,7 +17,7 @@ import {
 import { MobileShell } from '../components/mobile-shell';
 import { PullToRefresh } from '../components/pull-to-refresh';
 import { cn } from '@/lib/utils';
-import { format, parseISO, addWeeks, isWithinInterval, startOfToday } from 'date-fns';
+import { format, parseISO, addWeeks, isWithinInterval, startOfToday, endOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 interface EventForPlanning {
@@ -79,11 +79,11 @@ export function MobileDriverPlanning() {
       if (!event.eventDate) return false;
       const eventDate = parseISO(event.eventDate);
 
-      // Date filter
-      const endDate = dateFilter === 'today' ? today
-        : dateFilter === 'week' ? addWeeks(today, 1)
-        : dateFilter === '2weeks' ? addWeeks(today, 2)
-        : addWeeks(today, 4);
+      // Date filter - use endOfDay for proper boundary comparison
+      const endDate = dateFilter === 'today' ? endOfDay(today)
+        : dateFilter === 'week' ? endOfDay(addWeeks(today, 1))
+        : dateFilter === '2weeks' ? endOfDay(addWeeks(today, 2))
+        : endOfDay(addWeeks(today, 4));
 
       if (!isWithinInterval(eventDate, { start: today, end: endDate })) return false;
 

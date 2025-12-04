@@ -128,12 +128,14 @@ export function MobileLayoutPrompt() {
 
   const handleStayDesktop = () => {
     setMobilePreference('desktop');
-    setShowPrompt(false);
+    setIsAnimating(false);
+    setTimeout(() => setShowPrompt(false), 300);
   };
 
   const handleDismiss = () => {
     dismissPrompt();
-    setShowPrompt(false);
+    setIsAnimating(false);
+    setTimeout(() => setShowPrompt(false), 300);
   };
 
   if (!showPrompt) return null;
