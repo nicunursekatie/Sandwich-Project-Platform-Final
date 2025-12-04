@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Chat,
   Channel,
-  ChannelList,
   MessageList,
   MessageInput,
   Thread,
   Window,
   ChannelHeader,
   LoadingIndicator,
+  Message,
+  useMessageContext,
+  useChannelStateContext,
 } from 'stream-chat-react';
 import { StreamChat, Channel as ChannelType } from 'stream-chat';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +27,6 @@ import {
   MessageSquare,
   Plus,
   Search,
-  UserPlus,
   X,
   MessageCircle,
 } from 'lucide-react';
@@ -36,10 +37,93 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Check, CheckCheck } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Import Stream Chat styles
 import 'stream-chat-react/dist/css/v2/index.css';
 import { logger } from '@/lib/logger';
+
+// Custom Message component with read receipts
+const CustomMessage = () => {
+  const { message, readBy } = useMessageContext();
+  const { channel } = useChannelStateContext();
+  const { user } = useAuth();
+  
+  // Check if this is the current user's message
+  const isOwnMessage = message?.user?.id === `user_${user?.id}`;
+  
+  // Get read receipts - Stream Chat tracks reads in readBy array
+  const readers = readBy || [];
+  const hasReaders = readers.length > 0;
+  
+  // Get channel member count to determine if all have read
+  const memberCount = channel?.state?.members ? Object.keys(channel.state.members).length - 1 : 0; // -1 to exclude sender
+  const allRead = memberCount > 0 && readers.length >= memberCount;
+  
+  return (
+    <>
+      <Message message={message} />
+      {/* Show read receipts for your own messages */}
+      {isOwnMessage && (
+        <div className="read-receipt-indicator">
+          {hasReaders ? (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center">
+                    {allRead ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-gray-400" />
+                    )}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <div className="text-xs">
+                    <p className="font-medium mb-1">
+                      {allRead ? 'Read by everyone' : `Read by ${readers.length} of ${memberCount}`}
+                    </p>
+                    {readers.length > 0 && (
+                      <div className="space-y-1">
+                        {readers.slice(0, 5).map((reader: any) => {
+                          const readerName = reader.user?.name || reader.user?.id || 'Someone';
+                          return (
+                            <p key={reader.user?.id || reader} className="text-gray-300">
+                              {readerName}
+                            </p>
+                          );
+                        })}
+                        {readers.length > 5 && (
+                          <p className="text-gray-400 italic">+{readers.length - 5} more</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center">
+                  <Check className="w-3.5 h-3.5 text-gray-400" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                Sent
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
+    </>
+  );
+};
 
 // Custom CSS for Stream Chat with brand colors
 const customChatStyles = `
@@ -88,6 +172,20 @@ const customChatStyles = `
   .str-chat__header-livestream {
     background: #236383 !important;
     color: #ffffff !important;
+  }
+
+  /* Read receipts for own messages */
+  .str-chat__message--me .str-chat__message-bubble {
+    position: relative;
+  }
+
+  .read-receipt-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding-left: 8px;
+    font-size: 11px;
   }
 `;
 
@@ -802,7 +900,7 @@ export default function StreamChatRooms() {
             <Channel channel={activeChannel}>
               <Window>
                 <ChannelHeader />
-                <MessageList />
+                <MessageList Message={CustomMessage} />
                 <MessageInput />
               </Window>
               <Thread />
