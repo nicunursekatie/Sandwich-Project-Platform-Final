@@ -93,13 +93,13 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 overflow-x-hidden max-w-full">
+    <div className="space-y-6 max-w-full">
       {/* View Mode and Role Filter */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         {/* View Toggle */}
-        <div className="flex items-center gap-3">
-          <span className="text-base font-semibold text-gray-700">View:</span>
-          <div className="flex gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-base font-semibold text-gray-700 whitespace-nowrap">View:</span>
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               onClick={() => setViewMode('card')}
@@ -135,8 +135,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
         {/* Role Filter */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-base font-semibold text-gray-700">Filter by role:</span>
-          <div className="flex gap-2">
+          <span className="text-base font-semibold text-gray-700 whitespace-nowrap">Filter by role:</span>
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={roleFilter === 'all' ? 'default' : 'outline'}
               onClick={() => setRoleFilter('all')}
@@ -372,7 +372,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsSpeaker && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'speaker')}
-                          disabled={isSpeakerSignedUp || !canSelfSignup('speaker')}
+                          disabled={isSpeakerSignedUp || !canSelfSignup(request, 'speaker')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isSpeakerSignedUp
@@ -390,7 +390,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsVolunteer && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'volunteer')}
-                          disabled={isVolunteerSignedUp || !canSelfSignup('volunteer')}
+                          disabled={isVolunteerSignedUp || !canSelfSignup(request, 'volunteer')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isVolunteerSignedUp
@@ -408,7 +408,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsDriver && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'driver')}
-                          disabled={isDriverSignedUp || !canSelfSignup('driver')}
+                          disabled={isDriverSignedUp || !canSelfSignup(request, 'driver')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isDriverSignedUp
