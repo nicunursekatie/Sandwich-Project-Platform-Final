@@ -100,13 +100,16 @@ interface Driver {
   homeAddress: string | null;
 }
 
-interface Host {
+interface HostContact {
   id: number;
-  name: string;
+  contactName: string;
+  role: string;
+  hostLocationName: string;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: string | null;
+  latitude: string;
+  longitude: string;
+  email: string | null;
+  phone: string | null;
 }
 
 // Custom marker icons
@@ -294,12 +297,12 @@ export default function DriverPlanningDashboard() {
     },
   });
 
-  // Fetch hosts
-  const { data: hosts = [] } = useQuery<Host[]>({
-    queryKey: ['/api/hosts'],
+  // Fetch host contacts with coordinates (from the hosts/map endpoint)
+  const { data: hostContacts = [] } = useQuery<HostContact[]>({
+    queryKey: ['/api/hosts/map'],
     queryFn: async () => {
-      const response = await fetch('/api/hosts');
-      if (!response.ok) throw new Error('Failed to fetch hosts');
+      const response = await fetch('/api/hosts/map');
+      if (!response.ok) throw new Error('Failed to fetch host contacts');
       return response.json();
     },
   });
@@ -364,23 +367,44 @@ export default function DriverPlanningDashboard() {
     );
   }, [activeDrivers]);
 
-  // Get nearby hosts for selected event
+  // Get unique host locations near the selected event
   const nearbyHosts = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
     const eventLng = parseFloat(selectedEvent.longitude);
 
-    return hosts
-      .filter(host => host.latitude && host.longitude && host.status === 'active')
-      .map(host => {
-        const distance = calculateDistanceInMiles(eventLat, eventLng, host.latitude!, host.longitude!);
-        return { ...host, distance };
-      })
-      .filter(host => host.distance < 10) // Within 10 miles
+    // Group by host location name to avoid duplicates
+    const hostLocationMap = new Map<string, { name: string; distance: number; latitude: string; longitude: string }>();
+
+    hostContacts.forEach(contact => {
+      if (!contact.latitude || !contact.longitude) return;
+
+      const distance = calculateDistanceInMiles(
+        eventLat,
+        eventLng,
+        parseFloat(contact.latitude),
+        parseFloat(contact.longitude)
+      );
+
+      // Only include if within 10 miles and either new or closer than existing
+      if (distance < 10) {
+        const existing = hostLocationMap.get(contact.hostLocationName);
+        if (!existing || distance < existing.distance) {
+          hostLocationMap.set(contact.hostLocationName, {
+            name: contact.hostLocationName,
+            distance,
+            latitude: contact.latitude,
+            longitude: contact.longitude,
+          });
+        }
+      }
+    });
+
+    return Array.from(hostLocationMap.values())
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5);
-  }, [selectedEvent, hosts]);
+  }, [selectedEvent, hostContacts]);
 
   // Copy SMS to clipboard
   const copyDriverSMS = async (driver: Driver) => {
@@ -598,14 +622,13 @@ export default function DriverPlanningDashboard() {
             {/* Nearby host markers when event selected */}
             {selectedEvent && nearbyHosts.map((host) => (
               <Marker
-                key={`host-${host.id}`}
-                position={[host.latitude!, host.longitude!]}
+                key={`host-${host.name}`}
+                position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
                 icon={hostIcon}
               >
                 <Popup>
                   <div className="p-2">
                     <h3 className="font-semibold">{host.name}</h3>
-                    <p className="text-sm text-gray-600">{host.address}</p>
                     <p className="text-xs text-gray-500">{host.distance.toFixed(1)} miles away</p>
                   </div>
                 </Popup>
@@ -667,7 +690,7 @@ export default function DriverPlanningDashboard() {
                   {nearbyHosts.length > 0 ? (
                     <div className="space-y-2">
                       {nearbyHosts.map((host) => (
-                        <div key={host.id} className="flex items-center justify-between text-xs p-2 bg-green-50 border border-green-200 rounded">
+                        <div key={host.name} className="flex items-center justify-between text-xs p-2 bg-green-50 border border-green-200 rounded">
                           <div className="flex items-center gap-2">
                             <Building2 className="w-3.5 h-3.5 text-green-600" />
                             <span className="font-medium">{host.name}</span>
