@@ -481,6 +481,164 @@ const markAllRead = async (req: Request, res: Response) => {
   }
 };
 
+// Get who has read a specific chat message
+const getMessageReaders = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    const { chatMessageReads } = await import('../../shared/schema');
+
+    // Get all users who have read this message
+    const readers = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+        profileImageUrl: users.profileImageUrl,
+        readAt: chatMessageReads.readAt,
+      })
+      .from(chatMessageReads)
+      .innerJoin(users, eq(users.id, chatMessageReads.userId))
+      .where(eq(chatMessageReads.messageId, messageId))
+      .orderBy(chatMessageReads.readAt);
+
+    res.json(readers);
+  } catch (error) {
+    logger.error('Error getting message readers:', error);
+    res.status(500).json({ error: 'Failed to get message readers' });
+  }
+};
+
+// Get read status for multiple chat messages at once (batch endpoint for efficiency)
+const getBatchMessageReaders = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { messageIds } = req.body;
+    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({ error: 'Message IDs array is required' });
+    }
+
+    // Limit to prevent abuse
+    if (messageIds.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 messages per request' });
+    }
+
+    const numericIds = messageIds.map(id => parseInt(String(id))).filter(id => !isNaN(id));
+
+    const { chatMessageReads } = await import('../../shared/schema');
+
+    // Get all readers for all requested messages
+    const allReaders = await db
+      .select({
+        messageId: chatMessageReads.messageId,
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+        profileImageUrl: users.profileImageUrl,
+        readAt: chatMessageReads.readAt,
+      })
+      .from(chatMessageReads)
+      .innerJoin(users, eq(users.id, chatMessageReads.userId))
+      .where(sql`${chatMessageReads.messageId} IN (${sql.join(numericIds.map(id => sql`${id}`), sql`, `)})`)
+      .orderBy(chatMessageReads.readAt);
+
+    // Group by message ID
+    const readersByMessage: Record<number, typeof allReaders> = {};
+    for (const reader of allReaders) {
+      if (!readersByMessage[reader.messageId]) {
+        readersByMessage[reader.messageId] = [];
+      }
+      readersByMessage[reader.messageId].push(reader);
+    }
+
+    res.json(readersByMessage);
+  } catch (error) {
+    logger.error('Error getting batch message readers:', error);
+    res.status(500).json({ error: 'Failed to get message readers' });
+  }
+};
+
+// Get read status for email/inbox messages
+const getEmailMessageReadStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    // Get the email message and check if recipient has read it
+    const [message] = await db
+      .select({
+        id: emailMessages.id,
+        senderId: emailMessages.senderId,
+        recipientId: emailMessages.recipientId,
+        isRead: emailMessages.isRead,
+        readAt: emailMessages.readAt,
+      })
+      .from(emailMessages)
+      .where(eq(emailMessages.id, messageId));
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Only sender can see read status
+    if (message.senderId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to view read status' });
+    }
+
+    // Get recipient info if read
+    let reader = null;
+    if (message.isRead && message.recipientId) {
+      const [recipientInfo] = await db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          displayName: users.displayName,
+          profileImageUrl: users.profileImageUrl,
+        })
+        .from(users)
+        .where(eq(users.id, message.recipientId));
+
+      if (recipientInfo) {
+        reader = {
+          ...recipientInfo,
+          readAt: message.readAt,
+        };
+      }
+    }
+
+    res.json({
+      isRead: message.isRead,
+      readAt: message.readAt,
+      reader,
+    });
+  } catch (error) {
+    logger.error('Error getting email message read status:', error);
+    res.status(500).json({ error: 'Failed to get read status' });
+  }
+};
+
 export function createMessageNotificationsRouter(deps: RouterDependencies) {
   const router = Router();
   const { isAuthenticated } = deps;
@@ -490,6 +648,11 @@ export function createMessageNotificationsRouter(deps: RouterDependencies) {
   router.post('/mark-read', isAuthenticated, markMessagesRead);
   router.post('/mark-chat-read', isAuthenticated, markChatMessagesRead);
   router.post('/mark-all-read', isAuthenticated, markAllRead);
+
+  // Read receipts endpoints
+  router.get('/chat-readers/:messageId', isAuthenticated, getMessageReaders);
+  router.post('/chat-readers/batch', isAuthenticated, getBatchMessageReaders);
+  router.get('/email-read-status/:messageId', isAuthenticated, getEmailMessageReadStatus);
 
   return router;
 }

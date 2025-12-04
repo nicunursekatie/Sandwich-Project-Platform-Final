@@ -65,6 +65,7 @@ import {
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { KudosInbox } from '@/components/kudos-inbox';
 import { MessageContextBadge } from '@/components/message-context-badge';
+import { InboxReadIndicator } from '@/components/read-receipts';
 import { logger } from '@/lib/logger';
 
 interface User {
@@ -1224,22 +1225,32 @@ export default function GmailStyleInbox() {
                                 </Badge>
                               )}
                             </div>
-                            <span className={`text-xs whitespace-nowrap ${
-                              isKudos ? 'text-yellow-600 font-medium' : 'text-gray-500'
-                            }`}>
-                              {(() => {
-                                try {
-                                  return message.createdAt
-                                    ? formatDistanceToNow(
-                                        new Date(message.createdAt),
-                                        { addSuffix: true }
-                                      )
-                                    : 'No date';
-                                } catch (error) {
-                                  return 'Invalid date';
-                                }
-                              })()}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {/* Read indicator for sent messages */}
+                              {activeFolder === 'sent' && (
+                                <InboxReadIndicator
+                                  isRead={message.isRead || false}
+                                  readAt={message.readAt}
+                                  readerName={message.recipientName}
+                                />
+                              )}
+                              <span className={`text-xs whitespace-nowrap ${
+                                isKudos ? 'text-yellow-600 font-medium' : 'text-gray-500'
+                              }`}>
+                                {(() => {
+                                  try {
+                                    return message.createdAt
+                                      ? formatDistanceToNow(
+                                          new Date(message.createdAt),
+                                          { addSuffix: true }
+                                        )
+                                      : 'No date';
+                                  } catch (error) {
+                                    return 'Invalid date';
+                                  }
+                                })()}
+                              </span>
+                            </div>
                           </div>
                           
                           {/* Show subject for kudos */}
