@@ -3,14 +3,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
-  Route,
   Send,
-  CalendarCheck,
   ChevronRight,
   Sandwich,
   Users,
   TrendingUp,
   Clock,
+  StickyNote,
+  Truck,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
@@ -19,9 +19,9 @@ import { QUICK_ACTIONS } from '../types';
 // Icon mapping for quick actions
 const actionIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Plus,
-  Route,
   Send,
-  CalendarCheck,
+  StickyNote,
+  Truck,
 };
 
 /**

@@ -5,6 +5,7 @@ import {
   MessageCircle,
   Calendar,
   Menu,
+  StickyNote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOBILE_NAV_ITEMS } from '../types';
@@ -16,6 +17,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageCircle,
   Calendar,
   Menu,
+  StickyNote,
 };
 
 /**

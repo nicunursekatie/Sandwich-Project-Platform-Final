@@ -31,7 +31,11 @@ const MobileCollectionEntry = lazy(() => import('@/mobile/pages/mobile-collectio
 const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
 const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
 const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
-const MobileRoute = lazy(() => import('@/mobile/pages/mobile-route'));
+const MobileHoldingZone = lazy(() => import('@/mobile/pages/mobile-holding-zone'));
+const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zone-add'));
+const MobileDriverPlanning = lazy(() => import('@/mobile/pages/mobile-driver-planning'));
+const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
+const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
 
 // Mobile layout prompt (shows for mobile users on desktop routes)
 const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
@@ -272,9 +276,34 @@ function Router() {
                 <MobileCollections />
               </Suspense>
             </Route>
-            <Route path="/route">
+            <Route path="/holding-zone">
               <Suspense fallback={<MobileLoader />}>
-                <MobileRoute />
+                <MobileHoldingZone />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/:id/edit">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/driver-planning">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileDriverPlanning />
+              </Suspense>
+            </Route>
+            <Route path="/resources">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileResources />
+              </Suspense>
+            </Route>
+            <Route path="/quick-tools">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileQuickTools />
               </Suspense>
             </Route>
             <Route path="/chat">

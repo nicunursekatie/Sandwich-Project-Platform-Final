@@ -6,17 +6,17 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  MapPin,
   Truck,
-  Building2,
-  Users,
   FileText,
-  BarChart3,
   Bell,
   Moon,
   Sun,
   ExternalLink,
   Monitor,
+  Calendar,
+  FolderOpen,
+  Wrench,
+  Inbox,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
@@ -47,23 +47,23 @@ export function MobileMore() {
 
   const menuSections: MenuSection[] = [
     {
-      title: 'Operations',
+      title: 'Planning & Coordination',
       items: [
-        { id: 'hosts', label: 'Hosts', icon: Building2, href: '/m/hosts' },
-        { id: 'drivers', label: 'Drivers', icon: Truck, href: '/m/drivers' },
-        { id: 'recipients', label: 'Recipients', icon: Users, href: '/m/recipients' },
-        { id: 'route-map', label: 'Route Map', icon: MapPin, href: '/m/route' },
+        { id: 'events', label: 'Event Requests', icon: Calendar, href: '/m/events' },
+        { id: 'driver-planning', label: 'Driver Planning', icon: Truck, href: '/m/driver-planning' },
+        { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/m/inbox' },
       ],
     },
     {
-      title: 'Reports',
+      title: 'Resources',
       items: [
-        { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/m/analytics' },
-        { id: 'documents', label: 'Documents', icon: FileText, href: '/m/documents' },
+        { id: 'resources', label: 'Resources', icon: FolderOpen, href: '/m/resources' },
+        { id: 'quick-tools', label: 'Quick Tools', icon: Wrench, href: '/m/quick-tools' },
+        { id: 'documents', label: 'Documents', icon: FileText, href: '/resources', external: true },
       ],
     },
     {
-      title: 'Settings',
+      title: 'Account',
       items: [
         { id: 'profile', label: 'My Profile', icon: User, href: '/m/profile' },
         { id: 'notifications', label: 'Notifications', icon: Bell, href: '/m/notifications' },
@@ -72,7 +72,7 @@ export function MobileMore() {
     {
       title: 'Support',
       items: [
-        { id: 'help', label: 'Help & FAQ', icon: HelpCircle, href: '/m/help' },
+        { id: 'help', label: 'Help & FAQ', icon: HelpCircle, href: '/help', external: true },
         { id: 'desktop', label: 'Switch to Desktop', icon: Monitor, href: '/', external: true },
       ],
     },

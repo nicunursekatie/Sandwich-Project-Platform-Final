@@ -20,8 +20,8 @@ export interface MobileRoute {
 export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   { id: 'home', label: 'Home', icon: 'Home', href: '/m' },
   { id: 'collections', label: 'Log', icon: 'ClipboardList', href: '/m/collections' },
+  { id: 'holding', label: 'Holding', icon: 'StickyNote', href: '/m/holding-zone' },
   { id: 'chat', label: 'Chat', icon: 'MessageCircle', href: '/m/chat' },
-  { id: 'events', label: 'Events', icon: 'Calendar', href: '/m/events' },
   { id: 'more', label: 'More', icon: 'Menu', href: '/m/more' },
 ];
 
@@ -45,12 +45,12 @@ export const QUICK_ACTIONS: QuickAction[] = [
     color: 'bg-green-500',
   },
   {
-    id: 'my-route',
-    label: 'My Route',
-    description: 'View today\'s deliveries',
-    icon: 'Route',
-    href: '/m/route',
-    color: 'bg-blue-500',
+    id: 'add-task',
+    label: 'Add Task',
+    description: 'Quick task to holding zone',
+    icon: 'StickyNote',
+    href: '/m/holding-zone/new',
+    color: 'bg-amber-500',
   },
   {
     id: 'send-message',
@@ -61,11 +61,11 @@ export const QUICK_ACTIONS: QuickAction[] = [
     color: 'bg-purple-500',
   },
   {
-    id: 'check-events',
-    label: 'Today\'s Events',
-    description: 'See scheduled events',
-    icon: 'CalendarCheck',
-    href: '/m/events/today',
-    color: 'bg-orange-500',
+    id: 'driver-planning',
+    label: 'Driver Planning',
+    description: 'Assign drivers to events',
+    icon: 'Truck',
+    href: '/m/driver-planning',
+    color: 'bg-blue-500',
   },
 ];
