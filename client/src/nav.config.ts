@@ -208,7 +208,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Driver Planning',
     icon: Truck,
     href: 'driver-planning',
-    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    permission: PERMISSIONS.NAV_DRIVER_PLANNING,
     group: 'event-planning',
     highlighted: true,
   },

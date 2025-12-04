@@ -1035,7 +1035,7 @@ export const TOURS: Tour[] = [
     category: 'events-calendar',
     icon: 'Truck',
     estimatedTime: '3 min',
-    requiredPermission: 'NAV_EVENT_PLANNING',
+    requiredPermission: 'NAV_DRIVER_PLANNING',
     steps: [
       {
         id: 'driver-planning-intro',

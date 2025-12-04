@@ -289,6 +289,7 @@ export const PERMISSIONS = {
   NAV_PROJECTS: 'NAV_PROJECTS', // Access to Projects tab
   NAV_MEETINGS: 'NAV_MEETINGS', // Access to Meetings tab
   NAV_EVENT_PLANNING: 'NAV_EVENT_PLANNING', // Access to Event Planning tab
+  NAV_DRIVER_PLANNING: 'NAV_DRIVER_PLANNING', // Access to Driver Planning tab
   NAV_EVENT_REMINDERS: 'NAV_EVENT_REMINDERS', // Access to Event Reminders tab
   NAV_ANALYTICS: 'NAV_ANALYTICS', // Access to Analytics tab
   NAV_WEEKLY_MONITORING: 'NAV_WEEKLY_MONITORING', // Access to Weekly Monitoring tab
@@ -323,6 +324,7 @@ export const PERMISSIONS = {
 export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
   // Navigation permissions automatically grant their corresponding functional permissions
   [PERMISSIONS.NAV_EVENT_PLANNING]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
+  [PERMISSIONS.NAV_DRIVER_PLANNING]: [PERMISSIONS.EVENT_REQUESTS_VIEW, PERMISSIONS.DRIVERS_VIEW],
   [PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
   [PERMISSIONS.NAV_HOSTS]: [PERMISSIONS.HOSTS_VIEW],
   [PERMISSIONS.NAV_DRIVERS]: [PERMISSIONS.DRIVERS_VIEW],
