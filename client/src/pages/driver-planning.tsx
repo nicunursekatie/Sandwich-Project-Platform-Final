@@ -100,13 +100,16 @@ interface Driver {
   homeAddress: string | null;
 }
 
-interface Host {
+interface HostContact {
   id: number;
-  name: string;
+  contactName: string;
+  role: string;
+  hostLocationName: string;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: string | null;
+  latitude: string;
+  longitude: string;
+  email: string | null;
+  phone: string | null;
 }
 
 // Custom marker icons
@@ -294,12 +297,12 @@ export default function DriverPlanningDashboard() {
     },
   });
 
-  // Fetch hosts
-  const { data: hosts = [] } = useQuery<Host[]>({
-    queryKey: ['/api/hosts'],
+  // Fetch host contacts with coordinates (from the hosts/map endpoint)
+  const { data: hostContacts = [] } = useQuery<HostContact[]>({
+    queryKey: ['/api/hosts/map'],
     queryFn: async () => {
-      const response = await fetch('/api/hosts');
-      if (!response.ok) throw new Error('Failed to fetch hosts');
+      const response = await fetch('/api/hosts/map');
+      if (!response.ok) throw new Error('Failed to fetch host contacts');
       return response.json();
     },
   });
@@ -364,23 +367,44 @@ export default function DriverPlanningDashboard() {
     );
   }, [activeDrivers]);
 
-  // Get nearby hosts for selected event
+  // Get unique host locations near the selected event
   const nearbyHosts = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
     const eventLng = parseFloat(selectedEvent.longitude);
 
-    return hosts
-      .filter(host => host.latitude && host.longitude && host.status === 'active')
-      .map(host => {
-        const distance = calculateDistanceInMiles(eventLat, eventLng, host.latitude!, host.longitude!);
-        return { ...host, distance };
-      })
-      .filter(host => host.distance < 10) // Within 10 miles
+    // Group by host location name to avoid duplicates
+    const hostLocationMap = new Map<string, { name: string; distance: number; latitude: string; longitude: string }>();
+
+    hostContacts.forEach(contact => {
+      if (!contact.latitude || !contact.longitude) return;
+
+      const distance = calculateDistanceInMiles(
+        eventLat,
+        eventLng,
+        parseFloat(contact.latitude),
+        parseFloat(contact.longitude)
+      );
+
+      // Only include if within 10 miles and either new or closer than existing
+      if (distance < 10) {
+        const existing = hostLocationMap.get(contact.hostLocationName);
+        if (!existing || distance < existing.distance) {
+          hostLocationMap.set(contact.hostLocationName, {
+            name: contact.hostLocationName,
+            distance,
+            latitude: contact.latitude,
+            longitude: contact.longitude,
+          });
+        }
+      }
+    });
+
+    return Array.from(hostLocationMap.values())
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5);
-  }, [selectedEvent, hosts]);
+  }, [selectedEvent, hostContacts]);
 
   // Copy SMS to clipboard
   const copyDriverSMS = async (driver: Driver) => {
@@ -598,14 +622,13 @@ export default function DriverPlanningDashboard() {
             {/* Nearby host markers when event selected */}
             {selectedEvent && nearbyHosts.map((host) => (
               <Marker
-                key={`host-${host.id}`}
-                position={[host.latitude!, host.longitude!]}
+                key={`host-${host.name}`}
+                position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
                 icon={hostIcon}
               >
                 <Popup>
                   <div className="p-2">
                     <h3 className="font-semibold">{host.name}</h3>
-                    <p className="text-sm text-gray-600">{host.address}</p>
                     <p className="text-xs text-gray-500">{host.distance.toFixed(1)} miles away</p>
                   </div>
                 </Popup>
@@ -654,42 +677,36 @@ export default function DriverPlanningDashboard() {
               <div className="p-6 text-center text-gray-500">
                 <Truck className="w-16 h-16 mx-auto mb-3 opacity-20" />
                 <p className="text-sm font-medium">No event selected</p>
-                <p className="text-xs mt-1">Click an event from the list to see suggested drivers for that area</p>
+                <p className="text-xs mt-1">Click an event from the list to see suggested drivers and nearby hosts</p>
               </div>
             ) : (
               <div className="p-3 space-y-4">
-                {/* Event Details Card */}
-                <Card className="bg-[#007E8C]/5 border-[#007E8C]/20">
-                  <CardContent className="p-3 space-y-2">
-                    <h3 className="font-semibold text-sm">{selectedEvent.organizationName}</h3>
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>
-                          {selectedEvent.scheduledEventDate
-                            ? format(parseLocalDate(selectedEvent.scheduledEventDate), 'EEEE, MMMM d, yyyy')
-                            : 'Date TBD'}
-                        </span>
-                      </div>
-                      {selectedEvent.eventStartTime && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatTime12Hour(selectedEvent.eventStartTime)}</span>
+                {/* Nearby Hosts - Show first and always visible */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-green-600" />
+                    Nearby Host Locations
+                  </h3>
+                  {nearbyHosts.length > 0 ? (
+                    <div className="space-y-2">
+                      {nearbyHosts.map((host) => (
+                        <div key={host.name} className="flex items-center justify-between text-xs p-2 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-3.5 h-3.5 text-green-600" />
+                            <span className="font-medium">{host.name}</span>
+                          </div>
+                          <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="line-clamp-2">{selectedEvent.eventAddress}</span>
-                      </div>
-                      {selectedEvent.estimatedSandwichCount && (
-                        <div className="flex items-center gap-2">
-                          <Package className="w-3.5 h-3.5" />
-                          <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                      No hosts with map coordinates found nearby.
+                      <br />
+                      <span className="text-gray-400">Add coordinates in Host Management to see them here.</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Suggested Drivers */}
                 {suggestedDrivers.length > 0 ? (
@@ -778,7 +795,7 @@ export default function DriverPlanningDashboard() {
                         variant="link"
                         size="sm"
                         className="text-xs p-0 h-auto mt-2 text-amber-800"
-                        onClick={() => setLocation('/dashboard?section=drivers')}
+                        onClick={() => window.location.href = '/dashboard?section=drivers'}
                       >
                         Go to Driver Management →
                       </Button>
@@ -786,25 +803,6 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
 
-                {/* Nearby Hosts */}
-                {nearbyHosts.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                      Nearby Host Locations ({nearbyHosts.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {nearbyHosts.map((host) => (
-                        <div key={host.id} className="flex items-center gap-2 text-xs p-2 bg-green-50 rounded">
-                          <Building2 className="w-3.5 h-3.5 text-green-600" />
-                          <div>
-                            <span className="font-medium">{host.name}</span>
-                            <span className="text-gray-500 ml-2">({host.distance.toFixed(1)} mi)</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </ScrollArea>
