@@ -48,6 +48,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
 import { OnlineUsers } from '@/components/online-users';
+import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -155,6 +156,9 @@ export default function Dashboard({
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  // Show toast notifications when other users come online
+  useOnlinePresenceNotifications();
 
   React.useEffect(() => {
     trackView(
