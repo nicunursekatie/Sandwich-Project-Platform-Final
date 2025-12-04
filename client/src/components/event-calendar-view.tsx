@@ -76,6 +76,32 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Helper function to calculate unfilled needs for an event
+const getUnfilledNeeds = (event: EventRequest) => {
+  // Speakers: count needed vs assigned (using speakerDetails object)
+  const speakersNeededCount = event.speakersNeeded ?? 0;
+  const speakersAssignedCount = Object.keys(event.speakerDetails || {}).length;
+  const needsSpeaker = speakersNeededCount > speakersAssignedCount;
+  const speakersUnfilled = Math.max(0, speakersNeededCount - speakersAssignedCount);
+
+  // Volunteers: count needed vs assigned (using assignedVolunteerIds array)
+  const volunteersNeededCount = event.volunteersNeeded ?? 0;
+  const volunteersAssignedCount = event.assignedVolunteerIds?.length || 0;
+  const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
+  const volunteersUnfilled = Math.max(0, volunteersNeededCount - volunteersAssignedCount);
+
+  // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
+  const driversNeededCount = event.driversNeeded ?? 0;
+  const driversAssignedCount = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+  const needsDriver = driversNeededCount > driversAssignedCount;
+  const driversUnfilled = Math.max(0, driversNeededCount - driversAssignedCount);
+
+  return { 
+    needsSpeaker, needsVolunteer, needsDriver,
+    speakersUnfilled, volunteersUnfilled, driversUnfilled
+  };
+};
+
 // Helper function to get staffing indicators for an event
 const getStaffingIndicators = (event: EventRequest) => {
   const indicators = [];
@@ -613,22 +639,28 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             </Badge>
           </div>
 
-          {/* Staffing Indicators Legend */}
+          {/* Unfilled Needs Legend */}
           <div className="flex flex-wrap gap-4 items-center">
             <span className="text-sm font-semibold text-gray-800">
-              Staffing Needed:
+              Unfilled Needs:
             </span>
             <div className="flex items-center gap-1.5">
-              <Car className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-700">Drivers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
+                <Mic className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Speaker</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Mic className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-700">Speakers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
+                <UserCheck className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Volunteer</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-700">Volunteers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
+                <Car className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Driver</span>
             </div>
           </div>
 
@@ -766,6 +798,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
                     const assignedStaff = getAssignedStaffNames(event, resolveUserName);
+                    const unfilledNeeds = getUnfilledNeeds(event);
 
                     return (
                       <button
@@ -781,8 +814,32 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           {event.organizationName}
                         </div>
 
-                        {/* Staffing indicators row */}
-                        {staffingIndicators.length > 0 && (
+                        {/* Unfilled needs badges - prominent display */}
+                        {(unfilledNeeds.needsSpeaker || unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
+                          <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                            {unfilledNeeds.needsSpeaker && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
+                                <Mic className="w-3 h-3" />
+                                {unfilledNeeds.speakersUnfilled > 1 ? `${unfilledNeeds.speakersUnfilled}` : ''}
+                              </span>
+                            )}
+                            {unfilledNeeds.needsVolunteer && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
+                                <UserCheck className="w-3 h-3" />
+                                {unfilledNeeds.volunteersUnfilled > 1 ? `${unfilledNeeds.volunteersUnfilled}` : ''}
+                              </span>
+                            )}
+                            {unfilledNeeds.needsDriver && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
+                                <Car className="w-3 h-3" />
+                                {unfilledNeeds.driversUnfilled > 1 ? `${unfilledNeeds.driversUnfilled}` : ''}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Staffing indicators row - only show if no unfilled needs (assigned staff) */}
+                        {staffingIndicators.length > 0 && !unfilledNeeds.needsSpeaker && !unfilledNeeds.needsVolunteer && !unfilledNeeds.needsDriver && (
                           <div className="flex items-center gap-1.5 mt-1">
                             {staffingIndicators.map((indicator, idx) => {
                               const IconComponent = indicator.icon;
