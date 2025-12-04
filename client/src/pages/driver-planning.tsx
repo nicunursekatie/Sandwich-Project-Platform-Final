@@ -563,7 +563,7 @@ export default function DriverPlanningDashboard() {
       {/* Main Content - 3 Panels */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Event List */}
-        <div className="w-80 border-r bg-gray-50 flex flex-col">
+        <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list">
           <div className="p-3 border-b bg-white">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#007E8C]" />
@@ -649,7 +649,7 @@ export default function DriverPlanningDashboard() {
         </div>
 
         {/* Center Panel - Map */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" data-testid="driver-planning-map">
           <MapContainer
             center={mapCenter}
             zoom={10}
@@ -741,7 +741,7 @@ export default function DriverPlanningDashboard() {
           </MapContainer>
 
           {/* Map legend */}
-          <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+          <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]" data-testid="driver-planning-legend">
             <div className="text-xs font-semibold mb-2">Legend</div>
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
@@ -792,7 +792,7 @@ export default function DriverPlanningDashboard() {
             ) : (
               <div className="p-3 space-y-4">
                 {/* Nearby Hosts - Show first and always visible */}
-                <div>
+                <div data-testid="driver-planning-nearby-hosts">
                   <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-green-600" />
                     Nearby Hosts
@@ -838,7 +838,7 @@ export default function DriverPlanningDashboard() {
                 </div>
 
                 {/* Nearby Recipients - Delivery locations */}
-                <div>
+                <div data-testid="driver-planning-nearby-recipients">
                   <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
                     <Heart className="w-4 h-4 text-purple-600" />
                     Nearby Recipients (Delivery Locations)
@@ -896,7 +896,7 @@ export default function DriverPlanningDashboard() {
 
                 {/* Suggested Drivers */}
                 {suggestedDrivers.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-testid="driver-planning-suggested-drivers">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
                       Drivers in this area ({suggestedDrivers.length})
                     </h3>

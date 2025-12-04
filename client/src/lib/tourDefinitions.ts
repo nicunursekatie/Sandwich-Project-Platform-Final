@@ -1027,6 +1027,90 @@ export const TOURS: Tour[] = [
         highlightPadding: 12
       }
     ]
+  },
+  {
+    id: 'driver-planning-guide',
+    title: 'Driver Planning Map',
+    description: 'Plan driver assignments using the interactive event map',
+    category: 'events-calendar',
+    icon: 'Truck',
+    estimatedTime: '3 min',
+    requiredPermission: 'NAV_EVENT_PLANNING',
+    steps: [
+      {
+        id: 'driver-planning-intro',
+        title: 'Driver Planning Overview',
+        description: 'The Driver Planning Map helps you coordinate drivers with upcoming events. See events on a map, find nearby hosts and recipients, and identify available drivers.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'driver-planning-nav',
+        title: 'Open Driver Planning',
+        description: 'Find "Driver Planning" in the Event Planning section of the navigation menu.',
+        targetSelector: '[data-nav-id="driver-planning"]',
+        position: 'right',
+        navigationAction: {
+          section: 'driver-planning'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="driver-planning"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'driver-planning-events-list',
+        title: 'Upcoming Events',
+        description: 'The left panel shows all scheduled events in the selected time period. Click on any event to see it on the map and find nearby resources.',
+        targetSelector: '[data-testid="driver-planning-events-list"]',
+        position: 'right',
+        highlightPadding: 12,
+        waitForElement: true
+      },
+      {
+        id: 'driver-planning-map',
+        title: 'Interactive Event Map',
+        description: 'Events appear as blue markers on the map. Click any marker to select it. When selected, it turns red and shows nearby hosts (green) and recipients (purple).',
+        targetSelector: '[data-testid="driver-planning-map"]',
+        position: 'left',
+        highlightPadding: 16,
+        waitForElement: true
+      },
+      {
+        id: 'driver-planning-legend',
+        title: 'Map Legend',
+        description: 'Use the legend to understand marker colors: Blue = Event, Red = Selected Event, Green = Nearby Host, Purple = Nearby Recipient.',
+        targetSelector: '[data-testid="driver-planning-legend"]',
+        position: 'top',
+        highlightPadding: 8
+      },
+      {
+        id: 'driver-planning-nearby-hosts',
+        title: 'Nearby Hosts',
+        description: 'When you select an event, the right panel shows host contacts within 10 miles. Click any host to zoom to their location on the map.',
+        targetSelector: '[data-testid="driver-planning-nearby-hosts"]',
+        position: 'left',
+        highlightPadding: 12
+      },
+      {
+        id: 'driver-planning-nearby-recipients',
+        title: 'Nearby Recipients',
+        description: 'See recipients (delivery locations) within 15 miles of the selected event. Click any recipient to find them on the map.',
+        targetSelector: '[data-testid="driver-planning-nearby-recipients"]',
+        position: 'left',
+        highlightPadding: 12
+      },
+      {
+        id: 'driver-planning-drivers',
+        title: 'Suggested Drivers',
+        description: 'Based on the event location, the system suggests drivers who cover that area. You can copy an SMS request to send to any driver.',
+        targetSelector: '[data-testid="driver-planning-suggested-drivers"]',
+        position: 'left',
+        highlightPadding: 16
+      }
+    ]
   }
 ];
 
