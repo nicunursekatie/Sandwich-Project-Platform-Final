@@ -81,7 +81,7 @@ export const useEventMutations = () => {
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
       return apiRequest('PATCH', `/api/event-requests/${id}`, data);
     },
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       logger.log('=== UPDATE SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
       logger.log('Variables:', variables);
@@ -93,7 +93,8 @@ export const useEventMutations = () => {
 
       // Use refetchQueries to force immediate data refresh
       // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // NOTE: Do NOT await this - it blocks dialog close and causes poor UX
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       // Invalidate event map if address or coordinates might have changed
       queryClient.invalidateQueries({
@@ -229,23 +230,20 @@ export const useEventMutations = () => {
       apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
         scheduledCallDate,
       }),
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Call scheduled',
         description: 'Call has been scheduled successfully.',
       });
       
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after call scheduled:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data after call scheduled:', error));
       }
 
       setShowScheduleCallDialog(false);
@@ -271,7 +269,7 @@ export const useEventMutations = () => {
       field: string;
       value: string;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Field updated',
         description: 'Event field has been updated successfully.',
@@ -279,16 +277,14 @@ export const useEventMutations = () => {
       
       // Use refetchQueries instead of invalidateQueries to force immediate data refresh
       // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // NOTE: Don't await - it blocks UI updates
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after field update:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data after field update:', error));
       }
 
       setEditingScheduledId(null);
@@ -311,23 +307,20 @@ export const useEventMutations = () => {
         followUpOneDayDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: '1-day follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
       
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after 1-day follow-up:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data after 1-day follow-up:', error));
       }
 
       setShowOneDayFollowUpDialog(false);
@@ -349,23 +342,20 @@ export const useEventMutations = () => {
         followUpOneMonthDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: '1-month follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
       
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after 1-month follow-up:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data after 1-month follow-up:', error));
       }
 
       setShowOneMonthFollowUpDialog(false);
@@ -385,13 +375,13 @@ export const useEventMutations = () => {
       apiRequest('PATCH', `/api/event-requests/${id}`, {
         scheduledEventDate: newDate.toISOString(),
       }),
-    onSuccess: async () => {
+    onSuccess: () => {
       toast({
         title: 'Event rescheduled',
         description: 'The event date has been updated successfully.',
       });
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks UI updates)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
     },
     onError: () => {
@@ -411,7 +401,7 @@ export const useEventMutations = () => {
       logger.log('Recipient IDs:', assignedRecipientIds);
       return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds });
     },
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       logger.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
@@ -420,18 +410,15 @@ export const useEventMutations = () => {
         description: 'Recipients have been successfully assigned to this event.',
       });
 
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data:', error));
       }
     },
     onError: (error) => {
@@ -455,7 +442,7 @@ export const useEventMutations = () => {
       logger.log('Custom TSP Contact:', customTspContact);
       return apiRequest('PATCH', `/api/event-requests/${id}/tsp-contact`, { tspContact, customTspContact });
     },
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       logger.log('=== TSP CONTACT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
@@ -468,18 +455,15 @@ export const useEventMutations = () => {
         description,
       });
 
-      // Use refetchQueries for immediate data refresh
-      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
+      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data:', error);
-        }
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data:', error));
       }
     },
     onError: (error) => {
