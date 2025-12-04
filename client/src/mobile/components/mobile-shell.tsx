@@ -10,6 +10,7 @@ interface MobileShellProps {
   showHeader?: boolean;
   onBack?: () => void;
   rightAction?: ReactNode;
+  headerActions?: ReactNode;
 }
 
 /**
