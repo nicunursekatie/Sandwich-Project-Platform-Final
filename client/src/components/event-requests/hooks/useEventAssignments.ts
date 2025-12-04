@@ -5,6 +5,7 @@ import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -464,6 +465,11 @@ export const useEventAssignments = () => {
   // Check if user can sign up
   const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
     if (!user) return false;
+    
+    // Check if user has the self-signup permission
+    if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP)) {
+      return false;
+    }
 
     if (type === 'driver') {
       const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
