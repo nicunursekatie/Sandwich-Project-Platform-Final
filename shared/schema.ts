@@ -966,6 +966,11 @@ export const recipients = pgTable('recipients', {
   collectionSchedules: jsonb('collection_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
   feedingSchedules: jsonb('feeding_schedules').$type<Array<{day: string; time: string; notes?: string}>>().default([]),
 
+  // Geocoding fields for map display
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
+
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
