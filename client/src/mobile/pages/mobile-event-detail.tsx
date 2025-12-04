@@ -8,7 +8,6 @@ import {
   Phone,
   Mail,
   Sandwich,
-  ArrowLeft,
   Navigation,
   Copy,
   Check,
