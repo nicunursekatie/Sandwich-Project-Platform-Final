@@ -68,6 +68,7 @@ export default function DriversManagement() {
     name: '',
     phone: '',
     email: '',
+    address: '',
     licenseNumber: '',
     hostLocation: '',
     availability: '',
@@ -193,11 +194,13 @@ export default function DriversManagement() {
       name: '',
       phone: '',
       email: '',
+      address: '',
       licenseNumber: '',
       hostLocation: '',
       availability: '',
       emailAgreementSent: false,
       vanApproved: false,
+      isWeeklyDriver: false,
       isActive: true,
     });
   };

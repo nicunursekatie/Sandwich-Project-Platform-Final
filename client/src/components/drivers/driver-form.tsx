@@ -22,6 +22,7 @@ interface Driver {
   name: string;
   phone: string;
   email: string;
+  address: string;
   vehicleType: string;
   licenseNumber: string;
   availability: 'available' | 'busy' | 'off-duty';
@@ -33,6 +34,7 @@ interface DriverFormData {
   name: string;
   phone: string;
   email: string;
+  address: string;
   vehicleType: string;
   licenseNumber: string;
   availability: 'available' | 'busy' | 'off-duty';
@@ -61,6 +63,7 @@ export function DriverForm({
     name: '',
     phone: '',
     email: '',
+    address: '',
     vehicleType: '',
     licenseNumber: '',
     availability: 'available',
@@ -125,6 +128,21 @@ export function DriverForm({
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className="pl-10"
                 required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="address">Home Address</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                className="pl-10"
+                placeholder="Street address, city, state, zip"
+                data-testid="input-driver-address"
               />
             </div>
           </div>
