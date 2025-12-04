@@ -390,7 +390,8 @@ export default function DriverPlanningDashboard() {
         description: `SMS message for ${driver.name} copied to clipboard`,
       });
       setTimeout(() => setCopiedDriverId(null), 2000);
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
       toast({
         title: 'Copy failed',
         description: 'Unable to copy to clipboard. Please try again.',
