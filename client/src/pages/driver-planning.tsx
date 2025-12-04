@@ -237,9 +237,36 @@ const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): 
   return driverLocations.some(loc => locationMatchesCity(loc, eventCity));
 };
 
-// Component to center map on selected event
-function MapController({ selectedEvent, events }: { selectedEvent: EventMapData | null; events: EventMapData[] }) {
+// Type for focused map item (host or recipient)
+interface FocusedMapItem {
+  type: 'host' | 'recipient';
+  id: number;
+  latitude: string;
+  longitude: string;
+}
+
+// Component to center map on selected event or focused item
+function MapController({ 
+  selectedEvent, 
+  events,
+  focusedItem 
+}: { 
+  selectedEvent: EventMapData | null; 
+  events: EventMapData[];
+  focusedItem: FocusedMapItem | null;
+}) {
   const map = useMap();
+
+  // Handle focused item (host or recipient click from sidebar)
+  useEffect(() => {
+    if (focusedItem?.latitude && focusedItem?.longitude) {
+      map.setView(
+        [parseFloat(focusedItem.latitude), parseFloat(focusedItem.longitude)],
+        15,
+        { animate: true }
+      );
+    }
+  }, [focusedItem, map]);
 
   useEffect(() => {
     if (selectedEvent?.latitude && selectedEvent?.longitude) {
@@ -292,6 +319,7 @@ export default function DriverPlanningDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
   const [copiedDriverId, setCopiedDriverId] = useState<number | null>(null);
+  const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
 
   // Fetch events
   const { data: allEvents = [], isLoading: eventsLoading, refetch: refetchEvents } = useQuery<EventMapData[]>({
@@ -393,43 +421,31 @@ export default function DriverPlanningDashboard() {
     );
   }, [activeDrivers]);
 
-  // Get unique host locations near the selected event
+  // Get nearby host contacts near the selected event (show individual contacts, not locations)
   const nearbyHosts = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
     const eventLng = parseFloat(selectedEvent.longitude);
 
-    // Group by host location name to avoid duplicates
-    const hostLocationMap = new Map<string, { name: string; distance: number; latitude: string; longitude: string }>();
-
-    hostContacts.forEach(contact => {
-      if (!contact.latitude || !contact.longitude) return;
-
-      const distance = calculateDistanceInMiles(
-        eventLat,
-        eventLng,
-        parseFloat(contact.latitude),
-        parseFloat(contact.longitude)
-      );
-
-      // Only include if within 10 miles and either new or closer than existing
-      if (distance < 10) {
-        const existing = hostLocationMap.get(contact.hostLocationName);
-        if (!existing || distance < existing.distance) {
-          hostLocationMap.set(contact.hostLocationName, {
-            name: contact.hostLocationName,
-            distance,
-            latitude: contact.latitude,
-            longitude: contact.longitude,
-          });
-        }
-      }
-    });
-
-    return Array.from(hostLocationMap.values())
+    return hostContacts
+      .filter(contact => contact.latitude && contact.longitude)
+      .map(contact => ({
+        id: contact.id,
+        contactName: contact.contactName,
+        hostLocationName: contact.hostLocationName,
+        latitude: contact.latitude,
+        longitude: contact.longitude,
+        distance: calculateDistanceInMiles(
+          eventLat,
+          eventLng,
+          parseFloat(contact.latitude),
+          parseFloat(contact.longitude)
+        ),
+      }))
+      .filter(contact => contact.distance < 10) // Within 10 miles
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 5);
+      .slice(0, 10); // Top 10 closest
   }, [selectedEvent, hostContacts]);
 
   // Get nearby recipients (delivery locations) near the selected event
@@ -644,7 +660,7 @@ export default function DriverPlanningDashboard() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapController selectedEvent={selectedEvent} events={upcomingEvents} />
+            <MapController selectedEvent={selectedEvent} events={upcomingEvents} focusedItem={focusedItem} />
 
             {/* Event markers */}
             {upcomingEvents.map((event) => (
@@ -671,14 +687,23 @@ export default function DriverPlanningDashboard() {
             {/* Nearby host markers when event selected */}
             {selectedEvent && nearbyHosts.map((host) => (
               <Marker
-                key={`host-${host.name}`}
+                key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
-                icon={hostIcon}
+                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? selectedEventIcon : hostIcon}
+                eventHandlers={{
+                  click: () => setFocusedItem({
+                    type: 'host',
+                    id: host.id,
+                    latitude: host.latitude,
+                    longitude: host.longitude
+                  })
+                }}
               >
                 <Popup>
                   <div className="p-2">
-                    <h3 className="font-semibold">{host.name}</h3>
-                    <p className="text-xs text-gray-500">{host.distance.toFixed(1)} miles away</p>
+                    <h3 className="font-semibold text-green-700">{host.contactName}</h3>
+                    <p className="text-xs text-gray-600">{host.hostLocationName}</p>
+                    <p className="text-xs text-gray-500 mt-1">{host.distance.toFixed(1)} miles away</p>
                   </div>
                 </Popup>
               </Marker>
@@ -689,7 +714,15 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
-                icon={recipientIcon}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? selectedEventIcon : recipientIcon}
+                eventHandlers={{
+                  click: () => setFocusedItem({
+                    type: 'recipient',
+                    id: recipient.id,
+                    latitude: recipient.latitude,
+                    longitude: recipient.longitude
+                  })
+                }}
               >
                 <Popup>
                   <div className="p-2 min-w-[180px]">
@@ -762,18 +795,37 @@ export default function DriverPlanningDashboard() {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-green-600" />
-                    Nearby Host Locations
+                    Nearby Hosts
                   </h3>
                   {nearbyHosts.length > 0 ? (
                     <div className="space-y-2">
                       {nearbyHosts.map((host) => (
-                        <div key={host.name} className="flex items-center justify-between text-xs p-2 bg-green-50 border border-green-200 rounded">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-3.5 h-3.5 text-green-600" />
-                            <span className="font-medium">{host.name}</span>
+                        <button
+                          key={host.id}
+                          onClick={() => setFocusedItem({
+                            type: 'host',
+                            id: host.id,
+                            latitude: host.latitude,
+                            longitude: host.longitude
+                          })}
+                          className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-green-100 ${
+                            focusedItem?.type === 'host' && focusedItem?.id === host.id
+                              ? 'bg-green-100 border-green-400'
+                              : 'bg-green-50 border-green-200'
+                          }`}
+                          data-testid={`host-locate-${host.id}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-green-600" />
+                              <span className="font-medium">{host.contactName}</span>
+                            </div>
+                            <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
                           </div>
-                          <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
-                        </div>
+                          <div className="text-gray-500 pl-5 mt-0.5 text-[10px]">
+                            {host.hostLocationName}
+                          </div>
+                        </button>
                       ))}
                     </div>
                   ) : (
@@ -794,10 +846,24 @@ export default function DriverPlanningDashboard() {
                   {nearbyRecipients.length > 0 ? (
                     <div className="space-y-2">
                       {nearbyRecipients.map((recipient) => (
-                        <div key={recipient.id} className="text-xs p-2 bg-purple-50 border border-purple-200 rounded">
+                        <button
+                          key={recipient.id}
+                          onClick={() => setFocusedItem({
+                            type: 'recipient',
+                            id: recipient.id,
+                            latitude: recipient.latitude,
+                            longitude: recipient.longitude
+                          })}
+                          className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-purple-100 ${
+                            focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                              ? 'bg-purple-100 border-purple-400'
+                              : 'bg-purple-50 border-purple-200'
+                          }`}
+                          data-testid={`recipient-locate-${recipient.id}`}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Heart className="w-3.5 h-3.5 text-purple-600" />
+                              <MapPin className="w-3.5 h-3.5 text-purple-600" />
                               <span className="font-medium">{recipient.name}</span>
                             </div>
                             <span className="text-purple-700">{recipient.distance.toFixed(1)} mi</span>
@@ -808,11 +874,11 @@ export default function DriverPlanningDashboard() {
                             </div>
                           )}
                           {recipient.region && (
-                            <div className="mt-0.5 text-gray-500 pl-5">
+                            <div className="mt-0.5 text-gray-500 pl-5 text-[10px]">
                               {recipient.region}
                             </div>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ) : recipientMapData.length === 0 ? (
