@@ -5,7 +5,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
-  Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2
+  Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
+  ChevronUp, ChevronDown, X, List
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
@@ -41,6 +42,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -377,6 +384,7 @@ export default function DriverPlanningDashboard() {
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'events' | 'details' | null>(null);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -656,8 +664,8 @@ export default function DriverPlanningDashboard() {
 
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 p-4 bg-white border-b">
+      {/* Header - Desktop */}
+      <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
           segments={[
             { label: 'Event Planning', href: '/dashboard?section=event-requests' },
@@ -697,8 +705,41 @@ export default function DriverPlanningDashboard() {
         </div>
       </div>
 
-      {/* Main Content - 3 Panels */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Header - Mobile/Tablet */}
+      <div className="flex-shrink-0 p-3 bg-white border-b lg:hidden">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#007E8C] to-[#005f6b] flex items-center justify-center flex-shrink-0">
+              <Truck className="w-4 h-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-gray-900 truncate">Driver Planning</h1>
+              <p className="text-xs text-gray-600">
+                {upcomingEvents.length} event{upcomingEvents.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Select value={weeksAhead} onValueChange={setWeeksAhead}>
+              <SelectTrigger className="w-24 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 weeks</SelectItem>
+                <SelectItem value="4">4 weeks</SelectItem>
+                <SelectItem value="6">6 weeks</SelectItem>
+                <SelectItem value="8">8 weeks</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchEvents()}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Desktop 3-Panel Layout */}
+      <div className="flex-1 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
         <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list">
           <div className="p-3 border-b bg-white">
@@ -1174,6 +1215,641 @@ export default function DriverPlanningDashboard() {
           </ScrollArea>
         </div>
       </div>
+
+      {/* Main Content - Tablet 2-Panel Layout (md to lg) */}
+      <div className="flex-1 hidden md:flex lg:hidden overflow-hidden">
+        {/* Left Panel - Event List */}
+        <div className="w-72 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list-tablet">
+          <div className="p-3 border-b bg-white">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm">
+              <Calendar className="w-4 h-4 text-[#007E8C]" />
+              Events ({upcomingEvents.length})
+            </h2>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-2">
+              {upcomingEvents.map((event) => {
+                const isSelected = selectedEvent?.id === event.id;
+                const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                const driversAssigned = event.assignedDriverIds?.length || 0;
+                const driversNeeded = event.driversNeeded || 1;
+
+                return (
+                  <Card
+                    key={event.id}
+                    className={`p-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                        : 'hover:shadow-md hover:bg-white'
+                    }`}
+                    onClick={() => {
+                      setSelectedEvent(isSelected ? null : event);
+                      setShowAllHosts(false);
+                      setShowAllRecipients(false);
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <h3 className="font-medium text-xs text-gray-900 line-clamp-1">
+                        {event.organizationName || 'Unknown'}
+                      </h3>
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <Calendar className="w-3 h-3" />
+                        {eventDate ? format(parseLocalDate(eventDate), 'MMM d') : 'No date'}
+                      </div>
+                      <Badge
+                        variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
+                        className="text-[10px] px-1 py-0"
+                      >
+                        {driversAssigned}/{driversNeeded} drivers
+                      </Badge>
+                    </div>
+                  </Card>
+                );
+              })}
+              {upcomingEvents.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-xs">No events</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Right Panel - Map + Details overlay */}
+        <div className="flex-1 relative" data-testid="driver-planning-map-tablet">
+          <MapContainer
+            center={mapCenter}
+            zoom={10}
+            style={{ height: '100%', width: '100%' }}
+            className="z-0"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapController
+              selectedEvent={selectedEvent}
+              events={upcomingEvents}
+              focusedItem={focusedItem}
+              nearbyHosts={nearbyHosts}
+              nearbyRecipients={nearbyRecipients}
+            />
+            {upcomingEvents.map((event) => (
+              <Marker
+                key={event.id}
+                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                eventHandlers={{
+                  click: () => setSelectedEvent(event)
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                    <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyHosts.map((host) => (
+              <Marker
+                key={`host-${host.id}`}
+                position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
+                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
+                    <p className="text-xs text-gray-500">{host.distance.toFixed(1)} mi away</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyRecipients.map((recipient) => (
+              <Marker
+                key={`recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                    <p className="text-xs text-gray-500">{recipient.distance.toFixed(1)} mi away</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {/* Tablet Details Panel - Bottom overlay when event selected */}
+          {selectedEvent && (
+            <div className="absolute bottom-0 left-0 right-0 bg-white border-t shadow-lg max-h-[40%] overflow-y-auto z-[1000]">
+              <div className="p-3 border-b sticky top-0 bg-white flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-sm">{selectedEvent.organizationName}</h3>
+                  <p className="text-xs text-gray-500">{extractCityFromAddress(selectedEvent.eventAddress)}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setSelectedEvent(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="p-3 space-y-3">
+                {/* Nearby Hosts */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <Building2 className="w-3 h-3 text-green-600" />
+                    Nearby Hosts ({nearbyHosts.length})
+                  </h4>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {nearbyHosts.slice(0, 5).map((host) => (
+                      <div key={host.id} className="flex-shrink-0 text-xs p-2 bg-green-50 border border-green-200 rounded min-w-[120px]">
+                        <div className="font-medium">{host.contactName}</div>
+                        <div className="text-green-700">{host.distance.toFixed(1)} mi</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Nearby Recipients */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <Heart className="w-3 h-3 text-purple-600" />
+                    Nearby Recipients ({nearbyRecipients.length})
+                  </h4>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {nearbyRecipients.slice(0, 5).map((recipient) => (
+                      <div key={recipient.id} className="flex-shrink-0 text-xs p-2 bg-purple-50 border border-purple-200 rounded min-w-[120px]">
+                        <div className="font-medium">{recipient.name}</div>
+                        <div className="text-purple-700">{recipient.distance.toFixed(1)} mi</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Suggested Drivers */}
+                {suggestedDrivers.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                      <Truck className="w-3 h-3 text-[#007E8C]" />
+                      Suggested Drivers ({suggestedDrivers.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {suggestedDrivers.slice(0, 3).map((driver) => (
+                        <div key={driver.id} className="text-xs p-2 bg-gray-50 border rounded flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{driver.name}</div>
+                            <div className="text-gray-500">{driver.phone}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => copyDriverSMS(driver)}
+                          >
+                            {copiedDriverId === driver.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content - Mobile Layout (< md) */}
+      <div className="flex-1 md:hidden relative overflow-hidden" data-testid="driver-planning-mobile">
+        {/* Full-screen Map */}
+        <MapContainer
+          center={mapCenter}
+          zoom={10}
+          style={{ height: '100%', width: '100%' }}
+          className="z-0"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MapController
+            selectedEvent={selectedEvent}
+            events={upcomingEvents}
+            focusedItem={focusedItem}
+            nearbyHosts={nearbyHosts}
+            nearbyRecipients={nearbyRecipients}
+          />
+          {upcomingEvents.map((event) => (
+            <Marker
+              key={event.id}
+              position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+              icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+              eventHandlers={{
+                click: () => {
+                  setSelectedEvent(event);
+                  setMobilePanel('details');
+                }
+              }}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                  <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+          {selectedEvent && nearbyHosts.map((host) => (
+            <Marker
+              key={`host-${host.id}`}
+              position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
+              icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
+                  <p className="text-xs">{host.distance.toFixed(1)} mi</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+          {selectedEvent && nearbyRecipients.map((recipient) => (
+            <Marker
+              key={`recipient-${recipient.id}`}
+              position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+              icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                  <p className="text-xs">{recipient.distance.toFixed(1)} mi</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+
+        {/* Floating Action Buttons */}
+        <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">
+          <Button
+            onClick={() => setMobilePanel(mobilePanel === 'events' ? null : 'events')}
+            className="h-12 w-12 rounded-full shadow-lg bg-[#007E8C] hover:bg-[#006670]"
+            data-testid="mobile-events-toggle"
+          >
+            <List className="w-5 h-5 text-white" />
+          </Button>
+          {selectedEvent && (
+            <Button
+              onClick={() => setMobilePanel(mobilePanel === 'details' ? null : 'details')}
+              className="h-12 w-12 rounded-full shadow-lg bg-purple-600 hover:bg-purple-700"
+              data-testid="mobile-details-toggle"
+            >
+              <Users className="w-5 h-5 text-white" />
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile Legend */}
+        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000]">
+          <div className="text-[10px] font-semibold mb-1">Legend</div>
+          <div className="space-y-0.5 text-[10px]">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span>Event</span>
+            </div>
+            {selectedEvent && (
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Host</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span>Recipient</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Events Sheet */}
+      <Sheet open={mobilePanel === 'events'} onOpenChange={(open) => setMobilePanel(open ? 'events' : null)}>
+        <SheetContent side="bottom" className="h-[70vh] p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#007E8C]" />
+              Upcoming Events ({upcomingEvents.length})
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(70vh-80px)]">
+            <div className="p-4 space-y-3">
+              {upcomingEvents.map((event) => {
+                const isSelected = selectedEvent?.id === event.id;
+                const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                const driversAssigned = event.assignedDriverIds?.length || 0;
+                const driversNeeded = event.driversNeeded || 1;
+
+                return (
+                  <Card
+                    key={event.id}
+                    className={`p-3 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => {
+                      setSelectedEvent(isSelected ? null : event);
+                      setShowAllHosts(false);
+                      setShowAllRecipients(false);
+                      if (!isSelected) {
+                        setMobilePanel('details');
+                      }
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                          {event.organizationName || 'Unknown Organization'}
+                        </h3>
+                        <ChevronRight className={`w-4 h-4 text-gray-400 flex-shrink-0 ${isSelected ? 'rotate-90' : ''}`} />
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-700">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="font-medium">
+                          {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
+                        </span>
+                        {event.eventStartTime && (
+                          <span className="text-gray-500">
+                            at {formatTime12Hour(event.eventStartTime)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
+                          className="text-xs"
+                        >
+                          <Truck className="w-3 h-3 mr-1" />
+                          {driversAssigned}/{driversNeeded} drivers
+                        </Badge>
+                        {event.estimatedSandwichCount && (
+                          <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+              {upcomingEvents.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No scheduled events in this period</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile Details Sheet */}
+      <Sheet open={mobilePanel === 'details' && selectedEvent !== null} onOpenChange={(open) => setMobilePanel(open ? 'details' : null)}>
+        <SheetContent side="bottom" className="h-[80vh] p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#007E8C]" />
+                <span className="truncate">{selectedEvent?.organizationName || 'Event Details'}</span>
+              </div>
+              {canEditEvents && selectedEvent && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={openEditDialog}
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+              )}
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(80vh-80px)]">
+            {selectedEvent && (
+              <div className="p-4 space-y-4">
+                {/* Event Info */}
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span>
+                      {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
+                        ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEEE, MMMM d, yyyy')
+                        : 'No date'}
+                    </span>
+                  </div>
+                  {selectedEvent.eventStartTime && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span>{formatTime12Hour(selectedEvent.eventStartTime)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <span>{selectedEvent.eventAddress}</span>
+                  </div>
+                  {selectedEvent.estimatedSandwichCount && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Package className="w-4 h-4 text-gray-500" />
+                      <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Nearby Hosts */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-green-600" />
+                    Nearby Hosts ({nearbyHosts.length})
+                  </h3>
+                  {nearbyHosts.length > 0 ? (
+                    <div className="space-y-2">
+                      {(showAllHosts ? nearbyHosts : nearbyHosts.slice(0, 3)).map((host) => (
+                        <button
+                          key={host.id}
+                          onClick={() => {
+                            setFocusedItem({
+                              type: 'host',
+                              id: host.id,
+                              latitude: host.latitude,
+                              longitude: host.longitude
+                            });
+                            setMobilePanel(null);
+                          }}
+                          className={`w-full text-left text-sm p-3 border rounded-lg transition-colors ${
+                            focusedItem?.type === 'host' && focusedItem?.id === host.id
+                              ? 'bg-green-100 border-green-400'
+                              : 'bg-green-50 border-green-200 hover:bg-green-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{host.contactName}</span>
+                            <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{host.hostLocationName}</div>
+                        </button>
+                      ))}
+                      {nearbyHosts.length > 3 && (
+                        <button
+                          onClick={() => setShowAllHosts(!showAllHosts)}
+                          className="w-full text-sm text-green-700 font-medium py-2"
+                        >
+                          {showAllHosts ? 'Show less' : `View ${nearbyHosts.length - 3} more hosts`}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">No nearby hosts found</p>
+                  )}
+                </div>
+
+                {/* Nearby Recipients */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-purple-600" />
+                    Nearby Recipients ({nearbyRecipients.length})
+                  </h3>
+                  {nearbyRecipients.length > 0 ? (
+                    <div className="space-y-2">
+                      {(showAllRecipients ? nearbyRecipients : nearbyRecipients.slice(0, 3)).map((recipient) => (
+                        <button
+                          key={recipient.id}
+                          onClick={() => {
+                            setFocusedItem({
+                              type: 'recipient',
+                              id: recipient.id,
+                              latitude: recipient.latitude,
+                              longitude: recipient.longitude
+                            });
+                            setMobilePanel(null);
+                          }}
+                          className={`w-full text-left text-sm p-3 border rounded-lg transition-colors ${
+                            focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                              ? 'bg-purple-100 border-purple-400'
+                              : 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{recipient.name}</span>
+                            <span className="text-purple-700">{recipient.distance.toFixed(1)} mi</span>
+                          </div>
+                          {recipient.estimatedSandwiches && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              Needs ~{recipient.estimatedSandwiches} sandwiches
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                      {nearbyRecipients.length > 3 && (
+                        <button
+                          onClick={() => setShowAllRecipients(!showAllRecipients)}
+                          className="w-full text-sm text-purple-700 font-medium py-2"
+                        >
+                          {showAllRecipients ? 'Show less' : `View ${nearbyRecipients.length - 3} more recipients`}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">No nearby recipients found</p>
+                  )}
+                </div>
+
+                {/* Suggested Drivers */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-[#007E8C]" />
+                    Suggested Drivers ({suggestedDrivers.length})
+                  </h3>
+                  {suggestedDrivers.length > 0 ? (
+                    <div className="space-y-2">
+                      {suggestedDrivers.map((driver) => (
+                        <Card key={driver.id} className="p-3">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="font-medium text-sm">{driver.name}</h4>
+                                <p className="text-xs text-gray-500">
+                                  {driver.hostLocation || driver.area || 'No location'}
+                                </p>
+                              </div>
+                              <Badge
+                                variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {driver.availability || 'Unknown'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                              {driver.phone && (
+                                <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
+                                  <Phone className="w-3 h-3" />
+                                  {driver.phone}
+                                </a>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs"
+                              onClick={() => copyDriverSMS(driver)}
+                            >
+                              {copiedDriverId === driver.id ? (
+                                <>
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  Copy SMS Request
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 bg-gray-100 rounded-lg">
+                      <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">No matching drivers</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Drivers needing location */}
+                {driversWithoutLocation.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <h4 className="text-xs font-semibold text-amber-800 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {driversWithoutLocation.length} drivers need location data
+                    </h4>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Add area/location info to see more driver suggestions.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Event Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
