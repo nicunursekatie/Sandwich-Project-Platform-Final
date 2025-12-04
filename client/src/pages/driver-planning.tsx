@@ -1,12 +1,25 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 
 import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
-  Users, Copy, Check, Building2, Heart
+  Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import type { UserForPermissions } from '@shared/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useLocation } from 'wouter';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -317,6 +330,8 @@ Thanks so much!
 
 export default function DriverPlanningDashboard() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
@@ -324,6 +339,65 @@ export default function DriverPlanningDashboard() {
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    driversNeeded: '',
+    pickupTime: '',
+    eventStartTime: '',
+    eventEndTime: '',
+    pickupTimeWindow: '',
+  });
+
+  // Check if user has edit permission
+  const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
+
+  // Update event mutation
+  const updateEventMutation = useMutation({
+    mutationFn: async (data: { id: number; updates: Record<string, any> }) => {
+      const response = await fetch(`/api/event-requests/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data.updates),
+      });
+      if (!response.ok) throw new Error('Failed to update event');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      toast({ title: 'Event updated', description: 'Changes saved successfully' });
+      setEditDialogOpen(false);
+    },
+    onError: () => {
+      toast({ title: 'Update failed', description: 'Could not save changes', variant: 'destructive' });
+    },
+  });
+
+  // Open edit dialog and populate form
+  const openEditDialog = () => {
+    if (!selectedEvent) return;
+    setEditForm({
+      driversNeeded: selectedEvent.driversNeeded?.toString() || '',
+      pickupTime: selectedEvent.pickupTime || '',
+      eventStartTime: selectedEvent.eventStartTime || '',
+      eventEndTime: selectedEvent.eventEndTime || '',
+      pickupTimeWindow: selectedEvent.pickupTimeWindow || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  // Save edit form
+  const saveEditForm = () => {
+    if (!selectedEvent) return;
+    const updates: Record<string, any> = {};
+    if (editForm.driversNeeded) updates.driversNeeded = editForm.driversNeeded;
+    if (editForm.pickupTime) updates.pickupTime = editForm.pickupTime;
+    if (editForm.eventStartTime) updates.eventStartTime = editForm.eventStartTime;
+    if (editForm.eventEndTime) updates.eventEndTime = editForm.eventEndTime;
+    if (editForm.pickupTimeWindow) updates.pickupTimeWindow = editForm.pickupTimeWindow;
+
+    updateEventMutation.mutate({ id: selectedEvent.id, updates });
+  };
 
   // Fetch events
   const { data: allEvents = [], isLoading: eventsLoading, refetch: refetchEvents } = useQuery<EventMapData[]>({
@@ -805,10 +879,23 @@ export default function DriverPlanningDashboard() {
         {/* Right Panel - Driver Suggestions */}
         <div className="w-96 border-l bg-gray-50 flex flex-col">
           <div className="p-3 border-b bg-white">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#007E8C]" />
-              {selectedEvent ? 'Suggested Drivers' : 'Select an Event'}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#007E8C]" />
+                {selectedEvent ? 'Suggested Drivers' : 'Select an Event'}
+              </h2>
+              {selectedEvent && canEditEvents && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={openEditDialog}
+                  className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
+                  title="Edit event details"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
             {selectedEvent && (
               <p className="text-xs text-gray-600 mt-1">
                 For: {selectedEvent.organizationName}
@@ -1044,6 +1131,87 @@ export default function DriverPlanningDashboard() {
           </ScrollArea>
         </div>
       </div>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Edit Event Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="driversNeeded" className="text-sm">Drivers Needed</Label>
+              <Input
+                id="driversNeeded"
+                type="number"
+                min="1"
+                value={editForm.driversNeeded}
+                onChange={(e) => setEditForm({ ...editForm, driversNeeded: e.target.value })}
+                placeholder="e.g. 2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pickupTime" className="text-sm">Pickup Time</Label>
+              <Input
+                id="pickupTime"
+                type="time"
+                value={editForm.pickupTime}
+                onChange={(e) => setEditForm({ ...editForm, pickupTime: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="eventStartTime" className="text-sm">Event Start</Label>
+                <Input
+                  id="eventStartTime"
+                  type="time"
+                  value={editForm.eventStartTime}
+                  onChange={(e) => setEditForm({ ...editForm, eventStartTime: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventEndTime" className="text-sm">Event End</Label>
+                <Input
+                  id="eventEndTime"
+                  type="time"
+                  value={editForm.eventEndTime}
+                  onChange={(e) => setEditForm({ ...editForm, eventEndTime: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pickupTimeWindow" className="text-sm">Pickup Time Window</Label>
+              <Input
+                id="pickupTimeWindow"
+                value={editForm.pickupTimeWindow}
+                onChange={(e) => setEditForm({ ...editForm, pickupTimeWindow: e.target.value })}
+                placeholder="e.g. 30 minutes"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={saveEditForm}
+              disabled={updateEventMutation.isPending}
+            >
+              {updateEventMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
