@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
-  Users, Copy, Check, Building2
+  Users, Copy, Check, Building2, Heart
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import L from 'leaflet';
@@ -112,6 +112,21 @@ interface HostContact {
   phone: string | null;
 }
 
+interface RecipientMapData {
+  id: number;
+  name: string;
+  address: string | null;
+  region: string | null;
+  latitude: string;
+  longitude: string;
+  estimatedSandwiches: number | null;
+  collectionDay: string | null;
+  collectionTime: string | null;
+  focusAreas: string[] | null;
+  contactPersonName: string | null;
+  phone: string | null;
+}
+
 // Custom marker icons
 const createColorIcon = (color: string) => {
   return new L.Icon({
@@ -127,6 +142,7 @@ const createColorIcon = (color: string) => {
 const eventIcon = createColorIcon('blue');
 const selectedEventIcon = createColorIcon('red');
 const hostIcon = createColorIcon('green');
+const recipientIcon = createColorIcon('violet');
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -307,6 +323,16 @@ export default function DriverPlanningDashboard() {
     },
   });
 
+  // Fetch recipients with coordinates for map display
+  const { data: recipientMapData = [] } = useQuery<RecipientMapData[]>({
+    queryKey: ['/api/recipients/map'],
+    queryFn: async () => {
+      const response = await fetch('/api/recipients/map');
+      if (!response.ok) throw new Error('Failed to fetch recipients for map');
+      return response.json();
+    },
+  });
+
   // Filter events to upcoming scheduled events within selected weeks
   const upcomingEvents = useMemo(() => {
     const today = startOfDay(new Date());
@@ -405,6 +431,29 @@ export default function DriverPlanningDashboard() {
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5);
   }, [selectedEvent, hostContacts]);
+
+  // Get nearby recipients (delivery locations) near the selected event
+  const nearbyRecipients = useMemo(() => {
+    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+
+    const eventLat = parseFloat(selectedEvent.latitude);
+    const eventLng = parseFloat(selectedEvent.longitude);
+
+    return recipientMapData
+      .filter(recipient => recipient.latitude && recipient.longitude)
+      .map(recipient => ({
+        ...recipient,
+        distance: calculateDistanceInMiles(
+          eventLat,
+          eventLng,
+          parseFloat(recipient.latitude),
+          parseFloat(recipient.longitude)
+        ),
+      }))
+      .filter(recipient => recipient.distance < 15) // Within 15 miles
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 10); // Top 10 closest
+  }, [selectedEvent, recipientMapData]);
 
   // Copy SMS to clipboard
   const copyDriverSMS = async (driver: Driver) => {
@@ -634,6 +683,28 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Nearby recipient markers when event selected */}
+            {selectedEvent && nearbyRecipients.map((recipient) => (
+              <Marker
+                key={`recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-purple-700">{recipient.name}</h3>
+                    {recipient.address && (
+                      <p className="text-xs text-gray-600">{recipient.address}</p>
+                    )}
+                    {recipient.estimatedSandwiches && (
+                      <p className="text-xs mt-1">Needs ~{recipient.estimatedSandwiches} sandwiches</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">{recipient.distance.toFixed(1)} miles away</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Map legend */}
@@ -649,10 +720,16 @@ export default function DriverPlanningDashboard() {
                 <span>Selected Event</span>
               </div>
               {selectedEvent && (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span>Nearby Host</span>
-                </div>
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span>Nearby Host</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500" />
+                    <span>Nearby Recipient</span>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -704,6 +781,49 @@ export default function DriverPlanningDashboard() {
                       No hosts with map coordinates found nearby.
                       <br />
                       <span className="text-gray-400">Add coordinates in Host Management to see them here.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Nearby Recipients - Delivery locations */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-purple-600" />
+                    Nearby Recipients (Delivery Locations)
+                  </h3>
+                  {nearbyRecipients.length > 0 ? (
+                    <div className="space-y-2">
+                      {nearbyRecipients.map((recipient) => (
+                        <div key={recipient.id} className="text-xs p-2 bg-purple-50 border border-purple-200 rounded">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Heart className="w-3.5 h-3.5 text-purple-600" />
+                              <span className="font-medium">{recipient.name}</span>
+                            </div>
+                            <span className="text-purple-700">{recipient.distance.toFixed(1)} mi</span>
+                          </div>
+                          {recipient.estimatedSandwiches && (
+                            <div className="mt-1 text-gray-600 pl-5">
+                              Needs ~{recipient.estimatedSandwiches} sandwiches
+                            </div>
+                          )}
+                          {recipient.region && (
+                            <div className="mt-0.5 text-gray-500 pl-5">
+                              {recipient.region}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : recipientMapData.length === 0 ? (
+                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                      No recipients with map coordinates yet.
+                      <br />
+                      <span className="text-gray-400">Run geocoding backfill or add addresses to recipients.</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                      No recipients within 15 miles of this event.
                     </div>
                   )}
                 </div>
