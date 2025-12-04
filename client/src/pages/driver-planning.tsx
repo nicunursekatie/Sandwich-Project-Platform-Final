@@ -654,42 +654,36 @@ export default function DriverPlanningDashboard() {
               <div className="p-6 text-center text-gray-500">
                 <Truck className="w-16 h-16 mx-auto mb-3 opacity-20" />
                 <p className="text-sm font-medium">No event selected</p>
-                <p className="text-xs mt-1">Click an event from the list to see suggested drivers for that area</p>
+                <p className="text-xs mt-1">Click an event from the list to see suggested drivers and nearby hosts</p>
               </div>
             ) : (
               <div className="p-3 space-y-4">
-                {/* Event Details Card */}
-                <Card className="bg-[#007E8C]/5 border-[#007E8C]/20">
-                  <CardContent className="p-3 space-y-2">
-                    <h3 className="font-semibold text-sm">{selectedEvent.organizationName}</h3>
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>
-                          {selectedEvent.scheduledEventDate
-                            ? format(parseLocalDate(selectedEvent.scheduledEventDate), 'EEEE, MMMM d, yyyy')
-                            : 'Date TBD'}
-                        </span>
-                      </div>
-                      {selectedEvent.eventStartTime && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatTime12Hour(selectedEvent.eventStartTime)}</span>
+                {/* Nearby Hosts - Show first and always visible */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-green-600" />
+                    Nearby Host Locations
+                  </h3>
+                  {nearbyHosts.length > 0 ? (
+                    <div className="space-y-2">
+                      {nearbyHosts.map((host) => (
+                        <div key={host.id} className="flex items-center justify-between text-xs p-2 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-3.5 h-3.5 text-green-600" />
+                            <span className="font-medium">{host.name}</span>
+                          </div>
+                          <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="line-clamp-2">{selectedEvent.eventAddress}</span>
-                      </div>
-                      {selectedEvent.estimatedSandwichCount && (
-                        <div className="flex items-center gap-2">
-                          <Package className="w-3.5 h-3.5" />
-                          <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                      No hosts with map coordinates found nearby.
+                      <br />
+                      <span className="text-gray-400">Add coordinates in Host Management to see them here.</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Suggested Drivers */}
                 {suggestedDrivers.length > 0 ? (
@@ -786,25 +780,6 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
 
-                {/* Nearby Hosts */}
-                {nearbyHosts.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                      Nearby Host Locations ({nearbyHosts.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {nearbyHosts.map((host) => (
-                        <div key={host.id} className="flex items-center gap-2 text-xs p-2 bg-green-50 rounded">
-                          <Building2 className="w-3.5 h-3.5 text-green-600" />
-                          <div>
-                            <span className="font-medium">{host.name}</span>
-                            <span className="text-gray-500 ml-2">({host.distance.toFixed(1)} mi)</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </ScrollArea>
