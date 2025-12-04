@@ -86,3 +86,28 @@ The background sync service (`server/background-sync-service.ts`) includes compr
 
 **Critical Fix (December 2025):**
 PostgreSQL advisory locks (`pg_try_advisory_lock`) don't work with Neon's serverless connection pooling. Replaced with in-memory locking in `google-sheets-event-requests-sync.ts`. This fixed a 2+ month sync outage where the lock was stuck and no events were being imported.
+
+### React Query Cache Refresh for Event Mutations
+
+**Issue (December 2025):** Inline edits on scheduled event cards showed success toasts but the display didn't update. The backend saved correctly but the UI wasn't reflecting changes.
+
+**Root Cause:** React Query's `invalidateQueries` marks queries as stale but doesn't force an immediate refetch when `staleTime` is set (5 minutes in this case). With `refetchOnWindowFocus: false`, the query might not refetch until the stale time expires.
+
+**Solution:** Changed from `invalidateQueries` to `refetchQueries` in mutation success handlers (`client/src/components/event-requests/hooks/useEventMutations.tsx`):
+```typescript
+// Instead of:
+queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+
+// Use:
+await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+```
+
+**Key mutations updated:**
+- `updateEventRequestMutation` - main event updates
+- `updateScheduledFieldMutation` - inline field edits
+- `scheduleCallMutation` - call scheduling
+- `oneDayFollowUpMutation` / `oneMonthFollowUpMutation` - follow-up tracking
+- `rescheduleEventMutation` - date changes
+- `assignRecipientsMutation` / `assignTspContactMutation` - assignments
+
+This ensures the UI immediately reflects saved changes.

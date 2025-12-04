@@ -81,7 +81,7 @@ export const useEventMutations = () => {
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
       return apiRequest('PATCH', `/api/event-requests/${id}`, data);
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       logger.log('=== UPDATE SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
       logger.log('Variables:', variables);
@@ -91,16 +91,10 @@ export const useEventMutations = () => {
         description: 'The event request has been successfully updated.',
       });
 
-      // Don't await - let queries refetch in background for faster UI response
-      // Use 'active' to only refetch mounted queries, not all cached queries
-      queryClient.invalidateQueries({
-        queryKey: ['/api/event-requests'],
-        refetchType: 'active'
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['/api/event-requests', 'v2'],
-        refetchType: 'active'
-      });
+      // Use refetchQueries to force immediate data refresh
+      // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       // Invalidate event map if address or coordinates might have changed
       queryClient.invalidateQueries({
         queryKey: ['/api/event-map'],
@@ -240,8 +234,10 @@ export const useEventMutations = () => {
         title: 'Call scheduled',
         description: 'Call has been scheduled successfully.',
       });
+      
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -280,8 +276,11 @@ export const useEventMutations = () => {
         title: 'Field updated',
         description: 'Event field has been updated successfully.',
       });
+      
+      // Use refetchQueries instead of invalidateQueries to force immediate data refresh
+      // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -317,8 +316,10 @@ export const useEventMutations = () => {
         title: '1-day follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
+      
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -353,8 +354,10 @@ export const useEventMutations = () => {
         title: '1-month follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
+      
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -387,8 +390,9 @@ export const useEventMutations = () => {
         title: 'Event rescheduled',
         description: 'The event date has been updated successfully.',
       });
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
     },
     onError: () => {
       toast({
@@ -416,9 +420,9 @@ export const useEventMutations = () => {
         description: 'Recipients have been successfully assigned to this event.',
       });
 
-      // Invalidate and refetch event requests
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
@@ -464,9 +468,9 @@ export const useEventMutations = () => {
         description,
       });
 
-      // Invalidate and refetch event requests
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      // Use refetchQueries for immediate data refresh
+      await queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
