@@ -1,8 +1,72 @@
 import express from 'express';
+import { eq } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
-import { insertDriverSchema } from '@shared/schema';
+import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
+import { geocodeLocation } from '../services/geocoding-service';
+import { db } from '../db';
+
+type DriverLocationSource = 'hostLocation' | 'homeAddress' | 'routeDescription' | 'zone' | 'area';
+
+interface DriverLocationTarget {
+  location: string;
+  source: DriverLocationSource;
+}
+
+// Normalize the raw location text into something geocodable
+function normalizeDriverLocation(
+  value: string | null | undefined,
+  source: DriverLocationSource
+): string | null {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (source === 'routeDescription') {
+    // Remove the word "route" and try to extract endpoints like "Sandy Springs to Dunwoody"
+    const cleaned = trimmed.replace(/route/gi, '').trim();
+    const parts = cleaned
+      .split(/(?:\s+to\s+|->|—|–|-|\/|\|)/i)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      // Use the endpoints as a comma-separated query for better geocoding results
+      return `${parts[0]}, ${parts[parts.length - 1]}`;
+    }
+
+    return cleaned;
+  }
+
+  if (source === 'zone') {
+    // Strip the word "zone" which can confuse geocoding
+    return trimmed.replace(/zone\s*/i, '').trim() || trimmed;
+  }
+
+  return trimmed;
+}
+
+// Choose the best available field to geocode for a driver
+function getDriverLocationForGeocoding(driver: Driver): DriverLocationTarget | null {
+  const candidates: Array<{ value: string | null; source: DriverLocationSource }> = [
+    { value: driver.hostLocation, source: 'hostLocation' },
+    { value: driver.homeAddress, source: 'homeAddress' },
+    { value: driver.routeDescription, source: 'routeDescription' },
+    { value: driver.zone, source: 'zone' },
+    { value: driver.area, source: 'area' },
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeDriverLocation(candidate.value, candidate.source);
+    if (normalized) {
+      return { location: normalized, source: candidate.source };
+    }
+  }
+
+  return null;
+}
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -254,6 +318,157 @@ export function createDriversRouter(deps: RouterDependencies) {
     } catch (error) {
       logger.error('Failed to delete driver', error);
       res.status(500).json({ message: 'Failed to delete driver' });
+    }
+  });
+
+  // Geocode a single driver by ID
+  router.post('/:id/geocode', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const id = parseInt(req.params.id);
+      const driver = await storage.getDriver(id);
+
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      const locationTarget = getDriverLocationForGeocoding(driver);
+
+      if (!locationTarget) {
+        return res.status(400).json({
+          message: 'Driver has no location data (hostLocation, routeDescription, zone, area, homeAddress) to geocode'
+        });
+      }
+
+      logger.info('Geocoding driver location', {
+        driverId: id,
+        driverName: driver.name,
+        location: locationTarget.location,
+        source: locationTarget.source,
+      });
+
+      const result = await geocodeLocation(locationTarget.location);
+
+      if (!result) {
+        return res.status(500).json({
+          message: 'Failed to geocode location',
+          location: locationTarget.location,
+          source: locationTarget.source,
+        });
+      }
+
+      // Update driver with geocoded coordinates
+      await db.update(drivers)
+        .set({
+          latitude: result.latitude,
+          longitude: result.longitude,
+          geocodedAt: new Date(),
+        })
+        .where(eq(drivers.id, id));
+
+      logger.info('Driver geocoded successfully', {
+        driverId: id,
+        latitude: result.latitude,
+        longitude: result.longitude,
+        source: locationTarget.source,
+      });
+
+      res.json({
+        success: true,
+        driverId: id,
+        location: locationTarget.location,
+        source: locationTarget.source,
+        latitude: result.latitude,
+        longitude: result.longitude,
+        geocodedAt: new Date(),
+      });
+    } catch (error) {
+      logger.error('Failed to geocode driver', error);
+      res.status(500).json({ message: 'Failed to geocode driver' });
+    }
+  });
+
+  // Batch geocode all drivers that have location data but no coordinates
+  router.post('/batch-geocode', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const allDrivers = await storage.getAllDrivers();
+
+      // Build the list of drivers with a geocodable location and missing coordinates
+      const driversToGeocode = allDrivers
+        .map((driver) => ({
+          driver,
+          location: getDriverLocationForGeocoding(driver),
+        }))
+        .filter(
+          (item): item is { driver: Driver; location: DriverLocationTarget } =>
+            Boolean(item.location) && (!item.driver.latitude || !item.driver.longitude)
+        );
+
+      if (driversToGeocode.length === 0) {
+        return res.json({
+          message: 'No drivers need geocoding',
+          total: allDrivers.length,
+          alreadyGeocoded: allDrivers.filter(d => d.latitude && d.longitude).length,
+        });
+      }
+
+      logger.info('Starting batch geocoding', {
+        count: driversToGeocode.length
+      });
+
+      const results = {
+        success: 0,
+        failed: 0,
+        total: driversToGeocode.length,
+        failures: [] as Array<{
+          driverId: number;
+          name: string;
+          location: string;
+          source: DriverLocationSource;
+        }>,
+      };
+
+      // Geocode each driver with rate limiting (handled by geocodeLocation)
+      for (const { driver, location } of driversToGeocode) {
+        const geocodeResult = await geocodeLocation(location.location);
+
+        if (geocodeResult) {
+          // Update driver with coordinates
+          await db.update(drivers)
+            .set({
+              latitude: geocodeResult.latitude,
+              longitude: geocodeResult.longitude,
+              geocodedAt: new Date(),
+            })
+            .where(eq(drivers.id, driver.id));
+
+          results.success++;
+          logger.info('Geocoded driver', {
+            driverId: driver.id,
+            name: driver.name,
+            location: location.location,
+            source: location.source,
+          });
+        } else {
+          results.failed++;
+          results.failures.push({
+            driverId: driver.id,
+            name: driver.name,
+            location: location.location,
+            source: location.source,
+          });
+          logger.warn('Failed to geocode driver', {
+            driverId: driver.id,
+            name: driver.name,
+            location: location.location,
+            source: location.source,
+          });
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      logger.error('Batch geocoding failed', error);
+      res.status(500).json({ message: 'Batch geocoding failed' });
     }
   });
 

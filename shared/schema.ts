@@ -813,6 +813,9 @@ export const drivers = pgTable('drivers', {
   inactiveReason: text('inactive_reason'),
   isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
   willingToSpeak: boolean('willing_to_speak').notNull().default(false),
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

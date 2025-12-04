@@ -25,7 +25,8 @@
       "Bash(xargs kill:*)",
       "Bash(git stash:*)",
       "Bash(git fetch:*)",
-      "Bash(git rebase:*)"
+      "Bash(git rebase:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

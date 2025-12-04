@@ -118,6 +118,9 @@ interface Driver {
   hostLocation: string | null;
   routeDescription: string | null;
   homeAddress: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  geocodedAt: string | null;
 }
 
 interface HostContact {
@@ -165,6 +168,7 @@ const hostIcon = createColorIcon('green');
 const hostFocusedIcon = createColorIcon('orange');
 const recipientIcon = createColorIcon('violet');
 const recipientFocusedIcon = createColorIcon('orange');
+const driverIcon = createColorIcon('yellow'); // Yellow for drivers
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -515,6 +519,11 @@ export default function DriverPlanningDashboard() {
   const activeDrivers = useMemo(() => {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
+
+  // Get drivers with geocoded coordinates for map display
+  const driversWithGeocoding = useMemo(() => {
+    return activeDrivers.filter(d => d.latitude && d.longitude);
+  }, [activeDrivers]);
 
   // Get suggested drivers for selected event
   const suggestedDrivers = useMemo(() => {
@@ -1336,6 +1345,35 @@ export default function DriverPlanningDashboard() {
                   <div className="p-2">
                     <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
                     <p className="text-xs text-gray-500">{recipient.distance.toFixed(1)} mi away</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {/* Show all drivers with geocoded coordinates */}
+            {driversWithGeocoding.map((driver) => (
+              <Marker
+                key={`driver-${driver.id}`}
+                position={[parseFloat(driver.latitude!), parseFloat(driver.longitude!)]}
+                icon={driverIcon}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {driver.name}
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      {driver.hostLocation || driver.zone || 'Driver location'}
+                    </p>
+                    {driver.phone && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {driver.phone}
+                      </p>
+                    )}
+                    {driver.vanApproved && (
+                      <p className="text-xs text-green-600 mt-1">Van Approved</p>
+                    )}
                   </div>
                 </Popup>
               </Marker>
