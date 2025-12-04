@@ -283,6 +283,8 @@ function MapController({
     }
   }, [focusedItem, map]);
 
+  // Center on selected event when it changes
+  const selectedEventId = selectedEvent?.id;
   useEffect(() => {
     if (selectedEvent?.latitude && selectedEvent?.longitude) {
       map.setView(
@@ -290,8 +292,12 @@ function MapController({
         14,
         { animate: true }
       );
-    } else if (events.length > 0) {
-      // Fit to all events
+    }
+  }, [selectedEventId, selectedEvent?.latitude, selectedEvent?.longitude, map]);
+
+  // Fit bounds to all events on initial load (when no event selected)
+  useEffect(() => {
+    if (!selectedEvent && events.length > 0) {
       const validEvents = events.filter(e => e.latitude && e.longitude);
       if (validEvents.length > 0) {
         const bounds = L.latLngBounds(
