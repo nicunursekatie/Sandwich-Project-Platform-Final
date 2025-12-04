@@ -426,13 +426,14 @@ export default function DriverPlanningDashboard() {
   }, [activeDrivers]);
 
   // Get nearby host contacts near the selected event (show individual contacts, not locations)
+  // Dynamically expands search radius if not enough hosts found nearby
   const nearbyHosts = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
     const eventLng = parseFloat(selectedEvent.longitude);
 
-    return hostContacts
+    const hostsWithDistance = hostContacts
       .filter(contact => contact.latitude && contact.longitude)
       .map(contact => ({
         id: contact.id,
@@ -447,19 +448,30 @@ export default function DriverPlanningDashboard() {
           parseFloat(contact.longitude)
         ),
       }))
-      .filter(contact => contact.distance < 10) // Within 10 miles
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10); // Top 10 closest (UI will show 3 by default with "View more")
+      .sort((a, b) => a.distance - b.distance);
+
+    // Try progressively larger radii until we have at least 3 hosts (or run out of options)
+    const radii = [10, 20, 35, 50];
+    for (const radius of radii) {
+      const hostsInRadius = hostsWithDistance.filter(h => h.distance < radius);
+      if (hostsInRadius.length >= 3) {
+        return hostsInRadius.slice(0, 10);
+      }
+    }
+
+    // If still not enough, just return whatever we have (sorted by distance)
+    return hostsWithDistance.slice(0, 10);
   }, [selectedEvent, hostContacts]);
 
   // Get nearby recipients (delivery locations) near the selected event
+  // Dynamically expands search radius if not enough recipients found nearby
   const nearbyRecipients = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
     const eventLng = parseFloat(selectedEvent.longitude);
 
-    return recipientMapData
+    const recipientsWithDistance = recipientMapData
       .filter(recipient => recipient.latitude && recipient.longitude)
       .map(recipient => ({
         ...recipient,
@@ -470,9 +482,19 @@ export default function DriverPlanningDashboard() {
           parseFloat(recipient.longitude)
         ),
       }))
-      .filter(recipient => recipient.distance < 15) // Within 15 miles
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10); // Top 10 closest (UI will show 3 by default with "View more")
+      .sort((a, b) => a.distance - b.distance);
+
+    // Try progressively larger radii until we have at least 3 recipients (or run out of options)
+    const radii = [15, 25, 40, 60];
+    for (const radius of radii) {
+      const recipientsInRadius = recipientsWithDistance.filter(r => r.distance < radius);
+      if (recipientsInRadius.length >= 3) {
+        return recipientsInRadius.slice(0, 10);
+      }
+    }
+
+    // If still not enough, just return whatever we have (sorted by distance)
+    return recipientsWithDistance.slice(0, 10);
   }, [selectedEvent, recipientMapData]);
 
   // Copy SMS to clipboard
