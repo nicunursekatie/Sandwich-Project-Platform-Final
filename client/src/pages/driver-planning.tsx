@@ -6,7 +6,7 @@ import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
-  ChevronUp, ChevronDown, X, List
+  ChevronUp, ChevronDown, X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
@@ -323,9 +323,14 @@ function MapController({
       }
 
       if (points.length > 1) {
-        // Fit bounds to include event + closest host + closest recipient
+        // Compute zoom that includes event + closest host + closest recipient, but keep the event centered
         const bounds = L.latLngBounds(points);
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+        const zoomForBounds = map.getBoundsZoom(bounds, { padding: [60, 60], maxZoom: 14 });
+        map.setView(
+          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
+          zoomForBounds,
+          { animate: true }
+        );
       } else {
         // Fallback to just centering on event if no hosts/recipients
         map.setView(
@@ -388,7 +393,7 @@ export default function DriverPlanningDashboard() {
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<'events' | 'details' | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -1462,130 +1467,121 @@ export default function DriverPlanningDashboard() {
       </div>
 
       {/* Main Content - Mobile Layout (< md) */}
-      <div className="flex-1 md:hidden relative overflow-hidden" data-testid="driver-planning-mobile">
-        {/* Full-screen Map */}
-        <MapContainer
-          center={mapCenter}
-          zoom={10}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapController
-            selectedEvent={selectedEvent}
-            events={upcomingEvents}
-            focusedItem={focusedItem}
-            nearbyHosts={nearbyHosts}
-            nearbyRecipients={nearbyRecipients}
-          />
-          {upcomingEvents.map((event) => (
-            <Marker
-              key={event.id}
-              position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-              icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
-              eventHandlers={{
-                click: () => {
-                  setSelectedEvent(event);
-                  setMobilePanel('details');
-                }
-              }}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-sm">{event.organizationName}</h3>
-                  <p className="text-xs text-gray-600">{event.eventAddress}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          {selectedEvent && nearbyHosts.map((host) => (
-            <Marker
-              key={`host-${host.id}`}
-              position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
-              icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
-                  <p className="text-xs">{host.distance.toFixed(1)} mi</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          {selectedEvent && nearbyRecipients.map((recipient) => (
-            <Marker
-              key={`recipient-${recipient.id}`}
-              position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
-              icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
-                  <p className="text-xs">{recipient.distance.toFixed(1)} mi</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-
-        {/* Floating Action Buttons */}
-        <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">
-          <Button
-            onClick={() => setMobilePanel(mobilePanel === 'events' ? null : 'events')}
-            className="h-12 w-12 rounded-full shadow-lg bg-[#007E8C] hover:bg-[#006670]"
-            data-testid="mobile-events-toggle"
+      <div className="flex-1 md:hidden flex flex-col" data-testid="driver-planning-mobile">
+        {/* Map */}
+        <div className="relative h-[55vh] min-h-[320px]">
+          <MapContainer
+            center={mapCenter}
+            zoom={10}
+            style={{ height: '100%', width: '100%' }}
+            className="z-0"
           >
-            <List className="w-5 h-5 text-white" />
-          </Button>
-          {selectedEvent && (
-            <Button
-              onClick={() => setMobilePanel(mobilePanel === 'details' ? null : 'details')}
-              className="h-12 w-12 rounded-full shadow-lg bg-purple-600 hover:bg-purple-700"
-              data-testid="mobile-details-toggle"
-            >
-              <Users className="w-5 h-5 text-white" />
-            </Button>
-          )}
-        </div>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapController
+              selectedEvent={selectedEvent}
+              events={upcomingEvents}
+              focusedItem={focusedItem}
+              nearbyHosts={nearbyHosts}
+              nearbyRecipients={nearbyRecipients}
+            />
+            {upcomingEvents.map((event) => (
+              <Marker
+                key={event.id}
+                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedEvent(event);
+                    setMobilePanel('details');
+                  }
+                }}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                    <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyHosts.map((host) => (
+              <Marker
+                key={`host-${host.id}`}
+                position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
+                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
+                    <p className="text-xs">{host.distance.toFixed(1)} mi</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyRecipients.map((recipient) => (
+              <Marker
+                key={`recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                    <p className="text-xs">{recipient.distance.toFixed(1)} mi</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
 
-        {/* Mobile Legend */}
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000]">
-          <div className="text-[10px] font-semibold mb-1">Legend</div>
-          <div className="space-y-0.5 text-[10px]">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span>Event</span>
+          {/* Mobile Legend */}
+          <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000]">
+            <div className="text-[10px] font-semibold mb-1">Legend</div>
+            <div className="space-y-0.5 text-[10px]">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span>Event</span>
+              </div>
+              {selectedEvent && (
+                <>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Host</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span>Recipient</span>
+                  </div>
+                </>
+              )}
             </div>
-            {selectedEvent && (
-              <>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>Host</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span>Recipient</span>
-                </div>
-              </>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Mobile Events Sheet */}
-      <Sheet open={mobilePanel === 'events'} onOpenChange={(open) => setMobilePanel(open ? 'events' : null)}>
-        <SheetContent side="bottom" className="h-[70vh] p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle className="flex items-center gap-2">
+        {/* Inline events list on mobile to preview alongside map */}
+        <div className="bg-white border-t h-[45vh] min-h-[320px] flex flex-col">
+          <div className="p-3 border-b flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#007E8C]" />
-              Upcoming Events ({upcomingEvents.length})
-            </SheetTitle>
-          </SheetHeader>
-          <ScrollArea className="h-[calc(70vh-80px)]">
-            <div className="p-4 space-y-3">
+              <span className="font-semibold text-sm">Upcoming Events ({upcomingEvents.length})</span>
+            </div>
+            <Select value={weeksAhead} onValueChange={setWeeksAhead}>
+              <SelectTrigger className="w-28 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 weeks</SelectItem>
+                <SelectItem value="4">4 weeks</SelectItem>
+                <SelectItem value="6">6 weeks</SelectItem>
+                <SelectItem value="8">8 weeks</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-3 space-y-2">
               {upcomingEvents.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -1655,8 +1651,8 @@ export default function DriverPlanningDashboard() {
               )}
             </div>
           </ScrollArea>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
 
       {/* Mobile Details Sheet */}
       <Sheet open={mobilePanel === 'details' && selectedEvent !== null} onOpenChange={(open) => setMobilePanel(open ? 'details' : null)}>
