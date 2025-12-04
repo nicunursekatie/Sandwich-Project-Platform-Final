@@ -445,7 +445,7 @@ export default function DriverPlanningDashboard() {
       }))
       .filter(contact => contact.distance < 10) // Within 10 miles
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10); // Top 10 closest
+      .slice(0, 3); // Top 3 closest
   }, [selectedEvent, hostContacts]);
 
   // Get nearby recipients (delivery locations) near the selected event
@@ -468,7 +468,7 @@ export default function DriverPlanningDashboard() {
       }))
       .filter(recipient => recipient.distance < 15) // Within 15 miles
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10); // Top 10 closest
+      .slice(0, 3); // Top 3 closest
   }, [selectedEvent, recipientMapData]);
 
   // Copy SMS to clipboard
