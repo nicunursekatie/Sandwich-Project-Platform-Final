@@ -93,7 +93,7 @@ export function MobileHoldingZoneAdd() {
     { id: 'task', label: 'Task', icon: ListTodo, color: 'bg-blue-500' },
     { id: 'note', label: 'Note', icon: StickyNote, color: 'bg-amber-500' },
     { id: 'idea', label: 'Idea', icon: Lightbulb, color: 'bg-purple-500' },
-  ] as const;
+  ];
 
   return (
     <MobileShell title="Add to Holding Zone" showBack showNav={false}>

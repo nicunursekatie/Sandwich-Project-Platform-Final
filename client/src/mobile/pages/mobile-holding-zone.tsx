@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,8 +9,6 @@ import {
   AlertCircle,
   MessageSquare,
   Heart,
-  ChevronRight,
-  Filter,
   StickyNote,
   ListTodo,
   Lightbulb,
@@ -52,10 +50,25 @@ export function MobileHoldingZone() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showActions, setShowActions] = useState<number | null>(null);
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+        setShowActions(null);
+      }
+    };
+
+    if (showActions !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showActions]);
 
   // Fetch holding zone items
   const { data: items = [], isLoading, refetch } = useQuery<HoldingZoneItem[]>({
@@ -280,7 +293,7 @@ export function MobileHoldingZone() {
                         </div>
 
                         {/* Actions menu */}
-                        <div className="relative">
+                        <div className="relative" ref={showActions === item.id ? actionsMenuRef : null}>
                           <button
                             onClick={() => setShowActions(showActions === item.id ? null : item.id)}
                             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"

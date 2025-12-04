@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 interface UsePullToRefreshOptions {
   onRefresh: () => Promise<void>;
@@ -66,14 +66,14 @@ export function usePullToRefresh({
     // Find the scrollable container
     scrollableRef.current = e.currentTarget.querySelector('[data-pull-scroll]') || e.currentTarget;
 
-    if (isAtTop()) {
+    if (isAtTop() && e.touches[0]) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
     }
   }, [isRefreshing, isAtTop]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling || isRefreshing) return;
+    if (!isPulling || isRefreshing || !e.touches[0]) return;
 
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;

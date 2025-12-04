@@ -6,10 +6,8 @@ import {
   Calendar,
   MapPin,
   Users,
-  Clock,
   Phone,
   MessageSquare,
-  ChevronRight,
   Truck,
   AlertTriangle,
   CheckCircle2,
@@ -120,14 +118,18 @@ export function MobileDriverPlanning() {
     const driverName = driver ? driver.name.split(' ')[0] : '[Driver]';
     const message = `Hi ${driverName}! Can you help with a delivery on ${format(parseISO(event.eventDate), 'EEEE, MMM d')}? Pickup: ${event.hostName || 'TBD'} at ${event.pickupTime || 'TBD'}. Delivery to: ${event.recipientName || event.title || 'TBD'}. Let me know!`;
 
-    navigator.clipboard.writeText(message).then(() => {
-      toast({ title: 'Message copied to clipboard' });
-    });
+    navigator.clipboard.writeText(message)
+      .then(() => {
+        toast({ title: 'Message copied to clipboard' });
+      })
+      .catch(() => {
+        toast({ title: 'Failed to copy message', variant: 'destructive' });
+      });
   };
 
   // Open phone dialer
   const callPhone = (phone: string) => {
-    window.open(`tel:${phone}`, '_self');
+    window.location.href = `tel:${phone}`;
   };
 
   // Open SMS app
@@ -135,7 +137,7 @@ export function MobileDriverPlanning() {
     const smsUrl = message
       ? `sms:${phone}?body=${encodeURIComponent(message)}`
       : `sms:${phone}`;
-    window.open(smsUrl, '_self');
+    window.location.href = smsUrl;
   };
 
   const needsDriversCount = filteredEvents.filter(

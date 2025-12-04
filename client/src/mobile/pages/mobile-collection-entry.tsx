@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronDown,
-  Sandwich,
   Plus,
   Minus,
   Check,
   X,
   Building2,
   Calendar,
-  User,
   Loader2,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
@@ -41,6 +39,20 @@ export function MobileCollectionEntry() {
   const [collectionDate, setCollectionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
   const [hostSearch, setHostSearch] = useState('');
+
+  // Handle escape key to close modal
+  const handleEscapeKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && showHostPicker) {
+      setShowHostPicker(false);
+    }
+  }, [showHostPicker]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [handleEscapeKey]);
 
   // Fetch hosts
   const { data: hosts = [], isLoading: hostsLoading } = useQuery<Host[]>({
