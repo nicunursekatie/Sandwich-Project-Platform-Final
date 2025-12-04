@@ -142,7 +142,9 @@ const createColorIcon = (color: string) => {
 const eventIcon = createColorIcon('blue');
 const selectedEventIcon = createColorIcon('red');
 const hostIcon = createColorIcon('green');
+const hostFocusedIcon = createColorIcon('orange');
 const recipientIcon = createColorIcon('violet');
+const recipientFocusedIcon = createColorIcon('orange');
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -320,6 +322,8 @@ export default function DriverPlanningDashboard() {
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
   const [copiedDriverId, setCopiedDriverId] = useState<number | null>(null);
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
+  const [showAllHosts, setShowAllHosts] = useState(false);
+  const [showAllRecipients, setShowAllRecipients] = useState(false);
 
   // Fetch events
   const { data: allEvents = [], isLoading: eventsLoading, refetch: refetchEvents } = useQuery<EventMapData[]>({
@@ -445,7 +449,7 @@ export default function DriverPlanningDashboard() {
       }))
       .filter(contact => contact.distance < 10) // Within 10 miles
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 3); // Top 3 closest
+      .slice(0, 10); // Top 10 closest (UI will show 3 by default with "View more")
   }, [selectedEvent, hostContacts]);
 
   // Get nearby recipients (delivery locations) near the selected event
@@ -468,7 +472,7 @@ export default function DriverPlanningDashboard() {
       }))
       .filter(recipient => recipient.distance < 15) // Within 15 miles
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 3); // Top 3 closest
+      .slice(0, 10); // Top 10 closest (UI will show 3 by default with "View more")
   }, [selectedEvent, recipientMapData]);
 
   // Copy SMS to clipboard
@@ -586,7 +590,11 @@ export default function DriverPlanningDashboard() {
                         ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
                         : 'hover:shadow-md hover:bg-white'
                     }`}
-                    onClick={() => setSelectedEvent(isSelected ? null : event)}
+                    onClick={() => {
+                      setSelectedEvent(isSelected ? null : event);
+                      setShowAllHosts(false);
+                      setShowAllRecipients(false);
+                    }}
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -689,7 +697,7 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
-                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? selectedEventIcon : hostIcon}
+                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
                 eventHandlers={{
                   click: () => setFocusedItem({
                     type: 'host',
@@ -714,7 +722,7 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
-                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? selectedEventIcon : recipientIcon}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
                 eventHandlers={{
                   click: () => setFocusedItem({
                     type: 'recipient',
@@ -762,6 +770,10 @@ export default function DriverPlanningDashboard() {
                     <div className="w-3 h-3 rounded-full bg-purple-500" />
                     <span>Nearby Recipient</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-500" />
+                    <span>Focused Item</span>
+                  </div>
                 </>
               )}
             </div>
@@ -799,7 +811,7 @@ export default function DriverPlanningDashboard() {
                   </h3>
                   {nearbyHosts.length > 0 ? (
                     <div className="space-y-2">
-                      {nearbyHosts.map((host) => (
+                      {(showAllHosts ? nearbyHosts : nearbyHosts.slice(0, 3)).map((host) => (
                         <button
                           key={host.id}
                           onClick={() => setFocusedItem({
@@ -827,6 +839,14 @@ export default function DriverPlanningDashboard() {
                           </div>
                         </button>
                       ))}
+                      {nearbyHosts.length > 3 && (
+                        <button
+                          onClick={() => setShowAllHosts(!showAllHosts)}
+                          className="w-full text-xs text-green-700 hover:text-green-900 font-medium py-1"
+                        >
+                          {showAllHosts ? 'Show less' : `View ${nearbyHosts.length - 3} more hosts`}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
@@ -845,7 +865,7 @@ export default function DriverPlanningDashboard() {
                   </h3>
                   {nearbyRecipients.length > 0 ? (
                     <div className="space-y-2">
-                      {nearbyRecipients.map((recipient) => (
+                      {(showAllRecipients ? nearbyRecipients : nearbyRecipients.slice(0, 3)).map((recipient) => (
                         <button
                           key={recipient.id}
                           onClick={() => setFocusedItem({
@@ -880,6 +900,14 @@ export default function DriverPlanningDashboard() {
                           )}
                         </button>
                       ))}
+                      {nearbyRecipients.length > 3 && (
+                        <button
+                          onClick={() => setShowAllRecipients(!showAllRecipients)}
+                          className="w-full text-xs text-purple-700 hover:text-purple-900 font-medium py-1"
+                        >
+                          {showAllRecipients ? 'Show less' : `View ${nearbyRecipients.length - 3} more recipients`}
+                        </button>
+                      )}
                     </div>
                   ) : recipientMapData.length === 0 ? (
                     <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
