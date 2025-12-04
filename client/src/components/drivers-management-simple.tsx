@@ -334,6 +334,18 @@ export default function DriversManagement() {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="address">Home Address</Label>
+                      <Input
+                        id="address"
+                        value={newDriver.address}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, address: e.target.value })
+                        }
+                        placeholder="Street address, city, state, zip"
+                        data-testid="input-driver-address"
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="licenseNumber">
                         Driver's License Number
                       </Label>
@@ -660,6 +672,21 @@ export default function DriversManagement() {
                     })
                   }
                   placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-address">Home Address</Label>
+                <Input
+                  id="edit-address"
+                  value={editingDriver.address || ''}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      address: e.target.value,
+                    })
+                  }
+                  placeholder="Street address, city, state, zip"
+                  data-testid="input-edit-driver-address"
                 />
               </div>
               <div>
