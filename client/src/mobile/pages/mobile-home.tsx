@@ -11,6 +11,7 @@ import {
   Clock,
   StickyNote,
   Truck,
+  Route,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
