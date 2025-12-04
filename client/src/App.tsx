@@ -38,6 +38,9 @@ const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
 const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
 const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
 const MobileCollectionDetail = lazy(() => import('@/mobile/pages/mobile-collection-detail'));
+const MobileInbox = lazy(() => import('@/mobile/pages/mobile-inbox'));
+const MobileProfile = lazy(() => import('@/mobile/pages/mobile-profile'));
+const MobileNotifications = lazy(() => import('@/mobile/pages/mobile-notifications'));
 
 // Mobile layout prompt (shows for mobile users on desktop routes)
 const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
@@ -331,6 +334,21 @@ function Router() {
             <Route path="/more">
               <Suspense fallback={<MobileLoader />}>
                 <MobileMore />
+              </Suspense>
+            </Route>
+            <Route path="/inbox">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileInbox />
+              </Suspense>
+            </Route>
+            <Route path="/profile">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileProfile />
+              </Suspense>
+            </Route>
+            <Route path="/notifications">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileNotifications />
               </Suspense>
             </Route>
             {/* Fallback to mobile home for unmatched mobile routes */}
