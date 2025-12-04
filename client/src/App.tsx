@@ -24,6 +24,23 @@ import PendingApproval from '@/pages/pending-approval';
 import HoldingZone from '@/pages/HoldingZone';
 import { logger } from '@/lib/logger';
 
+// Mobile app lazy-loaded components
+const MobileHome = lazy(() => import('@/mobile/pages/mobile-home'));
+const MobileCollections = lazy(() => import('@/mobile/pages/mobile-collections'));
+const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
+const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
+const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
+
+// Mobile loading component
+const MobileLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary mx-auto mb-3"></div>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+    </div>
+  </div>
+);
+
 function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
 
@@ -223,6 +240,59 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
+        {/* Mobile App Routes - /m/* */}
+        <Route path="/m" nest>
+          <Switch>
+            <Route path="/">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+            <Route path="/collections">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollections />
+              </Suspense>
+            </Route>
+            <Route path="/collections/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollections />
+              </Suspense>
+            </Route>
+            <Route path="/chat">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/chat/:channel">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/events">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEvents />
+              </Suspense>
+            </Route>
+            <Route path="/events/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEvents />
+              </Suspense>
+            </Route>
+            <Route path="/more">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileMore />
+              </Suspense>
+            </Route>
+            {/* Fallback to mobile home for unmatched mobile routes */}
+            <Route>
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+          </Switch>
+        </Route>
+
+        {/* Desktop App Routes */}
         <Route path="/messages">
           {() => <Dashboard initialSection="messages" />}
         </Route>
