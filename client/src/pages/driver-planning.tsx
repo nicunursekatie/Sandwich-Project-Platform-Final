@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
+
 import {
-  MapPin, Calendar, Package, Phone, Mail, AlertCircle,
-  ChevronRight, RefreshCw, Navigation, User, Clock, Truck,
-  Users, Copy, Check, Building2, MessageSquare
+  MapPin, Calendar, Package, Phone, AlertCircle,
+  ChevronRight, RefreshCw, Clock, Truck,
+  Users, Copy, Check, Building2
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import L from 'leaflet';
@@ -15,7 +15,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,6 +41,20 @@ L.Icon.Default.mergeOptions({
 const parseLocalDate = (dateString: string): Date => {
   const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
   return new Date(year, month - 1, day);
+};
+
+// Haversine formula for accurate distance calculation between coordinates
+const calculateDistanceInMiles = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (deg: number) => deg * Math.PI / 180;
+  const R = 3959; // Earth's radius in miles
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 };
 
 // Types
@@ -95,15 +109,6 @@ interface Host {
   status: string | null;
 }
 
-interface Recipient {
-  id: number;
-  name: string;
-  address: string | null;
-  region: string | null;
-  collectionDay: string | null;
-  collectionTime: string | null;
-}
-
 // Custom marker icons
 const createColorIcon = (color: string) => {
   return new L.Icon({
@@ -119,18 +124,22 @@ const createColorIcon = (color: string) => {
 const eventIcon = createColorIcon('blue');
 const selectedEventIcon = createColorIcon('red');
 const hostIcon = createColorIcon('green');
-const recipientIcon = createColorIcon('orange');
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
   if (!time) return '';
   try {
     const [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) {
+      console.error('Failed to parse time (NaN):', time);
+      return 'Invalid time';
+    }
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  } catch {
-    return time;
+  } catch (error) {
+    console.error('Failed to parse time:', time, error);
+    return 'Invalid time';
   }
 };
 
@@ -148,11 +157,47 @@ const extractCityFromAddress = (address: string | null): string | null => {
   return null;
 };
 
+// City abbreviation mappings for location matching
+const CITY_ABBREVIATIONS: Record<string, string[]> = {
+  'sandy springs': ['ss'],
+  'alpharetta': ['alpha'],
+  // Add more as needed
+};
+
+// Check if a location string matches a city (including abbreviations)
+const locationMatchesCity = (location: string, city: string): boolean => {
+  const locLower = location.toLowerCase();
+  const cityLower = city.toLowerCase();
+  
+  // Direct match
+  if (locLower.includes(cityLower) || cityLower.includes(locLower)) {
+    return true;
+  }
+  
+  // Check abbreviations for the city
+  const cityAbbrevs = CITY_ABBREVIATIONS[cityLower] || [];
+  if (cityAbbrevs.some(abbrev => locLower.includes(abbrev))) {
+    return true;
+  }
+  
+  // Check if location is an abbreviation that matches the city
+  for (const [fullName, abbrevs] of Object.entries(CITY_ABBREVIATIONS)) {
+    if (abbrevs.some(abbrev => locLower.includes(abbrev)) && cityLower.includes(fullName)) {
+      return true;
+    }
+    if (locLower.includes(fullName) && abbrevs.some(abbrev => cityLower.includes(abbrev))) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
 // Check if driver location matches event area
 const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): boolean => {
   if (!eventAddress) return false;
 
-  const eventCity = extractCityFromAddress(eventAddress)?.toLowerCase();
+  const eventCity = extractCityFromAddress(eventAddress);
   if (!eventCity) return false;
 
   // Check all driver location fields
@@ -162,17 +207,10 @@ const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): 
     driver.zone,
     driver.routeDescription,
     driver.homeAddress
-  ].filter(Boolean).map(loc => loc!.toLowerCase());
+  ].filter(Boolean) as string[];
 
-  // Check if any driver location contains the event city or vice versa
-  return driverLocations.some(loc =>
-    loc.includes(eventCity) || eventCity.includes(loc) ||
-    // Also check for common abbreviations
-    (eventCity === 'sandy springs' && loc.includes('ss')) ||
-    (loc.includes('sandy springs') && eventCity === 'ss') ||
-    (eventCity === 'alpharetta' && loc.includes('alpha')) ||
-    (loc.includes('alpharetta') && eventCity === 'alpha')
-  );
+  // Check if any driver location matches the event city
+  return driverLocations.some(loc => locationMatchesCity(loc, eventCity));
 };
 
 // Component to center map on selected event
@@ -209,8 +247,9 @@ const generateDriverSMS = (event: EventMapData, driver: Driver): string => {
   const formattedTime = time ? formatTime12Hour(time) : 'TBD';
   const location = event.eventAddress || 'TBD';
   const sandwichCount = event.estimatedSandwichCount || 'TBD';
+  const firstName = driver.name?.split(' ')[0] || 'there';
 
-  return `Hi ${driver.name.split(' ')[0]}! We have a sandwich event coming up and would love your help! 🥪
+  return `Hi ${firstName}! We have a sandwich event coming up and would love your help! 🥪
 
 📅 ${formattedDate}
 ⏰ Pickup around ${formattedTime}
@@ -256,16 +295,6 @@ export default function DriverPlanningDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/hosts');
       if (!response.ok) throw new Error('Failed to fetch hosts');
-      return response.json();
-    },
-  });
-
-  // Fetch recipients
-  const { data: recipients = [] } = useQuery<Recipient[]>({
-    queryKey: ['/api/recipients'],
-    queryFn: async () => {
-      const response = await fetch('/api/recipients');
-      if (!response.ok) throw new Error('Failed to fetch recipients');
       return response.json();
     },
   });
@@ -340,10 +369,7 @@ export default function DriverPlanningDashboard() {
     return hosts
       .filter(host => host.latitude && host.longitude && host.status === 'active')
       .map(host => {
-        const distance = Math.sqrt(
-          Math.pow(host.latitude! - eventLat, 2) +
-          Math.pow(host.longitude! - eventLng, 2)
-        ) * 69; // Rough conversion to miles
+        const distance = calculateDistanceInMiles(eventLat, eventLng, host.latitude!, host.longitude!);
         return { ...host, distance };
       })
       .filter(host => host.distance < 10) // Within 10 miles
@@ -356,13 +382,21 @@ export default function DriverPlanningDashboard() {
     if (!selectedEvent) return;
 
     const sms = generateDriverSMS(selectedEvent, driver);
-    await navigator.clipboard.writeText(sms);
-    setCopiedDriverId(driver.id);
-    toast({
-      title: 'Copied!',
-      description: `SMS message for ${driver.name} copied to clipboard`,
-    });
-    setTimeout(() => setCopiedDriverId(null), 2000);
+    try {
+      await navigator.clipboard.writeText(sms);
+      setCopiedDriverId(driver.id);
+      toast({
+        title: 'Copied!',
+        description: `SMS message for ${driver.name} copied to clipboard`,
+      });
+      setTimeout(() => setCopiedDriverId(null), 2000);
+    } catch {
+      toast({
+        title: 'Copy failed',
+        description: 'Unable to copy to clipboard. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Map center
@@ -718,7 +752,7 @@ export default function DriverPlanningDashboard() {
                     <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="text-sm font-medium">No matching drivers found</p>
                     <p className="text-xs mt-1">
-                      No drivers have location data matching this event's area
+                      No drivers have location data matching this event&apos;s area
                     </p>
                   </div>
                 )}
