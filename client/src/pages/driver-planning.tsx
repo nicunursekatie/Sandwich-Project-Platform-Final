@@ -261,14 +261,18 @@ interface FocusedMapItem {
 }
 
 // Component to center map on selected event or focused item
-function MapController({ 
-  selectedEvent, 
+function MapController({
+  selectedEvent,
   events,
-  focusedItem 
-}: { 
-  selectedEvent: EventMapData | null; 
+  focusedItem,
+  nearbyHosts,
+  nearbyRecipients,
+}: {
+  selectedEvent: EventMapData | null;
   events: EventMapData[];
   focusedItem: FocusedMapItem | null;
+  nearbyHosts: { latitude: string; longitude: string }[];
+  nearbyRecipients: { latitude: string; longitude: string }[];
 }) {
   const map = useMap();
 
@@ -283,17 +287,44 @@ function MapController({
     }
   }, [focusedItem, map]);
 
-  // Center on selected event when it changes
+  // Center on selected event with bounds that include at least one host and one recipient
   const selectedEventId = selectedEvent?.id;
   useEffect(() => {
     if (selectedEvent?.latitude && selectedEvent?.longitude) {
-      map.setView(
-        [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
-        14,
-        { animate: true }
-      );
+      const points: [number, number][] = [
+        [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)]
+      ];
+
+      // Add closest host if available
+      if (nearbyHosts.length > 0) {
+        points.push([
+          parseFloat(nearbyHosts[0].latitude),
+          parseFloat(nearbyHosts[0].longitude)
+        ]);
+      }
+
+      // Add closest recipient if available
+      if (nearbyRecipients.length > 0) {
+        points.push([
+          parseFloat(nearbyRecipients[0].latitude),
+          parseFloat(nearbyRecipients[0].longitude)
+        ]);
+      }
+
+      if (points.length > 1) {
+        // Fit bounds to include event + closest host + closest recipient
+        const bounds = L.latLngBounds(points);
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+      } else {
+        // Fallback to just centering on event if no hosts/recipients
+        map.setView(
+          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
+          14,
+          { animate: true }
+        );
+      }
     }
-  }, [selectedEventId, selectedEvent?.latitude, selectedEvent?.longitude, map]);
+  }, [selectedEventId, selectedEvent?.latitude, selectedEvent?.longitude, nearbyHosts, nearbyRecipients, map]);
 
   // Fit bounds to all events on initial load (when no event selected)
   useEffect(() => {
@@ -770,7 +801,13 @@ export default function DriverPlanningDashboard() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapController selectedEvent={selectedEvent} events={upcomingEvents} focusedItem={focusedItem} />
+            <MapController
+              selectedEvent={selectedEvent}
+              events={upcomingEvents}
+              focusedItem={focusedItem}
+              nearbyHosts={nearbyHosts}
+              nearbyRecipients={nearbyRecipients}
+            />
 
             {/* Event markers */}
             {upcomingEvents.map((event) => (
