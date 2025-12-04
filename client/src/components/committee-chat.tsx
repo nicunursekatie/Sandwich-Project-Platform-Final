@@ -9,6 +9,8 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessageReads } from '@/hooks/useMessageReads';
 import { MessageLikeButton } from './message-like-button';
+import { ReadReceipts } from './read-receipts';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface Message {
   id: number;
@@ -19,6 +21,15 @@ interface Message {
   parentId: number | null;
   threadId: number | null;
   replyCount: number;
+}
+
+interface MessageReader {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  profileImageUrl: string | null;
+  readAt: string;
 }
 
 const committees = [
@@ -59,12 +70,14 @@ const MessageItem = memo(({
   message,
   currentUserName,
   onDelete,
-  isDeleting
+  isDeleting,
+  readers = [],
 }: {
   message: Message;
   currentUserName: string;
   onDelete: (id: number) => void;
   isDeleting: boolean;
+  readers?: MessageReader[];
 }) => {
   const formattedTime = useMemo(() => {
     if (message.timestamp && !isNaN(new Date(message.timestamp).getTime())) {
@@ -117,6 +130,11 @@ const MessageItem = memo(({
         </div>
         <div className="flex items-center mt-1 space-x-2">
           <MessageLikeButton messageId={message.id} />
+          {isOwnMessage && (
+            <TooltipProvider>
+              <ReadReceipts readers={readers} isOwnMessage={isOwnMessage} />
+            </TooltipProvider>
+          )}
         </div>
       </div>
     </div>
@@ -182,6 +200,27 @@ export default function CommitteeChat() {
     Message[] | null
   >(null);
   const displayedMessages = optimisticMessages || messages;
+
+  // Fetch read receipts for messages (only for user's own messages)
+  const ownMessageIds = useMemo(() => {
+    const userName = getUserName();
+    return displayedMessages
+      .filter(m => m.sender === userName)
+      .map(m => m.id);
+  }, [displayedMessages]);
+
+  const { data: messageReaders = {} } = useQuery<Record<number, MessageReader[]>>({
+    queryKey: ['/api/message-notifications/chat-readers/batch', ownMessageIds],
+    queryFn: async () => {
+      if (ownMessageIds.length === 0) return {};
+      return await apiRequest('POST', '/api/message-notifications/chat-readers/batch', {
+        messageIds: ownMessageIds,
+      });
+    },
+    enabled: ownMessageIds.length > 0,
+    staleTime: 30000, // Cache for 30 seconds
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   // Auto-mark messages as read when viewing committee
   useAutoMarkAsRead(selectedCommittee?.id || '', messages, !!selectedCommittee);
@@ -292,9 +331,10 @@ export default function CommitteeChat() {
         currentUserName={currentUserName}
         onDelete={handleDeleteMessage}
         isDeleting={deleteMessageMutation.isPending}
+        readers={messageReaders[message.id] || []}
       />
     ));
-  }, [displayedMessages, currentUserName, handleDeleteMessage, deleteMessageMutation.isPending]);
+  }, [displayedMessages, currentUserName, handleDeleteMessage, deleteMessageMutation.isPending, messageReaders]);
 
   // Filter committees based on user permissions
   const availableCommittees = useMemo(() => {
