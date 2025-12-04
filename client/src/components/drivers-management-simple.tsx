@@ -75,6 +75,7 @@ export default function DriversManagement() {
     emailAgreementSent: false,
     vanApproved: false,
     isWeeklyDriver: false,
+    willingToSpeak: false,
     isActive: true,
   });
 
@@ -432,6 +433,23 @@ export default function DriversManagement() {
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
+                        id="willingToSpeak"
+                        checked={newDriver.willingToSpeak}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            willingToSpeak: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="willingToSpeak">
+                        Willing to Speak at Events
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
                         id="vanApproved"
                         checked={newDriver.vanApproved}
                         onChange={(e) =>
@@ -770,6 +788,21 @@ export default function DriversManagement() {
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="edit-isWeeklyDriver">Weekly Driver</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-willingToSpeak"
+                  checked={editingDriver.willingToSpeak || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      willingToSpeak: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-willingToSpeak">Willing to Speak at Events</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
