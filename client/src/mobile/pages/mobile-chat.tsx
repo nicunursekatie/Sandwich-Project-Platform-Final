@@ -8,7 +8,6 @@ import {
   Users,
   ChevronRight,
   MessageCircle,
-  Clock,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
@@ -170,7 +169,7 @@ export function MobileChat() {
             "active:scale-95 transition-transform"
           )}
           style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-          aria-label="New message"
+          aria-label="Compose new message"
         >
           <Edit className="w-5 h-5" />
         </button>

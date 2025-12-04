@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
   Search,
@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Sandwich,
   MapPin,
-  Clock,
   User,
   Check,
   Calendar,

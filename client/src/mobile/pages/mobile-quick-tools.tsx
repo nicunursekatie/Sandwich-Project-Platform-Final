@@ -6,9 +6,6 @@ import {
   Calendar,
   Receipt,
   ExternalLink,
-  ChevronRight,
-  Wrench,
-  Link as LinkIcon,
   Copy,
   Check,
 } from 'lucide-react';
@@ -32,7 +29,7 @@ const QUICK_TOOLS: QuickTool[] = [
     name: 'Inventory Calculator',
     description: 'Calculate sandwich inventory and distribution',
     icon: Calculator,
-    url: 'https://docs.google.com/spreadsheets/d/1-ABC123/edit', // Placeholder - actual URL from app config
+    url: 'https://docs.google.com/spreadsheets/d/1-ABC123/edit', // TODO: Load from app config
     color: 'bg-blue-500',
     category: 'calculator',
   },
@@ -100,11 +97,15 @@ export function MobileQuickTools() {
   };
 
   const copyLink = (tool: QuickTool) => {
-    navigator.clipboard.writeText(tool.url).then(() => {
-      setCopiedId(tool.id);
-      toast({ title: 'Link copied' });
-      setTimeout(() => setCopiedId(null), 2000);
-    });
+    navigator.clipboard.writeText(tool.url)
+      .then(() => {
+        setCopiedId(tool.id);
+        toast({ title: 'Link copied' });
+        setTimeout(() => setCopiedId(null), 2000);
+      })
+      .catch(() => {
+        toast({ title: 'Failed to copy link', variant: 'destructive' });
+      });
   };
 
   const renderToolCard = (tool: QuickTool) => {

@@ -7,9 +7,7 @@ import {
   Clock,
   Users,
   ChevronRight,
-  Filter,
   CalendarDays,
-  AlertCircle,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';

@@ -8,7 +8,6 @@ import {
   Star,
   StarOff,
   FolderOpen,
-  Clock,
   Eye,
   Copy,
   Check,
@@ -122,11 +121,15 @@ export function MobileResources() {
     }
 
     if (url) {
-      navigator.clipboard.writeText(url).then(() => {
-        setCopiedId(resource.id);
-        toast({ title: 'Link copied' });
-        setTimeout(() => setCopiedId(null), 2000);
-      });
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          setCopiedId(resource.id);
+          toast({ title: 'Link copied' });
+          setTimeout(() => setCopiedId(null), 2000);
+        })
+        .catch(() => {
+          toast({ title: 'Failed to copy link', variant: 'destructive' });
+        });
     }
   };
 
