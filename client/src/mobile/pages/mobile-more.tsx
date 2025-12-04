@@ -80,7 +80,9 @@ export function MobileMore() {
   const handleLogout = async () => {
     try {
       await logout();
-      window.location.href = '/api/logout';
+      // If you need to call the server to invalidate the session, uncomment the next line:
+      // await fetch('/api/logout', { method: 'POST' });
+      navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
     }
