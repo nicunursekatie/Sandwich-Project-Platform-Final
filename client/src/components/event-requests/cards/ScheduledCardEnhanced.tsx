@@ -1013,88 +1013,99 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </h3>
               <div className="space-y-3">
             {/* Times Row with Add Times button */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid grid-cols-3 gap-3 text-sm flex-1">
-                {/* Start Time */}
-                <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
-                  {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        type="time"
-                        value={addingAllTimes ? tempStartTime : editingValue}
-                        onChange={(e) => addingAllTimes ? setTempStartTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                      />
-                      {!addingAllTimes && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
-                      {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
-                    </div>
-                  )}
+            <div className="space-y-3">
+              {/* Time fields - stacked layout when editing, grid when not */}
+              {addingAllTimes ? (
+                /* Stacked layout when editing all times */
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#236383] text-sm uppercase font-semibold w-16">Start</span>
+                    <Input
+                      type="time"
+                      value={tempStartTime}
+                      onChange={(e) => setTempStartTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#236383] text-sm uppercase font-semibold w-16">End</span>
+                    <Input
+                      type="time"
+                      value={tempEndTime}
+                      onChange={(e) => setTempEndTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-700 text-sm uppercase font-semibold w-16">Pickup</span>
+                    <Input
+                      type="time"
+                      value={tempPickupTime}
+                      onChange={(e) => setTempPickupTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const updates: Record<string, string> = {};
+                        const existingPickupTime = request.pickupDateTime
+                          ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                          : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
+                        if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
+                          updates.eventStartTime = tempStartTime;
+                        }
+                        if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
+                          updates.eventEndTime = tempEndTime;
+                        }
+                        if (tempPickupTime && tempPickupTime !== existingPickupTime) {
+                          updates.pickupTime = tempPickupTime;
+                        }
+                        if (Object.keys(updates).length > 0) {
+                          updateFieldsMutation.mutate(updates);
+                        } else {
+                          setAddingAllTimes(false);
+                        }
+                      }}
+                      className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-9 px-4 text-sm"
+                      disabled={updateFieldsMutation.isPending}
+                      aria-label="Save all times"
+                    >
+                      <Save className="w-4 h-4 mr-2" aria-hidden="true" />
+                      {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setAddingAllTimes(false);
+                        setTempStartTime('');
+                        setTempEndTime('');
+                        setTempPickupTime('');
+                      }}
+                      className="text-gray-600 hover:bg-gray-100 h-9 px-4 text-sm"
+                      aria-label="Cancel"
+                    >
+                      <X className="w-4 h-4 mr-2" aria-hidden="true" />
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-
-                {/* End Time */}
-                <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
-                  {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        type="time"
-                        value={addingAllTimes ? tempEndTime : editingValue}
-                        onChange={(e) => addingAllTimes ? setTempEndTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                      />
-                      {!addingAllTimes && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
-                      {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
-                    </div>
-                  )}
-                </div>
-
-                {/* Pickup Time */}
-                <div>
-                  <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
-                  {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      {addingAllTimes ? (
-                        <Input
-                          type="time"
-                          value={tempPickupTime}
-                          onChange={(e) => setTempPickupTime(e.target.value)}
-                          className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                        />
-                      ) : (
-                        <>
-                          <DateTimePicker
+              ) : (
+                /* Grid layout when viewing */
+                <div className="flex items-start justify-between gap-4">
+                  <div className="grid grid-cols-3 gap-3 text-sm flex-1">
+                    {/* Start Time */}
+                    <div>
+                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
+                      {isEditingThisCard && editingField === 'eventStartTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
                             value={editingValue}
-                            onChange={setEditingValue}
-                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 min-w-[200px]"
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                           />
                           <div className="flex gap-2">
                             <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
@@ -1106,27 +1117,79 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               Cancel
                             </Button>
                           </div>
-                        </>
+                        </div>
+                      ) : (
+                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                          {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                        </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                      {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Add Times button or Save/Cancel buttons */}
-              {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
-                <div className="flex items-center gap-1 mt-4">
-                  {!addingAllTimes ? (
+                    {/* End Time */}
+                    <div>
+                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
+                      {isEditingThisCard && editingField === 'eventEndTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                          {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pickup Time */}
+                    <div>
+                      <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
+                      {isEditingThisCard && editingField === 'pickupDateTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <DateTimePicker
+                            value={editingValue}
+                            onChange={setEditingValue}
+                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                          {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add Times button - only show when not editing and times are missing */}
+                  {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm mt-4"
                       onClick={() => {
-                        // Initialize temp values with existing times
                         setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
                         setTempEndTime(formatTimeForInput(request.eventEndTime || ''));
                         setTempPickupTime(request.pickupDateTime ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTimeForInput(request.pickupTime) : ''));
@@ -1136,59 +1199,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     >
                       <Clock className="w-4 h-4" aria-hidden="true" />
                     </Button>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          // Prepare updates object with all modified times
-                          const updates: Record<string, string> = {};
-
-                          // Get existing pickup time value for comparison
-                          const existingPickupTime = request.pickupDateTime
-                            ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
-                            : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
-
-                          if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
-                            updates.eventStartTime = tempStartTime;
-                          }
-                          if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
-                            updates.eventEndTime = tempEndTime;
-                          }
-                          if (tempPickupTime && tempPickupTime !== existingPickupTime) {
-                            updates.pickupTime = tempPickupTime;
-                          }
-
-                          // Save all fields at once
-                          if (Object.keys(updates).length > 0) {
-                            updateFieldsMutation.mutate(updates);
-                          } else {
-                            setAddingAllTimes(false);
-                          }
-                        }}
-                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap h-9 px-4 text-sm"
-                        disabled={updateFieldsMutation.isPending}
-                        aria-label="Save all times"
-                      >
-                        <Save className="w-4 h-4 mr-2" aria-hidden="true" />
-                        {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setAddingAllTimes(false);
-                          setTempStartTime('');
-                          setTempEndTime('');
-                          setTempPickupTime('');
-                        }}
-                        className="text-gray-600 hover:bg-gray-100 h-9 px-4 text-sm"
-                        aria-label="Cancel"
-                      >
-                        <X className="w-4 h-4 mr-2" aria-hidden="true" />
-                        Cancel
-                      </Button>
-                    </div>
                   )}
                 </div>
               )}
