@@ -9,6 +9,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
+import { geocodeAddress } from '../utils/geocoding';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -244,6 +245,104 @@ router.post(
   }
 );
 
+// GET /api/recipients/map - Get recipients with coordinates for map display
+// NOTE: Must come before /:id route to avoid "map" being parsed as an ID
+router.get(
+  '/map',
+  requirePermission(PERMISSIONS.RECIPIENTS_VIEW),
+  async (req, res) => {
+    try {
+      const recipients = await storage.getAllRecipients();
+      
+      // Filter to only include recipients with coordinates
+      const mappableRecipients = recipients
+        .filter((r: any) => r.latitude && r.longitude && r.status === 'active')
+        .map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          address: r.address,
+          region: r.region,
+          latitude: r.latitude,
+          longitude: r.longitude,
+          estimatedSandwiches: r.estimatedSandwiches,
+          collectionDay: r.collectionDay,
+          collectionTime: r.collectionTime,
+          focusAreas: r.focusAreas,
+          contactPersonName: r.contactPersonName,
+          phone: r.phone,
+        }));
+      
+      res.json(mappableRecipients);
+    } catch (error) {
+      logger.error('Error fetching recipients for map:', error);
+      res.status(500).json({ error: 'Failed to fetch recipients for map' });
+    }
+  }
+);
+
+// POST /api/recipients/geocode-all - Backfill geocoding for all recipients with addresses but no coordinates
+// NOTE: Must come before /:id route
+router.post(
+  '/geocode-all',
+  requirePermission(PERMISSIONS.RECIPIENTS_EDIT),
+  async (req, res) => {
+    try {
+      const recipients = await storage.getAllRecipients();
+      
+      // Find recipients that have addresses but no coordinates
+      const needsGeocoding = recipients.filter(
+        (r: any) => r.address && (!r.latitude || !r.longitude)
+      );
+      
+      logger.log(`🗺️ Starting geocode backfill for ${needsGeocoding.length} recipients`);
+      
+      // Start geocoding in background (don't block response)
+      const geocodeRecipients = async () => {
+        let success = 0;
+        let failed = 0;
+        
+        for (const recipient of needsGeocoding) {
+          try {
+            // Rate limit: 1 request per second for Nominatim
+            await new Promise(resolve => setTimeout(resolve, 1100));
+            
+            const coords = await geocodeAddress(recipient.address!);
+            if (coords) {
+              await storage.updateRecipient(recipient.id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                geocodedAt: new Date(),
+              });
+              success++;
+              logger.log(`✅ Geocoded recipient ${recipient.id}: ${recipient.name}`);
+            } else {
+              failed++;
+              logger.warn(`❌ Failed to geocode recipient ${recipient.id}: ${recipient.name}`);
+            }
+          } catch (error) {
+            failed++;
+            logger.error(`Failed to geocode recipient ${recipient.id}:`, error);
+          }
+        }
+        
+        logger.log(`🗺️ Geocode backfill complete: ${success} success, ${failed} failed`);
+      };
+      
+      // Start geocoding in background
+      geocodeRecipients();
+      
+      res.json({
+        message: 'Geocoding started in background',
+        recipientsToProcess: needsGeocoding.length,
+        recipientIds: needsGeocoding.map((r: any) => r.id),
+      });
+    } catch (error) {
+      logger.error('Error starting geocode backfill:', error);
+      res.status(500).json({ error: 'Failed to start geocode backfill' });
+    }
+  }
+);
+
 // GET /api/recipients/:id - Get single recipient
 router.get(
   '/:id',
@@ -292,6 +391,24 @@ router.post(
           sessionId: req.sessionID
         }
       );
+
+      // Geocode address asynchronously (don't block response)
+      if (validatedData.address) {
+        geocodeAddress(validatedData.address)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateRecipient(recipient.id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                geocodedAt: new Date(),
+              });
+              logger.log(`✅ Geocoded recipient ${recipient.id}: ${validatedData.address}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode recipient ${recipient.id}:`, error);
+          });
+      }
 
       res.status(201).json(recipient);
     } catch (error) {
@@ -349,6 +466,25 @@ router.put(
           sessionId: req.sessionID
         }
       );
+
+      // Re-geocode if address changed (async, don't block response)
+      const addressChanged = validatedData.address && validatedData.address !== existingRecipient.address;
+      if (addressChanged) {
+        geocodeAddress(validatedData.address!)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateRecipient(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                geocodedAt: new Date(),
+              });
+              logger.log(`✅ Re-geocoded recipient ${id}: ${validatedData.address}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to re-geocode recipient ${id}:`, error);
+          });
+      }
 
       res.json(updatedRecipient);
     } catch (error) {
