@@ -36,6 +36,8 @@ const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zo
 const MobileDriverPlanning = lazy(() => import('@/mobile/pages/mobile-driver-planning'));
 const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
 const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
+const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
+const MobileCollectionDetail = lazy(() => import('@/mobile/pages/mobile-collection-detail'));
 
 // Mobile layout prompt (shows for mobile users on desktop routes)
 const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
@@ -273,7 +275,7 @@ function Router() {
             </Route>
             <Route path="/collections/:id">
               <Suspense fallback={<MobileLoader />}>
-                <MobileCollections />
+                <MobileCollectionDetail />
               </Suspense>
             </Route>
             <Route path="/holding-zone">
@@ -323,7 +325,7 @@ function Router() {
             </Route>
             <Route path="/events/:id">
               <Suspense fallback={<MobileLoader />}>
-                <MobileEvents />
+                <MobileEventDetail />
               </Suspense>
             </Route>
             <Route path="/more">

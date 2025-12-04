@@ -150,7 +150,7 @@ function EventCard({
       onClick={onClick}
       className={cn(
         "w-full bg-white dark:bg-slate-800 rounded-xl p-4",
-        "border shadow-sm text-left",
+        "border shadow-sm text-left relative",
         needsDrivers
           ? "border-amber-300 dark:border-amber-700"
           : "border-slate-200 dark:border-slate-700",

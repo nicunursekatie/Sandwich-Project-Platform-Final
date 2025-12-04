@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, parseISO } from 'date-fns';
+
+type DateFilter = 'today' | 'week' | 'month' | 'all';
 
 /**
  * Mobile collections screen - view and log collections
@@ -24,18 +26,40 @@ export function MobileCollections() {
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today');
 
   // Fetch recent collections
   const { data: collections, isLoading } = useQuery({
-    queryKey: ['/api/collections', { limit: 20 }],
+    queryKey: ['/api/collections', { limit: 100 }],
     staleTime: 30000,
   });
 
-  // Filter collections based on search
-  const filteredCollections = collections?.filter((c: any) =>
-    c.hostName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.driverName?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Filter collections based on search and date filter
+  const filteredCollections = collections?.filter((c: any) => {
+    // Search filter
+    const matchesSearch = !searchQuery ||
+      c.hostName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.driverName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Date filter
+    if (dateFilter === 'all') return true;
+    if (!c.date) return false;
+
+    const collectionDate = typeof c.date === 'string' ? parseISO(c.date) : new Date(c.date);
+
+    switch (dateFilter) {
+      case 'today':
+        return isToday(collectionDate);
+      case 'week':
+        return isThisWeek(collectionDate);
+      case 'month':
+        return isThisMonth(collectionDate);
+      default:
+        return true;
+    }
+  }) || [];
 
   return (
     <MobileShell title="Collections" showNav>
@@ -75,18 +99,24 @@ export function MobileCollections() {
 
           {/* Quick date filters */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-            {['Today', 'This Week', 'This Month', 'All Time'].map((filter) => (
+            {([
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'This Week' },
+              { id: 'month', label: 'This Month' },
+              { id: 'all', label: 'All Time' },
+            ] as const).map((filter) => (
               <button
-                key={filter}
+                key={filter.id}
+                onClick={() => setDateFilter(filter.id)}
                 className={cn(
                   "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap",
                   "transition-colors",
-                  filter === 'Today'
+                  dateFilter === filter.id
                     ? "bg-brand-primary text-white"
                     : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                 )}
               >
-                {filter}
+                {filter.label}
               </button>
             ))}
           </div>
