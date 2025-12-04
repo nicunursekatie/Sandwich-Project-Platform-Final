@@ -24,6 +24,34 @@ import PendingApproval from '@/pages/pending-approval';
 import HoldingZone from '@/pages/HoldingZone';
 import { logger } from '@/lib/logger';
 
+// Mobile app lazy-loaded components
+const MobileHome = lazy(() => import('@/mobile/pages/mobile-home'));
+const MobileCollections = lazy(() => import('@/mobile/pages/mobile-collections'));
+const MobileCollectionEntry = lazy(() => import('@/mobile/pages/mobile-collection-entry'));
+const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
+const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
+const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
+const MobileHoldingZone = lazy(() => import('@/mobile/pages/mobile-holding-zone'));
+const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zone-add'));
+const MobileDriverPlanning = lazy(() => import('@/mobile/pages/mobile-driver-planning'));
+const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
+const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
+const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
+const MobileCollectionDetail = lazy(() => import('@/mobile/pages/mobile-collection-detail'));
+
+// Mobile layout prompt (shows for mobile users on desktop routes)
+const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
+
+// Mobile loading component
+const MobileLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary mx-auto mb-3"></div>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+    </div>
+  </div>
+);
+
 function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
 
@@ -222,7 +250,99 @@ function Router() {
   return (
     <>
       <ScrollToTop />
+      {/* Mobile layout prompt - shows for mobile users on desktop routes */}
+      <Suspense fallback={null}>
+        <MobileLayoutPrompt />
+      </Suspense>
       <Switch>
+        {/* Mobile App Routes - /m/* */}
+        <Route path="/m" nest>
+          <Switch>
+            <Route path="/">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+            <Route path="/collections">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollections />
+              </Suspense>
+            </Route>
+            <Route path="/collections/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollectionEntry />
+              </Suspense>
+            </Route>
+            <Route path="/collections/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollectionDetail />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZone />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/:id/edit">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/driver-planning">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileDriverPlanning />
+              </Suspense>
+            </Route>
+            <Route path="/resources">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileResources />
+              </Suspense>
+            </Route>
+            <Route path="/quick-tools">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileQuickTools />
+              </Suspense>
+            </Route>
+            <Route path="/chat">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/chat/:channel">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/events">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEvents />
+              </Suspense>
+            </Route>
+            <Route path="/events/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEventDetail />
+              </Suspense>
+            </Route>
+            <Route path="/more">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileMore />
+              </Suspense>
+            </Route>
+            {/* Fallback to mobile home for unmatched mobile routes */}
+            <Route>
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+          </Switch>
+        </Route>
+
+        {/* Desktop App Routes */}
         <Route path="/messages">
           {() => <Dashboard initialSection="messages" />}
         </Route>
