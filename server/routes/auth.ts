@@ -24,10 +24,20 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
 
       // Find user by email
       const user = await storage.getUserByEmail(email);
-      if (!user || !user.isActive) {
+      if (!user) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
+        });
+      }
+      
+      // SECURITY: Check if user is pending approval
+      if (!user.isActive) {
+        logger.log(`❌ Pending user attempted login: ${email}`);
+        return res.status(403).json({
+          success: false,
+          code: 'PENDING_APPROVAL',
+          message: 'Your account is pending approval. You will be notified once an admin reviews your application.',
         });
       }
 
@@ -140,83 +150,10 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
     }
   });
 
-  // Development-only GET /login route for auto-login (fixes infinite auth loop)
+  // GET /login - Redirect to login page (no auto-login for security)
   router.get('/login', async (req: any, res) => {
-    try {
-      // Allow auto-login in Replit development environment
-      // Don't check NODE_ENV as Replit may set it to production
-      const isLocalDev = process.env.REPL_ID || process.env.REPLIT_DB_URL || 
-                        req.hostname === 'localhost' || req.hostname === '127.0.0.1';
-      
-      if (!isLocalDev) {
-        return res.status(400).json({
-          success: false,
-          message: 'Auto-login only available in development environment',
-        });
-      }
-
-      // Auto-login as admin in development
-      const adminEmail = 'admin@sandwich.project';
-      const user = await storage.getUserByEmail(adminEmail);
-      
-      if (!user || !user.isActive) {
-        return res.status(500).json({
-          success: false,
-          message: 'Admin user not found or inactive',
-        });
-      }
-
-      // Create session user object
-      const sessionUser = {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-        role: user.role,
-        permissions: user.permissions,
-        isActive: user.isActive,
-      };
-
-      // Update last login time for development auto-login too
-      await storage.updateUser(user.id, { lastLoginAt: new Date() });
-
-      // Store user in session with explicit save
-      req.session.user = sessionUser;
-      req.user = sessionUser;
-
-      // Force session save to ensure persistence
-      try {
-        await new Promise((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              logger.error('Dev auto-login session save error:', err);
-              reject(err);
-            } else {
-              resolve(undefined);
-            }
-          });
-        });
-        
-        logger.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
-        logger.log('🔧 Session ID:', req.sessionID);
-        
-        // Redirect to dashboard after successful login
-        res.redirect('/');
-      } catch (sessionError) {
-        logger.error('Dev auto-login session save error:', sessionError);
-        res.status(500).json({
-          success: false,
-          message: 'Session save failed'
-        });
-      }
-    } catch (error) {
-      logger.error('Dev auto-login error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Auto-login failed' 
-      });
-    }
+    // Simply redirect to the login page - no auto-login to prevent unauthorized access
+    res.redirect('/login');
   });
 
   // Logout endpoint
@@ -280,29 +217,41 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       if (req.session?.user) {
         try {
           const dbUser = await storage.getUserByEmail(req.session.user.email);
-          if (dbUser && dbUser.isActive) {
-            // Update last login time to track session start
-            await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
-            
-            // Return fresh user data with updated permissions
-            res.json({
-              id: dbUser.id,
-              email: dbUser.email,
-              firstName: dbUser.firstName,
-              lastName: dbUser.lastName,
-              displayName: `${dbUser.firstName} ${dbUser.lastName}`,
-              profileImageUrl: dbUser.profileImageUrl,
-              role: dbUser.role,
-              permissions: dbUser.permissions,
-              isActive: dbUser.isActive,
-            });
-            return;
+          
+          // SECURITY: Block inactive users - they must be approved first
+          if (!dbUser) {
+            logger.log(`❌ User not found in database: ${req.session.user.email}`);
+            return res.status(401).json({ message: 'User not found' });
           }
+          
+          if (!dbUser.isActive) {
+            logger.log(`❌ Inactive user blocked: ${dbUser.email}`);
+            return res.status(403).json({ 
+              message: 'Account pending approval',
+              code: 'PENDING_APPROVAL',
+              details: 'Your account is awaiting admin approval. You will be notified once approved.',
+            });
+          }
+          
+          // Update last login time to track session start
+          await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+          
+          // Return fresh user data with updated permissions
+          res.json({
+            id: dbUser.id,
+            email: dbUser.email,
+            firstName: dbUser.firstName,
+            lastName: dbUser.lastName,
+            displayName: `${dbUser.firstName} ${dbUser.lastName}`,
+            profileImageUrl: dbUser.profileImageUrl,
+            role: dbUser.role,
+            permissions: dbUser.permissions,
+            isActive: dbUser.isActive,
+          });
+          return;
         } catch (error) {
           logger.error('Error getting fresh user data:', error);
-          // Fallback to session user if database error
-          res.json(user);
-          return;
+          return res.status(500).json({ message: 'Failed to verify user' });
         }
       }
 
@@ -310,12 +259,24 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       const userId = req.user.claims?.sub || req.user.id;
       const dbUser = await storage.getUser(userId);
       
-      // Update last login time for Replit auth too
-      if (dbUser && dbUser.id) {
-        await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+      // SECURITY: Block inactive users
+      if (!dbUser) {
+        return res.status(401).json({ message: 'User not found' });
       }
       
-      res.json(dbUser || user);
+      if (!dbUser.isActive) {
+        logger.log(`❌ Inactive user blocked: ${dbUser.email}`);
+        return res.status(403).json({ 
+          message: 'Account pending approval',
+          code: 'PENDING_APPROVAL',
+          details: 'Your account is awaiting admin approval. You will be notified once approved.',
+        });
+      }
+      
+      // Update last login time for Replit auth too
+      await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+      
+      res.json(dbUser);
     } catch (error) {
       logger.error('Error fetching user:', error);
       res.status(500).json({ message: 'Failed to fetch user' });

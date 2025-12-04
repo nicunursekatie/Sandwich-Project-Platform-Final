@@ -17,6 +17,7 @@ import { ScrollToTop } from '@/components/ScrollToTop';
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
+import LoginPage from '@/pages/login';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
@@ -104,7 +105,7 @@ function Router() {
             again.
           </p>
           <button
-            onClick={() => (window.location.href = '/api/login')}
+            onClick={() => (window.location.href = '/login')}
             className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
           >
             Try Again
@@ -141,19 +142,7 @@ function Router() {
             <SMSVerificationDocs />
           </Suspense>
         </Route>
-        <Route path="/login">
-          {() => {
-            // Redirect to the backend login page
-            window.location.href = '/api/login';
-            return (
-              <LoadingState
-                text="Redirecting to login..."
-                size="lg"
-                className="min-h-screen"
-              />
-            );
-          }}
-        </Route>
+        <Route path="/login" component={LoginPage} />
         <Route path="/stream-messages">
           {() => (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -187,7 +176,7 @@ function Router() {
                   work.
                 </p>
                 <button
-                  onClick={() => (window.location.href = '/api/login')}
+                  onClick={() => (window.location.href = '/login')}
                   className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
                 >
                   Login to Continue
@@ -199,7 +188,7 @@ function Router() {
         <Route path="/">
           {() => {
             // Redirect unauthenticated users directly to login page
-            window.location.href = '/api/login';
+            window.location.href = '/login';
             return (
               <LoadingState
                 text="Redirecting to login..."
@@ -212,7 +201,7 @@ function Router() {
         <Route>
           {() => {
             // Default fallback - redirect to login page
-            window.location.href = '/api/login';
+            window.location.href = '/login';
             return (
               <LoadingState
                 text="Redirecting to login..."

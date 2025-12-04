@@ -116,7 +116,7 @@ export default function ResetPassword() {
         setMessage(data.message);
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          window.location.href = '/api/login';
+          window.location.href = '/login';
         }, 3000);
       } else {
         setMessage(data.message);
@@ -162,14 +162,14 @@ export default function ResetPassword() {
             </Alert>
             <div className="space-y-2">
               <Button
-                onClick={() => (window.location.href = '/api/login')}
+                onClick={() => (window.location.href = '/login')}
                 className="w-full bg-teal-600 hover:bg-teal-700"
               >
                 Back to Login
               </Button>
               <Button
                 variant="outline"
-                onClick={() => (window.location.href = '/api/login')}
+                onClick={() => (window.location.href = '/login')}
                 className="w-full"
               >
                 Request New Reset Link
@@ -204,7 +204,7 @@ export default function ResetPassword() {
               You will be redirected to login in 3 seconds...
             </p>
             <Button
-              onClick={() => (window.location.href = '/api/login')}
+              onClick={() => (window.location.href = '/login')}
               className="w-full bg-teal-600 hover:bg-teal-700"
             >
               Go to Login Now
@@ -346,7 +346,7 @@ export default function ResetPassword() {
             <div className="text-center">
               <Button
                 variant="ghost"
-                onClick={() => (window.location.href = '/api/login')}
+                onClick={() => (window.location.href = '/login')}
                 className="text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft size={16} className="mr-2" />

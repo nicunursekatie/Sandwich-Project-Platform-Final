@@ -137,3 +137,29 @@ This ensures the UI immediately reflects saved changes.
 **Route Ordering (CRITICAL):**
 - Specific routes (`/map`, `/geocode-all`, `/export-csv`) MUST come before parameterized routes (`/:id`)
 - This prevents "map" or "geocode-all" from being parsed as recipient IDs
+
+### User Registration & Approval System (Security Fix - December 2025)
+
+**Issue:** Users could access the app without admin approval due to a development auto-login bypass.
+
+**Root Cause:** The `GET /api/login` endpoint auto-logged users in as admin when it detected Replit environment variables (`REPL_ID`, `REPLIT_DB_URL`). Since these are always present in production Replit deployments, anyone could hit `/api/login` and gain immediate admin access.
+
+**Security Fixes Applied:**
+1. **Removed dev auto-login** - `GET /api/login` now just redirects to `/login` (no auto-login)
+2. **Created proper login form** - New `client/src/pages/login.tsx` with email/password authentication
+3. **Enforced isActive checks everywhere:**
+   - `POST /api/auth/login` - Returns clear "pending approval" message for inactive users
+   - `GET /api/auth/user` - Blocks inactive users from getting authenticated user data
+   - `blockInactiveUsers` middleware continues to block all other routes
+
+**How Registration Now Works:**
+1. New users sign up via `/signup` - account created with `isActive: false`
+2. User sees "pending approval" message if they try to log in
+3. Admin approves user via User Management (sets `isActive: true` and assigns permissions)
+4. User can now log in and access the app
+
+**Key Files:**
+- `server/routes/auth.ts` - Login endpoint with isActive enforcement
+- `server/routes/signup.ts` - Registration with `isActive: false`
+- `server/middleware/auth.ts` - `blockInactiveUsers` middleware
+- `client/src/pages/login.tsx` - Login form with pending approval handling
