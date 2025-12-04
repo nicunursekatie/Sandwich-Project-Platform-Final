@@ -57,6 +57,13 @@
       "when": 1764787958775,
       "tag": "0007_add_last_active_at",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764883892989,
+      "tag": "0008_add_driver_geocoding",
+      "breakpoints": true
     }
   ]
 }

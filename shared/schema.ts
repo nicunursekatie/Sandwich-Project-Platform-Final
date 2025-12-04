@@ -812,6 +812,9 @@ export const drivers = pgTable('drivers', {
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
   isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
+  latitude: text('latitude'), // Geocoded latitude for map display
+  longitude: text('longitude'), // Geocoded longitude for map display
+  geocodedAt: timestamp('geocoded_at'), // When the location was geocoded
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
