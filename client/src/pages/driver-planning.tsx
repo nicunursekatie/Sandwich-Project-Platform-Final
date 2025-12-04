@@ -130,7 +130,7 @@ const formatTime12Hour = (time: string | null): string => {
   if (!time) return '';
   try {
     const [hours, minutes] = time.split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) {
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
       console.error('Failed to parse time (NaN):', time);
       return 'Invalid time';
     }
@@ -157,7 +157,12 @@ const extractCityFromAddress = (address: string | null): string | null => {
   return null;
 };
 
-// City abbreviation mappings for location matching
+/**
+ * City abbreviation mappings for location matching.
+ * Maps full city names (lowercase) to an array of common abbreviations.
+ * Used by locationMatchesCity() to match driver locations to event cities
+ * when users enter abbreviated or shorthand location names.
+ */
 const CITY_ABBREVIATIONS: Record<string, string[]> = {
   'sandy springs': ['ss'],
   'alpharetta': ['alpha'],
