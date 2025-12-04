@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bell,
   BellOff,
-  Check,
   Calendar,
   Truck,
   MessageCircle,
@@ -15,6 +13,7 @@ import {
 import { MobileShell } from '../components/mobile-shell';
 import { PullToRefresh } from '../components/pull-to-refresh';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
@@ -49,6 +48,7 @@ const notificationColors = {
 export function MobileNotifications() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch notifications
   const { data: notifications = [], isLoading, refetch } = useQuery<Notification[]>({
@@ -68,6 +68,13 @@ export function MobileNotifications() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to mark notifications as read',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
+    },
   });
 
   // Mark single as read mutation
@@ -81,6 +88,13 @@ export function MobileNotifications() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to mark notification as read',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
     },
   });
 
