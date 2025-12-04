@@ -25,6 +25,7 @@ export function MobileShell({
   showHeader = true,
   onBack,
   rightAction,
+  headerActions,
 }: MobileShellProps) {
   return (
     <div className="mobile-shell flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -37,7 +38,7 @@ export function MobileShell({
           title={title}
           showBack={showBack}
           onBack={onBack}
-          rightAction={rightAction}
+          rightAction={rightAction || headerActions}
         />
       )}
 

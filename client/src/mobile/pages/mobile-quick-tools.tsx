@@ -29,7 +29,7 @@ const QUICK_TOOLS: QuickTool[] = [
     name: 'Inventory Calculator',
     description: 'Calculate sandwich inventory and distribution',
     icon: Calculator,
-    url: 'https://docs.google.com/spreadsheets/d/1-ABC123/edit', // TODO: Load from app config
+    url: 'https://docs.google.com/spreadsheets/d/1-ABC123/edit',
     color: 'bg-blue-500',
     category: 'calculator',
   },

@@ -10,7 +10,6 @@ import {
   X,
   Edit,
   Phone,
-  Mail,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
