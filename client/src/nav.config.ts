@@ -204,6 +204,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'event-planning',
   },
   {
+    id: 'driver-planning',
+    label: 'Driver Planning',
+    icon: Truck,
+    href: 'driver-planning',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'event-planning',
+    highlighted: true,
+  },
+  {
     id: 'event-reminders',
     label: 'Event Reminders',
     icon: Clock,
