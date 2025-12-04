@@ -131,6 +131,7 @@ const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'
 const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
 const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
+const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -385,6 +386,8 @@ export default function Dashboard({
         return <RouteMapView />;
       case 'event-map':
         return <EventMapView />;
+      case 'driver-planning':
+        return <DriverPlanningDashboard />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':
