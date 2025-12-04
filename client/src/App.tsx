@@ -27,9 +27,14 @@ import { logger } from '@/lib/logger';
 // Mobile app lazy-loaded components
 const MobileHome = lazy(() => import('@/mobile/pages/mobile-home'));
 const MobileCollections = lazy(() => import('@/mobile/pages/mobile-collections'));
+const MobileCollectionEntry = lazy(() => import('@/mobile/pages/mobile-collection-entry'));
 const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
 const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
 const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
+const MobileRoute = lazy(() => import('@/mobile/pages/mobile-route'));
+
+// Mobile layout prompt (shows for mobile users on desktop routes)
+const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
 
 // Mobile loading component
 const MobileLoader = () => (
@@ -239,6 +244,10 @@ function Router() {
   return (
     <>
       <ScrollToTop />
+      {/* Mobile layout prompt - shows for mobile users on desktop routes */}
+      <Suspense fallback={null}>
+        <MobileLayoutPrompt />
+      </Suspense>
       <Switch>
         {/* Mobile App Routes - /m/* */}
         <Route path="/m" nest>
@@ -253,9 +262,19 @@ function Router() {
                 <MobileCollections />
               </Suspense>
             </Route>
+            <Route path="/collections/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollectionEntry />
+              </Suspense>
+            </Route>
             <Route path="/collections/:id">
               <Suspense fallback={<MobileLoader />}>
                 <MobileCollections />
+              </Suspense>
+            </Route>
+            <Route path="/route">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileRoute />
               </Suspense>
             </Route>
             <Route path="/chat">
