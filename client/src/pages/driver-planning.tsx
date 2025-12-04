@@ -772,7 +772,7 @@ export default function DriverPlanningDashboard() {
                         variant="link"
                         size="sm"
                         className="text-xs p-0 h-auto mt-2 text-amber-800"
-                        onClick={() => setLocation('/dashboard?section=drivers')}
+                        onClick={() => window.location.href = '/dashboard?section=drivers'}
                       >
                         Go to Driver Management →
                       </Button>
