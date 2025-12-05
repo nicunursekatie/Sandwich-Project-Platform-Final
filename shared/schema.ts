@@ -1884,11 +1884,18 @@ export const eventRequests = pgTable(
   'event_requests',
   {
     id: serial('id').primaryKey(),
-    // Submitter information
+    // Submitter information (primary contact)
     firstName: varchar('first_name'), // Made optional for manual entries
     lastName: varchar('last_name'), // Made optional for manual entries
     email: varchar('email'), // Made optional - can be null
     phone: varchar('phone'),
+
+    // Backup/secondary contact information
+    backupContactFirstName: varchar('backup_contact_first_name'),
+    backupContactLastName: varchar('backup_contact_last_name'),
+    backupContactEmail: varchar('backup_contact_email'),
+    backupContactPhone: varchar('backup_contact_phone'),
+    backupContactRole: varchar('backup_contact_role'), // Role/title (e.g., "Assistant Principal", "Events Coordinator")
 
     // Organization information
     organizationName: varchar('organization_name'), // Made optional for manual entries

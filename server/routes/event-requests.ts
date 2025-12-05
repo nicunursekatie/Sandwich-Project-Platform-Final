@@ -1242,8 +1242,9 @@ router.patch(
 );
 
 // Update event request (PATCH) - handles basic updates like toolkit sent
+// MUST use regex pattern to match numeric IDs only, consistent with GET route
 router.patch(
-  '/:id',
+  '/:id(\\d+)',
   isAuthenticated,
   requirePermission('EVENT_REQUESTS_EDIT'),
   async (req, res) => {
