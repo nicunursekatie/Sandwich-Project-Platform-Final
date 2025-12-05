@@ -84,20 +84,20 @@ export function MobileEventDetail() {
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-            {event.title || event.recipientName || 'Untitled Event'}
+            {event.organizationName || event.title || event.recipientName || 'Untitled Event'}
           </h1>
 
-          {event.eventDate && (
+          {(event.scheduledEventDate || event.desiredEventDate) && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <Calendar className="w-4 h-4" />
-              <span>{format(parseISO(event.eventDate), 'EEEE, MMMM d, yyyy')}</span>
+              <span>{format(parseISO(event.scheduledEventDate || event.desiredEventDate), 'EEEE, MMMM d, yyyy')}</span>
             </div>
           )}
 
-          {event.eventTime && (
+          {event.eventStartTime && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 mt-1">
               <Clock className="w-4 h-4" />
-              <span>{event.eventTime}</span>
+              <span>{event.eventStartTime}{event.eventEndTime ? ` - ${event.eventEndTime}` : ''}</span>
             </div>
           )}
         </div>
@@ -135,7 +135,7 @@ export function MobileEventDetail() {
         </div>
 
         {/* Location */}
-        {event.location && (
+        {(event.eventAddress || event.location) && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
               Location
@@ -143,11 +143,11 @@ export function MobileEventDetail() {
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 flex-1">
                 <MapPin className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
-                <span className="text-slate-900 dark:text-slate-100">{event.location}</span>
+                <span className="text-slate-900 dark:text-slate-100">{event.eventAddress || event.location}</span>
               </div>
               <div className="flex gap-1">
                 <button
-                  onClick={() => copyToClipboard(event.location, 'location')}
+                  onClick={() => copyToClipboard(event.eventAddress || event.location, 'location')}
                   className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                 >
                   {copiedField === 'location' ? (
@@ -157,7 +157,7 @@ export function MobileEventDetail() {
                   )}
                 </button>
                 <button
-                  onClick={() => openMaps(event.location)}
+                  onClick={() => openMaps(event.eventAddress || event.location)}
                   className="p-2 rounded-lg bg-brand-primary text-white"
                 >
                   <Navigation className="w-4 h-4" />
@@ -168,33 +168,33 @@ export function MobileEventDetail() {
         )}
 
         {/* Contact Info */}
-        {(event.contactName || event.contactPhone || event.contactEmail) && (
+        {(event.firstName || event.phone || event.email) && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
               Contact
             </h3>
             <div className="space-y-2">
-              {event.contactName && (
+              {(event.firstName || event.lastName) && (
                 <p className="text-slate-900 dark:text-slate-100 font-medium">
-                  {event.contactName}
+                  {event.firstName} {event.lastName}
                 </p>
               )}
-              {event.contactPhone && (
+              {event.phone && (
                 <a
-                  href={`tel:${event.contactPhone}`}
+                  href={`tel:${event.phone}`}
                   className="flex items-center gap-2 text-brand-primary"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>{event.contactPhone}</span>
+                  <span>{event.phone}</span>
                 </a>
               )}
-              {event.contactEmail && (
+              {event.email && (
                 <a
-                  href={`mailto:${event.contactEmail}`}
+                  href={`mailto:${event.email}`}
                   className="flex items-center gap-2 text-brand-primary"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>{event.contactEmail}</span>
+                  <span>{event.email}</span>
                 </a>
               )}
             </div>
@@ -202,25 +202,25 @@ export function MobileEventDetail() {
         )}
 
         {/* Sandwiches */}
-        {event.sandwichCount && (
+        {event.estimatedSandwichCount && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
               <Sandwich className="w-5 h-5 text-brand-primary" />
               <span className="text-slate-900 dark:text-slate-100 font-medium">
-                {event.sandwichCount} sandwiches requested
+                {event.estimatedSandwichCount} sandwiches estimated
               </span>
             </div>
           </div>
         )}
 
-        {/* Notes */}
-        {event.notes && (
+        {/* Message/Notes */}
+        {event.message && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-              Notes
+              Message
             </h3>
             <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {event.notes}
+              {event.message}
             </p>
           </div>
         )}

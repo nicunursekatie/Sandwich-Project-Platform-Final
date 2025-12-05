@@ -82,47 +82,37 @@ export function MobileCollectionDetail() {
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                  {collection.count || 0}
+                  {(() => {
+                    const individual = collection.individualSandwiches || 0;
+                    let group = 0;
+                    if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+                      group = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+                    } else {
+                      group = (collection.group1Count || 0) + (collection.group2Count || 0);
+                    }
+                    return (individual + group).toLocaleString();
+                  })()}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">sandwiches</p>
               </div>
             </div>
-            {collection.verified !== undefined && (
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
-                collection.verified
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-              )}>
-                {collection.verified ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Verified</span>
-                  </>
-                ) : (
-                  <>
-                    <X className="w-4 h-4" />
-                    <span>Unverified</span>
-                  </>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Date */}
-          {collection.date && (
+          {collection.collectionDate && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <Calendar className="w-4 h-4" />
               <span>
-                {format(new Date(collection.date), 'EEEE, MMMM d, yyyy')}
+                {format(new Date(collection.collectionDate), 'EEEE, MMMM d, yyyy')}
               </span>
             </div>
           )}
 
-          {collection.time && (
+          {/* Submitted by */}
+          {collection.createdByName && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 mt-1">
-              <Clock className="w-4 h-4" />
-              <span>{collection.time}</span>
+              <User className="w-4 h-4" />
+              <span>Submitted by {collection.createdByName}</span>
             </div>
           )}
         </div>
@@ -160,27 +150,24 @@ export function MobileCollectionDetail() {
           </div>
         )}
 
-        {/* Driver Info */}
-        {collection.driverName && (
+        {/* Group Collections */}
+        {collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-              Driver
+              Group Collections
             </h3>
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-slate-400" />
-              <span className="text-slate-900 dark:text-slate-100 font-medium">
-                {collection.driverName}
-              </span>
+            <div className="space-y-2">
+              {collection.groupCollections.map((group: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between">
+                  <span className="text-slate-900 dark:text-slate-100">
+                    {group.name || `Group ${idx + 1}`}
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">
+                    {group.count?.toLocaleString() || 0} sandwiches
+                  </span>
+                </div>
+              ))}
             </div>
-            {collection.driverPhone && (
-              <a
-                href={`tel:${collection.driverPhone}`}
-                className="flex items-center gap-2 text-brand-primary mt-2 ml-6"
-              >
-                <Phone className="w-4 h-4" />
-                <span>{collection.driverPhone}</span>
-              </a>
-            )}
           </div>
         )}
 

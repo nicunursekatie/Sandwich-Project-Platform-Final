@@ -24,7 +24,7 @@ export function MobileEvents() {
 
   // Fetch events
   const { data: events, isLoading } = useQuery({
-    queryKey: ['/api/event-requests', { status: 'approved' }],
+    queryKey: ['/api/event-requests'],
     staleTime: 60000,
   });
 
@@ -161,22 +161,22 @@ function EventCard({
     >
       {/* Event name */}
       <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-        {event.title || event.recipientName || 'Untitled Event'}
+        {event.organizationName || event.title || event.recipientName || 'Untitled Event'}
       </h3>
 
       {/* Details */}
       <div className="space-y-1.5 text-sm">
-        {event.location && (
+        {(event.eventAddress || event.location) && (
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
             <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{event.location}</span>
+            <span className="truncate">{event.eventAddress || event.location}</span>
           </div>
         )}
 
-        {event.eventTime && (
+        {event.eventStartTime && (
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
             <Clock className="w-4 h-4 flex-shrink-0" />
-            <span>{event.eventTime}</span>
+            <span>{event.eventStartTime}{event.eventEndTime ? ` - ${event.eventEndTime}` : ''}</span>
           </div>
         )}
 
