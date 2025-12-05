@@ -358,6 +358,28 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <span className="ml-2">• {request.phone}</span>
               )}
             </div>
+            {/* Backup Contact */}
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone) && (
+              <div className="text-sm text-gray-600 mb-2 pl-2 border-l-2 border-gray-300">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Backup Contact</div>
+                <div>
+                  {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+                    <strong>
+                      {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                      {(request as any).backupContactRole && (
+                        <span className="text-gray-500 font-normal ml-1">({(request as any).backupContactRole})</span>
+                      )}
+                    </strong>
+                  )}
+                  {(request as any).backupContactEmail && (
+                    <span className="ml-2">• {(request as any).backupContactEmail}</span>
+                  )}
+                  {(request as any).backupContactPhone && (
+                    <span className="ml-2">• {(request as any).backupContactPhone}</span>
+                  )}
+                </div>
+              </div>
+            )}
             {/* TSP Contact */}
             <div className="text-sm text-[#D68319] mb-2 group relative">
               <span className="font-medium">TSP Contact: </span>

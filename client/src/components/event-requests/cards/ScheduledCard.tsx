@@ -1063,6 +1063,49 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {request.email && renderEditableField('email', request.email, 'Email', <Mail className="w-4 h-4" />)}
             {request.phone && renderEditableField('phone', request.phone, 'Phone', <Phone className="w-4 h-4" />)}
 
+            {/* Backup Contact */}
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone) && (
+              <div className="pt-2 border-t border-gray-200 space-y-2">
+                <div className="text-xs font-semibold text-gray-500 uppercase">Backup Contact</div>
+                {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Name:</span>
+                    <span className="text-base text-gray-900 break-words min-w-0">
+                      {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                      {(request as any).backupContactRole && (
+                        <span className="text-gray-500 font-normal ml-2">({(request as any).backupContactRole})</span>
+                      )}
+                    </span>
+                  </div>
+                )}
+                {(request as any).backupContactEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Email:</span>
+                    <a
+                      href={`mailto:${(request as any).backupContactEmail}`}
+                      className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
+                    >
+                      {(request as any).backupContactEmail}
+                    </a>
+                  </div>
+                )}
+                {(request as any).backupContactPhone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Phone:</span>
+                    <a
+                      href={`tel:${(request as any).backupContactPhone}`}
+                      className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                    >
+                      {(request as any).backupContactPhone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
                 <UserPlus className="w-4 h-4 text-[#236383]" />
