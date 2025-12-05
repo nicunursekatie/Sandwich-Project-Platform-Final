@@ -22,21 +22,18 @@ import { useToast } from '@/hooks/use-toast';
 
 /**
  * Parse a date string as a local date to avoid timezone shift issues.
+ * Timestamps are stripped of their time component to avoid timezone shifts.
  */
 function parseLocalDate(dateString: string): Date {
   if (!dateString) return new Date();
-  
-  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    const [, yearStr, monthStr, dayStr] = isoMatch;
-    return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
-  }
-  
-  if (dateString.includes('T') || dateString.includes(' ')) {
-    return new Date(dateString);
-  }
-  
-  return new Date(dateString + 'T12:00:00');
+
+  // Extract just the date part (YYYY-MM-DD) from any format
+  // This handles both YYYY-MM-DD and YYYY-MM-DDTHH:MM:SS formats
+  const datePart = dateString.split('T')[0];
+  const [yearStr, monthStr, dayStr] = datePart.split('-');
+
+  // Create date at local midnight (not UTC midnight) to avoid timezone shifts
+  return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
 }
 
 interface EventForPlanning {

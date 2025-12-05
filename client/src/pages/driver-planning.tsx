@@ -59,7 +59,13 @@ L.Icon.Default.mergeOptions({
 
 // Helper function to parse date strings as local dates
 const parseLocalDate = (dateString: string): Date => {
-  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  if (!dateString) return new Date();
+
+  // Extract just the date part (YYYY-MM-DD) from any format
+  const datePart = dateString.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+
+  // Create date at local midnight (not UTC midnight)
   return new Date(year, month - 1, day);
 };
 

@@ -16,24 +16,18 @@ import { format, isToday, isTomorrow, isThisWeek } from 'date-fns';
 /**
  * Parse a date string as a local date to avoid timezone shift issues.
  * Date-only strings (YYYY-MM-DD) are treated as local dates.
+ * Timestamps are stripped of their time component to avoid timezone shifts.
  */
 function parseLocalDate(dateString: string): Date {
   if (!dateString) return new Date();
-  
-  // Check if it's a date-only string (YYYY-MM-DD)
-  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    const [, yearStr, monthStr, dayStr] = isoMatch;
-    return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
-  }
-  
-  // For datetime strings, parse normally but add noon to avoid edge cases
-  if (dateString.includes('T') || dateString.includes(' ')) {
-    return new Date(dateString);
-  }
-  
-  // Fallback: add noon time to avoid timezone edge cases
-  return new Date(dateString + 'T12:00:00');
+
+  // Extract just the date part (YYYY-MM-DD) from any format
+  // This handles both YYYY-MM-DD and YYYY-MM-DDTHH:MM:SS formats
+  const datePart = dateString.split('T')[0];
+  const [yearStr, monthStr, dayStr] = datePart.split('-');
+
+  // Create date at local midnight (not UTC midnight) to avoid timezone shifts
+  return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
 }
 
 type EventFilter = 'all' | 'today' | 'week' | 'upcoming';
