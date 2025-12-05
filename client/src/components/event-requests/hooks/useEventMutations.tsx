@@ -267,7 +267,7 @@ export const useEventMutations = () => {
     }: {
       id: number;
       field: string;
-      value: string;
+      value: any;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
     onMutate: async ({ id, field, value }) => {
       // Cancel outgoing fetches so we can optimistically update
