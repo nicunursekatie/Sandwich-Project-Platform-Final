@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   EventRequestProvider,
   useEventRequestContext,
@@ -70,6 +71,13 @@ import { Info } from 'lucide-react';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
+  const { track } = useOnboardingTracker();
+
+  // Track onboarding challenge on component mount
+  useEffect(() => {
+    track('view_event_requests');
+  }, []);
+
   const {
     eventRequests,
     isLoading,

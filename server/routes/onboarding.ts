@@ -111,6 +111,23 @@ router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Admin: Migrate challenges to updated schema
+router.post('/admin/migrate', isAuthenticated, async (req: any, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { migrateOnboardingChallenges } = await import('../scripts/migrate-onboarding-challenges');
+    await migrateOnboardingChallenges();
+    res.json({ message: 'Migration completed successfully' });
+  } catch (error: any) {
+    logger.error('Error running migration:', error);
+    res.status(500).json({ message: 'Failed to run migration', error: error.message });
+  }
+});
+
 // Admin: Send onboarding challenge announcement email
 router.post('/admin/send-announcement', isAuthenticated, async (req: any, res) => {
   try {
