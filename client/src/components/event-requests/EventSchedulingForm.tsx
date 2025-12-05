@@ -542,22 +542,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Check if event is in MLK Day week and we haven't asked yet
-    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
-      setShowMlkDayDialog(true);
-      setMlkDayAsked(true);
-      return; // Stop submission until user responds
-    }
-
-    // Check for van conflicts if event needs van and hasn't been checked yet
-    if (eventLikelyNeedsVan() && !vanConflictChecked) {
-      const canProceed = await checkVanConflicts();
-      if (!canProceed) return; // Wait for user to acknowledge
-    }
-
+  const performSubmit = async () => {
     // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
     let totalRelevantSandwiches = 0;
     
@@ -735,6 +720,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Create new event request
       createEventRequestMutation.mutate(eventData);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Check if event is in MLK Day week and we haven't asked yet
+    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      setShowMlkDayDialog(true);
+      setMlkDayAsked(true);
+      return; // Stop submission until user responds
+    }
+
+    // Check for van conflicts if event needs van and hasn't been checked yet
+    if (eventLikelyNeedsVan() && !vanConflictChecked) {
+      const canProceed = await checkVanConflicts();
+      if (!canProceed) return; // Wait for user to acknowledge
+    }
+
+    // All checks passed, proceed with submission
+    await performSubmit();
   };
 
   const addSandwichType = () => {
@@ -2542,13 +2547,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             }}>
               Go Back & Check
             </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
+            <AlertDialogAction
+              onClick={async () => {
                 setShowVanConflictDialog(false);
                 setVanConflictChecked(true);
-                // Re-trigger submit now that conflict is acknowledged
-                const submitBtn = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
-                if (submitBtn) submitBtn.click();
+                // Directly call performSubmit now that conflict is acknowledged
+                await performSubmit();
               }}
               className="bg-amber-600 hover:bg-amber-700"
             >

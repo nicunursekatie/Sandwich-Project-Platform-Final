@@ -184,6 +184,35 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // User activity tracking
+  async updateUserLastActive(userId: string): Promise<void> {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateUserLastActive(userId),
+      () => this.fallbackStorage.updateUserLastActive(userId)
+    );
+  }
+
+  async getOnlineUsers(sinceMinutes?: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getOnlineUsers(sinceMinutes),
+      () => this.fallbackStorage.getOnlineUsers(sinceMinutes)
+    );
+  }
+
+  async findUserByPhoneNumber(phoneNumber: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.findUserByPhoneNumber(phoneNumber),
+      () => this.fallbackStorage.findUserByPhoneNumber(phoneNumber)
+    );
+  }
+
+  async getUsersByNameOrEmail(searchTerms: string[]) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getUsersByNameOrEmail(searchTerms),
+      () => this.fallbackStorage.getUsersByNameOrEmail(searchTerms)
+    );
+  }
+
   // Project methods
   async getAllProjects() {
     return this.executeWithFallback(
