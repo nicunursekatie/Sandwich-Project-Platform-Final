@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft
 } from 'lucide-react';
@@ -27,6 +27,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Custom highlighted marker icon
+const highlightedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Map controller component to handle zoom/pan
+function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (center) {
+      map.setView(center, zoom, { animate: true, duration: 0.5 });
+    }
+  }, [center, zoom, map]);
+
+  return null;
+}
+
 interface HostContactMapData {
   id: number;
   contactName: string;
@@ -44,6 +67,9 @@ export default function RouteMapView() {
   const { trackView, trackSearch } = useActivityTracker();
   const [searchTerm, setSearchTerm] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [selectedHostId, setSelectedHostId] = useState<number | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState(10);
 
   useEffect(() => {
     trackView(
@@ -75,15 +101,24 @@ export default function RouteMapView() {
     );
   }, [hosts, searchTerm]);
 
-  // Calculate map center based on host contacts
-  const mapCenter: [number, number] = useMemo(() => {
+  // Calculate initial map center based on host contacts
+  const initialMapCenter: [number, number] = useMemo(() => {
     if (filteredHosts.length === 0) return [33.7490, -84.3880]; // Atlanta default
-    
+
     const avgLat = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.latitude), 0) / filteredHosts.length;
     const avgLng = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.longitude), 0) / filteredHosts.length;
-    
+
     return [avgLat, avgLng];
   }, [filteredHosts]);
+
+  // Handle host card click - zoom to host location
+  const handleHostClick = (contact: HostContactMapData) => {
+    const lat = parseFloat(contact.latitude);
+    const lng = parseFloat(contact.longitude);
+    setSelectedHostId(contact.id);
+    setMapCenter([lat, lng]);
+    setMapZoom(15); // Zoom in closer
+  };
 
   // Permission check
   if (!canView) {
@@ -252,7 +287,16 @@ export default function RouteMapView() {
               <ScrollArea className="flex-1">
                 <div className="p-3 space-y-3">
                   {filteredHosts.map(contact => (
-                    <Card key={contact.id} className="hover:shadow-md transition-shadow w-full" data-testid={`card-host-${contact.id}`}>
+                    <Card
+                      key={contact.id}
+                      className={`hover:shadow-md transition-all w-full cursor-pointer ${
+                        selectedHostId === contact.id
+                          ? 'ring-2 ring-[#007E8C] bg-teal-50'
+                          : ''
+                      }`}
+                      onClick={() => handleHostClick(contact)}
+                      data-testid={`card-host-${contact.id}`}
+                    >
                       <CardContent className="p-3">
                         <div className="space-y-2">
                           <div>
@@ -281,7 +325,11 @@ export default function RouteMapView() {
                             {contact.phone && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
                                 <Phone className="w-3 h-3 flex-shrink-0" />
-                                <a href={`tel:${contact.phone}`} className="hover:text-[#007E8C] break-all">
+                                <a
+                                  href={`tel:${contact.phone}`}
+                                  className="hover:text-[#007E8C] break-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {contact.phone}
                                 </a>
                               </div>
@@ -289,7 +337,11 @@ export default function RouteMapView() {
                             {contact.email && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
                                 <Mail className="w-3 h-3 flex-shrink-0" />
-                                <a href={`mailto:${contact.email}`} className="hover:text-[#007E8C] break-all">
+                                <a
+                                  href={`mailto:${contact.email}`}
+                                  className="hover:text-[#007E8C] break-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {contact.email}
                                 </a>
                               </div>
@@ -320,11 +372,12 @@ export default function RouteMapView() {
         {/* Map */}
         <div className="flex-1 relative">
           <MapContainer
-            center={mapCenter}
+            center={initialMapCenter}
             zoom={10}
             className="h-full w-full"
             data-testid="map-container"
           >
+            <MapController center={mapCenter} zoom={mapZoom} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -335,6 +388,12 @@ export default function RouteMapView() {
               <Marker
                 key={contact.id}
                 position={[parseFloat(contact.latitude), parseFloat(contact.longitude)]}
+                icon={selectedHostId === contact.id ? highlightedIcon : undefined}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedHostId(contact.id);
+                  },
+                }}
                 data-testid={`marker-host-${contact.id}`}
               >
                 <Popup>
