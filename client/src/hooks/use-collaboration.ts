@@ -180,9 +180,7 @@ export function useCollaboration({
   resourceId,
   enabled = true,
 }: UseCollaborationParams): UseCollaborationReturn {
-  console.log('[useCollaboration] Hook called with:', { resourceType, resourceId, enabled });
   const { user } = useAuth();
-  console.log('[useCollaboration] User from useAuth:', { hasUser: !!user, userId: user?.id });
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -230,18 +228,14 @@ export function useCollaboration({
   // ==================== Subscribe to Resource ====================
 
   useEffect(() => {
-    console.log('[useCollaboration] useEffect called:', { enabled, hasUser: !!user, resourceId, resourceType });
-    
     // Don't subscribe if disabled or missing required data
     if (!enabled || !user || !resourceId) {
-      console.log('[useCollaboration] Early return - missing data:', { enabled, hasUser: !!user, resourceId });
       setIsConnected(false);
       setPresentUsers([]);
       setLocks(new Map());
       return;
     }
 
-    console.log('[useCollaboration] About to subscribe to:', resourceType, resourceId);
     // Subscribe to the resource using the shared collaboration manager
     const unsubscribe = subscribeToResource(resourceType, resourceId, {
       onConnect: () => {
