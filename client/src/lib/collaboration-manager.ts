@@ -12,6 +12,8 @@
 import { io, Socket } from 'socket.io-client';
 import { logger } from '@/lib/logger';
 
+console.log('[CollaborationManager] 📦 Module loaded at', new Date().toISOString());
+
 export interface PresenceUser {
   userId: string;
   userName: string;
@@ -262,9 +264,11 @@ function setupSocketListeners(socket: Socket): void {
 
 function getOrCreateSocket(): Socket {
   if (socketInstance) {
+    console.log('[CollaborationManager] Reusing existing socket');
     return socketInstance;
   }
 
+  console.log('[CollaborationManager] 🔌 Creating NEW socket connection');
   const socketUrl = getSocketUrl();
   
   socketInstance = io(`${socketUrl}/collaboration`, {
@@ -339,6 +343,7 @@ export function subscribeToResource(
   resourceId: number | string,
   handlers: CollaborationHandlers
 ): () => void {
+  console.log(`[CollaborationManager] 📥 subscribeToResource called: ${resourceType}/${resourceId}`);
   const key = getResourceKey(resourceType, resourceId);
   
   // Store subscription
@@ -381,3 +386,13 @@ export function emitCollaborationEvent(eventName: string, data: any): void {
     socketInstance.emit(eventName, data);
   }
 }
+
+// ==================== Object-based API (for backward compatibility) ====================
+
+export const collaborationManager = {
+  setUser: setCollaborationUser,
+  subscribe: subscribeToResource,
+  isConnected: isCollaborationConnected,
+  getSubscriptionCount,
+  emit: emitCollaborationEvent,
+};

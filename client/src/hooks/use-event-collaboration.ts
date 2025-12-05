@@ -91,6 +91,7 @@ export type { EventCollaborationComment, EventFieldLock, EventEditRevision } fro
  * @returns Full collaboration API for the event
  */
 export function useEventCollaboration(eventId: number): UseCollaborationReturn {
+  console.log('[useEventCollaboration] Called with eventId:', eventId);
   return useCollaboration({
     resourceType: 'event',
     resourceId: eventId,

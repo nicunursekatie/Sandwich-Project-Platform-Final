@@ -180,7 +180,9 @@ export function useCollaboration({
   resourceId,
   enabled = true,
 }: UseCollaborationParams): UseCollaborationReturn {
+  console.log('[useCollaboration] Hook called with:', { resourceType, resourceId, enabled });
   const { user } = useAuth();
+  console.log('[useCollaboration] User from useAuth:', { hasUser: !!user, userId: user?.id });
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -228,14 +230,18 @@ export function useCollaboration({
   // ==================== Subscribe to Resource ====================
 
   useEffect(() => {
+    console.log('[useCollaboration] useEffect called:', { enabled, hasUser: !!user, resourceId, resourceType });
+    
     // Don't subscribe if disabled or missing required data
     if (!enabled || !user || !resourceId) {
+      console.log('[useCollaboration] Early return - missing data:', { enabled, hasUser: !!user, resourceId });
       setIsConnected(false);
       setPresentUsers([]);
       setLocks(new Map());
       return;
     }
 
+    console.log('[useCollaboration] About to subscribe to:', resourceType, resourceId);
     // Subscribe to the resource using the shared collaboration manager
     const unsubscribe = subscribeToResource(resourceType, resourceId, {
       onConnect: () => {
@@ -347,32 +353,54 @@ export function useCollaboration({
     };
   }, [user, resourceId, resourceType, enabled]);
 
-  // ==================== Load Initial Comments ====================
+  // ==================== Load Initial Comments and Locks ====================
 
   useEffect(() => {
     if (!resourceId || !user) return;
 
-    const loadComments = async () => {
+    const loadInitialData = async () => {
       setCommentsLoading(true);
       try {
-        const endpoint = resourceType === 'event'
+        const commentsEndpoint = resourceType === 'event'
           ? `/api/event-requests/${resourceId}/collaboration/comments`
           : `/api/${resourceType}/${resourceId}/collaboration/comments`;
 
-        const response = await apiRequest('GET', endpoint);
-        setComments(response.comments || []);
+        const locksEndpoint = resourceType === 'event'
+          ? `/api/event-requests/${resourceId}/collaboration/locks`
+          : `/api/${resourceType}/${resourceId}/collaboration/locks`;
+
+        const [commentsResponse, locksResponse] = await Promise.all([
+          apiRequest('GET', commentsEndpoint).catch(err => {
+            logger.error('[Collaboration] Error loading comments:', err);
+            return { comments: [] };
+          }),
+          apiRequest('GET', locksEndpoint).catch(err => {
+            logger.error('[Collaboration] Error loading locks:', err);
+            return { locks: [] };
+          }),
+        ]);
+
+        setComments(commentsResponse.comments || []);
+        
+        const locksMap = new Map<string, ResourceFieldLock>();
+        (locksResponse.locks || []).forEach((lock: ResourceFieldLock) => {
+          if (lock && lock.fieldName) {
+            locksMap.set(lock.fieldName, lock);
+          }
+        });
+        setLocks(locksMap);
       } catch (err) {
-        logger.error('[Collaboration] Error loading comments:', err);
-        setError('Failed to load comments');
+        logger.error('[Collaboration] Error loading initial data:', err);
+        setError('Failed to load collaboration data');
       } finally {
         setCommentsLoading(false);
       }
     };
 
-    loadComments();
+    loadInitialData();
   }, [resourceId, resourceType, user]);
 
-  // ==================== Field Locking ====================
+  // ==================== Field Locking (HTTP-based with optional real-time sync) ====================
 
   const acquireFieldLock = useCallback(
     async (fieldName: string): Promise<void> => {
@@ -380,52 +408,90 @@ export function useCollaboration({
         throw new Error('User not authenticated');
       }
 
-      if (!isCollaborationConnected()) {
-        throw new Error('Not connected to collaboration server');
+      try {
+        const endpoint = resourceType === 'event'
+          ? `/api/event-requests/${resourceId}/collaboration/locks`
+          : `/api/${resourceType}/${resourceId}/collaboration/locks`;
+
+        const response = await apiRequest('POST', endpoint, {
+          fieldName,
+          expiresInMinutes: 5,
+        });
+
+        logger.log('[Collaboration] Lock acquired via HTTP:', response);
+
+        if (response.lock) {
+          setLocks((prev) => {
+            const newLocks = new Map(prev);
+            newLocks.set(fieldName, response.lock);
+            return newLocks;
+          });
+        }
+
+        if (isCollaborationConnected()) {
+          const userName = user.display_name || 
+            (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+            user.email || 'Anonymous';
+
+          const payload = resourceType === 'event'
+            ? {
+                eventRequestId: resourceId,
+                fieldName,
+                userId: user.id,
+                userName,
+              }
+            : {
+                resourceType,
+                resourceId,
+                fieldName,
+                userId: user.id,
+                userName,
+              };
+
+          emitCollaborationEvent('acquire-lock', payload);
+        }
+      } catch (err) {
+        logger.error('[Collaboration] Error acquiring lock:', err);
+        throw err;
       }
-
-      const userName = user.display_name || 
-        (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
-        user.email || 'Anonymous';
-
-      const payload = resourceType === 'event'
-        ? {
-            eventRequestId: resourceId,
-            fieldName,
-            userId: user.id,
-            userName,
-          }
-        : {
-            resourceType,
-            resourceId,
-            fieldName,
-            userId: user.id,
-            userName,
-          };
-
-      emitCollaborationEvent('acquire-lock', payload);
-
-      // The lock state will be updated via the onLocksUpdated callback
-      // Return immediately - the UI should show pending state and update when lock is confirmed
     },
     [user, resourceId, resourceType]
   );
 
   const releaseFieldLock = useCallback(
     async (fieldName: string): Promise<void> => {
-      if (!isCollaborationConnected()) {
-        // If not connected, just return - lock will expire on server
-        logger.warn('[Collaboration] Cannot release lock: not connected');
+      if (!user) {
+        logger.warn('[Collaboration] Cannot release lock: no user');
         return;
       }
 
-      const payload = resourceType === 'event'
-        ? { eventRequestId: resourceId, fieldName }
-        : { resourceType, resourceId, fieldName };
+      try {
+        const endpoint = resourceType === 'event'
+          ? `/api/event-requests/${resourceId}/collaboration/locks/${encodeURIComponent(fieldName)}`
+          : `/api/${resourceType}/${resourceId}/collaboration/locks/${encodeURIComponent(fieldName)}`;
 
-      emitCollaborationEvent('release-lock', payload);
+        await apiRequest('DELETE', endpoint);
+
+        logger.log('[Collaboration] Lock released via HTTP:', fieldName);
+
+        setLocks((prev) => {
+          const newLocks = new Map(prev);
+          newLocks.delete(fieldName);
+          return newLocks;
+        });
+
+        if (isCollaborationConnected()) {
+          const payload = resourceType === 'event'
+            ? { eventRequestId: resourceId, fieldName }
+            : { resourceType, resourceId, fieldName };
+
+          emitCollaborationEvent('release-lock', payload);
+        }
+      } catch (err) {
+        logger.error('[Collaboration] Error releasing lock:', err);
+      }
     },
-    [resourceId, resourceType]
+    [user, resourceId, resourceType]
   );
 
   const isFieldLocked = useCallback(
