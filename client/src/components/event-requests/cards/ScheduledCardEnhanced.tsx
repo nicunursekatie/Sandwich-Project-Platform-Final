@@ -2298,6 +2298,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}

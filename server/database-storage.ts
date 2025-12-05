@@ -45,6 +45,7 @@ import {
   organizations,
   eventVolunteers,
   eventCollaborationComments,
+  eventCollaborationCommentLikes,
   eventFieldLocks,
   eventEditRevisions,
   meetingNotes,
@@ -139,6 +140,8 @@ import {
   type InsertSearchAnalytics,
   type EventCollaborationComment,
   type InsertEventCollaborationComment,
+  type EventCollaborationCommentLike,
+  type InsertEventCollaborationCommentLike,
   type EventFieldLock,
   type InsertEventFieldLock,
   type EventEditRevision,
@@ -4203,6 +4206,54 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Event Collaboration Comment Likes
+  async getCommentLikes(commentId: number): Promise<EventCollaborationCommentLike[]> {
+    return await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(eq(eventCollaborationCommentLikes.commentId, commentId))
+      .orderBy(asc(eventCollaborationCommentLikes.createdAt));
+  }
+
+  async toggleCommentLike(commentId: number, userId: string): Promise<{ liked: boolean; likeCount: number }> {
+    // Check if already liked
+    const existing = await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(
+        and(
+          eq(eventCollaborationCommentLikes.commentId, commentId),
+          eq(eventCollaborationCommentLikes.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Unlike: delete the like
+      await db
+        .delete(eventCollaborationCommentLikes)
+        .where(
+          and(
+            eq(eventCollaborationCommentLikes.commentId, commentId),
+            eq(eventCollaborationCommentLikes.userId, userId)
+          )
+        );
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: false, likeCount: likes.length };
+    } else {
+      // Like: insert new like
+      await db
+        .insert(eventCollaborationCommentLikes)
+        .values({ commentId, userId });
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: true, likeCount: likes.length };
+    }
   }
 
   // Event Field Locks

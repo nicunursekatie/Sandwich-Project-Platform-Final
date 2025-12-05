@@ -376,6 +376,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}

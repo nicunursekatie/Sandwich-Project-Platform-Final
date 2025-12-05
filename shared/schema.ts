@@ -2288,6 +2288,23 @@ export const eventCollaborationComments = pgTable(
   })
 );
 
+// Event collaboration comment likes table
+export const eventCollaborationCommentLikes = pgTable(
+  'event_collaboration_comment_likes',
+  {
+    id: serial('id').primaryKey(),
+    commentId: integer('comment_id').notNull().references(() => eventCollaborationComments.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique constraint: one like per user per comment
+    userCommentIdx: unique().on(table.commentId, table.userId),
+    commentIdIdx: index('idx_comment_likes_comment_id').on(table.commentId),
+    userIdIdx: index('idx_comment_likes_user_id').on(table.userId),
+  })
+);
+
 // Event field locks table for preventing edit conflicts
 export const eventFieldLocks = pgTable(
   'event_field_locks',
@@ -2580,6 +2597,15 @@ export const insertEventCollaborationCommentSchema = createInsertSchema(eventCol
 
 export type EventCollaborationComment = typeof eventCollaborationComments.$inferSelect;
 export type InsertEventCollaborationComment = z.infer<typeof insertEventCollaborationCommentSchema>;
+
+// Event collaboration comment like schema types
+export const insertEventCollaborationCommentLikeSchema = createInsertSchema(eventCollaborationCommentLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EventCollaborationCommentLike = typeof eventCollaborationCommentLikes.$inferSelect;
+export type InsertEventCollaborationCommentLike = z.infer<typeof insertEventCollaborationCommentLikeSchema>;
 
 // Event field lock schema types
 export const insertEventFieldLockSchema = createInsertSchema(eventFieldLocks).omit({
