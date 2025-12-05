@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { createWebSocketConnection } from '@/utils/websocket-helper';
+import { getOrCreateSocket, isSocketConnected } from '@/lib/socket-singleton';
 import { logger } from '@/lib/logger';
 
 interface UnreadCounts {
@@ -53,36 +53,14 @@ export function useMessaging() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+  const [connected, setConnected] = useState(false);
+  const socketInitialized = useRef(false);
 
   // Type guard for user object
   const isValidUser = (u: any): u is { id: string; email: string } => {
     return u && typeof u === 'object' && 'id' in u && 'email' in u;
   };
 
-  // Fix WebSocket URL construction with better port handling
-  // Note: This function is kept for reference but we use createWebSocketConnection from websocket-helper.ts
-  const getWebSocketUrl = () => {
-    if (typeof window === 'undefined') return '';
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname;
-    const port = window.location.port;
-
-    // Handle different deployment scenarios
-    if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app')) {
-      // Replit environment - DO NOT add port, proxy handles routing
-      // Adding port causes "Invalid frame header" errors
-      return `${protocol}//${hostname}/notifications`;
-    } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      // Local development - always use port 5000 explicitly
-      return `${protocol}//${hostname}:5000/notifications`;
-    } else {
-      // Other deployments - use current host
-      const host = port ? `${hostname}:${port}` : hostname;
-      return `${protocol}//${host}/notifications`;
-    }
-  };
 
   // Get unread message counts
   const {
@@ -238,79 +216,64 @@ export function useMessaging() {
     };
   }, [refetchUnreadCounts]);
 
-  // Setup WebSocket connection for real-time updates using robust helper
+  // Setup Socket.IO connection for real-time messaging updates
   useEffect(() => {
     if (!isValidUser(user)) return;
+    if (socketInitialized.current) return;
 
-    logger.log('Setting up messaging WebSocket for user:', user.id);
+    logger.log('[Messaging] Setting up Socket.IO for user:', user.id);
+    socketInitialized.current = true;
     
-    const { cleanup } = createWebSocketConnection(
-      {
-        path: '/notifications',
-        maxRetries: 5,
-        retryDelay: 3000
-      },
-      {
-        onOpen: (ws) => {
-          logger.log('Messaging WebSocket connected successfully');
-          // Identify user
-          ws.send(JSON.stringify({ type: 'identify', userId: user.id }));
-          setWsConnection(ws);
-        },
-        onMessage: (event) => {
-          try {
-            const data = JSON.parse(event.data);
+    const socket = getOrCreateSocket();
+    
+    const handleConnect = () => {
+      logger.log('[Messaging] Socket.IO connected');
+      setConnected(true);
+      socket.emit('join-messaging-channel', { userId: user.id });
+    };
 
-            if (data.type === 'new_message') {
-              // Refetch unread counts and messages
-              refetchUnreadCounts();
-              refetchUnreadMessages();
+    const handleDisconnect = () => {
+      logger.log('[Messaging] Socket.IO disconnected');
+      setConnected(false);
+    };
 
-              // Show toast notification
-              toast({
-                title: 'New message',
-                description: data.message.sender || 'You have a new message',
-              });
-            } else if (
-              data.type === 'message_edited' ||
-              data.type === 'message_deleted'
-            ) {
-              // Refresh message lists
-              queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
-            }
-          } catch (error) {
-            logger.error('Failed to parse WebSocket message:', error);
-          }
-        },
-        onError: (error) => {
-          logger.error('Messaging WebSocket error:', error);
-          setWsConnection(null);
-        },
-        onClose: (event) => {
-          logger.log('Messaging WebSocket disconnected:', event.code, event.reason);
-          setWsConnection(null);
+    const handleNewMessage = (data: any) => {
+      logger.log('[Messaging] New message received:', data);
+      refetchUnreadCounts();
+      refetchUnreadMessages();
+      toast({
+        title: 'New message',
+        description: data.sender || 'You have a new message',
+      });
+    };
 
-          // Only log warning for unexpected closures
-          if (event.code !== 1000 && event.code !== 1001) {
-            logger.warn(
-              'WebSocket closed unexpectedly:',
-              event.code,
-              event.reason
-            );
-          }
-        },
-        autoReconnect: true
-      }
-    );
+    const handleMessageEdited = () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
+    };
 
-    return cleanup;
-  }, [
-    isValidUser(user) ? user.id : null,
-    refetchUnreadCounts,
-    refetchUnreadMessages,
-    queryClient,
-    toast,
-  ]);
+    const handleMessageDeleted = () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('new_message', handleNewMessage);
+    socket.on('message_edited', handleMessageEdited);
+    socket.on('message_deleted', handleMessageDeleted);
+
+    if (socket.connected) {
+      handleConnect();
+    }
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('new_message', handleNewMessage);
+      socket.off('message_edited', handleMessageEdited);
+      socket.off('message_deleted', handleMessageDeleted);
+      socketInitialized.current = false;
+    };
+  }, [user?.id, refetchUnreadCounts, refetchUnreadMessages, queryClient, toast]);
 
   // Send a message
   const sendMessage = useCallback(
@@ -381,7 +344,7 @@ export function useMessaging() {
     refetchUnreadMessages,
 
     // Status
-    isConnected: !!wsConnection,
+    isConnected: connected,
     isSending: sendMessageMutation.isPending,
   };
 }
