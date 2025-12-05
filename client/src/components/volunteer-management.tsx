@@ -68,6 +68,7 @@ export default function VolunteerManagement() {
     availability: 'available',
     isActive: true,
     isDriver: false,
+    isSpeaker: false,
   });
 
   // Host designation state
@@ -216,6 +217,7 @@ export default function VolunteerManagement() {
       availability: 'available',
       isActive: true,
       isDriver: false,
+      isSpeaker: false,
     });
     setEditingVolunteer(null);
     setShowHostDesignation(false);
@@ -243,6 +245,7 @@ export default function VolunteerManagement() {
       availability: volunteer.availability || 'available',
       isActive: volunteer.isActive !== undefined ? volunteer.isActive : true,
       isDriver: volunteer.isDriver || false,
+      isSpeaker: volunteer.isSpeaker || false,
     });
     setEditingVolunteer(volunteer);
     setShowAddDialog(true);
@@ -289,6 +292,7 @@ export default function VolunteerManagement() {
       availability: formData.availability,
       isActive: formData.isActive,
       isDriver: formData.isDriver,
+      isSpeaker: formData.isSpeaker,
     };
 
     saveVolunteer(volunteerData);
@@ -479,6 +483,16 @@ export default function VolunteerManagement() {
                       >
                         {volunteer.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                      {volunteer.isDriver && (
+                        <Badge variant="outline" className="border-blue-500 text-blue-600">
+                          Driver
+                        </Badge>
+                      )}
+                      {volunteer.isSpeaker && (
+                        <Badge variant="outline" className="border-purple-500 text-purple-600">
+                          Speaker
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -659,19 +673,36 @@ export default function VolunteerManagement() {
                 </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  id="isDriver"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
-                  checked={formData.isDriver}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isDriver: e.target.checked })
-                  }
-                />
-                <Label htmlFor="isDriver" className="text-sm">
-                  This volunteer can drive (show in driver planning)
-                </Label>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Event Roles</Label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="isDriver"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300"
+                    checked={formData.isDriver}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isDriver: e.target.checked })
+                    }
+                  />
+                  <Label htmlFor="isDriver" className="text-sm font-normal">
+                    Can serve as driver at events
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="isSpeaker"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300"
+                    checked={formData.isSpeaker}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isSpeaker: e.target.checked })
+                    }
+                  />
+                  <Label htmlFor="isSpeaker" className="text-sm font-normal">
+                    Can serve as speaker at events
+                  </Label>
+                </div>
               </div>
 
               <div className="space-y-2">
