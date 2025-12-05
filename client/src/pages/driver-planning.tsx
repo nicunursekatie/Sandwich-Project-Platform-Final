@@ -6,7 +6,7 @@ import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
-  ChevronUp, ChevronDown, X
+  ChevronUp, ChevronDown, X, Maximize2, Minimize2, List
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
@@ -412,6 +412,8 @@ export default function DriverPlanningDashboard() {
   const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
+  const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
+  const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -1656,8 +1658,14 @@ export default function DriverPlanningDashboard() {
 
       {/* Main Content - Mobile Layout (< md) */}
       <div className="flex-1 md:hidden flex flex-col" data-testid="driver-planning-mobile">
-        {/* Map */}
-        <div className="relative h-[55vh] min-h-[320px]">
+        {/* Map - Expands to full screen when mobileFullscreenMap is true */}
+        <div className={`relative transition-all duration-300 ${
+          mobileFullscreenMap 
+            ? 'h-[calc(100vh-60px)]' 
+            : mobileEventsCollapsed 
+              ? 'h-[calc(100vh-120px)]'
+              : 'h-[55vh] min-h-[280px]'
+        }`}>
           <MapContainer
             center={mapCenter}
             zoom={10}
@@ -1725,8 +1733,47 @@ export default function DriverPlanningDashboard() {
             ))}
           </MapContainer>
 
-          {/* Mobile Legend */}
-          <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000]">
+          {/* Mobile Map Controls - Top Right */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-[1000]">
+            {/* Fullscreen Toggle Button */}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 bg-white shadow-lg border"
+              onClick={() => {
+                setMobileFullscreenMap(!mobileFullscreenMap);
+                if (!mobileFullscreenMap) {
+                  setMobileEventsCollapsed(true);
+                }
+              }}
+              data-testid="btn-toggle-fullscreen-map"
+            >
+              {mobileFullscreenMap ? (
+                <Minimize2 className="w-5 h-5 text-gray-700" />
+              ) : (
+                <Maximize2 className="w-5 h-5 text-gray-700" />
+              )}
+            </Button>
+            
+            {/* Show Events List Button - only visible in fullscreen mode */}
+            {mobileFullscreenMap && (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-10 w-10 bg-white shadow-lg border"
+                onClick={() => {
+                  setMobileFullscreenMap(false);
+                  setMobileEventsCollapsed(false);
+                }}
+                data-testid="btn-show-events-list"
+              >
+                <List className="w-5 h-5 text-gray-700" />
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Legend - repositioned */}
+          <div className="absolute top-3 left-3 bg-white rounded-lg shadow-lg p-2 z-[1000]">
             <div className="text-[10px] font-semibold mb-1">Legend</div>
             <div className="space-y-0.5 text-[10px]">
               <div className="flex items-center gap-1">
@@ -1747,99 +1794,160 @@ export default function DriverPlanningDashboard() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Inline events list on mobile to preview alongside map */}
-        <div className="bg-white border-t h-[45vh] min-h-[320px] flex flex-col">
-          <div className="p-3 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#007E8C]" />
-              <span className="font-semibold text-sm">Upcoming Events ({upcomingEvents.length})</span>
-            </div>
-            <Select value={weeksAhead} onValueChange={setWeeksAhead}>
-              <SelectTrigger className="w-28 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">2 weeks</SelectItem>
-                <SelectItem value="4">4 weeks</SelectItem>
-                <SelectItem value="6">6 weeks</SelectItem>
-                <SelectItem value="8">8 weeks</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-3 space-y-2">
-              {upcomingEvents.map((event) => {
-                const isSelected = selectedEvent?.id === event.id;
-                const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
-
-                return (
-                  <Card
-                    key={event.id}
-                    className={`p-3 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
-                        : 'hover:shadow-md'
-                    }`}
-                    onClick={() => {
-                      setSelectedEvent(isSelected ? null : event);
-                      setShowAllHosts(false);
-                      setShowAllRecipients(false);
-                      if (!isSelected) {
-                        setMobilePanel('details');
-                      }
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
-                          {event.organizationName || 'Unknown Organization'}
-                        </h3>
-                        <ChevronRight className={`w-4 h-4 text-gray-400 flex-shrink-0 ${isSelected ? 'rotate-90' : ''}`} />
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-700">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="font-medium">
-                          {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
-                        </span>
-                        {event.eventStartTime && (
-                          <span className="text-gray-500">
-                            at {formatTime12Hour(event.eventStartTime)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          <Truck className="w-3 h-3 mr-1" />
-                          {driversAssigned}/{driversNeeded} drivers
-                        </Badge>
-                        {event.estimatedSandwichCount && (
-                          <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-              {upcomingEvents.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No scheduled events in this period</p>
+          
+          {/* Selected Event Quick Info - Bottom of map in fullscreen mode */}
+          {mobileFullscreenMap && selectedEvent && (
+            <div className="absolute bottom-4 left-3 right-3 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm truncate">{selectedEvent.organizationName}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
+                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                    <span>
+                      {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
+                        ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
+                        : 'No date'}
+                    </span>
+                    <Badge
+                      variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 1) ? 'default' : 'destructive'}
+                      className="text-[10px] px-1.5"
+                    >
+                      {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 1} drivers
+                    </Badge>
+                  </div>
                 </div>
-              )}
+                <Button
+                  size="sm"
+                  className="h-9 px-3"
+                  onClick={() => setMobilePanel('details')}
+                  data-testid="btn-view-event-details"
+                >
+                  Details
+                </Button>
+              </div>
             </div>
-          </ScrollArea>
+          )}
         </div>
+
+        {/* Collapsible Events List - Hidden in fullscreen mode */}
+        {!mobileFullscreenMap && (
+          <div className={`bg-white border-t flex flex-col transition-all duration-300 ${
+            mobileEventsCollapsed ? 'h-14' : 'flex-1 min-h-[280px]'
+          }`}>
+            {/* Collapsible Header */}
+            <button
+              className="p-3 border-b flex items-center justify-between w-full text-left"
+              onClick={() => setMobileEventsCollapsed(!mobileEventsCollapsed)}
+              data-testid="btn-toggle-events-panel"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#007E8C]" />
+                <span className="font-semibold text-sm">Events ({upcomingEvents.length})</span>
+                {selectedEvent && mobileEventsCollapsed && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {selectedEvent.organizationName?.substring(0, 15)}...
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!mobileEventsCollapsed && (
+                  <Select value={weeksAhead} onValueChange={setWeeksAhead}>
+                    <SelectTrigger className="w-24 h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 weeks</SelectItem>
+                      <SelectItem value="4">4 weeks</SelectItem>
+                      <SelectItem value="6">6 weeks</SelectItem>
+                      <SelectItem value="8">8 weeks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {mobileEventsCollapsed ? (
+                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </button>
+            
+            {/* Events List Content */}
+            {!mobileEventsCollapsed && (
+              <ScrollArea className="flex-1">
+                <div className="p-3 space-y-2">
+                  {upcomingEvents.map((event) => {
+                    const isSelected = selectedEvent?.id === event.id;
+                    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                    const driversAssigned = event.assignedDriverIds?.length || 0;
+                    const driversNeeded = event.driversNeeded || 1;
+
+                    return (
+                      <Card
+                        key={event.id}
+                        className={`p-3 cursor-pointer transition-all active:scale-[0.98] ${
+                          isSelected
+                            ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                            : 'hover:shadow-md active:bg-gray-50'
+                        }`}
+                        onClick={() => {
+                          setSelectedEvent(isSelected ? null : event);
+                          setShowAllHosts(false);
+                          setShowAllRecipients(false);
+                          if (!isSelected) {
+                            setMobilePanel('details');
+                          }
+                        }}
+                        data-testid={`event-card-${event.id}`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                              {event.organizationName || 'Unknown Organization'}
+                            </h3>
+                            <ChevronRight className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-700">
+                            <Calendar className="w-4 h-4 flex-shrink-0" />
+                            <span className="font-medium">
+                              {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
+                            </span>
+                            {event.eventStartTime && (
+                              <span className="text-gray-500">
+                                at {formatTime12Hour(event.eventStartTime)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <MapPin className="w-4 h-4 flex-shrink-0" />
+                            <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
+                              className="text-xs px-2 py-0.5"
+                            >
+                              <Truck className="w-3.5 h-3.5 mr-1" />
+                              {driversAssigned}/{driversNeeded} drivers
+                            </Badge>
+                            {event.estimatedSandwichCount && (
+                              <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                  {upcomingEvents.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No scheduled events in this period</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Mobile Details Sheet */}

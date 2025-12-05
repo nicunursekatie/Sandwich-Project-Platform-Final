@@ -843,6 +843,7 @@ export const volunteers = pgTable('volunteers', {
   inactiveReason: text('inactive_reason'),
   volunteerType: text('volunteer_type').notNull().default('general'), // 'general', 'former_driver', 'driver_candidate', etc.
   isDriver: boolean('is_driver').notNull().default(false), // Whether this volunteer can drive
+  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events
   latitude: decimal('latitude'),
   longitude: decimal('longitude'),
   geocodedAt: timestamp('geocoded_at'),
