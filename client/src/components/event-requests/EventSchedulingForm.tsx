@@ -136,12 +136,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     department: '',
     organizationCategory: '',
     schoolClassification: '',
+    // Backup contact fields
+    backupContactFirstName: '',
+    backupContactLastName: '',
+    backupContactEmail: '',
+    backupContactPhone: '',
+    backupContactRole: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showBackupContactInfo, setShowBackupContactInfo] = useState(false);
   const [showCompletedDetails, setShowCompletedDetails] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
@@ -330,6 +337,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         department: eventRequest?.department || '',
         organizationCategory: (eventRequest as any)?.organizationCategory || '',
         schoolClassification: (eventRequest as any)?.schoolClassification || '',
+        // Backup contact fields
+        backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+        backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+        backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+        backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+        backupContactRole: (eventRequest as any)?.backupContactRole || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
         // Status
@@ -620,6 +633,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       department: formData.department || null,
       organizationCategory: formData.organizationCategory || null,
       schoolClassification: formData.schoolClassification || null,
+      // Backup contact fields
+      backupContactFirstName: formData.backupContactFirstName || null,
+      backupContactLastName: formData.backupContactLastName || null,
+      backupContactEmail: formData.backupContactEmail || null,
+      backupContactPhone: formData.backupContactPhone || null,
+      backupContactRole: formData.backupContactRole || null,
       // Van driver assignment
       assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
       // Toolkit information
@@ -876,7 +895,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
               <span className="font-semibold">
-                Contact Information (Editable)
+                Primary Contact Information (Editable)
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
@@ -1008,6 +1027,72 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </div>
                   )}
                 </>
+              </div>
+            )}
+          </div>
+
+          {/* Backup Contact Information Section - Collapsible */}
+          <div className="border rounded-lg">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full flex justify-between items-center p-4"
+              onClick={() => setShowBackupContactInfo(!showBackupContactInfo)}
+            >
+              <span className="font-semibold text-sm text-gray-700">
+                Backup/Secondary Contact (Optional)
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showBackupContactInfo ? 'rotate-180' : ''}`} />
+            </Button>
+
+            {showBackupContactInfo && (
+              <div className="p-4 border-t bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="backupFirstName" className="text-sm">First Name</Label>
+                  <Input
+                    id="backupFirstName"
+                    value={formData.backupContactFirstName || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactFirstName: e.target.value }))}
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupLastName" className="text-sm">Last Name</Label>
+                  <Input
+                    id="backupLastName"
+                    value={formData.backupContactLastName || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactLastName: e.target.value }))}
+                    placeholder="Enter last name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupEmail" className="text-sm">Email</Label>
+                  <Input
+                    id="backupEmail"
+                    type="email"
+                    value={formData.backupContactEmail || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactEmail: e.target.value }))}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupPhone" className="text-sm">Phone</Label>
+                  <Input
+                    id="backupPhone"
+                    value={formData.backupContactPhone || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactPhone: e.target.value }))}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="backupRole" className="text-sm">Role/Title</Label>
+                  <Input
+                    id="backupRole"
+                    value={formData.backupContactRole || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactRole: e.target.value }))}
+                    placeholder="e.g., Assistant Principal, Events Coordinator"
+                  />
+                </div>
               </div>
             )}
           </div>

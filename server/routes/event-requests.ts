@@ -1280,7 +1280,12 @@ router.patch(
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
-        return res.status(404).json({ message: 'Event request not found' });
+        logger.error(`[PATCH /:id] Event request ${id} not found in database`);
+        return res.status(404).json({ 
+          message: 'Event request not found',
+          eventId: id,
+          error: 'EVENT_NOT_FOUND'
+        });
       }
 
       // Process pickup time fields for data migration
