@@ -4,6 +4,25 @@ import { PERMISSIONS } from '../../shared/auth-utils';
 import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 
+/**
+ * Basic authentication check middleware
+ * Ensures user is logged in (has session)
+ */
+export const isAuthenticated: RequestHandler = (req, res, next) => {
+  const user = req.user || req.session?.user;
+
+  if (!user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // Attach user to request if not already there
+  if (!req.user && req.session?.user) {
+    req.user = req.session.user;
+  }
+
+  next();
+};
+
 // Global middleware to block inactive (pending approval) users
 export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
   try {

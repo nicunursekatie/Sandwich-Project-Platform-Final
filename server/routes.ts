@@ -86,11 +86,14 @@ export async function registerRoutes(app: Express): Promise<any> {
     })
   );
 
-  // Import authentication middleware and setup
-  const { isAuthenticated, setupAuth } = await import('./auth');
+  // Import authentication middleware
+  const { isAuthenticated } = await import('./auth');
 
-  // Setup authentication routes (including login page)
-  setupAuth(app);
+  // DEPRECATED: Old setupAuth() replaced by consolidated auth router
+  // The new auth router is registered in routes/auth/index.ts via registerRoutes()
+  // Commenting out to prevent conflicts with new auth system
+  // const { setupAuth } = await import('./auth');
+  // setupAuth(app);
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
