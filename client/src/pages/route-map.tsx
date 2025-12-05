@@ -232,15 +232,15 @@ export default function RouteMapView() {
       </div>
 
       {/* Main Content: Side Panel + Map */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Host List Panel */}
         <div className={`
-          ${isPanelOpen ? 'w-80' : 'w-0'}
-          transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col
+          ${isPanelOpen ? 'w-96' : 'w-0'}
+          transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
         `}>
           {isPanelOpen && (
             <>
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <List className="w-5 h-5 text-[#007E8C]" />
                   <h2 className="font-semibold text-gray-900">
@@ -248,47 +248,47 @@ export default function RouteMapView() {
                   </h2>
                 </div>
               </div>
-              
+
               <ScrollArea className="flex-1">
-                <div className="p-4 space-y-3">
+                <div className="p-3 space-y-3">
                   {filteredHosts.map(contact => (
-                    <Card key={contact.id} className="hover:shadow-md transition-shadow" data-testid={`card-host-${contact.id}`}>
-                      <CardContent className="p-4">
+                    <Card key={contact.id} className="hover:shadow-md transition-shadow w-full" data-testid={`card-host-${contact.id}`}>
+                      <CardContent className="p-3">
                         <div className="space-y-2">
                           <div>
-                            <div className="font-semibold text-gray-900">
+                            <div className="font-semibold text-gray-900 break-words">
                               {contact.contactName}
                             </div>
                             <div className="text-sm text-gray-600 flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
-                              {contact.hostLocationName}
+                              <Building2 className="w-3 h-3 flex-shrink-0" />
+                              <span className="break-words">{contact.hostLocationName}</span>
                             </div>
                           </div>
-                          
+
                           {contact.role && (
                             <Badge variant="outline" className="text-xs">
                               {contact.role}
                             </Badge>
                           )}
-                          
+
                           {contact.address && (
-                            <div className="text-xs text-gray-600">
+                            <div className="text-xs text-gray-600 break-words">
                               📍 {contact.address}
                             </div>
                           )}
-                          
+
                           <div className="space-y-1 pt-2 border-t border-gray-100">
                             {contact.phone && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Phone className="w-3 h-3" />
-                                <a href={`tel:${contact.phone}`} className="hover:text-[#007E8C]">
+                                <Phone className="w-3 h-3 flex-shrink-0" />
+                                <a href={`tel:${contact.phone}`} className="hover:text-[#007E8C] break-all">
                                   {contact.phone}
                                 </a>
                               </div>
                             )}
                             {contact.email && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Mail className="w-3 h-3" />
+                                <Mail className="w-3 h-3 flex-shrink-0" />
                                 <a href={`mailto:${contact.email}`} className="hover:text-[#007E8C] break-all">
                                   {contact.email}
                                 </a>
@@ -309,8 +309,8 @@ export default function RouteMapView() {
         <Button
           variant="outline"
           size="sm"
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-[1000] rounded-r-lg rounded-l-none shadow-md"
-          style={{ left: isPanelOpen ? '320px' : '0' }}
+          className="absolute top-1/2 transform -translate-y-1/2 z-[1000] rounded-r-lg rounded-l-none shadow-md transition-all duration-300"
+          style={{ left: isPanelOpen ? '384px' : '0' }}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           data-testid="button-toggle-panel"
         >
