@@ -4,7 +4,7 @@ import type { RouterDependencies } from '../types';
 import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
-import { geocodeLocation } from '../services/geocoding-service';
+import { geocodeAddress } from '../utils/geocoding';
 import { db } from '../db';
 
 type DriverLocationSource = 'hostLocation' | 'homeAddress' | 'routeDescription' | 'zone' | 'area';
@@ -67,6 +67,24 @@ function getDriverLocationForGeocoding(driver: Driver): DriverLocationTarget | n
 
   return null;
 }
+
+// Convert a raw location into a geocodable query string
+function buildGeocodeQuery(rawLocation: string): string {
+  const trimmed = rawLocation.trim();
+
+  // Split multi-area strings like "A/B/C" into a comma-separated query
+  const parts = trimmed.split(/[\\/]/).map((p) => p.trim()).filter(Boolean);
+  let query = parts.length > 1 ? parts.join(', ') : trimmed;
+
+  // Add regional context if missing to improve accuracy
+  if (!query.match(/,\s*(GA|Georgia)/i) && !query.match(/USA|United States/i)) {
+    query = `${query}, Georgia, USA`;
+  }
+
+  return query;
+}
+
+const GEOCODE_DELAY_MS = 1100; // Respect Nominatim 1 req/sec guidance
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -361,9 +379,13 @@ export function createDriversRouter(deps: RouterDependencies) {
         }>,
       };
 
-      // Geocode each driver with rate limiting (handled by geocodeLocation)
+      // Geocode each driver with rate limiting
       for (const { driver, location } of driversToGeocode) {
-        const geocodeResult = await geocodeLocation(location.location);
+        // Respect Nominatim rate limits
+        await new Promise((resolve) => setTimeout(resolve, GEOCODE_DELAY_MS));
+
+        const query = buildGeocodeQuery(location.location);
+        const geocodeResult = await geocodeAddress(query);
 
         if (geocodeResult) {
           // Update driver with coordinates
