@@ -53,6 +53,7 @@ type DateFilter = 'today' | 'week' | '2weeks' | 'month';
  * Mobile driver planning screen
  */
 export function MobileDriverPlanning() {
+  console.log('[MobileDriverPlanning] Component rendering');
   const [, navigate] = useLocation();
   const { toast } = useToast();
 

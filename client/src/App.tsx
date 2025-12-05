@@ -34,7 +34,7 @@ const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
 const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
 const MobileHoldingZone = lazy(() => import('@/mobile/pages/mobile-holding-zone'));
 const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zone-add'));
-const MobileDriverPlanning = lazy(() => import('@/mobile/pages/mobile-driver-planning'));
+import { MobileDriverPlanning } from '@/mobile/pages/mobile-driver-planning';
 const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
 const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
 const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
@@ -281,9 +281,7 @@ function Router() {
               </Suspense>
             </Route>
             <Route path="/driver-planning">
-              <Suspense fallback={<MobileLoader />}>
-                <MobileDriverPlanning />
-              </Suspense>
+              <MobileDriverPlanning />
             </Route>
             <Route path="/resources">
               <Suspense fallback={<MobileLoader />}>
