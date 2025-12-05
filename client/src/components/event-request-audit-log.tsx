@@ -412,6 +412,15 @@ export function EventRequestAuditLog({
     // Convert to string for processing
     const stringValue = String(value);
     
+    // Fields that are numeric counters and should NEVER be formatted as dates
+    // (even if their names contain date-like substrings like "Attempts" containing "At")
+    const numericCounterFields = [
+      'contactattempts', 'contact attempts', 'attempts',
+      'count', 'quantity', 'total', 'number'
+    ];
+    const fieldNameLower = fieldName?.toLowerCase() || '';
+    const isNumericCounter = numericCounterFields.some(f => fieldNameLower.includes(f));
+    
     // Check if this looks like a user ID and convert to name
     if (stringValue.startsWith('user_') && stringValue.includes('_')) {
       // This is a user ID - convert to name
@@ -453,8 +462,8 @@ export function EventRequestAuditLog({
       return 'No';
     }
     
-    // Handle dates and times
-    if (fieldName && (fieldName.includes('Time') || fieldName.includes('Date') || fieldName.includes('At'))) {
+    // Handle dates and times (but NOT numeric counter fields like "Contact Attempts")
+    if (!isNumericCounter && fieldName && (fieldName.includes('Time') || fieldName.includes('Date') || fieldName.includes('At'))) {
       try {
         // Try parsing as ISO date first
         if (stringValue.includes('T') || stringValue.includes('-')) {
@@ -464,10 +473,12 @@ export function EventRequestAuditLog({
           }
         }
         
-        // Try parsing as regular date
-        const date = new Date(stringValue);
-        if (isValid(date) && !isNaN(date.getTime())) {
-          return format(date, 'MMMM d, yyyy \'at\' h:mm a');
+        // Try parsing as regular date (but only if it looks like a date string, not a number)
+        if (!/^\d+$/.test(stringValue)) {
+          const date = new Date(stringValue);
+          if (isValid(date) && !isNaN(date.getTime())) {
+            return format(date, 'MMMM d, yyyy \'at\' h:mm a');
+          }
         }
       } catch (error) {
         // If date parsing fails, fall through to other formatting
