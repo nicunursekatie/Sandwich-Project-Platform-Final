@@ -368,8 +368,11 @@ export function useCollaboration({
     const handlePresenceUpdated = (data: { resourceId?: number | string; eventRequestId?: number; activeUsers: PresenceUser[] }) => {
       const dataResourceId = data.resourceId ?? data.eventRequestId;
       if (dataResourceId === resourceId) {
-        logger.log('[Collaboration] Presence updated:', data.activeUsers);
-        setPresentUsers(data.activeUsers || []);
+        const users = data.activeUsers || [];
+        if (users.length > 0) {
+          logger.log('[Collaboration] Presence updated:', users);
+        }
+        setPresentUsers(users);
       }
     };
 
