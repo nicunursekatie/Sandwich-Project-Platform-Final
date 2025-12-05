@@ -49,7 +49,10 @@ export function MobileBottomNav() {
           return (
             <button
               key={item.id}
-              onClick={() => navigate(item.href)}
+              onClick={() => {
+                console.log('[MobileNav] Clicked:', item.id, 'navigating to:', item.href);
+                navigate(item.href);
+              }}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full",
                 "transition-colors duration-150",
