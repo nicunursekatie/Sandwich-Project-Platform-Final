@@ -112,11 +112,11 @@ export function MobileLayoutPrompt() {
       return;
     }
 
-    // Show prompt after a short delay
+    // Show prompt after a short delay (500ms so it appears before other modals)
     const timer = setTimeout(() => {
       setIsAnimating(true);
       setShowPrompt(true);
-    }, 1500);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [location, navigate]);
