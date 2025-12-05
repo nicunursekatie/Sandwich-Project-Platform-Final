@@ -11,7 +11,30 @@ import {
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
-import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns';
+import { format, isToday, isTomorrow, isThisWeek } from 'date-fns';
+
+/**
+ * Parse a date string as a local date to avoid timezone shift issues.
+ * Date-only strings (YYYY-MM-DD) are treated as local dates.
+ */
+function parseLocalDate(dateString: string): Date {
+  if (!dateString) return new Date();
+  
+  // Check if it's a date-only string (YYYY-MM-DD)
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, yearStr, monthStr, dayStr] = isoMatch;
+    return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
+  }
+  
+  // For datetime strings, parse normally but add noon to avoid edge cases
+  if (dateString.includes('T') || dateString.includes(' ')) {
+    return new Date(dateString);
+  }
+  
+  // Fallback: add noon time to avoid timezone edge cases
+  return new Date(dateString + 'T12:00:00');
+}
 
 type EventFilter = 'all' | 'today' | 'week' | 'upcoming';
 
@@ -34,7 +57,7 @@ export function MobileEvents() {
     const dateField = event.scheduledEventDate || event.desiredEventDate;
     if (!dateField) return filter === 'all';
     
-    const eventDate = typeof dateField === 'string' ? parseISO(dateField) : new Date(dateField);
+    const eventDate = parseLocalDate(dateField);
 
     switch (filter) {
       case 'today':
@@ -52,7 +75,7 @@ export function MobileEvents() {
   const groupedEvents = filteredEvents.reduce((acc: any, event: any) => {
     const dateField = event.scheduledEventDate || event.desiredEventDate;
     const dateKey = dateField
-      ? format(typeof dateField === 'string' ? parseISO(dateField) : new Date(dateField), 'yyyy-MM-dd')
+      ? format(parseLocalDate(dateField), 'yyyy-MM-dd')
       : 'no-date';
     if (!acc[dateKey]) {
       acc[dateKey] = [];
@@ -210,7 +233,7 @@ function EventCard({
 function formatDateHeader(dateKey: string): string {
   if (dateKey === 'no-date') return 'Unscheduled';
 
-  const date = parseISO(dateKey);
+  const date = parseLocalDate(dateKey);
 
   if (isToday(date)) return 'Today';
   if (isTomorrow(date)) return 'Tomorrow';

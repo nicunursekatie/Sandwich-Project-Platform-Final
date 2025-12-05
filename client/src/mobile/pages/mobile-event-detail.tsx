@@ -14,8 +14,27 @@ import {
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useState } from 'react';
+
+/**
+ * Parse a date string as a local date to avoid timezone shift issues.
+ */
+function parseLocalDate(dateString: string): Date {
+  if (!dateString) return new Date();
+  
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, yearStr, monthStr, dayStr] = isoMatch;
+    return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
+  }
+  
+  if (dateString.includes('T') || dateString.includes(' ')) {
+    return new Date(dateString);
+  }
+  
+  return new Date(dateString + 'T12:00:00');
+}
 
 /**
  * Mobile event detail screen - view event details
@@ -90,7 +109,7 @@ export function MobileEventDetail() {
           {(event.scheduledEventDate || event.desiredEventDate) && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <Calendar className="w-4 h-4" />
-              <span>{format(parseISO(event.scheduledEventDate || event.desiredEventDate), 'EEEE, MMMM d, yyyy')}</span>
+              <span>{format(parseLocalDate(event.scheduledEventDate || event.desiredEventDate), 'EEEE, MMMM d, yyyy')}</span>
             </div>
           )}
 
