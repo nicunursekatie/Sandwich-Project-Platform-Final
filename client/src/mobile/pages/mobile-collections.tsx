@@ -27,26 +27,26 @@ export function MobileCollections() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
 
-  // Fetch recent collections
-  const { data: collections, isLoading } = useQuery({
+  // Fetch recent collections - API returns { collections: [...], pagination: {...} }
+  const { data: collectionsResponse, isLoading } = useQuery<{ collections: any[], pagination: any }>({
     queryKey: ['/api/collections', { limit: 100 }],
     staleTime: 30000,
   });
 
   // Filter collections based on search and date filter
-  const filteredCollections = collections?.filter((c: any) => {
-    // Search filter
+  const filteredCollections = (collectionsResponse?.collections || []).filter((c: any) => {
+    // Search filter - use actual field names from API
     const matchesSearch = !searchQuery ||
       c.hostName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.driverName?.toLowerCase().includes(searchQuery.toLowerCase());
+      c.createdByName?.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
-    // Date filter
+    // Date filter - use collectionDate field
     if (dateFilter === 'all') return true;
-    if (!c.date) return false;
+    if (!c.collectionDate) return false;
 
-    const collectionDate = typeof c.date === 'string' ? parseISO(c.date) : new Date(c.date);
+    const collectionDate = typeof c.collectionDate === 'string' ? parseISO(c.collectionDate) : new Date(c.collectionDate);
 
     switch (dateFilter) {
       case 'today':
@@ -58,7 +58,7 @@ export function MobileCollections() {
       default:
         return true;
     }
-  }) || [];
+  });
 
   return (
     <MobileShell title="Collections" showNav>
@@ -180,6 +180,16 @@ function CollectionCard({
   collection: any;
   onClick: () => void;
 }) {
+  // Calculate total sandwiches including groups
+  const individualCount = collection.individualSandwiches || 0;
+  let groupCount = 0;
+  if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+    groupCount = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+  } else {
+    groupCount = (collection.group1Count || 0) + (collection.group2Count || 0);
+  }
+  const totalCount = individualCount + groupCount;
+
   return (
     <button
       onClick={onClick}
@@ -199,15 +209,15 @@ function CollectionCard({
             </span>
           </div>
 
-          {/* Driver and count */}
+          {/* Submitted by and count */}
           <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1">
               <User className="w-3.5 h-3.5" />
-              <span>{collection.driverName || 'Unassigned'}</span>
+              <span>{collection.createdByName || 'Unknown'}</span>
             </div>
             <div className="flex items-center gap-1">
               <Sandwich className="w-3.5 h-3.5" />
-              <span>{collection.count || 0} sandwiches</span>
+              <span>{totalCount.toLocaleString()} sandwiches</span>
             </div>
           </div>
 
@@ -215,20 +225,15 @@ function CollectionCard({
           <div className="flex items-center gap-1 mt-2 text-xs text-slate-400">
             <Calendar className="w-3 h-3" />
             <span>
-              {collection.date
-                ? format(new Date(collection.date), 'MMM d, yyyy')
+              {collection.collectionDate
+                ? format(parseISO(collection.collectionDate), 'MMM d, yyyy')
                 : 'No date'}
             </span>
           </div>
         </div>
 
-        {/* Status indicator */}
+        {/* Arrow indicator */}
         <div className="flex items-center gap-2">
-          {collection.verified && (
-            <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-            </div>
-          )}
           <ChevronRight className="w-5 h-5 text-slate-400" />
         </div>
       </div>
