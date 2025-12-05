@@ -12,10 +12,13 @@ import {
   StickyNote,
   Truck,
   Route,
+  Monitor,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
 import { QUICK_ACTIONS } from '../types';
+
+const MOBILE_PREFERENCE_KEY = 'tsp-mobile-layout-preference';
 
 // Icon mapping for quick actions
 const actionIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,9 +49,37 @@ export function MobileHome() {
 
   const greeting = getGreeting();
 
+  const handleSwitchToDesktop = () => {
+    // Clear mobile preference
+    localStorage.setItem(MOBILE_PREFERENCE_KEY, 'desktop');
+    // Navigate to desktop view
+    window.location.href = '/';
+  };
+
   return (
     <MobileShell title="Sandwich Project" showNav>
       <div className="p-4 space-y-6">
+        {/* Desktop View Banner */}
+        <button
+          onClick={handleSwitchToDesktop}
+          className={cn(
+            "w-full flex items-center gap-3 p-3 rounded-xl",
+            "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800",
+            "active:bg-blue-100 dark:active:bg-blue-900/30 transition-colors"
+          )}
+        >
+          <Monitor className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <div className="flex-1 text-left">
+            <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Prefer the desktop view?
+            </div>
+            <div className="text-xs text-blue-700 dark:text-blue-300">
+              Tap here to switch
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-blue-500" />
+        </button>
+
         {/* Welcome section */}
         <section className="bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-2xl p-5 text-white shadow-lg">
           <p className="text-white/80 text-sm">{greeting}</p>

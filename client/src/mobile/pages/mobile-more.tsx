@@ -21,6 +21,8 @@ import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/context/theme-provider';
 
+const MOBILE_PREFERENCE_KEY = 'tsp-mobile-layout-preference';
+
 interface MenuItem {
   id: string;
   label: string;
@@ -43,6 +45,13 @@ export function MobileMore() {
   const { user, logout } = useAuth();
   const [, navigate] = useLocation();
   const { theme, setTheme } = useTheme();
+
+  const handleSwitchToDesktop = () => {
+    // Clear mobile preference
+    localStorage.setItem(MOBILE_PREFERENCE_KEY, 'desktop');
+    // Navigate to desktop view
+    window.location.href = '/';
+  };
 
   const menuSections: MenuSection[] = [
     {
@@ -72,7 +81,6 @@ export function MobileMore() {
       title: 'Support',
       items: [
         { id: 'help', label: 'Help & FAQ', icon: HelpCircle, href: '/help', external: true },
-        { id: 'desktop', label: 'Switch to Desktop', icon: Monitor, href: '/', external: true },
       ],
     },
   ];
@@ -159,6 +167,31 @@ export function MobileMore() {
                 )}
               />
             </div>
+          </button>
+        </div>
+
+        {/* Switch to Desktop - Prominent placement */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 overflow-hidden">
+          <button
+            onClick={handleSwitchToDesktop}
+            className={cn(
+              "w-full flex items-center gap-3 p-4",
+              "active:bg-blue-100 dark:active:bg-blue-900/30",
+              "transition-colors text-left"
+            )}
+          >
+            <div className="p-2 bg-blue-500 dark:bg-blue-600 rounded-lg">
+              <Monitor className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-900 dark:text-slate-100">
+                Switch to Desktop View
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                Use the full desktop interface
+              </div>
+            </div>
+            <ExternalLink className="w-5 h-5 text-blue-500 dark:text-blue-400" />
           </button>
         </div>
 
