@@ -55,8 +55,14 @@ export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: getSocketCorsConfig(),
     path: '/socket.io/',
-    transports: ['websocket', 'polling'],
+    // Start with polling for reliability through proxies, then upgrade to websocket
+    transports: ['polling', 'websocket'],
     allowEIO3: true,
+    // Increase timeouts for production stability
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    // Allow upgrade after initial polling connection
+    allowUpgrades: true,
   });
 
   // Store instance for access from routes

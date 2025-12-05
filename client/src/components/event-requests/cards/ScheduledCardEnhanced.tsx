@@ -271,15 +271,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
-  // Debug logging for host contacts
-  React.useEffect(() => {
-    if (hostContacts.length > 0) {
-      console.log('ScheduledCardEnhanced: hostContacts loaded', hostContacts.length, 'contacts');
-      console.log('ScheduledCardEnhanced: First few contacts:', hostContacts.slice(0, 3));
-    } else if (!isLoadingHostContacts) {
-      console.warn('ScheduledCardEnhanced: No host contacts loaded!');
-    }
-  }, [hostContacts, isLoadingHostContacts]);
 
   const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],

@@ -268,7 +268,8 @@ export function useCollaboration({
       path: '/socket.io/',
       // Force credentials so session cookies are sent (needed for auth on Replit proxies)
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      // Start with polling for reliability through proxies, then upgrade to websocket
+      transports: ['polling', 'websocket'],
       upgrade: true,
       timeout: 30000,
       reconnection: true,
