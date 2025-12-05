@@ -2005,65 +2005,109 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
-                {/* Suggested Drivers */}
+                {/* Nearby Drivers with Distance */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#007E8C]" />
-                    Suggested Drivers ({suggestedDrivers.length})
+                    Closest Drivers ({nearbyDrivers.length})
                   </h3>
-                  {suggestedDrivers.length > 0 ? (
+                  {nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
-                      {suggestedDrivers.map((driver) => (
+                      {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
                         <Card key={driver.id} className="p-3">
                           <div className="space-y-2">
                             <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-medium text-sm">{driver.name}</h4>
-                                <p className="text-xs text-gray-500">
-                                  {driver.hostLocation || driver.area || 'No location'}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm truncate">{driver.name}</h4>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                                </p>
+                                <p className="text-[11px] text-[#007E8C] font-medium mt-1">
+                                  {distance.toFixed(1)} miles away
                                 </p>
                               </div>
                               <Badge
                                 variant={driver.availability === 'available' ? 'default' : 'secondary'}
-                                className="text-xs"
+                                className="text-xs flex-shrink-0"
                               >
                                 {driver.availability || 'Unknown'}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
                               {driver.phone && (
                                 <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
                                   <Phone className="w-3 h-3" />
                                   {driver.phone}
                                 </a>
                               )}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => copyDriverSMS(driver)}
-                            >
-                              {copiedDriverId === driver.id ? (
-                                <>
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3 mr-1" />
-                                  Copy SMS Request
-                                </>
+                              {driver.vehicleType && (
+                                <span className="flex items-center gap-1">
+                                  <Truck className="w-3 h-3" />
+                                  {driver.vehicleType}
+                                  {driver.vanApproved && ' (Van OK)'}
+                                </span>
                               )}
-                            </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-8"
+                                onClick={() => copyDriverSMS(driver)}
+                              >
+                                {copiedDriverId === driver.id ? (
+                                  <>
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 mr-1" />
+                                    SMS
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="text-xs h-8"
+                                disabled={assigningDriverId === driver.id}
+                                onClick={() => {
+                                  if (!selectedEvent) return;
+                                  setAssigningDriverId(driver.id);
+                                  assignDriverMutation.mutate({
+                                    eventId: selectedEvent.id,
+                                    driverId: driver.id,
+                                    currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  });
+                                }}
+                              >
+                                {assigningDriverId === driver.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? (
+                                  <Check className="w-3 h-3 mr-1" />
+                                ) : (
+                                  <Check className="w-3 h-3 mr-1" />
+                                )}
+                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign'}
+                              </Button>
+                            </div>
                           </div>
                         </Card>
                       ))}
+                      {nearbyDrivers.length > 5 && (
+                        <button
+                          onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
+                          className="w-full text-sm text-[#007E8C] font-medium py-2"
+                        >
+                          {showAllNearbyDrivers ? 'Show top 5' : `View ${nearbyDrivers.length - 5} more drivers`}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-4 text-gray-500 bg-gray-100 rounded-lg">
                       <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">No matching drivers</p>
+                      <p className="text-sm">No drivers with location data found</p>
+                      <p className="text-xs mt-1 text-gray-400">Add area/location to drivers to see suggestions</p>
                     </div>
                   )}
                 </div>

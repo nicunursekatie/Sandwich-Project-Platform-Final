@@ -29,7 +29,7 @@ export function MobileCollections() {
 
   // Fetch recent collections - API returns { collections: [...], pagination: {...} }
   const { data: collectionsResponse, isLoading } = useQuery<{ collections: any[], pagination: any }>({
-    queryKey: ['/api/collections', { limit: 100 }],
+    queryKey: ['/api/sandwich-collections?limit=100'],
     staleTime: 30000,
   });
 
