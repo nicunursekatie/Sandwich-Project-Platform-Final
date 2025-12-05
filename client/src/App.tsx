@@ -13,6 +13,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ScrollToTop } from '@/components/ScrollToTop';
+import { ChatWindowsProvider } from '@/context/chat-windows-context';
+import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -469,10 +471,13 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <ChatWindowsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+            <FloatingChatWindowsContainer />
+          </TooltipProvider>
+        </ChatWindowsProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
