@@ -250,11 +250,6 @@ function Router() {
         {/* Mobile App Routes - /m/* */}
         <Route path="/m" nest>
           <Switch>
-            <Route path="/">
-              <Suspense fallback={<MobileLoader />}>
-                <MobileHome />
-              </Suspense>
-            </Route>
             <Route path="/collections">
               <Suspense fallback={<MobileLoader />}>
                 <MobileCollections />
@@ -338,6 +333,12 @@ function Router() {
             <Route path="/notifications">
               <Suspense fallback={<MobileLoader />}>
                 <MobileNotifications />
+              </Suspense>
+            </Route>
+            {/* Mobile home should be evaluated after specific routes */}
+            <Route path="/">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
               </Suspense>
             </Route>
             {/* Fallback to mobile home for unmatched mobile routes */}
