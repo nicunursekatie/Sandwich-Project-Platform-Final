@@ -2087,6 +2087,20 @@ export const eventRequests = pgTable(
     externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
+
+    // Pre-event critical flags (time-sensitive issues that need attention before event)
+    preEventFlags: jsonb('pre_event_flags').$type<Array<{
+      id: string;
+      type: 'critical' | 'important' | 'attention';
+      message: string;
+      createdAt: string;
+      createdBy: string;
+      createdByName: string;
+      resolvedAt: string | null;
+      resolvedBy: string | null;
+      resolvedByName: string | null;
+      dueDate: string | null;
+    }>>().default('[]'), // Critical flags that need resolution before event
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
     speakerAudienceType: text('speaker_audience_type'), // Type of audience for speaker (e.g., "Elementary School", "Adults", "Mixed")
     speakerDuration: text('speaker_duration'), // Duration of speaker session (e.g., "30 minutes", "1 hour")
