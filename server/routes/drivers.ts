@@ -101,6 +101,73 @@ export function createDriversRouter(deps: RouterDependencies) {
     }
   });
 
+  // Unified driver candidates: drivers + host contacts + volunteers flagged as drivers
+  router.get('/driver-candidates', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const [allDrivers, hostsWithContacts, volunteers] = await Promise.all([
+        storage.getAllDrivers(),
+        storage.getAllHostsWithContacts(),
+        storage.getAllVolunteers?.(),
+      ]);
+
+      const driverCandidates = (allDrivers || [])
+        .filter((d: any) => d.isActive && d.latitude && d.longitude)
+        .map((d: any) => ({
+          id: `driver-${d.id}`,
+          driverId: d.id,
+          source: 'driver' as const,
+          name: d.name,
+          email: d.email,
+          phone: d.phone,
+          latitude: String(d.latitude),
+          longitude: String(d.longitude),
+          availability: d.availability,
+          vehicleType: d.vehicleType,
+          vanApproved: d.vanApproved,
+          hostLocation: d.hostLocation || d.area || d.zone || d.routeDescription,
+        }));
+
+      const hostCandidates = (hostsWithContacts || [])
+        .filter((host: any) => host.status === 'active')
+        .flatMap((host: any) =>
+          (host.contacts || [])
+            .filter((contact: any) => contact.latitude && contact.longitude)
+            .map((contact: any) => ({
+              id: `host-${contact.id}`,
+              source: 'host' as const,
+              name: contact.name || contact.contactName,
+              email: contact.email,
+              phone: contact.phone,
+              latitude: String(contact.latitude),
+              longitude: String(contact.longitude),
+              availability: contact.weeklyActive ? 'available' : 'unknown',
+              hostLocation: host.name || contact.hostLocationName,
+            }))
+        );
+
+      const volunteerCandidates = (volunteers || [])
+        .filter((v: any) => v.isActive && v.isDriver && v.latitude && v.longitude)
+        .map((v: any) => ({
+          id: `volunteer-${v.id}`,
+          source: 'volunteer' as const,
+          name: v.name,
+          email: v.email,
+          phone: v.phone,
+          latitude: String(v.latitude),
+          longitude: String(v.longitude),
+          availability: v.availability,
+          vehicleType: v.vehicleType,
+          vanApproved: v.vanApproved,
+          hostLocation: v.hostLocation || v.routeDescription || v.zone,
+        }));
+
+      res.json([...driverCandidates, ...hostCandidates, ...volunteerCandidates]);
+    } catch (error) {
+      logger.error('Failed to get driver candidates', error);
+      res.status(500).json({ message: 'Failed to get driver candidates' });
+    }
+  });
+
   // Export drivers as CSV - MUST come before /:id route
   router.get('/export', isAuthenticated, async (req: any, res: any) => {
     try {

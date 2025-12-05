@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Search,
   Filter,
@@ -119,6 +120,7 @@ interface Tag {
 export function Resources() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.permissions?.includes('manage_resources');
+  const { track } = useOnboardingTracker();
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [favorites, setFavorites] = useState<Resource[]>([]);
@@ -133,6 +135,11 @@ export function Resources() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Track onboarding challenge on page load
+  useEffect(() => {
+    track('view_resources');
+  }, []);
 
   // Load resources
   const loadResources = async () => {

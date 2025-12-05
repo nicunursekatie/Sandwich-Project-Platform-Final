@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,9 +12,16 @@ import { Plus } from 'lucide-react';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { ExpensesList } from '@/components/expenses/ExpensesList';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 
 export default function ExpensesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { track } = useOnboardingTracker();
+
+  // Track onboarding challenge on page load
+  useEffect(() => {
+    track('view_expenses');
+  }, []);
 
   const handleExpenseCreated = () => {
     setIsDialogOpen(false);

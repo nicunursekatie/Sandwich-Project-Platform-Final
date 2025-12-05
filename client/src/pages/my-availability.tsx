@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   format,
   startOfWeek,
@@ -64,6 +65,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function MyAvailability() {
   const { user } = useAuth();
   const { trackView, trackCreate, trackUpdate, trackDelete } = useActivityTracker();
+  const { track } = useOnboardingTracker();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
@@ -76,6 +78,7 @@ export default function MyAvailability() {
       'My Availability',
       'User accessed my availability page'
     );
+    track('set_availability');
   }, [trackView]);
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday

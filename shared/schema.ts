@@ -842,6 +842,10 @@ export const volunteers = pgTable('volunteers', {
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
   volunteerType: text('volunteer_type').notNull().default('general'), // 'general', 'former_driver', 'driver_candidate', etc.
+  isDriver: boolean('is_driver').notNull().default(false), // Whether this volunteer can drive
+  latitude: decimal('latitude'),
+  longitude: decimal('longitude'),
+  geocodedAt: timestamp('geocoded_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

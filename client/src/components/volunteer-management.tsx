@@ -67,6 +67,7 @@ export default function VolunteerManagement() {
     notes: '',
     availability: 'available',
     isActive: true,
+    isDriver: false,
   });
 
   // Host designation state
@@ -214,6 +215,7 @@ export default function VolunteerManagement() {
       notes: '',
       availability: 'available',
       isActive: true,
+      isDriver: false,
     });
     setEditingVolunteer(null);
     setShowHostDesignation(false);
@@ -240,6 +242,7 @@ export default function VolunteerManagement() {
       notes: volunteer.notes || '',
       availability: volunteer.availability || 'available',
       isActive: volunteer.isActive !== undefined ? volunteer.isActive : true,
+      isDriver: volunteer.isDriver || false,
     });
     setEditingVolunteer(volunteer);
     setShowAddDialog(true);
@@ -285,6 +288,7 @@ export default function VolunteerManagement() {
       notes: formData.notes,
       availability: formData.availability,
       isActive: formData.isActive,
+      isDriver: formData.isDriver,
     };
 
     saveVolunteer(volunteerData);
@@ -653,6 +657,21 @@ export default function VolunteerManagement() {
                     <SelectItem value="off-duty">Off Duty</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  id="isDriver"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300"
+                  checked={formData.isDriver}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isDriver: e.target.checked })
+                  }
+                />
+                <Label htmlFor="isDriver" className="text-sm">
+                  This volunteer can drive (show in driver planning)
+                </Label>
               </div>
 
               <div className="space-y-2">

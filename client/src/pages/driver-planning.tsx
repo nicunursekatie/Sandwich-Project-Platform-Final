@@ -123,6 +123,22 @@ interface Driver {
   geocodedAt: string | null;
 }
 
+type DriverSource = 'driver' | 'host' | 'volunteer';
+
+interface DriverCandidate {
+  id: string; // source-prefixed id (e.g., driver-1, host-2, volunteer-3)
+  source: DriverSource;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  latitude: string;
+  longitude: string;
+  availability?: string | null;
+  vehicleType?: string | null;
+  vanApproved?: boolean | null;
+  hostLocation?: string | null;
+}
+
 interface HostContact {
   id: number;
   contactName: string;
@@ -392,6 +408,8 @@ export default function DriverPlanningDashboard() {
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
+  const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
+  const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
   const [editForm, setEditForm] = useState({
@@ -424,6 +442,43 @@ export default function DriverPlanningDashboard() {
     },
     onError: () => {
       toast({ title: 'Update failed', description: 'Could not save changes', variant: 'destructive' });
+    },
+  });
+
+  // Assign driver to event
+  const assignDriverMutation = useMutation({
+    mutationFn: async ({ eventId, driverId, currentAssigned }: { eventId: number; driverId: string; currentAssigned: string[] }) => {
+      const assignedSet = new Set(currentAssigned);
+      assignedSet.add(driverId);
+      const assignedDriverIds = Array.from(assignedSet);
+
+      const response = await fetch(`/api/event-requests/${eventId}/drivers`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ assignedDriverIds }),
+      });
+      if (!response.ok) throw new Error('Failed to assign driver');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Driver assigned',
+        description: 'Driver has been marked as assigned for this event.',
+      });
+      // Refresh events and update selected event locally
+      queryClient.invalidateQueries();
+      setSelectedEvent((prev) => (prev ? { ...prev, assignedDriverIds: data.assignedDriverIds || [] } : prev));
+    },
+    onError: () => {
+      toast({
+        title: 'Assign failed',
+        description: 'Could not assign the driver. Please try again.',
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      setAssigningDriverId(null);
     },
   });
 
@@ -469,6 +524,16 @@ export default function DriverPlanningDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/drivers');
       if (!response.ok) throw new Error('Failed to fetch drivers');
+      return response.json();
+    },
+  });
+
+  // Fetch driver candidates (drivers + hosts + volunteers flagged as drivers)
+  const { data: driverCandidates = [], isLoading: driverCandidatesLoading } = useQuery<DriverCandidate[]>({
+    queryKey: ['/api/drivers/driver-candidates'],
+    queryFn: async () => {
+      const response = await fetch('/api/drivers/driver-candidates');
+      if (!response.ok) throw new Error('Failed to fetch driver candidates');
       return response.json();
     },
   });
@@ -525,10 +590,31 @@ export default function DriverPlanningDashboard() {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
 
-  // Get drivers with geocoded coordinates for map display
+  // Get drivers with geocoded coordinates for map display (drivers only)
   const driversWithGeocoding = useMemo(() => {
     return activeDrivers.filter(d => d.latitude && d.longitude);
   }, [activeDrivers]);
+
+  // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
+  const nearbyDrivers = useMemo(() => {
+    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+
+    const eventLat = parseFloat(selectedEvent.latitude);
+    const eventLng = parseFloat(selectedEvent.longitude);
+
+    return driverCandidates
+      .filter((c) => c.latitude && c.longitude)
+      .map((driver) => {
+        const distance = calculateDistanceInMiles(
+          eventLat,
+          eventLng,
+          parseFloat(driver.latitude),
+          parseFloat(driver.longitude)
+        );
+        return { driver, distance };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  }, [driverCandidates, selectedEvent]);
 
   // Get suggested drivers for selected event
   const suggestedDrivers = useMemo(() => {
@@ -663,7 +749,7 @@ export default function DriverPlanningDashboard() {
     return [avgLat, avgLng];
   }, [upcomingEvents]);
 
-  const isLoading = eventsLoading || driversLoading;
+  const isLoading = eventsLoading || driversLoading || driverCandidatesLoading;
 
   if (isLoading) {
     return (
@@ -1130,6 +1216,81 @@ export default function DriverPlanningDashboard() {
                 </div>
 
                 {/* Suggested Drivers */}
+                {nearbyDrivers.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      Closest drivers
+                    </h3>
+                    {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
+                      <Card key={driver.id} className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium text-sm">{driver.name}</h4>
+                            <p className="text-xs text-gray-500">
+                              {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-1">{distance.toFixed(1)} miles away</p>
+                          </div>
+                          <Badge
+                            variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {driver.availability || 'Unknown'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                          {driver.phone && (
+                            <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
+                              <Phone className="w-3 h-3" />
+                              {driver.phone}
+                            </a>
+                          )}
+                          {driver.vehicleType && (
+                            <span className="flex items-center gap-1">
+                              <Truck className="w-3 h-3" />
+                              {driver.vehicleType}
+                              {driver.vanApproved && ' (Van OK)'}
+                            </span>
+                          )}
+                        </div>
+                        {selectedEvent && (
+                          <Button
+                            size="sm"
+                            className="w-full mt-3 text-xs"
+                            disabled={assigningDriverId === driver.id}
+                            onClick={() => {
+                              if (!selectedEvent) return;
+                              setAssigningDriverId(driver.id);
+                              assignDriverMutation.mutate({
+                                eventId: selectedEvent.id,
+                                driverId: driver.id,
+                                currentAssigned: selectedEvent.assignedDriverIds || [],
+                              });
+                            }}
+                          >
+                            {assigningDriverId === driver.id ? (
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3 mr-1" />
+                            )}
+                            {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign driver'}
+                          </Button>
+                        )}
+                      </Card>
+                    ))}
+                    {nearbyDrivers.length > 5 && (
+                      <button
+                        onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
+                        className="w-full text-xs text-purple-700 hover:text-purple-900 font-medium py-1"
+                      >
+                        {showAllNearbyDrivers
+                          ? 'Show top 5'
+                          : `View ${nearbyDrivers.length - 5} more drivers`}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {suggestedDrivers.length > 0 ? (
                   <div className="space-y-2" data-testid="driver-planning-suggested-drivers">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
@@ -1169,24 +1330,49 @@ export default function DriverPlanningDashboard() {
                             )}
                           </div>
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full text-xs"
-                            onClick={() => copyDriverSMS(driver)}
-                          >
-                            {copiedDriverId === driver.id ? (
-                              <>
-                                <Check className="w-3 h-3 mr-1" />
-                                Copied!
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3 mr-1" />
-                                Copy SMS Request
-                              </>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs"
+                              onClick={() => copyDriverSMS(driver)}
+                            >
+                              {copiedDriverId === driver.id ? (
+                                <>
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  Copy SMS Request
+                                </>
+                              )}
+                            </Button>
+                            {selectedEvent && (
+                              <Button
+                                size="sm"
+                                className="w-full text-xs"
+                                disabled={assigningDriverId === driver.id}
+                                onClick={() => {
+                                  if (!selectedEvent) return;
+                                  setAssigningDriverId(driver.id);
+                                  assignDriverMutation.mutate({
+                                    eventId: selectedEvent.id,
+                                    driverId: String(driver.id),
+                                    currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  });
+                                }}
+                              >
+                                {assigningDriverId === driver.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : (
+                                  <Check className="w-3 h-3 mr-1" />
+                                )}
+                                {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign driver'}
+                              </Button>
                             )}
-                          </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}
@@ -1354,21 +1540,23 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {/* Show all drivers with geocoded coordinates */}
-            {driversWithGeocoding.map((driver) => (
+            {/* Show all driver candidates with geocoded coordinates */}
+            {driverCandidates
+              .filter((driver) => driver.latitude && driver.longitude)
+              .map((driver) => (
               <Marker
                 key={`driver-${driver.id}`}
-                position={[parseFloat(driver.latitude!), parseFloat(driver.longitude!)]}
+                position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
                 icon={driverIcon}
               >
                 <Popup>
                   <div className="p-2 min-w-[180px]">
                     <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
                       <Truck className="w-3 h-3" />
-                      {driver.name}
+                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source})</span>
                     </h3>
                     <p className="text-xs text-gray-600">
-                      {driver.hostLocation || driver.zone || 'Driver location'}
+                      {driver.hostLocation || 'Driver location'}
                     </p>
                     {driver.phone && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
