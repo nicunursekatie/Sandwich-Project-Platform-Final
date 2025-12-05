@@ -30,8 +30,11 @@ export function MobileEvents() {
 
   // Filter events based on selected filter
   const filteredEvents = events?.filter((event: any) => {
-    if (!event.eventDate) return filter === 'all';
-    const eventDate = parseISO(event.eventDate);
+    // Use scheduledEventDate first, fall back to desiredEventDate
+    const dateField = event.scheduledEventDate || event.desiredEventDate;
+    if (!dateField) return filter === 'all';
+    
+    const eventDate = typeof dateField === 'string' ? parseISO(dateField) : new Date(dateField);
 
     switch (filter) {
       case 'today':
@@ -47,8 +50,9 @@ export function MobileEvents() {
 
   // Group events by date
   const groupedEvents = filteredEvents.reduce((acc: any, event: any) => {
-    const dateKey = event.eventDate
-      ? format(parseISO(event.eventDate), 'yyyy-MM-dd')
+    const dateField = event.scheduledEventDate || event.desiredEventDate;
+    const dateKey = dateField
+      ? format(typeof dateField === 'string' ? parseISO(dateField) : new Date(dateField), 'yyyy-MM-dd')
       : 'no-date';
     if (!acc[dateKey]) {
       acc[dateKey] = [];
