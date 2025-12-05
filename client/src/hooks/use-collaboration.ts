@@ -266,7 +266,9 @@ export function useCollaboration({
 
     const newSocket = io(`${socketUrl}${namespace}`, {
       path: '/socket.io/',
-      transports: ['polling', 'websocket'],
+      // Force credentials so session cookies are sent (needed for auth on Replit proxies)
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
       upgrade: true,
       timeout: 30000,
       reconnection: true,

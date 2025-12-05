@@ -269,6 +269,30 @@ export const useEventMutations = () => {
       field: string;
       value: string;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
+    onMutate: async ({ id, field, value }) => {
+      // Cancel outgoing fetches so we can optimistically update
+      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/event-requests', 'v2'] });
+
+      const patchList = (data: any) => {
+        if (!data) return data;
+        const patchArray = (arr: any[]) =>
+          arr.map((item) => (item?.id === id ? { ...item, [field]: value } : item));
+
+        if (Array.isArray(data)) return patchArray(data);
+        if (Array.isArray(data?.requests)) return { ...data, requests: patchArray(data.requests) };
+        if (Array.isArray(data?.items)) return { ...data, items: patchArray(data.items) };
+        return data;
+      };
+
+      const previousV1 = queryClient.getQueryData(['/api/event-requests']);
+      const previousV2 = queryClient.getQueryData(['/api/event-requests', 'v2']);
+
+      queryClient.setQueryData(['/api/event-requests'], (data) => patchList(data));
+      queryClient.setQueryData(['/api/event-requests', 'v2'], (data) => patchList(data));
+
+      return { previousV1, previousV2 };
+    },
     onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Field updated',
@@ -291,12 +315,23 @@ export const useEventMutations = () => {
       setEditingField(null);
       setEditingValue('');
     },
-    onError: () => {
+    onError: (_error, _vars, context) => {
+      // Roll back optimistic update
+      if (context?.previousV1) {
+        queryClient.setQueryData(['/api/event-requests'], context.previousV1);
+      }
+      if (context?.previousV2) {
+        queryClient.setQueryData(['/api/event-requests', 'v2'], context.previousV2);
+      }
       toast({
         title: 'Error',
         description: 'Failed to update field.',
         variant: 'destructive',
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
     },
   });
 
