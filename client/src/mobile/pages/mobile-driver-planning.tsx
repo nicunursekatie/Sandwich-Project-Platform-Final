@@ -17,8 +17,27 @@ import {
 import { MobileShell } from '../components/mobile-shell';
 import { PullToRefresh } from '../components/pull-to-refresh';
 import { cn } from '@/lib/utils';
-import { format, parseISO, addWeeks, isWithinInterval, startOfToday, endOfDay } from 'date-fns';
+import { format, addWeeks, isWithinInterval, startOfToday, endOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+
+/**
+ * Parse a date string as a local date to avoid timezone shift issues.
+ */
+function parseLocalDate(dateString: string): Date {
+  if (!dateString) return new Date();
+  
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, yearStr, monthStr, dayStr] = isoMatch;
+    return new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
+  }
+  
+  if (dateString.includes('T') || dateString.includes(' ')) {
+    return new Date(dateString);
+  }
+  
+  return new Date(dateString + 'T12:00:00');
+}
 
 interface EventForPlanning {
   id: number;
@@ -85,7 +104,7 @@ export function MobileDriverPlanning() {
   const getEventDate = (event: EventForPlanning): Date | null => {
     const dateStr = event.scheduledEventDate || event.desiredEventDate;
     if (!dateStr) return null;
-    return typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
+    return parseLocalDate(dateStr);
   };
 
   // Filter events
