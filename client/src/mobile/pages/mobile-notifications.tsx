@@ -18,28 +18,39 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
   id: number;
-  type: 'event' | 'driver' | 'message' | 'alert' | 'system';
+  type: string;
+  priority?: string;
   title: string;
   message?: string;
   isRead: boolean;
+  isArchived?: boolean;
+  category?: string;
+  actionUrl?: string;
   createdAt: string;
-  link?: string;
 }
 
-const notificationIcons = {
+const notificationIcons: Record<string, typeof Bell> = {
+  events: Calendar,
   event: Calendar,
   driver: Truck,
+  tasks: MessageCircle,
   message: MessageCircle,
   alert: AlertCircle,
+  updates: Bell,
   system: Bell,
+  social: MessageCircle,
 };
 
-const notificationColors = {
+const notificationColors: Record<string, string> = {
+  events: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   event: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   driver: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+  tasks: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   message: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   alert: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+  updates: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
   system: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+  social: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
 };
 
 /**
@@ -50,11 +61,16 @@ export function MobileNotifications() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Fetch notifications
-  const { data: notifications = [], isLoading, refetch } = useQuery<Notification[]>({
+  // Fetch notifications - API returns { notifications: [...], unreadCount, pagination }
+  const { data: notificationsData, isLoading, refetch } = useQuery<{ notifications: Notification[], unreadCount: number }>({
     queryKey: ['/api/notifications'],
     staleTime: 30000,
   });
+  
+  // Ensure notifications is always an array - handle both direct array and nested response
+  const notifications: Notification[] = Array.isArray(notificationsData) 
+    ? notificationsData 
+    : (notificationsData?.notifications || []);
 
   // Mark all as read mutation
   const markAllRead = useMutation({
@@ -104,8 +120,8 @@ export function MobileNotifications() {
     if (!notification.isRead) {
       markRead.mutate(notification.id);
     }
-    if (notification.link) {
-      navigate(notification.link);
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
     }
   };
 
@@ -173,8 +189,10 @@ export function MobileNotifications() {
           ) : (
             <div className="space-y-2">
               {notifications.map((notification) => {
-                const Icon = notificationIcons[notification.type] || Bell;
-                const colorClass = notificationColors[notification.type] || notificationColors.system;
+                // Try category first, then type, then default to system
+                const iconKey = notification.category || notification.type || 'system';
+                const Icon = notificationIcons[iconKey] || Bell;
+                const colorClass = notificationColors[iconKey] || notificationColors.system;
 
                 return (
                   <button
