@@ -53,3 +53,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
 - **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
 - **SMS**: `twilio` (using Replit Twilio integration with API Key authentication)
+
+### Technical Documentation
+For detailed architecture rules, environment constraints, and development guidelines, see **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)**. This includes:
+- Socket Architecture (namespaces, singleton patterns, polling-only constraints)
+- Environment Constraints (Replit-specific)
+- Authentication Rules
+- Folder Structure & Responsibilities
+- DO NOT TOUCH sections
+- Socket Modification Checklist
