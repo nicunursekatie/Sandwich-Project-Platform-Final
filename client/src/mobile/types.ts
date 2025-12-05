@@ -18,11 +18,11 @@ export interface MobileRoute {
 
 // Bottom navigation items - keep to 4-5 max for thumb reach
 export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
-  { id: 'home', label: 'Home', icon: 'Home', href: '/m' },
-  { id: 'events', label: 'Events', icon: 'Calendar', href: '/m/events' },
-  { id: 'drivers', label: 'Drivers', icon: 'Truck', href: '/m/driver-planning' },
-  { id: 'collections', label: 'Log', icon: 'ClipboardList', href: '/m/collections' },
-  { id: 'more', label: 'More', icon: 'Menu', href: '/m/more' },
+  { id: 'home', label: 'Home', icon: 'Home', href: '/' },
+  { id: 'events', label: 'Events', icon: 'Calendar', href: '/events' },
+  { id: 'drivers', label: 'Drivers', icon: 'Truck', href: '/driver-planning' },
+  { id: 'collections', label: 'Log', icon: 'ClipboardList', href: '/collections' },
+  { id: 'more', label: 'More', icon: 'Menu', href: '/more' },
 ];
 
 // Quick actions for the home screen
@@ -41,7 +41,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     label: 'Log Collection',
     description: 'Record a sandwich pickup',
     icon: 'Plus',
-    href: '/m/collections/new',
+    href: '/collections/new',
     color: 'bg-green-500',
   },
   {
@@ -49,7 +49,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     label: 'Add Task',
     description: 'Quick task to holding zone',
     icon: 'StickyNote',
-    href: '/m/holding-zone/new',
+    href: '/holding-zone/new',
     color: 'bg-amber-500',
   },
   {
@@ -57,7 +57,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     label: 'Send Message',
     description: 'Quick team message',
     icon: 'Send',
-    href: '/m/chat/new',
+    href: '/chat/new',
     color: 'bg-purple-500',
   },
   {
@@ -65,7 +65,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     label: 'Driver Planning',
     description: 'Assign drivers to events',
     icon: 'Truck',
-    href: '/m/driver-planning',
+    href: '/driver-planning',
     color: 'bg-blue-500',
   },
 ];

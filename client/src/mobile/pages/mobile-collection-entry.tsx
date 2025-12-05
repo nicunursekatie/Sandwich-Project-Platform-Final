@@ -92,7 +92,7 @@ export function MobileCollectionEntry() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
-      navigate('/m/collections');
+      navigate('/collections');
     },
     onError: (error: any) => {
       toast({

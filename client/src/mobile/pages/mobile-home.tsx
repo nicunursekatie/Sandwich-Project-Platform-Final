@@ -135,7 +135,7 @@ export function MobileHome() {
               Recent Activity
             </h3>
             <button
-              onClick={() => navigate('/m/activity')}
+              onClick={() => navigate('/activity')}
               className="text-sm text-brand-primary font-medium flex items-center"
             >
               See all

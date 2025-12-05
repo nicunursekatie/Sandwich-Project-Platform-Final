@@ -136,7 +136,7 @@ export function MobileCollections() {
               <Sandwich className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
               <p className="text-slate-500 dark:text-slate-400">No collections found</p>
               <button
-                onClick={() => navigate('/m/collections/new')}
+                onClick={() => navigate('/collections/new')}
                 className="mt-4 px-6 py-2 bg-brand-primary text-white rounded-full font-medium"
               >
                 Log a Collection
@@ -147,7 +147,7 @@ export function MobileCollections() {
               <CollectionCard
                 key={collection.id}
                 collection={collection}
-                onClick={() => navigate(`/m/collections/${collection.id}`)}
+                onClick={() => navigate(`/collections/${collection.id}`)}
               />
             ))
           )}
@@ -155,7 +155,7 @@ export function MobileCollections() {
 
         {/* Floating action button */}
         <button
-          onClick={() => navigate('/m/collections/new')}
+          onClick={() => navigate('/collections/new')}
           className={cn(
             "fixed right-4 bottom-20 z-40",
             "w-14 h-14 rounded-full",

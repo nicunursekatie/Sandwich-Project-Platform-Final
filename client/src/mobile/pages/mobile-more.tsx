@@ -48,24 +48,24 @@ export function MobileMore() {
     {
       title: 'Communication',
       items: [
-        { id: 'holding-zone', label: 'Holding Zone', icon: StickyNote, href: '/m/holding-zone' },
-        { id: 'chat', label: 'Team Chat', icon: MessageCircle, href: '/m/chat' },
-        { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/m/inbox' },
+        { id: 'holding-zone', label: 'Holding Zone', icon: StickyNote, href: '/holding-zone' },
+        { id: 'chat', label: 'Team Chat', icon: MessageCircle, href: '/chat' },
+        { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/inbox' },
       ],
     },
     {
       title: 'Resources',
       items: [
-        { id: 'resources', label: 'Resources', icon: FolderOpen, href: '/m/resources' },
-        { id: 'quick-tools', label: 'Quick Tools', icon: Wrench, href: '/m/quick-tools' },
+        { id: 'resources', label: 'Resources', icon: FolderOpen, href: '/resources' },
+        { id: 'quick-tools', label: 'Quick Tools', icon: Wrench, href: '/quick-tools' },
         { id: 'documents', label: 'Documents', icon: FileText, href: '/resources', external: true },
       ],
     },
     {
       title: 'Account',
       items: [
-        { id: 'profile', label: 'My Profile', icon: User, href: '/m/profile' },
-        { id: 'notifications', label: 'Notifications', icon: Bell, href: '/m/notifications' },
+        { id: 'profile', label: 'My Profile', icon: User, href: '/profile' },
+        { id: 'notifications', label: 'Notifications', icon: Bell, href: '/notifications' },
       ],
     },
     {
@@ -97,7 +97,7 @@ export function MobileMore() {
       <div className="p-4 space-y-6">
         {/* User profile card */}
         <button
-          onClick={() => navigate('/m/profile')}
+          onClick={() => navigate('/profile')}
           className={cn(
             "w-full flex items-center gap-4 p-4",
             "bg-white dark:bg-slate-800 rounded-xl",

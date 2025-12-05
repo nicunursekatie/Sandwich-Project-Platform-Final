@@ -43,7 +43,14 @@ export function createOnboardingRouter(deps: RouterDependencies) {
     if (result.success) {
       res.json(result);
     } else {
-      res.status(400).json(result);
+      // For non-critical errors (challenge not found, already completed), return 200
+      // This prevents console errors since challenge tracking is optional
+      if (result.message?.includes('not found') || result.message?.includes('already completed')) {
+        res.json(result);
+      } else {
+        // For actual errors, return 400
+        res.status(400).json(result);
+      }
     }
   } catch (error) {
     logger.error('Error tracking challenge:', error);

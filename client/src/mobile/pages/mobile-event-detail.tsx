@@ -22,7 +22,7 @@ import { useState } from 'react';
  */
 export function MobileEventDetail() {
   const [, navigate] = useLocation();
-  const [, params] = useRoute('/m/events/:id');
+  const [, params] = useRoute('/events/:id');
   const eventId = params?.id;
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export function MobileEventDetail() {
 
   if (isLoading) {
     return (
-      <MobileShell title="Event" showBack onBack={() => navigate('/m/events')}>
+      <MobileShell title="Event" showBack onBack={() => navigate('/events')}>
         <div className="p-4 space-y-4 animate-pulse">
           <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
           <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
@@ -62,11 +62,11 @@ export function MobileEventDetail() {
 
   if (error || !event) {
     return (
-      <MobileShell title="Event" showBack onBack={() => navigate('/m/events')}>
+      <MobileShell title="Event" showBack onBack={() => navigate('/events')}>
         <div className="p-4 text-center py-12">
           <p className="text-slate-500 dark:text-slate-400">Event not found</p>
           <button
-            onClick={() => navigate('/m/events')}
+            onClick={() => navigate('/events')}
             className="mt-4 px-6 py-2 bg-brand-primary text-white rounded-full font-medium"
           >
             Back to Events
@@ -79,7 +79,7 @@ export function MobileEventDetail() {
   const needsDrivers = (event.driversNeeded || 0) > (event.driversAssigned || 0);
 
   return (
-    <MobileShell title="Event Details" showBack onBack={() => navigate('/m/events')}>
+    <MobileShell title="Event Details" showBack onBack={() => navigate('/events')}>
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">

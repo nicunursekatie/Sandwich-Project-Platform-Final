@@ -25,11 +25,14 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function MobileBottomNav() {
   const [location, navigate] = useLocation();
 
+  // wouter nest trims the base path (/m); normalize to work with either form
+  const normalizedLocation = location.replace(/^\/m(\/|$)/, '/');
+
   const isActive = (href: string) => {
-    if (href === '/m') {
-      return location === '/m' || location === '/m/';
+    if (href === '/') {
+      return normalizedLocation === '/' || normalizedLocation === '';
     }
-    return location.startsWith(href);
+    return normalizedLocation.startsWith(href);
   };
 
   return (

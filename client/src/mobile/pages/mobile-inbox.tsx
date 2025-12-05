@@ -69,7 +69,7 @@ export function MobileInbox() {
               {messages.map((message) => (
                 <button
                   key={message.id}
-                  onClick={() => navigate(`/m/inbox/${message.id}`)}
+                  onClick={() => navigate(`/inbox/${message.id}`)}
                   className={cn(
                     "w-full bg-white dark:bg-slate-800 rounded-xl p-4",
                     "border shadow-sm text-left relative",

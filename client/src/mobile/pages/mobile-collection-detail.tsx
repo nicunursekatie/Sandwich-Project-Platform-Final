@@ -20,7 +20,7 @@ import { format } from 'date-fns';
  */
 export function MobileCollectionDetail() {
   const [, navigate] = useLocation();
-  const [, params] = useRoute('/m/collections/:id');
+  const [, params] = useRoute('/collections/:id');
   const collectionId = params?.id;
 
   // Fetch collection details
@@ -32,7 +32,7 @@ export function MobileCollectionDetail() {
 
   if (isLoading) {
     return (
-      <MobileShell title="Collection" showBack onBack={() => navigate('/m/collections')}>
+      <MobileShell title="Collection" showBack onBack={() => navigate('/collections')}>
         <div className="p-4 space-y-4 animate-pulse">
           <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
           <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
@@ -44,11 +44,11 @@ export function MobileCollectionDetail() {
 
   if (error || !collection) {
     return (
-      <MobileShell title="Collection" showBack onBack={() => navigate('/m/collections')}>
+      <MobileShell title="Collection" showBack onBack={() => navigate('/collections')}>
         <div className="p-4 text-center py-12">
           <p className="text-slate-500 dark:text-slate-400">Collection not found</p>
           <button
-            onClick={() => navigate('/m/collections')}
+            onClick={() => navigate('/collections')}
             className="mt-4 px-6 py-2 bg-brand-primary text-white rounded-full font-medium"
           >
             Back to Collections
@@ -62,10 +62,10 @@ export function MobileCollectionDetail() {
     <MobileShell
       title="Collection Details"
       showBack
-      onBack={() => navigate('/m/collections')}
+      onBack={() => navigate('/collections')}
       headerActions={
         <button
-          onClick={() => navigate(`/m/collections/${collectionId}/edit`)}
+          onClick={() => navigate(`/collections/${collectionId}/edit`)}
           className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
         >
           <Edit className="w-5 h-5" />

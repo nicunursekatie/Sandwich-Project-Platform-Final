@@ -58,7 +58,7 @@ export function MobileHoldingZoneAdd() {
     onSuccess: () => {
       toast({ title: 'Item added to holding zone' });
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
-      navigate('/m/holding-zone');
+      navigate('/holding-zone');
     },
     onError: (error: any) => {
       toast({

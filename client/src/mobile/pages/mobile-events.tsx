@@ -121,7 +121,7 @@ export function MobileEvents() {
                     <EventCard
                       key={event.id}
                       event={event}
-                      onClick={() => navigate(`/m/events/${event.id}`)}
+                      onClick={() => navigate(`/events/${event.id}`)}
                     />
                   ))}
                 </div>

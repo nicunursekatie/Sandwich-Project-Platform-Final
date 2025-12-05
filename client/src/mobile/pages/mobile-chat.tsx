@@ -106,7 +106,7 @@ export function MobileChat() {
                 return (
                   <button
                     key={channel.id}
-                    onClick={() => navigate(`/m/chat/${channel.id}`)}
+                    onClick={() => navigate(`/chat/${channel.id}`)}
                     className={cn(
                       "w-full flex items-center gap-3 p-4",
                       "bg-white dark:bg-slate-800",
@@ -139,7 +139,7 @@ export function MobileChat() {
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
                   <p className="text-slate-500 dark:text-slate-400">No conversations yet</p>
                   <button
-                    onClick={() => navigate('/m/chat/new')}
+                    onClick={() => navigate('/chat/new')}
                     className="mt-4 px-6 py-2 bg-brand-primary text-white rounded-full font-medium"
                   >
                     Start a Conversation
@@ -150,7 +150,7 @@ export function MobileChat() {
                   <ConversationItem
                     key={convo.id}
                     conversation={convo}
-                    onClick={() => navigate(`/m/chat/dm/${convo.id}`)}
+                    onClick={() => navigate(`/chat/dm/${convo.id}`)}
                   />
                 ))
               )}
@@ -160,7 +160,7 @@ export function MobileChat() {
 
         {/* Floating compose button */}
         <button
-          onClick={() => navigate('/m/chat/new')}
+          onClick={() => navigate('/chat/new')}
           className={cn(
             "fixed right-4 bottom-20 z-40",
             "w-14 h-14 rounded-full",

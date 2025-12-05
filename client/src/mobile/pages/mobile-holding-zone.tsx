@@ -209,7 +209,7 @@ export function MobileHoldingZone() {
                 <StickyNote className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
                 <p className="text-slate-500 dark:text-slate-400">No items found</p>
                 <button
-                  onClick={() => navigate('/m/holding-zone/new')}
+                  onClick={() => navigate('/holding-zone/new')}
                   className="mt-4 px-6 py-2 bg-brand-primary text-white rounded-full font-medium"
                 >
                   Add an Item
@@ -315,7 +315,7 @@ export function MobileHoldingZone() {
                               </button>
                               <button
                                 onClick={() => {
-                                  navigate(`/m/holding-zone/${item.id}/edit`);
+                                  navigate(`/holding-zone/${item.id}/edit`);
                                   setShowActions(null);
                                 }}
                                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -360,7 +360,7 @@ export function MobileHoldingZone() {
 
         {/* Floating action button */}
         <button
-          onClick={() => navigate('/m/holding-zone/new')}
+          onClick={() => navigate('/holding-zone/new')}
           className={cn(
             "fixed right-4 bottom-20 z-40",
             "w-14 h-14 rounded-full",

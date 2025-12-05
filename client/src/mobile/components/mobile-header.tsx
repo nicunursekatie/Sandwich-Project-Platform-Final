@@ -31,7 +31,7 @@ export function MobileHeader({
       if (window.history.length > 1) {
         window.history.back();
       } else {
-        navigate('/m');
+        navigate('/');
       }
     }
   };
