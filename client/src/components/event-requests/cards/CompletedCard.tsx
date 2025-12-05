@@ -2834,31 +2834,33 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             </Tooltip>
 
             {canDelete && (
-              <ConfirmationDialog
-                trigger={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700"
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this event</p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-                title="Delete Completed Event"
-                description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
-                confirmText="Delete Event"
-                cancelText="Cancel"
-                onConfirm={onDelete}
-                variant="destructive"
-              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete Completed Event"
+                      description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
+                      confirmText="Delete Event"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </TooltipProvider>

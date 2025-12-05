@@ -302,29 +302,31 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                       <p>Edit event</p>
                     </TooltipContent>
                   </Tooltip>
-                  <ConfirmationDialog
-                    trigger={
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete event</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    }
-                    title="Delete Event"
-                    description={`Delete the event from ${request.organizationName}?`}
-                    confirmText="Delete"
-                    onConfirm={onDelete}
-                    variant="destructive"
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          }
+                          title="Delete Event"
+                          description={`Delete the event from ${request.organizationName}?`}
+                          confirmText="Delete"
+                          onConfirm={onDelete}
+                          variant="destructive"
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete event</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               )}
             </div>
