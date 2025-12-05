@@ -22,20 +22,28 @@ import { useToast } from '@/hooks/use-toast';
 
 interface EventForPlanning {
   id: number;
+  organizationName?: string;
   title?: string;
   recipientName?: string;
-  eventDate: string;
-  eventTime?: string;
+  scheduledEventDate?: string;
+  desiredEventDate?: string;
+  eventStartTime?: string;
+  eventEndTime?: string;
   pickupTime?: string;
+  pickupTimeWindow?: string;
+  eventAddress?: string;
   location?: string;
   address?: string;
   driversNeeded: number;
   assignedDriverIds?: number[];
-  sandwichCount?: number;
+  estimatedSandwichCount?: number;
   status?: string;
   hostName?: string;
   hostPhone?: string;
   recipientPhone?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
 interface Driver {
@@ -73,12 +81,19 @@ export function MobileDriverPlanning() {
     staleTime: 300000,
   });
 
+  // Helper to get event date
+  const getEventDate = (event: EventForPlanning): Date | null => {
+    const dateStr = event.scheduledEventDate || event.desiredEventDate;
+    if (!dateStr) return null;
+    return typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
+  };
+
   // Filter events
   const today = startOfToday();
   const filteredEvents = events
     .filter((event) => {
-      if (!event.eventDate) return false;
-      const eventDate = parseISO(event.eventDate);
+      const eventDate = getEventDate(event);
+      if (!eventDate) return false;
 
       // Date filter - use endOfDay for proper boundary comparison
       const endDate = dateFilter === 'today' ? endOfDay(today)
@@ -92,9 +107,10 @@ export function MobileDriverPlanning() {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
+          event.organizationName?.toLowerCase().includes(query) ||
           event.title?.toLowerCase().includes(query) ||
           event.recipientName?.toLowerCase().includes(query) ||
-          event.location?.toLowerCase().includes(query) ||
+          event.eventAddress?.toLowerCase().includes(query) ||
           event.hostName?.toLowerCase().includes(query)
         );
       }
@@ -102,7 +118,9 @@ export function MobileDriverPlanning() {
     })
     .sort((a, b) => {
       // Sort by date, then by needs drivers
-      const dateCompare = new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
+      const aDate = getEventDate(a);
+      const bDate = getEventDate(b);
+      const dateCompare = (aDate?.getTime() || 0) - (bDate?.getTime() || 0);
       if (dateCompare !== 0) return dateCompare;
       const aNeedsDrivers = (a.driversNeeded || 0) > (a.assignedDriverIds?.length || 0);
       const bNeedsDrivers = (b.driversNeeded || 0) > (b.assignedDriverIds?.length || 0);
@@ -117,7 +135,9 @@ export function MobileDriverPlanning() {
   // Copy SMS message to clipboard
   const copySMSMessage = (event: EventForPlanning, driver?: Driver) => {
     const driverName = driver ? driver.name.split(' ')[0] : '[Driver]';
-    const message = `Hi ${driverName}! Can you help with a delivery on ${format(parseISO(event.eventDate), 'EEEE, MMM d')}? Pickup: ${event.hostName || 'TBD'} at ${event.pickupTime || 'TBD'}. Delivery to: ${event.recipientName || event.title || 'TBD'}. Let me know!`;
+    const eventDate = getEventDate(event);
+    const dateStr = eventDate ? format(eventDate, 'EEEE, MMM d') : 'TBD';
+    const message = `Hi ${driverName}! Can you help with a delivery on ${dateStr}? Pickup: ${event.hostName || 'TBD'} at ${event.pickupTime || 'TBD'}. Delivery to: ${event.organizationName || event.recipientName || event.title || 'TBD'}. Let me know!`;
 
     navigator.clipboard.writeText(message)
       .then(() => {
@@ -257,8 +277,8 @@ export function MobileDriverPlanning() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
-                          {format(parseISO(event.eventDate), 'EEE, MMM d')}
-                          {event.eventTime && ` at ${event.eventTime}`}
+                          {getEventDate(event) ? format(getEventDate(event)!, 'EEE, MMM d') : 'No date'}
+                          {event.eventStartTime && ` at ${event.eventStartTime}`}
                         </span>
                         {needsDrivers ? (
                           <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
@@ -274,14 +294,14 @@ export function MobileDriverPlanning() {
 
                       {/* Event name */}
                       <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
-                        {event.recipientName || event.title || 'Untitled Event'}
+                        {event.organizationName || event.recipientName || event.title || 'Untitled Event'}
                       </h3>
 
                       {/* Location */}
-                      {(event.location || event.address) && (
+                      {(event.eventAddress || event.location || event.address) && (
                         <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-2">
                           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="truncate">{event.location || event.address}</span>
+                          <span className="truncate">{event.eventAddress || event.location || event.address}</span>
                         </p>
                       )}
 
