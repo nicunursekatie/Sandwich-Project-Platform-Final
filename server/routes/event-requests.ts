@@ -1281,10 +1281,15 @@ router.patch(
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);
+        logger.error(`[PATCH /:id] Attempted update fields:`, Object.keys(updates).join(', '));
+        logger.error(`[PATCH /:id] User: ${req.user?.id} (${req.user?.email})`);
+        logger.error(`[PATCH /:id] Request body preview:`, JSON.stringify(updates).substring(0, 200));
+        
         return res.status(404).json({ 
           message: 'Event request not found',
           eventId: id,
-          error: 'EVENT_NOT_FOUND'
+          error: 'EVENT_NOT_FOUND',
+          details: 'The event request may have been deleted or the ID is incorrect. Please refresh the page and try again.'
         });
       }
 

@@ -403,11 +403,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
       setPendingMlkDayDecision(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      logger.error('Update event request error:', error);
+      
+      // Check if it's a 404 (event not found) error
+      const isNotFound = error?.message?.includes('DATA_LOADING_ERROR') || 
+                        error?.message?.includes('EVENT_NOT_FOUND') ||
+                        error?.message?.includes('not found');
+      
       const isEditMode = mode === 'edit';
       toast({
-        title: 'Error',
-        description: isEditMode ? 'Failed to update event.' : 'Failed to schedule event.',
+        title: isNotFound ? 'Event Not Found' : 'Error',
+        description: isNotFound
+          ? 'The event request was not found. It may have been deleted. Please refresh the page and try again.'
+          : (isEditMode ? 'Failed to update event.' : 'Failed to schedule event.'),
         variant: 'destructive',
       });
     },
@@ -699,11 +708,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     logger.log('📋 FORM SUBMIT DEBUG:');
     logger.log('  - eventRequest exists?', !!eventRequest);
+    logger.log('  - eventRequest.id:', eventRequest?.id);
     logger.log('  - mode:', mode);
     logger.log('  - isCreateMode:', isCreateMode);
     logger.log('  - eventData being sent:', eventData);
 
     if (eventRequest) {
+      if (!eventRequest.id) {
+        logger.error('❌ Event request object exists but has no ID');
+        toast({
+          title: 'Error',
+          description: 'Event request ID is missing. Please refresh the page and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       // Update existing event request
       updateEventRequestMutation.mutate({
