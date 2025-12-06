@@ -1,6 +1,7 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { eq } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
+import type { AuthenticatedRequest } from '../types/express';
 import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
@@ -91,7 +92,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   const { storage, isAuthenticated } = deps;
 
   // Get all drivers
-  router.get('/', isAuthenticated, async (req: any, res: any) => {
+  router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const drivers = await storage.getAllDrivers();
       res.json(drivers);
@@ -102,7 +103,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Unified driver candidates: drivers + host contacts + volunteers flagged as drivers
-  router.get('/driver-candidates', isAuthenticated, async (req: any, res: any) => {
+  router.get('/driver-candidates', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const [allDrivers, hostsWithContacts, volunteers] = await Promise.all([
         storage.getAllDrivers(),
@@ -169,7 +170,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Export drivers as CSV - MUST come before /:id route
-  router.get('/export', isAuthenticated, async (req: any, res: any) => {
+  router.get('/export', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const drivers = await storage.getAllDrivers();
 
@@ -256,7 +257,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Get driver by ID
-  router.get('/:id', isAuthenticated, async (req: any, res: any) => {
+  router.get('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const driver = await storage.getDriver(id);
@@ -271,7 +272,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Create new driver
-  router.post('/', isAuthenticated, async (req: any, res: any) => {
+  router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const validatedData = insertDriverSchema.parse(req.body);
       const driver = await storage.createDriver(validatedData);
@@ -297,7 +298,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Update driver (PUT)
-  router.put('/:id', isAuthenticated, async (req: any, res: any) => {
+  router.put('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const id = parseInt(req.params.id);
 
@@ -334,7 +335,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Update driver (PATCH)
-  router.patch('/:id', isAuthenticated, async (req: any, res: any) => {
+  router.patch('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const id = parseInt(req.params.id);
 
@@ -371,7 +372,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Delete driver
-  router.delete('/:id', isAuthenticated, async (req: any, res: any) => {
+  router.delete('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const id = parseInt(req.params.id);
 
@@ -407,7 +408,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Batch geocode all drivers that have location data but no coordinates
-  router.post('/batch-geocode', isAuthenticated, async (req: any, res: any) => {
+  router.post('/batch-geocode', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const allDrivers = await storage.getAllDrivers();
 

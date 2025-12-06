@@ -17,6 +17,7 @@ import { authService, AuthError } from '../../services/auth.service';
 import { getDefaultPermissionsForRole } from '../../../shared/auth-utils';
 import { logger } from '../../utils/production-safe-logger';
 import { isAuthenticated } from '../../middleware/auth';
+import type { AuthenticatedRequest, MaybeAuthenticatedRequest } from '../../types/express';
 
 export function createAuthRouter() {
   const router = Router();
@@ -25,7 +26,7 @@ export function createAuthRouter() {
    * POST /api/auth/login
    * Authenticate user and create session
    */
-  router.post('/login', async (req: Request, res: Response) => {
+  router.post('/login', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const { email, password } = req.body;
 
@@ -119,7 +120,7 @@ export function createAuthRouter() {
    * POST /api/auth/logout
    * Destroy session and log out user
    */
-  router.post('/logout', async (req: Request, res: Response) => {
+  router.post('/logout', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const userEmail = req.session.user?.email || 'unknown';
 
@@ -151,7 +152,7 @@ export function createAuthRouter() {
    * GET /api/auth/me
    * Get currently authenticated user
    */
-  router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
+  router.get('/me', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({
@@ -178,7 +179,7 @@ export function createAuthRouter() {
    * Legacy endpoint for backward compatibility
    * Redirects to /me internally
    */
-  router.get('/user', isAuthenticated, async (req: Request, res: Response) => {
+  router.get('/user', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
@@ -208,7 +209,7 @@ export function createAuthRouter() {
    * GET /api/auth/profile
    * Get current user's profile data
    */
-  router.get('/profile', isAuthenticated, async (req: Request, res: Response) => {
+  router.get('/profile', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
@@ -244,7 +245,7 @@ export function createAuthRouter() {
    * PUT /api/auth/profile
    * Update current user's profile
    */
-  router.put('/profile', isAuthenticated, async (req: Request, res: Response) => {
+  router.put('/profile', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
@@ -299,7 +300,7 @@ export function createAuthRouter() {
    * PUT /api/auth/change-password
    * Change current user's password (requires current password verification)
    */
-  router.put('/change-password', isAuthenticated, async (req: Request, res: Response) => {
+  router.put('/change-password', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
