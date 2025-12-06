@@ -128,13 +128,14 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
+    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone}) - campaign: ${category}`);
 
     res.json({
       success: true,
       message: 'Confirmation SMS sent! Please reply with your verification code or "YES" to complete signup.',
       phoneNumber: formattedPhone,
       status: 'pending_confirmation',
+      campaignType: category,
     });
   } catch (error) {
     logger.error('Error processing SMS opt-in:', error);
