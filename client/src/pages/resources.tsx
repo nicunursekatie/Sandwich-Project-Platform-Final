@@ -296,6 +296,7 @@ export function Resources() {
     return (
       <div
         className={`border ${category.borderColor} ${category.bgColor} rounded-lg overflow-hidden hover:shadow-md transition-shadow relative flex flex-col`}
+        data-testid={`resource-card-${item.resource.id}`}
       >
         {/* Pinned badge */}
         {item.resource.isPinnedGlobal && (
@@ -518,7 +519,7 @@ export function Resources() {
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-lg shadow-sm p-4" data-testid="resources-filters">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search */}
               <div className="flex-1 relative">
@@ -529,6 +530,7 @@ export function Resources() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  data-testid="resources-search"
                 />
               </div>
 
@@ -564,11 +566,11 @@ export function Resources() {
             {showFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 {/* Category Filter */}
-                <div className="mb-4">
+                <div className="mb-4" data-testid="resources-categories">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2" data-testid="category-filter">
                     <button
                       onClick={() => setSelectedCategory(null)}
                       className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
@@ -651,7 +653,7 @@ export function Resources() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Pinned Resources */}
           {pinnedResources.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="bg-white rounded-lg shadow-sm p-4" data-testid="pinned-resources">
               <div className="flex items-center gap-2 mb-3">
                 <Pin className="w-5 h-5 text-[#FBAD3F]" />
                 <h2 className="font-semibold text-gray-900">Pinned</h2>
@@ -745,7 +747,7 @@ export function Resources() {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6" data-testid="resources-list">
             {CATEGORIES.map((category) => {
               const categoryResources = groupedResources[category.id] || [];
               if (categoryResources.length === 0) return null;
