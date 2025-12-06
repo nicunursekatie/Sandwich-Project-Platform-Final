@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft
 } from 'lucide-react';
@@ -43,16 +43,24 @@ function MapController({ center, zoom }: { center: [number, number] | null; zoom
 
   useEffect(() => {
     if (center && map) {
-      // Check if map is properly initialized before calling setView
       try {
         map.setView(center, zoom, { animate: true, duration: 0.5 });
       } catch (error) {
-        // Silently handle map interaction errors (can occur during unmount)
         console.warn('Map interaction error:', error);
       }
     }
   }, [center, zoom, map]);
 
+  return null;
+}
+
+// Map click handler component using proper react-leaflet event handling
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
   return null;
 }
 
@@ -385,9 +393,9 @@ export default function RouteMapView() {
             zoom={10}
             className="h-full w-full"
             data-testid="map-container"
-            onClick={() => setSelectedHostId(null)}
           >
             <MapController center={mapCenter} zoom={mapZoom} />
+            <MapClickHandler onMapClick={() => setSelectedHostId(null)} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
