@@ -17,7 +17,7 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
 
   // Attach user to request if not already there
   if (!req.user && req.session?.user) {
-    req.user = req.session.user;
+    req.user = req.session?.user;
   }
 
   next();

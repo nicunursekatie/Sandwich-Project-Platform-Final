@@ -4,7 +4,11 @@
  * Single source of truth for all authentication endpoints
  * - POST /api/auth/login - User login
  * - POST /api/auth/logout - User logout
- * - GET /api/auth/me - Get current user
+ * - GET /api/auth/me - Get current user (new endpoint)
+ * - GET /api/auth/user - Get current user (legacy compatibility)
+ * - GET /api/auth/profile - Get current user's profile
+ * - PUT /api/auth/profile - Update current user's profile
+ * - PUT /api/auth/change-password - Change user's password
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -196,6 +200,158 @@ export function createAuthRouter() {
       });
     } catch (error) {
       logger.error('Get user error:', error);
+      return res.status(500).json({ message: 'An error occurred' });
+    }
+  });
+
+  /**
+   * GET /api/auth/profile
+   * Get current user's profile data
+   */
+  router.get('/profile', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      // Fetch fresh user data from database
+      const freshUser = await storage.getUserByEmail(req.user.email);
+
+      if (!freshUser) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      // Return profile data (exclude sensitive fields like password)
+      return res.json({
+        id: freshUser.id,
+        email: freshUser.email,
+        firstName: freshUser.firstName,
+        lastName: freshUser.lastName,
+        displayName: freshUser.displayName,
+        preferredEmail: freshUser.preferredEmail,
+        phoneNumber: freshUser.phoneNumber,
+        profileImageUrl: freshUser.profileImageUrl,
+        role: freshUser.role,
+        isActive: freshUser.isActive,
+      });
+    } catch (error) {
+      logger.error('Get profile error:', error);
+      return res.status(500).json({ message: 'An error occurred' });
+    }
+  });
+
+  /**
+   * PUT /api/auth/profile
+   * Update current user's profile
+   */
+  router.put('/profile', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const { firstName, lastName, displayName, preferredEmail, phoneNumber } = req.body;
+
+      // Build update object with only provided fields
+      const updateData: any = {};
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (preferredEmail !== undefined) updateData.preferredEmail = preferredEmail;
+      if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+
+      // Update user profile
+      const updatedUser = await storage.updateUser(req.user.id, updateData);
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Update session with fresh data
+      if (req.session?.user) {
+        req.session.user = {
+          ...req.session.user,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+        };
+      }
+
+      // Return updated profile (exclude sensitive fields)
+      return res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        displayName: updatedUser.displayName,
+        preferredEmail: updatedUser.preferredEmail,
+        phoneNumber: updatedUser.phoneNumber,
+        profileImageUrl: updatedUser.profileImageUrl,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      });
+    } catch (error) {
+      logger.error('Update profile error:', error);
+      return res.status(500).json({ message: 'An error occurred' });
+    }
+  });
+
+  /**
+   * PUT /api/auth/change-password
+   * Change current user's password (requires current password verification)
+   */
+  router.put('/change-password', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          message: 'Current password and new password are required',
+        });
+      }
+
+      // Fetch user to get current password hash
+      const user = await storage.getUserByEmail(req.user.email);
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      // Verify current password
+      const isValidPassword = await authService.verifyPassword(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({
+          message: 'Current password is incorrect',
+        });
+      }
+
+      // Validate new password
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          message: 'New password must be at least 8 characters long',
+        });
+      }
+
+      // Hash and update password
+      const hashedPassword = await authService.hashPassword(newPassword);
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      logger.log(`Password changed successfully for user: ${user.email}`);
+
+      return res.json({
+        success: true,
+        message: 'Password changed successfully',
+      });
+    } catch (error) {
+      if (error instanceof AuthError) {
+        return res.status(error.statusCode).json({
+          message: error.message,
+        });
+      }
+
+      logger.error('Change password error:', error);
       return res.status(500).json({ message: 'An error occurred' });
     }
   });

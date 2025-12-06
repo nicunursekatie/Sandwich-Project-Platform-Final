@@ -42,8 +42,14 @@ function MapController({ center, zoom }: { center: [number, number] | null; zoom
   const map = useMap();
 
   useEffect(() => {
-    if (center) {
-      map.setView(center, zoom, { animate: true, duration: 0.5 });
+    if (center && map) {
+      // Check if map is properly initialized before calling setView
+      try {
+        map.setView(center, zoom, { animate: true, duration: 0.5 });
+      } catch (error) {
+        // Silently handle map interaction errors (can occur during unmount)
+        console.warn('Map interaction error:', error);
+      }
     }
   }, [center, zoom, map]);
 
@@ -376,6 +382,7 @@ export default function RouteMapView() {
             zoom={10}
             className="h-full w-full"
             data-testid="map-container"
+            onClick={() => setSelectedHostId(null)}
           >
             <MapController center={mapCenter} zoom={mapZoom} />
             <TileLayer
