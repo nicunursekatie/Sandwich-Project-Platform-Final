@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  MessageSquare,
+  Calendar,
   CheckCircle,
   Smartphone,
   Shield,
-  Clock,
+  Users,
   Bell,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,9 +23,10 @@ import tspLogo from '@assets/LOGOS/TSP_transparent.png';
 interface SMSOptInData {
   phoneNumber: string;
   consent: boolean;
+  category: string;
 }
 
-export default function SMSSignupPage() {
+export default function SMSEventsPage() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -46,28 +47,25 @@ export default function SMSSignupPage() {
       setHasOptedIn(true);
       toast({
         title: 'Success!',
-        description: "You've been signed up for SMS reminders.",
+        description: "You've been signed up for event SMS notifications.",
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to sign up for SMS reminders.',
+        description: error.message || 'Failed to sign up for event notifications.',
         variant: 'destructive',
       });
     },
   });
 
   const optOutMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/users/sms-opt-out'),
+    mutationFn: () => apiRequest('POST', '/api/users/sms-opt-out', { category: 'events' }),
     onSuccess: () => {
       toast({
         title: 'Unsubscribed',
-        description: "You've been removed from SMS reminders.",
+        description: "You've been unsubscribed from event SMS notifications.",
       });
-      setHasOptedIn(false);
-      setPhoneNumber('');
-      setConsent(false);
     },
     onError: (error: any) => {
       toast({
@@ -78,31 +76,6 @@ export default function SMSSignupPage() {
     },
   });
 
-  const formatPhoneNumber = (value: string) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length >= 10) {
-      const match = digits.match(/^(\d{3})(\d{3})(\d{4})/);
-      if (match) {
-        return `(${match[1]}) ${match[2]}-${match[3]}`;
-      }
-    } else if (digits.length >= 6) {
-      const match = digits.match(/^(\d{3})(\d{3})/);
-      if (match) {
-        return `(${match[1]}) ${match[2]}`;
-      }
-    } else if (digits.length >= 3) {
-      const match = digits.match(/^(\d{3})/);
-      if (match) {
-        return `(${match[1]})`;
-      }
-    }
-    return digits;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhoneNumber(formatPhoneNumber(e.target.value));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -111,81 +84,113 @@ export default function SMSSignupPage() {
       return;
     }
 
-    if (!phoneNumber.trim()) {
+    if (!consent) {
       toast({
-        title: 'Error',
-        description: 'Please enter your phone number.',
+        title: 'Consent Required',
+        description: 'Please check the consent box to continue.',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!consent) {
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (cleanPhone.length !== 10 && cleanPhone.length !== 11) {
       toast({
-        title: 'Error',
-        description: 'Please check the consent box to proceed.',
+        title: 'Invalid Phone Number',
+        description: 'Please enter a valid US phone number.',
         variant: 'destructive',
       });
       return;
     }
 
     optInMutation.mutate({
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: cleanPhone,
       consent: true,
+      category: 'events',
     });
   };
 
-  const isAlreadyOptedIn = userSMSStatus?.hasOptedIn || hasOptedIn;
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 11) {
+      let formatted = value;
+      if (value.length >= 4 && value.length <= 6) {
+        formatted = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+      } else if (value.length >= 7) {
+        formatted = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+      }
+      setPhoneNumber(formatted);
+    }
+  };
+
+  const isAlreadyOptedIn = userSMSStatus?.eventsOptedIn || hasOptedIn;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <img 
-            src={tspLogo} 
-            alt="The Sandwich Project" 
-            className="h-20 mx-auto mb-4"
-          />
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white py-8 px-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center">
+          <Link href="/">
+            <img
+              src={tspLogo}
+              alt="The Sandwich Project"
+              className="h-20 mx-auto mb-4 cursor-pointer"
+            />
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            SMS Reminder Sign-up
+            Event SMS Notifications
           </h1>
-          <p className="text-gray-600 text-lg">
-            Get text message reminders for weekly sandwich collection submissions
+          <p className="text-gray-600 max-w-md mx-auto">
+            Stay connected with real-time updates about your events, volunteer assignments, and coordination messages.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="text-center p-4">
-            <Bell className="h-8 w-8 text-teal-600 mx-auto mb-2" />
-            <h3 className="font-semibold">Weekly Reminders</h3>
-            <p className="text-sm text-gray-600">
-              Get notified when collection data is missing
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-white border-teal-100">
+            <CardContent className="pt-6 text-center">
+              <Calendar className="h-8 w-8 text-teal-600 mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900">Event Reminders</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Get notified before your scheduled events
+              </p>
+            </CardContent>
           </Card>
-          <Card className="text-center p-4">
-            <Clock className="h-8 w-8 text-teal-600 mx-auto mb-2" />
-            <h3 className="font-semibold">Quick Links</h3>
-            <p className="text-sm text-gray-600">
-              Direct links to submit your counts fast
-            </p>
+
+          <Card className="bg-white border-teal-100">
+            <CardContent className="pt-6 text-center">
+              <Users className="h-8 w-8 text-teal-600 mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900">Assignment Updates</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Know when you're assigned to events
+              </p>
+            </CardContent>
           </Card>
-          <Card className="text-center p-4">
-            <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />
-            <h3 className="font-semibold">Privacy First</h3>
-            <p className="text-sm text-gray-600">
-              Your number is never shared
-            </p>
+
+          <Card className="bg-white border-teal-100">
+            <CardContent className="pt-6 text-center">
+              <Bell className="h-8 w-8 text-teal-600 mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900">Event Changes</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Get updates on time or location changes
+              </p>
+            </CardContent>
           </Card>
+        </div>
+
+        <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+          <Shield className="h-4 w-4 text-teal-600" />
+          <p>
+            Your number is never shared
+          </p>
         </div>
 
         <Card className="max-w-xl mx-auto">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="bg-teal-600 p-3 rounded-full">
-                <MessageSquare className="h-8 w-8 text-white" />
+                <Calendar className="h-8 w-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Sign Up for SMS Reminders</CardTitle>
+            <CardTitle className="text-2xl">Sign Up for Event Notifications</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
@@ -199,7 +204,7 @@ export default function SMSSignupPage() {
                 <Alert className="bg-green-50 border-green-200">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-800">
-                    You're signed up for SMS reminders!
+                    You're signed up for event SMS notifications!
                     {userSMSStatus?.phoneNumber && (
                       <span className="block mt-1 font-medium">
                         Phone: {userSMSStatus.phoneNumber}
@@ -213,9 +218,9 @@ export default function SMSSignupPage() {
                   onClick={() => optOutMutation.mutate()}
                   disabled={optOutMutation.isPending}
                   className="w-full"
-                  data-testid="button-unsubscribe"
+                  data-testid="button-unsubscribe-events"
                 >
-                  {optOutMutation.isPending ? 'Unsubscribing...' : 'Unsubscribe from SMS Reminders'}
+                  {optOutMutation.isPending ? 'Unsubscribing...' : 'Unsubscribe from Event Notifications'}
                 </Button>
               </div>
             ) : (
@@ -223,13 +228,13 @@ export default function SMSSignupPage() {
                 <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
                   <h3 className="font-medium text-teal-800 mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
-                    How SMS Reminders Work
+                    What You'll Receive
                   </h3>
                   <ul className="text-sm text-teal-700 space-y-1">
-                    <li>• Get text reminders when weekly sandwich counts are missing</li>
-                    <li>• Includes direct links to the app for easy submission</li>
-                    <li>• Only used for sandwich collection reminders</li>
-                    <li>• You can unsubscribe at any time by replying STOP</li>
+                    <li>• Event reminders before your scheduled events</li>
+                    <li>• Updates when you're assigned to organize or support events</li>
+                    <li>• Notifications about event time or location changes</li>
+                    <li>• Coordination messages for events you're involved in</li>
                   </ul>
                 </div>
 
@@ -243,7 +248,7 @@ export default function SMSSignupPage() {
                     onChange={handlePhoneChange}
                     required
                     className="text-lg"
-                    data-testid="input-phone"
+                    data-testid="input-phone-events"
                   />
                   <p className="text-sm text-gray-500">
                     US numbers only. Standard message and data rates may apply.
@@ -257,20 +262,20 @@ export default function SMSSignupPage() {
                       checked={consent}
                       onCheckedChange={(checked) => setConsent(checked as boolean)}
                       className="mt-1"
-                      data-testid="checkbox-consent"
+                      data-testid="checkbox-consent-events"
                     />
                     <div>
                       <Label
                         htmlFor="consent"
                         className="text-sm font-medium leading-relaxed cursor-pointer"
                       >
-                        I consent to receive SMS text message reminders from The Sandwich Project about weekly collection submissions. I understand:
+                        I agree to receive SMS notifications from The Sandwich Project about event reminders, event updates, and assignment notifications related to events I am organizing or supporting. I understand:
                       </Label>
                       <ul className="text-xs text-gray-600 mt-2 space-y-1 ml-4">
-                        <li>• Messages will only be sent for sandwich collection reminders</li>
+                        <li>• Messages will be sent for event coordination purposes only</li>
                         <li>• I can unsubscribe at any time by replying <strong>STOP</strong></li>
                         <li>• Reply <strong>HELP</strong> for assistance</li>
-                        <li>• Message frequency varies (up to 4 msgs/month)</li>
+                        <li>• Message frequency varies based on event activity</li>
                         <li>• Message and data rates may apply</li>
                         <li>• My phone number will not be shared with third parties</li>
                         <li>• Carriers are not liable for delayed or undelivered messages</li>
@@ -284,10 +289,10 @@ export default function SMSSignupPage() {
                     <AlertDescription className="text-amber-800">
                       <p className="font-medium mb-2">Please sign in to complete your registration</p>
                       <p className="text-sm mb-3">
-                        You need a Sandwich Project volunteer account to receive SMS reminders.
+                        You need a Sandwich Project volunteer account to receive event notifications.
                       </p>
                       <Link href="/login">
-                        <Button className="w-full bg-teal-600 hover:bg-teal-700" data-testid="button-login">
+                        <Button className="w-full bg-teal-600 hover:bg-teal-700" data-testid="button-login-events">
                           Sign In to Continue
                         </Button>
                       </Link>
@@ -299,9 +304,9 @@ export default function SMSSignupPage() {
                   type="submit"
                   className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg"
                   disabled={optInMutation.isPending || !consent || !phoneNumber.trim()}
-                  data-testid="button-submit"
+                  data-testid="button-submit-events"
                 >
-                  {optInMutation.isPending ? 'Signing Up...' : 'Sign Up for SMS Reminders'}
+                  {optInMutation.isPending ? 'Signing Up...' : 'Sign Up for Event Notifications'}
                 </Button>
 
                 <p className="text-center text-xs text-gray-500">
@@ -329,11 +334,17 @@ export default function SMSSignupPage() {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>The Sandwich Project is a 501(c)(3) nonprofit organization.</p>
-          <p className="mt-1">
-            <Link href="/sms-verification-docs" className="text-teal-600 hover:underline">
-              View SMS Compliance Documentation
+        <div className="text-center text-sm text-gray-500 space-y-2">
+          <p>
+            Looking for weekly collection reminders instead?{' '}
+            <Link href="/sms-signup" className="text-teal-600 hover:underline">
+              Sign up for Host Reminders
+            </Link>
+          </p>
+          <p>
+            Already have an account?{' '}
+            <Link href="/login" className="text-teal-600 hover:underline">
+              Sign in
             </Link>
           </p>
         </div>

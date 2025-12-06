@@ -120,6 +120,7 @@ function Router() {
   // Lazy-loaded components
   const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
   const SMSSignup = lazy(() => import('./pages/sms-signup'));
+  const SMSEvents = lazy(() => import('./pages/sms-events'));
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
@@ -148,6 +149,11 @@ function Router() {
         <Route path="/sms-signup">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSSignup />
+          </Suspense>
+        </Route>
+        <Route path="/sms-events">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSEvents />
           </Suspense>
         </Route>
         <Route path="/login" component={LoginPage} />
@@ -447,6 +453,11 @@ function Router() {
         <Route path="/sms-signup">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSSignup />
+          </Suspense>
+        </Route>
+        <Route path="/sms-events">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSEvents />
           </Suspense>
         </Route>
         <Route path="/profile">
