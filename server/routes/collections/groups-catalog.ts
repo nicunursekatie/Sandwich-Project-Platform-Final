@@ -2,35 +2,7 @@ import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
 import { logger } from '../../utils/production-safe-logger';
-
-// Canonicalize organization names for robust matching
-function canonicalizeOrgName(orgName: string): string {
-  if (!orgName || typeof orgName !== 'string') return '';
-
-  return orgName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ') // Collapse multiple whitespace to single space
-    .replace(/[&\.,;:!?"'\-_]/g, '') // Remove common punctuation
-    .replace(/\s/g, ''); // Remove all remaining spaces
-}
-
-// Enhanced matching: checks if names are exact match OR if one is a substring of the other
-// This handles cases like "Allied World" vs "Allied World Assurance"
-function organizationNamesMatch(canonical1: string, canonical2: string): boolean {
-  if (!canonical1 || !canonical2) return false;
-  
-  // Exact match
-  if (canonical1 === canonical2) return true;
-  
-  // Substring match: one name contains the other (with minimum length to avoid false positives)
-  const minLength = 8; // Avoid matching very short abbreviations
-  if (canonical1.length >= minLength && canonical2.length >= minLength) {
-    return canonical1.includes(canonical2) || canonical2.includes(canonical1);
-  }
-  
-  return false;
-}
+import { canonicalizeOrgName, organizationNamesMatch } from '../../utils/organization-canonicalization';
 
 export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   const router = Router();

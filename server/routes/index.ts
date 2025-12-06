@@ -75,6 +75,7 @@ import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
+import { createOrganizationsAdminRoutes } from './organizations-admin';
 
 // Import centralized middleware
 import {
@@ -124,6 +125,12 @@ export function createMainRoutes(deps: RouterDependencies) {
     isAuthenticated: deps.isAuthenticated,
   });
   router.use('/api/groups-catalog', groupsCatalogRoutes);
+
+  const organizationsAdminRoutes = createOrganizationsAdminRoutes({
+    isAuthenticated: deps.isAuthenticated,
+    requirePermission: deps.requirePermission,
+  });
+  router.use('/api/organizations-admin', organizationsAdminRoutes);
 
   // New organized feature routes with consistent middleware
   // Core application routes (health checks, session management)

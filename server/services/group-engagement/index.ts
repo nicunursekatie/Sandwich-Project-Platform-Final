@@ -2,6 +2,7 @@ import { db } from '../../db';
 import { eventRequests, sandwichCollections, organizationEngagementScores } from '../../../shared/schema';
 import { eq, sql, desc, and, gte, isNotNull } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
+import { canonicalizeOrgName } from '../../utils/organization-canonicalization';
 
 // ============================================================================
 // Types
@@ -93,19 +94,6 @@ export interface GroupInsightsSummary {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Canonicalize organization names for robust matching
- */
-function canonicalizeOrgName(orgName: string): string {
-  if (!orgName || typeof orgName !== 'string') return '';
-  return orgName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .replace(/[&.,;:!?"'_-]/g, '')
-    .replace(/\s/g, '');
-}
 
 /**
  * Calculate days between two dates

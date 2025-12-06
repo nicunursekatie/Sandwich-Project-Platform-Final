@@ -170,7 +170,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Export drivers as CSV - MUST come before /:id route
-  router.get('/export', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/export', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const drivers = await storage.getAllDrivers();
 
@@ -257,7 +257,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Get driver by ID
-  router.get('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const driver = await storage.getDriver(id);
@@ -272,18 +272,19 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Create new driver
-  router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertDriverSchema.parse(req.body);
       const driver = await storage.createDriver(validatedData);
 
       // Audit log
+      const authReq = req as AuthenticatedRequest;
       await AuditLogger.logCreate(
         'drivers',
         String(driver.id),
         driver,
         {
-          userId: req.user?.id || req.session?.user?.id,
+          userId: authReq.user?.id || req.session?.user?.id,
           ipAddress: req.ip,
           userAgent: req.get('user-agent'),
           sessionId: req.sessionID
