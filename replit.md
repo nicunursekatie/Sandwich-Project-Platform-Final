@@ -32,6 +32,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment. Recipients are geocoded and displayed on this map.
 - **Automated Reminders**: 24-hour volunteer reminder system via cron job.
 - **TSP Holding Zone**: Simple inbox-style system for capturing long-term ideas and tasks with flexible categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system.
+- **Guided Tours & Onboarding System**: Interactive step-by-step tours for new users covering all major features. Tours are defined in `client/src/lib/tourDefinitions.ts` with permission-based filtering. Available tours include: Resources Overview, Host Location Map, Event Planning Overview, Collections Log, Dashboard & Analytics, Team Chat, TSP Holding Zone, Projects, Hosts Management, Event Reminders, Availability, Volunteers, and Driver Planning.
 - **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
 - **Timezone Management**: Ensures accurate storage of user-entered times, strictly adhering to `timeZone: 'America/New_York'` for display and using provided utility functions to prevent timezone conversion issues.
 - **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.

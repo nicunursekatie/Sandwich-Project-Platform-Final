@@ -275,10 +275,13 @@ export default function RouteMapView() {
       {/* Main Content: Side Panel + Map */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Host List Panel */}
-        <div className={`
-          ${isPanelOpen ? 'w-96' : 'w-0'}
-          transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
-        `}>
+        <div 
+          className={`
+            ${isPanelOpen ? 'w-96' : 'w-0'}
+            transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
+          `}
+          data-testid="host-list-panel"
+        >
           {isPanelOpen && (
             <>
               <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
@@ -291,7 +294,7 @@ export default function RouteMapView() {
               </div>
 
               <ScrollArea className="flex-1">
-                <div className="p-3 space-y-3">
+                <div className="p-3 space-y-3" data-testid="host-contact-list">
                   {filteredHosts.map(contact => (
                     <Card
                       key={contact.id}
@@ -376,7 +379,7 @@ export default function RouteMapView() {
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" data-testid="host-map-container">
           <MapContainer
             center={initialMapCenter}
             zoom={10}
