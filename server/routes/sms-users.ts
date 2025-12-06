@@ -19,6 +19,7 @@ const webhookRouter = Router();
 const smsOptInSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   consent: z.boolean(),
+  category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
 
 const smsConfirmationSchema = z.object({
@@ -56,6 +57,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
       hasConfirmedOptIn: hasConfirmedOptIn,
       confirmedAt: smsConsent.confirmedAt || null,
       confirmationMethod: smsConsent.confirmationMethod || null,
+      campaignType: smsConsent.campaignType || null,
     });
   } catch (error) {
     logger.error('Error getting SMS status:', error);
@@ -71,7 +73,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
  */
 router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
   try {
-    const { phoneNumber, consent } = smsOptInSchema.parse(req.body);
+    const { phoneNumber, consent, category } = smsOptInSchema.parse(req.body);
     const userId = req.user?.id;
 
     if (!userId) {
@@ -120,6 +122,7 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
         verificationCodeExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         consentTimestamp: new Date().toISOString(),
         consentVersion: '1.0',
+        campaignType: category, // 'hosts' for collection reminders, 'events' for event coordination
       },
     };
 
@@ -166,13 +169,18 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user metadata to disable SMS consent
+    // Get existing smsConsent to preserve campaignType
+    const currentMetadata = user.metadata as any || {};
+    const existingSmsConsent = currentMetadata.smsConsent || {};
+
+    // Update user metadata to disable SMS consent while preserving campaignType
     const updatedMetadata = {
-      ...(user.metadata as any || {}),
+      ...currentMetadata,
       smsConsent: {
         enabled: false,
         phoneNumber: null,
         optOutTimestamp: new Date().toISOString(),
+        campaignType: existingSmsConsent.campaignType,
       },
     };
 
@@ -253,8 +261,10 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
         status: 'confirmed',
         enabled: true,
         confirmedAt: new Date().toISOString(),
+        confirmationMethod: 'verification_code',
         verificationCode: undefined, // Remove verification code after confirmation
         verificationCodeExpiry: undefined,
+        campaignType: smsConsent.campaignType, // Explicitly preserve campaignType
       },
       notificationPreferences: {
         ...notificationPreferences,
@@ -291,10 +301,11 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 
     if (!hasReceivedWelcome) {
       try {
-        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
+        const campaignType = freshSmsConsent.campaignType || 'hosts';
+        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId} (campaign: ${campaignType})`);
 
         const { sendWelcomeSMS } = await import('../sms-service');
-        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
         if (welcomeResult.success) {
           logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
@@ -605,11 +616,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
       if (!hasReceivedWelcome) {
         try {
+          const campaignType = freshSmsConsent.campaignType || 'hosts';
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
           if (welcomeResult.success) {
-            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation (campaign: ${campaignType})`);
 
             // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {
@@ -729,11 +741,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
       if (!hasReceivedWelcome) {
         try {
+          const campaignType = freshSmsConsent.campaignType || 'hosts';
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
           if (welcomeResult.success) {
-            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation (campaign: ${campaignType})`);
 
             // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {

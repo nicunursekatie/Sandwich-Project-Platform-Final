@@ -23,6 +23,7 @@ import tspLogo from '@assets/LOGOS/TSP_transparent.png';
 interface SMSOptInData {
   phoneNumber: string;
   consent: boolean;
+  category: 'hosts' | 'events';
 }
 
 export default function SMSSignupPage() {
@@ -59,7 +60,7 @@ export default function SMSSignupPage() {
   });
 
   const optOutMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/users/sms-opt-out'),
+    mutationFn: () => apiRequest('POST', '/api/users/sms-opt-out', { category: 'hosts' }),
     onSuccess: () => {
       toast({
         title: 'Unsubscribed',
@@ -132,6 +133,7 @@ export default function SMSSignupPage() {
     optInMutation.mutate({
       phoneNumber: phoneNumber.trim(),
       consent: true,
+      category: 'hosts',
     });
   };
 
