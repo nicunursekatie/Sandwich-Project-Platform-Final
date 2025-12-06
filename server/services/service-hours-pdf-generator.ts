@@ -63,19 +63,19 @@ export class ServiceHoursPDFGenerator {
     // Left column X positions
     const leftColX = {
       date: 132,        // DATE column start
-      hours: 190,       // HOURS column start
-      description: 247  // DESCRIPTION column start
+      hours: 185,       // HOURS column start (moved left from 190)
+      description: 240  // DESCRIPTION column start (moved left from 247)
     };
 
     // Right column X positions
     const rightColX = {
       date: 347,        // DATE column start
-      hours: 405,       // HOURS column start
-      description: 462  // DESCRIPTION column start
+      hours: 400,       // HOURS column start (moved left from 405)
+      description: 455  // DESCRIPTION column start (moved left from 462)
     };
 
     // Starting Y position for first table row
-    let currentY = height - 330;
+    let currentY = height - 335;  // Moved down from 330
     const rowHeight = 18.5;
 
     // Format date helper
@@ -150,7 +150,7 @@ export class ServiceHoursPDFGenerator {
     if (data.approverSignature) {
       firstPage.drawText(data.approverSignature, {
         x: 215,
-        y: height - 620,
+        y: height - 605,  // Moved up from 620
         size: 11,
         font: font,
         color: rgb(0, 0, 0),
@@ -160,7 +160,7 @@ export class ServiceHoursPDFGenerator {
     // Print Name (after "Print Name:")
     firstPage.drawText(data.approverName, {
       x: 215,
-      y: height - 645,
+      y: height - 630,  // Moved up from 645
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -169,7 +169,7 @@ export class ServiceHoursPDFGenerator {
     // Date (to the right of Print Name)
     firstPage.drawText(currentDate, {
       x: 480,
-      y: height - 645,
+      y: height - 630,  // Moved up from 645
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -177,8 +177,8 @@ export class ServiceHoursPDFGenerator {
 
     // Contact # (after "Contact #:")
     firstPage.drawText(data.approverContact, {
-      x: 270,
-      y: height - 670,
+      x: 250,           // Moved left from 270
+      y: height - 655,  // Moved up from 670
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
