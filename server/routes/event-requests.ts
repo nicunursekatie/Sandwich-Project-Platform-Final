@@ -3352,8 +3352,8 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           const metadata = assignedUser.metadata as any || {};
           const smsConsent = metadata.smsConsent || {};
           
-          // Only send SMS if user has confirmed SMS opt-in
-          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+          // Only send SMS if user has confirmed SMS opt-in for the 'events' campaign
+          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && smsConsent.campaignType === 'events') {
             const { sendTspContactAssignmentSMS } = await import('../sms-service');
             const smsResult = await sendTspContactAssignmentSMS(
               smsConsent.phoneNumber,
