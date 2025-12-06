@@ -58,6 +58,8 @@ export default function OrganizationsMerge() {
   const [merging, setMerging] = useState(false);
   const [viewMode, setViewMode] = useState<'duplicates' | 'history'>('duplicates');
   const [mergeHistory, setMergeHistory] = useState<any[]>([]);
+  const [mergeSourceName, setMergeSourceName] = useState('');
+  const [mergeTargetName, setMergeTargetName] = useState('');
   const { toast } = useToast();
 
   // Fetch duplicates on load
@@ -111,6 +113,8 @@ export default function OrganizationsMerge() {
   const openMergeDialog = async (pair: DuplicatePair, sourceName: string, targetName: string) => {
     setSelectedPair(pair);
     setMergeReason('');
+    setMergeSourceName(sourceName);
+    setMergeTargetName(targetName);
 
     // Fetch preview
     try {
@@ -135,22 +139,18 @@ export default function OrganizationsMerge() {
   };
 
   const executeMerge = async () => {
-    if (!selectedPair || !mergePreview) return;
-
-    // Determine source and target
-    // Use the org with more records as target (canonical name)
-    const org1Total = selectedPair.org1.eventCount + selectedPair.org1.collectionCount;
-    const org2Total = selectedPair.org2.eventCount + selectedPair.org2.collectionCount;
-
-    const sourceName = org1Total > org2Total ? selectedPair.org2.name : selectedPair.org1.name;
-    const targetName = org1Total > org2Total ? selectedPair.org1.name : selectedPair.org2.name;
+    if (!selectedPair || !mergePreview || !mergeSourceName || !mergeTargetName) return;
 
     setMerging(true);
     try {
       const response = await fetch('/api/organizations-admin/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceName, targetName, reason: mergeReason }),
+        body: JSON.stringify({
+          sourceName: mergeSourceName,
+          targetName: mergeTargetName,
+          reason: mergeReason
+        }),
       });
 
       const result = await response.json();
@@ -158,7 +158,7 @@ export default function OrganizationsMerge() {
       if (result.success) {
         toast({
           title: 'Merge successful!',
-          description: `Merged "${sourceName}" into "${targetName}". Affected ${result.affectedEventRequests} events and ${result.affectedCollections} collections.`,
+          description: `Merged "${mergeSourceName}" into "${mergeTargetName}". Affected ${result.affectedEventRequests} events and ${result.affectedCollections} collections.`,
         });
 
         // Remove merged pair from list
@@ -166,6 +166,8 @@ export default function OrganizationsMerge() {
         setShowMergeDialog(false);
         setSelectedPair(null);
         setMergePreview(null);
+        setMergeSourceName('');
+        setMergeTargetName('');
       } else {
         throw new Error(result.error || 'Merge failed');
       }
@@ -437,19 +439,9 @@ export default function OrganizationsMerge() {
                 <AlertDescription className="space-y-2">
                   <div className="mt-2">
                     All references to{' '}
-                    <strong className="text-orange-700">
-                      {selectedPair.org1.eventCount + selectedPair.org1.collectionCount >
-                      selectedPair.org2.eventCount + selectedPair.org2.collectionCount
-                        ? selectedPair.org2.name
-                        : selectedPair.org1.name}
-                    </strong>{' '}
+                    <strong className="text-orange-700">{mergeSourceName}</strong>{' '}
                     will be replaced with{' '}
-                    <strong className="text-green-700">
-                      {selectedPair.org1.eventCount + selectedPair.org1.collectionCount >
-                      selectedPair.org2.eventCount + selectedPair.org2.collectionCount
-                        ? selectedPair.org1.name
-                        : selectedPair.org2.name}
-                    </strong>
+                    <strong className="text-green-700">{mergeTargetName}</strong>
                   </div>
                   <div>
                     • {mergePreview.affectedEventRequests} event requests will be updated
