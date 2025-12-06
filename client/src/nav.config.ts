@@ -36,6 +36,7 @@ import {
   Receipt,
   Sparkles,
   Gauge,
+  GitMerge,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -485,6 +486,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'SmartSearch AI',
     icon: Sparkles,
     href: 'smart-search-admin',
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    group: 'admin',
+  },
+  {
+    id: 'organizations-merge',
+    label: 'Merge Organizations',
+    icon: GitMerge,
+    href: 'organizations-merge',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },
