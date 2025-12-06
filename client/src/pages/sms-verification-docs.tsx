@@ -20,6 +20,41 @@ export default function SMSVerificationDocs() {
           </p>
         </div>
 
+        {/* PUBLIC OPT-IN PAGE LINK - For Twilio reviewers */}
+        <div className="border-4 border-green-500 rounded-lg overflow-hidden bg-green-50">
+          <div className="bg-green-600 px-6 py-4">
+            <h2 className="flex items-center gap-2 text-white text-xl font-semibold">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Live Opt-In Page (Public URL)
+            </h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-green-800 font-medium">
+              View the actual SMS opt-in page with consent checkbox and TCPA-compliant language:
+            </p>
+            <a 
+              href="/sms-signup" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              View Live SMS Opt-In Page →
+            </a>
+            <p className="text-sm text-green-700 mt-2">
+              <strong>URL:</strong> <code className="bg-green-100 px-2 py-1 rounded">/sms-signup</code>
+            </p>
+            <p className="text-sm text-green-700">
+              This page displays the complete opt-in form with checkbox consent visible to all visitors.
+              Users must authenticate only when submitting the form.
+            </p>
+          </div>
+        </div>
+
         {/* Consent Process Overview */}
         <div className="border-2 border-teal-600 rounded-lg overflow-hidden bg-white">
           <div className="bg-teal-50 px-6 py-4">
@@ -75,9 +110,12 @@ export default function SMSVerificationDocs() {
                   </p>
                   <ul className="text-sm text-gray-700 space-y-1 ml-4">
                     <li>• Messages will only be sent for sandwich collection reminders</li>
-                    <li>• I can unsubscribe at any time</li>
-                    <li>• Standard message and data rates may apply</li>
+                    <li>• I can unsubscribe at any time by replying <strong>STOP</strong></li>
+                    <li>• Reply <strong>HELP</strong> for assistance</li>
+                    <li>• Message frequency varies (up to 4 msgs/month)</li>
+                    <li>• Message and data rates may apply</li>
                     <li>• My phone number will not be shared with third parties</li>
+                    <li>• Carriers are not liable for delayed or undelivered messages</li>
                   </ul>
                 </div>
               </div>
