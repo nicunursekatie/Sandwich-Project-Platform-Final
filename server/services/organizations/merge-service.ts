@@ -262,23 +262,19 @@ export async function previewMerge(
     let sampleEvents: any[] = [];
 
     try {
-      const eventCountResult = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(eventRequests)
-        .where(eq(eventRequests.organizationName, sourceName));
+      // Use raw SQL for counts to avoid schema issues
+      const eventCountResult = await db.execute(
+        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
+      );
 
-      eventCount = eventCountResult[0]?.count || 0;
+      eventCount = (eventCountResult.rows[0] as any)?.count || 0;
 
-      // Get sample events
-      sampleEvents = await db
-        .select({
-          id: eventRequests.id,
-          eventDate: eventRequests.eventDate,
-          departmentName: eventRequests.departmentName,
-        })
-        .from(eventRequests)
-        .where(eq(eventRequests.organizationName, sourceName))
-        .limit(5);
+      // Get sample events with raw SQL
+      const sampleEventsResult = await db.execute(
+        sql`SELECT id, event_date, department_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
+      );
+
+      sampleEvents = sampleEventsResult.rows;
     } catch (error) {
       logger.error('Error querying event requests', { sourceName, error });
       // Continue with collections even if events fail
@@ -289,34 +285,19 @@ export async function previewMerge(
     let sampleCollections: any[] = [];
 
     try {
-      const collectionCountResult = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(sandwichCollections)
-        .where(
-          or(
-            eq(sandwichCollections.group1Name, sourceName),
-            eq(sandwichCollections.group2Name, sourceName)
-          )
-        );
+      // Use raw SQL for counts to avoid schema issues
+      const collectionCountResult = await db.execute(
+        sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName}`
+      );
 
-      collectionCount = collectionCountResult[0]?.count || 0;
+      collectionCount = (collectionCountResult.rows[0] as any)?.count || 0;
 
-      // Get sample collections
-      sampleCollections = await db
-        .select({
-          id: sandwichCollections.id,
-          dateCollected: sandwichCollections.dateCollected,
-          group1Name: sandwichCollections.group1Name,
-          group2Name: sandwichCollections.group2Name,
-        })
-        .from(sandwichCollections)
-        .where(
-          or(
-            eq(sandwichCollections.group1Name, sourceName),
-            eq(sandwichCollections.group2Name, sourceName)
-          )
-        )
-        .limit(5);
+      // Get sample collections with raw SQL
+      const sampleCollectionsResult = await db.execute(
+        sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName} LIMIT 5`
+      );
+
+      sampleCollections = sampleCollectionsResult.rows;
     } catch (error) {
       logger.error('Error querying collections', { sourceName, error });
       // Continue with what we have

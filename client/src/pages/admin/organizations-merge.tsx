@@ -155,6 +155,11 @@ export default function OrganizationsMerge() {
 
       const result = await response.json();
 
+      if (!response.ok) {
+        console.error('Merge request failed:', result);
+        throw new Error(result.error || result.message || 'Merge failed');
+      }
+
       if (result.success) {
         toast({
           title: 'Merge successful!',
@@ -169,9 +174,11 @@ export default function OrganizationsMerge() {
         setMergeSourceName('');
         setMergeTargetName('');
       } else {
+        console.error('Merge result not successful:', result);
         throw new Error(result.error || 'Merge failed');
       }
     } catch (error) {
+      console.error('Merge error:', error);
       toast({
         title: 'Merge failed',
         description: error instanceof Error ? error.message : 'Unknown error',
