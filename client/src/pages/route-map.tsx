@@ -40,13 +40,35 @@ const highlightedIcon = new L.Icon({
 // Map controller component to handle zoom/pan
 function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
   const map = useMap();
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check if map is fully initialized by verifying it has the internal _leaflet_events property
+    // This prevents errors when the map is being unmounted or not yet ready
+    if (!isMountedRef.current) return;
+    
     if (center && map) {
+      // Check if map is fully initialized
+      const mapInstance = map as any;
+      if (!mapInstance._leaflet_events || !mapInstance._container) {
+        // Map not ready yet, skip this update
+        return;
+      }
+
       try {
         map.setView(center, zoom, { animate: true, duration: 0.5 });
       } catch (error) {
-        console.warn('Map interaction error:', error);
+        // Silently ignore errors if map is being destroyed
+        if (isMountedRef.current) {
+          console.warn('Map interaction error:', error);
+        }
       }
     }
   }, [center, zoom, map]);

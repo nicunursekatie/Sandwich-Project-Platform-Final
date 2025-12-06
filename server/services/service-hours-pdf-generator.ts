@@ -63,19 +63,19 @@ export class ServiceHoursPDFGenerator {
     // Left column X positions
     const leftColX = {
       date: 132,        // DATE column start
-      hours: 185,       // HOURS column start (moved left from 190)
-      description: 240  // DESCRIPTION column start (moved left from 247)
+      hours: 175,       // HOURS column start (moved left from 185)
+      description: 225  // DESCRIPTION column start (moved left from 240)
     };
 
     // Right column X positions
     const rightColX = {
       date: 347,        // DATE column start
-      hours: 400,       // HOURS column start (moved left from 405)
-      description: 455  // DESCRIPTION column start (moved left from 462)
+      hours: 390,       // HOURS column start (moved left from 400)
+      description: 440  // DESCRIPTION column start (moved left from 455)
     };
 
     // Starting Y position for first table row
-    let currentY = height - 335;  // Moved down from 330
+    let currentY = height - 345;  // Moved down from 335
     const rowHeight = 18.5;
 
     // Format date helper
@@ -149,8 +149,8 @@ export class ServiceHoursPDFGenerator {
     // Signature line (after "Signature:")
     if (data.approverSignature) {
       firstPage.drawText(data.approverSignature, {
-        x: 215,
-        y: height - 605,  // Moved up from 620
+        x: 200,           // Moved left from 215
+        y: height - 590,  // Moved up from 605
         size: 11,
         font: font,
         color: rgb(0, 0, 0),
@@ -159,8 +159,8 @@ export class ServiceHoursPDFGenerator {
 
     // Print Name (after "Print Name:")
     firstPage.drawText(data.approverName, {
-      x: 215,
-      y: height - 630,  // Moved up from 645
+      x: 200,           // Moved left from 215
+      y: height - 615,  // Moved up from 630
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -169,7 +169,7 @@ export class ServiceHoursPDFGenerator {
     // Date (to the right of Print Name)
     firstPage.drawText(currentDate, {
       x: 480,
-      y: height - 630,  // Moved up from 645
+      y: height - 615,  // Moved up from 630
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -177,8 +177,8 @@ export class ServiceHoursPDFGenerator {
 
     // Contact # (after "Contact #:")
     firstPage.drawText(data.approverContact, {
-      x: 250,           // Moved left from 270
-      y: height - 655,  // Moved up from 670
+      x: 235,           // Moved left from 250
+      y: height - 640,  // Moved up from 655
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
