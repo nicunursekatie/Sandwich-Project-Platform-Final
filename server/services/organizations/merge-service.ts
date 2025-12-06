@@ -255,55 +255,83 @@ export async function previewMerge(
   sampleCollections: any[];
 }> {
   try {
-    // Count affected event requests
-    const eventCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(eventRequests)
-      .where(eq(eventRequests.organizationName, sourceName));
+    logger.info('Previewing merge', { sourceName, targetName });
 
-    // Get sample events
-    const sampleEvents = await db
-      .select({
-        id: eventRequests.id,
-        eventDate: eventRequests.eventDate,
-        departmentName: eventRequests.departmentName,
-      })
-      .from(eventRequests)
-      .where(eq(eventRequests.organizationName, sourceName))
-      .limit(5);
+    // Count affected event requests
+    let eventCount = 0;
+    let sampleEvents: any[] = [];
+
+    try {
+      const eventCountResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(eventRequests)
+        .where(eq(eventRequests.organizationName, sourceName));
+
+      eventCount = eventCountResult[0]?.count || 0;
+
+      // Get sample events
+      sampleEvents = await db
+        .select({
+          id: eventRequests.id,
+          eventDate: eventRequests.eventDate,
+          departmentName: eventRequests.departmentName,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.organizationName, sourceName))
+        .limit(5);
+    } catch (error) {
+      logger.error('Error querying event requests', { sourceName, error });
+      // Continue with collections even if events fail
+    }
 
     // Count affected collections
-    const collectionCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(sandwichCollections)
-      .where(
-        or(
-          eq(sandwichCollections.group1Name, sourceName),
-          eq(sandwichCollections.group2Name, sourceName),
-          sql`${sandwichCollections.groupCollections}::text LIKE ${`%${sourceName}%`}`
-        )
-      );
+    let collectionCount = 0;
+    let sampleCollections: any[] = [];
 
-    // Get sample collections
-    const sampleCollections = await db
-      .select({
-        id: sandwichCollections.id,
-        dateCollected: sandwichCollections.dateCollected,
-        group1Name: sandwichCollections.group1Name,
-        group2Name: sandwichCollections.group2Name,
-      })
-      .from(sandwichCollections)
-      .where(
-        or(
-          eq(sandwichCollections.group1Name, sourceName),
-          eq(sandwichCollections.group2Name, sourceName)
+    try {
+      const collectionCountResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(sandwichCollections)
+        .where(
+          or(
+            eq(sandwichCollections.group1Name, sourceName),
+            eq(sandwichCollections.group2Name, sourceName)
+          )
+        );
+
+      collectionCount = collectionCountResult[0]?.count || 0;
+
+      // Get sample collections
+      sampleCollections = await db
+        .select({
+          id: sandwichCollections.id,
+          dateCollected: sandwichCollections.dateCollected,
+          group1Name: sandwichCollections.group1Name,
+          group2Name: sandwichCollections.group2Name,
+        })
+        .from(sandwichCollections)
+        .where(
+          or(
+            eq(sandwichCollections.group1Name, sourceName),
+            eq(sandwichCollections.group2Name, sourceName)
+          )
         )
-      )
-      .limit(5);
+        .limit(5);
+    } catch (error) {
+      logger.error('Error querying collections', { sourceName, error });
+      // Continue with what we have
+    }
+
+    logger.info('Preview complete', {
+      sourceName,
+      targetName,
+      eventCount,
+      collectionCount
+    });
 
     return {
-      affectedEventRequests: eventCount[0]?.count || 0,
-      affectedCollections: collectionCount[0]?.count || 0,
+      affectedEventRequests: eventCount,
+      affectedCollections: collectionCount,
       sampleEvents,
       sampleCollections,
     };
