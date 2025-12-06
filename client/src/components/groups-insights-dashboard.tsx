@@ -222,7 +222,7 @@ const getPriorityBadge = (priority: string) => {
   );
 };
 
-const getTrendIcon = (trend: string, percentChange: number) => {
+const getTrendIcon = (trend: string) => {
   if (trend === 'increasing') {
     return <ArrowUpRight className="h-4 w-4 text-green-500" />;
   }
@@ -240,6 +240,19 @@ const formatDaysAgo = (days: number | null): string => {
   if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
   if (days < 365) return `${Math.floor(days / 30)} months ago`;
   return `${Math.floor(days / 365)} years ago`;
+};
+
+const getDaysSinceLastEvent = (metrics: EngagementMetrics): number | null => {
+  if (metrics.daysSinceLastEvent !== null && metrics.daysSinceLastEvent !== undefined) {
+    return metrics.daysSinceLastEvent;
+  }
+  if (metrics.lastEventDate) {
+    const last = new Date(metrics.lastEventDate);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? diff : 0;
+  }
+  return null;
 };
 
 const getCategoryLabel = (category: string): string => {
@@ -320,7 +333,7 @@ function OrganizationDetailDialog({
                   {Math.round(organization.scores.overall)}
                 </div>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  {getTrendIcon(organization.engagementTrend, organization.trendPercentChange)}
+                  {getTrendIcon(organization.engagementTrend)}
                   <span>{organization.engagementTrend}</span>
                   {organization.trendPercentChange !== 0 && (
                     <span>({organization.trendPercentChange > 0 ? '+' : ''}{organization.trendPercentChange}%)</span>
@@ -361,7 +374,7 @@ function OrganizationDetailDialog({
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Last Event</div>
-                  <div className="text-xl font-semibold">{formatDaysAgo(organization.metrics.daysSinceLastEvent)}</div>
+                  <div className="text-xl font-semibold">{formatDaysAgo(getDaysSinceLastEvent(organization.metrics))}</div>
                 </div>
               </div>
             </CardContent>
@@ -477,7 +490,7 @@ function OrganizationRow({
       <TableCell>
         <div className="flex items-center gap-2">
           <span className="font-semibold">{Math.round(organization.scores.overall)}</span>
-          {getTrendIcon(organization.engagementTrend, organization.trendPercentChange)}
+          {getTrendIcon(organization.engagementTrend)}
         </div>
       </TableCell>
       <TableCell>
@@ -490,7 +503,7 @@ function OrganizationRow({
         {organization.metrics.totalSandwiches.toLocaleString()}
       </TableCell>
       <TableCell className="text-right">
-        {formatDaysAgo(organization.metrics.daysSinceLastEvent)}
+        {formatDaysAgo(getDaysSinceLastEvent(organization.metrics))}
       </TableCell>
       <TableCell>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />

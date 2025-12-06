@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { eq } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
 import type { AuthenticatedRequest } from '../types/express';
@@ -92,7 +92,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   const { storage, isAuthenticated } = deps;
 
   // Get all drivers
-  router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const drivers = await storage.getAllDrivers();
       res.json(drivers);
@@ -103,7 +103,7 @@ export function createDriversRouter(deps: RouterDependencies) {
   });
 
   // Unified driver candidates: drivers + host contacts + volunteers flagged as drivers
-  router.get('/driver-candidates', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/driver-candidates', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const [allDrivers, hostsWithContacts, volunteers] = await Promise.all([
         storage.getAllDrivers(),
