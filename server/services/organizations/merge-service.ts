@@ -77,123 +77,95 @@ export async function mergeOrganizations(
       reason,
     });
 
-    // Execute all updates in a transaction
-    const result = await db.transaction(async (tx) => {
-      // 1. Update event_requests
-      const eventUpdateResult = await tx
-        .update(eventRequests)
-        .set({ organizationName: targetName })
-        .where(eq(eventRequests.organizationName, sourceName));
+    // Execute all updates sequentially using raw SQL (no transaction support in HTTP driver)
 
-      // Count affected event requests
-      const affectedEvents = await tx
-        .select({ count: sql<number>`count(*)::int` })
-        .from(eventRequests)
-        .where(eq(eventRequests.organizationName, targetName));
+    // 1. Update event_requests
+    await db.execute(
+      sql`UPDATE event_requests SET organization_name = ${targetName} WHERE organization_name = ${sourceName}`
+    );
 
-      const eventCount = affectedEvents[0]?.count || 0;
+    // Count affected event requests
+    const eventCountResult = await db.execute(
+      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${targetName}`
+    );
+    const eventCount = (eventCountResult.rows[0] as any)?.count || 0;
 
-      // 2. Update sandwich_collections.group1Name
-      await tx
-        .update(sandwichCollections)
-        .set({ group1Name: targetName })
-        .where(eq(sandwichCollections.group1Name, sourceName));
+    // 2. Update sandwich_collections.group1Name
+    await db.execute(
+      sql`UPDATE sandwich_collections SET group1_name = ${targetName} WHERE group1_name = ${sourceName}`
+    );
 
-      // 3. Update sandwich_collections.group2Name
-      await tx
-        .update(sandwichCollections)
-        .set({ group2Name: targetName })
-        .where(eq(sandwichCollections.group2Name, sourceName));
+    // 3. Update sandwich_collections.group2Name
+    await db.execute(
+      sql`UPDATE sandwich_collections SET group2_name = ${targetName} WHERE group2_name = ${sourceName}`
+    );
 
-      // 4. Update groupCollections JSON arrays
-      // This requires a more complex SQL query to update nested JSON
-      await tx.execute(sql`
-        UPDATE sandwich_collections
-        SET group_collections = (
-          SELECT jsonb_agg(
-            CASE
-              WHEN elem->>'groupName' = ${sourceName}
-              THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName}))
-              ELSE elem
-            END
-          )
-          FROM jsonb_array_elements(group_collections) AS elem
+    // 4. Update groupCollections JSON arrays
+    await db.execute(sql`
+      UPDATE sandwich_collections
+      SET group_collections = (
+        SELECT jsonb_agg(
+          CASE
+            WHEN elem->>'groupName' = ${sourceName}
+            THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName}))
+            ELSE elem
+          END
         )
-        WHERE group_collections::text LIKE ${`%${sourceName}%`}
-      `);
+        FROM jsonb_array_elements(group_collections) AS elem
+      )
+      WHERE group_collections::text LIKE ${`%${sourceName}%`}
+    `);
 
-      // Count total affected collections
-      const affectedCollections = await tx
-        .select({ count: sql<number>`count(*)::int` })
-        .from(sandwichCollections)
-        .where(
-          or(
-            eq(sandwichCollections.group1Name, targetName),
-            eq(sandwichCollections.group2Name, targetName),
-            sql`${sandwichCollections.groupCollections}::text LIKE ${`%${targetName}%`}`
-          )
+    // Count total affected collections
+    const collectionCountResult = await db.execute(
+      sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${targetName} OR group2_name = ${targetName}`
+    );
+    const collectionCount = (collectionCountResult.rows[0] as any)?.count || 0;
+
+    // 5. Update or create organization record with alternate name
+    const existingOrgResult = await db.execute(
+      sql`SELECT id, organization_name, alternate_names FROM organizations WHERE organization_name = ${targetName} LIMIT 1`
+    );
+
+    if (existingOrgResult.rows.length > 0) {
+      // Update existing organization to add alternate name
+      const org = existingOrgResult.rows[0] as any;
+      const currentAltNames = org.alternate_names || [];
+
+      // Add sourceName to alternateNames if not already there
+      if (!currentAltNames.includes(sourceName)) {
+        const newAltNames = [...currentAltNames, sourceName];
+        await db.execute(
+          sql`UPDATE organizations SET alternate_names = ${JSON.stringify(newAltNames)}::jsonb WHERE id = ${org.id}`
         );
-
-      const collectionCount = affectedCollections[0]?.count || 0;
-
-      // 5. Update or create organization record with alternate name
-      // First, check if target organization exists
-      const existingOrg = await tx
-        .select()
-        .from(organizations)
-        .where(eq(organizations.organizationName, targetName))
-        .limit(1);
-
-      if (existingOrg.length > 0) {
-        // Update existing organization to add alternate name
-        const org = existingOrg[0];
-        const currentAltNames = org.alternateNames || [];
-
-        // Add sourceName to alternateNames if not already there
-        if (!currentAltNames.includes(sourceName)) {
-          await tx
-            .update(organizations)
-            .set({
-              alternateNames: [...currentAltNames, sourceName],
-            })
-            .where(eq(organizations.id, org.id));
-        }
-      } else {
-        // Create new organization record
-        await tx.insert(organizations).values({
-          organizationName: targetName,
-          alternateNames: [sourceName],
-        });
       }
+    } else {
+      // Create new organization record
+      await db.execute(
+        sql`INSERT INTO organizations (organization_name, alternate_names) VALUES (${targetName}, ${JSON.stringify([sourceName])}::jsonb)`
+      );
+    }
 
-      // 6. Create audit log entry
-      // Note: We'll store this in a simple format for now
-      // In a production system, you might want a dedicated audit_logs table
-      const auditEntry = {
-        action: 'organization_merge',
-        timestamp: new Date().toISOString(),
-        performedBy: mergedBy,
-        sourceName,
-        targetName,
-        reason: reason || '',
-        affectedEventRequests: eventCount,
-        affectedCollections: collectionCount,
-      };
+    // 6. Create audit log entry
+    const auditEntry = {
+      action: 'organization_merge',
+      timestamp: new Date().toISOString(),
+      performedBy: mergedBy,
+      sourceName,
+      targetName,
+      reason: reason || '',
+      affectedEventRequests: eventCount,
+      affectedCollections: collectionCount,
+    };
 
-      logger.info('Organization merge completed successfully', auditEntry);
-
-      return {
-        affectedEventRequests: eventCount,
-        affectedCollections: collectionCount,
-      };
-    });
+    logger.info('Organization merge completed successfully', auditEntry);
 
     return {
       success: true,
       targetName,
       sourceName,
-      affectedEventRequests: result.affectedEventRequests,
-      affectedCollections: result.affectedCollections,
+      affectedEventRequests: eventCount,
+      affectedCollections: collectionCount,
     };
   } catch (error) {
     logger.error('Error merging organizations', {
