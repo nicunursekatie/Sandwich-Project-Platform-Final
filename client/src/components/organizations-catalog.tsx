@@ -252,6 +252,7 @@ export default function GroupCatalog({
       newDepartment?: string;
       partnerOrganizations?: Array<{ name: string; role: string }>;
       eventId?: number; // If provided, only update this specific event
+      eventIds?: number[]; // If provided, only update these specific events (for aggregated cards)
     }) => {
       return apiRequest('POST', '/api/groups-catalog/rename', data);
     },
@@ -313,6 +314,10 @@ export default function GroupCatalog({
       newDepartment: editDeptName.trim() || undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
       eventId: editNameOrganization.linkedEventId, // Only update this specific event if available
+      // If no single linkedEventId, pass all eventIds for aggregated cards
+      eventIds: !editNameOrganization.linkedEventId && editNameOrganization.eventIds?.length
+        ? editNameOrganization.eventIds
+        : undefined,
     });
   };
 

@@ -1018,7 +1018,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   // If eventId is provided, only update that specific event (for single-card edits)
   router.post('/rename', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations, eventId } = req.body;
+      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations, eventId, eventIds } = req.body;
 
       // Validation
       if (!oldName || typeof oldName !== 'string') {
@@ -1031,6 +1031,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const trimmedOldDept = oldDepartment?.trim() || null;
       const trimmedNewDept = newDepartment?.trim() || null;
       const specificEventId = eventId && typeof eventId === 'number' ? eventId : null;
+      // Support multiple event IDs for aggregated cards
+      const specificEventIds = Array.isArray(eventIds) && eventIds.length > 0
+        ? eventIds.filter((id: any) => typeof id === 'number')
+        : null;
 
       // Process partner organizations - filter and validate
       const validPartnerOrgs = Array.isArray(partnerOrganizations)
@@ -1055,6 +1059,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         newDepartment: trimmedNewDept,
         partnerOrganizations: validPartnerOrgs,
         eventId: specificEventId,
+        eventIds: specificEventIds,
         userId: req.user?.id,
       });
 
@@ -1067,6 +1072,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // 1. Update event_requests
       // If specificEventId is provided, only update that one event (single-card edit mode)
+      // If specificEventIds array is provided, only update those events (aggregated card mode)
       // Otherwise, update all matching events (bulk rename mode)
       if (specificEventId) {
         // Single event update mode - much faster, only fetch and update one record
@@ -1082,13 +1088,37 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             updates.partnerOrganizations = validPartnerOrgs;
           }
 
-          // Update department if provided
-          if (trimmedNewDept !== null) {
-            updates.department = trimmedNewDept;
+          // Update department if provided (allow clearing with empty string)
+          if (trimmedNewDept !== null || newDepartment === '') {
+            updates.department = trimmedNewDept || null;
           }
 
           await storage.updateEventRequest(specificEventId, updates);
           updatedEventRequests = 1;
+        }
+      } else if (specificEventIds && specificEventIds.length > 0) {
+        // Aggregated card update mode - update specific events by ID
+        for (const eventIdToUpdate of specificEventIds) {
+          const request = await storage.getEventRequest(eventIdToUpdate);
+          if (request && request.organizationName === trimmedOldName) {
+            const updates: any = {};
+
+            // Update organization name
+            updates.organizationName = effectiveNewName;
+
+            // Add partner organizations if provided
+            if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+              updates.partnerOrganizations = validPartnerOrgs;
+            }
+
+            // Update department if provided (allow clearing with empty string)
+            if (trimmedNewDept !== null || newDepartment === '') {
+              updates.department = trimmedNewDept || null;
+            }
+
+            await storage.updateEventRequest(eventIdToUpdate, updates);
+            updatedEventRequests++;
+          }
         }
       } else {
         // Bulk update mode - iterate through all events
@@ -1147,8 +1177,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       }
 
       // 2. Update sandwich_collections (group1Name, group2Name, and groupCollections JSON)
-      // Skip collection updates if we're in single-event mode (only editing one event's department)
-      if (!specificEventId) {
+      // Skip collection updates if we're in single-event or aggregated-card mode (only editing specific events)
+      if (!specificEventId && !specificEventIds) {
         const allCollections = await storage.getAllSandwichCollections();
         for (const collection of allCollections) {
           let shouldUpdate = false;
