@@ -124,19 +124,20 @@ export async function mergeOrganizations(
     });
 
     // Count records BEFORE updating (to get accurate affected count)
-    // Use case-insensitive matching (ILIKE) to handle different capitalizations
+    // Use case-insensitive matching with TRIM to handle different capitalizations and whitespace
+    const trimmedSource = sourceName.trim();
     const eventCountResult = await db.execute(
-      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName})`
+      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource}))`
     ) as any[];
     const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
-    // Use case-insensitive matching for all comparisons
+    // Use case-insensitive matching with TRIM for all comparisons
     const collectionCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
-          WHERE LOWER(group1_name) = LOWER(${sourceName})
-             OR LOWER(group2_name) = LOWER(${sourceName})
-             OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})`
+          WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
+             OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
+             OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})`
     ) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -147,40 +148,41 @@ export async function mergeOrganizations(
       collectionCount
     });
 
-    // 1. Update event_requests (case-insensitive matching)
+    // 1. Update event_requests (case-insensitive matching with TRIM)
     await db.execute(
-      sql`UPDATE event_requests SET organization_name = ${targetName} WHERE LOWER(organization_name) = LOWER(${sourceName})`
+      sql`UPDATE event_requests SET organization_name = ${targetName.trim()} WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource}))`
     );
 
-    // 2. Update sandwich_collections.group1Name (case-insensitive matching)
+    // 2. Update sandwich_collections.group1Name (case-insensitive matching with TRIM)
     await db.execute(
-      sql`UPDATE sandwich_collections SET group1_name = ${targetName} WHERE LOWER(group1_name) = LOWER(${sourceName})`
+      sql`UPDATE sandwich_collections SET group1_name = ${targetName.trim()} WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))`
     );
 
-    // 3. Update sandwich_collections.group2Name (case-insensitive matching)
+    // 3. Update sandwich_collections.group2Name (case-insensitive matching with TRIM)
     await db.execute(
-      sql`UPDATE sandwich_collections SET group2_name = ${targetName} WHERE LOWER(group2_name) = LOWER(${sourceName})`
+      sql`UPDATE sandwich_collections SET group2_name = ${targetName.trim()} WHERE LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))`
     );
 
-    // 4. Update groupCollections JSON arrays (case-insensitive matching)
+    // 4. Update groupCollections JSON arrays (case-insensitive matching with TRIM)
     await db.execute(sql`
       UPDATE sandwich_collections
       SET group_collections = (
         SELECT jsonb_agg(
           CASE
-            WHEN LOWER(elem->>'groupName') = LOWER(${sourceName})
-            THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName}))
+            WHEN LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
+            THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName.trim()}))
             ELSE elem
           END
         )
         FROM jsonb_array_elements(group_collections) AS elem
       )
-      WHERE LOWER(group_collections::text) LIKE LOWER(${`%${sourceName}%`})
+      WHERE LOWER(group_collections::text) LIKE LOWER(${`%${trimmedSource}%`})
     `);
 
     // 5. Update or create organization record with alternate name
+    const trimmedTarget = targetName.trim();
     const existingOrgResult = await db.execute(
-      sql`SELECT id, organization_name, alternate_names FROM organizations WHERE organization_name = ${targetName} LIMIT 1`
+      sql`SELECT id, organization_name, alternate_names FROM organizations WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedTarget})) LIMIT 1`
     ) as any[];
 
     if (existingOrgResult && existingOrgResult.length > 0) {
@@ -289,18 +291,21 @@ export async function previewMerge(
     let eventCount = 0;
     let sampleEvents: any[] = [];
 
+    // Trim whitespace from source name for consistent matching
+    const trimmedSource = sourceName.trim();
+    
     try {
       // Use raw SQL for counts to avoid schema issues
-      // Use case-insensitive matching (LOWER) to handle different capitalizations
+      // Use case-insensitive matching with TRIM to handle different capitalizations and whitespace
       const eventCountResult = await db.execute(
-        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName})`
+        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource}))`
       ) as any[];
 
       eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
-      // Get sample events with raw SQL (case-insensitive)
+      // Get sample events with raw SQL (case-insensitive with TRIM)
       const sampleEventsResult = await db.execute(
-        sql`SELECT id, event_date, department_name FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName}) LIMIT 5`
+        sql`SELECT id, event_date, department_name FROM event_requests WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource})) LIMIT 5`
       ) as any[];
 
       sampleEvents = sampleEventsResult || [];
@@ -315,22 +320,22 @@ export async function previewMerge(
 
     try {
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
-      // Use case-insensitive matching for all comparisons
+      // Use case-insensitive matching with TRIM for all comparisons
       const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
-            WHERE LOWER(group1_name) = LOWER(${sourceName})
-               OR LOWER(group2_name) = LOWER(${sourceName})
-               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})`
+            WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
+               OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
+               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})`
       ) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
-      // Get sample collections with raw SQL (case-insensitive)
+      // Get sample collections with raw SQL (case-insensitive with TRIM)
       const sampleCollectionsResult = await db.execute(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
-            WHERE LOWER(group1_name) = LOWER(${sourceName})
-               OR LOWER(group2_name) = LOWER(${sourceName})
-               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})
+            WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
+               OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
+               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})
             LIMIT 5`
       ) as any[];
 
