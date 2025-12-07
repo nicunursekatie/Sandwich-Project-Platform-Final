@@ -82,49 +82,57 @@ export async function mergeOrganizations(
     });
 
     // Execute all updates sequentially using raw SQL (no transaction support in HTTP driver)
+    // Note: db.execute() returns { rows: [...], rowCount: n }, NOT an array directly
 
     // DEBUG: Check what organization names actually exist in database
-    const similarOrgsResult = (await db.execute(
+    const similarOrgsResultQuery = await db.execute(
       sql`SELECT DISTINCT organization_name FROM event_requests WHERE LOWER(organization_name) LIKE LOWER(${`%${sourceName.substring(0, Math.min(5, sourceName.length))}%`}) LIMIT 20`
-    )) as any[];
+    );
+    const similarOrgsResult = (similarOrgsResultQuery as any).rows || [];
     logger.info('DEBUG: Similar organization names in event_requests', {
       searchTerm: sourceName,
       similar: similarOrgsResult,
     });
 
-    const exactMatchResult = (await db.execute(
+    const exactMatchResultQuery = await db.execute(
       sql`SELECT organization_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
-    )) as any[];
+    );
+    const exactMatchResult = (exactMatchResultQuery as any).rows || [];
     logger.info('DEBUG: Exact match check in event_requests', {
       sourceName,
       exactMatches: exactMatchResult,
     });
 
     // Also check collections
-    const collectionsGroup1Result = (await db.execute(
+    const collectionsGroup1ResultQuery = await db.execute(
       sql`SELECT DISTINCT group1_name FROM sandwich_collections WHERE group1_name = ${sourceName} LIMIT 5`
-    )) as any[];
-    const collectionsGroup2Result = (await db.execute(
+    );
+    const collectionsGroup1Result = (collectionsGroup1ResultQuery as any).rows || [];
+    
+    const collectionsGroup2ResultQuery = await db.execute(
       sql`SELECT DISTINCT group2_name FROM sandwich_collections WHERE group2_name = ${sourceName} LIMIT 5`
-    )) as any[];
+    );
+    const collectionsGroup2Result = (collectionsGroup2ResultQuery as any).rows || [];
 
     // Check if it exists in groupCollections JSON array using proper JSONB query
-    const jsonArrayResult = (await db.execute(
+    const jsonArrayResultQuery = await db.execute(
       sql`SELECT id, group_collections FROM sandwich_collections
           WHERE group_collections IS NOT NULL AND EXISTS (
             SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
             WHERE elem->>'name' = ${sourceName}
           ) LIMIT 5`
-    )) as any[];
+    );
+    const jsonArrayResult = (jsonArrayResultQuery as any).rows || [];
 
     // Also try case-insensitive search
-    const jsonArrayLowerResult = (await db.execute(
+    const jsonArrayLowerResultQuery = await db.execute(
       sql`SELECT id, group_collections FROM sandwich_collections
           WHERE group_collections IS NOT NULL AND EXISTS (
             SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
             WHERE LOWER(elem->>'name') = LOWER(${sourceName})
           ) LIMIT 5`
-    )) as any[];
+    );
+    const jsonArrayLowerResult = (jsonArrayLowerResultQuery as any).rows || [];
 
     logger.info('DEBUG: Exact match check in sandwich_collections', {
       sourceName,
@@ -141,15 +149,16 @@ export async function mergeOrganizations(
     });
 
     // Count records BEFORE updating (to get accurate affected count)
-    const eventCountResult = (await db.execute(
+    const eventCountResultQuery = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
-    )) as any[];
-    const eventCount = (eventCountResult?.[0] as any)?.count || 0;
+    );
+    const eventCountRows = (eventCountResultQuery as any).rows || [];
+    const eventCount = eventCountRows[0]?.count || 0;
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
     // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
     // Use proper JSONB query with EXISTS subquery instead of brittle LIKE pattern
-    const collectionCountResult = (await db.execute(
+    const collectionCountResultQuery = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
           WHERE group1_name = ${sourceName}
              OR group2_name = ${sourceName}
@@ -157,8 +166,9 @@ export async function mergeOrganizations(
                SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
                WHERE elem->>'name' = ${sourceName}
              ))`
-    )) as any[];
-    const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
+    );
+    const collectionCountRows = (collectionCountResultQuery as any).rows || [];
+    const collectionCount = collectionCountRows[0]?.count || 0;
 
     logger.info('Pre-merge counts', {
       sourceName,
@@ -206,9 +216,11 @@ export async function mergeOrganizations(
     // 5. Update or create organization record with alternate name
     // Note: The organizations table uses 'name' column (not 'organization_name')
     // and alternate_names is a text[] array (not JSONB)
-    const existingOrgResult = (await db.execute(
+    // Note: db.execute() returns { rows: [...], rowCount: n }, NOT an array directly
+    const existingOrgResultQuery = await db.execute(
       sql`SELECT id, name, alternate_names FROM organizations WHERE name = ${targetName} LIMIT 1`
-    )) as any[];
+    );
+    const existingOrgResult = (existingOrgResultQuery as any).rows || [];
 
     if (existingOrgResult && existingOrgResult.length > 0) {
       // Update existing organization to add alternate name
@@ -321,18 +333,27 @@ export async function previewMerge(
 
     try {
       // Use raw SQL for counts to avoid schema issues
-      const eventCountResult = (await db.execute(
+      // Note: db.execute() returns { rows: [...], rowCount: n }, NOT an array directly
+      const eventCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
-      )) as any[];
+      );
 
-      eventCount = (eventCountResult?.[0] as any)?.count || 0;
+      // Extract rows from QueryResult object
+      const eventCountRows = (eventCountResult as any).rows || [];
+      eventCount = eventCountRows[0]?.count || 0;
+
+      logger.info('Preview: Event count query result', { 
+        sourceName, 
+        eventCount,
+        rawResult: eventCountRows[0]
+      });
 
       // Get sample events with raw SQL
-      const sampleEventsResult = (await db.execute(
+      const sampleEventsResult = await db.execute(
         sql`SELECT id, event_date, department_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
-      )) as any[];
+      );
 
-      sampleEvents = sampleEventsResult || [];
+      sampleEvents = (sampleEventsResult as any).rows || [];
     } catch (error) {
       logger.error('Error querying event requests', { sourceName, error });
       // Continue with collections even if events fail
@@ -346,7 +367,8 @@ export async function previewMerge(
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
       // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
       // Use proper JSONB query with EXISTS subquery instead of brittle LIKE pattern
-      const collectionCountResult = (await db.execute(
+      // Note: db.execute() returns { rows: [...], rowCount: n }, NOT an array directly
+      const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
@@ -354,12 +376,20 @@ export async function previewMerge(
                  SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
                  WHERE elem->>'name' = ${sourceName}
                ))`
-      )) as any[];
+      );
 
-      collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
+      // Extract rows from QueryResult object
+      const collectionCountRows = (collectionCountResult as any).rows || [];
+      collectionCount = collectionCountRows[0]?.count || 0;
+
+      logger.info('Preview: Collection count query result', { 
+        sourceName, 
+        collectionCount,
+        rawResult: collectionCountRows[0]
+      });
 
       // Get sample collections with raw SQL
-      const sampleCollectionsResult = (await db.execute(
+      const sampleCollectionsResult = await db.execute(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
@@ -368,9 +398,9 @@ export async function previewMerge(
                  WHERE elem->>'name' = ${sourceName}
                ))
             LIMIT 5`
-      )) as any[];
+      );
 
-      sampleCollections = sampleCollectionsResult || [];
+      sampleCollections = (sampleCollectionsResult as any).rows || [];
     } catch (error) {
       logger.error('Error querying collections', { sourceName, error });
       // Continue with what we have
