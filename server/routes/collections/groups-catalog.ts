@@ -869,7 +869,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   // POST /api/groups-catalog/rename - Rename organization/department across all source records
   router.post('/rename', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { oldName, newName, oldDepartment, newDepartment } = req.body;
+      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations } = req.body;
 
       // Validation
       if (!oldName || typeof oldName !== 'string') {
@@ -885,6 +885,16 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const trimmedOldDept = oldDepartment?.trim() || null;
       const trimmedNewDept = newDepartment?.trim() || null;
 
+      // Process partner organizations - filter and validate
+      const validPartnerOrgs = Array.isArray(partnerOrganizations)
+        ? partnerOrganizations
+            .filter((p: any) => p && typeof p.name === 'string' && p.name.trim())
+            .map((p: any) => ({
+              name: p.name.trim(),
+              role: ['co-host', 'partner', 'sponsor'].includes(p.role) ? p.role : 'partner',
+            }))
+        : null;
+
       if (!trimmedNewName) {
         return res.status(400).json({ message: 'New organization name cannot be empty' });
       }
@@ -894,6 +904,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         newName: trimmedNewName,
         oldDepartment: trimmedOldDept,
         newDepartment: trimmedNewDept,
+        partnerOrganizations: validPartnerOrgs,
         userId: req.user?.id,
       });
 
@@ -910,6 +921,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (request.organizationName === trimmedOldName) {
           updates.organizationName = trimmedNewName;
           shouldUpdate = true;
+
+          // Add partner organizations if provided
+          if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+            updates.partnerOrganizations = validPartnerOrgs;
+          }
         }
 
         // Check if department matches (if we're updating department)

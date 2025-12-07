@@ -33,6 +33,8 @@ import {
   CheckCircle,
   UserCheck,
   Edit,
+  Plus,
+  X,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
@@ -182,6 +184,7 @@ export default function GroupCatalog({
   const [editNameOrganization, setEditNameOrganization] = useState<OrganizationContact | null>(null);
   const [editOrgName, setEditOrgName] = useState('');
   const [editDeptName, setEditDeptName] = useState('');
+  const [partnerOrganizations, setPartnerOrganizations] = useState<Array<{ name: string; role: string }>>([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -232,7 +235,13 @@ export default function GroupCatalog({
 
   // Mutation for renaming organization/department
   const renameOrganizationMutation = useMutation({
-    mutationFn: async (data: { oldName: string; newName: string; oldDepartment?: string; newDepartment?: string }) => {
+    mutationFn: async (data: {
+      oldName: string;
+      newName: string;
+      oldDepartment?: string;
+      newDepartment?: string;
+      partnerOrganizations?: Array<{ name: string; role: string }>;
+    }) => {
       return apiRequest('POST', '/api/groups-catalog/rename', data);
     },
     onSuccess: (data: any) => {
@@ -258,6 +267,7 @@ export default function GroupCatalog({
     setEditNameOrganization(org);
     setEditOrgName(org.organizationName);
     setEditDeptName(org.department || '');
+    setPartnerOrganizations([]);
     setShowEditNameDialog(true);
   };
 
@@ -272,11 +282,15 @@ export default function GroupCatalog({
       return;
     }
 
+    // Filter out empty partner organizations
+    const validPartners = partnerOrganizations.filter(p => p.name.trim());
+
     renameOrganizationMutation.mutate({
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim(),
       oldDepartment: editNameOrganization.department || undefined,
       newDepartment: editDeptName.trim() || undefined,
+      partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
     });
   };
 
@@ -2277,16 +2291,16 @@ export default function GroupCatalog({
 
       {/* Edit Name Dialog */}
       <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Organization Name</DialogTitle>
+            <DialogTitle>Edit Organization</DialogTitle>
             <DialogDescription>
-              Update the name for this organization. This will update all related event requests and collection records.
+              Update the organization name and add partner organizations if this event is co-hosted.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-org-name">Organization Name</Label>
+              <Label htmlFor="edit-org-name">Primary Organization</Label>
               <Input
                 id="edit-org-name"
                 value={editOrgName}
@@ -2305,6 +2319,76 @@ export default function GroupCatalog({
                 placeholder="Enter department name"
                 data-testid="input-edit-dept-name"
               />
+            </div>
+
+            {/* Partner Organizations Section */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Partner Organizations</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPartnerOrganizations([...partnerOrganizations, { name: '', role: 'partner' }])}
+                  data-testid="button-add-partner"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Partner
+                </Button>
+              </div>
+              {partnerOrganizations.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  No partner organizations. Click "Add Partner" if this event is co-hosted.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {partnerOrganizations.map((partner, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={partner.name}
+                        onChange={(e) => {
+                          const updated = [...partnerOrganizations];
+                          updated[index] = { ...updated[index], name: e.target.value };
+                          setPartnerOrganizations(updated);
+                        }}
+                        placeholder="Partner organization name"
+                        className="flex-1"
+                        data-testid={`input-partner-name-${index}`}
+                      />
+                      <Select
+                        value={partner.role}
+                        onValueChange={(value) => {
+                          const updated = [...partnerOrganizations];
+                          updated[index] = { ...updated[index], role: value };
+                          setPartnerOrganizations(updated);
+                        }}
+                      >
+                        <SelectTrigger className="w-28" data-testid={`select-partner-role-${index}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="co-host">Co-host</SelectItem>
+                          <SelectItem value="partner">Partner</SelectItem>
+                          <SelectItem value="sponsor">Sponsor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          const updated = partnerOrganizations.filter((_, i) => i !== index);
+                          setPartnerOrganizations(updated);
+                        }}
+                        data-testid={`button-remove-partner-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-4">
