@@ -282,7 +282,7 @@ export async function getMergeHistory(limit: number = 100): Promise<any[]> {
 
 /**
  * Preview what would be affected by a merge (without actually executing it)
- * Uses the SAME JavaScript-based matching logic as duplicate-detection to ensure consistency
+ * Uses the SAME Drizzle ORM approach as duplicate-detection to ensure consistency
  */
 export async function previewMerge(
   sourceName: string,
@@ -296,88 +296,73 @@ export async function previewMerge(
   try {
     logger.info('Previewing merge', { sourceName, targetName });
 
-    // Use JavaScript-based matching (same as duplicate-detection) to ensure consistency
-    const trimmedSource = sourceName.trim().toLowerCase();
-    
-    // Count affected event requests by iterating (same approach as duplicate-detection)
+    // Count affected event requests using Drizzle ORM (same as duplicate-detection)
     let eventCount = 0;
     let sampleEvents: any[] = [];
 
     try {
-      // Get all event requests and count matches using JavaScript string comparison
-      // db.execute returns { rows, rowCount, ... }, so we need to extract rows
-      const result = await db.execute(
-        sql`SELECT id, organization_name, event_date, department_name FROM event_requests 
-            WHERE organization_name IS NOT NULL AND organization_name != ''`
-      );
-      const allEvents = (result as any).rows || [];
-
-      for (const event of allEvents) {
-        const orgName = (event.organization_name || '').trim().toLowerCase();
-        if (orgName === trimmedSource) {
-          eventCount++;
-          if (sampleEvents.length < 5) {
-            sampleEvents.push({
-              id: event.id,
-              event_date: event.event_date,
-              department_name: event.department_name
-            });
-          }
-        }
-      }
+      // Use Drizzle ORM select (same as duplicate-detection.ts)
+      const events = await db
+        .select({
+          id: eventRequests.id,
+          eventDate: eventRequests.eventDate,
+          departmentName: eventRequests.departmentName,
+          organizationName: eventRequests.organizationName,
+        })
+        .from(eventRequests)
+        .where(sql`${eventRequests.organizationName} = ${sourceName}`);
       
-      logger.info('Preview: Event requests matched via JavaScript', { 
+      eventCount = events.length;
+      sampleEvents = events.slice(0, 5).map(e => ({
+        id: e.id,
+        event_date: e.eventDate,
+        department_name: e.departmentName
+      }));
+      
+      logger.info('Preview: Event requests matched via Drizzle ORM', { 
         sourceName, 
-        trimmedSource,
-        totalEvents: allEvents.length,
         matchedEvents: eventCount 
       });
     } catch (error) {
       logger.error('Error querying event requests for preview', { sourceName, error });
     }
 
-    // Count affected collections by iterating (same approach as duplicate-detection)
+    // Count affected collections using Drizzle ORM (same approach as duplicate-detection)
     let collectionCount = 0;
     let sampleCollections: any[] = [];
 
     try {
-      // Get all collections and count matches using JavaScript
-      // db.execute returns { rows, rowCount, ... }, so we need to extract rows
-      const collectionsResult = await db.execute(
-        sql`SELECT id, date_collected, group1_name, group2_name, group_collections FROM sandwich_collections`
-      );
-      const allCollections = (collectionsResult as any).rows || [];
+      // Use Drizzle ORM select (same as duplicate-detection.ts)
+      const collections = await db
+        .select({
+          id: sandwichCollections.id,
+          dateCollected: sandwichCollections.dateCollected,
+          group1Name: sandwichCollections.group1Name,
+          group2Name: sandwichCollections.group2Name,
+          groupCollections: sandwichCollections.groupCollections,
+        })
+        .from(sandwichCollections);
 
-      for (const collection of allCollections) {
+      // Count collections where org appears (same logic as duplicate-detection)
+      for (const collection of collections) {
         let matched = false;
         
-        // Check group1_name
-        const group1 = (collection.group1_name || '').trim().toLowerCase();
-        if (group1 === trimmedSource) {
+        // Check group1Name (exact match like duplicate-detection)
+        if (collection.group1Name === sourceName) {
           matched = true;
         }
         
-        // Check group2_name
-        const group2 = (collection.group2_name || '').trim().toLowerCase();
-        if (group2 === trimmedSource) {
+        // Check group2Name (exact match like duplicate-detection)
+        if (collection.group2Name === sourceName) {
           matched = true;
         }
         
-        // Check groupCollections JSON array - parse if it's a string
-        let groupCollections = collection.group_collections;
-        if (typeof groupCollections === 'string') {
-          try {
-            groupCollections = JSON.parse(groupCollections);
-          } catch {
-            groupCollections = null;
-          }
-        }
-        
-        if (groupCollections && Array.isArray(groupCollections)) {
-          for (const groupItem of groupCollections) {
+        // Check groupCollections JSON array (same as duplicate-detection)
+        if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+          for (const groupItem of collection.groupCollections) {
             if (groupItem && typeof groupItem === 'object' && 'groupName' in groupItem) {
-              const groupName = ((groupItem.groupName as string) || '').trim().toLowerCase();
-              if (groupName === trimmedSource) {
+              const groupName = groupItem.groupName as string;
+              if (groupName === sourceName) {
                 matched = true;
                 break;
               }
@@ -390,18 +375,17 @@ export async function previewMerge(
           if (sampleCollections.length < 5) {
             sampleCollections.push({
               id: collection.id,
-              date_collected: collection.date_collected,
-              group1_name: collection.group1_name,
-              group2_name: collection.group2_name
+              date_collected: collection.dateCollected,
+              group1_name: collection.group1Name,
+              group2_name: collection.group2Name
             });
           }
         }
       }
       
-      logger.info('Preview: Collections matched via JavaScript', { 
+      logger.info('Preview: Collections matched via Drizzle ORM', { 
         sourceName, 
-        trimmedSource,
-        totalCollections: allCollections.length,
+        totalCollections: collections.length,
         matchedCollections: collectionCount 
       });
     } catch (error) {
