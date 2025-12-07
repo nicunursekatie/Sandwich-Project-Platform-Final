@@ -227,6 +227,112 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
       });
 
+      // STEP 2b: Process partner organizations - show events under both primary and partner orgs
+      // This creates additional entries for partner organizations while tracking that they're linked
+      allEventRequests.forEach((request) => {
+        if (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations)) return;
+        if (!request.organizationName) return;
+
+        const primaryOrgName = request.organizationName;
+        const primaryCanonicalName = canonicalOrgNameMap.get(primaryOrgName) || canonicalizeOrgName(primaryOrgName);
+        const eventDate = request.desiredEventDate;
+        const eventId = request.id;
+
+        request.partnerOrganizations.forEach((partner: any) => {
+          if (!partner.name || !partner.name.trim()) return;
+
+          const partnerOrgName = partner.name.trim();
+          const partnerRole = partner.role || 'partner';
+
+          // Get or create canonical name for partner org
+          let partnerCanonicalName = canonicalOrgNameMap.get(partnerOrgName);
+          if (!partnerCanonicalName) {
+            const candidateCanonical = canonicalizeOrgName(partnerOrgName);
+            // Check if it matches an existing canonical name
+            for (const existingCanonical of canonicalOrgNameMap.values()) {
+              if (organizationNamesMatch(candidateCanonical, existingCanonical)) {
+                partnerCanonicalName = existingCanonical;
+                break;
+              }
+            }
+            if (!partnerCanonicalName) {
+              partnerCanonicalName = candidateCanonical;
+            }
+            canonicalOrgNameMap.set(partnerOrgName, partnerCanonicalName);
+          }
+
+          // Create department key for partner org (using primary org contact info)
+          const department = partner.department || request.department || '';
+          const contactName =
+            request.firstName && request.lastName
+              ? `${request.firstName} ${request.lastName}`.trim()
+              : request.firstName || request.lastName || request.email || 'Unknown Contact';
+          const contactEmail = request.email || '';
+
+          const partnerDeptKey = `${partnerCanonicalName}|${department}|${contactEmail}`;
+
+          if (!departmentsMap.has(partnerDeptKey)) {
+            departmentsMap.set(partnerDeptKey, {
+              organizationName: partnerOrgName,
+              canonicalName: partnerCanonicalName,
+              department: department,
+              contactName: contactName,
+              contactEmail: contactEmail,
+              contactPhone: request.phone,
+              contacts: [{
+                name: contactName,
+                email: contactEmail,
+                phone: request.phone,
+              }],
+              totalRequests: 0,
+              latestStatus: 'new',
+              latestRequestDate: request.createdAt || new Date(),
+              hasHostedEvent: false,
+              totalSandwiches: 0,
+              eventDate: null,
+              tspContact: null,
+              tspContactAssigned: null,
+              assignedTo: null,
+              assignedToName: null,
+              completedEventsFromRequests: 0,
+              // Track this is a partner entry to avoid double-counting
+              isPartnerEntry: true,
+              primaryOrganization: primaryOrgName,
+              partnerRole: partnerRole,
+              linkedEventId: eventId,
+            });
+          }
+
+          const partnerDept = departmentsMap.get(partnerDeptKey);
+          partnerDept.totalRequests += 1;
+
+          // Copy status and event details from primary org's request
+          if (request.status === 'completed' || request.status === 'contact_completed') {
+            partnerDept.completedEventsFromRequests = (partnerDept.completedEventsFromRequests || 0) + 1;
+            partnerDept.hasHostedEvent = true;
+          }
+
+          // Update event date
+          if (eventDate) {
+            try {
+              const dateObj = new Date(eventDate);
+              if (!isNaN(dateObj.getTime())) {
+                partnerDept.eventDate = dateObj.toISOString().split('T')[0];
+              }
+            } catch (e) {
+              // Ignore date parsing errors
+            }
+          }
+
+          // Update status
+          const requestDate = new Date(request.createdAt || new Date());
+          if (requestDate >= partnerDept.latestRequestDate) {
+            partnerDept.latestRequestDate = requestDate;
+            partnerDept.latestStatus = request.status || 'new';
+          }
+        });
+      });
+
       // Build a lookup of event requests by canonical org name and date for deduplication
       // This prevents double-counting events that exist in both event_requests AND sandwich_collections
       // NOTE: Only event requests WITH dates can be used for date-based deduplication
@@ -485,11 +591,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             actualSandwichTotal: orgData.totalSandwiches,
             actualEventCount: orgData.eventCount,
             eventFrequency: calculateEventFrequency(orgData.eventDates),
-            eventDate: null,
+            // Use the most recent collection date as the eventDate for display
+            eventDate: new Date(latestCollectionDate).toISOString().split('T')[0],
             latestCollectionDate: new Date(latestCollectionDate)
               .toISOString()
               .split('T')[0],
             pastEvents: sortedPastEvents, // NEW: Add past events list
+            isFromCollectionOnly: true, // Flag to indicate this is from collection log only
           });
         }
       });

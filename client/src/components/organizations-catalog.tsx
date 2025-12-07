@@ -83,6 +83,12 @@ interface OrganizationContact {
   assignedTo?: string | null;
   assignedToName?: string | null;
   pastEvents?: Array<{ date: string; sandwichCount: number }>;
+  // Partner organization fields
+  isPartnerEntry?: boolean;
+  primaryOrganization?: string;
+  partnerRole?: 'co-host' | 'partner' | 'sponsor';
+  linkedEventId?: number;
+  isFromCollectionOnly?: boolean;
 }
 
 interface GroupCatalogProps {
@@ -561,11 +567,20 @@ export default function GroupCatalog({
       .values()
   );
 
+  // Helper to get sortable name (strips leading "The " for alphabetical sorting)
+  const getSortableName = (name: string): string => {
+    const trimmed = name.trim();
+    if (trimmed.toLowerCase().startsWith('the ')) {
+      return trimmed.substring(4).trim();
+    }
+    return trimmed;
+  };
+
   // Sort groups by organization name or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
-      const aName = a.groupName || '';
-      const bName = b.groupName || '';
+      const aName = getSortableName(a.groupName || '');
+      const bName = getSortableName(b.groupName || '');
       return sortOrder === 'desc'
         ? bName.localeCompare(aName)
         : aName.localeCompare(bName);
@@ -1145,11 +1160,24 @@ export default function GroupCatalog({
                                         <span className="font-semibold">
                                           {formatDateForDisplay(org.eventDate)}
                                         </span>
+                                        {org.isFromCollectionOnly && (
+                                          <Badge className="bg-gray-100 text-gray-600 text-xs">
+                                            from collection log
+                                          </Badge>
+                                        )}
                                       </div>
                                     ) : (
                                       <div className="flex items-center space-x-2 text-base text-gray-500">
                                         <Calendar className="w-5 h-5 text-gray-400" />
                                         <span>No date specified</span>
+                                      </div>
+                                    )}
+                                    {/* Partner Organization Badge */}
+                                    {org.isPartnerEntry && org.primaryOrganization && (
+                                      <div className="flex items-center mt-2">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          {org.partnerRole === 'co-host' ? 'Co-hosted' : org.partnerRole === 'sponsor' ? 'Sponsored' : 'Partner'} with {org.primaryOrganization}
+                                        </Badge>
                                       </div>
                                     )}
                                   </div>
@@ -1464,18 +1492,31 @@ export default function GroupCatalog({
                                     {/* Event Date - Compact */}
                                     {org.eventDate ? (
                                       <div
-                                        className="flex items-center mt-1 text-sm font-semibold"
+                                        className="flex items-center flex-wrap gap-1 mt-1 text-sm font-semibold"
                                         style={{ color: '#FBAD3F' }}
                                       >
                                         <Calendar className="w-4 h-4 mr-1" />
                                         <span className="truncate">
                                           {formatDateForDisplay(org.eventDate)}
                                         </span>
+                                        {org.isFromCollectionOnly && (
+                                          <Badge className="bg-gray-100 text-gray-600 text-xs ml-1">
+                                            from log
+                                          </Badge>
+                                        )}
                                       </div>
                                     ) : (
                                       <div className="flex items-center mt-1 text-xs text-gray-500">
                                         <Calendar className="w-3 h-3 mr-1" />
                                         <span>No date specified</span>
+                                      </div>
+                                    )}
+                                    {/* Partner Organization Badge - Compact */}
+                                    {org.isPartnerEntry && org.primaryOrganization && (
+                                      <div className="mt-1">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          {org.partnerRole === 'co-host' ? 'Co-host' : org.partnerRole === 'sponsor' ? 'Sponsor' : 'Partner'}: {org.primaryOrganization}
+                                        </Badge>
                                       </div>
                                     )}
                                   </div>
