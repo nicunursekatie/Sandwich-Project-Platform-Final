@@ -79,6 +79,23 @@ export async function mergeOrganizations(
 
     // Execute all updates sequentially using raw SQL (no transaction support in HTTP driver)
 
+    // DEBUG: Check what organization names actually exist in database
+    const similarOrgsResult = await db.execute(
+      sql`SELECT DISTINCT organization_name FROM event_requests WHERE LOWER(organization_name) LIKE LOWER(${`%${sourceName.substring(0, Math.min(5, sourceName.length))}%`}) LIMIT 20`
+    ) as any[];
+    logger.info('DEBUG: Similar organization names in event_requests', {
+      searchTerm: sourceName,
+      similar: similarOrgsResult
+    });
+
+    const exactMatchResult = await db.execute(
+      sql`SELECT organization_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
+    ) as any[];
+    logger.info('DEBUG: Exact match check', {
+      sourceName,
+      exactMatches: exactMatchResult
+    });
+
     // Count records BEFORE updating (to get accurate affected count)
     const eventCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
