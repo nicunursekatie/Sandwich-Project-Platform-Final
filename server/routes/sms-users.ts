@@ -482,6 +482,11 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
  * NOTE: This is on webhookRouter (not router) - NO auth middleware, just Twilio signature validation
  */
 webhookRouter.post('/sms/webhook', async (req, res) => {
+  // DEBUG: Log that webhook was hit (before any validation)
+  logger.log('🔔 SMS WEBHOOK HIT - Request received');
+  logger.log(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
+  logger.log(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  
   try {
     // SECURITY VALIDATION: Verify Twilio request signature
     const twilioSignature = req.headers['x-twilio-signature'] as string;
@@ -491,10 +496,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: Missing signature' });
     }
     
-    if (!process.env.TWILIO_AUTH_TOKEN) {
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (!authToken) {
       logger.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
       return res.status(500).json({ error: 'Server configuration error' });
     }
+    
+    // DEBUG: Log auth token info (first 4 chars only for security)
+    logger.log(`🔔 Auth token configured: ${authToken.substring(0, 4)}...${authToken.substring(authToken.length - 4)}`);
     
     // Construct the full webhook URL that matches Twilio console configuration
     // Use x-forwarded-proto header for proxy environments (Replit, Heroku, etc.)
@@ -503,9 +512,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     const host = req.get('host');
     const webhookUrl = `${protocol}://${host}${req.originalUrl}`;
     
+    // DEBUG: Log the URL being used for validation
+    logger.log(`🔔 Validating signature with URL: ${webhookUrl}`);
+    
     // Validate the Twilio request signature
     const isValidRequest = validateRequest(
-      process.env.TWILIO_AUTH_TOKEN,
+      authToken,
       twilioSignature,
       webhookUrl,
       req.body
@@ -515,6 +527,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       logger.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
       logger.warn(`Attempted URL: ${webhookUrl}`);
       logger.warn(`Signature: ${twilioSignature}`);
+      logger.warn(`Auth token prefix: ${authToken.substring(0, 4)}...`);
       return res.status(403).json({ error: 'Forbidden: Invalid signature' });
     }
     
