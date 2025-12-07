@@ -975,14 +975,19 @@ export default function GroupCatalog({
                   >
                     {/* Organization Header */}
                     <div className="mb-4 pb-3 border-b border-gray-200">
-                      <div className="flex items-center space-x-2 mb-3">
+                      {/* Organization Name - Full Width */}
+                      <div className="flex items-start space-x-2 mb-2">
                         <Building
-                          className="w-6 h-6"
+                          className="w-6 h-6 flex-shrink-0 mt-0.5"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-xl font-bold text-gray-900 break-words">
+                        <h2 className="text-xl font-bold text-gray-900">
                           {group.groupName}
                         </h2>
+                      </div>
+
+                      {/* Category Badge and Actions Row */}
+                      <div className="flex items-center flex-wrap gap-2 mb-2 ml-8">
                         {(() => {
                           const orgInfo = organizationCategoryMap.get(group.groupName);
                           const category = orgInfo?.category;
@@ -996,7 +1001,7 @@ export default function GroupCatalog({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 hover:bg-blue-100"
+                            className="h-6 px-2 hover:bg-blue-100"
                             onClick={() => handleEditName({
                               organizationName: group.groupName,
                               contactName: group.departments[0]?.contactName || '',
@@ -1010,12 +1015,14 @@ export default function GroupCatalog({
                             title="Edit organization name"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
-                            <Edit className="h-4 w-4 text-blue-600 mr-1" />
+                            <Edit className="h-3 w-3 text-blue-600 mr-1" />
                             <span className="text-xs text-blue-600">Rename</span>
                           </Button>
                         )}
                       </div>
-                      <div className="flex items-center text-sm text-gray-600">
+
+                      {/* Department Count */}
+                      <div className="flex items-center text-sm text-gray-600 ml-8">
                         <span className="flex items-center space-x-1">
                           <Users className="w-4 h-4" />
                           <span>
@@ -1368,27 +1375,44 @@ export default function GroupCatalog({
                             }
                           >
                             <CardHeader className="pb-3">
-                              {/* Organization Header - Compact */}
-                              <div className="flex items-center space-x-2 mb-3">
-                                <Building
-                                  className="w-4 h-4 flex-shrink-0"
-                                  style={{ color: '#236383' }}
-                                />
-                                <h3 className="text-lg font-bold text-gray-900 break-words">
-                                  {group.groupName}
-                                </h3>
-                                {canEditCategories && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-1.5 hover:bg-blue-100"
-                                    onClick={() => handleEditName(org)}
-                                    title="Edit organization name"
-                                    data-testid={`button-edit-name-single-${group.groupName}`}
-                                  >
-                                    <Edit className="h-3 w-3 text-blue-600" />
-                                  </Button>
-                                )}
+                              {/* Organization Header */}
+                              <div className="mb-3">
+                                {/* Organization Name - Full Width */}
+                                <div className="flex items-start space-x-2 mb-2">
+                                  <Building
+                                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                                    style={{ color: '#236383' }}
+                                  />
+                                  <h3 className="text-lg font-bold text-gray-900">
+                                    {group.groupName}
+                                  </h3>
+                                </div>
+
+                                {/* Category Badge and Rename Row */}
+                                <div className="flex items-center flex-wrap gap-2 ml-7">
+                                  {(() => {
+                                    const orgInfo = organizationCategoryMap.get(group.groupName);
+                                    const category = orgInfo?.category;
+                                    return category ? (
+                                      <Badge className={getCategoryBadgeColor(category)}>
+                                        {getCategoryLabel(category)}
+                                      </Badge>
+                                    ) : null;
+                                  })()}
+                                  {canEditCategories && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 px-2 hover:bg-blue-100"
+                                      onClick={() => handleEditName(org)}
+                                      title="Edit organization name"
+                                      data-testid={`button-edit-name-single-${group.groupName}`}
+                                    >
+                                      <Edit className="h-3 w-3 text-blue-600 mr-1" />
+                                      <span className="text-xs text-blue-600">Rename</span>
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
 
                               {/* Main headline with org name and date */}
