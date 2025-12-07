@@ -29,7 +29,8 @@
       "Bash(psql:*)",
       "Bash(node -r dotenv/config -r esbuild-register:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(source .env)"
     ],
     "deny": [],
     "ask": []

@@ -1081,8 +1081,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
 
         if (shouldUpdate) {
-          await storage.updateEventRequest(request.id, updates);
-          updatedEventRequests++;
+          try {
+            await storage.updateEventRequest(request.id, updates);
+            updatedEventRequests++;
+          } catch (updateError) {
+            logger.error('Failed to update event request', {
+              requestId: request.id,
+              updates,
+              error: updateError instanceof Error ? updateError.message : updateError,
+            });
+            throw updateError;
+          }
         }
       }
 
