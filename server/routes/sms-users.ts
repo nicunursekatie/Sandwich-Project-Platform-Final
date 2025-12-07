@@ -7,6 +7,7 @@ import twilio from 'twilio';
 import { logger } from '../utils/production-safe-logger';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { NotificationService } from '../notification-service';
+import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -495,25 +496,31 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       logger.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
       return res.status(403).json({ error: 'Forbidden: Missing signature' });
     }
-    
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    // Get auth token from environment or Replit connector
+    const authToken = await getTwilioAuthToken();
     if (!authToken) {
-      logger.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
-      return res.status(500).json({ error: 'Server configuration error' });
+      logger.error('❌ SECURITY ERROR: No Twilio auth token available for webhook validation');
+      logger.error('   Set TWILIO_AUTH_TOKEN in environment/secrets, or ensure Replit Twilio connection provides auth_token');
+      return res.status(500).json({ error: 'Server configuration error: Missing auth token for webhook validation' });
     }
-    
+
     // DEBUG: Log auth token info (first 4 chars only for security)
     logger.log(`🔔 Auth token configured: ${authToken.substring(0, 4)}...${authToken.substring(authToken.length - 4)}`);
     
     // Construct the full webhook URL that matches Twilio console configuration
     // Use x-forwarded-proto header for proxy environments (Replit, Heroku, etc.)
     // SSL terminates at the proxy level, so req.secure is false even for HTTPS connections
-    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    // Handle comma-separated values in x-forwarded-proto (e.g., "https, http")
+    const forwardedProto = req.get('x-forwarded-proto');
+    const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : (req.secure ? 'https' : 'http');
     const host = req.get('host');
+    // Use only the path portion (originalUrl may include query string which should be included)
     const webhookUrl = `${protocol}://${host}${req.originalUrl}`;
-    
+
     // DEBUG: Log the URL being used for validation
     logger.log(`🔔 Validating signature with URL: ${webhookUrl}`);
+    logger.log(`🔔 Expected Twilio webhook URL should be: https://sandwich-project-platform-final-katielong2316.replit.app/api/sms/webhook`);
     
     // Validate the Twilio request signature
     const isValidRequest = validateRequest(
@@ -528,6 +535,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       logger.warn(`Attempted URL: ${webhookUrl}`);
       logger.warn(`Signature: ${twilioSignature}`);
       logger.warn(`Auth token prefix: ${authToken.substring(0, 4)}...`);
+      logger.warn(`x-forwarded-proto: ${forwardedProto}`);
+      logger.warn(`host header: ${host}`);
+      logger.warn(`originalUrl: ${req.originalUrl}`);
+      logger.warn(`Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+      logger.warn(`🔧 TROUBLESHOOTING: Ensure TWILIO_AUTH_TOKEN is set to your Twilio Auth Token (not API Key Secret)`);
+      logger.warn(`   You can find your Auth Token in Twilio Console > Account > API keys and tokens`);
       return res.status(403).json({ error: 'Forbidden: Invalid signature' });
     }
     
