@@ -102,10 +102,11 @@ export async function findPotentialDuplicates(
       }
 
       // Count organizations in groupCollections JSON array
+      // Note: The JSON stores "name" field (not "groupName" - that's only used in client display)
       if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
         for (const groupItem of collection.groupCollections) {
-          if (groupItem && typeof groupItem === 'object' && 'groupName' in groupItem) {
-            const groupName = groupItem.groupName as string;
+          if (groupItem && typeof groupItem === 'object' && 'name' in groupItem) {
+            const groupName = (groupItem as any).name as string;
             if (groupName) {
               collectionOrgCounts.set(
                 groupName,
