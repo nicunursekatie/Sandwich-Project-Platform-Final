@@ -229,8 +229,8 @@ export default function GroupCatalog({
         title: 'Success',
         description: 'Organization category updated successfully',
       });
-      // Invalidate and refetch groups catalog
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditCategoryDialog(false);
     },
     onError: (error: any) => {
@@ -258,8 +258,8 @@ export default function GroupCatalog({
         title: 'Success',
         description: `Renamed successfully. Updated ${data.updatedEventRequests} event requests and ${data.updatedCollections} collections.`,
       });
-      // Invalidate and refetch groups catalog
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditNameDialog(false);
     },
     onError: (error: any) => {
