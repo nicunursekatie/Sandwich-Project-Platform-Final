@@ -689,6 +689,14 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           assignedTo: dept.assignedTo || null,
           assignedToName: dept.assignedToName || null,
           pastEvents: dept.pastEvents || [], // Include all past events in array
+          // Partner/co-host tracking fields
+          isPartnerEntry: dept.isPartnerEntry || false,
+          primaryOrganization: dept.primaryOrganization || null,
+          partnerRole: dept.partnerRole || null,
+          linkedEventId: dept.linkedEventId || null,
+          isFromCollectionOnly: dept.isFromCollectionOnly || false,
+          isCoHostedEvent: dept.isCoHostedEvent || false,
+          coHostNames: dept.coHostNames || [],
         });
       });
 
