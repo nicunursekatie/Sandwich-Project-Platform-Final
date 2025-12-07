@@ -1121,43 +1121,42 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         }
       } else {
-        // Bulk update mode - iterate through all events
+        // Bulk update mode - iterate through events matching org + dept
+        // When oldDepartment is provided, only update events that match BOTH org AND department
+        // This prevents accidentally updating unrelated events with different departments
         const allEventRequests = await storage.getAllEventRequests();
         for (const request of allEventRequests) {
           let shouldUpdate = false;
           const updates: any = {};
 
           // Check if organization name matches
-          if (request.organizationName === trimmedOldName) {
-            updates.organizationName = effectiveNewName;
-            shouldUpdate = true;
+          const orgMatches = request.organizationName === trimmedOldName;
+          if (!orgMatches) continue; // Skip if org doesn't match
 
-            // Add partner organizations if provided
-            if (validPartnerOrgs && validPartnerOrgs.length > 0) {
-              // If no primary org was specified, add all orgs as co-hosts (including the first one used as organizationName)
-              if (!trimmedNewName) {
-                // All orgs are equal co-hosts
-                updates.partnerOrganizations = validPartnerOrgs;
-              } else {
-                // Normal case: primary org + partners
-                updates.partnerOrganizations = validPartnerOrgs;
-              }
-            }
+          // Check if department matches (when oldDepartment is specified)
+          const currentDept = request.department || null;
+          const deptMatches = trimmedOldDept === null
+            ? true // No dept filter specified, match all
+            : (currentDept === trimmedOldDept || (trimmedOldDept === '' && !currentDept));
+
+          if (!deptMatches) continue; // Skip if dept doesn't match
+
+          // At this point, org matches and dept matches (or no dept filter)
+          updates.organizationName = effectiveNewName;
+          shouldUpdate = true;
+
+          // Add partner organizations if provided
+          if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+            updates.partnerOrganizations = validPartnerOrgs;
           }
 
-          // Check if department should be updated
-          // Note: Schema uses 'department', not 'departmentName'
-          // Cases:
-          // 1. Adding a new department (oldDept is null/empty, newDept has value) - UPDATE
-          // 2. Changing existing department (oldDept matches, newDept has value) - UPDATE
-          // 3. Clearing department (oldDept has value, newDept is null/empty) - SKIP (prevent accidental clearing)
-          // 4. No change (oldDept is null, newDept is null) - SKIP
-          const currentDept = request.department || null;
-          const oldDeptMatches = trimmedOldDept === null ? currentDept === null || currentDept === '' : currentDept === trimmedOldDept;
+          // Update department if specified
+          // Allow clearing: if oldDept was explicitly provided and newDept is null/empty
+          const isClearing = trimmedOldDept !== null && trimmedNewDept === null;
+          const isChanging = trimmedNewDept !== null && trimmedNewDept !== currentDept;
 
-          if (oldDeptMatches && trimmedNewDept !== null && trimmedNewDept !== currentDept) {
-            updates.department = trimmedNewDept;
-            shouldUpdate = true;
+          if (isClearing || isChanging) {
+            updates.department = trimmedNewDept; // null will clear it
           }
 
           if (shouldUpdate) {
@@ -1177,8 +1176,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       }
 
       // 2. Update sandwich_collections (group1Name, group2Name, and groupCollections JSON)
-      // Skip collection updates if we're in single-event or aggregated-card mode (only editing specific events)
-      if (!specificEventId && !specificEventIds) {
+      // Skip collection updates if:
+      // - we're in single-event or aggregated-card mode (editing specific events)
+      // - we're editing a department-level card (collections don't have departments)
+      const isDepartmentEdit = trimmedOldDept !== null || trimmedNewDept !== null;
+      if (!specificEventId && !specificEventIds && !isDepartmentEdit) {
         const allCollections = await storage.getAllSandwichCollections();
         for (const collection of allCollections) {
           let shouldUpdate = false;
