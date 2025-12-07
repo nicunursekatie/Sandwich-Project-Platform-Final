@@ -37,10 +37,11 @@ import { logger } from './utils/production-safe-logger';
 export async function registerRoutes(app: Express): Promise<any> {
   // Use database-backed session store for deployment persistence
   // Environment-based database selection
+  // TODO: Switch to DEV_DATABASE_URL for development once dev database has all data imported
   const isProductionEnv = process.env.NODE_ENV === 'production';
   const databaseUrl = isProductionEnv
     ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
-    : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+    : (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: databaseUrl,
