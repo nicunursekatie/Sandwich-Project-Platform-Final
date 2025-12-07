@@ -137,12 +137,26 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             // Co-host tracking
             isCoHostedEvent: isCoHostedEvent,
             coHostNames: isCoHostedEvent ? coHostNames : [],
+            // Track the event ID - will be used for single-event edits
+            linkedEventId: request.id,
+            // Track all event IDs for this aggregated card
+            eventIds: [request.id],
           });
-        } else if (isCoHostedEvent) {
-          // Update existing entry with co-host info if this request has co-hosts
+        } else {
+          // Entry already exists - add this event ID to the list
           const existingDept = departmentsMap.get(departmentKey);
-          existingDept.isCoHostedEvent = true;
-          existingDept.coHostNames = [...new Set([...(existingDept.coHostNames || []), ...coHostNames])];
+          if (existingDept.eventIds && !existingDept.eventIds.includes(request.id)) {
+            existingDept.eventIds.push(request.id);
+          }
+          // If multiple events, clear linkedEventId (it only works for single-event cards)
+          if (existingDept.eventIds && existingDept.eventIds.length > 1) {
+            existingDept.linkedEventId = null;
+          }
+          // Update co-host info if this request has co-hosts
+          if (isCoHostedEvent) {
+            existingDept.isCoHostedEvent = true;
+            existingDept.coHostNames = [...new Set([...(existingDept.coHostNames || []), ...coHostNames])];
+          }
         }
 
         const dept = departmentsMap.get(departmentKey);
@@ -694,6 +708,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           primaryOrganization: dept.primaryOrganization || null,
           partnerRole: dept.partnerRole || null,
           linkedEventId: dept.linkedEventId || null,
+          eventIds: dept.eventIds || [], // All event IDs aggregated in this card
           isFromCollectionOnly: dept.isFromCollectionOnly || false,
           isCoHostedEvent: dept.isCoHostedEvent || false,
           coHostNames: dept.coHostNames || [],
@@ -1000,9 +1015,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   );
 
   // POST /api/groups-catalog/rename - Rename organization/department across all source records
+  // If eventId is provided, only update that specific event (for single-card edits)
   router.post('/rename', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations } = req.body;
+      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations, eventId } = req.body;
 
       // Validation
       if (!oldName || typeof oldName !== 'string') {
@@ -1014,6 +1030,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const trimmedNewName = (newName && typeof newName === 'string') ? newName.trim() : '';
       const trimmedOldDept = oldDepartment?.trim() || null;
       const trimmedNewDept = newDepartment?.trim() || null;
+      const specificEventId = eventId && typeof eventId === 'number' ? eventId : null;
 
       // Process partner organizations - filter and validate
       const validPartnerOrgs = Array.isArray(partnerOrganizations)
@@ -1037,6 +1054,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         oldDepartment: trimmedOldDept,
         newDepartment: trimmedNewDept,
         partnerOrganizations: validPartnerOrgs,
+        eventId: specificEventId,
         userId: req.user?.id,
       });
 
@@ -1048,116 +1066,146 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const effectiveNewName = trimmedNewName || (hasCoHosts ? validPartnerOrgs![0].name : '');
 
       // 1. Update event_requests
-      const allEventRequests = await storage.getAllEventRequests();
-      for (const request of allEventRequests) {
-        let shouldUpdate = false;
-        const updates: any = {};
+      // If specificEventId is provided, only update that one event (single-card edit mode)
+      // Otherwise, update all matching events (bulk rename mode)
+      if (specificEventId) {
+        // Single event update mode - much faster, only fetch and update one record
+        const request = await storage.getEventRequest(specificEventId);
+        if (request && request.organizationName === trimmedOldName) {
+          const updates: any = {};
 
-        // Check if organization name matches
-        if (request.organizationName === trimmedOldName) {
+          // Update organization name
           updates.organizationName = effectiveNewName;
-          shouldUpdate = true;
 
           // Add partner organizations if provided
           if (validPartnerOrgs && validPartnerOrgs.length > 0) {
-            // If no primary org was specified, add all orgs as co-hosts (including the first one used as organizationName)
-            if (!trimmedNewName) {
-              // All orgs are equal co-hosts
-              updates.partnerOrganizations = validPartnerOrgs;
-            } else {
-              // Normal case: primary org + partners
-              updates.partnerOrganizations = validPartnerOrgs;
+            updates.partnerOrganizations = validPartnerOrgs;
+          }
+
+          // Update department if provided
+          if (trimmedNewDept !== null) {
+            updates.department = trimmedNewDept;
+          }
+
+          await storage.updateEventRequest(specificEventId, updates);
+          updatedEventRequests = 1;
+        }
+      } else {
+        // Bulk update mode - iterate through all events
+        const allEventRequests = await storage.getAllEventRequests();
+        for (const request of allEventRequests) {
+          let shouldUpdate = false;
+          const updates: any = {};
+
+          // Check if organization name matches
+          if (request.organizationName === trimmedOldName) {
+            updates.organizationName = effectiveNewName;
+            shouldUpdate = true;
+
+            // Add partner organizations if provided
+            if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+              // If no primary org was specified, add all orgs as co-hosts (including the first one used as organizationName)
+              if (!trimmedNewName) {
+                // All orgs are equal co-hosts
+                updates.partnerOrganizations = validPartnerOrgs;
+              } else {
+                // Normal case: primary org + partners
+                updates.partnerOrganizations = validPartnerOrgs;
+              }
             }
           }
-        }
 
-        // Check if department should be updated
-        // Note: Schema uses 'department', not 'departmentName'
-        // Cases:
-        // 1. Adding a new department (oldDept is null/empty, newDept has value) - UPDATE
-        // 2. Changing existing department (oldDept matches, newDept has value) - UPDATE
-        // 3. Clearing department (oldDept has value, newDept is null/empty) - SKIP (prevent accidental clearing)
-        // 4. No change (oldDept is null, newDept is null) - SKIP
-        const currentDept = request.department || null;
-        const oldDeptMatches = trimmedOldDept === null ? currentDept === null || currentDept === '' : currentDept === trimmedOldDept;
+          // Check if department should be updated
+          // Note: Schema uses 'department', not 'departmentName'
+          // Cases:
+          // 1. Adding a new department (oldDept is null/empty, newDept has value) - UPDATE
+          // 2. Changing existing department (oldDept matches, newDept has value) - UPDATE
+          // 3. Clearing department (oldDept has value, newDept is null/empty) - SKIP (prevent accidental clearing)
+          // 4. No change (oldDept is null, newDept is null) - SKIP
+          const currentDept = request.department || null;
+          const oldDeptMatches = trimmedOldDept === null ? currentDept === null || currentDept === '' : currentDept === trimmedOldDept;
 
-        if (oldDeptMatches && trimmedNewDept !== null && trimmedNewDept !== currentDept) {
-          updates.department = trimmedNewDept;
-          shouldUpdate = true;
-        }
+          if (oldDeptMatches && trimmedNewDept !== null && trimmedNewDept !== currentDept) {
+            updates.department = trimmedNewDept;
+            shouldUpdate = true;
+          }
 
-        if (shouldUpdate) {
-          try {
-            await storage.updateEventRequest(request.id, updates);
-            updatedEventRequests++;
-          } catch (updateError) {
-            logger.error('Failed to update event request', {
-              requestId: request.id,
-              updates,
-              error: updateError instanceof Error ? updateError.message : updateError,
-            });
-            throw updateError;
+          if (shouldUpdate) {
+            try {
+              await storage.updateEventRequest(request.id, updates);
+              updatedEventRequests++;
+            } catch (updateError) {
+              logger.error('Failed to update event request', {
+                requestId: request.id,
+                updates,
+                error: updateError instanceof Error ? updateError.message : updateError,
+              });
+              throw updateError;
+            }
           }
         }
       }
 
       // 2. Update sandwich_collections (group1Name, group2Name, and groupCollections JSON)
-      const allCollections = await storage.getAllSandwichCollections();
-      for (const collection of allCollections) {
-        let shouldUpdate = false;
-        const updates: any = {};
+      // Skip collection updates if we're in single-event mode (only editing one event's department)
+      if (!specificEventId) {
+        const allCollections = await storage.getAllSandwichCollections();
+        for (const collection of allCollections) {
+          let shouldUpdate = false;
+          const updates: any = {};
 
-        // Check group1Name
-        if (collection.group1Name === trimmedOldName) {
-          updates.group1Name = effectiveNewName;
-          shouldUpdate = true;
-        }
+          // Check group1Name
+          if (collection.group1Name === trimmedOldName) {
+            updates.group1Name = effectiveNewName;
+            shouldUpdate = true;
+          }
 
-        // Check group2Name
-        if (collection.group2Name === trimmedOldName) {
-          updates.group2Name = effectiveNewName;
-          shouldUpdate = true;
-        }
+          // Check group2Name
+          if (collection.group2Name === trimmedOldName) {
+            updates.group2Name = effectiveNewName;
+            shouldUpdate = true;
+          }
 
-        // Check groupCollections JSON array
-        if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
-          const updatedGroupCollections = collection.groupCollections.map((group: any) => {
-            if (group && typeof group === 'object') {
-              let updatedGroup = { ...group };
+          // Check groupCollections JSON array
+          if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+            const updatedGroupCollections = collection.groupCollections.map((group: any) => {
+              if (group && typeof group === 'object') {
+                let updatedGroup = { ...group };
 
-              // Update name field
-              if (group.name === trimmedOldName) {
-                updatedGroup.name = effectiveNewName;
-                shouldUpdate = true;
+                // Update name field
+                if (group.name === trimmedOldName) {
+                  updatedGroup.name = effectiveNewName;
+                  shouldUpdate = true;
+                }
+
+                // Update department field if applicable (only if new department was explicitly provided)
+                if (trimmedOldDept !== null && group.department === trimmedOldDept && trimmedNewDept !== null) {
+                  updatedGroup.department = trimmedNewDept;
+                  shouldUpdate = true;
+                }
+
+                return updatedGroup;
               }
+              return group;
+            });
 
-              // Update department field if applicable (only if new department was explicitly provided)
-              if (trimmedOldDept !== null && group.department === trimmedOldDept && trimmedNewDept !== null) {
-                updatedGroup.department = trimmedNewDept;
-                shouldUpdate = true;
-              }
-
-              return updatedGroup;
+            if (shouldUpdate) {
+              updates.groupCollections = updatedGroupCollections;
             }
-            return group;
-          });
+          }
 
           if (shouldUpdate) {
-            updates.groupCollections = updatedGroupCollections;
+            await storage.updateSandwichCollection(collection.id, updates);
+            updatedCollections++;
           }
         }
 
-        if (shouldUpdate) {
-          await storage.updateSandwichCollection(collection.id, updates);
-          updatedCollections++;
-        }
-      }
-
-      // 3. Update the organizations table if it exists
-      const allOrganizations = await storage.getAllOrganizations();
-      for (const org of allOrganizations) {
-        if (org.name === trimmedOldName) {
-          await storage.updateOrganization(org.id, { name: effectiveNewName });
+        // 3. Update the organizations table if it exists (only for bulk rename mode)
+        const allOrganizations = await storage.getAllOrganizations();
+        for (const org of allOrganizations) {
+          if (org.name === trimmedOldName) {
+            await storage.updateOrganization(org.id, { name: effectiveNewName });
+          }
         }
       }
 

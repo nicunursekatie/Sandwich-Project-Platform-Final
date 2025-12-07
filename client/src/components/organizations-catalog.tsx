@@ -88,6 +88,7 @@ interface OrganizationContact {
   primaryOrganization?: string;
   partnerRole?: 'co-host' | 'partner' | 'sponsor';
   linkedEventId?: number;
+  eventIds?: number[]; // All event IDs aggregated in this card
   isFromCollectionOnly?: boolean;
   // Co-host tracking for primary entries
   isCoHostedEvent?: boolean;
@@ -250,13 +251,20 @@ export default function GroupCatalog({
       oldDepartment?: string;
       newDepartment?: string;
       partnerOrganizations?: Array<{ name: string; role: string }>;
+      eventId?: number; // If provided, only update this specific event
     }) => {
       return apiRequest('POST', '/api/groups-catalog/rename', data);
     },
     onSuccess: (data: any) => {
+      const eventCount = data.updatedEventRequests || 0;
+      const collectionCount = data.updatedCollections || 0;
+      const description = eventCount === 1 && collectionCount === 0
+        ? 'Event updated successfully.'
+        : `Updated ${eventCount} event${eventCount !== 1 ? 's' : ''} and ${collectionCount} collection${collectionCount !== 1 ? 's' : ''}.`;
+
       toast({
         title: 'Success',
-        description: `Renamed successfully. Updated ${data.updatedEventRequests} event requests and ${data.updatedCollections} collections.`,
+        description,
       });
       // Invalidate and force immediate refetch of groups catalog
       queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
@@ -304,6 +312,7 @@ export default function GroupCatalog({
       oldDepartment: editNameOrganization.department || undefined,
       newDepartment: editDeptName.trim() || undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
+      eventId: editNameOrganization.linkedEventId, // Only update this specific event if available
     });
   };
 
@@ -2379,6 +2388,13 @@ export default function GroupCatalog({
               Update the organization name and add partner organizations if this event is co-hosted.
             </DialogDescription>
           </DialogHeader>
+          {/* Warning for multi-event cards */}
+          {editNameOrganization && !editNameOrganization.linkedEventId && (editNameOrganization.eventIds?.length ?? 0) > 1 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800">
+              <strong>Note:</strong> This card represents {editNameOrganization.eventIds?.length} events.
+              Changes will apply to ALL events for this organization.
+            </div>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-org-name">Organization Name</Label>
