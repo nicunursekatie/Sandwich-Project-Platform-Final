@@ -975,7 +975,7 @@ export default function GroupCatalog({
                   >
                     {/* Organization Header */}
                     <div className="mb-4 pb-3 border-b border-gray-200">
-                      {/* Organization Name - Full Width */}
+                      {/* Organization Name with Rename Button */}
                       <div className="flex items-start space-x-2 mb-2">
                         <Building
                           className="w-6 h-6 flex-shrink-0 mt-0.5"
@@ -984,24 +984,11 @@ export default function GroupCatalog({
                         <h2 className="text-xl font-bold text-gray-900">
                           {group.groupName}
                         </h2>
-                      </div>
-
-                      {/* Category Badge and Actions Row */}
-                      <div className="flex items-center flex-wrap gap-2 mb-2 ml-8">
-                        {(() => {
-                          const orgInfo = organizationCategoryMap.get(group.groupName);
-                          const category = orgInfo?.category;
-                          return category ? (
-                            <Badge className={getCategoryBadgeColor(category)}>
-                              {getCategoryLabel(category)}
-                            </Badge>
-                          ) : null;
-                        })()}
                         {canEditCategories && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 hover:bg-blue-100"
+                            className="h-6 w-6 p-0 hover:bg-blue-100 flex-shrink-0"
                             onClick={() => handleEditName({
                               organizationName: group.groupName,
                               contactName: group.departments[0]?.contactName || '',
@@ -1012,13 +999,49 @@ export default function GroupCatalog({
                               status: group.departments[0]?.status || 'new',
                               hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
                             })}
-                            title="Edit organization name"
+                            title="Rename organization"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
-                            <Edit className="h-3 w-3 text-blue-600 mr-1" />
-                            <span className="text-xs text-blue-600">Rename</span>
+                            <Edit className="h-3 w-3 text-blue-600" />
                           </Button>
                         )}
+                      </div>
+
+                      {/* Category Badge with Inline Edit */}
+                      <div className="flex items-center flex-wrap gap-2 mb-2 ml-8">
+                        {(() => {
+                          const orgInfo = organizationCategoryMap.get(group.groupName);
+                          const category = orgInfo?.category;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Badge className={getCategoryBadgeColor(category)}>
+                                {getCategoryLabel(category)}
+                              </Badge>
+                              {canEditCategories && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-orange-200"
+                                  onClick={() => handleEditCategory({
+                                    organizationName: group.groupName,
+                                    contactName: group.departments[0]?.contactName || '',
+                                    department: group.departments[0]?.department,
+                                    latestRequestDate: group.departments[0]?.latestRequestDate || '',
+                                    latestActivityDate: group.departments[0]?.latestActivityDate || '',
+                                    totalRequests: group.departments[0]?.totalRequests || 0,
+                                    status: group.departments[0]?.status || 'new',
+                                    hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
+                                    category: category,
+                                  })}
+                                  title="Edit category"
+                                  data-testid={`button-edit-category-header-${group.groupName}`}
+                                >
+                                  <Edit className="h-3 w-3 text-orange-700" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Department Count */}
@@ -1152,22 +1175,6 @@ export default function GroupCatalog({
                                         >
                                           {getStatusText(org.status)}
                                         </Badge>
-                                        <div className="flex items-center gap-1">
-                                          <Badge className={getCategoryBadgeColor(org.category)}>
-                                            {getCategoryLabel(org.category)}
-                                          </Badge>
-                                          {canEditCategories && (
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-6 w-6 p-0 hover:bg-orange-200"
-                                              onClick={() => handleEditCategory(org)}
-                                              data-testid={`button-edit-category-${org.organizationName}`}
-                                            >
-                                              <Edit className="h-3 w-3 text-orange-700" />
-                                            </Button>
-                                          )}
-                                        </div>
                                       </div>
                                       {org.totalRequests > 1 && (
                                         <span className="text-gray-600 font-medium">
@@ -1377,7 +1384,7 @@ export default function GroupCatalog({
                             <CardHeader className="pb-3">
                               {/* Organization Header */}
                               <div className="mb-3">
-                                {/* Organization Name - Full Width */}
+                                {/* Organization Name with Rename Button */}
                                 <div className="flex items-start space-x-2 mb-2">
                                   <Building
                                     className="w-5 h-5 flex-shrink-0 mt-0.5"
@@ -1386,32 +1393,48 @@ export default function GroupCatalog({
                                   <h3 className="text-lg font-bold text-gray-900">
                                     {group.groupName}
                                   </h3>
-                                </div>
-
-                                {/* Category Badge and Rename Row */}
-                                <div className="flex items-center flex-wrap gap-2 ml-7">
-                                  {(() => {
-                                    const orgInfo = organizationCategoryMap.get(group.groupName);
-                                    const category = orgInfo?.category;
-                                    return category ? (
-                                      <Badge className={getCategoryBadgeColor(category)}>
-                                        {getCategoryLabel(category)}
-                                      </Badge>
-                                    ) : null;
-                                  })()}
                                   {canEditCategories && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 px-2 hover:bg-blue-100"
+                                      className="h-6 w-6 p-0 hover:bg-blue-100 flex-shrink-0"
                                       onClick={() => handleEditName(org)}
-                                      title="Edit organization name"
+                                      title="Rename organization"
                                       data-testid={`button-edit-name-single-${group.groupName}`}
                                     >
-                                      <Edit className="h-3 w-3 text-blue-600 mr-1" />
-                                      <span className="text-xs text-blue-600">Rename</span>
+                                      <Edit className="h-3 w-3 text-blue-600" />
                                     </Button>
                                   )}
+                                </div>
+
+                                {/* Category Badge with Inline Edit */}
+                                <div className="flex items-center flex-wrap gap-2 ml-7">
+                                  {(() => {
+                                    const orgInfo = organizationCategoryMap.get(group.groupName);
+                                    const category = orgInfo?.category;
+                                    return (
+                                      <div className="flex items-center gap-1">
+                                        <Badge className={getCategoryBadgeColor(category)}>
+                                          {getCategoryLabel(category)}
+                                        </Badge>
+                                        {canEditCategories && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 hover:bg-orange-200"
+                                            onClick={() => handleEditCategory({
+                                              ...org,
+                                              category: category,
+                                            })}
+                                            title="Edit category"
+                                            data-testid={`button-edit-category-single-${group.groupName}`}
+                                          >
+                                            <Edit className="h-3 w-3 text-orange-700" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
 
