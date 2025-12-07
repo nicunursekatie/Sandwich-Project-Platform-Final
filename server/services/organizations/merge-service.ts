@@ -130,11 +130,12 @@ export async function mergeOrganizations(
     const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
+    // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
     const collectionCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
           WHERE group1_name = ${sourceName}
              OR group2_name = ${sourceName}
-             OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
+             OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}`
     ) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -161,19 +162,20 @@ export async function mergeOrganizations(
     );
 
     // 4. Update groupCollections JSON arrays
+    // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
     await db.execute(sql`
       UPDATE sandwich_collections
       SET group_collections = (
         SELECT jsonb_agg(
           CASE
-            WHEN elem->>'groupName' = ${sourceName}
-            THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName}))
+            WHEN elem->>'name' = ${sourceName}
+            THEN jsonb_set(elem, '{name}', to_jsonb(${targetName}))
             ELSE elem
           END
         )
         FROM jsonb_array_elements(group_collections) AS elem
       )
-      WHERE group_collections::text LIKE ${`%${sourceName}%`}
+      WHERE group_collections::text LIKE ${`%"name":"${sourceName}"%`}
     `);
 
     // 5. Update or create organization record with alternate name
@@ -312,11 +314,12 @@ export async function previewMerge(
 
     try {
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
+      // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
       const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
+               OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}`
       ) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
@@ -326,7 +329,7 @@ export async function previewMerge(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}
+               OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}
             LIMIT 5`
       ) as any[];
 

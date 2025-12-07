@@ -28,7 +28,8 @@
       "Bash(git rebase:*)",
       "Bash(psql:*)",
       "Bash(node -r dotenv/config -r esbuild-register:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
