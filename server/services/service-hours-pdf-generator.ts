@@ -18,9 +18,6 @@ interface ServiceHoursData {
 }
 
 export class ServiceHoursPDFGenerator {
-  private static readonly MAX_DESCRIPTION_LENGTH = 28;
-  private static readonly TRUNCATE_AT = 25;
-
   static async generatePDF(data: ServiceHoursData): Promise<Buffer> {
     // Load the existing PDF template
     const templatePath = path.join(
@@ -62,16 +59,16 @@ export class ServiceHoursPDFGenerator {
 
     // Left column X positions
     const leftColX = {
-      date: 132,        // DATE column start
-      hours: 165,       // HOURS column start (moved left from 175)
-      description: 215  // DESCRIPTION column start (moved left from 225)
+      date: 125,        // DATE column start (moved left from 132)
+      hours: 165,       // HOURS column start
+      description: 205  // DESCRIPTION column start (moved left from 215)
     };
 
     // Right column X positions
     const rightColX = {
-      date: 347,        // DATE column start
-      hours: 380,       // HOURS column start (moved left from 390)
-      description: 430  // DESCRIPTION column start (moved left from 440)
+      date: 340,        // DATE column start (moved left from 347)
+      hours: 380,       // HOURS column start
+      description: 420  // DESCRIPTION column start (moved left from 430)
     };
 
     // Starting Y position for first table row
@@ -118,18 +115,43 @@ export class ServiceHoursPDFGenerator {
         color: rgb(0, 0, 0),
       });
 
-      // Draw description (truncate if too long to fit in column)
-      let description = entry.description;
-      if (description.length > this.MAX_DESCRIPTION_LENGTH) {
-        description = description.substring(0, this.TRUNCATE_AT) + '...';
+      // Draw description with wrapping
+      const description = entry.description;
+      const maxWidth = 100; // Maximum width in points for description
+      const words = description.split(' ');
+      let line = '';
+      let lineY = currentY;
+
+      for (let j = 0; j < words.length; j++) {
+        const testLine = line + (line ? ' ' : '') + words[j];
+        const testWidth = font.widthOfTextAtSize(testLine, 8);
+
+        if (testWidth > maxWidth && line) {
+          // Draw current line and move to next
+          firstPage.drawText(line, {
+            x: colX.description,
+            y: lineY,
+            size: 8,
+            font: font,
+            color: rgb(0, 0, 0),
+          });
+          line = words[j];
+          lineY -= 9; // Move down for next line (slightly less than rowHeight)
+        } else {
+          line = testLine;
+        }
       }
-      firstPage.drawText(description, {
-        x: colX.description,
-        y: currentY,
-        size: 8,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
+
+      // Draw remaining text
+      if (line) {
+        firstPage.drawText(line, {
+          x: colX.description,
+          y: lineY,
+          size: 8,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+      }
     }
 
     // TOTAL COMMUNITY SERVICE HOURS COMPLETED field
@@ -149,8 +171,8 @@ export class ServiceHoursPDFGenerator {
     // Signature line (after "Signature:")
     if (data.approverSignature) {
       firstPage.drawText(data.approverSignature, {
-        x: 185,           // Moved left from 200
-        y: height - 580,  // Moved up from 590
+        x: 185,
+        y: height - 585,  // Moved down from 580 (was too high)
         size: 11,
         font: font,
         color: rgb(0, 0, 0),
@@ -159,8 +181,8 @@ export class ServiceHoursPDFGenerator {
 
     // Print Name (after "Print Name:")
     firstPage.drawText(data.approverName, {
-      x: 185,           // Moved left from 200
-      y: height - 605,  // Moved up from 615
+      x: 185,
+      y: height - 610,  // Moved down from 605 (was too high)
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -169,7 +191,7 @@ export class ServiceHoursPDFGenerator {
     // Date (to the right of Print Name)
     firstPage.drawText(currentDate, {
       x: 480,
-      y: height - 605,  // Moved up from 615
+      y: height - 610,  // Match print name Y position
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
@@ -177,8 +199,8 @@ export class ServiceHoursPDFGenerator {
 
     // Contact # (after "Contact #:")
     firstPage.drawText(data.approverContact, {
-      x: 220,           // Moved left from 235
-      y: height - 630,  // Moved up from 640
+      x: 210,           // Moved left from 220
+      y: height - 630,  // Perfect height, just adjusted X
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
