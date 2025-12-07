@@ -282,6 +282,7 @@ export async function getMergeHistory(limit: number = 100): Promise<any[]> {
 
 /**
  * Preview what would be affected by a merge (without actually executing it)
+ * Uses the SAME JavaScript-based matching logic as duplicate-detection to ensure consistency
  */
 export async function previewMerge(
   sourceName: string,
@@ -295,112 +296,103 @@ export async function previewMerge(
   try {
     logger.info('Previewing merge', { sourceName, targetName });
 
-    // Count affected event requests
+    // Use JavaScript-based matching (same as duplicate-detection) to ensure consistency
+    const trimmedSource = sourceName.trim().toLowerCase();
+    
+    // Count affected event requests by iterating (same approach as duplicate-detection)
     let eventCount = 0;
     let sampleEvents: any[] = [];
 
-    // Trim whitespace from source name for consistent matching
-    const trimmedSource = sourceName.trim();
-    
-    // DEBUG: Log byte representation to detect invisible characters
-    logger.info('DEBUG: Source name analysis', {
-      sourceName,
-      trimmedSource,
-      sourceLength: sourceName.length,
-      trimmedLength: trimmedSource.length,
-      sourceBytes: Buffer.from(sourceName).toString('hex'),
-      trimmedBytes: Buffer.from(trimmedSource).toString('hex'),
-    });
-    
-    // DEBUG: Find similar names in event_requests
     try {
-      const similarNamesResult = await db.execute(
-        sql`SELECT DISTINCT organization_name, LENGTH(organization_name) as len 
-            FROM event_requests 
-            WHERE LOWER(organization_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
-            LIMIT 10`
+      // Get all event requests and count matches using JavaScript string comparison
+      const allEvents = await db.execute(
+        sql`SELECT id, organization_name, event_date, department_name FROM event_requests 
+            WHERE organization_name IS NOT NULL AND organization_name != ''`
       ) as any[];
-      logger.info('DEBUG: Similar org names in event_requests', { 
-        searchPrefix: trimmedSource.substring(0, 5),
-        results: similarNamesResult 
+
+      for (const event of allEvents) {
+        const orgName = (event.organization_name || '').trim().toLowerCase();
+        if (orgName === trimmedSource) {
+          eventCount++;
+          if (sampleEvents.length < 5) {
+            sampleEvents.push({
+              id: event.id,
+              event_date: event.event_date,
+              department_name: event.department_name
+            });
+          }
+        }
+      }
+      
+      logger.info('Preview: Event requests matched via JavaScript', { 
+        sourceName, 
+        trimmedSource,
+        totalEvents: allEvents.length,
+        matchedEvents: eventCount 
       });
-    } catch (e) {
-      logger.error('DEBUG: Error finding similar names', { error: e });
-    }
-    
-    // DEBUG: Find similar names in collections
-    try {
-      const similarCollectionsResult = await db.execute(
-        sql`SELECT DISTINCT group1_name, group2_name 
-            FROM sandwich_collections 
-            WHERE LOWER(group1_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
-               OR LOWER(group2_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
-            LIMIT 10`
-      ) as any[];
-      logger.info('DEBUG: Similar org names in collections', { 
-        searchPrefix: trimmedSource.substring(0, 5),
-        results: similarCollectionsResult 
-      });
-    } catch (e) {
-      logger.error('DEBUG: Error finding similar collection names', { error: e });
-    }
-    
-    try {
-      // Use raw SQL for counts to avoid schema issues
-      // Use case-insensitive matching with TRIM to handle different capitalizations and whitespace
-      const eventCountResult = await db.execute(
-        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource}))`
-      ) as any[];
-
-      eventCount = (eventCountResult?.[0] as any)?.count || 0;
-
-      // Get sample events with raw SQL (case-insensitive with TRIM)
-      const sampleEventsResult = await db.execute(
-        sql`SELECT id, event_date, department_name FROM event_requests WHERE LOWER(TRIM(organization_name)) = LOWER(TRIM(${trimmedSource})) LIMIT 5`
-      ) as any[];
-
-      sampleEvents = sampleEventsResult || [];
     } catch (error) {
-      logger.error('Error querying event requests', { sourceName, error });
-      // Continue with collections even if events fail
+      logger.error('Error querying event requests for preview', { sourceName, error });
     }
 
-    // Count affected collections
+    // Count affected collections by iterating (same approach as duplicate-detection)
     let collectionCount = 0;
     let sampleCollections: any[] = [];
 
     try {
-      // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
-      // Use case-insensitive matching with TRIM for all comparisons
-      // Use proper jsonb array element query for JSON matching
-      const collectionCountResult = await db.execute(
-        sql`SELECT COUNT(*)::int as count FROM sandwich_collections
-            WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
-               OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
-               OR (group_collections IS NOT NULL AND EXISTS (
-                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
-                 WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
-               ))`
+      // Get all collections and count matches using JavaScript
+      const allCollections = await db.execute(
+        sql`SELECT id, date_collected, group1_name, group2_name, group_collections FROM sandwich_collections`
       ) as any[];
 
-      collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
-
-      // Get sample collections with raw SQL (case-insensitive with TRIM)
-      const sampleCollectionsResult = await db.execute(
-        sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
-            WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
-               OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
-               OR (group_collections IS NOT NULL AND EXISTS (
-                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
-                 WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
-               ))
-            LIMIT 5`
-      ) as any[];
-
-      sampleCollections = sampleCollectionsResult || [];
+      for (const collection of allCollections) {
+        let matched = false;
+        
+        // Check group1_name
+        const group1 = (collection.group1_name || '').trim().toLowerCase();
+        if (group1 === trimmedSource) {
+          matched = true;
+        }
+        
+        // Check group2_name
+        const group2 = (collection.group2_name || '').trim().toLowerCase();
+        if (group2 === trimmedSource) {
+          matched = true;
+        }
+        
+        // Check groupCollections JSON array
+        if (collection.group_collections && Array.isArray(collection.group_collections)) {
+          for (const groupItem of collection.group_collections) {
+            if (groupItem && typeof groupItem === 'object' && 'groupName' in groupItem) {
+              const groupName = ((groupItem.groupName as string) || '').trim().toLowerCase();
+              if (groupName === trimmedSource) {
+                matched = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (matched) {
+          collectionCount++;
+          if (sampleCollections.length < 5) {
+            sampleCollections.push({
+              id: collection.id,
+              date_collected: collection.date_collected,
+              group1_name: collection.group1_name,
+              group2_name: collection.group2_name
+            });
+          }
+        }
+      }
+      
+      logger.info('Preview: Collections matched via JavaScript', { 
+        sourceName, 
+        trimmedSource,
+        totalCollections: allCollections.length,
+        matchedCollections: collectionCount 
+      });
     } catch (error) {
-      logger.error('Error querying collections', { sourceName, error });
-      // Continue with what we have
+      logger.error('Error querying collections for preview', { sourceName, error });
     }
 
     logger.info('Preview complete', {
