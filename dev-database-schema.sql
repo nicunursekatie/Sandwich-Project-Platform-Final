@@ -1,6 +1,110 @@
--- Generated from production database on 2025-12-07T21:13:14.319Z
+-- Generated from production database on 2025-12-07T21:49:06.883Z
 -- Run this SQL against your dev database to create all tables
 
+-- SEQUENCES
+CREATE SEQUENCE IF NOT EXISTS "_migrations_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "activity_attachments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "activity_participants_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "activity_reactions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "agenda_items_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "agenda_sections_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "alert_requests_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "announcements_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "archived_projects_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "audit_logs_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "authoritative_weekly_collections_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "availability_slots_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "chat_message_likes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "chat_message_reads_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "chat_messages_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "committee_memberships_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "committees_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "compiled_agendas_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "confidential_documents_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "contacts_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "conversations_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "cooler_inventory_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "cooler_types_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "dashboard_documents_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "dismissed_announcements_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "document_access_logs_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "document_permissions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "documents_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "drive_links_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "driver_agreements_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "drivers_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "email_drafts_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "email_messages_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_collaboration_comment_likes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_collaboration_comments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_edit_revisions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_field_locks_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_reminders_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_requests_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "event_volunteers_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "expenses_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "feature_flags_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "google_sheets_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "holding_zone_categories_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "host_contacts_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "hosted_files_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "hosts_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "impact_reports_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "imported_external_ids_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "kudos_tracking_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "meeting_minutes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "meeting_notes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "meeting_projects_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "meetings_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "message_likes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "message_recipients_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "messages_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_ab_tests_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_action_history_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_analytics_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_history_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_preferences_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notification_rules_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "notifications_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "onboarding_challenges_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "onboarding_progress_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "organization_engagement_scores_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "organizations_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "project_assignments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "project_comments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "project_documents_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "project_tasks_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "projects_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "promotion_graphics_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "recipient_tsp_contacts_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "recipients_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "resource_tag_assignments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "resource_tags_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "resources_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "sandwich_collections_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "sandwich_distributions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "search_analytics_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "stream_channels_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "stream_messages_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "stream_threads_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "stream_users_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "suggestion_responses_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "suggestions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "task_assignments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "task_completions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "team_board_assignments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "team_board_comments_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "team_board_item_likes_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "team_board_items_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "user_activity_logs_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "user_notification_patterns_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "user_resource_favorites_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "volunteers_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "weekly_reports_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "wishlist_suggestions_id_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "work_logs_id_seq" START 1;
+
+-- TABLES
 CREATE TABLE IF NOT EXISTS "_migrations" (
   "id" INT4 NOT NULL DEFAULT nextval('_migrations_id_seq'::regclass),
   "name" VARCHAR(255) NOT NULL,
