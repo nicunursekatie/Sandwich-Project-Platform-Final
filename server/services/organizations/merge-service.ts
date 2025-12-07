@@ -305,10 +305,12 @@ export async function previewMerge(
 
     try {
       // Get all event requests and count matches using JavaScript string comparison
-      const allEvents = await db.execute(
+      // db.execute returns { rows, rowCount, ... }, so we need to extract rows
+      const result = await db.execute(
         sql`SELECT id, organization_name, event_date, department_name FROM event_requests 
             WHERE organization_name IS NOT NULL AND organization_name != ''`
-      ) as any[];
+      );
+      const allEvents = (result as any).rows || [];
 
       for (const event of allEvents) {
         const orgName = (event.organization_name || '').trim().toLowerCase();
@@ -340,9 +342,11 @@ export async function previewMerge(
 
     try {
       // Get all collections and count matches using JavaScript
-      const allCollections = await db.execute(
+      // db.execute returns { rows, rowCount, ... }, so we need to extract rows
+      const collectionsResult = await db.execute(
         sql`SELECT id, date_collected, group1_name, group2_name, group_collections FROM sandwich_collections`
-      ) as any[];
+      );
+      const allCollections = (collectionsResult as any).rows || [];
 
       for (const collection of allCollections) {
         let matched = false;
@@ -359,9 +363,18 @@ export async function previewMerge(
           matched = true;
         }
         
-        // Check groupCollections JSON array
-        if (collection.group_collections && Array.isArray(collection.group_collections)) {
-          for (const groupItem of collection.group_collections) {
+        // Check groupCollections JSON array - parse if it's a string
+        let groupCollections = collection.group_collections;
+        if (typeof groupCollections === 'string') {
+          try {
+            groupCollections = JSON.parse(groupCollections);
+          } catch {
+            groupCollections = null;
+          }
+        }
+        
+        if (groupCollections && Array.isArray(groupCollections)) {
+          for (const groupItem of groupCollections) {
             if (groupItem && typeof groupItem === 'object' && 'groupName' in groupItem) {
               const groupName = ((groupItem.groupName as string) || '').trim().toLowerCase();
               if (groupName === trimmedSource) {
