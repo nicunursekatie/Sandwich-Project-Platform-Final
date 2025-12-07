@@ -100,6 +100,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Group by organization + department + contact (one card per unique contact)
         const departmentKey = `${canonicalOrgName}|${department}|${contactEmail}`;
 
+        // Check if this event has co-hosts (partner organizations where primary org is also listed)
+        const partnerOrgs = request.partnerOrganizations || [];
+        const coHostNames = Array.isArray(partnerOrgs)
+          ? partnerOrgs
+              .filter((p: any) => p && p.name && p.name.trim() && p.name.trim() !== orgName)
+              .map((p: any) => p.name.trim())
+          : [];
+        const isCoHostedEvent = coHostNames.length > 0;
+
         // Track contact-level aggregation (one entry per unique contact)
         if (!departmentsMap.has(departmentKey)) {
           departmentsMap.set(departmentKey, {
@@ -125,7 +134,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             assignedTo: null,
             assignedToName: null,
             completedEventsFromRequests: 0, // Track completed events from event_requests
+            // Co-host tracking
+            isCoHostedEvent: isCoHostedEvent,
+            coHostNames: isCoHostedEvent ? coHostNames : [],
           });
+        } else if (isCoHostedEvent) {
+          // Update existing entry with co-host info if this request has co-hosts
+          const existingDept = departmentsMap.get(departmentKey);
+          existingDept.isCoHostedEvent = true;
+          existingDept.coHostNames = [...new Set([...(existingDept.coHostNames || []), ...coHostNames])];
         }
 
         const dept = departmentsMap.get(departmentKey);
@@ -984,12 +1001,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         return res.status(400).json({ message: 'Current organization name is required' });
       }
 
-      if (!newName || typeof newName !== 'string') {
-        return res.status(400).json({ message: 'New organization name is required' });
-      }
-
       const trimmedOldName = oldName.trim();
-      const trimmedNewName = newName.trim();
+      // Allow newName to be null/empty for co-hosted events
+      const trimmedNewName = (newName && typeof newName === 'string') ? newName.trim() : '';
       const trimmedOldDept = oldDepartment?.trim() || null;
       const trimmedNewDept = newDepartment?.trim() || null;
 
@@ -1003,8 +1017,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             }))
         : null;
 
-      if (!trimmedNewName) {
-        return res.status(400).json({ message: 'New organization name cannot be empty' });
+      // Either need a new org name OR co-hosts (for truly co-hosted events)
+      const hasCoHosts = validPartnerOrgs && validPartnerOrgs.length > 0;
+      if (!trimmedNewName && !hasCoHosts) {
+        return res.status(400).json({ message: 'Please provide an organization name or add co-hosting organizations' });
       }
 
       logger.info('Renaming organization', {
@@ -1019,6 +1035,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       let updatedEventRequests = 0;
       let updatedCollections = 0;
 
+      // For co-hosted events with no primary org, use the first co-host as the organizationName
+      // This ensures the record isn't orphaned while still having all orgs as co-hosts
+      const effectiveNewName = trimmedNewName || (hasCoHosts ? validPartnerOrgs![0].name : '');
+
       // 1. Update event_requests
       const allEventRequests = await storage.getAllEventRequests();
       for (const request of allEventRequests) {
@@ -1027,12 +1047,19 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Check if organization name matches
         if (request.organizationName === trimmedOldName) {
-          updates.organizationName = trimmedNewName;
+          updates.organizationName = effectiveNewName;
           shouldUpdate = true;
 
           // Add partner organizations if provided
           if (validPartnerOrgs && validPartnerOrgs.length > 0) {
-            updates.partnerOrganizations = validPartnerOrgs;
+            // If no primary org was specified, add all orgs as co-hosts (including the first one used as organizationName)
+            if (!trimmedNewName) {
+              // All orgs are equal co-hosts
+              updates.partnerOrganizations = validPartnerOrgs;
+            } else {
+              // Normal case: primary org + partners
+              updates.partnerOrganizations = validPartnerOrgs;
+            }
           }
         }
 
@@ -1056,13 +1083,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Check group1Name
         if (collection.group1Name === trimmedOldName) {
-          updates.group1Name = trimmedNewName;
+          updates.group1Name = effectiveNewName;
           shouldUpdate = true;
         }
 
         // Check group2Name
         if (collection.group2Name === trimmedOldName) {
-          updates.group2Name = trimmedNewName;
+          updates.group2Name = effectiveNewName;
           shouldUpdate = true;
         }
 
@@ -1074,7 +1101,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
               // Update name field
               if (group.name === trimmedOldName) {
-                updatedGroup.name = trimmedNewName;
+                updatedGroup.name = effectiveNewName;
                 shouldUpdate = true;
               }
 
@@ -1104,13 +1131,14 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const allOrganizations = await storage.getAllOrganizations();
       for (const org of allOrganizations) {
         if (org.name === trimmedOldName) {
-          await storage.updateOrganization(org.id, { name: trimmedNewName });
+          await storage.updateOrganization(org.id, { name: effectiveNewName });
         }
       }
 
       logger.info('Organization rename completed', {
         oldName: trimmedOldName,
-        newName: trimmedNewName,
+        newName: effectiveNewName,
+        isCoHostedEvent: !trimmedNewName && hasCoHosts,
         updatedEventRequests,
         updatedCollections,
       });
@@ -1118,7 +1146,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       res.json({
         success: true,
         oldName: trimmedOldName,
-        newName: trimmedNewName,
+        newName: effectiveNewName,
+        isCoHostedEvent: !trimmedNewName && hasCoHosts,
         updatedEventRequests,
         updatedCollections,
       });

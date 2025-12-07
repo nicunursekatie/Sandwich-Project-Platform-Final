@@ -89,6 +89,9 @@ interface OrganizationContact {
   partnerRole?: 'co-host' | 'partner' | 'sponsor';
   linkedEventId?: number;
   isFromCollectionOnly?: boolean;
+  // Co-host tracking for primary entries
+  isCoHostedEvent?: boolean;
+  coHostNames?: string[];
 }
 
 interface GroupCatalogProps {
@@ -279,21 +282,25 @@ export default function GroupCatalog({
 
   // Handler to save name changes
   const handleSaveName = () => {
-    if (!editNameOrganization || !editOrgName.trim()) {
+    // Filter out empty partner organizations
+    const validPartners = partnerOrganizations.filter(p => p.name.trim());
+
+    // Allow empty primary org if we have co-hosts (for truly co-hosted events)
+    const hasValidPrimaryOrg = editOrgName.trim().length > 0;
+    const hasValidCoHosts = validPartners.length > 0;
+
+    if (!editNameOrganization || (!hasValidPrimaryOrg && !hasValidCoHosts)) {
       toast({
         title: 'Error',
-        description: 'Organization name cannot be empty',
+        description: 'Please enter an organization name or add co-hosting organizations',
         variant: 'destructive',
       });
       return;
     }
 
-    // Filter out empty partner organizations
-    const validPartners = partnerOrganizations.filter(p => p.name.trim());
-
     renameOrganizationMutation.mutate({
       oldName: editNameOrganization.organizationName,
-      newName: editOrgName.trim(),
+      newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
       oldDepartment: editNameOrganization.department || undefined,
       newDepartment: editDeptName.trim() || undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
@@ -1172,11 +1179,19 @@ export default function GroupCatalog({
                                         <span>No date specified</span>
                                       </div>
                                     )}
-                                    {/* Partner Organization Badge */}
+                                    {/* Partner Organization Badge (for entries created from partner data) */}
                                     {org.isPartnerEntry && org.primaryOrganization && (
                                       <div className="flex items-center mt-2">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           {org.partnerRole === 'co-host' ? 'Co-hosted' : org.partnerRole === 'sponsor' ? 'Sponsored' : 'Partner'} with {org.primaryOrganization}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {/* Co-host Badge (for primary entries that have co-hosts) */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="flex items-center mt-2">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          Co-hosted with {org.coHostNames.join(', ')}
                                         </Badge>
                                       </div>
                                     )}
@@ -1516,6 +1531,14 @@ export default function GroupCatalog({
                                       <div className="mt-1">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           {org.partnerRole === 'co-host' ? 'Co-host' : org.partnerRole === 'sponsor' ? 'Sponsor' : 'Partner'}: {org.primaryOrganization}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {/* Co-host Badge - Compact (for primary entries that have co-hosts) */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          Co-host: {org.coHostNames.join(', ')}
                                         </Badge>
                                       </div>
                                     )}
@@ -2341,14 +2364,17 @@ export default function GroupCatalog({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-org-name">Primary Organization</Label>
+              <Label htmlFor="edit-org-name">Organization Name</Label>
               <Input
                 id="edit-org-name"
                 value={editOrgName}
                 onChange={(e) => setEditOrgName(e.target.value)}
-                placeholder="Enter organization name"
+                placeholder="Enter organization name (or leave empty for co-hosted events)"
                 data-testid="input-edit-org-name"
               />
+              <p className="text-xs text-gray-500">
+                For co-hosted events: leave this empty and add both organizations as co-hosts below.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -2442,7 +2468,7 @@ export default function GroupCatalog({
               </Button>
               <Button
                 onClick={handleSaveName}
-                disabled={renameOrganizationMutation.isPending || !editOrgName.trim()}
+                disabled={renameOrganizationMutation.isPending || (!editOrgName.trim() && partnerOrganizations.filter(p => p.name.trim()).length === 0)}
                 data-testid="button-save-name"
               >
                 {renameOrganizationMutation.isPending ? 'Saving...' : 'Save'}
