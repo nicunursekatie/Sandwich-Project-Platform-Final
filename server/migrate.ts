@@ -9,10 +9,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function runMigrationsAutomatically() {
-  const DATABASE_URL = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const DATABASE_URL = isProduction
+    ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
+    : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
   if (!DATABASE_URL) {
-    logger.log('⚠️  No DATABASE_URL set, skipping migrations (using SQLite)');
+    logger.log('⚠️  No database URL set, skipping migrations');
     return;
   }
 

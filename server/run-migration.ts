@@ -8,11 +8,14 @@ import { logger } from './utils/production-safe-logger';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Get database URL from environment
-const DATABASE_URL = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+// Get database URL from environment (environment-based selection)
+const isProduction = process.env.NODE_ENV === 'production';
+const DATABASE_URL = isProduction
+  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
+  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
 if (!DATABASE_URL) {
-  logger.error('ERROR: DATABASE_URL environment variable not set');
+  logger.error('ERROR: Database URL not configured. Set DEV_DATABASE_URL or PRODUCTION_DATABASE_URL.');
   process.exit(1);
 }
 
