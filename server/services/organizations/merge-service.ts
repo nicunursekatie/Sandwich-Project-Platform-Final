@@ -302,6 +302,49 @@ export async function previewMerge(
     // Trim whitespace from source name for consistent matching
     const trimmedSource = sourceName.trim();
     
+    // DEBUG: Log byte representation to detect invisible characters
+    logger.info('DEBUG: Source name analysis', {
+      sourceName,
+      trimmedSource,
+      sourceLength: sourceName.length,
+      trimmedLength: trimmedSource.length,
+      sourceBytes: Buffer.from(sourceName).toString('hex'),
+      trimmedBytes: Buffer.from(trimmedSource).toString('hex'),
+    });
+    
+    // DEBUG: Find similar names in event_requests
+    try {
+      const similarNamesResult = await db.execute(
+        sql`SELECT DISTINCT organization_name, LENGTH(organization_name) as len 
+            FROM event_requests 
+            WHERE LOWER(organization_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
+            LIMIT 10`
+      ) as any[];
+      logger.info('DEBUG: Similar org names in event_requests', { 
+        searchPrefix: trimmedSource.substring(0, 5),
+        results: similarNamesResult 
+      });
+    } catch (e) {
+      logger.error('DEBUG: Error finding similar names', { error: e });
+    }
+    
+    // DEBUG: Find similar names in collections
+    try {
+      const similarCollectionsResult = await db.execute(
+        sql`SELECT DISTINCT group1_name, group2_name 
+            FROM sandwich_collections 
+            WHERE LOWER(group1_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
+               OR LOWER(group2_name) LIKE LOWER(${`%${trimmedSource.substring(0, 5)}%`})
+            LIMIT 10`
+      ) as any[];
+      logger.info('DEBUG: Similar org names in collections', { 
+        searchPrefix: trimmedSource.substring(0, 5),
+        results: similarCollectionsResult 
+      });
+    } catch (e) {
+      logger.error('DEBUG: Error finding similar collection names', { error: e });
+    }
+    
     try {
       // Use raw SQL for counts to avoid schema issues
       // Use case-insensitive matching with TRIM to handle different capitalizations and whitespace
