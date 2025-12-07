@@ -123,8 +123,12 @@ export async function mergeOrganizations(
     ) as any[];
     const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
+    // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
     const collectionCountResult = await db.execute(
-      sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName}`
+      sql`SELECT COUNT(*)::int as count FROM sandwich_collections
+          WHERE group1_name = ${sourceName}
+             OR group2_name = ${sourceName}
+             OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
     ) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -301,16 +305,23 @@ export async function previewMerge(
     let sampleCollections: any[] = [];
 
     try {
-      // Use raw SQL for counts to avoid schema issues
+      // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
       const collectionCountResult = await db.execute(
-        sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName}`
+        sql`SELECT COUNT(*)::int as count FROM sandwich_collections
+            WHERE group1_name = ${sourceName}
+               OR group2_name = ${sourceName}
+               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
       ) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
       // Get sample collections with raw SQL
       const sampleCollectionsResult = await db.execute(
-        sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName} LIMIT 5`
+        sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
+            WHERE group1_name = ${sourceName}
+               OR group2_name = ${sourceName}
+               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}
+            LIMIT 5`
       ) as any[];
 
       sampleCollections = sampleCollectionsResult || [];
