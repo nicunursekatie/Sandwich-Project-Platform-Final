@@ -87,13 +87,8 @@ export async function mergeOrganizations(
     // Count affected event requests
     const eventCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${targetName}`
-    );
-    logger.info('Event count result structure', {
-      hasRows: !!eventCountResult?.rows,
-      rowCount: eventCountResult?.rowCount,
-      result: eventCountResult
-    });
-    const eventCount = (eventCountResult?.rows?.[0] as any)?.count || 0;
+    ) as any[];
+    const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
     // 2. Update sandwich_collections.group1Name
     await db.execute(
@@ -124,17 +119,17 @@ export async function mergeOrganizations(
     // Count total affected collections
     const collectionCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${targetName} OR group2_name = ${targetName}`
-    );
-    const collectionCount = (collectionCountResult?.rows?.[0] as any)?.count || 0;
+    ) as any[];
+    const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
     // 5. Update or create organization record with alternate name
     const existingOrgResult = await db.execute(
       sql`SELECT id, organization_name, alternate_names FROM organizations WHERE organization_name = ${targetName} LIMIT 1`
-    );
+    ) as any[];
 
-    if (existingOrgResult.rows.length > 0) {
+    if (existingOrgResult && existingOrgResult.length > 0) {
       // Update existing organization to add alternate name
-      const org = existingOrgResult.rows[0] as any;
+      const org = existingOrgResult[0] as any;
       const currentAltNames = org.alternate_names || [];
 
       // Add sourceName to alternateNames if not already there
@@ -242,16 +237,16 @@ export async function previewMerge(
       // Use raw SQL for counts to avoid schema issues
       const eventCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
-      );
+      ) as any[];
 
-      eventCount = (eventCountResult?.rows?.[0] as any)?.count || 0;
+      eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
       // Get sample events with raw SQL
       const sampleEventsResult = await db.execute(
         sql`SELECT id, event_date, department_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
-      );
+      ) as any[];
 
-      sampleEvents = sampleEventsResult?.rows || [];
+      sampleEvents = sampleEventsResult || [];
     } catch (error) {
       logger.error('Error querying event requests', { sourceName, error });
       // Continue with collections even if events fail
@@ -265,16 +260,16 @@ export async function previewMerge(
       // Use raw SQL for counts to avoid schema issues
       const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName}`
-      );
+      ) as any[];
 
-      collectionCount = (collectionCountResult?.rows?.[0] as any)?.count || 0;
+      collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
       // Get sample collections with raw SQL
       const sampleCollectionsResult = await db.execute(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName} LIMIT 5`
-      );
+      ) as any[];
 
-      sampleCollections = sampleCollectionsResult?.rows || [];
+      sampleCollections = sampleCollectionsResult || [];
     } catch (error) {
       logger.error('Error querying collections', { sourceName, error });
       // Continue with what we have
