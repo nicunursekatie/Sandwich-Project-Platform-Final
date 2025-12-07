@@ -307,7 +307,7 @@ export default function GroupCatalog({
       return;
     }
 
-    renameOrganizationMutation.mutate({
+    const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
       oldDepartment: editNameOrganization.department || undefined,
@@ -318,7 +318,10 @@ export default function GroupCatalog({
       eventIds: !editNameOrganization.linkedEventId && editNameOrganization.eventIds?.length
         ? editNameOrganization.eventIds
         : undefined,
-    });
+    };
+    console.log('🔵 Rename mutation data:', mutationData);
+    console.log('🔵 editNameOrganization:', editNameOrganization);
+    renameOrganizationMutation.mutate(mutationData);
   };
 
   // Handler to open edit category dialog
