@@ -7,7 +7,7 @@
 import { SMSProvider, SMSProviderConfig } from './types';
 import { TwilioProvider } from './twilio-provider';
 import { PhoneGatewayProvider } from './phone-gateway-provider';
-import { isTwilioConnected } from './replit-twilio-connector';
+import { isTwilioConnected, isReplitEnvironmentAvailable } from './replit-twilio-connector';
 import { logger } from '../utils/production-safe-logger';
 
 export class SMSProviderFactory {
@@ -127,9 +127,27 @@ export class SMSProviderFactory {
         timeout: parseInt(process.env.PHONE_GATEWAY_TIMEOUT || '30000', 10)
       };
     } else if (provider === 'twilio') {
+      // Check for manual credentials first (allows explicit override)
+      const hasManualCredentials =
+        process.env.TWILIO_ACCOUNT_SID &&
+        process.env.TWILIO_AUTH_TOKEN &&
+        process.env.TWILIO_PHONE_NUMBER;
+
+      // Quick sync check - if Replit env vars aren't available, skip async check entirely
+      const replitEnvAvailable = isReplitEnvironmentAvailable();
+
       // Priority 1: Check if Replit Twilio integration is connected (API Key authentication)
       // This is preferred as it uses secure API key auth and is managed by Replit
-      const isReplitConnected = await isTwilioConnected();
+      // Only attempt Replit integration if env vars are present
+      let isReplitConnected = false;
+      if (replitEnvAvailable) {
+        try {
+          isReplitConnected = await isTwilioConnected();
+        } catch (error) {
+          logger.warn('⚠️ Replit Twilio integration check failed:', error instanceof Error ? error.message : error);
+          isReplitConnected = false;
+        }
+      }
 
       if (isReplitConnected) {
         logger.log('🔗 Using Replit Twilio integration (API Key authentication)');
@@ -139,31 +157,24 @@ export class SMSProviderFactory {
           phoneNumber: '', // Will be loaded from Replit integration
           useReplitIntegration: true
         };
-      } else {
+      } else if (hasManualCredentials) {
         // Priority 2: Fallback to manual environment variables (Auth Token authentication)
-        const hasManualCredentials = 
-          process.env.TWILIO_ACCOUNT_SID && 
-          process.env.TWILIO_AUTH_TOKEN && 
-          process.env.TWILIO_PHONE_NUMBER;
-
-        if (hasManualCredentials) {
-          logger.log('📝 Using manual Twilio environment variables (Auth Token authentication)');
-          config.twilio = {
-            accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-            authToken: process.env.TWILIO_AUTH_TOKEN || '',
-            phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
-            useReplitIntegration: false
-          };
-        } else {
-          // No credentials available
-          logger.log('⚠️ No Twilio credentials found (configure Replit Twilio integration or set manual env vars)');
-          config.twilio = {
-            accountSid: '',
-            authToken: '',
-            phoneNumber: '',
-            useReplitIntegration: false
-          };
-        }
+        logger.log('📝 Using manual Twilio environment variables (Auth Token authentication)');
+        config.twilio = {
+          accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+          authToken: process.env.TWILIO_AUTH_TOKEN || '',
+          phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+          useReplitIntegration: false
+        };
+      } else {
+        // No credentials available
+        logger.warn('⚠️ No Twilio credentials found (configure Replit Twilio integration or set manual env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)');
+        config.twilio = {
+          accountSid: '',
+          authToken: '',
+          phoneNumber: '',
+          useReplitIntegration: false
+        };
       }
     }
 

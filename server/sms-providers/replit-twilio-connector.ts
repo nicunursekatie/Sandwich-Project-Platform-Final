@@ -18,6 +18,17 @@ let cachedCredentials: TwilioCredentials | null = null;
 let cachedClient: ReturnType<typeof twilio> | null = null;
 
 /**
+ * Check if Replit connector environment is available
+ * Returns true only if all required env vars exist for Replit Twilio integration
+ */
+function isReplitEnvironmentAvailable(): boolean {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const hasAuthToken = !!(process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL);
+
+  return !!(hostname && hasAuthToken);
+}
+
+/**
  * Get Twilio credentials from Replit's managed connection
  * Uses REPL_IDENTITY in development and WEB_REPL_RENEWAL in production
  */
@@ -28,20 +39,20 @@ async function getCredentials(): Promise<TwilioCredentials> {
   }
 
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  
+
   // Determine the authentication token based on environment
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
-  if (!xReplitToken) {
-    throw new Error('Replit authentication token not found (REPL_IDENTITY or WEB_REPL_RENEWAL)');
+  if (!hostname) {
+    throw new Error('Replit connector hostname not available - falling back to manual credentials');
   }
 
-  if (!hostname) {
-    throw new Error('REPLIT_CONNECTORS_HOSTNAME not found');
+  if (!xReplitToken) {
+    throw new Error('Replit session token not available (REPL_IDENTITY or WEB_REPL_RENEWAL missing) - falling back to manual credentials');
   }
 
   try {
@@ -56,17 +67,21 @@ async function getCredentials(): Promise<TwilioCredentials> {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Twilio credentials: ${response.status} ${response.statusText}`);
+      // Check for specific session/auth errors
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Replit session expired or invalid (${response.status}) - falling back to manual credentials`);
+      }
+      throw new Error(`Failed to fetch Twilio credentials from Replit: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     const connectionSettings = data.items?.[0];
 
-    if (!connectionSettings || 
-        !connectionSettings.settings.account_sid || 
-        !connectionSettings.settings.api_key || 
+    if (!connectionSettings ||
+        !connectionSettings.settings.account_sid ||
+        !connectionSettings.settings.api_key ||
         !connectionSettings.settings.api_key_secret) {
-      throw new Error('Twilio not connected or missing required settings');
+      throw new Error('Twilio not connected in Replit or missing required settings - falling back to manual credentials');
     }
 
     cachedCredentials = {
@@ -82,10 +97,13 @@ async function getCredentials(): Promise<TwilioCredentials> {
     logger.log(`📱 Twilio API Key prefix: ${cachedCredentials.apiKey?.substring(0, 8)}...`);
     logger.log(`📱 Twilio API Key Secret length: ${cachedCredentials.apiKeySecret?.length || 0}`);
     logger.log(`📱 Twilio Phone Number: ${cachedCredentials.phoneNumber}`);
-    
+
     return cachedCredentials;
   } catch (error) {
-    logger.error('Failed to load Twilio credentials from Replit connection:', error);
+    // Clear cache on failure to allow retry
+    cachedCredentials = null;
+    cachedClient = null;
+    logger.warn('Failed to load Twilio credentials from Replit connection:', error instanceof Error ? error.message : error);
     throw error;
   }
 }
@@ -118,16 +136,36 @@ export async function getTwilioFromPhoneNumber(): Promise<string> {
 }
 
 /**
- * Check if Twilio connection is available
+ * Check if Twilio connection is available via Replit integration
+ * First performs a quick sync check, then validates async if env is available
  */
 export async function isTwilioConnected(): Promise<boolean> {
+  // Quick sync check - if Replit env vars aren't available, don't even try
+  if (!isReplitEnvironmentAvailable()) {
+    logger.log('📝 Replit Twilio integration not available (missing env vars), will use manual credentials');
+    return false;
+  }
+
+  // If we have cached credentials, assume still connected
+  if (cachedCredentials) {
+    return true;
+  }
+
+  // Try to fetch credentials
   try {
     await getCredentials();
     return true;
   } catch (error) {
+    logger.log('📝 Replit Twilio integration failed, will use manual credentials if available');
     return false;
   }
 }
+
+/**
+ * Check if Replit environment is available (synchronous check)
+ * Exported for use in provider factory
+ */
+export { isReplitEnvironmentAvailable };
 
 /**
  * Clear cached credentials (for testing or reconnection)
