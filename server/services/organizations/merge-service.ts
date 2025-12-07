@@ -109,12 +109,18 @@ export async function mergeOrganizations(
       sql`SELECT id, group_collections FROM sandwich_collections WHERE group_collections::text LIKE ${`%${sourceName}%`} LIMIT 5`
     ) as any[];
 
+    // Also try with lowercase to check case sensitivity
+    const jsonArrayLowerResult = await db.execute(
+      sql`SELECT id, group_collections FROM sandwich_collections WHERE LOWER(group_collections::text) LIKE LOWER(${`%${sourceName}%`}) LIMIT 5`
+    ) as any[];
+
     logger.info('DEBUG: Exact match check in sandwich_collections', {
       sourceName,
       group1Matches: collectionsGroup1Result,
       group2Matches: collectionsGroup2Result,
       jsonArrayMatches: jsonArrayResult.length,
-      sampleJsonData: jsonArrayResult.length > 0 ? jsonArrayResult[0] : null
+      jsonArrayMatchesLower: jsonArrayLowerResult.length,
+      sampleJsonData: jsonArrayResult.length > 0 ? jsonArrayResult[0] : (jsonArrayLowerResult.length > 0 ? jsonArrayLowerResult[0] : null)
     });
 
     // Count records BEFORE updating (to get accurate affected count)
