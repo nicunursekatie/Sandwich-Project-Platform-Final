@@ -188,8 +188,10 @@ export async function mergeOrganizations(
     `);
 
     // 5. Update or create organization record with alternate name
+    // Note: The organizations table uses 'name' column (not 'organization_name')
+    // and alternate_names is a text[] array (not JSONB)
     const existingOrgResult = (await db.execute(
-      sql`SELECT id, organization_name, alternate_names FROM organizations WHERE organization_name = ${targetName} LIMIT 1`
+      sql`SELECT id, name, alternate_names FROM organizations WHERE name = ${targetName} LIMIT 1`
     )) as any[];
 
     if (existingOrgResult && existingOrgResult.length > 0) {
@@ -199,15 +201,15 @@ export async function mergeOrganizations(
 
       // Add sourceName to alternateNames if not already there
       if (!currentAltNames.includes(sourceName)) {
-        const newAltNames = [...currentAltNames, sourceName];
+        // Use array_append for PostgreSQL text[] array type
         await db.execute(
-          sql`UPDATE organizations SET alternate_names = ${JSON.stringify(newAltNames)}::jsonb WHERE id = ${org.id}`
+          sql`UPDATE organizations SET alternate_names = array_append(COALESCE(alternate_names, ARRAY[]::text[]), ${sourceName}) WHERE id = ${org.id}`
         );
       }
     } else {
-      // Create new organization record
+      // Create new organization record with text[] array
       await db.execute(
-        sql`INSERT INTO organizations (organization_name, alternate_names) VALUES (${targetName}, ${JSON.stringify([sourceName])}::jsonb)`
+        sql`INSERT INTO organizations (name, alternate_names) VALUES (${targetName}, ARRAY[${sourceName}]::text[])`
       );
     }
 
@@ -262,16 +264,17 @@ export async function getMergeHistory(limit: number = 100): Promise<any[]> {
   try {
     // For now, we'll return merge history from the organizations table
     // by looking at organizations that have alternate names
+    // Note: alternate_names is a text[] array, so use array_length instead of jsonb_array_length
     const orgsWithAltNames = await db
       .select()
       .from(organizations)
       .where(
-        sql`${organizations.alternateNames} IS NOT NULL AND jsonb_array_length(${organizations.alternateNames}) > 0`
+        sql`${organizations.alternateNames} IS NOT NULL AND array_length(${organizations.alternateNames}, 1) > 0`
       )
       .limit(limit);
 
     return orgsWithAltNames.map((org) => ({
-      organizationName: org.organizationName,
+      organizationName: org.name, // Schema uses 'name', not 'organizationName'
       alternateNames: org.alternateNames,
       createdAt: org.createdAt,
     }));
