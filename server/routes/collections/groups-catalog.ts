@@ -866,6 +866,144 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
     }
   );
 
+  // POST /api/groups-catalog/rename - Rename organization/department across all source records
+  router.post('/rename', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { oldName, newName, oldDepartment, newDepartment } = req.body;
+
+      // Validation
+      if (!oldName || typeof oldName !== 'string') {
+        return res.status(400).json({ message: 'Current organization name is required' });
+      }
+
+      if (!newName || typeof newName !== 'string') {
+        return res.status(400).json({ message: 'New organization name is required' });
+      }
+
+      const trimmedOldName = oldName.trim();
+      const trimmedNewName = newName.trim();
+      const trimmedOldDept = oldDepartment?.trim() || null;
+      const trimmedNewDept = newDepartment?.trim() || null;
+
+      if (!trimmedNewName) {
+        return res.status(400).json({ message: 'New organization name cannot be empty' });
+      }
+
+      logger.info('Renaming organization', {
+        oldName: trimmedOldName,
+        newName: trimmedNewName,
+        oldDepartment: trimmedOldDept,
+        newDepartment: trimmedNewDept,
+        userId: req.user?.id,
+      });
+
+      let updatedEventRequests = 0;
+      let updatedCollections = 0;
+
+      // 1. Update event_requests
+      const allEventRequests = await storage.getAllEventRequests();
+      for (const request of allEventRequests) {
+        let shouldUpdate = false;
+        const updates: any = {};
+
+        // Check if organization name matches
+        if (request.organizationName === trimmedOldName) {
+          updates.organizationName = trimmedNewName;
+          shouldUpdate = true;
+        }
+
+        // Check if department matches (if we're updating department)
+        if (trimmedOldDept !== null && request.departmentName === trimmedOldDept) {
+          updates.departmentName = trimmedNewDept;
+          shouldUpdate = true;
+        }
+
+        if (shouldUpdate) {
+          await storage.updateEventRequest(request.id, updates);
+          updatedEventRequests++;
+        }
+      }
+
+      // 2. Update sandwich_collections (group1Name, group2Name, and groupCollections JSON)
+      const allCollections = await storage.getAllSandwichCollections();
+      for (const collection of allCollections) {
+        let shouldUpdate = false;
+        const updates: any = {};
+
+        // Check group1Name
+        if (collection.group1Name === trimmedOldName) {
+          updates.group1Name = trimmedNewName;
+          shouldUpdate = true;
+        }
+
+        // Check group2Name
+        if (collection.group2Name === trimmedOldName) {
+          updates.group2Name = trimmedNewName;
+          shouldUpdate = true;
+        }
+
+        // Check groupCollections JSON array
+        if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+          const updatedGroupCollections = collection.groupCollections.map((group: any) => {
+            if (group && typeof group === 'object') {
+              let updatedGroup = { ...group };
+
+              // Update name field
+              if (group.name === trimmedOldName) {
+                updatedGroup.name = trimmedNewName;
+                shouldUpdate = true;
+              }
+
+              // Update department field if applicable
+              if (trimmedOldDept !== null && group.department === trimmedOldDept) {
+                updatedGroup.department = trimmedNewDept;
+                shouldUpdate = true;
+              }
+
+              return updatedGroup;
+            }
+            return group;
+          });
+
+          if (shouldUpdate) {
+            updates.groupCollections = updatedGroupCollections;
+          }
+        }
+
+        if (shouldUpdate) {
+          await storage.updateSandwichCollection(collection.id, updates);
+          updatedCollections++;
+        }
+      }
+
+      // 3. Update the organizations table if it exists
+      const allOrganizations = await storage.getAllOrganizations();
+      for (const org of allOrganizations) {
+        if (org.name === trimmedOldName) {
+          await storage.updateOrganization(org.id, { name: trimmedNewName });
+        }
+      }
+
+      logger.info('Organization rename completed', {
+        oldName: trimmedOldName,
+        newName: trimmedNewName,
+        updatedEventRequests,
+        updatedCollections,
+      });
+
+      res.json({
+        success: true,
+        oldName: trimmedOldName,
+        newName: trimmedNewName,
+        updatedEventRequests,
+        updatedCollections,
+      });
+    } catch (error) {
+      logger.error('Error renaming organization:', error);
+      res.status(500).json({ message: 'Failed to rename organization' });
+    }
+  });
+
   // POST /api/organizations/upsert - Create or update organization category
   router.post('/upsert', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {

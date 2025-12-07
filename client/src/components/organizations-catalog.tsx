@@ -38,6 +38,7 @@ import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -176,6 +177,12 @@ export default function GroupCatalog({
   const [editSchoolClassification, setEditSchoolClassification] = useState('');
   const [editIsReligious, setEditIsReligious] = useState(false);
 
+  // Edit name dialog state
+  const [showEditNameDialog, setShowEditNameDialog] = useState(false);
+  const [editNameOrganization, setEditNameOrganization] = useState<OrganizationContact | null>(null);
+  const [editOrgName, setEditOrgName] = useState('');
+  const [editDeptName, setEditDeptName] = useState('');
+
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -222,6 +229,56 @@ export default function GroupCatalog({
       });
     },
   });
+
+  // Mutation for renaming organization/department
+  const renameOrganizationMutation = useMutation({
+    mutationFn: async (data: { oldName: string; newName: string; oldDepartment?: string; newDepartment?: string }) => {
+      return apiRequest('POST', '/api/groups-catalog/rename', data);
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Success',
+        description: `Renamed successfully. Updated ${data.updatedEventRequests} event requests and ${data.updatedCollections} collections.`,
+      });
+      // Invalidate and refetch groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      setShowEditNameDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to rename organization',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Handler to open edit name dialog
+  const handleEditName = (org: OrganizationContact) => {
+    setEditNameOrganization(org);
+    setEditOrgName(org.organizationName);
+    setEditDeptName(org.department || '');
+    setShowEditNameDialog(true);
+  };
+
+  // Handler to save name changes
+  const handleSaveName = () => {
+    if (!editNameOrganization || !editOrgName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Organization name cannot be empty',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    renameOrganizationMutation.mutate({
+      oldName: editNameOrganization.organizationName,
+      newName: editOrgName.trim(),
+      oldDepartment: editNameOrganization.department || undefined,
+      newDepartment: editDeptName.trim() || undefined,
+    });
+  };
 
   // Handler to open edit category dialog
   const handleEditCategory = (org: OrganizationContact) => {
@@ -935,6 +992,28 @@ export default function GroupCatalog({
                             </Badge>
                           ) : null;
                         })()}
+                        {canEditCategories && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 hover:bg-blue-100"
+                            onClick={() => handleEditName({
+                              organizationName: group.groupName,
+                              contactName: group.departments[0]?.contactName || '',
+                              department: group.departments[0]?.department,
+                              latestRequestDate: group.departments[0]?.latestRequestDate || '',
+                              latestActivityDate: group.departments[0]?.latestActivityDate || '',
+                              totalRequests: group.departments[0]?.totalRequests || 0,
+                              status: group.departments[0]?.status || 'new',
+                              hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
+                            })}
+                            title="Edit organization name"
+                            data-testid={`button-edit-name-${group.groupName}`}
+                          >
+                            <Edit className="h-4 w-4 text-blue-600 mr-1" />
+                            <span className="text-xs text-blue-600">Rename</span>
+                          </Button>
+                        )}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="flex items-center space-x-1">
@@ -1298,6 +1377,18 @@ export default function GroupCatalog({
                                 <h3 className="text-lg font-bold text-gray-900 break-words">
                                   {group.groupName}
                                 </h3>
+                                {canEditCategories && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-1.5 hover:bg-blue-100"
+                                    onClick={() => handleEditName(org)}
+                                    title="Edit organization name"
+                                    data-testid={`button-edit-name-single-${group.groupName}`}
+                                  >
+                                    <Edit className="h-3 w-3 text-blue-600" />
+                                  </Button>
+                                )}
                               </div>
 
                               {/* Main headline with org name and date */}
@@ -2131,6 +2222,58 @@ export default function GroupCatalog({
                 data-testid="button-save-category"
               >
                 {updateCategoryMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Name Dialog */}
+      <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Organization Name</DialogTitle>
+            <DialogDescription>
+              Update the name for this organization. This will update all related event requests and collection records.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-org-name">Organization Name</Label>
+              <Input
+                id="edit-org-name"
+                value={editOrgName}
+                onChange={(e) => setEditOrgName(e.target.value)}
+                placeholder="Enter organization name"
+                data-testid="input-edit-org-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-dept-name">Department (optional)</Label>
+              <Input
+                id="edit-dept-name"
+                value={editDeptName}
+                onChange={(e) => setEditDeptName(e.target.value)}
+                placeholder="Enter department name"
+                data-testid="input-edit-dept-name"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditNameDialog(false)}
+                data-testid="button-cancel-edit-name"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveName}
+                disabled={renameOrganizationMutation.isPending || !editOrgName.trim()}
+                data-testid="button-save-name"
+              >
+                {renameOrganizationMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>
