@@ -133,11 +133,15 @@ export async function mergeOrganizations(
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
     // Use case-insensitive matching with TRIM for all comparisons
+    // Use proper jsonb array element query for JSON matching
     const collectionCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
           WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
              OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
-             OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})`
+             OR (group_collections IS NOT NULL AND EXISTS (
+               SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+               WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
+             ))`
     ) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -164,6 +168,7 @@ export async function mergeOrganizations(
     );
 
     // 4. Update groupCollections JSON arrays (case-insensitive matching with TRIM)
+    // Use proper jsonb array element query for matching
     await db.execute(sql`
       UPDATE sandwich_collections
       SET group_collections = (
@@ -176,7 +181,10 @@ export async function mergeOrganizations(
         )
         FROM jsonb_array_elements(group_collections) AS elem
       )
-      WHERE LOWER(group_collections::text) LIKE LOWER(${`%${trimmedSource}%`})
+      WHERE group_collections IS NOT NULL AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+        WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
+      )
     `);
 
     // 5. Update or create organization record with alternate name
@@ -321,11 +329,15 @@ export async function previewMerge(
     try {
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
       // Use case-insensitive matching with TRIM for all comparisons
+      // Use proper jsonb array element query for JSON matching
       const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
             WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
                OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
-               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})`
+               OR (group_collections IS NOT NULL AND EXISTS (
+                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+                 WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
+               ))`
       ) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
@@ -335,7 +347,10 @@ export async function previewMerge(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
             WHERE LOWER(TRIM(group1_name)) = LOWER(TRIM(${trimmedSource}))
                OR LOWER(TRIM(group2_name)) = LOWER(TRIM(${trimmedSource}))
-               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${trimmedSource}"%`})
+               OR (group_collections IS NOT NULL AND EXISTS (
+                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+                 WHERE LOWER(TRIM(elem->>'groupName')) = LOWER(TRIM(${trimmedSource}))
+               ))
             LIMIT 5`
       ) as any[];
 
