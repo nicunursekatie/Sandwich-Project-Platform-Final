@@ -108,14 +108,22 @@ export async function mergeOrganizations(
       sql`SELECT DISTINCT group2_name FROM sandwich_collections WHERE group2_name = ${sourceName} LIMIT 5`
     )) as any[];
 
-    // Check if it exists in groupCollections JSON array
+    // Check if it exists in groupCollections JSON array using proper JSONB query
     const jsonArrayResult = (await db.execute(
-      sql`SELECT id, group_collections FROM sandwich_collections WHERE group_collections::text LIKE ${`%${sourceName}%`} LIMIT 5`
+      sql`SELECT id, group_collections FROM sandwich_collections
+          WHERE group_collections IS NOT NULL AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+            WHERE elem->>'name' = ${sourceName}
+          ) LIMIT 5`
     )) as any[];
 
-    // Also try with lowercase to check case sensitivity
+    // Also try case-insensitive search
     const jsonArrayLowerResult = (await db.execute(
-      sql`SELECT id, group_collections FROM sandwich_collections WHERE LOWER(group_collections::text) LIKE LOWER(${`%${sourceName}%`}) LIMIT 5`
+      sql`SELECT id, group_collections FROM sandwich_collections
+          WHERE group_collections IS NOT NULL AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+            WHERE LOWER(elem->>'name') = LOWER(${sourceName})
+          ) LIMIT 5`
     )) as any[];
 
     logger.info('DEBUG: Exact match check in sandwich_collections', {
@@ -140,11 +148,15 @@ export async function mergeOrganizations(
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
     // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
+    // Use proper JSONB query with EXISTS subquery instead of brittle LIKE pattern
     const collectionCountResult = (await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
           WHERE group1_name = ${sourceName}
              OR group2_name = ${sourceName}
-             OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}`
+             OR (group_collections IS NOT NULL AND EXISTS (
+               SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+               WHERE elem->>'name' = ${sourceName}
+             ))`
     )) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -172,19 +184,23 @@ export async function mergeOrganizations(
 
     // 4. Update groupCollections JSON arrays
     // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
+    // Use proper JSONB query with EXISTS subquery instead of brittle LIKE pattern
     await db.execute(sql`
       UPDATE sandwich_collections
       SET group_collections = (
         SELECT jsonb_agg(
           CASE
             WHEN elem->>'name' = ${sourceName}
-            THEN jsonb_set(elem, '{name}', to_jsonb(${targetName}))
+            THEN jsonb_set(elem, '{name}', to_jsonb(${targetName}::text))
             ELSE elem
           END
         )
         FROM jsonb_array_elements(group_collections) AS elem
       )
-      WHERE group_collections::text LIKE ${`%"name":"${sourceName}"%`}
+      WHERE group_collections IS NOT NULL AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+        WHERE elem->>'name' = ${sourceName}
+      )
     `);
 
     // 5. Update or create organization record with alternate name
@@ -329,11 +345,15 @@ export async function previewMerge(
     try {
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
       // Note: The JSON stores "name" field, not "groupName" (client transforms to groupName for display)
+      // Use proper JSONB query with EXISTS subquery instead of brittle LIKE pattern
       const collectionCountResult = (await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}`
+               OR (group_collections IS NOT NULL AND EXISTS (
+                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+                 WHERE elem->>'name' = ${sourceName}
+               ))`
       )) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
@@ -343,7 +363,10 @@ export async function previewMerge(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
             WHERE group1_name = ${sourceName}
                OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"name":"${sourceName}"%`}
+               OR (group_collections IS NOT NULL AND EXISTS (
+                 SELECT 1 FROM jsonb_array_elements(group_collections) AS elem
+                 WHERE elem->>'name' = ${sourceName}
+               ))
             LIMIT 5`
       )) as any[];
 
