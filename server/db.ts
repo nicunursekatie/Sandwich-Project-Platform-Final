@@ -4,19 +4,23 @@ import * as schema from '@shared/schema';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { logger } from './utils/production-safe-logger';
 
-// Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
-// Otherwise use development database (workspace)
-const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+// Environment-based database selection:
+// - Production (NODE_ENV=production): Use PRODUCTION_DATABASE_URL
+// - Development (NODE_ENV=development): Use DEV_DATABASE_URL (or DATABASE_URL for backwards compatibility)
+const isProduction = process.env.NODE_ENV === 'production';
+const databaseUrl = isProduction 
+  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
+  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL environment variable is required. Please set either PRODUCTION_DATABASE_URL or DATABASE_URL.');
+  throw new Error('Database URL not configured. Please set DEV_DATABASE_URL for development or PRODUCTION_DATABASE_URL for production.');
 }
 
 // Fix TypeScript union type issue by using a single concrete type
 // This prevents "expression is not callable" errors when using db.select/insert/update/delete
 type DB = NeonHttpDatabase<typeof schema>;
 
-logger.log(`🗄️ Using ${process.env.PRODUCTION_DATABASE_URL ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
+logger.log(`🗄️ Using ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
 
 // Use HTTP connection instead of WebSocket for better stability
 const sqlClient = neon(databaseUrl);
