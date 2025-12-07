@@ -1072,8 +1072,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
 
         // Check if department matches (if we're updating department)
-        if (trimmedOldDept !== null && request.departmentName === trimmedOldDept) {
-          updates.departmentName = trimmedNewDept;
+        // Note: Schema uses 'department', not 'departmentName'
+        if (trimmedOldDept !== null && request.department === trimmedOldDept) {
+          updates.department = trimmedNewDept;
           shouldUpdate = true;
         }
 

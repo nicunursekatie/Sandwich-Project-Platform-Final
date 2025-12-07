@@ -1028,7 +1028,7 @@ export default function GroupCatalog({
                             onClick={() => handleEditName({
                               organizationName: group.groupName,
                               contactName: group.departments[0]?.contactName || '',
-                              department: group.departments[0]?.department,
+                              department: undefined, // Don't include department for org-level edits - affects all departments
                               latestRequestDate: group.departments[0]?.latestRequestDate || '',
                               latestActivityDate: group.departments[0]?.latestActivityDate || '',
                               totalRequests: group.departments[0]?.totalRequests || 0,
