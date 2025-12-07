@@ -1071,11 +1071,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         }
 
-        // Check if department matches AND a new department value was explicitly provided
+        // Check if department should be updated
         // Note: Schema uses 'department', not 'departmentName'
-        // IMPORTANT: Only update department if newDepartment was explicitly set (not undefined/empty)
-        // This prevents accidentally clearing departments when editing only the org name
-        if (trimmedOldDept !== null && request.department === trimmedOldDept && trimmedNewDept !== null) {
+        // Cases:
+        // 1. Adding a new department (oldDept is null/empty, newDept has value) - UPDATE
+        // 2. Changing existing department (oldDept matches, newDept has value) - UPDATE
+        // 3. Clearing department (oldDept has value, newDept is null/empty) - SKIP (prevent accidental clearing)
+        // 4. No change (oldDept is null, newDept is null) - SKIP
+        const currentDept = request.department || null;
+        const oldDeptMatches = trimmedOldDept === null ? currentDept === null || currentDept === '' : currentDept === trimmedOldDept;
+
+        if (oldDeptMatches && trimmedNewDept !== null && trimmedNewDept !== currentDept) {
           updates.department = trimmedNewDept;
           shouldUpdate = true;
         }
