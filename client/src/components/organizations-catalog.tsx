@@ -1152,14 +1152,31 @@ export default function GroupCatalog({
                                 <CardHeader className="pb-3 px-4 pt-4">
                                   {/* Department Name and Event Date - Top of Card */}
                                   <div className="mb-4 pb-3 border-b border-gray-200">
-                                    {org.department && org.department !== 'General' && (
-                                      <div className="flex items-center space-x-2 mb-2">
-                                        <Building className="w-5 h-5 text-purple-600" />
-                                        <h4 className="text-base font-semibold text-gray-800 break-words">
-                                          {org.department}
-                                        </h4>
+                                    {/* Edit button for this specific event card */}
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2 flex-1">
+                                        {org.department && org.department !== 'General' && (
+                                          <>
+                                            <Building className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                                            <h4 className="text-base font-semibold text-gray-800 break-words">
+                                              {org.department}
+                                            </h4>
+                                          </>
+                                        )}
                                       </div>
-                                    )}
+                                      {canEditCategories && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0"
+                                          onClick={() => handleEditName(org)}
+                                          title="Edit this event"
+                                          data-testid={`button-edit-event-${org.organizationName}-${org.department}-${index}`}
+                                        >
+                                          <Edit className="h-3.5 w-3.5 text-teal-600" />
+                                        </Button>
+                                      )}
+                                    </div>
                                     {/* Event Date */}
                                     {org.eventDate ? (
                                       <div className="flex items-center space-x-2 text-base text-gray-700">
