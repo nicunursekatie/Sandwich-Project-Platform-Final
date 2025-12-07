@@ -1,5 +1,6 @@
--- Generated from production database on 2025-12-07T21:49:06.883Z
--- Run this SQL against your dev database to create all tables
+-- Generated from production database on 2025-12-07T21:52:28.894Z
+-- Run this SQL against a FRESH/EMPTY dev database
+-- If database has existing tables, drop them first or use a new database
 
 -- SEQUENCES
 CREATE SEQUENCE IF NOT EXISTS "_migrations_id_seq" START 1;
@@ -106,13 +107,13 @@ CREATE SEQUENCE IF NOT EXISTS "work_logs_id_seq" START 1;
 
 -- TABLES
 CREATE TABLE IF NOT EXISTS "_migrations" (
-  "id" INT4 NOT NULL DEFAULT nextval('_migrations_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('_migrations_id_seq'::regclass),
   "name" VARCHAR(255) NOT NULL,
   "executed_at" TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "activities" (
-  "id" VARCHAR NOT NULL,
+  "id" VARCHAR PRIMARY KEY,
   "type" VARCHAR(50) NOT NULL,
   "title" TEXT NOT NULL,
   "content" TEXT,
@@ -133,7 +134,7 @@ CREATE TABLE IF NOT EXISTS "activities" (
 );
 
 CREATE TABLE IF NOT EXISTS "activity_attachments" (
-  "id" INT4 NOT NULL DEFAULT nextval('activity_attachments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('activity_attachments_id_seq'::regclass),
   "activity_id" VARCHAR NOT NULL,
   "file_url" TEXT NOT NULL,
   "file_type" VARCHAR(100),
@@ -144,7 +145,7 @@ CREATE TABLE IF NOT EXISTS "activity_attachments" (
 );
 
 CREATE TABLE IF NOT EXISTS "activity_participants" (
-  "id" INT4 NOT NULL DEFAULT nextval('activity_participants_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('activity_participants_id_seq'::regclass),
   "activity_id" VARCHAR NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "role" VARCHAR(50) NOT NULL,
@@ -154,7 +155,7 @@ CREATE TABLE IF NOT EXISTS "activity_participants" (
 );
 
 CREATE TABLE IF NOT EXISTS "activity_reactions" (
-  "id" INT4 NOT NULL DEFAULT nextval('activity_reactions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('activity_reactions_id_seq'::regclass),
   "activity_id" VARCHAR NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "reaction_type" VARCHAR(50) NOT NULL,
@@ -162,7 +163,7 @@ CREATE TABLE IF NOT EXISTS "activity_reactions" (
 );
 
 CREATE TABLE IF NOT EXISTS "agenda_items" (
-  "id" INT4 NOT NULL DEFAULT nextval('agenda_items_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('agenda_items_id_seq'::regclass),
   "meeting_id" INT4 NOT NULL,
   "submitted_by" TEXT NOT NULL,
   "title" TEXT NOT NULL,
@@ -173,7 +174,7 @@ CREATE TABLE IF NOT EXISTS "agenda_items" (
 );
 
 CREATE TABLE IF NOT EXISTS "agenda_sections" (
-  "id" INT4 NOT NULL DEFAULT nextval('agenda_sections_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('agenda_sections_id_seq'::regclass),
   "compiled_agenda_id" INT4 NOT NULL,
   "title" TEXT NOT NULL,
   "order_index" INT4 NOT NULL,
@@ -181,7 +182,7 @@ CREATE TABLE IF NOT EXISTS "agenda_sections" (
 );
 
 CREATE TABLE IF NOT EXISTS "alert_requests" (
-  "id" INT4 NOT NULL DEFAULT nextval('alert_requests_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('alert_requests_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "alert_description" TEXT NOT NULL,
   "preferred_channel" VARCHAR NOT NULL DEFAULT 'no_preference'::character varying,
@@ -197,7 +198,7 @@ CREATE TABLE IF NOT EXISTS "alert_requests" (
 );
 
 CREATE TABLE IF NOT EXISTS "announcements" (
-  "id" INT4 NOT NULL DEFAULT nextval('announcements_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('announcements_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "message" TEXT NOT NULL,
   "type" VARCHAR NOT NULL DEFAULT 'general'::character varying,
@@ -212,7 +213,7 @@ CREATE TABLE IF NOT EXISTS "announcements" (
 );
 
 CREATE TABLE IF NOT EXISTS "archived_projects" (
-  "id" INT4 NOT NULL DEFAULT nextval('archived_projects_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('archived_projects_id_seq'::regclass),
   "original_project_id" INT4 NOT NULL,
   "title" TEXT NOT NULL,
   "description" TEXT,
@@ -247,7 +248,7 @@ CREATE TABLE IF NOT EXISTS "archived_projects" (
 );
 
 CREATE TABLE IF NOT EXISTS "audit_logs" (
-  "id" INT4 NOT NULL DEFAULT nextval('audit_logs_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('audit_logs_id_seq'::regclass),
   "action" VARCHAR NOT NULL,
   "table_name" VARCHAR NOT NULL,
   "record_id" VARCHAR NOT NULL,
@@ -261,7 +262,7 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
 );
 
 CREATE TABLE IF NOT EXISTS "authoritative_weekly_collections" (
-  "id" INT4 NOT NULL DEFAULT nextval('authoritative_weekly_collections_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('authoritative_weekly_collections_id_seq'::regclass),
   "week_date" TEXT NOT NULL,
   "location" TEXT NOT NULL,
   "sandwiches" INT4 NOT NULL,
@@ -273,7 +274,7 @@ CREATE TABLE IF NOT EXISTS "authoritative_weekly_collections" (
 );
 
 CREATE TABLE IF NOT EXISTS "availability_slots" (
-  "id" INT4 NOT NULL DEFAULT nextval('availability_slots_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('availability_slots_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "start_at" TIMESTAMP NOT NULL,
   "end_at" TIMESTAMP NOT NULL,
@@ -284,7 +285,7 @@ CREATE TABLE IF NOT EXISTS "availability_slots" (
 );
 
 CREATE TABLE IF NOT EXISTS "chat_message_likes" (
-  "id" INT4 NOT NULL DEFAULT nextval('chat_message_likes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('chat_message_likes_id_seq'::regclass),
   "message_id" INT4,
   "user_id" VARCHAR NOT NULL,
   "user_name" VARCHAR NOT NULL,
@@ -292,7 +293,7 @@ CREATE TABLE IF NOT EXISTS "chat_message_likes" (
 );
 
 CREATE TABLE IF NOT EXISTS "chat_message_reads" (
-  "id" INT4 NOT NULL DEFAULT nextval('chat_message_reads_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('chat_message_reads_id_seq'::regclass),
   "message_id" INT4,
   "user_id" VARCHAR NOT NULL,
   "channel" VARCHAR NOT NULL,
@@ -301,7 +302,7 @@ CREATE TABLE IF NOT EXISTS "chat_message_reads" (
 );
 
 CREATE TABLE IF NOT EXISTS "chat_messages" (
-  "id" INT4 NOT NULL DEFAULT nextval('chat_messages_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('chat_messages_id_seq'::regclass),
   "channel" VARCHAR NOT NULL DEFAULT 'general'::character varying,
   "user_id" VARCHAR NOT NULL,
   "user_name" VARCHAR NOT NULL,
@@ -311,7 +312,7 @@ CREATE TABLE IF NOT EXISTS "chat_messages" (
 );
 
 CREATE TABLE IF NOT EXISTS "committee_memberships" (
-  "id" INT4 NOT NULL DEFAULT nextval('committee_memberships_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('committee_memberships_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "committee_id" INT4 NOT NULL,
   "role" VARCHAR NOT NULL DEFAULT 'member'::character varying,
@@ -322,7 +323,7 @@ CREATE TABLE IF NOT EXISTS "committee_memberships" (
 );
 
 CREATE TABLE IF NOT EXISTS "committees" (
-  "id" INT4 NOT NULL DEFAULT nextval('committees_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('committees_id_seq'::regclass),
   "name" VARCHAR NOT NULL,
   "description" TEXT,
   "is_active" BOOL NOT NULL DEFAULT true,
@@ -331,7 +332,7 @@ CREATE TABLE IF NOT EXISTS "committees" (
 );
 
 CREATE TABLE IF NOT EXISTS "compiled_agendas" (
-  "id" INT4 NOT NULL DEFAULT nextval('compiled_agendas_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('compiled_agendas_id_seq'::regclass),
   "meeting_id" INT4 NOT NULL,
   "title" TEXT NOT NULL,
   "date" TEXT NOT NULL,
@@ -345,7 +346,7 @@ CREATE TABLE IF NOT EXISTS "compiled_agendas" (
 );
 
 CREATE TABLE IF NOT EXISTS "confidential_documents" (
-  "id" INT4 NOT NULL DEFAULT nextval('confidential_documents_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('confidential_documents_id_seq'::regclass),
   "file_name" VARCHAR NOT NULL,
   "original_name" VARCHAR NOT NULL,
   "file_path" VARCHAR NOT NULL,
@@ -355,7 +356,7 @@ CREATE TABLE IF NOT EXISTS "confidential_documents" (
 );
 
 CREATE TABLE IF NOT EXISTS "contacts" (
-  "id" INT4 NOT NULL DEFAULT nextval('contacts_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('contacts_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "organization" TEXT,
   "role" TEXT,
@@ -371,21 +372,22 @@ CREATE TABLE IF NOT EXISTS "contacts" (
 );
 
 CREATE TABLE IF NOT EXISTS "conversation_participants" (
-  "conversation_id" INT4 NOT NULL,
-  "user_id" TEXT NOT NULL,
+  "conversation_id" INT4,
+  "user_id" TEXT,
   "joined_at" TIMESTAMP DEFAULT now(),
-  "last_read_at" TIMESTAMP DEFAULT now()
+  "last_read_at" TIMESTAMP DEFAULT now(),
+  PRIMARY KEY ("conversation_id", "user_id")
 );
 
 CREATE TABLE IF NOT EXISTS "conversations" (
-  "id" INT4 NOT NULL DEFAULT nextval('conversations_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('conversations_id_seq'::regclass),
   "type" TEXT NOT NULL,
   "name" TEXT,
   "created_at" TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "cooler_inventory" (
-  "id" INT4 NOT NULL DEFAULT nextval('cooler_inventory_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('cooler_inventory_id_seq'::regclass),
   "host_home_id" VARCHAR NOT NULL,
   "cooler_type_id" INT4 NOT NULL,
   "quantity" INT4 NOT NULL DEFAULT 0,
@@ -397,7 +399,7 @@ CREATE TABLE IF NOT EXISTS "cooler_inventory" (
 );
 
 CREATE TABLE IF NOT EXISTS "cooler_types" (
-  "id" INT4 NOT NULL DEFAULT nextval('cooler_types_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('cooler_types_id_seq'::regclass),
   "name" VARCHAR(100) NOT NULL,
   "description" TEXT,
   "is_active" BOOL NOT NULL DEFAULT true,
@@ -407,7 +409,7 @@ CREATE TABLE IF NOT EXISTS "cooler_types" (
 );
 
 CREATE TABLE IF NOT EXISTS "dashboard_documents" (
-  "id" INT4 NOT NULL DEFAULT nextval('dashboard_documents_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('dashboard_documents_id_seq'::regclass),
   "document_id" VARCHAR NOT NULL,
   "display_order" INT4 NOT NULL DEFAULT 0,
   "is_active" BOOL NOT NULL DEFAULT true,
@@ -417,14 +419,14 @@ CREATE TABLE IF NOT EXISTS "dashboard_documents" (
 );
 
 CREATE TABLE IF NOT EXISTS "dismissed_announcements" (
-  "id" INT4 NOT NULL DEFAULT nextval('dismissed_announcements_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('dismissed_announcements_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "announcement_id" VARCHAR NOT NULL,
   "dismissed_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "document_access_logs" (
-  "id" INT4 NOT NULL DEFAULT nextval('document_access_logs_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('document_access_logs_id_seq'::regclass),
   "document_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "user_name" TEXT NOT NULL,
@@ -436,7 +438,7 @@ CREATE TABLE IF NOT EXISTS "document_access_logs" (
 );
 
 CREATE TABLE IF NOT EXISTS "document_permissions" (
-  "id" INT4 NOT NULL DEFAULT nextval('document_permissions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('document_permissions_id_seq'::regclass),
   "document_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "permission_type" TEXT NOT NULL,
@@ -449,7 +451,7 @@ CREATE TABLE IF NOT EXISTS "document_permissions" (
 );
 
 CREATE TABLE IF NOT EXISTS "documents" (
-  "id" INT4 NOT NULL DEFAULT nextval('documents_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('documents_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT,
   "file_name" TEXT NOT NULL,
@@ -466,7 +468,7 @@ CREATE TABLE IF NOT EXISTS "documents" (
 );
 
 CREATE TABLE IF NOT EXISTS "drive_links" (
-  "id" INT4 NOT NULL DEFAULT nextval('drive_links_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('drive_links_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT NOT NULL,
   "url" TEXT NOT NULL,
@@ -475,7 +477,7 @@ CREATE TABLE IF NOT EXISTS "drive_links" (
 );
 
 CREATE TABLE IF NOT EXISTS "driver_agreements" (
-  "id" INT4 NOT NULL DEFAULT nextval('driver_agreements_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('driver_agreements_id_seq'::regclass),
   "submitted_by" TEXT NOT NULL,
   "email" TEXT NOT NULL,
   "phone" TEXT NOT NULL,
@@ -488,7 +490,7 @@ CREATE TABLE IF NOT EXISTS "driver_agreements" (
 );
 
 CREATE TABLE IF NOT EXISTS "drivers" (
-  "id" INT4 NOT NULL DEFAULT nextval('drivers_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('drivers_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "phone" TEXT,
   "email" TEXT,
@@ -519,7 +521,7 @@ CREATE TABLE IF NOT EXISTS "drivers" (
 );
 
 CREATE TABLE IF NOT EXISTS "email_drafts" (
-  "id" INT4 NOT NULL DEFAULT nextval('email_drafts_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('email_drafts_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "recipient_id" VARCHAR NOT NULL,
   "recipient_name" VARCHAR NOT NULL,
@@ -530,7 +532,7 @@ CREATE TABLE IF NOT EXISTS "email_drafts" (
 );
 
 CREATE TABLE IF NOT EXISTS "email_messages" (
-  "id" INT4 NOT NULL DEFAULT nextval('email_messages_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('email_messages_id_seq'::regclass),
   "sender_id" VARCHAR NOT NULL,
   "sender_name" VARCHAR NOT NULL,
   "sender_email" VARCHAR NOT NULL,
@@ -548,7 +550,7 @@ CREATE TABLE IF NOT EXISTS "email_messages" (
   "context_type" VARCHAR,
   "context_id" VARCHAR,
   "context_title" VARCHAR,
-  "attachments" TEXT,
+  "attachments" TEXT[],
   "include_scheduling_link" BOOL DEFAULT false,
   "request_phone_call" BOOL DEFAULT false,
   "read_at" TIMESTAMP,
@@ -557,14 +559,14 @@ CREATE TABLE IF NOT EXISTS "email_messages" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_collaboration_comment_likes" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_collaboration_comment_likes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_collaboration_comment_likes_id_seq'::regclass),
   "comment_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "event_collaboration_comments" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_collaboration_comments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_collaboration_comments_id_seq'::regclass),
   "event_request_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "user_name" VARCHAR NOT NULL,
@@ -576,7 +578,7 @@ CREATE TABLE IF NOT EXISTS "event_collaboration_comments" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_edit_revisions" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_edit_revisions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_edit_revisions_id_seq'::regclass),
   "event_request_id" INT4 NOT NULL,
   "field_name" VARCHAR NOT NULL,
   "old_value" TEXT,
@@ -588,7 +590,7 @@ CREATE TABLE IF NOT EXISTS "event_edit_revisions" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_field_locks" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_field_locks_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_field_locks_id_seq'::regclass),
   "event_request_id" INT4 NOT NULL,
   "field_name" VARCHAR NOT NULL,
   "locked_by" VARCHAR NOT NULL,
@@ -598,7 +600,7 @@ CREATE TABLE IF NOT EXISTS "event_field_locks" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_reminders" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_reminders_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_reminders_id_seq'::regclass),
   "event_request_id" INT4 NOT NULL,
   "title" VARCHAR NOT NULL,
   "description" TEXT,
@@ -617,7 +619,7 @@ CREATE TABLE IF NOT EXISTS "event_reminders" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_requests" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_requests_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_requests_id_seq'::regclass),
   "first_name" VARCHAR,
   "last_name" VARCHAR,
   "email" VARCHAR,
@@ -668,14 +670,14 @@ CREATE TABLE IF NOT EXISTS "event_requests" (
   "speakers_needed" INT4 DEFAULT 0,
   "volunteers_needed" INT4 DEFAULT 0,
   "volunteer_notes" TEXT,
-  "assigned_driver_ids" TEXT,
+  "assigned_driver_ids" TEXT[],
   "driver_pickup_time" VARCHAR,
   "driver_notes" TEXT,
   "drivers_arranged" BOOL DEFAULT false,
-  "assigned_speaker_ids" TEXT,
-  "assigned_driver_speakers" TEXT,
-  "assigned_volunteer_ids" TEXT,
-  "assigned_recipient_ids" TEXT,
+  "assigned_speaker_ids" TEXT[],
+  "assigned_driver_speakers" TEXT[],
+  "assigned_volunteer_ids" TEXT[],
+  "assigned_recipient_ids" TEXT[],
   "van_driver_needed" BOOL DEFAULT false,
   "assigned_van_driver_id" TEXT,
   "custom_van_driver_name" TEXT,
@@ -770,7 +772,7 @@ CREATE TABLE IF NOT EXISTS "event_requests" (
 );
 
 CREATE TABLE IF NOT EXISTS "event_volunteers" (
-  "id" INT4 NOT NULL DEFAULT nextval('event_volunteers_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('event_volunteers_id_seq'::regclass),
   "event_request_id" INT4 NOT NULL,
   "volunteer_user_id" VARCHAR,
   "volunteer_name" VARCHAR,
@@ -792,7 +794,7 @@ CREATE TABLE IF NOT EXISTS "event_volunteers" (
 );
 
 CREATE TABLE IF NOT EXISTS "expenses" (
-  "id" INT4 NOT NULL DEFAULT nextval('expenses_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('expenses_id_seq'::regclass),
   "context_type" VARCHAR(50),
   "context_id" INT4,
   "description" TEXT NOT NULL,
@@ -815,7 +817,7 @@ CREATE TABLE IF NOT EXISTS "expenses" (
 );
 
 CREATE TABLE IF NOT EXISTS "feature_flags" (
-  "id" INT4 NOT NULL DEFAULT nextval('feature_flags_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('feature_flags_id_seq'::regclass),
   "flag_name" VARCHAR(255) NOT NULL,
   "description" TEXT,
   "enabled" BOOL NOT NULL DEFAULT false,
@@ -829,7 +831,7 @@ CREATE TABLE IF NOT EXISTS "feature_flags" (
 );
 
 CREATE TABLE IF NOT EXISTS "google_sheets" (
-  "id" INT4 NOT NULL DEFAULT nextval('google_sheets_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('google_sheets_id_seq'::regclass),
   "name" VARCHAR NOT NULL,
   "description" TEXT,
   "sheet_id" VARCHAR NOT NULL,
@@ -842,7 +844,7 @@ CREATE TABLE IF NOT EXISTS "google_sheets" (
 );
 
 CREATE TABLE IF NOT EXISTS "holding_zone_categories" (
-  "id" INT4 NOT NULL DEFAULT nextval('holding_zone_categories_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('holding_zone_categories_id_seq'::regclass),
   "name" VARCHAR(100) NOT NULL,
   "color" VARCHAR(50) NOT NULL,
   "created_by" VARCHAR NOT NULL,
@@ -851,7 +853,7 @@ CREATE TABLE IF NOT EXISTS "holding_zone_categories" (
 );
 
 CREATE TABLE IF NOT EXISTS "host_contacts" (
-  "id" INT4 NOT NULL DEFAULT nextval('host_contacts_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('host_contacts_id_seq'::regclass),
   "host_id" INT4 NOT NULL,
   "name" TEXT NOT NULL,
   "role" TEXT NOT NULL,
@@ -871,7 +873,7 @@ CREATE TABLE IF NOT EXISTS "host_contacts" (
 );
 
 CREATE TABLE IF NOT EXISTS "hosted_files" (
-  "id" INT4 NOT NULL DEFAULT nextval('hosted_files_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('hosted_files_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT,
   "file_name" TEXT NOT NULL,
@@ -888,7 +890,7 @@ CREATE TABLE IF NOT EXISTS "hosted_files" (
 );
 
 CREATE TABLE IF NOT EXISTS "hosts" (
-  "id" INT4 NOT NULL DEFAULT nextval('hosts_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('hosts_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "address" TEXT,
   "email" TEXT,
@@ -903,7 +905,7 @@ CREATE TABLE IF NOT EXISTS "hosts" (
 );
 
 CREATE TABLE IF NOT EXISTS "impact_reports" (
-  "id" INT4 NOT NULL DEFAULT nextval('impact_reports_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('impact_reports_id_seq'::regclass),
   "report_type" VARCHAR(50) NOT NULL,
   "report_period" VARCHAR(50) NOT NULL,
   "start_date" TIMESTAMP NOT NULL,
@@ -924,14 +926,14 @@ CREATE TABLE IF NOT EXISTS "impact_reports" (
   "published_by" VARCHAR,
   "pdf_url" TEXT,
   "pdf_generated_at" TIMESTAMP,
-  "tags" TEXT,
+  "tags" TEXT[],
   "notes" TEXT,
   "created_at" TIMESTAMP NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "imported_external_ids" (
-  "id" INT4 NOT NULL DEFAULT nextval('imported_external_ids_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('imported_external_ids_id_seq'::regclass),
   "external_id" VARCHAR NOT NULL,
   "imported_at" TIMESTAMP NOT NULL DEFAULT now(),
   "source_table" VARCHAR NOT NULL DEFAULT 'event_requests'::character varying,
@@ -939,7 +941,7 @@ CREATE TABLE IF NOT EXISTS "imported_external_ids" (
 );
 
 CREATE TABLE IF NOT EXISTS "kudos_tracking" (
-  "id" INT4 NOT NULL DEFAULT nextval('kudos_tracking_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('kudos_tracking_id_seq'::regclass),
   "sender_id" TEXT NOT NULL,
   "recipient_id" TEXT NOT NULL,
   "context_type" TEXT NOT NULL,
@@ -950,7 +952,7 @@ CREATE TABLE IF NOT EXISTS "kudos_tracking" (
 );
 
 CREATE TABLE IF NOT EXISTS "meeting_minutes" (
-  "id" INT4 NOT NULL DEFAULT nextval('meeting_minutes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('meeting_minutes_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "date" TEXT NOT NULL,
   "summary" TEXT NOT NULL,
@@ -963,7 +965,7 @@ CREATE TABLE IF NOT EXISTS "meeting_minutes" (
 );
 
 CREATE TABLE IF NOT EXISTS "meeting_notes" (
-  "id" INT4 NOT NULL DEFAULT nextval('meeting_notes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('meeting_notes_id_seq'::regclass),
   "project_id" INT4,
   "meeting_id" INT4 NOT NULL,
   "type" TEXT NOT NULL,
@@ -978,7 +980,7 @@ CREATE TABLE IF NOT EXISTS "meeting_notes" (
 );
 
 CREATE TABLE IF NOT EXISTS "meeting_projects" (
-  "id" INT4 NOT NULL DEFAULT nextval('meeting_projects_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('meeting_projects_id_seq'::regclass),
   "meeting_id" INT4 NOT NULL,
   "project_id" INT4 NOT NULL,
   "discussion_points" TEXT,
@@ -995,7 +997,7 @@ CREATE TABLE IF NOT EXISTS "meeting_projects" (
 );
 
 CREATE TABLE IF NOT EXISTS "meetings" (
-  "id" INT4 NOT NULL DEFAULT nextval('meetings_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('meetings_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "type" TEXT NOT NULL,
   "date" TEXT NOT NULL,
@@ -1008,7 +1010,7 @@ CREATE TABLE IF NOT EXISTS "meetings" (
 );
 
 CREATE TABLE IF NOT EXISTS "message_likes" (
-  "id" INT4 NOT NULL DEFAULT nextval('message_likes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('message_likes_id_seq'::regclass),
   "message_id" INT4 NOT NULL,
   "user_id" TEXT NOT NULL,
   "user_name" TEXT,
@@ -1016,7 +1018,7 @@ CREATE TABLE IF NOT EXISTS "message_likes" (
 );
 
 CREATE TABLE IF NOT EXISTS "message_recipients" (
-  "id" INT4 NOT NULL DEFAULT nextval('message_recipients_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('message_recipients_id_seq'::regclass),
   "message_id" INT4,
   "recipient_id" TEXT NOT NULL,
   "read" BOOL NOT NULL DEFAULT false,
@@ -1030,7 +1032,7 @@ CREATE TABLE IF NOT EXISTS "message_recipients" (
 );
 
 CREATE TABLE IF NOT EXISTS "messages" (
-  "id" INT4 NOT NULL DEFAULT nextval('messages_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('messages_id_seq'::regclass),
   "conversation_id" INT4,
   "user_id" TEXT NOT NULL,
   "sender_id" TEXT NOT NULL,
@@ -1052,7 +1054,7 @@ CREATE TABLE IF NOT EXISTS "messages" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_ab_tests" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_ab_tests_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_ab_tests_id_seq'::regclass),
   "name" VARCHAR NOT NULL,
   "description" TEXT,
   "hypothesis" TEXT,
@@ -1080,7 +1082,7 @@ CREATE TABLE IF NOT EXISTS "notification_ab_tests" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_action_history" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_action_history_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_action_history_id_seq'::regclass),
   "notification_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "action_type" VARCHAR NOT NULL,
@@ -1096,7 +1098,7 @@ CREATE TABLE IF NOT EXISTS "notification_action_history" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_analytics" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_analytics_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_analytics_id_seq'::regclass),
   "period_type" VARCHAR NOT NULL,
   "period_start" TIMESTAMP NOT NULL,
   "period_end" TIMESTAMP NOT NULL,
@@ -1121,7 +1123,7 @@ CREATE TABLE IF NOT EXISTS "notification_analytics" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_history" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_history_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_history_id_seq'::regclass),
   "notification_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "delivery_channel" VARCHAR NOT NULL,
@@ -1141,7 +1143,7 @@ CREATE TABLE IF NOT EXISTS "notification_history" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_preferences" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_preferences_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_preferences_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "category" VARCHAR NOT NULL,
   "type" VARCHAR NOT NULL,
@@ -1166,7 +1168,7 @@ CREATE TABLE IF NOT EXISTS "notification_preferences" (
 );
 
 CREATE TABLE IF NOT EXISTS "notification_rules" (
-  "id" INT4 NOT NULL DEFAULT nextval('notification_rules_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notification_rules_id_seq'::regclass),
   "name" VARCHAR NOT NULL,
   "description" TEXT,
   "category" VARCHAR,
@@ -1190,7 +1192,7 @@ CREATE TABLE IF NOT EXISTS "notification_rules" (
 );
 
 CREATE TABLE IF NOT EXISTS "notifications" (
-  "id" INT4 NOT NULL DEFAULT nextval('notifications_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('notifications_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "type" VARCHAR NOT NULL,
   "priority" VARCHAR NOT NULL DEFAULT 'medium'::character varying,
@@ -1209,7 +1211,7 @@ CREATE TABLE IF NOT EXISTS "notifications" (
 );
 
 CREATE TABLE IF NOT EXISTS "onboarding_challenges" (
-  "id" INT4 NOT NULL DEFAULT nextval('onboarding_challenges_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('onboarding_challenges_id_seq'::regclass),
   "action_key" VARCHAR NOT NULL,
   "title" VARCHAR NOT NULL,
   "description" TEXT,
@@ -1223,7 +1225,7 @@ CREATE TABLE IF NOT EXISTS "onboarding_challenges" (
 );
 
 CREATE TABLE IF NOT EXISTS "onboarding_progress" (
-  "id" INT4 NOT NULL DEFAULT nextval('onboarding_progress_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('onboarding_progress_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "challenge_id" INT4 NOT NULL,
   "completed_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -1231,7 +1233,7 @@ CREATE TABLE IF NOT EXISTS "onboarding_progress" (
 );
 
 CREATE TABLE IF NOT EXISTS "organization_engagement_scores" (
-  "id" INT4 NOT NULL DEFAULT nextval('organization_engagement_scores_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('organization_engagement_scores_id_seq'::regclass),
   "organization_name" VARCHAR NOT NULL,
   "canonical_name" VARCHAR NOT NULL,
   "category" VARCHAR,
@@ -1263,11 +1265,11 @@ CREATE TABLE IF NOT EXISTS "organization_engagement_scores" (
 );
 
 CREATE TABLE IF NOT EXISTS "organizations" (
-  "id" INT4 NOT NULL DEFAULT nextval('organizations_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('organizations_id_seq'::regclass),
   "name" VARCHAR NOT NULL,
-  "alternate_names" TEXT,
-  "addresses" TEXT,
-  "domains" TEXT,
+  "alternate_names" TEXT[],
+  "addresses" TEXT[],
+  "domains" TEXT[],
   "total_events" INT4 NOT NULL DEFAULT 0,
   "last_event_date" TIMESTAMP,
   "created_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -1279,7 +1281,7 @@ CREATE TABLE IF NOT EXISTS "organizations" (
 );
 
 CREATE TABLE IF NOT EXISTS "project_assignments" (
-  "id" INT4 NOT NULL DEFAULT nextval('project_assignments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('project_assignments_id_seq'::regclass),
   "project_id" INT4 NOT NULL,
   "user_id" TEXT NOT NULL,
   "user_name" TEXT NOT NULL,
@@ -1289,7 +1291,7 @@ CREATE TABLE IF NOT EXISTS "project_assignments" (
 );
 
 CREATE TABLE IF NOT EXISTS "project_comments" (
-  "id" INT4 NOT NULL DEFAULT nextval('project_comments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('project_comments_id_seq'::regclass),
   "project_id" INT4 NOT NULL,
   "author_name" TEXT NOT NULL,
   "content" TEXT NOT NULL,
@@ -1298,7 +1300,7 @@ CREATE TABLE IF NOT EXISTS "project_comments" (
 );
 
 CREATE TABLE IF NOT EXISTS "project_documents" (
-  "id" INT4 NOT NULL DEFAULT nextval('project_documents_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('project_documents_id_seq'::regclass),
   "project_id" INT4 NOT NULL,
   "file_name" TEXT NOT NULL,
   "original_name" TEXT NOT NULL,
@@ -1309,7 +1311,7 @@ CREATE TABLE IF NOT EXISTS "project_documents" (
 );
 
 CREATE TABLE IF NOT EXISTS "project_tasks" (
-  "id" INT4 NOT NULL DEFAULT nextval('project_tasks_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('project_tasks_id_seq'::regclass),
   "project_id" INT4,
   "title" TEXT NOT NULL,
   "description" TEXT,
@@ -1317,8 +1319,8 @@ CREATE TABLE IF NOT EXISTS "project_tasks" (
   "priority" TEXT NOT NULL DEFAULT 'medium'::text,
   "assignee_id" TEXT,
   "assignee_name" TEXT,
-  "assignee_ids" TEXT,
-  "assignee_names" TEXT,
+  "assignee_ids" TEXT[],
+  "assignee_names" TEXT[],
   "due_date" TEXT,
   "completed_at" TIMESTAMP,
   "attachments" TEXT,
@@ -1336,7 +1338,7 @@ CREATE TABLE IF NOT EXISTS "project_tasks" (
 );
 
 CREATE TABLE IF NOT EXISTS "projects" (
-  "id" INT4 NOT NULL DEFAULT nextval('projects_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('projects_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT,
   "status" TEXT NOT NULL,
@@ -1391,7 +1393,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
 );
 
 CREATE TABLE IF NOT EXISTS "promotion_graphics" (
-  "id" INT4 NOT NULL DEFAULT nextval('promotion_graphics_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('promotion_graphics_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT NOT NULL,
   "image_url" TEXT NOT NULL,
@@ -1411,7 +1413,7 @@ CREATE TABLE IF NOT EXISTS "promotion_graphics" (
 );
 
 CREATE TABLE IF NOT EXISTS "recipient_tsp_contacts" (
-  "id" INT4 NOT NULL DEFAULT nextval('recipient_tsp_contacts_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('recipient_tsp_contacts_id_seq'::regclass),
   "recipient_id" INT4 NOT NULL,
   "user_id" VARCHAR,
   "user_name" TEXT,
@@ -1428,7 +1430,7 @@ CREATE TABLE IF NOT EXISTS "recipient_tsp_contacts" (
 );
 
 CREATE TABLE IF NOT EXISTS "recipients" (
-  "id" INT4 NOT NULL DEFAULT nextval('recipients_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('recipients_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "contact_name" TEXT,
   "phone" TEXT NOT NULL,
@@ -1491,14 +1493,14 @@ CREATE TABLE IF NOT EXISTS "recipients" (
 );
 
 CREATE TABLE IF NOT EXISTS "resource_tag_assignments" (
-  "id" INT4 NOT NULL DEFAULT nextval('resource_tag_assignments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('resource_tag_assignments_id_seq'::regclass),
   "resource_id" INT4 NOT NULL,
   "tag_id" INT4 NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "resource_tags" (
-  "id" INT4 NOT NULL DEFAULT nextval('resource_tags_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('resource_tags_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "color" TEXT,
   "description" TEXT,
@@ -1507,7 +1509,7 @@ CREATE TABLE IF NOT EXISTS "resource_tags" (
 );
 
 CREATE TABLE IF NOT EXISTS "resources" (
-  "id" INT4 NOT NULL DEFAULT nextval('resources_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('resources_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT,
   "type" TEXT NOT NULL,
@@ -1528,7 +1530,7 @@ CREATE TABLE IF NOT EXISTS "resources" (
 );
 
 CREATE TABLE IF NOT EXISTS "sandwich_collections" (
-  "id" INT4 NOT NULL DEFAULT nextval('sandwich_collections_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('sandwich_collections_id_seq'::regclass),
   "collection_date" TEXT NOT NULL,
   "host_name" TEXT NOT NULL,
   "individual_sandwiches" INT4 NOT NULL DEFAULT 0,
@@ -1552,7 +1554,7 @@ CREATE TABLE IF NOT EXISTS "sandwich_collections" (
 );
 
 CREATE TABLE IF NOT EXISTS "sandwich_distributions" (
-  "id" INT4 NOT NULL DEFAULT nextval('sandwich_distributions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('sandwich_distributions_id_seq'::regclass),
   "distribution_date" TEXT NOT NULL,
   "week_ending" TEXT NOT NULL,
   "host_id" INT4 NOT NULL,
@@ -1568,7 +1570,7 @@ CREATE TABLE IF NOT EXISTS "sandwich_distributions" (
 );
 
 CREATE TABLE IF NOT EXISTS "search_analytics" (
-  "id" INT4 NOT NULL DEFAULT nextval('search_analytics_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('search_analytics_id_seq'::regclass),
   "query" TEXT NOT NULL,
   "result_id" VARCHAR,
   "clicked" BOOL NOT NULL DEFAULT false,
@@ -1581,13 +1583,13 @@ CREATE TABLE IF NOT EXISTS "search_analytics" (
 );
 
 CREATE TABLE IF NOT EXISTS "sessions" (
-  "sid" VARCHAR NOT NULL,
+  "sid" VARCHAR PRIMARY KEY,
   "sess" JSONB NOT NULL,
   "expire" TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "stream_channels" (
-  "id" INT4 NOT NULL DEFAULT nextval('stream_channels_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('stream_channels_id_seq'::regclass),
   "channel_id" VARCHAR NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "folder" VARCHAR NOT NULL DEFAULT 'inbox'::character varying,
@@ -1598,7 +1600,7 @@ CREATE TABLE IF NOT EXISTS "stream_channels" (
 );
 
 CREATE TABLE IF NOT EXISTS "stream_messages" (
-  "id" INT4 NOT NULL DEFAULT nextval('stream_messages_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('stream_messages_id_seq'::regclass),
   "stream_message_id" VARCHAR NOT NULL,
   "channel_id" VARCHAR NOT NULL,
   "user_id" VARCHAR NOT NULL,
@@ -1610,7 +1612,7 @@ CREATE TABLE IF NOT EXISTS "stream_messages" (
 );
 
 CREATE TABLE IF NOT EXISTS "stream_threads" (
-  "id" INT4 NOT NULL DEFAULT nextval('stream_threads_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('stream_threads_id_seq'::regclass),
   "stream_thread_id" VARCHAR NOT NULL,
   "parent_message_id" INT4,
   "title" TEXT,
@@ -1622,7 +1624,7 @@ CREATE TABLE IF NOT EXISTS "stream_threads" (
 );
 
 CREATE TABLE IF NOT EXISTS "stream_users" (
-  "id" INT4 NOT NULL DEFAULT nextval('stream_users_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('stream_users_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "stream_user_id" VARCHAR NOT NULL,
   "stream_token" TEXT,
@@ -1631,7 +1633,7 @@ CREATE TABLE IF NOT EXISTS "stream_users" (
 );
 
 CREATE TABLE IF NOT EXISTS "suggestion_responses" (
-  "id" INT4 NOT NULL DEFAULT nextval('suggestion_responses_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('suggestion_responses_id_seq'::regclass),
   "suggestion_id" INT4 NOT NULL,
   "message" TEXT NOT NULL,
   "is_admin_response" BOOL NOT NULL DEFAULT false,
@@ -1642,7 +1644,7 @@ CREATE TABLE IF NOT EXISTS "suggestion_responses" (
 );
 
 CREATE TABLE IF NOT EXISTS "suggestions" (
-  "id" INT4 NOT NULL DEFAULT nextval('suggestions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('suggestions_id_seq'::regclass),
   "title" TEXT NOT NULL,
   "description" TEXT NOT NULL,
   "category" TEXT NOT NULL DEFAULT 'general'::text,
@@ -1653,7 +1655,7 @@ CREATE TABLE IF NOT EXISTS "suggestions" (
   "submitter_name" TEXT,
   "is_anonymous" BOOL NOT NULL DEFAULT false,
   "upvotes" INT4 NOT NULL DEFAULT 0,
-  "tags" TEXT DEFAULT '{}'::text[],
+  "tags" TEXT[] DEFAULT '{}'::text[],
   "implementation_notes" TEXT,
   "estimated_effort" TEXT,
   "assigned_to" VARCHAR,
@@ -1663,7 +1665,7 @@ CREATE TABLE IF NOT EXISTS "suggestions" (
 );
 
 CREATE TABLE IF NOT EXISTS "task_assignments" (
-  "id" INT4 NOT NULL DEFAULT nextval('task_assignments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('task_assignments_id_seq'::regclass),
   "task_id" INT4 NOT NULL,
   "user_id" TEXT NOT NULL,
   "user_name" TEXT NOT NULL,
@@ -1673,7 +1675,7 @@ CREATE TABLE IF NOT EXISTS "task_assignments" (
 );
 
 CREATE TABLE IF NOT EXISTS "task_completions" (
-  "id" INT4 NOT NULL DEFAULT nextval('task_completions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('task_completions_id_seq'::regclass),
   "task_id" INT4 NOT NULL,
   "user_id" TEXT NOT NULL,
   "user_name" TEXT NOT NULL,
@@ -1682,7 +1684,7 @@ CREATE TABLE IF NOT EXISTS "task_completions" (
 );
 
 CREATE TABLE IF NOT EXISTS "team_board_assignments" (
-  "id" INT4 NOT NULL DEFAULT nextval('team_board_assignments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('team_board_assignments_id_seq'::regclass),
   "item_id" INT4 NOT NULL,
   "user_id" TEXT NOT NULL,
   "user_name" TEXT NOT NULL,
@@ -1690,7 +1692,7 @@ CREATE TABLE IF NOT EXISTS "team_board_assignments" (
 );
 
 CREATE TABLE IF NOT EXISTS "team_board_comments" (
-  "id" INT4 NOT NULL DEFAULT nextval('team_board_comments_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('team_board_comments_id_seq'::regclass),
   "item_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "user_name" VARCHAR NOT NULL,
@@ -1699,20 +1701,20 @@ CREATE TABLE IF NOT EXISTS "team_board_comments" (
 );
 
 CREATE TABLE IF NOT EXISTS "team_board_item_likes" (
-  "id" INT4 NOT NULL DEFAULT nextval('team_board_item_likes_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('team_board_item_likes_id_seq'::regclass),
   "item_id" INT4 NOT NULL,
   "user_id" VARCHAR NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "team_board_items" (
-  "id" INT4 NOT NULL DEFAULT nextval('team_board_items_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('team_board_items_id_seq'::regclass),
   "content" TEXT NOT NULL,
   "type" VARCHAR DEFAULT 'task'::character varying,
   "created_by" VARCHAR NOT NULL,
   "created_by_name" VARCHAR NOT NULL,
-  "assigned_to" TEXT,
-  "assigned_to_names" TEXT,
+  "assigned_to" TEXT[],
+  "assigned_to_names" TEXT[],
   "status" VARCHAR NOT NULL DEFAULT 'open'::character varying,
   "created_at" TIMESTAMP NOT NULL DEFAULT now(),
   "completed_at" TIMESTAMP,
@@ -1727,7 +1729,7 @@ CREATE TABLE IF NOT EXISTS "team_board_items" (
 );
 
 CREATE TABLE IF NOT EXISTS "user_activity_logs" (
-  "id" INT4 NOT NULL DEFAULT nextval('user_activity_logs_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('user_activity_logs_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "action" VARCHAR NOT NULL,
   "section" VARCHAR NOT NULL,
@@ -1743,7 +1745,7 @@ CREATE TABLE IF NOT EXISTS "user_activity_logs" (
 );
 
 CREATE TABLE IF NOT EXISTS "user_notification_patterns" (
-  "id" INT4 NOT NULL DEFAULT nextval('user_notification_patterns_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('user_notification_patterns_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "most_active_hours" JSONB DEFAULT '[]'::jsonb,
   "most_active_days" JSONB DEFAULT '[]'::jsonb,
@@ -1762,14 +1764,14 @@ CREATE TABLE IF NOT EXISTS "user_notification_patterns" (
 );
 
 CREATE TABLE IF NOT EXISTS "user_resource_favorites" (
-  "id" INT4 NOT NULL DEFAULT nextval('user_resource_favorites_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('user_resource_favorites_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "resource_id" INT4 NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS "users" (
-  "id" VARCHAR NOT NULL,
+  "id" VARCHAR PRIMARY KEY,
   "email" VARCHAR,
   "password" VARCHAR,
   "first_name" VARCHAR,
@@ -1792,7 +1794,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 );
 
 CREATE TABLE IF NOT EXISTS "volunteers" (
-  "id" INT4 NOT NULL DEFAULT nextval('volunteers_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('volunteers_id_seq'::regclass),
   "name" TEXT NOT NULL,
   "phone" TEXT,
   "email" TEXT,
@@ -1823,7 +1825,7 @@ CREATE TABLE IF NOT EXISTS "volunteers" (
 );
 
 CREATE TABLE IF NOT EXISTS "weekly_reports" (
-  "id" INT4 NOT NULL DEFAULT nextval('weekly_reports_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('weekly_reports_id_seq'::regclass),
   "week_ending" TEXT NOT NULL,
   "sandwich_count" INT4 NOT NULL,
   "notes" TEXT,
@@ -1832,7 +1834,7 @@ CREATE TABLE IF NOT EXISTS "weekly_reports" (
 );
 
 CREATE TABLE IF NOT EXISTS "wishlist_suggestions" (
-  "id" INT4 NOT NULL DEFAULT nextval('wishlist_suggestions_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('wishlist_suggestions_id_seq'::regclass),
   "item" TEXT NOT NULL,
   "reason" TEXT,
   "priority" VARCHAR NOT NULL DEFAULT 'medium'::character varying,
@@ -1848,7 +1850,7 @@ CREATE TABLE IF NOT EXISTS "wishlist_suggestions" (
 );
 
 CREATE TABLE IF NOT EXISTS "work_logs" (
-  "id" INT4 NOT NULL DEFAULT nextval('work_logs_id_seq'::regclass),
+  "id" INT4 PRIMARY KEY DEFAULT nextval('work_logs_id_seq'::regclass),
   "user_id" VARCHAR NOT NULL,
   "description" TEXT NOT NULL,
   "hours" INT4 NOT NULL DEFAULT 0,
@@ -1864,110 +1866,3 @@ CREATE TABLE IF NOT EXISTS "work_logs" (
   "team_id" VARCHAR
 );
 
-
--- PRIMARY KEY CONSTRAINTS
-ALTER TABLE "_migrations" ADD PRIMARY KEY ("id");
-ALTER TABLE "activities" ADD PRIMARY KEY ("id");
-ALTER TABLE "activity_attachments" ADD PRIMARY KEY ("id");
-ALTER TABLE "activity_participants" ADD PRIMARY KEY ("id");
-ALTER TABLE "activity_reactions" ADD PRIMARY KEY ("id");
-ALTER TABLE "agenda_items" ADD PRIMARY KEY ("id");
-ALTER TABLE "agenda_sections" ADD PRIMARY KEY ("id");
-ALTER TABLE "alert_requests" ADD PRIMARY KEY ("id");
-ALTER TABLE "announcements" ADD PRIMARY KEY ("id");
-ALTER TABLE "archived_projects" ADD PRIMARY KEY ("id");
-ALTER TABLE "audit_logs" ADD PRIMARY KEY ("id");
-ALTER TABLE "authoritative_weekly_collections" ADD PRIMARY KEY ("id");
-ALTER TABLE "availability_slots" ADD PRIMARY KEY ("id");
-ALTER TABLE "chat_message_likes" ADD PRIMARY KEY ("id");
-ALTER TABLE "chat_message_reads" ADD PRIMARY KEY ("id");
-ALTER TABLE "chat_messages" ADD PRIMARY KEY ("id");
-ALTER TABLE "committee_memberships" ADD PRIMARY KEY ("id");
-ALTER TABLE "committees" ADD PRIMARY KEY ("id");
-ALTER TABLE "compiled_agendas" ADD PRIMARY KEY ("id");
-ALTER TABLE "confidential_documents" ADD PRIMARY KEY ("id");
-ALTER TABLE "contacts" ADD PRIMARY KEY ("id");
-ALTER TABLE "conversation_participants" ADD PRIMARY KEY ("conversation_id", "user_id");
-ALTER TABLE "conversations" ADD PRIMARY KEY ("id");
-ALTER TABLE "cooler_inventory" ADD PRIMARY KEY ("id");
-ALTER TABLE "cooler_types" ADD PRIMARY KEY ("id");
-ALTER TABLE "dashboard_documents" ADD PRIMARY KEY ("id");
-ALTER TABLE "dismissed_announcements" ADD PRIMARY KEY ("id");
-ALTER TABLE "document_access_logs" ADD PRIMARY KEY ("id");
-ALTER TABLE "document_permissions" ADD PRIMARY KEY ("id");
-ALTER TABLE "documents" ADD PRIMARY KEY ("id");
-ALTER TABLE "drive_links" ADD PRIMARY KEY ("id");
-ALTER TABLE "driver_agreements" ADD PRIMARY KEY ("id");
-ALTER TABLE "drivers" ADD PRIMARY KEY ("id");
-ALTER TABLE "email_drafts" ADD PRIMARY KEY ("id");
-ALTER TABLE "email_messages" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_collaboration_comment_likes" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_collaboration_comments" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_edit_revisions" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_field_locks" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_reminders" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_requests" ADD PRIMARY KEY ("id");
-ALTER TABLE "event_volunteers" ADD PRIMARY KEY ("id");
-ALTER TABLE "expenses" ADD PRIMARY KEY ("id");
-ALTER TABLE "feature_flags" ADD PRIMARY KEY ("id");
-ALTER TABLE "google_sheets" ADD PRIMARY KEY ("id");
-ALTER TABLE "holding_zone_categories" ADD PRIMARY KEY ("id");
-ALTER TABLE "host_contacts" ADD PRIMARY KEY ("id");
-ALTER TABLE "hosted_files" ADD PRIMARY KEY ("id");
-ALTER TABLE "hosts" ADD PRIMARY KEY ("id");
-ALTER TABLE "impact_reports" ADD PRIMARY KEY ("id");
-ALTER TABLE "imported_external_ids" ADD PRIMARY KEY ("id");
-ALTER TABLE "kudos_tracking" ADD PRIMARY KEY ("id");
-ALTER TABLE "meeting_minutes" ADD PRIMARY KEY ("id");
-ALTER TABLE "meeting_notes" ADD PRIMARY KEY ("id");
-ALTER TABLE "meeting_projects" ADD PRIMARY KEY ("id");
-ALTER TABLE "meetings" ADD PRIMARY KEY ("id");
-ALTER TABLE "message_likes" ADD PRIMARY KEY ("id");
-ALTER TABLE "message_recipients" ADD PRIMARY KEY ("id");
-ALTER TABLE "messages" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_ab_tests" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_action_history" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_analytics" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_history" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_preferences" ADD PRIMARY KEY ("id");
-ALTER TABLE "notification_rules" ADD PRIMARY KEY ("id");
-ALTER TABLE "notifications" ADD PRIMARY KEY ("id");
-ALTER TABLE "onboarding_challenges" ADD PRIMARY KEY ("id");
-ALTER TABLE "onboarding_progress" ADD PRIMARY KEY ("id");
-ALTER TABLE "organization_engagement_scores" ADD PRIMARY KEY ("id");
-ALTER TABLE "organizations" ADD PRIMARY KEY ("id");
-ALTER TABLE "project_assignments" ADD PRIMARY KEY ("id");
-ALTER TABLE "project_comments" ADD PRIMARY KEY ("id");
-ALTER TABLE "project_documents" ADD PRIMARY KEY ("id");
-ALTER TABLE "project_tasks" ADD PRIMARY KEY ("id");
-ALTER TABLE "projects" ADD PRIMARY KEY ("id");
-ALTER TABLE "promotion_graphics" ADD PRIMARY KEY ("id");
-ALTER TABLE "recipient_tsp_contacts" ADD PRIMARY KEY ("id");
-ALTER TABLE "recipients" ADD PRIMARY KEY ("id");
-ALTER TABLE "resource_tag_assignments" ADD PRIMARY KEY ("id");
-ALTER TABLE "resource_tags" ADD PRIMARY KEY ("id");
-ALTER TABLE "resources" ADD PRIMARY KEY ("id");
-ALTER TABLE "sandwich_collections" ADD PRIMARY KEY ("id");
-ALTER TABLE "sandwich_distributions" ADD PRIMARY KEY ("id");
-ALTER TABLE "search_analytics" ADD PRIMARY KEY ("id");
-ALTER TABLE "sessions" ADD PRIMARY KEY ("sid");
-ALTER TABLE "stream_channels" ADD PRIMARY KEY ("id");
-ALTER TABLE "stream_messages" ADD PRIMARY KEY ("id");
-ALTER TABLE "stream_threads" ADD PRIMARY KEY ("id");
-ALTER TABLE "stream_users" ADD PRIMARY KEY ("id");
-ALTER TABLE "suggestion_responses" ADD PRIMARY KEY ("id");
-ALTER TABLE "suggestions" ADD PRIMARY KEY ("id");
-ALTER TABLE "task_assignments" ADD PRIMARY KEY ("id");
-ALTER TABLE "task_completions" ADD PRIMARY KEY ("id");
-ALTER TABLE "team_board_assignments" ADD PRIMARY KEY ("id");
-ALTER TABLE "team_board_comments" ADD PRIMARY KEY ("id");
-ALTER TABLE "team_board_item_likes" ADD PRIMARY KEY ("id");
-ALTER TABLE "team_board_items" ADD PRIMARY KEY ("id");
-ALTER TABLE "user_activity_logs" ADD PRIMARY KEY ("id");
-ALTER TABLE "user_notification_patterns" ADD PRIMARY KEY ("id");
-ALTER TABLE "user_resource_favorites" ADD PRIMARY KEY ("id");
-ALTER TABLE "users" ADD PRIMARY KEY ("id");
-ALTER TABLE "volunteers" ADD PRIMARY KEY ("id");
-ALTER TABLE "weekly_reports" ADD PRIMARY KEY ("id");
-ALTER TABLE "wishlist_suggestions" ADD PRIMARY KEY ("id");
-ALTER TABLE "work_logs" ADD PRIMARY KEY ("id");
