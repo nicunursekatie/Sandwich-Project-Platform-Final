@@ -294,7 +294,13 @@ export async function previewMerge(
   sampleCollections: any[];
 }> {
   try {
-    logger.info('Previewing merge', { sourceName, targetName });
+    logger.info('=== PREVIEW MERGE DEBUG START ===');
+    logger.info('Previewing merge', { 
+      sourceName, 
+      targetName,
+      sourceNameLength: sourceName.length,
+      sourceNameBytes: Buffer.from(sourceName).toString('hex')
+    });
 
     // Count affected event requests using Drizzle ORM (same as duplicate-detection)
     let eventCount = 0;
@@ -311,6 +317,20 @@ export async function previewMerge(
         })
         .from(eventRequests)
         .where(sql`${eventRequests.organizationName} = ${sourceName}`);
+      
+      // DEBUG: Log first few event org names to compare
+      const sampleOrgNames = await db
+        .select({ name: eventRequests.organizationName })
+        .from(eventRequests)
+        .where(sql`${eventRequests.organizationName} IS NOT NULL`)
+        .limit(5);
+      logger.info('DEBUG: Sample event org names from DB', { 
+        sampleOrgNames: sampleOrgNames.map(e => ({ 
+          name: e.name, 
+          length: e.name?.length,
+          bytes: e.name ? Buffer.from(e.name).toString('hex') : null
+        }))
+      });
       
       eventCount = events.length;
       sampleEvents = events.slice(0, 5).map(e => ({
@@ -343,7 +363,10 @@ export async function previewMerge(
         })
         .from(sandwichCollections);
 
+      logger.info('DEBUG: Total collections fetched', { count: collections.length });
+
       // Count collections where org appears (same logic as duplicate-detection)
+      let matchDetails: any[] = [];
       for (const collection of collections) {
         let matched = false;
         
@@ -372,6 +395,14 @@ export async function previewMerge(
         
         if (matched) {
           collectionCount++;
+          if (matchDetails.length < 3) {
+            matchDetails.push({
+              id: collection.id,
+              group1Name: collection.group1Name,
+              group2Name: collection.group2Name,
+              hasGroupCollections: !!collection.groupCollections
+            });
+          }
           if (sampleCollections.length < 5) {
             sampleCollections.push({
               id: collection.id,
@@ -386,8 +417,24 @@ export async function previewMerge(
       logger.info('Preview: Collections matched via Drizzle ORM', { 
         sourceName, 
         totalCollections: collections.length,
-        matchedCollections: collectionCount 
+        matchedCollections: collectionCount,
+        matchDetails: matchDetails.slice(0, 3)
       });
+      
+      // DEBUG: Show sample groupCollections to understand structure
+      const samplesWithGroupCollections = collections
+        .filter(c => c.groupCollections && Array.isArray(c.groupCollections) && c.groupCollections.length > 0)
+        .slice(0, 2);
+      if (samplesWithGroupCollections.length > 0) {
+        logger.info('DEBUG: Sample groupCollections structure', {
+          samples: samplesWithGroupCollections.map(c => ({
+            id: c.id,
+            groupCollections: c.groupCollections?.slice(0, 2)
+          }))
+        });
+      }
+      
+      logger.info('=== PREVIEW MERGE DEBUG END ===');
     } catch (error) {
       logger.error('Error querying collections for preview', { sourceName, error });
     }
