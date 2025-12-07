@@ -103,10 +103,18 @@ export async function mergeOrganizations(
     const collectionsGroup2Result = await db.execute(
       sql`SELECT DISTINCT group2_name FROM sandwich_collections WHERE group2_name = ${sourceName} LIMIT 5`
     ) as any[];
+
+    // Check if it exists in groupCollections JSON array
+    const jsonArrayResult = await db.execute(
+      sql`SELECT id, group_collections FROM sandwich_collections WHERE group_collections::text LIKE ${`%${sourceName}%`} LIMIT 5`
+    ) as any[];
+
     logger.info('DEBUG: Exact match check in sandwich_collections', {
       sourceName,
       group1Matches: collectionsGroup1Result,
-      group2Matches: collectionsGroup2Result
+      group2Matches: collectionsGroup2Result,
+      jsonArrayMatches: jsonArrayResult.length,
+      sampleJsonData: jsonArrayResult.length > 0 ? jsonArrayResult[0] : null
     });
 
     // Count records BEFORE updating (to get accurate affected count)
