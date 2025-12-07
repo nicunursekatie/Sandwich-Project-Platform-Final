@@ -91,9 +91,22 @@ export async function mergeOrganizations(
     const exactMatchResult = await db.execute(
       sql`SELECT organization_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
     ) as any[];
-    logger.info('DEBUG: Exact match check', {
+    logger.info('DEBUG: Exact match check in event_requests', {
       sourceName,
       exactMatches: exactMatchResult
+    });
+
+    // Also check collections
+    const collectionsGroup1Result = await db.execute(
+      sql`SELECT DISTINCT group1_name FROM sandwich_collections WHERE group1_name = ${sourceName} LIMIT 5`
+    ) as any[];
+    const collectionsGroup2Result = await db.execute(
+      sql`SELECT DISTINCT group2_name FROM sandwich_collections WHERE group2_name = ${sourceName} LIMIT 5`
+    ) as any[];
+    logger.info('DEBUG: Exact match check in sandwich_collections', {
+      sourceName,
+      group1Matches: collectionsGroup1Result,
+      group2Matches: collectionsGroup2Result
     });
 
     // Count records BEFORE updating (to get accurate affected count)
