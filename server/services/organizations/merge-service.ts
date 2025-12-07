@@ -79,16 +79,28 @@ export async function mergeOrganizations(
 
     // Execute all updates sequentially using raw SQL (no transaction support in HTTP driver)
 
+    // Count records BEFORE updating (to get accurate affected count)
+    const eventCountResult = await db.execute(
+      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
+    ) as any[];
+    const eventCount = (eventCountResult?.[0] as any)?.count || 0;
+
+    const collectionCountResult = await db.execute(
+      sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${sourceName} OR group2_name = ${sourceName}`
+    ) as any[];
+    const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
+
+    logger.info('Pre-merge counts', {
+      sourceName,
+      targetName,
+      eventCount,
+      collectionCount
+    });
+
     // 1. Update event_requests
     await db.execute(
       sql`UPDATE event_requests SET organization_name = ${targetName} WHERE organization_name = ${sourceName}`
     );
-
-    // Count affected event requests
-    const eventCountResult = await db.execute(
-      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${targetName}`
-    ) as any[];
-    const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
     // 2. Update sandwich_collections.group1Name
     await db.execute(
@@ -115,12 +127,6 @@ export async function mergeOrganizations(
       )
       WHERE group_collections::text LIKE ${`%${sourceName}%`}
     `);
-
-    // Count total affected collections
-    const collectionCountResult = await db.execute(
-      sql`SELECT COUNT(*)::int as count FROM sandwich_collections WHERE group1_name = ${targetName} OR group2_name = ${targetName}`
-    ) as any[];
-    const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
     // 5. Update or create organization record with alternate name
     const existingOrgResult = await db.execute(
