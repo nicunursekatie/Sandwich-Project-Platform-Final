@@ -1903,6 +1903,13 @@ export const eventRequests = pgTable(
     organizationCategory: varchar('organization_category'), // 'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'school', 'neighborhood', 'club', 'greek_life', 'cultural', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
 
+    // Partner/co-hosting organizations (for events hosted by multiple organizations)
+    partnerOrganizations: jsonb('partner_organizations').$type<Array<{
+      name: string;
+      department?: string;
+      role?: 'co-host' | 'partner' | 'sponsor';
+    }>>(),
+
     // AI-generated categorization (optional, auto-populated)
     autoCategories: jsonb('auto_categories').$type<{
       eventType: 'corporate' | 'school' | 'nonprofit' | 'community' | 'religious' | 'government' | 'other';

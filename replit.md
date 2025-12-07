@@ -40,6 +40,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **User Registration & Approval System**: New users sign up with `isActive: false` and require admin approval before accessing the application, enforced at login and through middleware.
 - **Google Sheets Sync Monitoring & Alerts**: Background sync service includes comprehensive monitoring and email alerts for no sync, stale sync, failures, and service stoppage. Advisory locks replaced with in-memory locking due to Neon serverless limitations.
 - **React Query Cache Management**: Uses `queryClient.refetchQueries` in mutation success handlers to ensure immediate UI updates after data changes.
+- **Organization Merge System**: Admin tool to merge duplicate organizations (e.g., "Dutton Family" vs "Dutton family"). Includes duplicate detection with similarity scoring, merge preview, and batch updates across event_requests and sandwich_collections tables. **CRITICAL**: When using `db.execute()` with raw SQL, results return as `{ rows: [...], rowCount: n }` QueryResult object, NOT as an array directly. Always access `.rows` to get the data array.
 
 ### External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

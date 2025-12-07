@@ -12,6 +12,7 @@ interface TwilioCredentials {
   apiKey: string;
   apiKeySecret: string;
   phoneNumber: string;
+  authToken?: string; // Auth token for webhook signature validation
 }
 
 let cachedCredentials: TwilioCredentials | null = null;
@@ -88,7 +89,8 @@ async function getCredentials(): Promise<TwilioCredentials> {
       accountSid: connectionSettings.settings.account_sid,
       apiKey: connectionSettings.settings.api_key,
       apiKeySecret: connectionSettings.settings.api_key_secret,
-      phoneNumber: connectionSettings.settings.phone_number || ''
+      phoneNumber: connectionSettings.settings.phone_number || '',
+      authToken: connectionSettings.settings.auth_token || undefined
     };
 
     // Debug: Log credential info (not the secrets themselves)
@@ -97,6 +99,7 @@ async function getCredentials(): Promise<TwilioCredentials> {
     logger.log(`📱 Twilio API Key prefix: ${cachedCredentials.apiKey?.substring(0, 8)}...`);
     logger.log(`📱 Twilio API Key Secret length: ${cachedCredentials.apiKeySecret?.length || 0}`);
     logger.log(`📱 Twilio Phone Number: ${cachedCredentials.phoneNumber}`);
+    logger.log(`📱 Twilio Auth Token available: ${cachedCredentials.authToken ? 'Yes' : 'No (webhook validation may fail)'}`);
 
     return cachedCredentials;
   } catch (error) {
@@ -166,6 +169,40 @@ export async function isTwilioConnected(): Promise<boolean> {
  * Exported for use in provider factory
  */
 export { isReplitEnvironmentAvailable };
+
+/**
+ * Get the Twilio Auth Token for webhook signature validation
+ * Priority:
+ * 1. TWILIO_AUTH_TOKEN environment variable (manual override)
+ * 2. Auth token from Replit's managed connection (if available)
+ *
+ * Note: Replit's connector may not provide auth_token as it uses API Key auth.
+ * In that case, TWILIO_AUTH_TOKEN must be set manually in Replit Secrets.
+ */
+export async function getTwilioAuthToken(): Promise<string | null> {
+  // Priority 1: Environment variable override
+  const envAuthToken = process.env.TWILIO_AUTH_TOKEN;
+  if (envAuthToken) {
+    logger.log('📱 Using TWILIO_AUTH_TOKEN from environment variable');
+    return envAuthToken;
+  }
+
+  // Priority 2: Try to get from Replit connector
+  try {
+    const credentials = await getCredentials();
+    if (credentials.authToken) {
+      logger.log('📱 Using auth token from Replit Twilio connection');
+      return credentials.authToken;
+    }
+  } catch (error) {
+    // Replit connector not available or failed
+    logger.log('📱 Replit Twilio connector not available for auth token');
+  }
+
+  // No auth token available
+  logger.warn('⚠️ No Twilio auth token available for webhook validation. Set TWILIO_AUTH_TOKEN in environment.');
+  return null;
+}
 
 /**
  * Clear cached credentials (for testing or reconnection)
