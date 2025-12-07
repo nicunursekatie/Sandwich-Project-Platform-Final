@@ -124,17 +124,19 @@ export async function mergeOrganizations(
     });
 
     // Count records BEFORE updating (to get accurate affected count)
+    // Use case-insensitive matching (ILIKE) to handle different capitalizations
     const eventCountResult = await db.execute(
-      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
+      sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName})`
     ) as any[];
     const eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
     // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
+    // Use case-insensitive matching for all comparisons
     const collectionCountResult = await db.execute(
       sql`SELECT COUNT(*)::int as count FROM sandwich_collections
-          WHERE group1_name = ${sourceName}
-             OR group2_name = ${sourceName}
-             OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
+          WHERE LOWER(group1_name) = LOWER(${sourceName})
+             OR LOWER(group2_name) = LOWER(${sourceName})
+             OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})`
     ) as any[];
     const collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
@@ -145,35 +147,35 @@ export async function mergeOrganizations(
       collectionCount
     });
 
-    // 1. Update event_requests
+    // 1. Update event_requests (case-insensitive matching)
     await db.execute(
-      sql`UPDATE event_requests SET organization_name = ${targetName} WHERE organization_name = ${sourceName}`
+      sql`UPDATE event_requests SET organization_name = ${targetName} WHERE LOWER(organization_name) = LOWER(${sourceName})`
     );
 
-    // 2. Update sandwich_collections.group1Name
+    // 2. Update sandwich_collections.group1Name (case-insensitive matching)
     await db.execute(
-      sql`UPDATE sandwich_collections SET group1_name = ${targetName} WHERE group1_name = ${sourceName}`
+      sql`UPDATE sandwich_collections SET group1_name = ${targetName} WHERE LOWER(group1_name) = LOWER(${sourceName})`
     );
 
-    // 3. Update sandwich_collections.group2Name
+    // 3. Update sandwich_collections.group2Name (case-insensitive matching)
     await db.execute(
-      sql`UPDATE sandwich_collections SET group2_name = ${targetName} WHERE group2_name = ${sourceName}`
+      sql`UPDATE sandwich_collections SET group2_name = ${targetName} WHERE LOWER(group2_name) = LOWER(${sourceName})`
     );
 
-    // 4. Update groupCollections JSON arrays
+    // 4. Update groupCollections JSON arrays (case-insensitive matching)
     await db.execute(sql`
       UPDATE sandwich_collections
       SET group_collections = (
         SELECT jsonb_agg(
           CASE
-            WHEN elem->>'groupName' = ${sourceName}
+            WHEN LOWER(elem->>'groupName') = LOWER(${sourceName})
             THEN jsonb_set(elem, '{groupName}', to_jsonb(${targetName}))
             ELSE elem
           END
         )
         FROM jsonb_array_elements(group_collections) AS elem
       )
-      WHERE group_collections::text LIKE ${`%${sourceName}%`}
+      WHERE LOWER(group_collections::text) LIKE LOWER(${`%${sourceName}%`})
     `);
 
     // 5. Update or create organization record with alternate name
@@ -289,15 +291,16 @@ export async function previewMerge(
 
     try {
       // Use raw SQL for counts to avoid schema issues
+      // Use case-insensitive matching (LOWER) to handle different capitalizations
       const eventCountResult = await db.execute(
-        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE organization_name = ${sourceName}`
+        sql`SELECT COUNT(*)::int as count FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName})`
       ) as any[];
 
       eventCount = (eventCountResult?.[0] as any)?.count || 0;
 
-      // Get sample events with raw SQL
+      // Get sample events with raw SQL (case-insensitive)
       const sampleEventsResult = await db.execute(
-        sql`SELECT id, event_date, department_name FROM event_requests WHERE organization_name = ${sourceName} LIMIT 5`
+        sql`SELECT id, event_date, department_name FROM event_requests WHERE LOWER(organization_name) = LOWER(${sourceName}) LIMIT 5`
       ) as any[];
 
       sampleEvents = sampleEventsResult || [];
@@ -312,21 +315,22 @@ export async function previewMerge(
 
     try {
       // Count collections where org appears in group1_name, group2_name, OR groupCollections JSON
+      // Use case-insensitive matching for all comparisons
       const collectionCountResult = await db.execute(
         sql`SELECT COUNT(*)::int as count FROM sandwich_collections
-            WHERE group1_name = ${sourceName}
-               OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}`
+            WHERE LOWER(group1_name) = LOWER(${sourceName})
+               OR LOWER(group2_name) = LOWER(${sourceName})
+               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})`
       ) as any[];
 
       collectionCount = (collectionCountResult?.[0] as any)?.count || 0;
 
-      // Get sample collections with raw SQL
+      // Get sample collections with raw SQL (case-insensitive)
       const sampleCollectionsResult = await db.execute(
         sql`SELECT id, date_collected, group1_name, group2_name FROM sandwich_collections
-            WHERE group1_name = ${sourceName}
-               OR group2_name = ${sourceName}
-               OR group_collections::text LIKE ${`%"groupName":"${sourceName}"%`}
+            WHERE LOWER(group1_name) = LOWER(${sourceName})
+               OR LOWER(group2_name) = LOWER(${sourceName})
+               OR LOWER(group_collections::text) LIKE LOWER(${`%"groupName":"${sourceName}"%`})
             LIMIT 5`
       ) as any[];
 
