@@ -882,14 +882,14 @@ export default function HoldingZone() {
         parentItemId: parentItemId,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
       setLinkDialogOpen(false);
       setItemToLink(null);
       setSelectedParentId(null);
       toast({
-        title: 'Item linked',
-        description: parentItemId ? 'Item has been linked to parent' : 'Item has been unlinked',
+        title: variables.parentItemId ? 'Item linked' : 'Item unlinked',
+        description: variables.parentItemId ? 'Item has been linked to parent' : 'Item has been unlinked',
       });
     },
     onError: (error: any) => {
@@ -2535,6 +2535,155 @@ export default function HoldingZone() {
                 <>
                   <FolderKanban className="h-4 w-4 mr-2" />
                   Upgrade to Project
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link to Parent Item Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5 text-[#236383]" />
+              {itemToLink?.parentItemId ? 'Change or Remove Link' : 'Link to Parent Item'}
+            </DialogTitle>
+            <DialogDescription>
+              {itemToLink?.parentItemId
+                ? 'Change the parent item or remove the link entirely.'
+                : 'Select a parent item to nest this item under. This helps organize related items together.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {itemToLink && (
+            <div className="space-y-4 py-4">
+              {/* Current Item Preview */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">This item:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 line-clamp-2">
+                  {itemToLink.content}
+                </p>
+              </div>
+
+              {/* Parent Selection */}
+              <div className="space-y-2">
+                <Label>Select Parent Item</Label>
+                <div className="max-h-[250px] overflow-y-auto space-y-2 border rounded-lg p-2">
+                  {/* Option to remove link */}
+                  {itemToLink.parentItemId && (
+                    <Button
+                      variant={selectedParentId === null ? 'default' : 'outline'}
+                      className={`w-full justify-start text-left h-auto py-2 px-3 ${
+                        selectedParentId === null ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' : ''
+                      }`}
+                      onClick={() => setSelectedParentId(null)}
+                    >
+                      <Unlink className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">Remove link (make standalone)</span>
+                    </Button>
+                  )}
+
+                  {/* Available parent items - exclude current item and its children */}
+                  {items
+                    .filter(item =>
+                      item.id !== itemToLink.id && // Can't link to self
+                      item.parentItemId !== itemToLink.id && // Can't link to own children
+                      item.status !== 'done' // Don't show completed items
+                    )
+                    .map(item => (
+                      <Button
+                        key={item.id}
+                        variant={selectedParentId === item.id ? 'default' : 'outline'}
+                        className={`w-full justify-start text-left h-auto py-2 px-3 ${
+                          selectedParentId === item.id ? 'bg-[#236383] text-white' : ''
+                        }`}
+                        onClick={() => setSelectedParentId(item.id)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.type === 'task' && <ListTodo className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'note' && <StickyNote className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'idea' && <Lightbulb className="h-4 w-4 flex-shrink-0" />}
+                          <span className="truncate">{item.content}</span>
+                          {item.childCount && item.childCount > 0 && (
+                            <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
+                              {item.childCount} linked
+                            </Badge>
+                          )}
+                        </div>
+                      </Button>
+                    ))}
+
+                  {items.filter(item =>
+                    item.id !== itemToLink.id &&
+                    item.parentItemId !== itemToLink.id &&
+                    item.status !== 'done'
+                  ).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No available items to link to
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Selection indicator */}
+              {selectedParentId !== null && selectedParentId !== itemToLink.parentItemId && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Will link to:</strong>{' '}
+                    {items.find(i => i.id === selectedParentId)?.content || 'Unknown'}
+                  </p>
+                </div>
+              )}
+
+              {selectedParentId === null && itemToLink.parentItemId && (
+                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Will remove link</strong> - Item will become standalone
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLinkDialogOpen(false);
+                setItemToLink(null);
+                setSelectedParentId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (itemToLink) {
+                  linkItemMutation.mutate({
+                    id: itemToLink.id,
+                    parentItemId: selectedParentId,
+                  });
+                }
+              }}
+              disabled={
+                linkItemMutation.isPending ||
+                (selectedParentId === itemToLink?.parentItemId) // No change
+              }
+              className="bg-[#236383] hover:bg-[#007E8C]"
+            >
+              {linkItemMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : itemToLink?.parentItemId && selectedParentId === null ? (
+                <>
+                  <Unlink className="h-4 w-4 mr-2" />
+                  Remove Link
+                </>
+              ) : (
+                <>
+                  <Link className="h-4 w-4 mr-2" />
+                  Link Item
                 </>
               )}
             </Button>
