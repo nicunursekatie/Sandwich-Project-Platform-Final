@@ -25,7 +25,7 @@ async function seedUsers() {
 
   const users = [
     {
-      id: 'admin-001',
+      id: 'admin-user',
       email: 'admin@sandwich.dev',
       password: hashedPassword,
       firstName: 'Admin',
@@ -37,7 +37,7 @@ async function seedUsers() {
       preferredEmail: 'admin@sandwich.dev',
     },
     {
-      id: 'coordinator-001',
+      id: 'jane-coordinator',
       email: 'coordinator@sandwich.dev',
       password: hashedPassword,
       firstName: 'Jane',
@@ -49,7 +49,7 @@ async function seedUsers() {
       preferredEmail: 'coordinator@sandwich.dev',
     },
     {
-      id: 'volunteer-001',
+      id: 'john-volunteer',
       email: 'volunteer1@sandwich.dev',
       password: hashedPassword,
       firstName: 'John',
@@ -61,7 +61,7 @@ async function seedUsers() {
       preferredEmail: 'volunteer1@sandwich.dev',
     },
     {
-      id: 'volunteer-002',
+      id: 'sarah-helper',
       email: 'volunteer2@sandwich.dev',
       password: hashedPassword,
       firstName: 'Sarah',
@@ -73,7 +73,7 @@ async function seedUsers() {
       preferredEmail: 'volunteer2@sandwich.dev',
     },
     {
-      id: 'driver-001',
+      id: 'mike-driver',
       email: 'driver@sandwich.dev',
       password: hashedPassword,
       firstName: 'Mike',
@@ -105,7 +105,7 @@ async function seedProjects() {
       category: 'events',
       startDate: '2025-11-01',
       dueDate: '2025-11-28',
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       createdByName: 'Admin User',
       progressPercentage: 25,
     },
@@ -117,7 +117,7 @@ async function seedProjects() {
       category: 'outreach',
       startDate: '2025-11-15',
       dueDate: '2025-12-20',
-      createdBy: 'coordinator-001',
+      createdBy: 'jane-coordinator',
       createdByName: 'Jane Coordinator',
       progressPercentage: 0,
     },
@@ -129,7 +129,7 @@ async function seedProjects() {
       category: 'events',
       startDate: '2025-10-01',
       dueDate: '2025-12-31',
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       createdByName: 'Admin User',
       progressPercentage: 60,
     },
@@ -298,7 +298,7 @@ async function seedSandwichDistributions(hosts: any[], recipients: any[]) {
       recipientName: recipients[0].name,
       sandwichCount: 50,
       notes: 'Great turnout, ran out early',
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       createdByName: 'Admin User',
     },
     {
@@ -310,7 +310,7 @@ async function seedSandwichDistributions(hosts: any[], recipients: any[]) {
       recipientName: recipients[1].name,
       sandwichCount: 40,
       notes: 'Smooth distribution',
-      createdBy: 'coordinator-001',
+      createdBy: 'jane-coordinator',
       createdByName: 'Jane Coordinator',
     },
     {
@@ -322,7 +322,7 @@ async function seedSandwichDistributions(hosts: any[], recipients: any[]) {
       recipientName: recipients[2].name,
       sandwichCount: 40,
       notes: 'Regular weekly distribution',
-      createdBy: 'volunteer-001',
+      createdBy: 'john-volunteer',
       createdByName: 'John Volunteer',
     },
   ];
@@ -340,25 +340,25 @@ async function seedChatMessages() {
   const messages = [
     {
       channel: 'general',
-      userId: 'admin-001',
+      userId: 'admin-user',
       userName: 'Admin User',
       content: 'Welcome to the Sandwich Project Platform! 🥪',
     },
     {
       channel: 'general',
-      userId: 'volunteer-001',
+      userId: 'john-volunteer',
       userName: 'John V',
       content: 'Happy to be here! Looking forward to helping out.',
     },
     {
       channel: 'core-team',
-      userId: 'coordinator-001',
+      userId: 'jane-coordinator',
       userName: 'Jane C',
       content: 'Team meeting scheduled for next Tuesday at 2 PM',
     },
     {
       channel: 'driver',
-      userId: 'driver-001',
+      userId: 'mike-driver',
       userName: 'Mike D',
       content: 'Available for deliveries this weekend',
     },
@@ -378,37 +378,37 @@ async function seedHoldingZoneCategories() {
     {
       name: 'Group Events',
       color: '#236383', // Primary blue
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
     {
       name: 'Hosts',
       color: '#007E8C', // Teal
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
     {
       name: 'Weekly Collections',
       color: '#47B3CB', // Light blue
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
     {
       name: 'Volunteers',
       color: '#FBAD3F', // Orange/gold
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
     {
       name: 'Tech',
       color: '#A31C41', // Red
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
     {
       name: 'Fundraising',
       color: '#2E7D32', // Green
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       isActive: true,
     },
   ];
@@ -428,21 +428,21 @@ async function seedTeamBoardItems() {
       content: 'Need volunteers for Saturday distribution - Looking for 5 volunteers to help with sandwich prep and distribution',
       type: 'task',
       status: 'open',
-      createdBy: 'coordinator-001',
+      createdBy: 'jane-coordinator',
       createdByName: 'Jane Coordinator',
     },
     {
       content: 'Extra coolers available - We have 3 extra coolers in storage if anyone needs them',
       type: 'note',
       status: 'open',
-      createdBy: 'volunteer-001',
+      createdBy: 'john-volunteer',
       createdByName: 'John Volunteer',
     },
     {
       content: 'Transportation needed for next week - Need a driver for the downtown route next Wednesday',
       type: 'task',
       status: 'open',
-      createdBy: 'admin-001',
+      createdBy: 'admin-user',
       createdByName: 'Admin User',
     },
   ];
