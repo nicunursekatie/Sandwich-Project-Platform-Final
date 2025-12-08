@@ -73,8 +73,9 @@ interface HoldingZoneItem {
   completedAt: Date | null;
   createdAt: Date;
   commentCount: number;
-  category: HoldingZoneCategory | null;
-  categoryId: number | null;
+  category: HoldingZoneCategory | null; // Legacy single category
+  categoryId: number | null; // Legacy single category ID
+  categories: Array<{ id: number; name: string; color: string }>; // Multiple categories
   isUrgent: boolean;
   isPrivate: boolean;
   details: string | null;
@@ -123,18 +124,23 @@ const formatDate = (date: Date | string) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Category badge component
-function CategoryBadge({ category }: { category: HoldingZoneCategory | null }) {
-  if (!category) return null;
-  
+// Category badges component - supports multiple categories
+function CategoryBadges({ categories }: { categories: Array<{ id: number; name: string; color: string }> }) {
+  if (!categories || categories.length === 0) return null;
+
   return (
-    <Badge 
-      className="font-medium text-white border-0" 
-      style={{ backgroundColor: category.color }}
-      data-testid={`badge-category-${category.id}`}
-    >
-      {category.name}
-    </Badge>
+    <>
+      {categories.map(category => (
+        <Badge
+          key={category.id}
+          className="font-medium text-white border-0"
+          style={{ backgroundColor: category.color }}
+          data-testid={`badge-category-${category.id}`}
+        >
+          {category.name}
+        </Badge>
+      ))}
+    </>
   );
 }
 
@@ -501,7 +507,7 @@ export default function HoldingZone() {
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
+  const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [newItemDetails, setNewItemDetails] = useState('');
@@ -521,7 +527,7 @@ export default function HoldingZone() {
   const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
   const [editItemContent, setEditItemContent] = useState('');
   const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
+  const [editItemCategoryIds, setEditItemCategoryIds] = useState<number[]>([]);
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
   const [editItemDetails, setEditItemDetails] = useState('');
@@ -627,7 +633,7 @@ export default function HoldingZone() {
     },
     onSuccess: (newCategory: HoldingZoneCategory) => {
       queryClient.invalidateQueries({ queryKey: ['/api/holding-zone/categories'] });
-      setNewItemCategoryId(String(newCategory.id));
+      setNewItemCategoryIds(prev => [...prev, newCategory.id]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -650,7 +656,7 @@ export default function HoldingZone() {
     mutationFn: async (data: {
       content: string;
       type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      categoryIds: number[] | null;
       isUrgent: boolean;
       isPrivate: boolean;
       details: string | null;
@@ -665,7 +671,7 @@ export default function HoldingZone() {
       setIsSubmitDialogOpen(false);
       setNewItemContent('');
       setNewItemType('task');
-      setNewItemCategoryId('none');
+      setNewItemCategoryIds([]);
       setNewItemIsUrgent(false);
       setNewItemIsPrivate(false);
       setNewItemDetails('');
@@ -712,17 +718,17 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate, details, dueDate }: {
+    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate }: {
       id: number;
       content: string;
       type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      categoryIds: number[];
       isUrgent: boolean;
       isPrivate: boolean;
       details?: string | null;
       dueDate?: string | null;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate, details, dueDate });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -730,7 +736,7 @@ export default function HoldingZone() {
       setItemToEdit(null);
       setEditItemContent('');
       setEditItemType('task');
-      setEditItemCategoryId('none');
+      setEditItemCategoryIds([]);
       setEditItemIsUrgent(false);
       setEditItemIsPrivate(false);
       setEditItemDetails('');
@@ -973,7 +979,7 @@ export default function HoldingZone() {
     createItemMutation.mutate({
       content: newItemContent.trim(),
       type: newItemType,
-      categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
+      categoryIds: newItemCategoryIds.length > 0 ? newItemCategoryIds : null,
       isUrgent: newItemIsUrgent,
       isPrivate: newItemIsPrivate,
       details: newItemDetails.trim() || null,
@@ -1254,7 +1260,7 @@ export default function HoldingZone() {
               className={`transition-all hover:shadow-md border-l-4 ${
                 item.isUrgent ? 'border-l-red-500' : ''
               }`}
-              style={!item.isUrgent && item.category?.color ? { borderLeftColor: item.category.color } : undefined}
+              style={!item.isUrgent && item.categories?.length > 0 ? { borderLeftColor: item.categories[0].color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
               <CardContent className="p-4">
@@ -1265,7 +1271,7 @@ export default function HoldingZone() {
                       {item.content}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <CategoryBadge category={item.category} />
+                      <CategoryBadges categories={item.categories || []} />
                       {item.isUrgent && (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
@@ -1299,7 +1305,7 @@ export default function HoldingZone() {
                           setItemToEdit(item);
                           setEditItemContent(item.content);
                           setEditItemType(item.type);
-                          setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
+                          setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
                           setEditItemIsUrgent(item.isUrgent);
                           setEditItemIsPrivate(item.isPrivate);
                           setEditItemDetails(item.details || '');
@@ -1562,34 +1568,47 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="item-category">Category (Optional)</Label>
+              <Label>Categories (Optional)</Label>
               {!isCreatingNewCategory ? (
-                <Select
-                  value={newItemCategoryId}
-                  onValueChange={(value) => {
-                    if (value === 'create-new') {
-                      setIsCreatingNewCategory(true);
-                      setNewItemCategoryId('none');
-                    } else {
-                      setNewItemCategoryId(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="item-category" data-testid="select-new-item-category">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="create-new" className="text-[#236383] font-medium">
-                      + Create New Category...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`new-item-cat-${cat.id}`}
+                            checked={newItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setNewItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setNewItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`new-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3 p-4 border border-[#236383] rounded-lg bg-[#E6F4F6]">
                   <div className="flex items-center justify-between mb-2">
@@ -1927,7 +1946,7 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-item-category">Category (Optional)</Label>
+              <Label>Categories (Optional)</Label>
               {isEditCreatingNewCategory ? (
                 <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
                   <div className="space-y-2">
@@ -1982,7 +2001,7 @@ export default function HoldingZone() {
                             { name: editNewCategoryName.trim(), color: editNewCategoryColor },
                             {
                               onSuccess: (newCategory: HoldingZoneCategory) => {
-                                setEditItemCategoryId(String(newCategory.id));
+                                setEditItemCategoryIds(prev => [...prev, newCategory.id]);
                                 setIsEditCreatingNewCategory(false);
                                 setEditNewCategoryName('');
                                 setEditNewCategoryColor('#236383');
@@ -2004,31 +2023,45 @@ export default function HoldingZone() {
                   </div>
                 </div>
               ) : (
-                <Select
-                  value={editItemCategoryId}
-                  onValueChange={(value) => {
-                    if (value === 'new') {
-                      setIsEditCreatingNewCategory(true);
-                    } else {
-                      setEditItemCategoryId(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="edit-item-category">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new" className="text-[#007E8C] font-medium">
-                      + Add New Category...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-item-cat-${cat.id}`}
+                            checked={editItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setEditItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setEditItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`edit-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -2041,7 +2074,7 @@ export default function HoldingZone() {
                 setItemToEdit(null);
                 setEditItemContent('');
                 setEditItemType('task');
-                setEditItemCategoryId('none');
+                setEditItemCategoryIds([]);
                 setEditItemIsUrgent(false);
                 setEditItemIsPrivate(false);
                 setEditItemDetails('');
@@ -2060,7 +2093,7 @@ export default function HoldingZone() {
                     id: itemToEdit.id,
                     content: editItemContent.trim(),
                     type: editItemType,
-                    categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
+                    categoryIds: editItemCategoryIds,
                     isUrgent: editItemIsUrgent,
                     isPrivate: editItemIsPrivate,
                     details: editItemDetails.trim() || null,

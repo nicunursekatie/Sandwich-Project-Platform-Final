@@ -17,6 +17,7 @@ import {
   type InsertTeamBoardItemLike,
   holdingZoneCategories,
   type HoldingZoneCategory,
+  teamBoardItemCategories,
   users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
@@ -45,7 +46,8 @@ const createItemSchema = insertTeamBoardItemSchema
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
     type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
-    categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+    categoryId: z.number().int().positive().optional().nullable(), // Holding zone category (legacy single)
+    categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
     isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
     details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
@@ -59,7 +61,8 @@ const updateItemSchema = z.object({
   assignedTo: z.array(z.string()).nullable().optional(),
   assignedToNames: z.array(z.string()).nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
-  categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+  categoryId: z.number().int().positive().optional().nullable(), // Holding zone category (legacy single)
+  categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
   isUrgent: z.boolean().optional(), // Urgent flag for priority items
   isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
   content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
@@ -178,14 +181,44 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
     // Combine public and private items
     const allItems = [...items, ...privateItems];
 
-    // Flatten the results to include category info
+    // Flatten the results to include legacy single category info
     const flattenedItems = allItems.map(row => ({
       ...row.item,
-      category: row.category,
+      category: row.category, // Legacy single category from categoryId
     }));
 
     // Get comment counts for all items
     const itemIds = flattenedItems.map(item => item.id);
+
+    // Fetch all categories for items from the junction table
+    const itemCategoriesData = itemIds.length > 0
+      ? await db
+          .select({
+            itemId: teamBoardItemCategories.itemId,
+            categoryId: teamBoardItemCategories.categoryId,
+            categoryName: holdingZoneCategories.name,
+            categoryColor: holdingZoneCategories.color,
+          })
+          .from(teamBoardItemCategories)
+          .innerJoin(
+            holdingZoneCategories,
+            eq(teamBoardItemCategories.categoryId, holdingZoneCategories.id)
+          )
+          .where(inArray(teamBoardItemCategories.itemId, itemIds))
+      : [];
+
+    // Create a map of itemId -> categories array
+    const itemCategoriesMap = new Map<number, Array<{ id: number; name: string; color: string }>>();
+    for (const row of itemCategoriesData) {
+      if (!itemCategoriesMap.has(row.itemId)) {
+        itemCategoriesMap.set(row.itemId, []);
+      }
+      itemCategoriesMap.get(row.itemId)!.push({
+        id: row.categoryId,
+        name: row.categoryName,
+        color: row.categoryColor,
+      });
+    }
     const commentCounts = itemIds.length > 0 
       ? await db
           .select({
@@ -231,12 +264,13 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
     const likeCountMap = new Map(likeCounts.map(c => [c.itemId, Number(c.count)]));
     const userLikedSet = new Set(userLikes.map(l => l.itemId));
 
-    // Add comment counts and like data to items
+    // Add comment counts, like data, and categories to items
     const itemsWithCounts = flattenedItems.map(item => ({
       ...item,
       commentCount: countMap.get(item.id) || 0,
       likeCount: likeCountMap.get(item.id) || 0,
       userHasLiked: userLikedSet.has(item.id),
+      categories: itemCategoriesMap.get(item.id) || [], // Multiple categories from junction table
     }));
 
     // Sort: open items first, then done items
@@ -311,7 +345,14 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
 
     const displayName = req.user.displayName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email;
 
-    // Prepare the item data for insertion
+    // Determine category IDs - prefer categoryIds array, fallback to single categoryId
+    const categoryIdsToAssign = itemData.categoryIds && itemData.categoryIds.length > 0
+      ? itemData.categoryIds
+      : itemData.categoryId
+        ? [itemData.categoryId]
+        : [];
+
+    // Prepare the item data for insertion (keep legacy categoryId for backward compatibility)
     const newItem: InsertTeamBoardItem = {
       content: itemData.content,
       type: itemData.type || 'note',
@@ -321,7 +362,7 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       assignedTo: itemData.assignedTo ?? null,
       assignedToNames: itemData.assignedToNames ?? null,
       completedAt: null,
-      categoryId: itemData.categoryId ?? null,
+      categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null, // Keep first category for legacy
       isUrgent: itemData.isUrgent ?? false,
       isPrivate: itemData.isPrivate ?? false,
       details: itemData.details ?? null,
@@ -334,9 +375,20 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       .values(newItem)
       .returning();
 
+    // Insert category associations into junction table
+    if (categoryIdsToAssign.length > 0) {
+      await db.insert(teamBoardItemCategories).values(
+        categoryIdsToAssign.map(catId => ({
+          itemId: createdItem.id,
+          categoryId: catId,
+        }))
+      );
+    }
+
     logger.info('Successfully created team board item', {
       itemId: createdItem.id,
-      userId: req.user.id
+      userId: req.user.id,
+      categoryCount: categoryIdsToAssign.length,
     });
 
     // Process mentions in the item content asynchronously
@@ -421,19 +473,50 @@ teamBoardRouter.patch('/:id',
       return res.status(404).json({ error: 'Item not found' });
     }
 
+    // Determine category IDs if updating categories
+    const categoryIdsToAssign = updateData.categoryIds !== undefined
+      ? (updateData.categoryIds || [])
+      : updateData.categoryId !== undefined
+        ? (updateData.categoryId ? [updateData.categoryId] : [])
+        : null; // null means don't update categories
+
+    // Prepare update data, setting legacy categoryId if categories are being updated
+    const dbUpdateData = {
+      ...updateData,
+      ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
+      ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
+      ...(categoryIdsToAssign !== null ? { categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null } : {}),
+    };
+    // Remove categoryIds from db update since it's not a column
+    delete (dbUpdateData as any).categoryIds;
+
     // Update the item
     const [updatedItem] = await db
       .update(teamBoardItems)
-      .set({
-        ...updateData,
-        ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
-        ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
-      })
+      .set(dbUpdateData)
       .where(eq(teamBoardItems.id, itemId))
       .returning();
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update categories in junction table if provided
+    if (categoryIdsToAssign !== null) {
+      // Delete existing category associations
+      await db
+        .delete(teamBoardItemCategories)
+        .where(eq(teamBoardItemCategories.itemId, itemId));
+
+      // Insert new category associations
+      if (categoryIdsToAssign.length > 0) {
+        await db.insert(teamBoardItemCategories).values(
+          categoryIdsToAssign.map(catId => ({
+            itemId,
+            categoryId: catId,
+          }))
+        );
+      }
     }
 
     // REFACTOR: Dual-write to team_board_assignments table

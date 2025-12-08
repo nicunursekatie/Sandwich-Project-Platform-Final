@@ -1784,6 +1784,26 @@ export const insertTeamBoardItemSchema = createInsertSchema(
 export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
 export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
 
+// Team Board Item Categories - junction table for many-to-many relationship
+export const teamBoardItemCategories = pgTable(
+  'team_board_item_categories',
+  {
+    id: serial('id').primaryKey(),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+    categoryId: integer('category_id')
+      .notNull()
+      .references(() => holdingZoneCategories.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueItemCategory: unique().on(table.itemId, table.categoryId),
+  })
+);
+
+export type TeamBoardItemCategory = typeof teamBoardItemCategories.$inferSelect;
+
 // Team Board Comments - allow discussion on team board items
 export const teamBoardComments = pgTable('team_board_comments', {
   id: serial('id').primaryKey(),
