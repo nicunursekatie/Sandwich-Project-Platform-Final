@@ -88,6 +88,7 @@ interface AlertItem {
   configurable: boolean;
   enabled?: boolean;
   requiresSmsOptIn?: boolean;
+  smsImplemented?: boolean; // false = SMS support coming soon
 }
 
 // Form schemas
@@ -118,6 +119,7 @@ const notificationPreferencesSchema = z.object({
 type NotificationPreferencesFormData = z.infer<typeof notificationPreferencesSchema>;
 
 // Define all existing alerts in the system
+// smsImplemented: true = SMS delivery fully working, false = coming soon
 const ALERT_CATEGORIES: AlertCategory[] = [
   {
     id: 'event-alerts',
@@ -132,14 +134,16 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         channels: ['email', 'sms'],
         configurable: true,
         requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
       {
         id: 'tsp-contact-assignment',
         name: 'TSP Contact Assignment',
         description: 'Notification when you\'re assigned as the TSP contact for an event',
         channels: ['email', 'sms'],
-        configurable: false,
+        configurable: false, // Not configurable until SMS backend implemented
         requiresSmsOptIn: true,
+        smsImplemented: false, // SMS coming soon
       },
     ],
   },
@@ -153,15 +157,19 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         id: 'chat-mentions',
         name: 'Chat Room Mentions',
         description: 'Get notified when someone @mentions you in a chat room',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: false, // Not configurable until SMS backend implemented
+        requiresSmsOptIn: true,
+        smsImplemented: false, // SMS coming soon
       },
       {
         id: 'team-board-mentions',
         name: 'Team Board Mentions',
         description: 'Get notified when someone mentions you in a team board item or comment',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: false, // Not configurable until SMS backend implemented
+        requiresSmsOptIn: true,
+        smsImplemented: false, // SMS coming soon
       },
     ],
   },
@@ -175,8 +183,10 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         id: 'team-board-assignment',
         name: 'Team Board Assignments',
         description: 'Get notified when you\'re assigned to a task, note, idea, or reminder',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: false, // Not configurable until SMS backend implemented
+        requiresSmsOptIn: true,
+        smsImplemented: false, // SMS coming soon
       },
     ],
   },
@@ -189,10 +199,11 @@ const ALERT_CATEGORIES: AlertCategory[] = [
       {
         id: 'weekly-collection-reminder',
         name: 'Weekly Collection Reminders',
-        description: 'SMS reminders when weekly sandwich counts are missing for your locations',
-        channels: ['sms'],
-        configurable: false,
+        description: 'Reminders when weekly sandwich counts are missing for your locations',
+        channels: ['email', 'sms'],
+        configurable: false, // Not configurable until SMS backend implemented
         requiresSmsOptIn: true,
+        smsImplemented: false, // SMS coming soon
       },
     ],
   },
@@ -365,8 +376,8 @@ export default function AlertPreferences() {
   // Generate hour options
   const hourOptions = Array.from({ length: 72 }, (_, i) => i + 1);
 
-  const renderAlertChannelBadges = (channels: ('email' | 'sms')[], requiresSmsOptIn?: boolean) => (
-    <div className="flex gap-1">
+  const renderAlertChannelBadges = (channels: ('email' | 'sms')[], requiresSmsOptIn?: boolean, smsImplemented?: boolean) => (
+    <div className="flex gap-1 flex-wrap">
       {channels.includes('email') && (
         <Badge variant="secondary" className="text-xs">
           <Mail className="h-3 w-3 mr-1" />
@@ -377,20 +388,31 @@ export default function AlertPreferences() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge
-                variant={hasSMSOptIn || !requiresSmsOptIn ? "secondary" : "outline"}
-                className={`text-xs ${!hasSMSOptIn && requiresSmsOptIn ? 'opacity-50' : ''}`}
-              >
-                <Smartphone className="h-3 w-3 mr-1" />
-                SMS
-                {!hasSMSOptIn && requiresSmsOptIn && <AlertTriangle className="h-3 w-3 ml-1 text-amber-500" />}
-              </Badge>
+              {smsImplemented === false ? (
+                <Badge variant="outline" className="text-xs opacity-60">
+                  <Smartphone className="h-3 w-3 mr-1" />
+                  SMS Coming Soon
+                </Badge>
+              ) : (
+                <Badge
+                  variant={hasSMSOptIn || !requiresSmsOptIn ? "secondary" : "outline"}
+                  className={`text-xs ${!hasSMSOptIn && requiresSmsOptIn ? 'opacity-50' : ''}`}
+                >
+                  <Smartphone className="h-3 w-3 mr-1" />
+                  SMS
+                  {!hasSMSOptIn && requiresSmsOptIn && <AlertTriangle className="h-3 w-3 ml-1 text-amber-500" />}
+                </Badge>
+              )}
             </TooltipTrigger>
-            {!hasSMSOptIn && requiresSmsOptIn && (
+            {smsImplemented === false ? (
+              <TooltipContent>
+                <p>SMS delivery for this alert is coming soon</p>
+              </TooltipContent>
+            ) : !hasSMSOptIn && requiresSmsOptIn ? (
               <TooltipContent>
                 <p>Sign up for SMS notifications to enable this</p>
               </TooltipContent>
-            )}
+            ) : null}
           </Tooltip>
         </TooltipProvider>
       )}
@@ -502,7 +524,7 @@ export default function AlertPreferences() {
                               <p className="text-sm text-muted-foreground mb-2">
                                 {alert.description}
                               </p>
-                              {renderAlertChannelBadges(alert.channels, alert.requiresSmsOptIn)}
+                              {renderAlertChannelBadges(alert.channels, alert.requiresSmsOptIn, alert.smsImplemented)}
                             </div>
                             {alert.configurable && (
                               <Button
