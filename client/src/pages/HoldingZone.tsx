@@ -1381,16 +1381,16 @@ export default function HoldingZone() {
               style={!item.isUrgent && item.categories?.length > 0 ? { borderLeftColor: item.categories[0].color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
-              {isChildItem && (
-                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
-                  <ChevronRight className="h-3 w-3" />
-                  <span>Linked to: <span className="font-medium">{parentItem?.content || 'Unknown'}</span></span>
-                </div>
-              )}
               <CardContent className="p-4">
                 {/* Header: Title, Badges, Actions */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
+                    {isChildItem && parentItem && (
+                      <div className="mb-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate max-w-[400px]">{parentItem.content}</span>
+                      </div>
+                    )}
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                       {item.content}
                     </h3>
