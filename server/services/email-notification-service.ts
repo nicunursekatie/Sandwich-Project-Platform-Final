@@ -4,6 +4,8 @@ import { users, eventRequests } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
+import { getUserMetadata } from '@shared/types';
+import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS } from '../sms-service';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -178,6 +180,33 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       logger.log(
         `Chat mention notification sent to ${notification.mentionedUserEmail}`
       );
+
+      // Send SMS notification if user has opted in
+      try {
+        const mentionedUser = await db.select().from(users).where(eq(users.id, notification.mentionedUserId)).limit(1);
+        if (mentionedUser && mentionedUser.length > 0) {
+          const metadata = getUserMetadata(mentionedUser[0]);
+          const smsConsent = metadata.smsConsent;
+          if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const messagePreview = notification.messageContent.length > 50 
+              ? notification.messageContent.substring(0, 50) + '...' 
+              : notification.messageContent;
+            const chatUrl = this.getChatUrl(notification.channel);
+            await sendChatMentionSMS(
+              smsConsent.phoneNumber,
+              notification.mentionedUserName,
+              notification.senderName,
+              notification.channel,
+              messagePreview,
+              chatUrl
+            );
+            logger.log(`Chat mention SMS sent to ${smsConsent.phoneNumber}`);
+          }
+        }
+      } catch (smsError) {
+        logger.error('Error sending chat mention SMS (email still succeeded):', smsError);
+      }
+
       return true;
     } catch (error) {
       logger.error('Error sending chat mention notification:', error);
@@ -289,6 +318,26 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
       await sgMail.send(msg);
       logger.log(`TSP contact assignment notification sent to ${userEmail} for event ${eventId}`);
+
+      // Send SMS notification if user has opted in
+      try {
+        const metadata = getUserMetadata(user[0]);
+        const smsConsent = metadata.smsConsent;
+        if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+          const eventUrl = this.getEventUrl(eventId);
+          await sendTSPContactAssignmentSMS(
+            smsConsent.phoneNumber,
+            userName,
+            organizationName,
+            formattedEventDate,
+            eventUrl
+          );
+          logger.log(`TSP contact assignment SMS sent to ${smsConsent.phoneNumber} for event ${eventId}`);
+        }
+      } catch (smsError) {
+        logger.error('Error sending TSP contact assignment SMS (email still succeeded):', smsError);
+      }
+
       return true;
     } catch (error) {
       logger.error('Error sending TSP contact assignment notification:', error);
@@ -603,6 +652,32 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
         await sgMail.send(msg);
         logger.log(`Team board assignment notification sent to ${userEmail} for item ${itemId}`);
+      }
+
+      // Send SMS notifications to users who have opted in
+      const teamBoardUrl = this.getTeamBoardUrl();
+      for (const user of assignedUsers) {
+        try {
+          const metadata = getUserMetadata(user);
+          const smsConsent = metadata.smsConsent;
+          if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const userName = user.displayName || user.firstName || user.email?.split('@')[0] || 'User';
+            const displayContent = itemContent.length > 50 
+              ? itemContent.substring(0, 50) + '...' 
+              : itemContent;
+            await sendTeamBoardAssignmentSMS(
+              smsConsent.phoneNumber,
+              userName,
+              displayContent,
+              assignedBy,
+              itemType,
+              teamBoardUrl
+            );
+            logger.log(`Team board assignment SMS sent to ${smsConsent.phoneNumber} for item ${itemId}`);
+          }
+        } catch (smsError) {
+          logger.error(`Error sending team board assignment SMS to user ${user.id} (emails still succeeded):`, smsError);
+        }
       }
 
       return true;

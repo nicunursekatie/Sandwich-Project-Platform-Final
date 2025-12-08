@@ -141,9 +141,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'TSP Contact Assignment',
         description: 'Notification when you\'re assigned as the TSP contact for an event',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -158,18 +158,18 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Chat Room Mentions',
         description: 'Get notified when someone @mentions you in a chat room',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
       {
         id: 'team-board-mentions',
         name: 'Team Board Mentions',
         description: 'Get notified when someone mentions you in a team board item or comment',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -184,9 +184,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Team Board Assignments',
         description: 'Get notified when you\'re assigned to a task, note, idea, or reminder',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -201,9 +201,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Weekly Collection Reminders',
         description: 'Reminders when weekly sandwich counts are missing for your locations',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },

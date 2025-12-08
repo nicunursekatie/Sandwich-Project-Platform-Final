@@ -1158,3 +1158,201 @@ export async function sendEventReminderSMS(
     };
   }
 }
+
+/**
+ * Send SMS notification when a user is mentioned in a chat channel
+ */
+export async function sendChatMentionSMS(
+  phoneNumber: string,
+  recipientName: string,
+  senderName: string,
+  channelName: string,
+  messagePreview: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 💬 ${senderName} mentioned you in #${channelName}: "${messagePreview}". ${appUrl ? `View: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Chat mention SMS sent to ${phoneNumber} for mention by ${senderName}`);
+      return {
+        success: true,
+        message: 'Chat mention notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending chat mention SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send chat mention notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification when a user is assigned to a team board item
+ */
+export async function sendTeamBoardAssignmentSMS(
+  phoneNumber: string,
+  recipientName: string,
+  itemTitle: string,
+  assignedByName: string,
+  itemType: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 📋 You've been assigned to a ${itemType}: "${itemTitle}" by ${assignedByName}. ${appUrl ? `View: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Team board assignment SMS sent to ${phoneNumber} for ${itemType}: ${itemTitle}`);
+      return {
+        success: true,
+        message: 'Team board assignment notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending team board assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send team board assignment notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification when a user is assigned as TSP contact for an event
+ */
+export async function sendTSPContactAssignmentSMS(
+  phoneNumber: string,
+  recipientName: string,
+  organizationName: string,
+  eventDate: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 🥪 You've been assigned as TSP contact for ${organizationName} on ${eventDate}. ${appUrl ? `View details: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ TSP contact assignment SMS sent to ${phoneNumber} for ${organizationName}`);
+      return {
+        success: true,
+        message: 'TSP contact assignment notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending TSP contact assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send TSP contact assignment notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS reminder for collection submission
+ */
+export async function sendCollectionReminderSMS(
+  phoneNumber: string,
+  recipientName: string,
+  hostLocation: string,
+  weekEnding: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 🥪 Reminder: Weekly sandwich count for ${hostLocation} (week ending ${weekEnding}) hasn't been submitted yet. ${appUrl ? `Submit: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Collection reminder SMS sent to ${phoneNumber} for ${hostLocation}`);
+      return {
+        success: true,
+        message: 'Collection reminder notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending collection reminder SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send collection reminder notification: ${(error as Error).message}`,
+    };
+  }
+}
