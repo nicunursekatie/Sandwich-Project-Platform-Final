@@ -189,6 +189,8 @@ export default function GroupCatalog({
   const [editCategory, setEditCategory] = useState('');
   const [editSchoolClassification, setEditSchoolClassification] = useState('');
   const [editIsReligious, setEditIsReligious] = useState(false);
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Edit name dialog state
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
@@ -234,6 +236,8 @@ export default function GroupCatalog({
       // Invalidate and force immediate refetch of groups catalog
       queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditCategoryDialog(false);
+      setIsAddingNewCategory(false);
+      setNewCategoryName('');
     },
     onError: (error: any) => {
       toast({
@@ -2369,37 +2373,90 @@ export default function GroupCatalog({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-category">Organization Category</Label>
-              <Select
-                value={editCategory}
-                onValueChange={(value) => {
-                  setEditCategory(value);
-                  // Clear school classification if category changes to non-school
-                  if (value !== 'school') {
-                    setEditSchoolClassification('');
-                  }
-                }}
-              >
-                <SelectTrigger id="edit-category" data-testid="select-edit-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="school">School</SelectItem>
-                  <SelectItem value="church_faith">Church/Faith Group</SelectItem>
-                  <SelectItem value="religious">Religious Organization</SelectItem>
-                  <SelectItem value="nonprofit">Nonprofit</SelectItem>
-                  <SelectItem value="government">Government</SelectItem>
-                  <SelectItem value="hospital">Hospital</SelectItem>
-                  <SelectItem value="political">Political Organization</SelectItem>
-                  <SelectItem value="club">Club</SelectItem>
-                  <SelectItem value="neighborhood">Neighborhood</SelectItem>
-                  <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
-                  <SelectItem value="cultural">Cultural Organization</SelectItem>
-                  <SelectItem value="corp">Company</SelectItem>
-                  <SelectItem value="large_corp">Large Corporation</SelectItem>
-                  <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              {isAddingNewCategory ? (
+                <div className="space-y-2">
+                  <Input
+                    id="new-category-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Enter new category name"
+                    autoFocus
+                    data-testid="input-new-category"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingNewCategory(false);
+                        setNewCategoryName('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!newCategoryName.trim()}
+                      onClick={() => {
+                        // Convert to snake_case for the category value
+                        const categoryValue = newCategoryName.trim().toLowerCase().replace(/\s+/g, '_');
+                        setEditCategory(categoryValue);
+                        setIsAddingNewCategory(false);
+                        setNewCategoryName('');
+                      }}
+                    >
+                      Use Category
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  value={editCategory}
+                  onValueChange={(value) => {
+                    if (value === '__add_new__') {
+                      setIsAddingNewCategory(true);
+                      return;
+                    }
+                    setEditCategory(value);
+                    // Clear school classification if category changes to non-school
+                    if (value !== 'school') {
+                      setEditSchoolClassification('');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="edit-category" data-testid="select-edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="school">School</SelectItem>
+                    <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                    <SelectItem value="religious">Religious Organization</SelectItem>
+                    <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                    <SelectItem value="government">Government</SelectItem>
+                    <SelectItem value="hospital">Hospital</SelectItem>
+                    <SelectItem value="political">Political Organization</SelectItem>
+                    <SelectItem value="club">Club</SelectItem>
+                    <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                    <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
+                    <SelectItem value="cultural">Cultural Organization</SelectItem>
+                    <SelectItem value="corp">Company</SelectItem>
+                    <SelectItem value="large_corp">Large Corporation</SelectItem>
+                    <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="__add_new__" className="text-blue-600 font-medium">
+                      + Add New Category...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {/* Show the custom category if one was entered */}
+              {editCategory && !['school', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'club', 'neighborhood', 'greek_life', 'cultural', 'corp', 'large_corp', 'small_medium_corp', 'other'].includes(editCategory) && (
+                <p className="text-xs text-blue-600">
+                  Custom category: {editCategory.replace(/_/g, ' ')}
+                </p>
+              )}
             </div>
 
             {/* School Classification - only shown when category is 'school' */}
@@ -2425,7 +2482,11 @@ export default function GroupCatalog({
             <div className="flex items-center justify-end gap-2 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowEditCategoryDialog(false)}
+                onClick={() => {
+                  setShowEditCategoryDialog(false);
+                  setIsAddingNewCategory(false);
+                  setNewCategoryName('');
+                }}
                 data-testid="button-cancel-edit-category"
               >
                 Cancel
