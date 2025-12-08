@@ -36,6 +36,12 @@ import {
   ListTodo,
   StickyNote,
   Lightbulb,
+  Clock,
+  RefreshCw,
+  Link,
+  Unlink,
+  ChevronRight,
+  Copy,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -73,14 +79,17 @@ interface HoldingZoneItem {
   completedAt: Date | null;
   createdAt: Date;
   commentCount: number;
-  category: HoldingZoneCategory | null;
-  categoryId: number | null;
+  category: HoldingZoneCategory | null; // Legacy single category
+  categoryId: number | null; // Legacy single category ID
+  categories: Array<{ id: number; name: string; color: string }>; // Multiple categories
   isUrgent: boolean;
   isPrivate: boolean;
   details: string | null;
   dueDate: Date | string | null;
   likeCount?: number;
   userHasLiked?: boolean;
+  parentItemId?: number | null; // Parent item for nesting
+  childCount?: number; // Number of items nested under this item
 }
 
 interface Comment {
@@ -123,18 +132,33 @@ const formatDate = (date: Date | string) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Category badge component
-function CategoryBadge({ category }: { category: HoldingZoneCategory | null }) {
-  if (!category) return null;
-  
+// Check if an item is overdue (has a due date in the past and is not completed)
+const isItemOverdue = (item: { dueDate: Date | string | null; status: string }) => {
+  if (!item.dueDate || item.status === 'done') return false;
+  const dueDate = typeof item.dueDate === 'string' ? new Date(item.dueDate) : item.dueDate;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  dueDate.setHours(0, 0, 0, 0);
+  return dueDate < today;
+};
+
+// Category badges component - supports multiple categories
+function CategoryBadges({ categories }: { categories: Array<{ id: number; name: string; color: string }> }) {
+  if (!categories || categories.length === 0) return null;
+
   return (
-    <Badge 
-      className="font-medium text-white border-0" 
-      style={{ backgroundColor: category.color }}
-      data-testid={`badge-category-${category.id}`}
-    >
-      {category.name}
-    </Badge>
+    <>
+      {categories.map(category => (
+        <Badge
+          key={category.id}
+          className="font-medium text-white border-0"
+          style={{ backgroundColor: category.color }}
+          data-testid={`badge-category-${category.id}`}
+        >
+          {category.name}
+        </Badge>
+      ))}
+    </>
   );
 }
 
@@ -501,7 +525,7 @@ export default function HoldingZone() {
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
+  const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [newItemDetails, setNewItemDetails] = useState('');
@@ -521,7 +545,7 @@ export default function HoldingZone() {
   const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
   const [editItemContent, setEditItemContent] = useState('');
   const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
+  const [editItemCategoryIds, setEditItemCategoryIds] = useState<number[]>([]);
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
   const [editItemDetails, setEditItemDetails] = useState('');
@@ -539,6 +563,15 @@ export default function HoldingZone() {
   const [upgradeProjectTitle, setUpgradeProjectTitle] = useState('');
   const [upgradeProjectPriority, setUpgradeProjectPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [upgradeProjectCategory, setUpgradeProjectCategory] = useState('technology');
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [itemToLink, setItemToLink] = useState<HoldingZoneItem | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+
+  // Overdue item action dialog state
+  const [overdueActionDialogOpen, setOverdueActionDialogOpen] = useState(false);
+  const [overdueItem, setOverdueItem] = useState<HoldingZoneItem | null>(null);
+  const [postponeDate, setPostponeDate] = useState('');
+  const [transformContent, setTransformContent] = useState('');
 
   // Permission checks
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
@@ -627,7 +660,7 @@ export default function HoldingZone() {
     },
     onSuccess: (newCategory: HoldingZoneCategory) => {
       queryClient.invalidateQueries({ queryKey: ['/api/holding-zone/categories'] });
-      setNewItemCategoryId(String(newCategory.id));
+      setNewItemCategoryIds(prev => [...prev, newCategory.id]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -650,7 +683,7 @@ export default function HoldingZone() {
     mutationFn: async (data: {
       content: string;
       type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      categoryIds: number[] | null;
       isUrgent: boolean;
       isPrivate: boolean;
       details: string | null;
@@ -665,7 +698,7 @@ export default function HoldingZone() {
       setIsSubmitDialogOpen(false);
       setNewItemContent('');
       setNewItemType('task');
-      setNewItemCategoryId('none');
+      setNewItemCategoryIds([]);
       setNewItemIsUrgent(false);
       setNewItemIsPrivate(false);
       setNewItemDetails('');
@@ -712,17 +745,17 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate, details, dueDate }: {
+    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate }: {
       id: number;
       content: string;
       type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      categoryIds: number[];
       isUrgent: boolean;
       isPrivate: boolean;
       details?: string | null;
       dueDate?: string | null;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate, details, dueDate });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -730,7 +763,7 @@ export default function HoldingZone() {
       setItemToEdit(null);
       setEditItemContent('');
       setEditItemType('task');
-      setEditItemCategoryId('none');
+      setEditItemCategoryIds([]);
       setEditItemIsUrgent(false);
       setEditItemIsPrivate(false);
       setEditItemDetails('');
@@ -831,6 +864,38 @@ export default function HoldingZone() {
       toast({
         title: 'Error',
         description: 'Failed to move item to To-Do List',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Link/unlink item mutation
+  const linkItemMutation = useMutation({
+    mutationFn: async ({ 
+      id, 
+      parentItemId 
+    }: { 
+      id: number; 
+      parentItemId: number | null;
+    }) => {
+      return await apiRequest('PATCH', `/api/team-board/${id}/link`, {
+        parentItemId: parentItemId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setLinkDialogOpen(false);
+      setItemToLink(null);
+      setSelectedParentId(null);
+      toast({
+        title: 'Item linked',
+        description: parentItemId ? 'Item has been linked to parent' : 'Item has been unlinked',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to link/unlink item',
         variant: 'destructive',
       });
     },
@@ -973,7 +1038,7 @@ export default function HoldingZone() {
     createItemMutation.mutate({
       content: newItemContent.trim(),
       type: newItemType,
-      categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
+      categoryIds: newItemCategoryIds.length > 0 ? newItemCategoryIds : null,
       isUrgent: newItemIsUrgent,
       isPrivate: newItemIsPrivate,
       details: newItemDetails.trim() || null,
@@ -1248,14 +1313,24 @@ export default function HoldingZone() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {currentItems.map((item) => (
+          {currentItems.map((item) => {
+            const isChildItem = !!item.parentItemId;
+            const parentItem = items.find(i => i.id === item.parentItemId);
+            return (
             <Card
               key={item.id}
-              className={`transition-all hover:shadow-md ${
-                item.isUrgent ? 'border-l-4 border-l-red-500' : ''
-              }`}
+              className={`transition-all hover:shadow-md border-l-4 ${
+                item.isUrgent ? 'border-l-red-500' : ''
+              } ${isChildItem ? 'ml-8 border-l-2 opacity-95' : ''}`}
+              style={!item.isUrgent && item.categories?.length > 0 ? { borderLeftColor: item.categories[0].color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
+              {isChildItem && (
+                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
+                  <ChevronRight className="h-3 w-3" />
+                  <span>Linked to: <span className="font-medium">{parentItem?.content || 'Unknown'}</span></span>
+                </div>
+              )}
               <CardContent className="p-4">
                 {/* Header: Title, Badges, Actions */}
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -1264,7 +1339,7 @@ export default function HoldingZone() {
                       {item.content}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <CategoryBadge category={item.category} />
+                      <CategoryBadges categories={item.categories || []} />
                       {item.isUrgent && (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
@@ -1286,6 +1361,21 @@ export default function HoldingZone() {
                           Done
                         </Badge>
                       )}
+                      {isItemOverdue(item) && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-orange-500 text-orange-600 bg-orange-50 cursor-pointer hover:bg-orange-100"
+                          onClick={() => {
+                            setOverdueItem(item);
+                            setTransformContent(item.content);
+                            setPostponeDate('');
+                            setOverdueActionDialogOpen(true);
+                          }}
+                        >
+                          <Clock className="h-3 w-3" />
+                          Overdue
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
@@ -1298,7 +1388,7 @@ export default function HoldingZone() {
                           setItemToEdit(item);
                           setEditItemContent(item.content);
                           setEditItemType(item.type);
-                          setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
+                          setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
                           setEditItemIsUrgent(item.isUrgent);
                           setEditItemIsPrivate(item.isPrivate);
                           setEditItemDetails(item.details || '');
@@ -1519,6 +1609,34 @@ export default function HoldingZone() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => {
+                        setItemToLink(item);
+                        setSelectedParentId(item.parentItemId || null);
+                        setLinkDialogOpen(true);
+                      }}
+                      className="text-xs"
+                      data-testid={`button-link-${item.id}`}
+                    >
+                      {item.parentItemId ? (
+                        <>
+                          <Unlink className="h-3 w-3 mr-1" />
+                          Unlink
+                        </>
+                      ) : (
+                        <>
+                          <Link className="h-3 w-3 mr-1" />
+                          Link to Item
+                        </>
+                      )}
+                    </Button>
+                    {item.childCount && item.childCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {item.childCount} linked {item.childCount === 1 ? 'item' : 'items'}
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
                       disabled={updateItemMutation.isPending}
                       className="text-xs"
@@ -1531,7 +1649,8 @@ export default function HoldingZone() {
                 )}
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -1561,34 +1680,47 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="item-category">Category (Optional)</Label>
+              <Label>Categories (Optional)</Label>
               {!isCreatingNewCategory ? (
-                <Select
-                  value={newItemCategoryId}
-                  onValueChange={(value) => {
-                    if (value === 'create-new') {
-                      setIsCreatingNewCategory(true);
-                      setNewItemCategoryId('none');
-                    } else {
-                      setNewItemCategoryId(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="item-category" data-testid="select-new-item-category">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="create-new" className="text-[#236383] font-medium">
-                      + Create New Category...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`new-item-cat-${cat.id}`}
+                            checked={newItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setNewItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setNewItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`new-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3 p-4 border border-[#236383] rounded-lg bg-[#E6F4F6]">
                   <div className="flex items-center justify-between mb-2">
@@ -1926,7 +2058,7 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-item-category">Category (Optional)</Label>
+              <Label>Categories (Optional)</Label>
               {isEditCreatingNewCategory ? (
                 <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
                   <div className="space-y-2">
@@ -1981,7 +2113,7 @@ export default function HoldingZone() {
                             { name: editNewCategoryName.trim(), color: editNewCategoryColor },
                             {
                               onSuccess: (newCategory: HoldingZoneCategory) => {
-                                setEditItemCategoryId(String(newCategory.id));
+                                setEditItemCategoryIds(prev => [...prev, newCategory.id]);
                                 setIsEditCreatingNewCategory(false);
                                 setEditNewCategoryName('');
                                 setEditNewCategoryColor('#236383');
@@ -2003,31 +2135,45 @@ export default function HoldingZone() {
                   </div>
                 </div>
               ) : (
-                <Select
-                  value={editItemCategoryId}
-                  onValueChange={(value) => {
-                    if (value === 'new') {
-                      setIsEditCreatingNewCategory(true);
-                    } else {
-                      setEditItemCategoryId(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="edit-item-category">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new" className="text-[#007E8C] font-medium">
-                      + Add New Category...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-item-cat-${cat.id}`}
+                            checked={editItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setEditItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setEditItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`edit-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -2040,7 +2186,7 @@ export default function HoldingZone() {
                 setItemToEdit(null);
                 setEditItemContent('');
                 setEditItemType('task');
-                setEditItemCategoryId('none');
+                setEditItemCategoryIds([]);
                 setEditItemIsUrgent(false);
                 setEditItemIsPrivate(false);
                 setEditItemDetails('');
@@ -2059,7 +2205,7 @@ export default function HoldingZone() {
                     id: itemToEdit.id,
                     content: editItemContent.trim(),
                     type: editItemType,
-                    categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
+                    categoryIds: editItemCategoryIds,
                     isUrgent: editItemIsUrgent,
                     isPrivate: editItemIsPrivate,
                     details: editItemDetails.trim() || null,
@@ -2090,7 +2236,7 @@ export default function HoldingZone() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {teamMembers.map(member => (
                 <Button
                   key={member.id}
@@ -2391,6 +2537,220 @@ export default function HoldingZone() {
                   Upgrade to Project
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Overdue Item Action Dialog */}
+      <Dialog open={overdueActionDialogOpen} onOpenChange={setOverdueActionDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Overdue Item
+            </DialogTitle>
+            <DialogDescription>
+              This item's due date has passed. What would you like to do with it?
+            </DialogDescription>
+          </DialogHeader>
+
+          {overdueItem && (
+            <div className="space-y-4 py-4">
+              {/* Item Preview */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Item Content:
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mb-3">
+                  {overdueItem.content}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
+                  <Calendar className="h-3 w-3" />
+                  <span>
+                    Due: {overdueItem.dueDate ? formatDate(overdueItem.dueDate) : 'No date'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {/* Mark Complete */}
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-auto py-3 px-4"
+                  onClick={() => {
+                    if (overdueItem) {
+                      updateItemMutation.mutate(
+                        { id: overdueItem.id, status: 'done', completedAt: new Date().toISOString() },
+                        {
+                          onSuccess: () => {
+                            setOverdueActionDialogOpen(false);
+                            setOverdueItem(null);
+                            toast({
+                              title: 'Item completed',
+                              description: 'The item has been marked as done',
+                            });
+                          },
+                        }
+                      );
+                    }
+                  }}
+                  disabled={updateItemMutation.isPending}
+                >
+                  <div className="bg-green-100 dark:bg-green-900 rounded-full p-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium">Mark as Complete</p>
+                    <p className="text-xs text-gray-500">The task was finished, just past due</p>
+                  </div>
+                </Button>
+
+                {/* Postpone */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-2">
+                      <RefreshCw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Postpone</p>
+                      <p className="text-xs text-gray-500">Set a new due date</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="date"
+                      value={postponeDate}
+                      onChange={(e) => setPostponeDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="default"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        if (overdueItem && postponeDate) {
+                          editItemMutation.mutate(
+                            {
+                              id: overdueItem.id,
+                              content: overdueItem.content,
+                              type: overdueItem.type,
+                              categoryIds: overdueItem.categories?.map(c => c.id) || [],
+                              isUrgent: overdueItem.isUrgent,
+                              isPrivate: overdueItem.isPrivate,
+                              details: overdueItem.details,
+                              dueDate: new Date(postponeDate).toISOString(),
+                            },
+                            {
+                              onSuccess: () => {
+                                setOverdueActionDialogOpen(false);
+                                setOverdueItem(null);
+                                setPostponeDate('');
+                                toast({
+                                  title: 'Due date updated',
+                                  description: `New due date: ${formatDate(postponeDate)}`,
+                                });
+                              },
+                            }
+                          );
+                        }
+                      }}
+                      disabled={!postponeDate || editItemMutation.isPending}
+                    >
+                      {editItemMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Update'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Transform into New Task */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-100 dark:bg-purple-900 rounded-full p-2">
+                      <Copy className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Transform into New Task</p>
+                      <p className="text-xs text-gray-500">Create a new task if requirements changed, then archive this one</p>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={transformContent}
+                    onChange={(e) => setTransformContent(e.target.value)}
+                    placeholder="Updated task description..."
+                    className="min-h-[80px]"
+                  />
+                  <Button
+                    variant="default"
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      if (overdueItem && transformContent.trim()) {
+                        // Create new task
+                        createItemMutation.mutate(
+                          {
+                            content: transformContent.trim(),
+                            type: overdueItem.type,
+                            categoryIds: overdueItem.categories?.map(c => c.id) || null,
+                            isUrgent: overdueItem.isUrgent,
+                            isPrivate: overdueItem.isPrivate,
+                            details: overdueItem.details,
+                            dueDate: null, // New task starts without a due date
+                            assignedTo: overdueItem.assignedTo,
+                            assignedToNames: overdueItem.assignedToNames,
+                          },
+                          {
+                            onSuccess: () => {
+                              // Mark old item as done
+                              updateItemMutation.mutate(
+                                { id: overdueItem.id, status: 'done', completedAt: new Date().toISOString() },
+                                {
+                                  onSuccess: () => {
+                                    setOverdueActionDialogOpen(false);
+                                    setOverdueItem(null);
+                                    setTransformContent('');
+                                    toast({
+                                      title: 'Task transformed',
+                                      description: 'New task created and old task archived',
+                                    });
+                                  },
+                                }
+                              );
+                            },
+                          }
+                        );
+                      }
+                    }}
+                    disabled={!transformContent.trim() || createItemMutation.isPending || updateItemMutation.isPending}
+                  >
+                    {createItemMutation.isPending || updateItemMutation.isPending ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Create New Task & Archive Old
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setOverdueActionDialogOpen(false);
+                setOverdueItem(null);
+                setPostponeDate('');
+                setTransformContent('');
+              }}
+            >
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

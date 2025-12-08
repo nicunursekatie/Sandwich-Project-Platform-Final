@@ -1770,6 +1770,8 @@ export const teamBoardItems = pgTable('team_board_items', {
   projectId: integer('project_id'), // Optional link to a project for context
   promotedToTaskId: integer('promoted_to_task_id'), // If promoted to project task
   promotedAt: timestamp('promoted_at'), // When promoted to project task
+  // PARENT-CHILD LINKING - Link items to other items (e.g., meeting items with sub-items)
+  parentItemId: integer('parent_item_id').references(() => teamBoardItems.id, { onDelete: 'set null' }), // Optional parent item for nesting
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
 });
@@ -1783,6 +1785,26 @@ export const insertTeamBoardItemSchema = createInsertSchema(
 
 export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
 export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
+
+// Team Board Item Categories - junction table for many-to-many relationship
+export const teamBoardItemCategories = pgTable(
+  'team_board_item_categories',
+  {
+    id: serial('id').primaryKey(),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+    categoryId: integer('category_id')
+      .notNull()
+      .references(() => holdingZoneCategories.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueItemCategory: unique().on(table.itemId, table.categoryId),
+  })
+);
+
+export type TeamBoardItemCategory = typeof teamBoardItemCategories.$inferSelect;
 
 // Team Board Comments - allow discussion on team board items
 export const teamBoardComments = pgTable('team_board_comments', {

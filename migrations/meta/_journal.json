@@ -61,12 +61,7 @@
     {
       "idx": 8,
       "version": "7",
-<<<<<<< HEAD
       "when": 1764883892989,
-      "tag": "0008_add_driver_geocoding",
-      "breakpoints": true
-=======
-      "when": 1764885155900,
       "tag": "0008_add_driver_geocoding",
       "breakpoints": true
     },
@@ -76,7 +71,6 @@
       "when": 1765135434004,
       "tag": "0009_add_partner_organizations",
       "breakpoints": true
->>>>>>> f8c7dcf5a22e06570f9edbb9a8984c9f66942776
     }
   ]
 }
