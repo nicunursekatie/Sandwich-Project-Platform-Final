@@ -978,6 +978,7 @@ export default function GroupCatalog({
               <div className="flex rounded-lg border border-gray-300 overflow-hidden">
                 <button
                   onClick={() => setViewMode('aggregated')}
+                  aria-pressed={viewMode === 'aggregated'}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'aggregated'
                       ? 'bg-[#236383] text-white'
@@ -989,6 +990,7 @@ export default function GroupCatalog({
                 </button>
                 <button
                   onClick={() => setViewMode('individual')}
+                  aria-pressed={viewMode === 'individual'}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'individual'
                       ? 'bg-[#236383] text-white'
