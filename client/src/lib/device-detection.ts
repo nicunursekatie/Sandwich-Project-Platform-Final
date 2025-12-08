@@ -63,7 +63,7 @@ export function isTouchDevice(): boolean {
  * @returns 'mobile' | 'tablet' | 'desktop'
  */
 export function getDeviceType(): 'mobile' | 'tablet' | 'desktop' {
-  if (isMobileDevice()) return 'mobile';
   if (isTabletDevice()) return 'tablet';
+  if (isMobileDevice()) return 'mobile';
   return 'desktop';
 }
