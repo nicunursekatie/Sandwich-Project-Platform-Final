@@ -983,9 +983,10 @@ export default function GroupCatalog({
               variant="outline"
               size="sm"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-4 min-h-[44px] min-w-[44px]"
+              className="px-3 min-h-[44px] min-w-[44px]"
+              aria-label={sortOrder === 'asc' ? 'Sort ascending' : 'Sort descending'}
             >
-              {sortOrder === 'asc' ? '↑ A-Z' : '↓ Z-A'}
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
 
