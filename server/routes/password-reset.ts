@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 import bcrypt from 'bcrypt';
 import { logger } from '../utils/production-safe-logger';
+import { passwordResetRateLimiter } from '../middleware/rate-limiter';
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<
@@ -27,7 +28,7 @@ export function createPasswordResetRouter(deps: RouterDependencies) {
   const { storage } = deps;
 
 // Request password reset
-  router.post('/forgot-password', async (req, res) => {
+  router.post('/forgot-password', passwordResetRateLimiter, async (req, res) => {
   try {
     const schema = z.object({
       email: z.string().email('Please enter a valid email address'),
