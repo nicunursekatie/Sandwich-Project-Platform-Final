@@ -41,6 +41,7 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
+import yearlyCalendarRouter from './yearly-calendar';
 import holdingZoneCategoriesRouter from './holding-zone-categories';
 import { createHoldingZoneCollaborationRouter } from './holding-zone-collaboration';
 import { promotionGraphicsRouter } from './promotion-graphics';
@@ -600,6 +601,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     teamBoardRouter
   );
   router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Yearly Calendar routes
+  router.use(
+    '/api/yearly-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    yearlyCalendarRouter
+  );
+  router.use('/api/yearly-calendar', createErrorHandler('yearly-calendar'));
 
   // Holding zone categories routes
   router.use(

@@ -1806,6 +1806,40 @@ export const teamBoardItemCategories = pgTable(
 
 export type TeamBoardItemCategory = typeof teamBoardItemCategories.$inferSelect;
 
+// TSP Yearly Calendar - Month-based planning items (not date-specific)
+export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
+  id: serial('id').primaryKey(),
+  month: integer('month').notNull(), // 1-12 (January = 1, December = 12)
+  year: integer('year').notNull(), // Year for this calendar item (allows multiple years)
+  title: text('title').notNull(), // Short title/description
+  description: text('description'), // Optional longer description
+  category: varchar('category').default('planning'), // 'planning', 'event', 'review', 'recruitment', etc.
+  priority: varchar('priority').default('medium'), // 'low', 'medium', 'high'
+  createdBy: varchar('created_by').notNull(), // User ID who created it
+  createdByName: varchar('created_by_name').notNull(), // Display name of creator
+  assignedTo: text('assigned_to').array(), // Array of user IDs
+  assignedToNames: text('assigned_to_names').array(), // Array of display names
+  isRecurring: boolean('is_recurring').notNull().default(true), // Whether this repeats every year
+  isCompleted: boolean('is_completed').notNull().default(false), // Mark as completed for the year
+  completedAt: timestamp('completed_at'), // When it was marked complete
+  completedBy: varchar('completed_by'), // User who marked it complete
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  monthYearIndex: index('idx_yearly_calendar_month_year').on(table.year, table.month),
+}));
+
+export const insertYearlyCalendarItemSchema = createInsertSchema(
+  yearlyCalendarItems
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type YearlyCalendarItem = typeof yearlyCalendarItems.$inferSelect;
+export type InsertYearlyCalendarItem = z.infer<typeof insertYearlyCalendarItemSchema>;
+
 // Team Board Comments - allow discussion on team board items
 export const teamBoardComments = pgTable('team_board_comments', {
   id: serial('id').primaryKey(),
