@@ -77,24 +77,42 @@ const methodToActionDetails: Record<
 
 export function createActivityLogger(options: ActivityLoggerOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // Skip logging for certain endpoints to avoid noise
+    // Skip logging for endpoints that don't provide meaningful activity insight
     const skipPaths = [
       '/api/auth/user',
       '/api/message-notifications',
       '/api/emails/unread-count',
       '/api/messaging/unread',
       '/unread',
-      '/api/user-activity', // Don't log activity API calls themselves
-      '/api/enhanced-user-activity', // Don't log enhanced analytics API calls
-      '/api/notifications/counts', // Skip notification polling
-      '/count', // Skip all count endpoints - they're background polling
-      '/stats', // Skip all stats endpoints - they're background data fetches
-      '/kudos/unnotified', // Skip kudos polling for unnotified entries
+      '/api/user-activity',
+      '/api/enhanced-user-activity',
+      '/api/notifications/counts',
+      '/count',
+      '/stats',
+      '/kudos/unnotified',
+      '/api/online',
+      '/api/health',
+      '/api/ping',
+      '/socket.io',
+      '/api/dismissed-announcements',
+      '/api/activity-log', // Skip - already logged by frontend
+      '/api/activity-logs',
     ];
+
+    // Skip generic GET requests that are just page loads or data fetches
+    // Only log meaningful actions (creates, updates, deletes)
+    const isGenericView = req.method === 'GET' && (
+      req.path === '/' ||
+      req.path === '/dashboard' ||
+      req.path.startsWith('/api/announcements') ||
+      req.path.includes('/dismissed') ||
+      req.path.includes('/online')
+    );
 
     const shouldSkip =
       skipPaths.some((path) => req.path.includes(path)) ||
-      req.method === 'OPTIONS';
+      req.method === 'OPTIONS' ||
+      isGenericView;
 
     if (shouldSkip) {
       return next();

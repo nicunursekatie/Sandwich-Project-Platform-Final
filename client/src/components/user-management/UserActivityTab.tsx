@@ -135,63 +135,103 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
             Recent Activity (Last 7 Days)
           </h4>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {recentLogs.slice(0, 10).map((log: any) => {
+            {recentLogs
+              // Filter out useless generic entries that don't provide insight
+              .filter((log: any) => {
+                // Handle details that might be string or object
+                let details = '';
+                if (typeof log.details === 'string') {
+                  details = log.details;
+                } else if (log.details && typeof log.details === 'object') {
+                  details = log.details.message || JSON.stringify(log.details);
+                }
+                const feature = log.feature || '';
+                const section = log.section || '';
+                
+                // Skip generic dashboard access entries
+                if (details.includes('Accessed main dashboard') || 
+                    details.includes('Created new main dashboard') ||
+                    details.includes('User accessed dashboard') ||
+                    details.includes('Accessed main overview dashboard')) {
+                  return false;
+                }
+                
+                // Skip "Online" entries which are just connection status
+                if (feature === 'Online' || feature.toLowerCase() === 'online') {
+                  return false;
+                }
+                
+                // Skip entries with just numbers as features (meaningless)
+                if (/^\d+$/.test(feature)) {
+                  return false;
+                }
+                
+                // Skip noisy "Dismissed" section entries that are just announcement polling
+                // but keep actual "Dismissed X" action events
+                if (section === 'Dismissed' && details.includes('Viewed')) {
+                  return false;
+                }
+                
+                // Skip generic "Main Dashboard" feature entries
+                if (feature === 'Main Dashboard' && log.action === 'View') {
+                  return false;
+                }
+                
+                return true;
+              })
+              .slice(0, 10).map((log: any) => {
               // Helper function to make descriptions more readable
               const getReadableDescription = () => {
                 if (log.details) {
-                  // Ensure desc is always a string (handle objects, undefined, etc.)
+                  // Handle details that could be string, object, or object with message
                   let desc: string;
                   if (typeof log.details === 'string') {
                     desc = log.details;
-                  } else {
-                    try {
-                      desc = JSON.stringify(log.details) || 'Activity';
-                    } catch {
-                      desc = 'Activity';
+                  } else if (log.details && typeof log.details === 'object') {
+                    // Extract message from object if present, otherwise use feature/action
+                    desc = log.details.message || '';
+                    if (!desc) {
+                      // Don't show raw JSON - use feature name instead
+                      desc = log.feature || log.action || 'Activity';
                     }
+                  } else {
+                    desc = 'Activity';
                   }
                   
-                  // Make "Viewed X content" more meaningful
+                  // Clean up underscored feature names only if they're all lowercase
+                  // Preserve intentional capitalization like SMS_ALERTS
+                  if (desc.includes('_') && desc === desc.toLowerCase()) {
+                    desc = desc.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                  } else if (desc.includes('_')) {
+                    // Just replace underscores with spaces, keep original casing
+                    desc = desc.replace(/_/g, ' ');
+                  }
+                  
+                  // Skip showing raw JSON strings
+                  if (desc.startsWith('{') || desc.startsWith('[')) {
+                    return log.feature || log.action || 'Activity';
+                  }
+                  
+                  // Make common patterns more meaningful
                   if (desc.includes('Viewed kudos system')) {
-                    return 'Checked kudos inbox for recognition messages';
+                    return 'Checked kudos inbox';
                   }
-                  if (desc.includes('Viewed counts')) {
-                    return 'Reviewed collection count summaries';
-                  }
-                  if (desc.includes('Viewed count ')) {
-                    return 'Reviewed collection counting interface';
-                  }
-                  if (desc.includes('Viewed main dashboard')) {
-                    return 'Accessed main overview dashboard';
+                  if (desc.includes('Viewed counts') || desc.includes('Viewed count ')) {
+                    return 'Reviewed collection counts';
                   }
                   if (desc.includes('Viewed hosts')) {
                     return 'Browsed hosts directory';
                   }
                   if (desc.includes('Viewed announcements')) {
-                    return 'Read team announcements and updates';
+                    return 'Read team announcements';
                   }
-                  if (desc.includes('Viewed') && desc.includes('activity')) {
-                    let feature = log.feature || log.section;
-
-                    // Skip if feature is just a number (meaningless)
-                    if (!feature || /^\d+$/.test(feature)) {
-                      return 'Viewed activity feed';
+                  if (desc.includes('Viewed') && desc.includes('content')) {
+                    // Extract the feature name from "Viewed X content"
+                    const match = desc.match(/Viewed (.+?) content/);
+                    if (match && match[1]) {
+                      const cleanName = match[1].replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                      return `Viewed ${cleanName}`;
                     }
-
-                    // Clean up redundant "Activity" in feature names
-                    if (feature.includes(' Activity')) {
-                      feature = feature.replace(' Activity', '');
-                    }
-
-                    // Map only truly generic/unclear names to meaningful ones
-                    const featureMap: Record<string, string> = {
-                      'Basic': 'Dashboard',
-                      'Count': 'Collection Counts',
-                      'Counts': 'Collection Statistics',
-                    };
-
-                    const cleanFeature = featureMap[feature] || feature;
-                    return `Worked in ${cleanFeature}`;
                   }
                   
                   return desc;
