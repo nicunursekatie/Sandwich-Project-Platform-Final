@@ -17,6 +17,7 @@ import { authService, AuthError } from '../../services/auth.service';
 import { getDefaultPermissionsForRole } from '../../../shared/auth-utils';
 import { logger } from '../../utils/production-safe-logger';
 import { isAuthenticated } from '../../middleware/auth';
+import { loginRateLimiter } from '../../middleware/rate-limiter';
 import type { AuthenticatedRequest, MaybeAuthenticatedRequest } from '../../types/express';
 
 export function createAuthRouter() {
@@ -26,7 +27,7 @@ export function createAuthRouter() {
    * POST /api/auth/login
    * Authenticate user and create session
    */
-  router.post('/login', async (req: MaybeAuthenticatedRequest, res: Response) => {
+  router.post('/login', loginRateLimiter, async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const { email, password } = req.body;
 
