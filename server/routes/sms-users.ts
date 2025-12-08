@@ -19,6 +19,13 @@ const router = Router();
 // These endpoints use Twilio signature validation instead of user auth
 const webhookRouter = Router();
 
+// Add middleware to log ALL requests to webhook router (for debugging)
+webhookRouter.use((req, res, next) => {
+  console.log(`📞 WEBHOOK ROUTER: ${req.method} ${req.path}`);
+  console.log(`📞 WEBHOOK ROUTER: Full path ${req.originalUrl}`);
+  next();
+});
+
 const smsOptInSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   consent: z.boolean(),
@@ -480,15 +487,45 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Test endpoint to verify webhook routing is working
+ * This helps debug if Twilio can reach the server
+ */
+webhookRouter.get('/sms/webhook/test', async (req, res) => {
+  logger.log('✅ SMS Webhook test endpoint hit');
+  res.json({ 
+    status: 'ok', 
+    message: 'SMS webhook endpoint is reachable',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * Twilio webhook endpoint for incoming SMS messages
  * SECURITY: Validates Twilio request signature to prevent spoofing
  * NOTE: This is on webhookRouter (not router) - NO auth middleware, just Twilio signature validation
+ * 
+ * Twilio sends webhooks as application/x-www-form-urlencoded
+ * The webhook URL should be: https://your-domain.com/api/sms/webhook
  */
 webhookRouter.post('/sms/webhook', async (req, res) => {
-  // DEBUG: Log that webhook was hit (before any validation)
+  // CRITICAL: Log immediately - this should ALWAYS appear if webhook is hit
+  console.log('🔔🔔🔔 SMS WEBHOOK POST REQUEST RECEIVED 🔔🔔🔔');
   logger.log('🔔 SMS WEBHOOK HIT - Request received');
+  logger.log(`🔔 Method: ${req.method}`);
+  logger.log(`🔔 Path: ${req.path}`);
+  logger.log(`🔔 Original URL: ${req.originalUrl}`);
+  logger.log(`🔔 Base URL: ${req.baseUrl}`);
+  logger.log(`🔔 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
   logger.log(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
+  logger.log(`🔔 Content-Type: ${req.get('content-type')}`);
+  logger.log(`🔔 User-Agent: ${req.get('user-agent')}`);
+  logger.log(`🔔 IP: ${req.ip}`);
   logger.log(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    logger.log(`🔔 Body sample: ${JSON.stringify(req.body).substring(0, 500)}`);
+  } else {
+    logger.log(`🔔 Body is empty or not parsed`);
+  }
   
   try {
     // SECURITY VALIDATION: Verify Twilio request signature

@@ -101,6 +101,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   // CRITICAL: Twilio SMS webhooks - MUST be registered FIRST (before any auth)
   // These endpoints use Twilio signature validation instead of user authentication
   // ========================================================================
+  // Add debug logging for ALL requests to /api/sms/* to catch Twilio webhooks
+  router.use('/api/sms', (req, res, next) => {
+    console.log(`🔍 DEBUG: Request to /api/sms${req.path} - Method: ${req.method}`);
+    console.log(`🔍 DEBUG: Full URL: ${req.originalUrl}`);
+    console.log(`🔍 DEBUG: Headers: ${JSON.stringify(req.headers)}`);
+    next();
+  });
+  
   router.use(
     '/api',
     ...createPublicMiddleware(),
