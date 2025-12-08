@@ -149,6 +149,15 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'yearly-calendar',
+    label: 'TSP Yearly Calendar',
+    icon: Calendar,
+    href: 'yearly-calendar',
+    permission: PERMISSIONS.VIEW_HOLDING_ZONE, // Reuse holding zone permission
+    group: 'communication',
+    highlighted: true,
+  },
+  {
     id: 'promotion',
     label: 'Social Media Graphics',
     icon: Image,

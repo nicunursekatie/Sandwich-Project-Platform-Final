@@ -134,6 +134,7 @@ const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-servic
 const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
+const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -424,6 +425,8 @@ export default function Dashboard({
         return <WishlistPage />;
       case 'team-board':
         return <HoldingZone />;
+      case 'yearly-calendar':
+        return <YearlyCalendar />;
       case 'promotion':
         return <PromotionGraphics />;
       case 'quick-sms-links':
