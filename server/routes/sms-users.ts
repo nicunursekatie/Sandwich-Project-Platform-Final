@@ -848,13 +848,13 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     }
     // Handle IDEA submissions for Holding Zone
     else if (messageBody.startsWith('IDEA ') || messageBody.startsWith('IDEA:')) {
-      logger.log(`💡 Holding Zone idea received from ${redactedPhone}`);
+      logger.info(`💡 Holding Zone idea received from ${redactedPhone}`);
 
       // Extract the idea content (remove "IDEA " or "IDEA:" prefix)
       const ideaContent = Body.trim().replace(/^IDEA[:\s]+/i, '').trim();
 
       if (ideaContent.length < 3) {
-        logger.log(`❌ Idea too short from ${redactedPhone}`);
+        logger.info(`❌ Idea too short from ${redactedPhone}`);
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Your idea is too short. Please text: IDEA followed by your suggestion (at least 3 characters).</Message></Response>`);
       }
@@ -884,7 +884,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         // The database requires createdBy to be a string, so we'll use a system identifier
         const createdBy = senderUser?.id || 'sms-system';
 
-        logger.log(`📝 Creating Holding Zone item from SMS:`, {
+        logger.info(`📝 Creating Holding Zone item from SMS:`, {
           phone: redactedPhone,
           createdBy,
           createdByName,
@@ -918,7 +918,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           })
           .returning();
 
-        logger.log(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
+        logger.info(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
 
         // Send confirmation
         res.type('text/xml');
