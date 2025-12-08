@@ -397,15 +397,18 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       });
 
       // Calculate actual sandwich totals and event counts from collections
+      // Now tracks by organization+department to properly reflect department assignments
       const organizationSandwichData = new Map();
 
       allCollections.forEach((collection) => {
         const collectionDate = collection.collectionDate;
 
         // Helper function to process organization data from collections
+        // Now accepts department parameter to properly track department-level data
         const processOrganization = (
           orgName: string,
-          sandwichCount: number
+          sandwichCount: number,
+          department: string = ''
         ) => {
           if (
             !orgName ||
@@ -418,6 +421,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
 
           const cleanOrgName = orgName.trim();
+          const cleanDepartment = (department || '').trim();
           
           // Use canonical name mapping if available, otherwise create new canonical name
           // This ensures collections use same canonical names as event requests
@@ -475,18 +479,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             }
           }
 
-          // Track sandwich totals using canonical name (already normalized above)
-          if (!organizationSandwichData.has(canonicalOrgName)) {
-            organizationSandwichData.set(canonicalOrgName, {
+          // Track sandwich totals using canonical name + department for proper grouping
+          // This ensures department-specific collections are tracked separately
+          const orgDeptKey = `${canonicalOrgName}|${cleanDepartment}`;
+          
+          if (!organizationSandwichData.has(orgDeptKey)) {
+            organizationSandwichData.set(orgDeptKey, {
+              canonicalName: canonicalOrgName,
               originalName: cleanOrgName, // Preserve original display name
+              department: cleanDepartment,
               totalSandwiches: 0,
               eventCount: 0,
               eventDates: new Set(),
-              pastEvents: [], // NEW: Track individual past events
+              pastEvents: [], // Track individual past events
             });
           }
 
-          const orgData = organizationSandwichData.get(canonicalOrgName);
+          const orgData = organizationSandwichData.get(orgDeptKey);
           orgData.totalSandwiches += sandwichCount || 0;
 
           // Track unique event dates to calculate frequency
@@ -494,10 +503,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             orgData.eventDates.add(collectionDate);
             orgData.eventCount = orgData.eventDates.size;
             
-            // NEW: Add individual past event details
+            // Add individual past event details
             orgData.pastEvents.push({
               date: collectionDate,
               sandwichCount: sandwichCount || 0,
+              department: cleanDepartment,
             });
           }
         };
@@ -509,20 +519,21 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           collection.groupCollections.length > 0
         ) {
           // Use new JSON group collections data (preferred)
+          // Now passes department from groupCollections JSON
           collection.groupCollections.forEach((group: any) => {
             // Include groups even if count is 0 (check for undefined/null instead of truthy)
             if (group.name && group.count != null) {
-              processOrganization(group.name, group.count);
+              processOrganization(group.name, group.count, group.department || '');
             }
           });
         } else {
           // Fall back to legacy group data only if JSON is empty
-          // Include groups even if count is 0
+          // Legacy fields don't have department info
           if (collection.group1Name && collection.group1Count != null) {
-            processOrganization(collection.group1Name, collection.group1Count);
+            processOrganization(collection.group1Name, collection.group1Count, '');
           }
           if (collection.group2Name && collection.group2Count != null) {
-            processOrganization(collection.group2Name, collection.group2Count);
+            processOrganization(collection.group2Name, collection.group2Count, '');
           }
         }
       });
@@ -573,9 +584,14 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       };
 
       // Update departments with actual collection data
-      organizationSandwichData.forEach((orgData, canonicalOrgName) => {
+      // Now matches by organization+department for proper alignment
+      organizationSandwichData.forEach((orgData, orgDeptKey) => {
+        // orgDeptKey format: "canonicalOrgName|department"
+        const canonicalOrgName = orgData.canonicalName;
+        const collectionDepartment = orgData.department || '';
+        
         // Find existing department entries for this organization using canonical matching
-        // ENHANCED: Now uses fuzzy matching to catch name variations
+        // ENHANCED: Now matches by both organization name AND department
         let foundExisting = false;
 
         // Sort past events by date (most recent first)
@@ -584,13 +600,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         );
 
         departmentsMap.forEach((dept, key) => {
-          if (organizationNamesMatch(dept.canonicalName, canonicalOrgName)) {
+          // Match by organization name AND department (if collection has department)
+          const orgMatches = organizationNamesMatch(dept.canonicalName, canonicalOrgName);
+          // Safely normalize department strings before comparison to avoid null dereference
+          const normalizedDeptDepartment = (dept.department || '').toLowerCase().trim();
+          const normalizedCollectionDepartment = (collectionDepartment || '').toLowerCase().trim();
+          const deptMatches = !collectionDepartment || 
+            normalizedDeptDepartment === normalizedCollectionDepartment;
+          
+          if (orgMatches && deptMatches) {
             foundExisting = true;
-            dept.actualSandwichTotal = orgData.totalSandwiches;
-            dept.actualEventCount = orgData.eventCount;
+            dept.actualSandwichTotal = (dept.actualSandwichTotal || 0) + orgData.totalSandwiches;
+            dept.actualEventCount = (dept.actualEventCount || 0) + orgData.eventCount;
             dept.eventFrequency = calculateEventFrequency(orgData.eventDates);
             dept.hasHostedEvent = true;
-            dept.pastEvents = sortedPastEvents; // NEW: Add past events list
+            dept.pastEvents = [...(dept.pastEvents || []), ...sortedPastEvents].sort((a: any, b: any) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
 
             // Update latest collection date and calculate latest activity date
             const latestCollectionDate = Math.max(
@@ -611,9 +637,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         });
 
-        // Add as historical organization if not found in event requests
+        // Add as historical organization+department if not found in event requests
+        // This creates a new card for organizations/departments only known from collections
         if (!foundExisting) {
-          const departmentKey = `${canonicalOrgName}||`; // Empty department and contact for historical entries
+          const departmentKey = `${canonicalOrgName}|${collectionDepartment}|`; // Include department for proper grouping
           const latestCollectionDate = Math.max(
             ...(Array.from(orgData.eventDates) as string[]).map((d: string) => new Date(d).getTime())
           );
@@ -621,7 +648,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           departmentsMap.set(departmentKey, {
             organizationName: orgData.originalName,
             canonicalName: canonicalOrgName,
-            department: '',
+            department: collectionDepartment, // Include department from collection
             contactName: '',
             contactEmail: '',
             contactPhone: '',
@@ -640,7 +667,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             latestCollectionDate: new Date(latestCollectionDate)
               .toISOString()
               .split('T')[0],
-            pastEvents: sortedPastEvents, // NEW: Add past events list
+            pastEvents: sortedPastEvents,
             isFromCollectionOnly: true, // Flag to indicate this is from collection log only
           });
         }
