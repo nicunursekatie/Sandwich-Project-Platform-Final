@@ -2704,6 +2704,57 @@ export type InsertEventRequest = z.infer<typeof insertEventRequestSchema>;
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 
+// Google Sheets Import Schema - for receiving event data from Google Sheets export
+export const importFromSheetsSchema = z.object({
+  // Event date (required)
+  date: z.string().min(1, 'Event date is required'),
+
+  // Organization info
+  'Day of Week': z.string().optional(),
+  'Group Name': z.string().min(1, 'Organization name is required'),
+
+  // Event timing
+  'Event Start time (MUST when volunteer needed)': z.string().optional(),
+  'Event end time (MUST when volunteer needed)': z.string().optional(),
+  'Pick up time': z.string().optional(),
+
+  // Event details
+  'ALL DETAILS': z.string().optional(),
+  'Social Post': z.string().optional(),
+  'Staffing': z.string().optional(),
+
+  // Sandwich info
+  'Estimate # sandwiches': z.union([z.string(), z.number()]).optional(),
+  'Deli or PBJ?': z.string().optional(),
+  'Final # sandwiches made': z.union([z.string(), z.number()]).optional(),
+
+  // Toolkit
+  'Sent toolkit': z.string().optional(),
+
+  // Contact info
+  'Contact Name': z.string().optional(),
+  'Email Address': z.string().optional(),
+  'Contact Cell Number': z.string().optional(),
+
+  // TSP and logistics
+  'TSP Contact': z.string().optional(),
+  'Address': z.string().optional(),
+  'Van Booked?': z.string().optional(),
+
+  // Notes
+  'Notes': z.string().optional(),
+  "Add'l Notes": z.string().optional(),
+  'Waiting On': z.string().optional(),
+
+  // Recipient/destination
+  'Planned Recipient/Host Home': z.string().optional(),
+
+  // Status
+  'Cancelled': z.string().optional(),
+});
+
+export type ImportFromSheetsData = z.infer<typeof importFromSheetsSchema>;
+
 // Google Sheets integration table
 export const googleSheets = pgTable('google_sheets', {
   id: serial('id').primaryKey(),
