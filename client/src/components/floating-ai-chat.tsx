@@ -65,7 +65,8 @@ export type AIContextType =
   | 'organizations'
   | 'links'
   | 'dashboard'
-  | 'volunteer-calendar';
+  | 'volunteer-calendar'
+  | 'users';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;

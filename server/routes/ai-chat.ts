@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
+import { userActivityLogs } from '@shared/schema';
+import { sql, desc, and, gte } from 'drizzle-orm';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -138,6 +140,7 @@ function getContextTitle(contextType: string): string {
     'dashboard': 'Dashboard',
     'volunteer-calendar': 'Volunteer Calendar',
     'impact-reports': 'Impact Reports',
+    'users': 'User Management',
     'general': 'Platform',
   };
   return titles[contextType] || 'Data';
@@ -196,6 +199,17 @@ function formatDataItem(item: any, contextType: string, index: number): string {
     const status = item.status || '';
 
     return `${index + 1}. [${type}] **${content.substring(0, 100)}**${content.length > 100 ? '...' : ''} - Status: ${status}\n`;
+  }
+
+  // For users
+  if (contextType === 'users') {
+    const name = `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.email || 'Unknown';
+    const role = item.role || 'unknown';
+    const status = item.isActive ? 'Active' : 'Inactive';
+    const email = item.email || 'No email';
+    const lastLogin = item.lastLogin ? new Date(item.lastLogin).toLocaleDateString() : 'Never';
+
+    return `${index + 1}. **${name}** (${email}) - Role: ${role}, Status: ${status}, Last Login: ${lastLogin}\n`;
   }
 
   // Default: show key fields
@@ -1566,6 +1580,178 @@ The Dashboard provides an overview of The Sandwich Project's activities:
 `;
 }
 
+// Build context for User Management - analyzes user activity patterns
+async function buildUsersContext(contextData?: Record<string, any>): Promise<string> {
+  try {
+    const days = 30; // Look at last 30 days of activity
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    // Get all users
+    const users = await db.query.users.findMany();
+    const activeUsers = users.filter(u => u.isActive !== false).length;
+
+    // Get top sections users visit (what they do when they come into the app)
+    const topSections = await db
+      .select({
+        section: userActivityLogs.section,
+        actionCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(userActivityLogs.section)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get top actions (what actions users take most frequently)
+    const topActions = await db
+      .select({
+        action: userActivityLogs.action,
+        actionCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(userActivityLogs.action)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get top features (specific features users interact with)
+    const topFeatures = await db
+      .select({
+        feature: userActivityLogs.feature,
+        usageCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(and(
+        gte(userActivityLogs.createdAt, dateThreshold),
+        sql`${userActivityLogs.feature} IS NOT NULL`
+      ))
+      .groupBy(userActivityLogs.feature)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get most visited pages
+    const topPages = await db
+      .select({
+        page: userActivityLogs.page,
+        visitCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(and(
+        gte(userActivityLogs.createdAt, dateThreshold),
+        sql`${userActivityLogs.page} IS NOT NULL`
+      ))
+      .groupBy(userActivityLogs.page)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get activity by time of day (when users are most active)
+    const activityByHour = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${userActivityLogs.createdAt})::int`,
+        actionCount: sql<number>`count(*)::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(sql`EXTRACT(HOUR FROM ${userActivityLogs.createdAt})`)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+
+    // Get total activity stats
+    const totalActivityResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold));
+    
+    const totalActions = totalActivityResult[0]?.count || 0;
+
+    const uniqueActiveUsersResult = await db
+      .select({ count: sql<number>`count(distinct ${userActivityLogs.userId})::int` })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold));
+    
+    const uniqueActiveUsers = uniqueActiveUsersResult[0]?.count || 0;
+
+    // Format sections list
+    const sectionsList = topSections.length > 0
+      ? topSections.map(s => `- **${s.section}**: ${s.actionCount.toLocaleString()} actions by ${s.uniqueUsers} users`)
+      : ['- No section data available'];
+
+    // Format actions list
+    const actionsList = topActions.length > 0
+      ? topActions.map(a => `- **${a.action}**: ${a.actionCount.toLocaleString()} times by ${a.uniqueUsers} users`)
+      : ['- No action data available'];
+
+    // Format features list
+    const featuresList = topFeatures.length > 0
+      ? topFeatures.map(f => `- **${f.feature}**: ${f.usageCount.toLocaleString()} uses by ${f.uniqueUsers} users`)
+      : ['- No feature data available'];
+
+    // Format pages list
+    const pagesList = topPages.length > 0
+      ? topPages.map(p => `- **${p.page}**: ${p.visitCount.toLocaleString()} visits by ${p.uniqueUsers} users`)
+      : ['- No page data available'];
+
+    // Format peak hours
+    const peakHoursList = activityByHour.length > 0
+      ? activityByHour.map(h => {
+          const hour12 = h.hour === 0 ? 12 : h.hour > 12 ? h.hour - 12 : h.hour;
+          const ampm = h.hour < 12 ? 'AM' : 'PM';
+          return `- **${hour12}:00 ${ampm}**: ${h.actionCount.toLocaleString()} actions`;
+        })
+      : ['- No time data available'];
+
+    return `
+## User Management & Activity Data Summary
+
+### User Overview
+- Total Users: ${users.length}
+- Active Users: ${activeUsers}
+- Users Active in Last ${days} Days: ${uniqueActiveUsers}
+- Total Actions in Last ${days} Days: ${totalActions.toLocaleString()}
+- Average Actions per Active User: ${uniqueActiveUsers > 0 ? Math.round(totalActions / uniqueActiveUsers) : 0}
+
+### What Users Do When They Come Into the App (Top Sections)
+These are the main areas of the platform users visit most frequently:
+${sectionsList.join('\n')}
+
+### Most Common User Actions
+These are the actions users take most often:
+${actionsList.join('\n')}
+
+### Most Used Features
+These are the specific features users interact with most:
+${featuresList.join('\n')}
+
+### Most Visited Pages
+These are the specific pages users visit most:
+${pagesList.join('\n')}
+
+### Peak Activity Times
+When users are most active during the day:
+${peakHoursList.join('\n')}
+
+### About User Activity
+This data shows what users typically do when they use The Sandwich Project platform:
+- Sections show the main areas users navigate to (Dashboard, Event Requests, Collections, etc.)
+- Actions show what users do (PAGE_VIEW, FORM_SUBMIT, SEARCH, etc.)
+- Features show specific functionality users interact with
+- Pages show the exact routes users visit
+- Activity times help understand when users are most engaged
+`;
+  } catch (error) {
+    logger.error('Error building users context', { error });
+    return `
+## User Management & Activity Data Summary
+Error loading user activity data. Please try again.
+`;
+  }
+}
+
 // Get system prompt for context type
 function getSystemPrompt(contextType: string, dataSummary: string): string {
   const baseRules = `
@@ -1649,6 +1835,10 @@ Help users figure out who's available when and coordinate scheduling.`,
 
     'dashboard': `You're helping with the dashboard - an overview of all platform activities and key metrics.
 Help users understand the overall status and find what they're looking for.`,
+
+    'users': `You're helping with user management and understanding user behavior patterns in The Sandwich Project platform.
+You have access to user activity logs that show what users do when they come into the app - which sections they visit, what actions they take, which features they use, and when they're most active.
+Help answer questions about user behavior, activity patterns, and what users typically do in the platform.`,
   };
 
   const contextDesc = contextDescriptions[contextType] || contextDescriptions['general'];
@@ -1726,6 +1916,9 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         break;
       case 'dashboard':
         dataSummary = await buildDashboardContext(contextData);
+        break;
+      case 'users':
+        dataSummary = await buildUsersContext(contextData);
         break;
       case 'general':
         dataSummary = await buildGeneralContext();
