@@ -13,28 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Smartphone, Bell, MessageSquare } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
+import { isMobileDevice } from '@/lib/device-detection';
 
 const ANNOUNCEMENT_ID = 'sms_alerts_launch_2024';
-
-/**
- * Detects if user is on a mobile device
- */
-function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  // Check screen width
-  const isSmallScreen = window.innerWidth < 768;
-
-  // Check user agent for mobile devices
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
-  // Check for touch capability
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  return (isSmallScreen && hasTouch) || isMobileUserAgent;
-}
 
 export function SMSAnnouncementModal() {
   const [, setLocation] = useLocation();

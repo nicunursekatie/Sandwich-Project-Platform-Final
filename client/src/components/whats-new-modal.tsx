@@ -8,28 +8,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Settings, HelpCircle, FileSpreadsheet, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { isMobileDevice } from '@/lib/device-detection';
 
 const STORAGE_KEY = 'navigation_update_2024_v2_seen';
-
-/**
- * Detects if user is on a mobile device
- */
-function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  // Check screen width
-  const isSmallScreen = window.innerWidth < 768;
-
-  // Check user agent for mobile devices
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
-  // Check for touch capability
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  return (isSmallScreen && hasTouch) || isMobileUserAgent;
-}
 
 export function WhatsNewModal() {
   const [isOpen, setIsOpen] = useState(false);
