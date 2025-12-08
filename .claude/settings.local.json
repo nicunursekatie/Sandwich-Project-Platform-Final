@@ -32,7 +32,8 @@
       "Bash(cat:*)",
       "Bash(source .env)",
       "Bash(curl:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(PRODUCTION_DATABASE_URL=\"$PRODUCTION_DATABASE_URL\" npx tsx:*)"
     ],
     "deny": [],
     "ask": []

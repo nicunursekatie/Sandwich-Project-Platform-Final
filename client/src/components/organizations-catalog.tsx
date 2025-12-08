@@ -247,7 +247,7 @@ export default function GroupCatalog({
   const renameOrganizationMutation = useMutation({
     mutationFn: async (data: {
       oldName: string;
-      newName: string;
+      newName: string | null; // Can be null for co-hosted events
       oldDepartment?: string;
       newDepartment?: string;
       partnerOrganizations?: Array<{ name: string; role: string }>;
@@ -307,21 +307,26 @@ export default function GroupCatalog({
       return;
     }
 
-    // Only include department data if we have a specific event ID (single-event card)
-    const canEditDepartment = !!editNameOrganization.linkedEventId;
+    // For single-event cards (linkedEventId), we can edit the department
+    // For aggregated cards (eventIds), we can still edit but it affects all events in the card
+    const hasLinkedEvent = !!editNameOrganization.linkedEventId;
+    const hasEventIds = editNameOrganization.eventIds && editNameOrganization.eventIds.length > 0;
+
+    // Department editing is allowed if we have either linkedEventId OR eventIds
+    // (meaning we can target specific events, not all matching by name)
+    const canEditDepartment = hasLinkedEvent || hasEventIds;
 
     const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
-      // Only send department data for single-event cards
-      oldDepartment: canEditDepartment ? (editNameOrganization.department || undefined) : undefined,
-      newDepartment: canEditDepartment ? (editDeptName.trim() || undefined) : undefined,
+      // Include department data when we have specific events to update
+      // ALWAYS include oldDepartment to prevent matching all events with that org name
+      oldDepartment: canEditDepartment ? (editNameOrganization.department || '') : undefined,
+      newDepartment: canEditDepartment ? (editDeptName.trim() || '') : undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
-      eventId: editNameOrganization.linkedEventId, // Only update this specific event if available
+      eventId: editNameOrganization.linkedEventId || undefined, // Only update this specific event if available
       // If no single linkedEventId, pass all eventIds for aggregated cards
-      eventIds: !editNameOrganization.linkedEventId && editNameOrganization.eventIds?.length
-        ? editNameOrganization.eventIds
-        : undefined,
+      eventIds: hasEventIds ? editNameOrganization.eventIds : undefined,
     };
     console.log('🔵 Rename mutation data:', mutationData);
     console.log('🔵 editNameOrganization:', editNameOrganization);
@@ -473,13 +478,25 @@ export default function GroupCatalog({
       category: org.category || null,
       schoolClassification: org.schoolClassification || null,
       isReligious: org.isReligious || false,
+      // Event tracking for single-card edits
+      linkedEventId: contact.linkedEventId || null,
+      eventIds: contact.eventIds || [],
+      // Partner/co-host tracking
+      isPartnerEntry: contact.isPartnerEntry || false,
+      primaryOrganization: contact.primaryOrganization || null,
+      partnerRole: contact.partnerRole || null,
+      isFromCollectionOnly: contact.isFromCollectionOnly || false,
+      isCoHostedEvent: contact.isCoHostedEvent || false,
+      coHostNames: contact.coHostNames || [],
+      pastEvents: contact.pastEvents || [],
     }));
   });
 
-  // Deduplicate by creating unique key from organization + contact + email
+  // Deduplicate by creating unique key from organization + department + contact + email
+  // Include department to ensure cards with different departments are preserved
   const uniqueOrganizationsMap = new Map<string, OrganizationContact>();
   allContactsAndDepartments.forEach((org: any) => {
-    const uniqueKey = `${org.organizationName}|${org.contactName}|${org.email || 'no-email'}`;
+    const uniqueKey = `${org.organizationName}|${org.department || ''}|${org.contactName}|${org.email || 'no-email'}`;
     if (!uniqueOrganizationsMap.has(uniqueKey)) {
       uniqueOrganizationsMap.set(uniqueKey, org);
     }
@@ -2424,19 +2441,26 @@ export default function GroupCatalog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-dept-name">Department (optional)</Label>
-              {/* Only allow department edits for single-event cards */}
-              {editNameOrganization?.linkedEventId ? (
-                <Input
-                  id="edit-dept-name"
-                  value={editDeptName}
-                  onChange={(e) => setEditDeptName(e.target.value)}
-                  placeholder="Enter department name"
-                  data-testid="input-edit-dept-name"
-                />
+              {/* Allow department edits when we have specific events to target */}
+              {(editNameOrganization?.linkedEventId || (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0)) ? (
+                <>
+                  <Input
+                    id="edit-dept-name"
+                    value={editDeptName}
+                    onChange={(e) => setEditDeptName(e.target.value)}
+                    placeholder="Enter department name"
+                    data-testid="input-edit-dept-name"
+                  />
+                  {editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 1 && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all {editNameOrganization.eventIds.length} events in this card.
+                    </p>
+                  )}
+                </>
               ) : (
                 <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded border">
-                  Department editing is disabled for aggregated cards.
-                  To edit a specific event's department, open the event details.
+                  Department editing is disabled for this card type.
+                  Try editing from the event details view.
                 </div>
               )}
             </div>

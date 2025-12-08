@@ -1028,8 +1028,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const trimmedOldName = oldName.trim();
       // Allow newName to be null/empty for co-hosted events
       const trimmedNewName = (newName && typeof newName === 'string') ? newName.trim() : '';
-      const trimmedOldDept = oldDepartment?.trim() || null;
-      const trimmedNewDept = newDepartment?.trim() || null;
+      // Preserve empty string as a valid value (means "no department") - only use null if undefined
+      const trimmedOldDept = typeof oldDepartment === 'string' ? oldDepartment.trim() : null;
+      const trimmedNewDept = typeof newDepartment === 'string' ? newDepartment.trim() : null;
       const specificEventId = eventId && typeof eventId === 'number' ? eventId : null;
       // Support multiple event IDs for aggregated cards
       const specificEventIds = Array.isArray(eventIds) && eventIds.length > 0
