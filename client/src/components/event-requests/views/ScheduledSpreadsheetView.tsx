@@ -2437,7 +2437,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
       {/* Table Container with Horizontal and Vertical Scroll */}
       <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)', overflowY: 'auto', willChange: 'scroll-position' }}>
+        <div className="overflow-x-auto" style={{ maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'calc(100vh - 380px)', overflowY: 'auto', willChange: 'scroll-position' }}>
           <table className="w-full border-collapse">
             <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-30" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
               <tr>
