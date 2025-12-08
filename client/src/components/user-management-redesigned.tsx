@@ -51,6 +51,7 @@ import { PasswordDialog } from '@/components/user-management/PasswordDialog';
 import { SMSDialog } from '@/components/user-management/SMSDialog';
 import { SimplifiedUserTableRow } from '@/components/user-management/SimplifiedUserTableRow';
 import { IndividualUserActivity } from '@/components/individual-user-activity';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Import custom hooks
 import { useUserManagement } from '@/hooks/useUserManagement';
@@ -727,6 +728,61 @@ export default function UserManagementFinal() {
             description: 'Your appreciation message has been recorded.',
           });
         }}
+      />
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="users"
+        title="User Management Assistant"
+        subtitle="Ask about users and activity patterns"
+        contextData={{
+          currentView: activeTab,
+          filters: {
+            role: filters.role || roleFilter || undefined,
+            status: filters.status.length > 0 ? filters.status : undefined,
+            searchQuery: searchQuery || undefined,
+          },
+          summaryStats: {
+            totalUsers: userStats.total,
+            activeUsers: userStats.active,
+            inactiveUsers: userStats.inactive,
+            byRole: userStats.byRole,
+            filteredCount: filteredUsers.length,
+            selectedCount: selectedUsers.size,
+          },
+          selectedUser: editUser ? {
+            id: editUser.id,
+            email: editUser.email,
+            firstName: editUser.firstName,
+            lastName: editUser.lastName,
+            role: editUser.role,
+            isActive: editUser.isActive,
+          } : undefined,
+        }}
+        getFullContext={() => ({
+          rawData: filteredUsers.map((user: User) => ({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            isActive: user.isActive,
+            phoneNumber: user.phoneNumber,
+            preferredEmail: user.preferredEmail,
+            lastLogin: user.lastLogin,
+            createdAt: user.createdAt,
+          })),
+        })}
+        suggestedQuestions={[
+          'What do most users do when they come into the app?',
+          'Which sections of the platform are most visited?',
+          'What are the most common user actions?',
+          'When are users most active?',
+          'Which features do users use most?',
+          'How many active users do we have?',
+          'What roles are most common?',
+          'Show me user distribution by role',
+        ]}
       />
     </div>
   );

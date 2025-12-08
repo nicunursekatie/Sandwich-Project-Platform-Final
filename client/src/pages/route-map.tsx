@@ -111,8 +111,8 @@ export default function RouteMapView() {
     trackView(
       'Maps',
       'Maps',
-      'Route Map',
-      'User accessed route map'
+      'Host Map',
+      'User accessed host map'
     );
   }, [trackView]);
 

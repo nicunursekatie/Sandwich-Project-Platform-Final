@@ -8,6 +8,8 @@ import { logger } from '../utils/production-safe-logger';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { NotificationService } from '../notification-service';
 import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
+import { db } from '../db';
+import { teamBoardItems } from '@shared/schema';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -16,6 +18,14 @@ const router = Router();
 // Separate router for Twilio webhooks - NO authentication required
 // These endpoints use Twilio signature validation instead of user auth
 const webhookRouter = Router();
+
+// Add middleware to log ALL requests to webhook router (for debugging)
+// Use logger.info() so it appears in production Winston logs
+webhookRouter.use((req, res, next) => {
+  logger.info(`📞 WEBHOOK ROUTER: ${req.method} ${req.path}`);
+  logger.info(`📞 WEBHOOK ROUTER: Full path ${req.originalUrl}`);
+  next();
+});
 
 const smsOptInSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
@@ -478,15 +488,46 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Test endpoint to verify webhook routing is working
+ * This helps debug if Twilio can reach the server
+ */
+webhookRouter.get('/sms/webhook/test', async (req, res) => {
+  logger.log('✅ SMS Webhook test endpoint hit');
+  res.json({ 
+    status: 'ok', 
+    message: 'SMS webhook endpoint is reachable',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * Twilio webhook endpoint for incoming SMS messages
  * SECURITY: Validates Twilio request signature to prevent spoofing
  * NOTE: This is on webhookRouter (not router) - NO auth middleware, just Twilio signature validation
+ * 
+ * Twilio sends webhooks as application/x-www-form-urlencoded
+ * The webhook URL should be: https://your-domain.com/api/sms/webhook
  */
 webhookRouter.post('/sms/webhook', async (req, res) => {
-  // DEBUG: Log that webhook was hit (before any validation)
-  logger.log('🔔 SMS WEBHOOK HIT - Request received');
-  logger.log(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
-  logger.log(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  // CRITICAL: Use logger.info() so it appears in production logs (Winston)
+  // logger.log() is development-only and won't show in Replit production logs
+  logger.info('🔔🔔🔔 SMS WEBHOOK POST REQUEST RECEIVED 🔔🔔🔔');
+  logger.info('🔔 SMS WEBHOOK HIT - Request received');
+  logger.info(`🔔 Method: ${req.method}`);
+  logger.info(`🔔 Path: ${req.path}`);
+  logger.info(`🔔 Original URL: ${req.originalUrl}`);
+  logger.info(`🔔 Base URL: ${req.baseUrl}`);
+  logger.info(`🔔 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  logger.info(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
+  logger.info(`🔔 Content-Type: ${req.get('content-type')}`);
+  logger.info(`🔔 User-Agent: ${req.get('user-agent')}`);
+  logger.info(`🔔 IP: ${req.ip}`);
+  logger.info(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    logger.info(`🔔 Body sample: ${JSON.stringify(req.body).substring(0, 500)}`);
+  } else {
+    logger.info(`🔔 Body is empty or not parsed`);
+  }
   
   try {
     // SECURITY VALIDATION: Verify Twilio request signature
@@ -807,13 +848,13 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     }
     // Handle IDEA submissions for Holding Zone
     else if (messageBody.startsWith('IDEA ') || messageBody.startsWith('IDEA:')) {
-      logger.log(`💡 Holding Zone idea received from ${redactedPhone}`);
+      logger.info(`💡 Holding Zone idea received from ${redactedPhone}`);
 
       // Extract the idea content (remove "IDEA " or "IDEA:" prefix)
       const ideaContent = Body.trim().replace(/^IDEA[:\s]+/i, '').trim();
 
       if (ideaContent.length < 3) {
-        logger.log(`❌ Idea too short from ${redactedPhone}`);
+        logger.info(`❌ Idea too short from ${redactedPhone}`);
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Your idea is too short. Please text: IDEA followed by your suggestion (at least 3 characters).</Message></Response>`);
       }
@@ -827,36 +868,72 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           return smsConsent.phoneNumber === phoneNumber;
         });
 
-        const submittedBy = senderUser
-          ? (senderUser.firstName && senderUser.lastName
-              ? `${senderUser.firstName} ${senderUser.lastName}`
-              : senderUser.email)
-          : `SMS: ${redactedPhone}`;
+        // Ensure createdByName is never empty (required field)
+        let createdByName = `SMS: ${redactedPhone}`;
+        if (senderUser) {
+          if (senderUser.firstName && senderUser.lastName) {
+            createdByName = `${senderUser.firstName} ${senderUser.lastName}`;
+          } else if (senderUser.firstName) {
+            createdByName = senderUser.firstName;
+          } else if (senderUser.email) {
+            createdByName = senderUser.email;
+          }
+        }
 
-        // Create holding zone item
-        const holdingZoneItem = await storage.createTeamBoardItem({
-          title: ideaContent.substring(0, 100), // Limit title length
-          description: ideaContent.length > 100 ? ideaContent : null,
-          category: 'idea',
-          priority: 'medium',
-          status: 'open',
-          submittedBy: submittedBy,
-          submittedByUserId: senderUser?.id || null,
-          isAnonymous: !senderUser,
-          metadata: {
-            source: 'sms',
-            phoneNumber: redactedPhone, // Store redacted for reference
-            receivedAt: new Date().toISOString(),
-          },
+        // Use a valid user ID or generate a system ID
+        // The database requires createdBy to be a string, so we'll use a system identifier
+        const createdBy = senderUser?.id || 'sms-system';
+
+        logger.info(`📝 Creating Holding Zone item from SMS:`, {
+          phone: redactedPhone,
+          createdBy,
+          createdByName,
+          contentLength: ideaContent.length,
         });
 
-        logger.log(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
+        // Create holding zone item using the correct schema
+        // Store SMS metadata in the details field since there's no metadata column
+        const details = JSON.stringify({
+          source: 'sms',
+          phoneNumber: redactedPhone,
+          receivedAt: new Date().toISOString(),
+        });
+
+        const [holdingZoneItem] = await db
+          .insert(teamBoardItems)
+          .values({
+            content: ideaContent,
+            type: 'idea',
+            createdBy: createdBy,
+            createdByName: createdByName,
+            status: 'open',
+            assignedTo: null,
+            assignedToNames: null,
+            completedAt: null,
+            categoryId: null,
+            isUrgent: false,
+            isPrivate: false,
+            details: details,
+            dueDate: null,
+          })
+          .returning();
+
+        logger.info(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
 
         // Send confirmation
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks! Your idea has been added to the TSP Holding Zone. 🥪</Message></Response>`);
       } catch (createError) {
-        logger.error('Failed to create Holding Zone item from SMS:', createError);
+        logger.error('❌ Failed to create Holding Zone item from SMS');
+        logger.error('Error type:', createError instanceof Error ? createError.constructor.name : typeof createError);
+        logger.error('Error message:', createError instanceof Error ? createError.message : String(createError));
+        if (createError instanceof Error && createError.stack) {
+          logger.error('Error stack:', createError.stack);
+        }
+        // Log the full error object if it has additional properties
+        if (createError && typeof createError === 'object') {
+          logger.error('Error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError)));
+        }
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
       }

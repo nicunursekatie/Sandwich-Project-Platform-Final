@@ -190,10 +190,9 @@ export default function SMSOptInPage() {
                 <MessageSquare className="h-8 w-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-2xl">SMS Reminder Sign-up</CardTitle>
+            <CardTitle className="text-2xl">SMS Notifications Sign-up</CardTitle>
             <p className="text-gray-600 mt-2">
-              Get text message reminders for weekly sandwich collection
-              submissions
+              Get text message notifications for events, tasks, mentions, and collection reminders
             </p>
           </CardHeader>
 
@@ -204,7 +203,7 @@ export default function SMSOptInPage() {
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
-                    You're signed up for SMS reminders!
+                    You're signed up for SMS notifications!
                     {userSMSStatus?.phoneNumber && (
                       <span className="block mt-1 font-medium">
                         Phone: {userSMSStatus.phoneNumber}
@@ -213,18 +212,46 @@ export default function SMSOptInPage() {
                   </AlertDescription>
                 </Alert>
 
-                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    What you'll receive:
+                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 text-left">
+                  <h4 className="font-medium text-gray-900 mb-3">
+                    SMS Alert Types:
                   </h4>
-                  <ul className="space-y-1">
-                    <li>
-                      • Friendly reminders when weekly sandwich counts are
-                      missing
-                    </li>
-                    <li>• Direct links to the app for easy submission</li>
-                    <li>• Only related to sandwich collection reminders</li>
-                  </ul>
+                  
+                  <div className="mb-3">
+                    <p className="text-xs uppercase font-semibold text-green-700 mb-2">Available Now</p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Event Reminders</strong> - Get reminded before events you're scheduled to volunteer, drive, or speak at</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Coming Soon</p>
+                    <ul className="space-y-2 text-gray-500">
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400">•</span>
+                        <span><strong>TSP Contact Assignments</strong> - Notification when you're assigned as the TSP contact for an event</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400">•</span>
+                        <span><strong>Chat Mentions</strong> - Get notified when someone @mentions you in a chat room</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400">•</span>
+                        <span><strong>Task Assignments</strong> - Notifications when you're assigned to tasks on the team board</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400">•</span>
+                        <span><strong>Collection Reminders</strong> - Reminders when weekly sandwich counts are missing</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <p className="mt-3 text-xs text-gray-500 italic">
+                    You can configure your SMS preferences in Alert Preferences.
+                  </p>
                 </div>
 
                 <Button
@@ -232,10 +259,11 @@ export default function SMSOptInPage() {
                   onClick={() => optOutMutation.mutate()}
                   disabled={optOutMutation.isPending}
                   className="w-full"
+                  data-testid="button-sms-opt-out"
                 >
                   {optOutMutation.isPending
                     ? 'Unsubscribing...'
-                    : 'Unsubscribe from SMS Reminders'}
+                    : 'Unsubscribe from SMS Notifications'}
                 </Button>
               </div>
             ) : (
@@ -244,19 +272,32 @@ export default function SMSOptInPage() {
                 <div className="bg-brand-primary/10 p-4 rounded-lg">
                   <h3 className="font-medium text-brand-primary-dark mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
-                    How SMS Reminders Work
+                    SMS Alert Types
                   </h3>
-                  <ul className="text-sm text-brand-primary space-y-1">
-                    <li>
-                      • Get text reminders when weekly sandwich counts are
-                      missing
-                    </li>
-                    <li>
-                      • Includes direct links to the app for easy submission
-                    </li>
-                    <li>• Only used for sandwich collection reminders</li>
-                    <li>• You can unsubscribe at any time</li>
-                  </ul>
+                  
+                  <div className="text-sm text-brand-primary mb-3">
+                    <p className="text-xs uppercase font-semibold mb-1">Available Now</p>
+                    <ul className="space-y-1">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Event Reminders</strong> - Before events you're scheduled for</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="text-sm text-brand-primary/60">
+                    <p className="text-xs uppercase font-semibold mb-1 opacity-70">Coming Soon</p>
+                    <ul className="space-y-1">
+                      <li className="flex items-start gap-2">
+                        <span className="opacity-50">•</span>
+                        <span>TSP Contact Assignments, Chat Mentions, Task Assignments, Collection Reminders</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <p className="mt-3 text-xs opacity-75">
+                    You can configure your SMS preferences after signing up.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -284,26 +325,25 @@ export default function SMSOptInPage() {
                         setConsent(checked as boolean)
                       }
                       className="mt-1"
+                      data-testid="checkbox-sms-consent"
                     />
                     <div>
                       <Label
                         htmlFor="consent"
                         className="text-sm leading-relaxed cursor-pointer"
                       >
-                        I consent to receive SMS text message reminders from The
-                        Sandwich Project about weekly collection submissions. I
-                        understand:
+                        I consent to receive SMS text message notifications from The
+                        Sandwich Project. I understand:
                       </Label>
                       <ul className="text-xs text-gray-600 mt-2 space-y-1 ml-4">
                         <li>
-                          • Messages will only be sent for sandwich collection
-                          reminders
+                          • Messages may include event reminders, task assignments, chat mentions, and collection reminders
                         </li>
+                        <li>• I can configure which alert types I receive via SMS in my preferences</li>
                         <li>• I can unsubscribe at any time</li>
                         <li>• Standard message and data rates may apply</li>
                         <li>
-                          • My phone number will not be shared with third
-                          parties
+                          • My phone number will not be shared with third parties
                         </li>
                       </ul>
                     </div>
@@ -316,10 +356,11 @@ export default function SMSOptInPage() {
                   disabled={
                     optInMutation.isPending || !consent || !phoneNumber.trim()
                   }
+                  data-testid="button-sms-opt-in"
                 >
                   {optInMutation.isPending
                     ? 'Signing Up...'
-                    : 'Sign Up for SMS Reminders'}
+                    : 'Sign Up for SMS Notifications'}
                 </Button>
               </form>
             )}

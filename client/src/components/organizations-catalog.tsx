@@ -840,22 +840,22 @@ export default function GroupCatalog({
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-          <Building className="w-6 h-6 text-teal-600" />
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-100 flex-shrink-0">
+          <Building className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
-          <p className="text-gray-600">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Groups Catalog</h1>
+          <p className="text-sm sm:text-base text-gray-600 hidden sm:block">
             Directory of all organizations we've worked with from event requests
           </p>
         </div>
       </div>
 
       {/* Search and Filter Controls */}
-      <div className="bg-white rounded-lg border p-4 shadow-sm">
+      <div className="bg-white rounded-lg border p-3 sm:p-4 shadow-sm">
         <StandardFilterBar
           searchPlaceholder="Search organizations, contacts, emails, phone numbers, departments..."
           searchValue={searchTerm}
@@ -936,45 +936,46 @@ export default function GroupCatalog({
 
         {/* Search Scope Selector */}
         {searchTerm && (
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="text-sm font-medium text-gray-600">Search in:</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant={searchScope === 'all' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('all')}
-                className={searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                All Fields
+                All
               </Button>
               <Button
                 size="sm"
                 variant={searchScope === 'organization' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('organization')}
-                className={searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                Organization Name Only
+                Org Name
               </Button>
               <Button
                 size="sm"
                 variant={searchScope === 'department' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('department')}
-                className={searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                Department Only
+                Department
               </Button>
             </div>
           </div>
         )}
 
         {/* Sort Controls */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex gap-2 items-center">
-            <span className="text-sm font-medium text-gray-600">Sort by:</span>
+        <div className="mt-4 flex flex-col gap-3">
+          {/* Row 1: Sort and Order */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-gray-600">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px] flex-1 sm:flex-none"
             >
               <option value="groupName">Group Name</option>
               <option value="contactName">Contact Name</option>
@@ -986,21 +987,23 @@ export default function GroupCatalog({
               variant="outline"
               size="sm"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-3"
+              className="px-3 min-h-[44px] min-w-[44px]"
+              aria-label={sortOrder === 'asc' ? 'Sort ascending' : 'Sort descending'}
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Row 2: View Mode and Per Page */}
+          <div className="flex flex-wrap gap-3 items-center justify-between">
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">View:</span>
+              <span className="text-sm font-medium text-gray-600 hidden sm:inline">View:</span>
               <div className="flex rounded-lg border border-gray-300 overflow-hidden">
                 <button
                   onClick={() => setViewMode('aggregated')}
                   aria-pressed={viewMode === 'aggregated'}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium transition-colors min-h-[44px] ${
                     viewMode === 'aggregated'
                       ? 'bg-[#236383] text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -1012,7 +1015,7 @@ export default function GroupCatalog({
                 <button
                   onClick={() => setViewMode('individual')}
                   aria-pressed={viewMode === 'individual'}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium transition-colors min-h-[44px] ${
                     viewMode === 'individual'
                       ? 'bg-[#236383] text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -1029,7 +1032,7 @@ export default function GroupCatalog({
               <select
                 value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+                className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px]"
               >
                 <option value="12">12</option>
                 <option value="24">24</option>
@@ -1065,42 +1068,42 @@ export default function GroupCatalog({
         <>
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
-            <div className="space-y-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
-                  <Calendar className="w-5 h-5 text-teal-700" />
+            <div className="space-y-4 sm:space-y-8">
+              <div className="flex items-center flex-wrap gap-2 sm:space-x-3 mb-4 sm:mb-6">
+                <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-700" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   Active Organizations
                 </h2>
-                <Badge className="bg-teal-100 text-teal-700">
-                  {totalActiveItems} organizations
+                <Badge className="bg-teal-100 text-teal-700 text-xs sm:text-sm">
+                  {totalActiveItems}
                 </Badge>
               </div>
 
               {/* Organization Grouped Layout - All Events and Departments Displayed */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
                   <div
                     key={`group-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-4 shadow-sm"
+                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-3 sm:p-4 shadow-sm"
                   >
                     {/* Organization Header */}
-                    <div className="mb-4 pb-3 border-b border-gray-200">
+                    <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-gray-200">
                       {/* Organization Name with Rename Button */}
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-start gap-2 mb-2">
                         <Building
-                          className="w-6 h-6 flex-shrink-0"
+                          className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-xl font-bold text-gray-900 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex-1 break-words leading-tight">
                           {group.groupName}
                         </h2>
                         {canEditCategories && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0 ml-1"
+                            className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
                             onClick={() => handleEditName({
                               organizationName: group.groupName,
                               contactName: group.departments[0]?.contactName || '',
@@ -1114,26 +1117,26 @@ export default function GroupCatalog({
                             title="Rename organization"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
-                            <Edit className="h-3.5 w-3.5 text-teal-600" />
+                            <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-teal-600" />
                           </Button>
                         )}
                       </div>
 
                       {/* Category Badge with Inline Edit */}
-                      <div className="flex items-center gap-2 mb-2 ml-8">
+                      <div className="flex items-center gap-2 mb-2 ml-7 sm:ml-8">
                         {(() => {
                           const orgInfo = organizationCategoryMap.get(group.groupName);
                           const category = orgInfo?.category;
                           return (
-                            <div className="flex items-center gap-1">
-                              <Badge className={getCategoryBadgeColor(category)}>
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={`${getCategoryBadgeColor(category)} text-xs sm:text-sm`}>
                                 {getCategoryLabel(category)}
                               </Badge>
                               {canEditCategories && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-5 w-5 p-0 hover:bg-teal-100"
+                                  className="h-7 w-7 sm:h-5 sm:w-5 p-0 hover:bg-teal-100 touch-manipulation"
                                   onClick={() => handleEditCategory({
                                     organizationName: group.groupName,
                                     contactName: group.departments[0]?.contactName || '',
@@ -1148,7 +1151,7 @@ export default function GroupCatalog({
                                   title="Edit category"
                                   data-testid={`button-edit-category-header-${group.groupName}`}
                                 >
-                                  <Edit className="h-3 w-3 text-teal-600" />
+                                  <Edit className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-teal-600" />
                                 </Button>
                               )}
                             </div>
@@ -1157,9 +1160,9 @@ export default function GroupCatalog({
                       </div>
 
                       {/* Department Count */}
-                      <div className="flex items-center text-sm text-gray-600 ml-8">
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 ml-7 sm:ml-8">
                         <span className="flex items-center space-x-1">
-                          <Users className="w-4 h-4" />
+                          <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           <span>
                             {group.totalDepartments}{' '}
                             {group.totalDepartments === 1
@@ -1184,19 +1187,19 @@ export default function GroupCatalog({
                       });
 
                       return Array.from(departmentGroups.entries()).map(([deptName, deptEvents], deptIndex) => (
-                        <div 
-                          key={`dept-${deptName}-${deptIndex}`} 
-                          className={`mb-4 ${deptName !== 'General' ? 'p-3 bg-purple-50/50 border-2 border-purple-200 rounded-lg' : ''}`}
+                        <div
+                          key={`dept-${deptName}-${deptIndex}`}
+                          className={`mb-3 sm:mb-4 ${deptName !== 'General' ? 'p-2 sm:p-3 bg-purple-50/50 border border-purple-200 sm:border-2 rounded-lg' : ''}`}
                         >
                           {/* Department Header - Only show for non-General departments */}
                           {deptName !== 'General' && (
-                            <div className="mb-3 pb-2 border-b border-purple-300">
-                              <div className="flex items-center space-x-2">
-                                <Building className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-base font-semibold text-purple-900 break-words">
+                            <div className="mb-2 sm:mb-3 pb-2 border-b border-purple-300">
+                              <div className="flex items-start sm:items-center gap-1.5 sm:space-x-2 flex-wrap">
+                                <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                                <h3 className="text-sm sm:text-base font-semibold text-purple-900 break-words flex-1 min-w-0">
                                   {deptName}
                                 </h3>
-                                <Badge className="bg-purple-200 text-purple-800 text-sm font-semibold">
+                                <Badge className="bg-purple-200 text-purple-800 text-xs sm:text-sm font-semibold">
                                   {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
@@ -1225,16 +1228,16 @@ export default function GroupCatalog({
                                     : { borderLeftColor: '#FBAD3F' }
                                 }
                               >
-                                <CardHeader className="pb-3 px-4 pt-4">
+                                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4 pt-3 sm:pt-4">
                                   {/* Department Name and Event Date - Top of Card */}
-                                  <div className="mb-4 pb-3 border-b border-gray-200">
+                                  <div className="mb-2 sm:mb-4 pb-2 sm:pb-3 border-b border-gray-200">
                                     {/* Edit button for this specific event card */}
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2 flex-1">
+                                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                                      <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
                                         {org.department && org.department !== 'General' && (
                                           <>
-                                            <Building className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                                            <h4 className="text-base font-semibold text-gray-800 break-words">
+                                            <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+                                            <h4 className="text-sm sm:text-base font-semibold text-gray-800 break-words truncate">
                                               {org.department}
                                             </h4>
                                           </>
@@ -1244,45 +1247,45 @@ export default function GroupCatalog({
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0"
+                                          className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
                                           onClick={() => handleEditName(org)}
                                           title="Edit this event"
                                           data-testid={`button-edit-event-${org.organizationName}-${org.department}-${index}`}
                                         >
-                                          <Edit className="h-3.5 w-3.5 text-teal-600" />
+                                          <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-teal-600" />
                                         </Button>
                                       )}
                                     </div>
                                     {/* Event Date */}
                                     {org.eventDate ? (
-                                      <div className="flex items-center space-x-2 text-base text-gray-700">
-                                        <Calendar className="w-5 h-5 text-teal-600" />
+                                      <div className="flex items-center flex-wrap gap-1.5 sm:space-x-2 text-sm sm:text-base text-gray-700">
+                                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                                         <span className="font-semibold">
                                           {formatDateForDisplay(org.eventDate)}
                                         </span>
                                         {org.isFromCollectionOnly && (
-                                          <Badge className="bg-gray-100 text-gray-600 text-xs">
-                                            from collection log
+                                          <Badge className="bg-gray-100 text-gray-600 text-[10px] sm:text-xs">
+                                            collection
                                           </Badge>
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="flex items-center space-x-2 text-base text-gray-500">
-                                        <Calendar className="w-5 h-5 text-gray-400" />
-                                        <span>No date specified</span>
+                                      <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base text-gray-500">
+                                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                                        <span>No date</span>
                                       </div>
                                     )}
-                                    {/* Partner Organization Badge (for entries created from partner data) */}
+                                    {/* Partner Organization Badge (for entries created from partner data) - hidden on mobile */}
                                     {org.isPartnerEntry && org.primaryOrganization && (
-                                      <div className="flex items-center mt-2">
+                                      <div className="hidden sm:flex items-center mt-2">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           {org.partnerRole === 'co-host' ? 'Co-hosted' : org.partnerRole === 'sponsor' ? 'Sponsored' : 'Partner'} with {org.primaryOrganization}
                                         </Badge>
                                       </div>
                                     )}
-                                    {/* Co-host Badge (for primary entries that have co-hosts) */}
+                                    {/* Co-host Badge (for primary entries that have co-hosts) - hidden on mobile */}
                                     {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
-                                      <div className="flex items-center mt-2">
+                                      <div className="hidden sm:flex items-center mt-2">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           Co-hosted with {org.coHostNames.join(', ')}
                                         </Badge>
@@ -1291,22 +1294,22 @@ export default function GroupCatalog({
                                   </div>
 
                                   {/* Contact Information */}
-                                  <div className="space-y-2 mb-3">
-                                    <div className="flex items-center space-x-2 text-base">
-                                      <User className="w-5 h-5 text-teal-600" />
+                                  <div className="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
+                                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base">
+                                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0" />
                                       <button
                                         onClick={() => {
                                           setSelectedContact(org);
                                           setShowContactDetailsModal(true);
                                         }}
-                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2 min-h-[44px] sm:min-h-0 flex items-center touch-manipulation"
                                         data-testid={`button-contact-${org.organizationName}-${org.contactName}`}
                                       >
                                         {org.contactName}
                                       </button>
                                     </div>
                                     {org.email && (
-                                      <div className="flex items-center space-x-2 text-sm">
+                                      <div className="hidden sm:flex items-center space-x-2 text-sm">
                                         <Mail className="w-4 h-4 text-teal-500" />
                                         <span className="text-teal-700 hover:text-teal-800 truncate">
                                           {org.email}
@@ -1316,84 +1319,77 @@ export default function GroupCatalog({
                                   </div>
 
                                   {/* Status and Metrics */}
-                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <Badge
-                                          className={getStatusBadgeColor(org.status)}
-                                          variant="outline"
-                                        >
-                                          {getStatusText(org.status)}
-                                        </Badge>
-                                      </div>
+                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 sm:p-3 border border-orange-200 rounded text-xs sm:text-sm mt-2 sm:mt-3">
+                                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                                      <Badge
+                                        className={`${getStatusBadgeColor(org.status)} text-xs`}
+                                        variant="outline"
+                                      >
+                                        {getStatusText(org.status)}
+                                      </Badge>
                                       {org.totalRequests > 1 && (
-                                        <span className="text-gray-600 font-medium">
-                                          {org.totalRequests} requests
+                                        <span className="text-gray-600 font-medium text-xs">
+                                          {org.totalRequests} req
                                         </span>
                                       )}
                                     </div>
 
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-1.5">
-                                        <span className="text-lg">🥪</span>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-sm sm:text-lg">🥪</span>
                                         {(() => {
                                           const isFuture = isFutureEvent(org);
                                           const estimatedCount = org.totalSandwiches || 0;
                                           const actualCount = org.actualSandwichTotal || 0;
-                                          
+
                                           // For future events: show estimated with "planned" label, only if > 0
                                           if (isFuture) {
                                             if (estimatedCount > 0) {
                                               return (
-                                                <span className="font-semibold text-orange-700 text-base italic">
-                                                  {estimatedCount} <span className="text-xs not-italic text-gray-600">planned</span>
+                                                <span className="font-semibold text-orange-700 text-sm sm:text-base italic">
+                                                  {estimatedCount} <span className="text-[10px] sm:text-xs not-italic text-gray-600 hidden sm:inline">planned</span>
                                                 </span>
                                               );
                                             }
-                                            // Don't show anything for future events without estimates
                                             return null;
                                           }
-                                          
-                                          // For past/completed events: prioritize actual count
+
                                           if (actualCount > 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 {actualCount}
                                               </span>
                                             );
                                           }
-                                          
-                                          // Show estimated if available for past events
+
                                           if (estimatedCount > 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 {estimatedCount}
                                               </span>
                                             );
                                           }
-                                          
-                                          // Show 0 only if actualSandwichTotal is explicitly 0 (completed event with 0 sandwiches)
+
                                           if (org.actualSandwichTotal !== undefined && org.actualSandwichTotal === 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 0
                                               </span>
                                             );
                                           }
-                                          
-                                          // Don't show anything if no count available
+
                                           return null;
                                         })()}
                                       </div>
-                                      <div className="flex items-center space-x-1.5">
-                                        <span className="text-lg">📦</span>
-                                        <span className="font-semibold text-brand-primary text-base">
-                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-sm sm:text-lg">📦</span>
+                                        <span className="font-semibold text-brand-primary text-sm sm:text-base">
+                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}
                                         </span>
                                       </div>
                                     </div>
 
-                                    {/* TSP Contact Display */}
+                                    {/* TSP Contact Display - hidden on mobile */}
                                     {(() => {
                                       let tspContactName = null;
 
@@ -1408,7 +1404,7 @@ export default function GroupCatalog({
                                       }
 
                                       return tspContactName ? (
-                                        <div className="flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
+                                        <div className="hidden sm:flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
                                           <UserCheck className="w-4 h-4 text-purple-500" />
                                           <span className="text-purple-700 font-medium truncate">
                                             TSP: {tspContactName}
@@ -1417,9 +1413,9 @@ export default function GroupCatalog({
                                       ) : null;
                                     })()}
 
-                                    {/* Past Events List - Compact */}
+                                    {/* Past Events List - hidden on mobile */}
                                     {org.pastEvents && org.pastEvents.length > 0 && (
-                                      <div className="mt-2 pt-2 border-t border-orange-300">
+                                      <div className="hidden sm:block mt-2 pt-2 border-t border-orange-300">
                                         <div className="text-sm font-semibold text-gray-700 mb-2">
                                           Past Events:
                                         </div>
@@ -1453,7 +1449,7 @@ export default function GroupCatalog({
                                   </div>
                                 </CardHeader>
 
-                                <CardContent className="pt-0 px-4 pb-4">
+                                <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
                                   {/* View Complete History Button */}
                                   <Button
                                     onClick={() => {
@@ -1463,19 +1459,20 @@ export default function GroupCatalog({
                                     }}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2"
+                                    className="w-full text-xs sm:text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 touch-manipulation"
                                   >
-                                    <ExternalLink className="w-4 h-4 mr-1.5" />
-                                    View Complete History
+                                    <ExternalLink className="w-4 h-4 mr-1" />
+                                    <span className="sm:hidden">View History</span>
+                                    <span className="hidden sm:inline">View Complete History</span>
                                   </Button>
                                 </CardContent>
                               </Card>
                             ))}
                             {/* Show indicator if there are more events */}
                             {deptEvents.length > 3 && (
-                              <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
-                                <p className="text-sm text-gray-600 font-medium">
-                                  + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
+                              <div className="text-center py-1.5 sm:py-2 px-2 sm:px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                  + {deptEvents.length - 3} more
                                 </p>
                               </div>
                             )}
