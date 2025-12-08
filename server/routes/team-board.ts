@@ -260,17 +260,31 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
           )
       : [];
 
+    // Get child item counts for all items (to show how many items are nested under each)
+    const childCounts = itemIds.length > 0
+      ? await db
+          .select({
+            parentItemId: teamBoardItems.parentItemId,
+            count: count(teamBoardItems.id),
+          })
+          .from(teamBoardItems)
+          .where(inArray(teamBoardItems.parentItemId, itemIds))
+          .groupBy(teamBoardItems.parentItemId)
+      : [];
+
     // Create maps for quick lookup
     const likeCountMap = new Map(likeCounts.map(c => [c.itemId, Number(c.count)]));
     const userLikedSet = new Set(userLikes.map(l => l.itemId));
+    const childCountMap = new Map(childCounts.map(c => [c.parentItemId, Number(c.count)]));
 
-    // Add comment counts, like data, and categories to items
+    // Add comment counts, like data, categories, and child counts to items
     const itemsWithCounts = flattenedItems.map(item => ({
       ...item,
       commentCount: countMap.get(item.id) || 0,
       likeCount: likeCountMap.get(item.id) || 0,
       userHasLiked: userLikedSet.has(item.id),
       categories: itemCategoriesMap.get(item.id) || [], // Multiple categories from junction table
+      childCount: childCountMap.get(item.id) || 0, // Number of items nested under this item
     }));
 
     // Sort: open items first, then done items
@@ -1263,6 +1277,110 @@ teamBoardRouter.post(
       res.status(500).json({
         error: 'Failed to move item',
         message: 'An error occurred while moving the item to the To-Do List',
+      });
+    }
+  }
+);
+
+// PATCH /api/team-board/:id/link - Link or unlink an item to/from a parent item
+teamBoardRouter.patch(
+  '/:id/link',
+  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      // Validation schema for link request
+      const linkSchema = z.object({
+        parentItemId: z.number().int().positive().nullable().optional(), // null to unlink, number to link
+      });
+
+      const validation = linkSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Invalid input data',
+          details: validation.error.issues,
+        });
+      }
+
+      const { parentItemId } = validation.data;
+
+      logger.info('Linking/unlinking holding zone item', {
+        itemId,
+        parentItemId: parentItemId || null,
+        userId: req.user.id,
+      });
+
+      // Get the item to link
+      const [item] = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      // Prevent circular references - check if parentItemId would create a cycle
+      if (parentItemId) {
+        // Check if the parent item is a child of this item (directly or indirectly)
+        let currentParentId = parentItemId;
+        const visited = new Set<number>([itemId]); // Start with current item to prevent self-reference
+        
+        while (currentParentId) {
+          if (visited.has(currentParentId)) {
+            return res.status(400).json({
+              error: 'Circular reference detected',
+              message: 'Cannot link item to a parent that would create a circular reference',
+            });
+          }
+          
+          visited.add(currentParentId);
+          
+          const [parentItem] = await db
+            .select({ parentItemId: teamBoardItems.parentItemId })
+            .from(teamBoardItems)
+            .where(eq(teamBoardItems.id, currentParentId))
+            .limit(1);
+          
+          if (!parentItem) break;
+          currentParentId = parentItem.parentItemId || undefined;
+        }
+      }
+
+      // Update the item's parent
+      const [updatedItem] = await db
+        .update(teamBoardItems)
+        .set({
+          parentItemId: parentItemId || null,
+        })
+        .where(eq(teamBoardItems.id, itemId))
+        .returning();
+
+      logger.info('Successfully linked/unlinked holding zone item', {
+        itemId,
+        parentItemId: updatedItem.parentItemId,
+        userId: req.user.id,
+      });
+
+      res.status(200).json({
+        success: true,
+        item: updatedItem,
+        message: parentItemId ? 'Item linked to parent' : 'Item unlinked from parent',
+      });
+    } catch (error) {
+      logger.error('Failed to link/unlink holding zone item', error);
+      res.status(500).json({
+        error: 'Failed to link/unlink item',
+        message: 'An error occurred while linking/unlinking the item',
       });
     }
   }
