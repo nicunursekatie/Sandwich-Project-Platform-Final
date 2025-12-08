@@ -621,6 +621,57 @@ export default function HoldingZone() {
     enabled: canView,
   });
 
+  // Helper function to sort items so children appear right after their parents
+  const sortItemsWithChildren = (items: HoldingZoneItem[]): HoldingZoneItem[] => {
+    const itemMap = new Map<number, HoldingZoneItem>();
+    const rootItems: HoldingZoneItem[] = [];
+    const childrenByParent = new Map<number, HoldingZoneItem[]>();
+
+    // Build maps
+    items.forEach(item => {
+      itemMap.set(item.id, item);
+      if (item.parentItemId) {
+        if (!childrenByParent.has(item.parentItemId)) {
+          childrenByParent.set(item.parentItemId, []);
+        }
+        childrenByParent.get(item.parentItemId)!.push(item);
+      } else {
+        rootItems.push(item);
+      }
+    });
+
+    // Sort root items (by createdAt descending)
+    rootItems.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
+    // Recursively build sorted list: parent, then its children, then next parent
+    const result: HoldingZoneItem[] = [];
+    const processed = new Set<number>();
+
+    const addItemAndChildren = (item: HoldingZoneItem) => {
+      if (processed.has(item.id)) return;
+      processed.add(item.id);
+      
+      result.push(item);
+      
+      // Add children right after parent
+      const children = childrenByParent.get(item.id) || [];
+      children.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      children.forEach(child => addItemAndChildren(child));
+    };
+
+    rootItems.forEach(item => addItemAndChildren(item));
+
+    return result;
+  };
+
   // Filter items - split by type and status
   const { filteredTasks, filteredTodo, filteredNotes } = useMemo(() => {
     let filtered = items;
@@ -647,7 +698,12 @@ export default function HoldingZone() {
     const todo = filtered.filter(item => item.status === 'todo'); // To-Do List items (any type)
     const notes = filtered.filter(item => (item.type === 'note' || item.type === 'idea') && item.status !== 'todo');
 
-    return { filteredTasks: tasks, filteredTodo: todo, filteredNotes: notes };
+    // Sort each array so children appear right after their parents
+    return { 
+      filteredTasks: sortItemsWithChildren(tasks), 
+      filteredTodo: sortItemsWithChildren(todo), 
+      filteredNotes: sortItemsWithChildren(notes) 
+    };
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
 
   // Get current items based on active tab
@@ -1629,7 +1685,7 @@ export default function HoldingZone() {
                         </>
                       )}
                     </Button>
-                    {item.childCount && item.childCount > 0 && (
+                    {item.childCount != null && item.childCount > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {item.childCount} linked {item.childCount === 1 ? 'item' : 'items'}
                       </Badge>
@@ -2606,7 +2662,7 @@ export default function HoldingZone() {
                           {item.type === 'note' && <StickyNote className="h-4 w-4 flex-shrink-0" />}
                           {item.type === 'idea' && <Lightbulb className="h-4 w-4 flex-shrink-0" />}
                           <span className="truncate">{item.content}</span>
-                          {item.childCount && item.childCount > 0 && (
+                          {item.childCount != null && item.childCount > 0 && (
                             <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                               {item.childCount} linked
                             </Badge>
