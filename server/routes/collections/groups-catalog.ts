@@ -1325,14 +1325,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         return res.status(400).json({ message: 'Category is required' });
       }
 
-      const validCategories = [
-        'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious',
-        'nonprofit', 'government', 'hospital', 'political', 'school',
-        'neighborhood', 'club', 'greek_life', 'cultural', 'other'
-      ];
-
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ message: 'Invalid category' });
+      // Validate category format (alphanumeric with underscores, reasonable length)
+      const trimmedCategory = category.trim().toLowerCase();
+      if (trimmedCategory.length < 2 || trimmedCategory.length > 50) {
+        return res.status(400).json({ message: 'Category must be between 2 and 50 characters' });
+      }
+      if (!/^[a-z0-9_]+$/.test(trimmedCategory)) {
+        return res.status(400).json({ message: 'Category can only contain letters, numbers, and underscores' });
       }
 
       // Get all organizations to find matching one
@@ -1356,23 +1355,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       if (existingOrg) {
         // Update existing organization
         result = await storage.updateOrganization(existingOrg.id, {
-          category,
-          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          category: trimmedCategory,
+          schoolClassification: trimmedCategory === 'school' ? (schoolClassification || null) : null,
           isReligious: isReligious || false,
         });
 
-        logger.log(`Updated organization category: ${name} (ID: ${existingOrg.id}) -> ${category}`);
+        logger.log(`Updated organization category: ${name} (ID: ${existingOrg.id}) -> ${trimmedCategory}`);
       } else {
         // Create new organization
         result = await storage.createOrganization({
           name,
-          category,
-          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          category: trimmedCategory,
+          schoolClassification: trimmedCategory === 'school' ? (schoolClassification || null) : null,
           isReligious: isReligious || false,
           totalEvents: 0,
         });
 
-        logger.log(`Created new organization: ${name} with category ${category}`);
+        logger.log(`Created new organization: ${name} with category ${trimmedCategory}`);
       }
 
       res.json(result);
