@@ -283,6 +283,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           if (!partner.name || !partner.name.trim()) return;
 
           const partnerOrgName = partner.name.trim();
+
+          // Skip if this partner matches the primary org name
+          // (this happens when primary org is blank and first partner becomes the primary)
+          if (organizationNamesMatch(canonicalizeOrgName(partnerOrgName), primaryCanonicalName)) {
+            return;
+          }
+
           const partnerRole = partner.role || 'partner';
 
           // Get or create canonical name for partner org
