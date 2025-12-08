@@ -815,6 +815,7 @@ export const drivers = pgTable('drivers', {
   latitude: text('latitude'), // Geocoded latitude for map display
   longitude: text('longitude'), // Geocoded longitude for map display
   geocodedAt: timestamp('geocoded_at'), // When the location was geocoded
+  willingToSpeak: boolean('willing_to_speak').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

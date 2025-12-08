@@ -75,6 +75,7 @@ export default function DriversManagement() {
     emailAgreementSent: false,
     vanApproved: false,
     isWeeklyDriver: false,
+    willingToSpeak: false,
     isActive: true,
   });
 
@@ -334,6 +335,18 @@ export default function DriversManagement() {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="address">Home Address</Label>
+                      <Input
+                        id="address"
+                        value={newDriver.address}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, address: e.target.value })
+                        }
+                        placeholder="Street address, city, state, zip"
+                        data-testid="input-driver-address"
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="licenseNumber">
                         Driver's License Number
                       </Label>
@@ -415,6 +428,23 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="isWeeklyDriver">
                         Weekly Driver
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="willingToSpeak"
+                        checked={newDriver.willingToSpeak}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            willingToSpeak: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="willingToSpeak">
+                        Willing to Speak at Events
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -663,6 +693,21 @@ export default function DriversManagement() {
                 />
               </div>
               <div>
+                <Label htmlFor="edit-address">Home Address</Label>
+                <Input
+                  id="edit-address"
+                  value={editingDriver.address || ''}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      address: e.target.value,
+                    })
+                  }
+                  placeholder="Street address, city, state, zip"
+                  data-testid="input-edit-driver-address"
+                />
+              </div>
+              <div>
                 <Label htmlFor="edit-licenseNumber">
                   Driver's License Number
                 </Label>
@@ -743,6 +788,21 @@ export default function DriversManagement() {
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="edit-isWeeklyDriver">Weekly Driver</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-willingToSpeak"
+                  checked={editingDriver.willingToSpeak || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      willingToSpeak: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-willingToSpeak">Willing to Speak at Events</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
