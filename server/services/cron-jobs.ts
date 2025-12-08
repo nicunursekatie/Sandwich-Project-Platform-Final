@@ -562,6 +562,37 @@ export async function notifyPastDateInProcessEvents(): Promise<{
       eventsProcessed++;
 
       try {
+        // Re-fetch the event to ensure we have the latest status
+        // This prevents sending notifications for events that were completed
+        // between when we queried and when we process each event
+        const [currentEvent] = await db
+          .select()
+          .from(eventRequests)
+          .where(eq(eventRequests.id, event.id))
+          .limit(1);
+
+        if (!currentEvent) {
+          cronLogger.warn(`Event ${event.id} no longer exists, skipping`);
+          continue;
+        }
+
+        // Skip if status has changed from in_process (e.g., already completed)
+        if (currentEvent.status !== 'in_process') {
+          cronLogger.info(`Event ${event.id} (${event.organizationName}) status changed to '${currentEvent.status}', skipping notification`);
+          // Still mark as notified so we don't keep checking this event
+          await db
+            .update(eventRequests)
+            .set({ pastDateNotificationSentAt: new Date() })
+            .where(eq(eventRequests.id, event.id));
+          continue;
+        }
+
+        // Skip if notification was already sent (race condition protection)
+        if (currentEvent.pastDateNotificationSentAt) {
+          cronLogger.info(`Event ${event.id} already has notification sent, skipping`);
+          continue;
+        }
+
         // Get the TSP contact(s) to notify
         const tspContactIds: string[] = [];
 

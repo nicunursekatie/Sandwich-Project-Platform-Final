@@ -526,6 +526,9 @@ export default function HoldingZone() {
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
   const [editItemDetails, setEditItemDetails] = useState('');
   const [editItemDueDate, setEditItemDueDate] = useState('');
+  const [isEditCreatingNewCategory, setIsEditCreatingNewCategory] = useState(false);
+  const [editNewCategoryName, setEditNewCategoryName] = useState('');
+  const [editNewCategoryColor, setEditNewCategoryColor] = useState('#236383');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
   const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
@@ -1924,19 +1927,108 @@ export default function HoldingZone() {
 
             <div className="space-y-2">
               <Label htmlFor="edit-item-category">Category (Optional)</Label>
-              <Select value={editItemCategoryId} onValueChange={setEditItemCategoryId}>
-                <SelectTrigger id="edit-item-category">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
+              {isEditCreatingNewCategory ? (
+                <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-new-category-name">New Category Name</Label>
+                    <Input
+                      id="edit-new-category-name"
+                      value={editNewCategoryName}
+                      onChange={(e) => setEditNewCategoryName(e.target.value)}
+                      placeholder="Enter category name..."
+                      data-testid="input-edit-new-category-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-new-category-color">Category Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="edit-new-category-color"
+                        type="color"
+                        value={editNewCategoryColor}
+                        onChange={(e) => setEditNewCategoryColor(e.target.value)}
+                        className="w-16 h-10 p-1 cursor-pointer"
+                        data-testid="input-edit-new-category-color"
+                      />
+                      <Input
+                        value={editNewCategoryColor}
+                        onChange={(e) => setEditNewCategoryColor(e.target.value)}
+                        placeholder="#236383"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditCreatingNewCategory(false);
+                        setEditNewCategoryName('');
+                        setEditNewCategoryColor('#236383');
+                      }}
+                      data-testid="button-edit-cancel-new-category"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        if (editNewCategoryName.trim()) {
+                          createCategoryMutation.mutate(
+                            { name: editNewCategoryName.trim(), color: editNewCategoryColor },
+                            {
+                              onSuccess: (newCategory: HoldingZoneCategory) => {
+                                setEditItemCategoryId(String(newCategory.id));
+                                setIsEditCreatingNewCategory(false);
+                                setEditNewCategoryName('');
+                                setEditNewCategoryColor('#236383');
+                              }
+                            }
+                          );
+                        }
+                      }}
+                      disabled={!editNewCategoryName.trim() || createCategoryMutation.isPending}
+                      className="bg-[#236383] hover:bg-[#007E8C]"
+                      data-testid="button-edit-create-category"
+                    >
+                      {createCategoryMutation.isPending ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Creating...</>
+                      ) : (
+                        'Create Category'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  value={editItemCategoryId}
+                  onValueChange={(value) => {
+                    if (value === 'new') {
+                      setIsEditCreatingNewCategory(true);
+                    } else {
+                      setEditItemCategoryId(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="edit-item-category">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new" className="text-[#007E8C] font-medium">
+                      + Add New Category...
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
@@ -1953,6 +2045,9 @@ export default function HoldingZone() {
                 setEditItemIsPrivate(false);
                 setEditItemDetails('');
                 setEditItemDueDate('');
+                setIsEditCreatingNewCategory(false);
+                setEditNewCategoryName('');
+                setEditNewCategoryColor('#236383');
               }}
             >
               Cancel
