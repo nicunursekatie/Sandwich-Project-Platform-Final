@@ -2,31 +2,12 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Smartphone, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isMobileDevice } from '@/lib/device-detection';
 
 const MOBILE_PREFERENCE_KEY = 'tsp-mobile-layout-preference';
 const PROMPT_DISMISSED_KEY = 'tsp-mobile-prompt-dismissed';
 
 type MobilePreference = 'mobile' | 'desktop' | null;
-
-/**
- * Detects if user is on a mobile device
- */
-function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  // Check screen width
-  const isSmallScreen = window.innerWidth < 768;
-
-  // Check user agent for mobile devices
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
-  // Check for touch capability
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  return (isSmallScreen && hasTouch) || isMobileUserAgent;
-}
 
 /**
  * Gets stored mobile preference
