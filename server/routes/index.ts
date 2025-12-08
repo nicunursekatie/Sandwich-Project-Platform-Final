@@ -83,6 +83,7 @@ import {
   createErrorHandler,
   createPublicMiddleware,
 } from '../middleware';
+import { logger } from '../utils/production-safe-logger';
 import { createErrorLogsRoutes } from './error-logs';
 import workLogsRouter from './work-logs';
 import shoutoutsRouter from './shoutouts';
