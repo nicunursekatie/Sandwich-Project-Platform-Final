@@ -813,7 +813,7 @@ export default function AlertPreferences() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!userSMSStatus?.isOptedIn && (
+              {!userSMSStatus?.hasConfirmedOptIn && (
                 <Alert className="mb-6">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
@@ -848,13 +848,13 @@ export default function AlertPreferences() {
                     </Badge>
                     <Badge 
                       variant="outline" 
-                      className={userSMSStatus?.isOptedIn 
+                      className={userSMSStatus?.hasConfirmedOptIn 
                         ? "text-blue-600 border-blue-200 bg-blue-50" 
                         : "text-gray-400 border-gray-200 bg-gray-50"
                       }
                     >
                       <Smartphone className="w-3 h-3 mr-1" />
-                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
                     </Badge>
                   </div>
                 </div>
@@ -877,13 +877,13 @@ export default function AlertPreferences() {
                     </Badge>
                     <Badge 
                       variant="outline" 
-                      className={userSMSStatus?.isOptedIn 
+                      className={userSMSStatus?.hasConfirmedOptIn 
                         ? "text-blue-600 border-blue-200 bg-blue-50" 
                         : "text-gray-400 border-gray-200 bg-gray-50"
                       }
                     >
                       <Smartphone className="w-3 h-3 mr-1" />
-                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
                     </Badge>
                   </div>
                 </div>
@@ -906,13 +906,13 @@ export default function AlertPreferences() {
                     </Badge>
                     <Badge 
                       variant="outline" 
-                      className={userSMSStatus?.isOptedIn 
+                      className={userSMSStatus?.hasConfirmedOptIn 
                         ? "text-blue-600 border-blue-200 bg-blue-50" 
                         : "text-gray-400 border-gray-200 bg-gray-50"
                       }
                     >
                       <Smartphone className="w-3 h-3 mr-1" />
-                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
                     </Badge>
                   </div>
                 </div>
@@ -935,13 +935,13 @@ export default function AlertPreferences() {
                     </Badge>
                     <Badge 
                       variant="outline" 
-                      className={userSMSStatus?.isOptedIn 
+                      className={userSMSStatus?.hasConfirmedOptIn 
                         ? "text-blue-600 border-blue-200 bg-blue-50" 
                         : "text-gray-400 border-gray-200 bg-gray-50"
                       }
                     >
                       <Smartphone className="w-3 h-3 mr-1" />
-                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
                     </Badge>
                   </div>
                 </div>
@@ -964,13 +964,13 @@ export default function AlertPreferences() {
                     </Badge>
                     <Badge 
                       variant="outline" 
-                      className={userSMSStatus?.isOptedIn 
+                      className={userSMSStatus?.hasConfirmedOptIn 
                         ? "text-blue-600 border-blue-200 bg-blue-50" 
                         : "text-gray-400 border-gray-200 bg-gray-50"
                       }
                     >
                       <Smartphone className="w-3 h-3 mr-1" />
-                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
                     </Badge>
                   </div>
                 </div>

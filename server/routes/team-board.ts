@@ -1084,7 +1084,7 @@ teamBoardRouter.get(
   }
 );
 
-// POST /api/team-board/:id/promote - Promote holding zone item to a standalone task
+// POST /api/team-board/:id/promote - Move holding zone item to To-Do List (instead of promoting to project tasks)
 teamBoardRouter.post(
   '/:id/promote',
   requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE),
@@ -1099,11 +1099,11 @@ teamBoardRouter.post(
         return res.status(400).json({ error: 'Invalid item ID' });
       }
 
-      // Validation schema for promote request
+      // Validation schema for promote request - now supports multiple assignees and due dates
       const promoteSchema = z.object({
-        projectId: z.number().int().positive().optional().nullable(), // Optional project to attach to
-        priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
-        dueDate: z.string().optional().nullable(),
+        assignedTo: z.array(z.string()).optional().nullable(), // Array of user IDs
+        assignedToNames: z.array(z.string()).optional().nullable(), // Array of user display names
+        dueDate: z.string().optional().nullable(), // ISO date string
       });
 
       const validation = promoteSchema.safeParse(req.body);
@@ -1114,12 +1114,13 @@ teamBoardRouter.post(
         });
       }
 
-      const { projectId, priority, dueDate } = validation.data;
+      const { assignedTo, assignedToNames, dueDate } = validation.data;
 
-      logger.info('Promoting holding zone item to task', {
+      logger.info('Moving holding zone item to To-Do List', {
         itemId,
-        projectId,
         userId: req.user.id,
+        assignedTo: assignedTo?.length || 0,
+        hasDueDate: !!dueDate,
       });
 
       // Get the holding zone item
@@ -1133,65 +1134,52 @@ teamBoardRouter.post(
         return res.status(404).json({ error: 'Holding zone item not found' });
       }
 
-      // Check if already promoted
-      if (holdingZoneItem.promotedToTaskId) {
+      // Check if already in todo status
+      if (holdingZoneItem.status === 'todo') {
         return res.status(400).json({
-          error: 'Item already promoted to a task',
-          taskId: holdingZoneItem.promotedToTaskId,
+          error: 'Item is already in the To-Do List',
         });
       }
 
-      // Import projectTasks schema
-      const { projectTasks } = await import('../../shared/schema');
+      // Update the holding zone item to move it to To-Do List
+      // Merge existing assignees with new ones if provided
+      const finalAssignedTo = assignedTo && assignedTo.length > 0 
+        ? assignedTo 
+        : holdingZoneItem.assignedTo || [];
+      const finalAssignedToNames = assignedToNames && assignedToNames.length > 0
+        ? assignedToNames
+        : holdingZoneItem.assignedToNames || [];
+      
+      // Parse due date if provided
+      const finalDueDate = dueDate ? new Date(dueDate) : (holdingZoneItem.dueDate ? new Date(holdingZoneItem.dueDate) : null);
 
-      // Create a new project task
-      const [newTask] = await db
-        .insert(projectTasks)
-        .values({
-          projectId: projectId || null, // Nullable for standalone tasks
-          title: holdingZoneItem.content.substring(0, 255), // Use content as title
-          description: holdingZoneItem.content,
-          status: 'pending',
-          priority: priority,
-          assigneeIds: holdingZoneItem.assignedTo || [],
-          assigneeNames: holdingZoneItem.assignedToNames || [],
-          dueDate: dueDate || null,
-          originType: 'team_board',
-          sourceTeamBoardId: itemId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
-
-      // Update the holding zone item to mark as promoted
-      await db
+      const [updatedItem] = await db
         .update(teamBoardItems)
         .set({
-          promotedToTaskId: newTask.id,
-          promotedAt: new Date(),
-          status: 'done', // Mark as done since it's been promoted
+          status: 'todo', // Move to To-Do List status
+          assignedTo: finalAssignedTo,
+          assignedToNames: finalAssignedToNames,
+          dueDate: finalDueDate,
         })
-        .where(eq(teamBoardItems.id, itemId));
+        .where(eq(teamBoardItems.id, itemId))
+        .returning();
 
-      logger.info('Successfully promoted holding zone item to task', {
+      logger.info('Successfully moved holding zone item to To-Do List', {
         itemId,
-        taskId: newTask.id,
-        projectId: projectId || 'standalone',
         userId: req.user.id,
+        status: updatedItem.status,
       });
 
-      res.status(201).json({
+      res.status(200).json({
         success: true,
-        task: newTask,
-        message: projectId
-          ? 'Item promoted to project task'
-          : 'Item promoted to standalone task',
+        item: updatedItem,
+        message: 'Item moved to To-Do List',
       });
     } catch (error) {
-      logger.error('Failed to promote holding zone item', error);
+      logger.error('Failed to move holding zone item to To-Do List', error);
       res.status(500).json({
-        error: 'Failed to promote item',
-        message: 'An error occurred while promoting the item to a task',
+        error: 'Failed to move item',
+        message: 'An error occurred while moving the item to the To-Do List',
       });
     }
   }
