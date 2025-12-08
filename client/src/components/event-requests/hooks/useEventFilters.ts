@@ -172,6 +172,37 @@ export const useEventFilters = () => {
     return isNaN(parsed.getTime()) ? null : parsed;
   };
 
+  // Helper function to parse a date string from search query
+  const parseSearchQueryAsDate = (searchQuery: string): Date | null => {
+    if (!searchQuery) return null;
+    
+    const trimmed = searchQuery.trim();
+    
+    // Try YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    
+    // Try MM/DD/YYYY or M/D/YYYY format
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+      const parts = trimmed.split('/');
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month - 1, day);
+    }
+    
+    // Try other common formats
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      // If it's a valid date, parse it in local timezone to avoid timezone shift
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+    
+    return null;
+  };
+
   // Helper function to check if a date matches the search query
   const dateMatchesSearch = (dateValue: string | Date | null | undefined, searchQuery: string): boolean => {
     if (!dateValue || !searchQuery) return false;
@@ -180,6 +211,16 @@ export const useEventFilters = () => {
       const date = parseLocalDate(dateValue);
       if (!date) return false;
 
+      // First, try to parse the search query as a date
+      const searchDate = parseSearchQueryAsDate(searchQuery);
+      if (searchDate) {
+        // If search query is a date, compare actual date values (year, month, day)
+        return date.getFullYear() === searchDate.getFullYear() &&
+               date.getMonth() === searchDate.getMonth() &&
+               date.getDate() === searchDate.getDate();
+      }
+
+      // Fall back to string matching for non-date queries
       const searchLower = searchQuery.toLowerCase();
 
       const formats = [
@@ -231,7 +272,7 @@ export const useEventFilters = () => {
           (request.lastName && request.lastName.toLowerCase().includes(searchLower)) ||
           (request.email && request.email.toLowerCase().includes(searchLower)) ||
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
-          dateMatchesSearch(request.desiredEventDate, debouncedSearchQuery) ||
+          dateMatchesSearch(request.scheduledEventDate || request.desiredEventDate, debouncedSearchQuery) ||
           matchesTspContact ||
           matchesVolunteer;
       }
@@ -349,7 +390,7 @@ export const useEventFilters = () => {
               .toLowerCase()
               .includes(searchLower)) ||
             (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
-            dateMatchesSearch(request.desiredEventDate, debouncedSearchQuery) ||
+            dateMatchesSearch(request.scheduledEventDate || request.desiredEventDate, debouncedSearchQuery) ||
             matchesTspContact ||
             matchesVolunteer;
         }
