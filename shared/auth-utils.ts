@@ -304,7 +304,7 @@ export const PERMISSIONS = {
   NAV_SIGNUP_GENIUS: 'NAV_SIGNUP_GENIUS', // Access to Sign Up Genius tab
   NAV_WISHLIST: 'NAV_WISHLIST', // Access to Amazon Wishlist tab
   NAV_COOLER_TRACKING: 'NAV_COOLER_TRACKING', // Access to Cooler Tracking tab
-  NAV_ROUTE_MAP: 'NAV_ROUTE_MAP', // Access to Host Locations/Route Map tab
+  NAV_ROUTE_MAP: 'NAV_ROUTE_MAP', // Access to Host Map tab
   NAV_HISTORICAL_IMPORT: 'NAV_HISTORICAL_IMPORT', // Access to Historical Import tab
   NAV_HELP: 'NAV_HELP', // Access to Help tab
   NAV_USER_MANAGEMENT: 'NAV_USER_MANAGEMENT', // Access to User Management tab

@@ -323,6 +323,9 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
                 } else {
                   activityDetails = 'Submitted new event request';
                 }
+              } else if (req.path === '/' || req.path === '/dashboard') {
+                // Skip generic "Created new dashboard entry" - doesn't make sense
+                activityDetails = `Accessed ${feature.toLowerCase()}`;
               } else {
                 // Generic fallback with more context
                 activityDetails =
