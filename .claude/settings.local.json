@@ -30,7 +30,9 @@
       "Bash(node -r dotenv/config -r esbuild-register:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(source .env)"
+      "Bash(source .env)",
+      "Bash(curl:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

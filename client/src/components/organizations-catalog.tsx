@@ -307,11 +307,15 @@ export default function GroupCatalog({
       return;
     }
 
+    // Only include department data if we have a specific event ID (single-event card)
+    const canEditDepartment = !!editNameOrganization.linkedEventId;
+
     const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
-      oldDepartment: editNameOrganization.department || undefined,
-      newDepartment: editDeptName.trim() || undefined,
+      // Only send department data for single-event cards
+      oldDepartment: canEditDepartment ? (editNameOrganization.department || undefined) : undefined,
+      newDepartment: canEditDepartment ? (editDeptName.trim() || undefined) : undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
       eventId: editNameOrganization.linkedEventId, // Only update this specific event if available
       // If no single linkedEventId, pass all eventIds for aggregated cards
@@ -2420,13 +2424,21 @@ export default function GroupCatalog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-dept-name">Department (optional)</Label>
-              <Input
-                id="edit-dept-name"
-                value={editDeptName}
-                onChange={(e) => setEditDeptName(e.target.value)}
-                placeholder="Enter department name"
-                data-testid="input-edit-dept-name"
-              />
+              {/* Only allow department edits for single-event cards */}
+              {editNameOrganization?.linkedEventId ? (
+                <Input
+                  id="edit-dept-name"
+                  value={editDeptName}
+                  onChange={(e) => setEditDeptName(e.target.value)}
+                  placeholder="Enter department name"
+                  data-testid="input-edit-dept-name"
+                />
+              ) : (
+                <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded border">
+                  Department editing is disabled for aggregated cards.
+                  To edit a specific event's department, open the event details.
+                </div>
+              )}
             </div>
 
             {/* Partner Organizations Section */}
