@@ -285,7 +285,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           const partnerOrgName = partner.name.trim();
 
           // Skip if this partner matches the primary org name
-          // (this happens when primary org is blank and first partner becomes the primary)
+          // (avoids creating duplicate entries when the same org is listed as both primary and partner)
           if (organizationNamesMatch(canonicalizeOrgName(partnerOrgName), primaryCanonicalName)) {
             return;
           }
