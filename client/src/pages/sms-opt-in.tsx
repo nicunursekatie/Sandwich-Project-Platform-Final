@@ -214,41 +214,30 @@ export default function SMSOptInPage() {
 
                 <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 text-left">
                   <h4 className="font-medium text-gray-900 mb-3">
-                    SMS Alert Types:
+                    Available SMS Alert Types:
                   </h4>
-                  
-                  <div className="mb-3">
-                    <p className="text-xs uppercase font-semibold text-green-700 mb-2">Available Now</p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span><strong>Event Reminders</strong> - Get reminded before events you're scheduled to volunteer, drive, or speak at</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Coming Soon</p>
-                    <ul className="space-y-2 text-gray-500">
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400">•</span>
-                        <span><strong>TSP Contact Assignments</strong> - Notification when you're assigned as the TSP contact for an event</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400">•</span>
-                        <span><strong>Chat Mentions</strong> - Get notified when someone @mentions you in a chat room</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400">•</span>
-                        <span><strong>Task Assignments</strong> - Notifications when you're assigned to tasks on the team board</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400">•</span>
-                        <span><strong>Collection Reminders</strong> - Reminders when weekly sandwich counts are missing</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Event Reminders</strong> - Get reminded before events you're scheduled to volunteer, drive, or speak at</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>TSP Contact Assignments</strong> - Notification when you're assigned as the TSP contact for an event</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Chat Mentions</strong> - Get notified when someone @mentions you in a chat room</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Task Assignments</strong> - Notifications when you're assigned to tasks on the team board</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Collection Reminders</strong> - Reminders when weekly sandwich counts are missing</span>
+                    </li>
+                  </ul>
                   <p className="mt-3 text-xs text-gray-500 italic">
                     You can configure your SMS preferences in Alert Preferences.
                   </p>
@@ -272,29 +261,30 @@ export default function SMSOptInPage() {
                 <div className="bg-brand-primary/10 p-4 rounded-lg">
                   <h3 className="font-medium text-brand-primary-dark mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
-                    SMS Alert Types
+                    Available SMS Alert Types
                   </h3>
-                  
-                  <div className="text-sm text-brand-primary mb-3">
-                    <p className="text-xs uppercase font-semibold mb-1">Available Now</p>
-                    <ul className="space-y-1">
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span><strong>Event Reminders</strong> - Before events you're scheduled for</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div className="text-sm text-brand-primary/60">
-                    <p className="text-xs uppercase font-semibold mb-1 opacity-70">Coming Soon</p>
-                    <ul className="space-y-1">
-                      <li className="flex items-start gap-2">
-                        <span className="opacity-50">•</span>
-                        <span>TSP Contact Assignments, Chat Mentions, Task Assignments, Collection Reminders</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
+                  <ul className="text-sm text-brand-primary space-y-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Event Reminders</strong> - Before events you're scheduled for</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>TSP Contact Assignments</strong> - When assigned as event contact</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Chat Mentions</strong> - When someone @mentions you</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Task Assignments</strong> - Team board assignments</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span><strong>Collection Reminders</strong> - Missing sandwich counts</span>
+                    </li>
+                  </ul>
                   <p className="mt-3 text-xs opacity-75">
                     You can configure your SMS preferences after signing up.
                   </p>

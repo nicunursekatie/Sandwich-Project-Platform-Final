@@ -141,9 +141,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'TSP Contact Assignment',
         description: 'Notification when you\'re assigned as the TSP contact for an event',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -158,18 +158,18 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Chat Room Mentions',
         description: 'Get notified when someone @mentions you in a chat room',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
       {
         id: 'team-board-mentions',
         name: 'Team Board Mentions',
         description: 'Get notified when someone mentions you in a team board item or comment',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -184,9 +184,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Team Board Assignments',
         description: 'Get notified when you\'re assigned to a task, note, idea, or reminder',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -201,9 +201,9 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         name: 'Weekly Collection Reminders',
         description: 'Reminders when weekly sandwich counts are missing for your locations',
         channels: ['email', 'sms'],
-        configurable: false, // Not configurable until SMS backend implemented
+        configurable: true,
         requiresSmsOptIn: true,
-        smsImplemented: false, // SMS coming soon
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -798,6 +798,191 @@ export default function AlertPreferences() {
                   </div>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+
+          {/* Other Alert Channel Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Bell className="h-5 w-5 text-brand-primary" />
+                Other Alert Delivery Preferences
+              </CardTitle>
+              <CardDescription>
+                Choose how you want to receive each type of alert (email, SMS, or both)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!userSMSStatus?.isOptedIn && (
+                <Alert className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    To receive SMS notifications, please{' '}
+                    <button 
+                      onClick={() => setActiveTab('sms-setup')}
+                      className="text-brand-primary underline font-medium"
+                    >
+                      set up SMS alerts
+                    </button>{' '}
+                    first.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-6">
+                {/* TSP Contact Assignment */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      <h4 className="font-medium">TSP Contact Assignment</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Notification when you're assigned as the TSP contact for an event
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.isOptedIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Chat Mentions */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      <h4 className="font-medium">Chat Room Mentions</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone @mentions you in a chat room
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.isOptedIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Team Board Mentions */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      <h4 className="font-medium">Team Board Mentions</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone mentions you in a team board item or comment
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.isOptedIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Team Board Assignment */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ClipboardList className="h-4 w-4 text-amber-500" />
+                      <h4 className="font-medium">Team Board Assignments</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when you're assigned to a task, note, idea, or reminder
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.isOptedIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Weekly Collection Reminders */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="h-4 w-4 text-green-500" />
+                      <h4 className="font-medium">Weekly Collection Reminders</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Reminders when weekly sandwich counts are missing for your locations
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.isOptedIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.isOptedIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> These alerts are automatically sent via email. If you've opted in to SMS, 
+                  you'll also receive text messages for each alert type. To customize which alerts you receive by SMS only, 
+                  email only, or both - this feature is coming in a future update.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
