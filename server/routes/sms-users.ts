@@ -829,13 +829,28 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           return smsConsent.phoneNumber === phoneNumber;
         });
 
-        const createdByName = senderUser
-          ? (senderUser.firstName && senderUser.lastName
-              ? `${senderUser.firstName} ${senderUser.lastName}`
-              : senderUser.email || `SMS: ${redactedPhone}`)
-          : `SMS: ${redactedPhone}`;
+        // Ensure createdByName is never empty (required field)
+        let createdByName = `SMS: ${redactedPhone}`;
+        if (senderUser) {
+          if (senderUser.firstName && senderUser.lastName) {
+            createdByName = `${senderUser.firstName} ${senderUser.lastName}`;
+          } else if (senderUser.firstName) {
+            createdByName = senderUser.firstName;
+          } else if (senderUser.email) {
+            createdByName = senderUser.email;
+          }
+        }
 
-        const createdBy = senderUser?.id || 'system';
+        // Use a valid user ID or generate a system ID
+        // The database requires createdBy to be a string, so we'll use a system identifier
+        const createdBy = senderUser?.id || 'sms-system';
+
+        logger.log(`📝 Creating Holding Zone item from SMS:`, {
+          phone: redactedPhone,
+          createdBy,
+          createdByName,
+          contentLength: ideaContent.length,
+        });
 
         // Create holding zone item using the correct schema
         // Store SMS metadata in the details field since there's no metadata column
@@ -870,11 +885,16 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks! Your idea has been added to the TSP Holding Zone. 🥪</Message></Response>`);
       } catch (createError) {
-        logger.error('Failed to create Holding Zone item from SMS:', createError);
-        logger.error('Error details:', {
-          message: createError instanceof Error ? createError.message : 'Unknown error',
-          stack: createError instanceof Error ? createError.stack : undefined,
-        });
+        logger.error('❌ Failed to create Holding Zone item from SMS');
+        logger.error('Error type:', createError instanceof Error ? createError.constructor.name : typeof createError);
+        logger.error('Error message:', createError instanceof Error ? createError.message : String(createError));
+        if (createError instanceof Error && createError.stack) {
+          logger.error('Error stack:', createError.stack);
+        }
+        // Log the full error object if it has additional properties
+        if (createError && typeof createError === 'object') {
+          logger.error('Error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError)));
+        }
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
       }
