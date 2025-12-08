@@ -8,9 +8,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   const router = Router();
 
   // Groups Catalog: Complete directory of all organizations (current requests + historical hosts)
+  // Query params:
+  //   viewMode: 'aggregated' (default) - groups events by org+dept+contact
+  //             'individual' - each event request is its own card
   router.get('/', deps.isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
+      const viewMode = (req.query.viewMode as string) || 'aggregated';
 
       // Get all event requests and aggregate by organization + department
       const allEventRequests = await storage.getAllEventRequests();
@@ -96,9 +100,12 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Use the canonical name from our mapping (this groups "Allstate" and "Allstate/Pebble Tossers" together)
         const canonicalOrgName = canonicalOrgNameMap.get(orgName) || canonicalizeOrgName(orgName);
-        
+
         // Group by organization + department + contact (one card per unique contact)
-        const departmentKey = `${canonicalOrgName}|${department}|${contactEmail}`;
+        // In 'individual' mode, add event ID to key so each event gets its own card
+        const departmentKey = viewMode === 'individual'
+          ? `${canonicalOrgName}|${department}|${contactEmail}|${request.id}`
+          : `${canonicalOrgName}|${department}|${contactEmail}`;
 
         // Check if this event has co-hosts (partner organizations where primary org is also listed)
         const partnerOrgs = request.partnerOrganizations || [];
@@ -300,7 +307,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
               : request.firstName || request.lastName || request.email || 'Unknown Contact';
           const contactEmail = request.email || '';
 
-          const partnerDeptKey = `${partnerCanonicalName}|${department}|${contactEmail}`;
+          // In 'individual' mode, add event ID to key so each event gets its own card
+          const partnerDeptKey = viewMode === 'individual'
+            ? `${partnerCanonicalName}|${department}|${contactEmail}|${eventId}`
+            : `${partnerCanonicalName}|${department}|${contactEmail}`;
 
           if (!departmentsMap.has(partnerDeptKey)) {
             departmentsMap.set(partnerDeptKey, {

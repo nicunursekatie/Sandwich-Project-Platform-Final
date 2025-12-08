@@ -161,6 +161,7 @@ export default function GroupCatalog({
   const [searchScope, setSearchScope] = useState<'all' | 'organization' | 'department'>('all');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<'aggregated' | 'individual'>('aggregated');
 
   // Consolidated filter state
   const [filters, setFilters] = useState({
@@ -208,10 +209,10 @@ export default function GroupCatalog({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['/api/groups-catalog'],
+    queryKey: ['/api/groups-catalog', viewMode],
     queryFn: async () => {
-      logger.log('🔄 Groups catalog fetching data from API...');
-      const response = await fetch('/api/groups-catalog');
+      logger.log('🔄 Groups catalog fetching data from API...', { viewMode });
+      const response = await fetch(`/api/groups-catalog?viewMode=${viewMode}`);
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
       logger.log('✅ Groups catalog received data:', data);
@@ -693,7 +694,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, searchScope, filters, sortBy, sortOrder]);
+  }, [searchTerm, searchScope, filters, sortBy, sortOrder, viewMode]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -970,18 +971,49 @@ export default function GroupCatalog({
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Per page:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
-            >
-              <option value="12">12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
-              <option value="100">100</option>
-            </select>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">View:</span>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => setViewMode('aggregated')}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'aggregated'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Group events by organization + department + contact"
+                >
+                  Grouped
+                </button>
+                <button
+                  onClick={() => setViewMode('individual')}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'individual'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Show each event as its own card"
+                >
+                  Individual
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+              >
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
 
