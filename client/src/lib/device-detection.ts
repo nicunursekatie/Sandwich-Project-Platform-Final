@@ -22,7 +22,7 @@ export function isMobileDevice(): boolean {
   const isSmallScreen = window.innerWidth < 768;
 
   // Check user agent for mobile devices
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  const isMobileUserAgent = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
 
@@ -63,7 +63,7 @@ export function isTouchDevice(): boolean {
  * @returns 'mobile' | 'tablet' | 'desktop'
  */
 export function getDeviceType(): 'mobile' | 'tablet' | 'desktop' {
-  if (isMobileDevice()) return 'mobile';
   if (isTabletDevice()) return 'tablet';
+  if (isMobileDevice()) return 'mobile';
   return 'desktop';
 }
