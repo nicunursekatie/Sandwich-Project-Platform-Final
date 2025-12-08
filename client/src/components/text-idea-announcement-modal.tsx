@@ -13,23 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquareText, Lightbulb, Phone, CheckCircle } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
+import { isMobileDevice } from '@/lib/device-detection';
 
 const ANNOUNCEMENT_ID = 'text_idea_feature_2024';
-
-/**
- * Detects if user is on a mobile device
- */
-function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const isSmallScreen = window.innerWidth < 768;
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  return (isSmallScreen && hasTouch) || isMobileUserAgent;
-}
 
 export function TextIdeaAnnouncementModal() {
   const [, setLocation] = useLocation();
