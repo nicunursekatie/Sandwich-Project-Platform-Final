@@ -70,10 +70,15 @@ availabilityRouter.post('/', requirePermission('AVAILABILITY_ADD'), async (req, 
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const slotData = insertAvailabilitySlotSchema.parse({
+    // Convert string dates to Date objects before validation
+    const requestData = {
       ...req.body,
       userId: user.id,
-    });
+      startAt: req.body.startAt ? new Date(req.body.startAt) : undefined,
+      endAt: req.body.endAt ? new Date(req.body.endAt) : undefined,
+    };
+
+    const slotData = insertAvailabilitySlotSchema.parse(requestData);
 
     const slot = await storage.createAvailabilitySlot(slotData);
 
@@ -112,9 +117,14 @@ availabilityRouter.put(
         return res.status(400).json({ message: 'Invalid availability slot ID' });
       }
 
-      const updates = req.body;
+      // Convert string dates to Date objects if present
+      const updates = {
+        ...req.body,
+        ...(req.body.startAt && { startAt: new Date(req.body.startAt) }),
+        ...(req.body.endAt && { endAt: new Date(req.body.endAt) }),
+      };
       const slot = await storage.updateAvailabilitySlot(id, updates);
-      
+
       if (!slot) {
         return res.status(404).json({ message: 'Availability slot not found' });
       }
