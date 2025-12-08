@@ -20,9 +20,10 @@ const router = Router();
 const webhookRouter = Router();
 
 // Add middleware to log ALL requests to webhook router (for debugging)
+// Use logger.info() so it appears in production Winston logs
 webhookRouter.use((req, res, next) => {
-  console.log(`📞 WEBHOOK ROUTER: ${req.method} ${req.path}`);
-  console.log(`📞 WEBHOOK ROUTER: Full path ${req.originalUrl}`);
+  logger.info(`📞 WEBHOOK ROUTER: ${req.method} ${req.path}`);
+  logger.info(`📞 WEBHOOK ROUTER: Full path ${req.originalUrl}`);
   next();
 });
 
@@ -508,23 +509,24 @@ webhookRouter.get('/sms/webhook/test', async (req, res) => {
  * The webhook URL should be: https://your-domain.com/api/sms/webhook
  */
 webhookRouter.post('/sms/webhook', async (req, res) => {
-  // CRITICAL: Log immediately - this should ALWAYS appear if webhook is hit
-  console.log('🔔🔔🔔 SMS WEBHOOK POST REQUEST RECEIVED 🔔🔔🔔');
-  logger.log('🔔 SMS WEBHOOK HIT - Request received');
-  logger.log(`🔔 Method: ${req.method}`);
-  logger.log(`🔔 Path: ${req.path}`);
-  logger.log(`🔔 Original URL: ${req.originalUrl}`);
-  logger.log(`🔔 Base URL: ${req.baseUrl}`);
-  logger.log(`🔔 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  logger.log(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
-  logger.log(`🔔 Content-Type: ${req.get('content-type')}`);
-  logger.log(`🔔 User-Agent: ${req.get('user-agent')}`);
-  logger.log(`🔔 IP: ${req.ip}`);
-  logger.log(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  // CRITICAL: Use logger.info() so it appears in production logs (Winston)
+  // logger.log() is development-only and won't show in Replit production logs
+  logger.info('🔔🔔🔔 SMS WEBHOOK POST REQUEST RECEIVED 🔔🔔🔔');
+  logger.info('🔔 SMS WEBHOOK HIT - Request received');
+  logger.info(`🔔 Method: ${req.method}`);
+  logger.info(`🔔 Path: ${req.path}`);
+  logger.info(`🔔 Original URL: ${req.originalUrl}`);
+  logger.info(`🔔 Base URL: ${req.baseUrl}`);
+  logger.info(`🔔 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  logger.info(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
+  logger.info(`🔔 Content-Type: ${req.get('content-type')}`);
+  logger.info(`🔔 User-Agent: ${req.get('user-agent')}`);
+  logger.info(`🔔 IP: ${req.ip}`);
+  logger.info(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
   if (req.body && Object.keys(req.body).length > 0) {
-    logger.log(`🔔 Body sample: ${JSON.stringify(req.body).substring(0, 500)}`);
+    logger.info(`🔔 Body sample: ${JSON.stringify(req.body).substring(0, 500)}`);
   } else {
-    logger.log(`🔔 Body is empty or not parsed`);
+    logger.info(`🔔 Body is empty or not parsed`);
   }
   
   try {

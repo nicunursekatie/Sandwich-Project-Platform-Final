@@ -102,10 +102,11 @@ export function createMainRoutes(deps: RouterDependencies) {
   // These endpoints use Twilio signature validation instead of user authentication
   // ========================================================================
   // Add debug logging for ALL requests to /api/sms/* to catch Twilio webhooks
+  // Use logger.info() so it appears in production Winston logs
   router.use('/api/sms', (req, res, next) => {
-    console.log(`🔍 DEBUG: Request to /api/sms${req.path} - Method: ${req.method}`);
-    console.log(`🔍 DEBUG: Full URL: ${req.originalUrl}`);
-    console.log(`🔍 DEBUG: Headers: ${JSON.stringify(req.headers)}`);
+    logger.info(`🔍 DEBUG: Request to /api/sms${req.path} - Method: ${req.method}`);
+    logger.info(`🔍 DEBUG: Full URL: ${req.originalUrl}`);
+    logger.info(`🔍 DEBUG: Headers: ${JSON.stringify(req.headers)}`);
     next();
   });
   
