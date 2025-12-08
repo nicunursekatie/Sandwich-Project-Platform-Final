@@ -4070,10 +4070,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
+    // Filter out undefined values to prevent Drizzle from writing NULL
+    // This preserves existing database values when a field is not explicitly updated
+    const filteredData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+    
     const [result] = await db
       .update(eventRequests)
       .set({
-        ...updateData,
+        ...filteredData,
         updatedAt: new Date(),
       })
       .where(eq(eventRequests.id, id))

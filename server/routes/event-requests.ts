@@ -1254,6 +1254,9 @@ router.patch(
 
       logger.info(`[PATCH /:id] Request received for event ${id}`);
       logger.info(`[PATCH /:id] Updates:`, JSON.stringify(updates, null, 2));
+      
+      // DEBUG: Log department field specifically
+      logger.info(`[PATCH /:id] DEPARTMENT DEBUG: department in updates = "${updates.department}", type = ${typeof updates.department}`);
 
       // Validate scheduledCallDate if present using z.coerce.date()
       if (updates.scheduledCallDate !== undefined) {
@@ -1434,6 +1437,9 @@ router.patch(
 
       // Always update the updatedAt timestamp
       logger.info(`[PATCH /:id] Saving to database. Processed updates:`, JSON.stringify(processedUpdates, null, 2));
+      
+      // DEBUG: Log department field specifically before save
+      logger.info(`[PATCH /:id] DEPARTMENT DEBUG: Before save, processedUpdates.department = "${processedUpdates.department}", type = ${typeof processedUpdates.department}`);
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,

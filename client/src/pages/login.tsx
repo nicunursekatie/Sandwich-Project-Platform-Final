@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 import { AlertCircle, Clock, LogIn } from 'lucide-react';
+import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -90,8 +91,8 @@ export default function LoginPage() {
 
   if (pendingApproval) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
             <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Clock className="w-12 h-12 text-amber-600" />
@@ -122,20 +123,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-green-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-gray-900">
-            Welcome Back
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
+      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-4">
+            <img
+              src={tspLogo}
+              alt="The Sandwich Project"
+              className="h-20 w-auto"
+            />
+          </div>
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Team Login
           </CardTitle>
-          <CardDescription className="text-lg">
-            Sign in to The Sandwich Project
+          <CardDescription className="text-base text-gray-600">
+            Sign in to access the platform
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               {errorMessage && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -148,12 +156,13 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel className="text-gray-700">Email Address</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
                         placeholder="your.email@example.com"
                         data-testid="input-email"
+                        className="border-gray-300 focus:border-amber-500 focus:ring-amber-500"
                         {...field}
                       />
                     </FormControl>
@@ -167,12 +176,13 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-gray-700">Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
                         placeholder="Enter your password"
                         data-testid="input-password"
+                        className="border-gray-300 focus:border-amber-500 focus:ring-amber-500"
                         {...field}
                       />
                     </FormControl>
@@ -185,7 +195,8 @@ export default function LoginPage() {
                 type="submit"
                 disabled={isLoading}
                 data-testid="button-login"
-                className="w-full bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
+                className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-amber-500/30"
+                style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #E89A2F 100%)' }}
               >
                 {isLoading ? (
                   'Signing in...'
@@ -197,10 +208,10 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-2 pt-2">
                 <Link
                   href="/reset-password"
-                  className="text-sm text-brand-primary hover:underline"
+                  className="text-sm text-gray-600 hover:text-amber-600 hover:underline"
                 >
                   Forgot your password?
                 </Link>
@@ -208,7 +219,7 @@ export default function LoginPage() {
                   Don't have an account?{' '}
                   <Link
                     href="/signup"
-                    className="text-brand-primary hover:underline font-medium"
+                    className="text-amber-600 hover:text-amber-700 hover:underline font-medium"
                   >
                     Sign up
                   </Link>

@@ -23,12 +23,13 @@ const dbLogger = createServiceLogger('database');
 export async function initializeDatabase() {
   try {
     dbLogger.info('Checking database initialization...');
+    const dbUrl = process.env.DEV_DATABASE_URL || process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL;
     dbLogger.debug('DATABASE_URL exists', {
-      exists: !!process.env.DATABASE_URL,
+      exists: !!dbUrl,
     });
     dbLogger.debug('DATABASE_URL preview', {
-      preview: process.env.DATABASE_URL
-        ? process.env.DATABASE_URL.substring(0, 20) + '...'
+      preview: dbUrl
+        ? dbUrl.substring(0, 20) + '...'
         : 'not set',
     });
 

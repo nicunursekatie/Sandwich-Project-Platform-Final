@@ -88,6 +88,7 @@ interface OrganizationContact {
   primaryOrganization?: string;
   partnerRole?: 'co-host' | 'partner' | 'sponsor';
   linkedEventId?: number;
+  eventIds?: number[]; // All event IDs aggregated in this card
   isFromCollectionOnly?: boolean;
   // Co-host tracking for primary entries
   isCoHostedEvent?: boolean;
@@ -160,6 +161,7 @@ export default function GroupCatalog({
   const [searchScope, setSearchScope] = useState<'all' | 'organization' | 'department'>('all');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<'aggregated' | 'individual'>('aggregated');
 
   // Consolidated filter state
   const [filters, setFilters] = useState({
@@ -207,10 +209,10 @@ export default function GroupCatalog({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['/api/groups-catalog'],
+    queryKey: ['/api/groups-catalog', viewMode],
     queryFn: async () => {
-      logger.log('🔄 Groups catalog fetching data from API...');
-      const response = await fetch('/api/groups-catalog');
+      logger.log('🔄 Groups catalog fetching data from API...', { viewMode });
+      const response = await fetch(`/api/groups-catalog?viewMode=${viewMode}`);
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
       logger.log('✅ Groups catalog received data:', data);
@@ -229,8 +231,8 @@ export default function GroupCatalog({
         title: 'Success',
         description: 'Organization category updated successfully',
       });
-      // Invalidate and refetch groups catalog
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditCategoryDialog(false);
     },
     onError: (error: any) => {
@@ -246,20 +248,28 @@ export default function GroupCatalog({
   const renameOrganizationMutation = useMutation({
     mutationFn: async (data: {
       oldName: string;
-      newName: string;
+      newName: string | null; // Can be null for co-hosted events
       oldDepartment?: string;
       newDepartment?: string;
       partnerOrganizations?: Array<{ name: string; role: string }>;
+      eventId?: number; // If provided, only update this specific event
+      eventIds?: number[]; // If provided, only update these specific events (for aggregated cards)
     }) => {
       return apiRequest('POST', '/api/groups-catalog/rename', data);
     },
     onSuccess: (data: any) => {
+      const eventCount = data.updatedEventRequests || 0;
+      const collectionCount = data.updatedCollections || 0;
+      const description = eventCount === 1 && collectionCount === 0
+        ? 'Event updated successfully.'
+        : `Updated ${eventCount} event${eventCount !== 1 ? 's' : ''} and ${collectionCount} collection${collectionCount !== 1 ? 's' : ''}.`;
+
       toast({
         title: 'Success',
-        description: `Renamed successfully. Updated ${data.updatedEventRequests} event requests and ${data.updatedCollections} collections.`,
+        description,
       });
-      // Invalidate and refetch groups catalog
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditNameDialog(false);
     },
     onError: (error: any) => {
@@ -298,13 +308,30 @@ export default function GroupCatalog({
       return;
     }
 
-    renameOrganizationMutation.mutate({
+    // For single-event cards (linkedEventId), we can edit the department
+    // For aggregated cards (eventIds), we can still edit but it affects all events in the card
+    const hasLinkedEvent = !!editNameOrganization.linkedEventId;
+    const hasEventIds = editNameOrganization.eventIds && editNameOrganization.eventIds.length > 0;
+
+    // Department editing is allowed if we have either linkedEventId OR eventIds
+    // (meaning we can target specific events, not all matching by name)
+    const canEditDepartment = hasLinkedEvent || hasEventIds;
+
+    const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
-      oldDepartment: editNameOrganization.department || undefined,
-      newDepartment: editDeptName.trim() || undefined,
+      // Include department data when we have specific events to update
+      // ALWAYS include oldDepartment to prevent matching all events with that org name
+      oldDepartment: canEditDepartment ? (editNameOrganization.department || '') : undefined,
+      newDepartment: canEditDepartment ? (editDeptName.trim() || '') : undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
-    });
+      eventId: editNameOrganization.linkedEventId || undefined, // Only update this specific event if available
+      // If no single linkedEventId, pass all eventIds for aggregated cards
+      eventIds: hasEventIds ? editNameOrganization.eventIds : undefined,
+    };
+    console.log('🔵 Rename mutation data:', mutationData);
+    console.log('🔵 editNameOrganization:', editNameOrganization);
+    renameOrganizationMutation.mutate(mutationData);
   };
 
   // Handler to open edit category dialog
@@ -452,13 +479,25 @@ export default function GroupCatalog({
       category: org.category || null,
       schoolClassification: org.schoolClassification || null,
       isReligious: org.isReligious || false,
+      // Event tracking for single-card edits
+      linkedEventId: contact.linkedEventId || null,
+      eventIds: contact.eventIds || [],
+      // Partner/co-host tracking
+      isPartnerEntry: contact.isPartnerEntry || false,
+      primaryOrganization: contact.primaryOrganization || null,
+      partnerRole: contact.partnerRole || null,
+      isFromCollectionOnly: contact.isFromCollectionOnly || false,
+      isCoHostedEvent: contact.isCoHostedEvent || false,
+      coHostNames: contact.coHostNames || [],
+      pastEvents: contact.pastEvents || [],
     }));
   });
 
-  // Deduplicate by creating unique key from organization + contact + email
+  // Deduplicate by creating unique key from organization + department + contact + email
+  // Include department to ensure cards with different departments are preserved
   const uniqueOrganizationsMap = new Map<string, OrganizationContact>();
   allContactsAndDepartments.forEach((org: any) => {
-    const uniqueKey = `${org.organizationName}|${org.contactName}|${org.email || 'no-email'}`;
+    const uniqueKey = `${org.organizationName}|${org.department || ''}|${org.contactName}|${org.email || 'no-email'}`;
     if (!uniqueOrganizationsMap.has(uniqueKey)) {
       uniqueOrganizationsMap.set(uniqueKey, org);
     }
@@ -672,7 +711,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, searchScope, filters, sortBy, sortOrder]);
+  }, [searchTerm, searchScope, filters, sortBy, sortOrder, viewMode]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -949,18 +988,51 @@ export default function GroupCatalog({
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Per page:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
-            >
-              <option value="12">12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
-              <option value="100">100</option>
-            </select>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">View:</span>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => setViewMode('aggregated')}
+                  aria-pressed={viewMode === 'aggregated'}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'aggregated'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Group events by organization + department + contact"
+                >
+                  Grouped
+                </button>
+                <button
+                  onClick={() => setViewMode('individual')}
+                  aria-pressed={viewMode === 'individual'}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'individual'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Show each event as its own card"
+                >
+                  Individual
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+              >
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1012,23 +1084,23 @@ export default function GroupCatalog({
                     {/* Organization Header */}
                     <div className="mb-4 pb-3 border-b border-gray-200">
                       {/* Organization Name with Rename Button */}
-                      <div className="flex items-start space-x-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2">
                         <Building
-                          className="w-6 h-6 flex-shrink-0 mt-0.5"
+                          className="w-6 h-6 flex-shrink-0"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-xl font-bold text-gray-900">
+                        <h2 className="text-xl font-bold text-gray-900 flex-1">
                           {group.groupName}
                         </h2>
                         {canEditCategories && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 hover:bg-blue-100 flex-shrink-0"
+                            className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0 ml-1"
                             onClick={() => handleEditName({
                               organizationName: group.groupName,
                               contactName: group.departments[0]?.contactName || '',
-                              department: group.departments[0]?.department,
+                              department: undefined, // Don't include department for org-level edits - affects all departments
                               latestRequestDate: group.departments[0]?.latestRequestDate || '',
                               latestActivityDate: group.departments[0]?.latestActivityDate || '',
                               totalRequests: group.departments[0]?.totalRequests || 0,
@@ -1038,13 +1110,13 @@ export default function GroupCatalog({
                             title="Rename organization"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
-                            <Edit className="h-3 w-3 text-blue-600" />
+                            <Edit className="h-3.5 w-3.5 text-teal-600" />
                           </Button>
                         )}
                       </div>
 
                       {/* Category Badge with Inline Edit */}
-                      <div className="flex items-center flex-wrap gap-2 mb-2 ml-8">
+                      <div className="flex items-center gap-2 mb-2 ml-8">
                         {(() => {
                           const orgInfo = organizationCategoryMap.get(group.groupName);
                           const category = orgInfo?.category;
@@ -1057,7 +1129,7 @@ export default function GroupCatalog({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-orange-200"
+                                  className="h-5 w-5 p-0 hover:bg-teal-100"
                                   onClick={() => handleEditCategory({
                                     organizationName: group.groupName,
                                     contactName: group.departments[0]?.contactName || '',
@@ -1072,7 +1144,7 @@ export default function GroupCatalog({
                                   title="Edit category"
                                   data-testid={`button-edit-category-header-${group.groupName}`}
                                 >
-                                  <Edit className="h-3 w-3 text-orange-700" />
+                                  <Edit className="h-3 w-3 text-teal-600" />
                                 </Button>
                               )}
                             </div>
@@ -1152,14 +1224,31 @@ export default function GroupCatalog({
                                 <CardHeader className="pb-3 px-4 pt-4">
                                   {/* Department Name and Event Date - Top of Card */}
                                   <div className="mb-4 pb-3 border-b border-gray-200">
-                                    {org.department && org.department !== 'General' && (
-                                      <div className="flex items-center space-x-2 mb-2">
-                                        <Building className="w-5 h-5 text-purple-600" />
-                                        <h4 className="text-base font-semibold text-gray-800 break-words">
-                                          {org.department}
-                                        </h4>
+                                    {/* Edit button for this specific event card */}
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2 flex-1">
+                                        {org.department && org.department !== 'General' && (
+                                          <>
+                                            <Building className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                                            <h4 className="text-base font-semibold text-gray-800 break-words">
+                                              {org.department}
+                                            </h4>
+                                          </>
+                                        )}
                                       </div>
-                                    )}
+                                      {canEditCategories && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0"
+                                          onClick={() => handleEditName(org)}
+                                          title="Edit this event"
+                                          data-testid={`button-edit-event-${org.organizationName}-${org.department}-${index}`}
+                                        >
+                                          <Edit className="h-3.5 w-3.5 text-teal-600" />
+                                        </Button>
+                                      )}
+                                    </div>
                                     {/* Event Date */}
                                     {org.eventDate ? (
                                       <div className="flex items-center space-x-2 text-base text-gray-700">
@@ -1442,30 +1531,30 @@ export default function GroupCatalog({
                               {/* Organization Header */}
                               <div className="mb-3">
                                 {/* Organization Name with Rename Button */}
-                                <div className="flex items-start space-x-2 mb-2">
+                                <div className="flex items-center gap-2 mb-2">
                                   <Building
-                                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                                    className="w-5 h-5 flex-shrink-0"
                                     style={{ color: '#236383' }}
                                   />
-                                  <h3 className="text-lg font-bold text-gray-900">
+                                  <h3 className="text-lg font-bold text-gray-900 flex-1">
                                     {group.groupName}
                                   </h3>
                                   {canEditCategories && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0 hover:bg-blue-100 flex-shrink-0"
+                                      className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0 ml-1"
                                       onClick={() => handleEditName(org)}
                                       title="Rename organization"
                                       data-testid={`button-edit-name-single-${group.groupName}`}
                                     >
-                                      <Edit className="h-3 w-3 text-blue-600" />
+                                      <Edit className="h-3.5 w-3.5 text-teal-600" />
                                     </Button>
                                   )}
                                 </div>
 
                                 {/* Category Badge with Inline Edit */}
-                                <div className="flex items-center flex-wrap gap-2 ml-7">
+                                <div className="flex items-center gap-2 ml-7">
                                   {(() => {
                                     const orgInfo = organizationCategoryMap.get(group.groupName);
                                     const category = orgInfo?.category;
@@ -1478,7 +1567,7 @@ export default function GroupCatalog({
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-6 w-6 p-0 hover:bg-orange-200"
+                                            className="h-5 w-5 p-0 hover:bg-teal-100"
                                             onClick={() => handleEditCategory({
                                               ...org,
                                               category: category,
@@ -1486,7 +1575,7 @@ export default function GroupCatalog({
                                             title="Edit category"
                                             data-testid={`button-edit-category-single-${group.groupName}`}
                                           >
-                                            <Edit className="h-3 w-3 text-orange-700" />
+                                            <Edit className="h-3 w-3 text-teal-600" />
                                           </Button>
                                         )}
                                       </div>
@@ -2362,6 +2451,13 @@ export default function GroupCatalog({
               Update the organization name and add partner organizations if this event is co-hosted.
             </DialogDescription>
           </DialogHeader>
+          {/* Warning for multi-event cards */}
+          {editNameOrganization && !editNameOrganization.linkedEventId && (editNameOrganization.eventIds?.length ?? 0) > 1 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800">
+              <strong>Note:</strong> This card represents {editNameOrganization.eventIds?.length} events.
+              Changes will apply to ALL events for this organization.
+            </div>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-org-name">Organization Name</Label>
@@ -2379,13 +2475,28 @@ export default function GroupCatalog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-dept-name">Department (optional)</Label>
-              <Input
-                id="edit-dept-name"
-                value={editDeptName}
-                onChange={(e) => setEditDeptName(e.target.value)}
-                placeholder="Enter department name"
-                data-testid="input-edit-dept-name"
-              />
+              {/* Allow department edits when we have specific events to target */}
+              {(editNameOrganization?.linkedEventId || (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0)) ? (
+                <>
+                  <Input
+                    id="edit-dept-name"
+                    value={editDeptName}
+                    onChange={(e) => setEditDeptName(e.target.value)}
+                    placeholder="Enter department name"
+                    data-testid="input-edit-dept-name"
+                  />
+                  {editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 1 && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all {editNameOrganization.eventIds.length} events in this card.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded border">
+                  Department editing is disabled for this card type.
+                  Try editing from the event details view.
+                </div>
+              )}
             </div>
 
             {/* Partner Organizations Section */}
