@@ -8,6 +8,8 @@ import { logger } from '../utils/production-safe-logger';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { NotificationService } from '../notification-service';
 import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
+import { db } from '../db';
+import { teamBoardItems } from '@shared/schema';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -827,28 +829,40 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           return smsConsent.phoneNumber === phoneNumber;
         });
 
-        const submittedBy = senderUser
+        const createdByName = senderUser
           ? (senderUser.firstName && senderUser.lastName
               ? `${senderUser.firstName} ${senderUser.lastName}`
-              : senderUser.email)
+              : senderUser.email || `SMS: ${redactedPhone}`)
           : `SMS: ${redactedPhone}`;
 
-        // Create holding zone item
-        const holdingZoneItem = await storage.createTeamBoardItem({
-          title: ideaContent.substring(0, 100), // Limit title length
-          description: ideaContent.length > 100 ? ideaContent : null,
-          category: 'idea',
-          priority: 'medium',
-          status: 'open',
-          submittedBy: submittedBy,
-          submittedByUserId: senderUser?.id || null,
-          isAnonymous: !senderUser,
-          metadata: {
-            source: 'sms',
-            phoneNumber: redactedPhone, // Store redacted for reference
-            receivedAt: new Date().toISOString(),
-          },
+        const createdBy = senderUser?.id || 'system';
+
+        // Create holding zone item using the correct schema
+        // Store SMS metadata in the details field since there's no metadata column
+        const details = JSON.stringify({
+          source: 'sms',
+          phoneNumber: redactedPhone,
+          receivedAt: new Date().toISOString(),
         });
+
+        const [holdingZoneItem] = await db
+          .insert(teamBoardItems)
+          .values({
+            content: ideaContent,
+            type: 'idea',
+            createdBy: createdBy,
+            createdByName: createdByName,
+            status: 'open',
+            assignedTo: null,
+            assignedToNames: null,
+            completedAt: null,
+            categoryId: null,
+            isUrgent: false,
+            isPrivate: false,
+            details: details,
+            dueDate: null,
+          })
+          .returning();
 
         logger.log(`✅ Holding Zone item created from SMS: ${holdingZoneItem.id}`);
 
@@ -857,6 +871,10 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks! Your idea has been added to the TSP Holding Zone. 🥪</Message></Response>`);
       } catch (createError) {
         logger.error('Failed to create Holding Zone item from SMS:', createError);
+        logger.error('Error details:', {
+          message: createError instanceof Error ? createError.message : 'Unknown error',
+          stack: createError instanceof Error ? createError.stack : undefined,
+        });
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
       }
