@@ -68,22 +68,22 @@ export function MobileLayoutPrompt() {
       return;
     }
 
-    // Check if on mobile device
-    if (!isMobileDevice()) {
-      setShowPrompt(false);
+    // Check preference first - if manually set to mobile, redirect regardless of detection
+    const preference = getMobilePreference();
+    if (preference === 'mobile') {
+      navigate('/m');
       return;
     }
 
-    // Check preference
-    const preference = getMobilePreference();
+    // If preference is desktop, don't show prompt
     if (preference === 'desktop') {
       setShowPrompt(false);
       return;
     }
 
-    // Auto-redirect if preference is mobile
-    if (preference === 'mobile') {
-      navigate('/m');
+    // Check if on mobile device (only show prompt if auto-detected as mobile)
+    if (!isMobileDevice()) {
+      setShowPrompt(false);
       return;
     }
 
