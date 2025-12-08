@@ -22,7 +22,7 @@ export function isMobileDevice(): boolean {
   const isSmallScreen = window.innerWidth < 768;
 
   // Check user agent for mobile devices
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  const isMobileUserAgent = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
 
