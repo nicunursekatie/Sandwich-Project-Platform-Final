@@ -65,7 +65,7 @@ interface HoldingZoneItem {
   id: number;
   content: string;
   type: 'task' | 'note' | 'idea';
-  status: 'open' | 'done';
+  status: 'open' | 'todo' | 'done';
   createdBy: string;
   createdByName: string;
   assignedTo: string[] | null;
@@ -514,6 +514,9 @@ export default function HoldingZone() {
   const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
   const [itemToPromote, setItemToPromote] = useState<HoldingZoneItem | null>(null);
   const [promotePriority, setPromotePriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [promoteAssignedTo, setPromoteAssignedTo] = useState<string[]>([]);
+  const [promoteAssignedToNames, setPromoteAssignedToNames] = useState<string[]>([]);
+  const [promoteDueDate, setPromoteDueDate] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
   const [editItemContent, setEditItemContent] = useState('');
@@ -527,7 +530,7 @@ export default function HoldingZone() {
   const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
   const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
   const [editingDetailsContent, setEditingDetailsContent] = useState('');
-  const [activeTab, setActiveTab] = useState<'tasks' | 'notes'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'todo' | 'notes'>('tasks');
   const [upgradeToProjectDialogOpen, setUpgradeToProjectDialogOpen] = useState(false);
   const [itemToUpgrade, setItemToUpgrade] = useState<HoldingZoneItem | null>(null);
   const [upgradeProjectTitle, setUpgradeProjectTitle] = useState('');
@@ -582,8 +585,8 @@ export default function HoldingZone() {
     enabled: canView,
   });
 
-  // Filter items - split by type
-  const { filteredTasks, filteredNotes } = useMemo(() => {
+  // Filter items - split by type and status
+  const { filteredTasks, filteredTodo, filteredNotes } = useMemo(() => {
     let filtered = items;
 
     // Filter by active/archived status
@@ -603,15 +606,16 @@ export default function HoldingZone() {
       filtered = filtered.filter(item => item.isUrgent);
     }
 
-    // Split into tasks and notes/ideas
-    const tasks = filtered.filter(item => item.type === 'task');
-    const notes = filtered.filter(item => item.type === 'note' || item.type === 'idea');
+    // Split into tasks, todo list, and notes/ideas
+    const tasks = filtered.filter(item => item.type === 'task' && item.status !== 'todo');
+    const todo = filtered.filter(item => item.status === 'todo'); // To-Do List items (any type)
+    const notes = filtered.filter(item => (item.type === 'note' || item.type === 'idea') && item.status !== 'todo');
 
-    return { filteredTasks: tasks, filteredNotes: notes };
+    return { filteredTasks: tasks, filteredTodo: todo, filteredNotes: notes };
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
 
   // Get current items based on active tab
-  const currentItems = activeTab === 'tasks' ? filteredTasks : filteredNotes;
+  const currentItems = activeTab === 'tasks' ? filteredTasks : activeTab === 'todo' ? filteredTodo : filteredNotes;
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -788,30 +792,42 @@ export default function HoldingZone() {
     },
   });
 
-  // Promote to task mutation
+  // Promote to To-Do List mutation
   const promoteToTaskMutation = useMutation({
-    mutationFn: async ({ id, priority }: { id: number; priority: 'low' | 'medium' | 'high' }) => {
+    mutationFn: async ({ 
+      id, 
+      assignedTo, 
+      assignedToNames, 
+      dueDate 
+    }: { 
+      id: number; 
+      assignedTo?: string[]; 
+      assignedToNames?: string[]; 
+      dueDate?: string | null;
+    }) => {
       return await apiRequest('POST', `/api/team-board/${id}/promote`, {
-        projectId: null, // Standalone task
-        priority,
-        dueDate: null,
+        assignedTo: assignedTo || null,
+        assignedToNames: assignedToNames || null,
+        dueDate: dueDate || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/projects/standalone-tasks'] });
       setPromoteDialogOpen(false);
       setItemToPromote(null);
       setPromotePriority('medium');
+      setPromoteAssignedTo([]);
+      setPromoteAssignedToNames([]);
+      setPromoteDueDate('');
       toast({
-        title: 'Task-Draft promoted',
-        description: 'The task-draft has been promoted to a Task-Planned',
+        title: 'Moved to To-Do List',
+        description: 'The item has been moved to the To-Do List',
       });
     },
     onError: () => {
       toast({
         title: 'Error',
-        description: 'Failed to promote task-draft',
+        description: 'Failed to move item to To-Do List',
         variant: 'destructive',
       });
     },
@@ -1162,15 +1178,24 @@ export default function HoldingZone() {
         </Card>
       </div>
 
-      {/* Tabs for Tasks vs Notes */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'notes')} className="mb-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+      {/* Tabs for Tasks, To-Do List, and Notes */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'todo' | 'notes')} className="mb-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
           <TabsTrigger value="tasks" className="flex items-center gap-2" data-testid="tab-tasks">
             <ListTodo className="h-4 w-4" />
             Task-Drafts
             {filteredTasks.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {filteredTasks.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="todo" className="flex items-center gap-2" data-testid="tab-todo">
+            <CheckCircle2 className="h-4 w-4" />
+            To-Do List
+            {filteredTodo.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredTodo.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -1199,6 +1224,13 @@ export default function HoldingZone() {
                 <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 dark:text-gray-400 text-lg">
                   No task-drafts found. {canSubmit && "Click 'Submit Item' to add one!"}
+                </p>
+              </>
+            ) : activeTab === 'todo' ? (
+              <>
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No items in To-Do List. Promote task-drafts to add them here!
                 </p>
               </>
             ) : (
@@ -1239,6 +1271,12 @@ export default function HoldingZone() {
                       <Badge variant="outline" className="capitalize">
                         {item.type}
                       </Badge>
+                      {item.status === 'todo' && (
+                        <Badge variant="default" className="gap-1 bg-blue-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          To-Do
+                        </Badge>
+                      )}
                       {item.status === 'done' && (
                         <Badge variant="default" className="gap-1">
                           <CheckCircle2 className="h-3 w-3" />
@@ -1439,13 +1477,16 @@ export default function HoldingZone() {
                 {/* Action Buttons for Manage */}
                 {canManage && item.status !== 'done' && !item.completedAt && (
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    {item.type === 'task' && (
+                    {item.type === 'task' && item.status !== 'todo' && (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
                             setItemToPromote(item);
+                            setPromoteAssignedTo(item.assignedTo || []);
+                            setPromoteAssignedToNames(item.assignedToNames || []);
+                            setPromoteDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate.split('T')[0] : new Date(item.dueDate).toISOString().split('T')[0]) : '');
                             setPromoteDialogOpen(true);
                           }}
                           disabled={promoteToTaskMutation.isPending}
@@ -1453,7 +1494,7 @@ export default function HoldingZone() {
                           data-testid={`button-promote-${item.id}`}
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
-                          Promote to Task-Planned
+                          Move to To-Do List
                         </Button>
                         <Button
                           size="sm"
@@ -1982,13 +2023,13 @@ export default function HoldingZone() {
         </DialogContent>
       </Dialog>
 
-      {/* Promote to Task-Planned Dialog */}
+      {/* Move to To-Do List Dialog */}
       <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Promote to Task-Planned</DialogTitle>
+            <DialogTitle>Move to To-Do List</DialogTitle>
             <DialogDescription>
-              Convert this task-draft into a standalone planned task ready for action
+              Move this item to the To-Do List where you can assign it to team members and set a due date
             </DialogDescription>
           </DialogHeader>
 
@@ -2005,23 +2046,89 @@ export default function HoldingZone() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="promote-priority">Priority</Label>
-              <Select value={promotePriority} onValueChange={(v) => setPromotePriority(v as any)}>
-                <SelectTrigger id="promote-priority" data-testid="select-promote-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="promote-assignees">Assign to Team Members (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    id="promote-assignees"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    {promoteAssignedToNames.length > 0
+                      ? `${promoteAssignedToNames.length} member${promoteAssignedToNames.length > 1 ? 's' : ''} selected`
+                      : 'Select team members...'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search team members..." />
+                    <CommandList>
+                      <CommandEmpty>No team members found.</CommandEmpty>
+                      <CommandGroup>
+                        {teamMembers.map((member) => {
+                          const isSelected = promoteAssignedTo.includes(member.id);
+                          return (
+                            <CommandItem
+                              key={member.id}
+                              onSelect={() => {
+                                if (isSelected) {
+                                  setPromoteAssignedTo(promoteAssignedTo.filter(id => id !== member.id));
+                                  setPromoteAssignedToNames(promoteAssignedToNames.filter(name => name !== member.name));
+                                } else {
+                                  setPromoteAssignedTo([...promoteAssignedTo, member.id]);
+                                  setPromoteAssignedToNames([...promoteAssignedToNames, member.name]);
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-2 w-full">
+                                <Checkbox checked={isSelected} />
+                                <User className="h-4 w-4 mr-2" />
+                                <span>{member.name}</span>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {promoteAssignedToNames.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {promoteAssignedToNames.map((name, idx) => (
+                    <Badge key={idx} variant="secondary" className="gap-1">
+                      {name}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          const member = teamMembers.find(m => m.name === name);
+                          if (member) {
+                            setPromoteAssignedTo(promoteAssignedTo.filter(id => id !== member.id));
+                            setPromoteAssignedToNames(promoteAssignedToNames.filter(n => n !== name));
+                          }
+                        }}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promote-due-date">Due Date (Optional)</Label>
+              <Input
+                id="promote-due-date"
+                type="date"
+                value={promoteDueDate}
+                onChange={(e) => setPromoteDueDate(e.target.value)}
+                className="w-full"
+              />
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> This will create a standalone Task-Planned (not attached to any project).
-                The task-draft will be marked as done, and you can find the new task in the Projects section.
+                <strong>Note:</strong> This will move the item to the To-Do List section where it can be assigned to team members and tracked with due dates.
               </p>
             </div>
           </div>
@@ -2033,6 +2140,9 @@ export default function HoldingZone() {
                 setPromoteDialogOpen(false);
                 setItemToPromote(null);
                 setPromotePriority('medium');
+                setPromoteAssignedTo([]);
+                setPromoteAssignedToNames([]);
+                setPromoteDueDate('');
               }}
               data-testid="button-cancel-promote"
             >
@@ -2043,7 +2153,9 @@ export default function HoldingZone() {
                 if (itemToPromote) {
                   promoteToTaskMutation.mutate({
                     id: itemToPromote.id,
-                    priority: promotePriority,
+                    assignedTo: promoteAssignedTo.length > 0 ? promoteAssignedTo : undefined,
+                    assignedToNames: promoteAssignedToNames.length > 0 ? promoteAssignedToNames : undefined,
+                    dueDate: promoteDueDate || null,
                   });
                 }
               }}
@@ -2052,9 +2164,9 @@ export default function HoldingZone() {
               data-testid="button-confirm-promote"
             >
               {promoteToTaskMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Promoting...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Moving...</>
               ) : (
-                <>Promote to Task-Planned</>
+                <>Move to To-Do List</>
               )}
             </Button>
           </DialogFooter>
