@@ -4,7 +4,6 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import {
   holdingZoneCategories,
-  insertHoldingZoneCategorySchema,
   type HoldingZoneCategory,
   type InsertHoldingZoneCategory,
 } from '../../shared/schema';
@@ -23,8 +22,8 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Input validation schemas
-const createCategorySchema = insertHoldingZoneCategorySchema.extend({
+// Input validation schemas - only validate fields from request body, not createdBy (comes from session)
+const createCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required').max(100, 'Name too long'),
   color: z.string().min(1, 'Color is required').max(50, 'Color value too long'),
 });
