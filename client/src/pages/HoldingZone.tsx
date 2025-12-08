@@ -1251,9 +1251,10 @@ export default function HoldingZone() {
           {currentItems.map((item) => (
             <Card
               key={item.id}
-              className={`transition-all hover:shadow-md ${
-                item.isUrgent ? 'border-l-4 border-l-red-500' : ''
+              className={`transition-all hover:shadow-md border-l-4 ${
+                item.isUrgent ? 'border-l-red-500' : ''
               }`}
+              style={!item.isUrgent && item.category?.color ? { borderLeftColor: item.category.color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
               <CardContent className="p-4">
