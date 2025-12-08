@@ -869,14 +869,15 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         });
 
         // Ensure createdByName is never empty (required field)
+        // Format: "Name (via SMS)" or "SMS: ***1234" if no user found
         let createdByName = `SMS: ${redactedPhone}`;
         if (senderUser) {
           if (senderUser.firstName && senderUser.lastName) {
-            createdByName = `${senderUser.firstName} ${senderUser.lastName}`;
+            createdByName = `${senderUser.firstName} ${senderUser.lastName} (via SMS)`;
           } else if (senderUser.firstName) {
-            createdByName = senderUser.firstName;
+            createdByName = `${senderUser.firstName} (via SMS)`;
           } else if (senderUser.email) {
-            createdByName = senderUser.email;
+            createdByName = `${senderUser.email} (via SMS)`;
           }
         }
 
@@ -892,20 +893,15 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         });
 
         // Create holding zone item using the correct schema
-        // Store SMS metadata in the details field since there's no metadata column
-        const details = JSON.stringify({
-          source: 'sms',
-          phoneNumber: redactedPhone,
-          receivedAt: new Date().toISOString(),
-        });
-
+        // Don't store JSON in details - details is for user-visible information
+        // The SMS source info is already in createdByName, so details can be null
         const [holdingZoneItem] = await db
           .insert(teamBoardItems)
           .values({
             content: ideaContent,
             type: 'idea',
             createdBy: createdBy,
-            createdByName: createdByName,
+            createdByName: createdByName, // This will show "Name (via SMS)" or "SMS: ***1234"
             status: 'open',
             assignedTo: null,
             assignedToNames: null,
@@ -913,7 +909,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
             categoryId: null,
             isUrgent: false,
             isPrivate: false,
-            details: details,
+            details: null, // Leave details empty - SMS metadata is in createdByName
             dueDate: null,
           })
           .returning();
