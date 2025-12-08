@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Card,
   CardContent,
@@ -56,6 +57,12 @@ interface ActionItem {
 
 export default function ActionCenter() {
   const [, setLocation] = useLocation();
+  const { track } = useOnboardingTracker();
+
+  // Track onboarding challenge on component mount
+  useEffect(() => {
+    track('view_my_actions');
+  }, []);
 
   // State for modals
   const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);

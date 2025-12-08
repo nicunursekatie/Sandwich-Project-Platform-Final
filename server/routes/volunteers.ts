@@ -3,6 +3,34 @@ import type { RouterDependencies } from '../types';
 import { insertVolunteerSchema } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
+import { geocodeAddress } from '../utils/geocoding';
+
+async function geocodeVolunteerIfNeeded(volunteerData: any, existing?: any) {
+  const address = volunteerData.address || volunteerData.homeAddress;
+  const shouldGeocode =
+    volunteerData.isDriver &&
+    address &&
+    (!existing ||
+      !existing.latitude ||
+      !existing.longitude ||
+      address !== existing.address);
+
+  if (!shouldGeocode) {
+    return volunteerData;
+  }
+
+  const result = await geocodeAddress(address);
+  if (result) {
+    return {
+      ...volunteerData,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      geocodedAt: new Date(),
+    };
+  }
+
+  return volunteerData;
+}
 
 export function createVolunteersRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -112,7 +140,8 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.post('/', isAuthenticated, async (req: any, res: any) => {
     try {
       const validatedData = insertVolunteerSchema.parse(req.body);
-      const volunteer = await storage.createVolunteer(validatedData);
+      const dataWithGeo = await geocodeVolunteerIfNeeded(validatedData);
+      const volunteer = await storage.createVolunteer(dataWithGeo);
 
       // Audit log
       await AuditLogger.logCreate(
@@ -145,7 +174,8 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
 
-      const volunteer = await storage.updateVolunteer(id, req.body);
+      const updatePayload = await geocodeVolunteerIfNeeded(req.body, oldVolunteer);
+      const volunteer = await storage.updateVolunteer(id, updatePayload);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }

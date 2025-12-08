@@ -260,16 +260,20 @@ export const ScheduledTab: React.FC = () => {
         });
       } else {
         // Regular field update
+        const numericFields = ['driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+        const valueToSend = numericFields.includes(editingField)
+          ? (editingValue === '' ? null : Number(editingValue))
+          : editingValue;
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
           field: editingField,
-          value: editingValue,
+          value: valueToSend as any,
         });
       }
       };
 
       // Check if this is a critical field that requires confirmation
-      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'volunteersNeeded'];
 
       if (criticalFields.includes(editingField)) {
         const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());

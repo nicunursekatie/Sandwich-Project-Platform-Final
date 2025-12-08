@@ -36,9 +36,12 @@ import { logger } from './utils/production-safe-logger';
 
 export async function registerRoutes(app: Express): Promise<any> {
   // Use database-backed session store for deployment persistence
-  // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
-  const databaseUrl =
-    process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+  // Environment-based database selection
+  // TODO: Switch to DEV_DATABASE_URL for development once dev database has all data imported
+  const isProductionEnv = process.env.NODE_ENV === 'production';
+  const databaseUrl = isProductionEnv
+    ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
+    : (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: databaseUrl,
@@ -53,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<any> {
 
   // Determine if we're in production (deployed) or development environment
   // For Replit: disable secure cookies in development to allow HTTP
-  const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+  const isProduction = process.env.NODE_ENV === 'production';
   const isReplitDev = !!(process.env.REPL_ID || process.env.REPLIT_DB_URL);
   const useSecureCookies = isProduction && !isReplitDev;
 
@@ -86,11 +89,14 @@ export async function registerRoutes(app: Express): Promise<any> {
     })
   );
 
-  // Import authentication middleware and setup
-  const { isAuthenticated, setupAuth } = await import('./auth');
+  // Import authentication middleware
+  const { isAuthenticated } = await import('./auth');
 
-  // Setup authentication routes (including login page)
-  setupAuth(app);
+  // DEPRECATED: Old setupAuth() replaced by consolidated auth router
+  // The new auth router is registered in routes/auth/index.ts via registerRoutes()
+  // Commenting out to prevent conflicts with new auth system
+  // const { setupAuth } = await import('./auth');
+  // setupAuth(app);
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));

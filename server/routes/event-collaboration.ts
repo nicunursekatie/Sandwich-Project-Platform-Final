@@ -200,7 +200,7 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
     try {
       const eventId = parseInt(req.params.id, 10);
       const commentId = parseInt(req.params.commentId, 10);
-      
+
       if (isNaN(eventId) || isNaN(commentId)) {
         return res.status(400).json({ error: 'Invalid event or comment ID' });
       }
@@ -218,8 +218,66 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       res.json({ success: true });
     } catch (error) {
       logger.error('[Event Collaboration] Error deleting comment:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to delete comment',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ============================================================================
+  // COMMENT LIKES ENDPOINTS
+  // ============================================================================
+
+  /**
+   * GET /api/event-requests/:id/collaboration/comments/:commentId/likes
+   * Get all likes for a comment
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.get('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId, 10);
+
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+      }
+
+      const likes = await storage.getCommentLikes(commentId);
+
+      res.json({ likes });
+    } catch (error) {
+      logger.error('[Event Collaboration] Error fetching comment likes:', error);
+      res.status(500).json({
+        error: 'Failed to fetch comment likes',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  /**
+   * POST /api/event-requests/:id/collaboration/comments/:commentId/likes
+   * Like a comment (toggle: if already liked, unlike it)
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.post('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId, 10);
+
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const result = await storage.toggleCommentLike(commentId, req.user.id);
+
+      res.json(result);
+    } catch (error) {
+      logger.error('[Event Collaboration] Error toggling comment like:', error);
+      res.status(500).json({
+        error: 'Failed to toggle comment like',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }

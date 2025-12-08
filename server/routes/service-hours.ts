@@ -36,7 +36,7 @@ const serviceHoursRequestSchema = z.object({
 });
 
 router.post(
-  '/generate-service-hours-pdf',
+  '/',
   isAuthenticated,
   requirePermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
   async (req, res) => {

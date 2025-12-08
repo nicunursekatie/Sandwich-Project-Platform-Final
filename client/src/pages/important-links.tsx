@@ -88,7 +88,7 @@ export default function ImportantLinks() {
 
   // Track page visit for onboarding challenge
   useEffect(() => {
-    track('view_important_links');
+    track('view_quick_tools');
   }, []);
 
   // Load user's saved zoom preferences

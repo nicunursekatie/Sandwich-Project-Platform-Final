@@ -43,7 +43,14 @@ export function createOnboardingRouter(deps: RouterDependencies) {
     if (result.success) {
       res.json(result);
     } else {
-      res.status(400).json(result);
+      // For non-critical errors (challenge not found, already completed), return 200
+      // This prevents console errors since challenge tracking is optional
+      if (result.message?.includes('not found') || result.message?.includes('already completed')) {
+        res.json(result);
+      } else {
+        // For actual errors, return 400
+        res.status(400).json(result);
+      }
     }
   } catch (error) {
     logger.error('Error tracking challenge:', error);
@@ -108,6 +115,23 @@ router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
   } catch (error) {
     logger.error('Error initializing challenges:', error);
     res.status(500).json({ message: 'Failed to initialize challenges' });
+  }
+});
+
+// Admin: Migrate challenges to updated schema
+router.post('/admin/migrate', isAuthenticated, async (req: any, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { migrateOnboardingChallenges } = await import('../scripts/migrate-onboarding-challenges');
+    await migrateOnboardingChallenges();
+    res.json({ message: 'Migration completed successfully' });
+  } catch (error: any) {
+    logger.error('Error running migration:', error);
+    res.status(500).json({ message: 'Failed to run migration', error: error.message });
   }
 });
 

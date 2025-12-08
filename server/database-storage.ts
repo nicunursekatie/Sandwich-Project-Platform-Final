@@ -45,6 +45,7 @@ import {
   organizations,
   eventVolunteers,
   eventCollaborationComments,
+  eventCollaborationCommentLikes,
   eventFieldLocks,
   eventEditRevisions,
   meetingNotes,
@@ -139,6 +140,8 @@ import {
   type InsertSearchAnalytics,
   type EventCollaborationComment,
   type InsertEventCollaborationComment,
+  type EventCollaborationCommentLike,
+  type InsertEventCollaborationCommentLike,
   type EventFieldLock,
   type InsertEventFieldLock,
   type EventEditRevision,
@@ -4067,10 +4070,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
+    // Filter out undefined values to prevent Drizzle from writing NULL
+    // This preserves existing database values when a field is not explicitly updated
+    const filteredData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+    
     const [result] = await db
       .update(eventRequests)
       .set({
-        ...updateData,
+        ...filteredData,
         updatedAt: new Date(),
       })
       .where(eq(eventRequests.id, id))
@@ -4203,6 +4212,54 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Event Collaboration Comment Likes
+  async getCommentLikes(commentId: number): Promise<EventCollaborationCommentLike[]> {
+    return await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(eq(eventCollaborationCommentLikes.commentId, commentId))
+      .orderBy(asc(eventCollaborationCommentLikes.createdAt));
+  }
+
+  async toggleCommentLike(commentId: number, userId: string): Promise<{ liked: boolean; likeCount: number }> {
+    // Check if already liked
+    const existing = await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(
+        and(
+          eq(eventCollaborationCommentLikes.commentId, commentId),
+          eq(eventCollaborationCommentLikes.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Unlike: delete the like
+      await db
+        .delete(eventCollaborationCommentLikes)
+        .where(
+          and(
+            eq(eventCollaborationCommentLikes.commentId, commentId),
+            eq(eventCollaborationCommentLikes.userId, userId)
+          )
+        );
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: false, likeCount: likes.length };
+    } else {
+      // Like: insert new like
+      await db
+        .insert(eventCollaborationCommentLikes)
+        .values({ commentId, userId });
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: true, likeCount: likes.length };
+    }
   }
 
   // Event Field Locks

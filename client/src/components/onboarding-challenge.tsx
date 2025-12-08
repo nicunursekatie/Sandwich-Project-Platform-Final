@@ -28,6 +28,11 @@ import {
   X,
   ArrowRight,
   AlertCircle,
+  StickyNote,
+  ListTodo,
+  Sandwich,
+  Receipt,
+  Gift,
 } from 'lucide-react';
 import {
   Dialog,
@@ -79,19 +84,34 @@ const iconMap: Record<string, any> = {
   Heart,
   Briefcase,
   Calendar,
+  StickyNote,
+  ListTodo,
+  Sandwich,
+  Receipt,
+  Gift,
 };
 
 const categoryColors: Record<string, string> = {
   communication: 'bg-blue-100 text-blue-700 border-blue-200',
-  documents: 'bg-purple-100 text-purple-700 border-purple-200',
+  documentation: 'bg-purple-100 text-purple-700 border-purple-200',
   team: 'bg-green-100 text-green-700 border-green-200',
-  projects: 'bg-orange-100 text-orange-700 border-orange-200',
+  productivity: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  operations: 'bg-orange-100 text-orange-700 border-orange-200',
+  strategic: 'bg-pink-100 text-pink-700 border-pink-200',
+  // Legacy categories for backward compatibility
+  documents: 'bg-purple-100 text-purple-700 border-purple-200',
+  projects: 'bg-pink-100 text-pink-700 border-pink-200',
 };
 
 const categoryIcons: Record<string, any> = {
   communication: MessageCircle,
-  documents: FileText,
+  documentation: FileText,
   team: Users,
+  productivity: ListTodo,
+  operations: Sandwich,
+  strategic: Briefcase,
+  // Legacy categories for backward compatibility
+  documents: FileText,
   projects: Briefcase,
 };
 
@@ -106,28 +126,52 @@ const challengeNavigation: Record<string, { section: string; instructions: strin
     instructions: 'Open Team Chat to view messages from your team.',
   },
   inbox_send_email: {
-    section: 'messages',
+    section: 'gmail-inbox',
     instructions: 'Go to your Inbox and compose a new message to a team member.',
   },
-  view_important_documents: {
-    section: 'important-documents',
-    instructions: 'Visit the Important Documents page to see essential files and resources.',
+  view_resources: {
+    section: 'resources',
+    instructions: 'Visit the Resources page to explore important documents, templates, and tools.',
   },
-  view_important_links: {
+  view_quick_tools: {
     section: 'important-links',
-    instructions: 'Check out the Important Links page for useful tools and resources.',
+    instructions: 'Check out Quick Tools for helpful links and resources.',
   },
-  view_team_board: {
-    section: 'team-board',
-    instructions: 'Visit the Team Board to see what your team is working on.',
+  view_wishlist: {
+    section: 'wishlist',
+    instructions: 'Visit the Amazon Wishlist page to see items we need.',
   },
-  post_team_board: {
+  view_holding_zone: {
     section: 'team-board',
-    instructions: 'Go to the Team Board and create a new post (task, note, or idea).',
+    instructions: 'Visit the TSP Holding Zone to see what your team is working on.',
   },
-  like_team_board_post: {
+  post_holding_zone: {
     section: 'team-board',
-    instructions: 'Visit the Team Board and like a post from a team member.',
+    instructions: 'Go to the TSP Holding Zone and create a new post (task, note, or idea).',
+  },
+  like_holding_zone_post: {
+    section: 'team-board',
+    instructions: 'Visit the TSP Holding Zone and like a post from a team member.',
+  },
+  view_my_actions: {
+    section: 'my-actions',
+    instructions: 'Navigate to My Actions to see your assigned tasks and to-dos.',
+  },
+  set_availability: {
+    section: 'my-availability',
+    instructions: 'Go to My Availability and update your schedule to let the team know when you\'re available.',
+  },
+  submit_collection_log: {
+    section: 'collections',
+    instructions: 'Navigate to Collections Log and submit an entry to record your sandwich collection.',
+  },
+  view_event_requests: {
+    section: 'event-requests',
+    instructions: 'Check the Event Requests page to see upcoming events and requests.',
+  },
+  view_expenses: {
+    section: 'expenses',
+    instructions: 'Visit Expenses & Receipts to learn how to track and submit expenses.',
   },
   view_projects: {
     section: 'projects',
@@ -136,6 +180,27 @@ const challengeNavigation: Record<string, { section: string; instructions: strin
   view_meetings: {
     section: 'meetings',
     instructions: 'Check the Meetings page to view notes and agendas.',
+  },
+  // Legacy mappings for backward compatibility
+  view_important_documents: {
+    section: 'resources',
+    instructions: 'Visit the Resources page to explore important documents, templates, and tools.',
+  },
+  view_important_links: {
+    section: 'important-links',
+    instructions: 'Check out Quick Tools for helpful links and resources.',
+  },
+  view_team_board: {
+    section: 'team-board',
+    instructions: 'Visit the TSP Holding Zone to see what your team is working on.',
+  },
+  post_team_board: {
+    section: 'team-board',
+    instructions: 'Go to the TSP Holding Zone and create a new post (task, note, or idea).',
+  },
+  like_team_board_post: {
+    section: 'team-board',
+    instructions: 'Visit the TSP Holding Zone and like a post from a team member.',
   },
 };
 

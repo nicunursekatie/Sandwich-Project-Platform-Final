@@ -6,7 +6,7 @@ import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
-  ChevronUp, ChevronDown, X, List
+  ChevronUp, ChevronDown, X, Maximize2, Minimize2, List
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
@@ -59,7 +59,13 @@ L.Icon.Default.mergeOptions({
 
 // Helper function to parse date strings as local dates
 const parseLocalDate = (dateString: string): Date => {
-  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  if (!dateString) return new Date();
+
+  // Extract just the date part (YYYY-MM-DD) from any format
+  const datePart = dateString.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+
+  // Create date at local midnight (not UTC midnight)
   return new Date(year, month - 1, day);
 };
 
@@ -118,6 +124,25 @@ interface Driver {
   hostLocation: string | null;
   routeDescription: string | null;
   homeAddress: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  geocodedAt: string | null;
+}
+
+type DriverSource = 'driver' | 'host' | 'volunteer';
+
+interface DriverCandidate {
+  id: string; // source-prefixed id (e.g., driver-1, host-2, volunteer-3)
+  source: DriverSource;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  latitude: string;
+  longitude: string;
+  availability?: string | null;
+  vehicleType?: string | null;
+  vanApproved?: boolean | null;
+  hostLocation?: string | null;
 }
 
 interface HostContact {
@@ -165,6 +190,7 @@ const hostIcon = createColorIcon('green');
 const hostFocusedIcon = createColorIcon('orange');
 const recipientIcon = createColorIcon('violet');
 const recipientFocusedIcon = createColorIcon('orange');
+const driverIcon = createColorIcon('yellow'); // Yellow for drivers
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -319,9 +345,14 @@ function MapController({
       }
 
       if (points.length > 1) {
-        // Fit bounds to include event + closest host + closest recipient
+        // Compute zoom that includes event + closest host + closest recipient, but keep the event centered
         const bounds = L.latLngBounds(points);
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+        const zoomForBounds = map.getBoundsZoom(bounds, { padding: [60, 60], maxZoom: 14 });
+        map.setView(
+          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
+          zoomForBounds,
+          { animate: true }
+        );
       } else {
         // Fallback to just centering on event if no hosts/recipients
         map.setView(
@@ -383,8 +414,12 @@ export default function DriverPlanningDashboard() {
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
+  const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
+  const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<'events' | 'details' | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
+  const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
+  const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -415,6 +450,43 @@ export default function DriverPlanningDashboard() {
     },
     onError: () => {
       toast({ title: 'Update failed', description: 'Could not save changes', variant: 'destructive' });
+    },
+  });
+
+  // Assign driver to event
+  const assignDriverMutation = useMutation({
+    mutationFn: async ({ eventId, driverId, currentAssigned }: { eventId: number; driverId: string; currentAssigned: string[] }) => {
+      const assignedSet = new Set(currentAssigned);
+      assignedSet.add(driverId);
+      const assignedDriverIds = Array.from(assignedSet);
+
+      const response = await fetch(`/api/event-requests/${eventId}/drivers`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ assignedDriverIds }),
+      });
+      if (!response.ok) throw new Error('Failed to assign driver');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Driver assigned',
+        description: 'Driver has been marked as assigned for this event.',
+      });
+      // Refresh events and update selected event locally
+      queryClient.invalidateQueries();
+      setSelectedEvent((prev) => (prev ? { ...prev, assignedDriverIds: data.assignedDriverIds || [] } : prev));
+    },
+    onError: () => {
+      toast({
+        title: 'Assign failed',
+        description: 'Could not assign the driver. Please try again.',
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      setAssigningDriverId(null);
     },
   });
 
@@ -460,6 +532,16 @@ export default function DriverPlanningDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/drivers');
       if (!response.ok) throw new Error('Failed to fetch drivers');
+      return response.json();
+    },
+  });
+
+  // Fetch driver candidates (drivers + hosts + volunteers flagged as drivers)
+  const { data: driverCandidates = [], isLoading: driverCandidatesLoading } = useQuery<DriverCandidate[]>({
+    queryKey: ['/api/drivers/driver-candidates'],
+    queryFn: async () => {
+      const response = await fetch('/api/drivers/driver-candidates');
+      if (!response.ok) throw new Error('Failed to fetch driver candidates');
       return response.json();
     },
   });
@@ -515,6 +597,32 @@ export default function DriverPlanningDashboard() {
   const activeDrivers = useMemo(() => {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
+
+  // Get drivers with geocoded coordinates for map display (drivers only)
+  const driversWithGeocoding = useMemo(() => {
+    return activeDrivers.filter(d => d.latitude && d.longitude);
+  }, [activeDrivers]);
+
+  // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
+  const nearbyDrivers = useMemo(() => {
+    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+
+    const eventLat = parseFloat(selectedEvent.latitude);
+    const eventLng = parseFloat(selectedEvent.longitude);
+
+    return driverCandidates
+      .filter((c) => c.latitude && c.longitude)
+      .map((driver) => {
+        const distance = calculateDistanceInMiles(
+          eventLat,
+          eventLng,
+          parseFloat(driver.latitude),
+          parseFloat(driver.longitude)
+        );
+        return { driver, distance };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  }, [driverCandidates, selectedEvent]);
 
   // Get suggested drivers for selected event
   const suggestedDrivers = useMemo(() => {
@@ -649,7 +757,7 @@ export default function DriverPlanningDashboard() {
     return [avgLat, avgLng];
   }, [upcomingEvents]);
 
-  const isLoading = eventsLoading || driversLoading;
+  const isLoading = eventsLoading || driversLoading || driverCandidatesLoading;
 
   if (isLoading) {
     return (
@@ -1116,76 +1224,81 @@ export default function DriverPlanningDashboard() {
                 </div>
 
                 {/* Suggested Drivers */}
-                {suggestedDrivers.length > 0 ? (
-                  <div className="space-y-2" data-testid="driver-planning-suggested-drivers">
+                {nearbyDrivers.length > 0 && (
+                  <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                      Drivers in this area ({suggestedDrivers.length})
+                      Closest drivers
                     </h3>
-                    {suggestedDrivers.map((driver) => (
+                    {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
                       <Card key={driver.id} className="p-3">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-medium text-sm">{driver.name}</h4>
-                              <p className="text-xs text-gray-500">
-                                {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
-                              </p>
-                            </div>
-                            <Badge
-                              variant={driver.availability === 'available' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {driver.availability || 'Unknown'}
-                            </Badge>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium text-sm">{driver.name}</h4>
+                            <p className="text-xs text-gray-500">
+                              {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-1">{distance.toFixed(1)} miles away</p>
                           </div>
-
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
-                            {driver.phone && (
-                              <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
-                                <Phone className="w-3 h-3" />
-                                {driver.phone}
-                              </a>
-                            )}
-                            {driver.vehicleType && (
-                              <span className="flex items-center gap-1">
-                                <Truck className="w-3 h-3" />
-                                {driver.vehicleType}
-                                {driver.vanApproved && ' (Van OK)'}
-                              </span>
-                            )}
-                          </div>
-
+                          <Badge
+                            variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {driver.availability || 'Unknown'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                          {driver.phone && (
+                            <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
+                              <Phone className="w-3 h-3" />
+                              {driver.phone}
+                            </a>
+                          )}
+                          {driver.vehicleType && (
+                            <span className="flex items-center gap-1">
+                              <Truck className="w-3 h-3" />
+                              {driver.vehicleType}
+                              {driver.vanApproved && ' (Van OK)'}
+                            </span>
+                          )}
+                        </div>
+                        {selectedEvent && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="w-full text-xs"
-                            onClick={() => copyDriverSMS(driver)}
+                            className="w-full mt-3 text-xs"
+                            disabled={assigningDriverId === driver.id}
+                            onClick={() => {
+                              if (!selectedEvent) return;
+                              setAssigningDriverId(driver.id);
+                              assignDriverMutation.mutate({
+                                eventId: selectedEvent.id,
+                                driverId: driver.id,
+                                currentAssigned: selectedEvent.assignedDriverIds || [],
+                              });
+                            }}
                           >
-                            {copiedDriverId === driver.id ? (
-                              <>
-                                <Check className="w-3 h-3 mr-1" />
-                                Copied!
-                              </>
+                            {assigningDriverId === driver.id ? (
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                             ) : (
-                              <>
-                                <Copy className="w-3 h-3 mr-1" />
-                                Copy SMS Request
-                              </>
+                              <Check className="w-3 h-3 mr-1" />
                             )}
+                            {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign driver'}
                           </Button>
-                        </div>
+                        )}
                       </Card>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm font-medium">No matching drivers found</p>
-                    <p className="text-xs mt-1">
-                      No drivers have location data matching this event&apos;s area
-                    </p>
+                    {nearbyDrivers.length > 5 && (
+                      <button
+                        onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
+                        className="w-full text-xs text-purple-700 hover:text-purple-900 font-medium py-1"
+                      >
+                        {showAllNearbyDrivers
+                          ? 'Show top 5'
+                          : `View ${nearbyDrivers.length - 5} more drivers`}
+                      </button>
+                    )}
                   </div>
                 )}
+
 
                 {/* Drivers needing location data */}
                 {driversWithoutLocation.length > 0 && (
@@ -1340,6 +1453,37 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+            {/* Show all driver candidates with geocoded coordinates */}
+            {driverCandidates
+              .filter((driver) => driver.latitude && driver.longitude)
+              .map((driver) => (
+              <Marker
+                key={`driver-${driver.id}`}
+                position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
+                icon={driverIcon}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source})</span>
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      {driver.hostLocation || 'Driver location'}
+                    </p>
+                    {driver.phone && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {driver.phone}
+                      </p>
+                    )}
+                    {driver.vanApproved && (
+                      <p className="text-xs text-green-600 mt-1">Van Approved</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Tablet Details Panel - Bottom overlay when event selected */}
@@ -1424,201 +1568,298 @@ export default function DriverPlanningDashboard() {
       </div>
 
       {/* Main Content - Mobile Layout (< md) */}
-      <div className="flex-1 md:hidden relative overflow-hidden" data-testid="driver-planning-mobile">
-        {/* Full-screen Map */}
-        <MapContainer
-          center={mapCenter}
-          zoom={10}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapController
-            selectedEvent={selectedEvent}
-            events={upcomingEvents}
-            focusedItem={focusedItem}
-            nearbyHosts={nearbyHosts}
-            nearbyRecipients={nearbyRecipients}
-          />
-          {upcomingEvents.map((event) => (
-            <Marker
-              key={event.id}
-              position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-              icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
-              eventHandlers={{
-                click: () => {
-                  setSelectedEvent(event);
-                  setMobilePanel('details');
+      <div className="flex-1 md:hidden flex flex-col" data-testid="driver-planning-mobile">
+        {/* Map - Expands to full screen when mobileFullscreenMap is true */}
+        <div className={`relative transition-all duration-300 ${
+          mobileFullscreenMap 
+            ? 'h-[calc(100vh-60px)]' 
+            : mobileEventsCollapsed 
+              ? 'h-[calc(100vh-120px)]'
+              : 'h-[55vh] min-h-[280px]'
+        }`}>
+          <MapContainer
+            center={mapCenter}
+            zoom={10}
+            style={{ height: '100%', width: '100%' }}
+            className="z-0"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapController
+              selectedEvent={selectedEvent}
+              events={upcomingEvents}
+              focusedItem={focusedItem}
+              nearbyHosts={nearbyHosts}
+              nearbyRecipients={nearbyRecipients}
+            />
+            {upcomingEvents.map((event) => (
+              <Marker
+                key={event.id}
+                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedEvent(event);
+                    setMobilePanel('details');
+                  }
+                }}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                    <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyHosts.map((host) => (
+              <Marker
+                key={`host-${host.id}`}
+                position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
+                icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
+                    <p className="text-xs">{host.distance.toFixed(1)} mi</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+            {selectedEvent && nearbyRecipients.map((recipient) => (
+              <Marker
+                key={`recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                    <p className="text-xs">{recipient.distance.toFixed(1)} mi</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {/* Mobile Map Controls - Top Right */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-[1000]">
+            {/* Fullscreen Toggle Button */}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 bg-white shadow-lg border"
+              onClick={() => {
+                setMobileFullscreenMap(!mobileFullscreenMap);
+                if (!mobileFullscreenMap) {
+                  setMobileEventsCollapsed(true);
                 }
               }}
+              data-testid="btn-toggle-fullscreen-map"
             >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-sm">{event.organizationName}</h3>
-                  <p className="text-xs text-gray-600">{event.eventAddress}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          {selectedEvent && nearbyHosts.map((host) => (
-            <Marker
-              key={`host-${host.id}`}
-              position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
-              icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-green-700 text-sm">{host.contactName}</h3>
-                  <p className="text-xs">{host.distance.toFixed(1)} mi</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          {selectedEvent && nearbyRecipients.map((recipient) => (
-            <Marker
-              key={`recipient-${recipient.id}`}
-              position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
-              icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
-                  <p className="text-xs">{recipient.distance.toFixed(1)} mi</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-
-        {/* Floating Action Buttons */}
-        <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">
-          <Button
-            onClick={() => setMobilePanel(mobilePanel === 'events' ? null : 'events')}
-            className="h-12 w-12 rounded-full shadow-lg bg-[#007E8C] hover:bg-[#006670]"
-            data-testid="mobile-events-toggle"
-          >
-            <List className="w-5 h-5 text-white" />
-          </Button>
-          {selectedEvent && (
-            <Button
-              onClick={() => setMobilePanel(mobilePanel === 'details' ? null : 'details')}
-              className="h-12 w-12 rounded-full shadow-lg bg-purple-600 hover:bg-purple-700"
-              data-testid="mobile-details-toggle"
-            >
-              <Users className="w-5 h-5 text-white" />
+              {mobileFullscreenMap ? (
+                <Minimize2 className="w-5 h-5 text-gray-700" />
+              ) : (
+                <Maximize2 className="w-5 h-5 text-gray-700" />
+              )}
             </Button>
+            
+            {/* Show Events List Button - only visible in fullscreen mode */}
+            {mobileFullscreenMap && (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-10 w-10 bg-white shadow-lg border"
+                onClick={() => {
+                  setMobileFullscreenMap(false);
+                  setMobileEventsCollapsed(false);
+                }}
+                data-testid="btn-show-events-list"
+              >
+                <List className="w-5 h-5 text-gray-700" />
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Legend - repositioned */}
+          <div className="absolute top-3 left-3 bg-white rounded-lg shadow-lg p-2 z-[1000]">
+            <div className="text-[10px] font-semibold mb-1">Legend</div>
+            <div className="space-y-0.5 text-[10px]">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span>Event</span>
+              </div>
+              {selectedEvent && (
+                <>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Host</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span>Recipient</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Selected Event Quick Info - Bottom of map in fullscreen mode */}
+          {mobileFullscreenMap && selectedEvent && (
+            <div className="absolute bottom-4 left-3 right-3 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm truncate">{selectedEvent.organizationName}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
+                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                    <span>
+                      {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
+                        ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
+                        : 'No date'}
+                    </span>
+                    <Badge
+                      variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 1) ? 'default' : 'destructive'}
+                      className="text-[10px] px-1.5"
+                    >
+                      {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 1} drivers
+                    </Badge>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-9 px-3"
+                  onClick={() => setMobilePanel('details')}
+                  data-testid="btn-view-event-details"
+                >
+                  Details
+                </Button>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Mobile Legend */}
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000]">
-          <div className="text-[10px] font-semibold mb-1">Legend</div>
-          <div className="space-y-0.5 text-[10px]">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span>Event</span>
-            </div>
-            {selectedEvent && (
-              <>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>Host</span>
+        {/* Collapsible Events List - Hidden in fullscreen mode */}
+        {!mobileFullscreenMap && (
+          <div className={`bg-white border-t flex flex-col transition-all duration-300 ${
+            mobileEventsCollapsed ? 'h-14' : 'flex-1 min-h-[280px]'
+          }`}>
+            {/* Collapsible Header */}
+            <button
+              className="p-3 border-b flex items-center justify-between w-full text-left"
+              onClick={() => setMobileEventsCollapsed(!mobileEventsCollapsed)}
+              data-testid="btn-toggle-events-panel"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#007E8C]" />
+                <span className="font-semibold text-sm">Events ({upcomingEvents.length})</span>
+                {selectedEvent && mobileEventsCollapsed && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {selectedEvent.organizationName?.substring(0, 15)}...
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!mobileEventsCollapsed && (
+                  <Select value={weeksAhead} onValueChange={setWeeksAhead}>
+                    <SelectTrigger className="w-24 h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 weeks</SelectItem>
+                      <SelectItem value="4">4 weeks</SelectItem>
+                      <SelectItem value="6">6 weeks</SelectItem>
+                      <SelectItem value="8">8 weeks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {mobileEventsCollapsed ? (
+                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </button>
+            
+            {/* Events List Content */}
+            {!mobileEventsCollapsed && (
+              <ScrollArea className="flex-1">
+                <div className="p-3 space-y-2">
+                  {upcomingEvents.map((event) => {
+                    const isSelected = selectedEvent?.id === event.id;
+                    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                    const driversAssigned = event.assignedDriverIds?.length || 0;
+                    const driversNeeded = event.driversNeeded || 1;
+
+                    return (
+                      <Card
+                        key={event.id}
+                        className={`p-3 cursor-pointer transition-all active:scale-[0.98] ${
+                          isSelected
+                            ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                            : 'hover:shadow-md active:bg-gray-50'
+                        }`}
+                        onClick={() => {
+                          setSelectedEvent(isSelected ? null : event);
+                          setShowAllHosts(false);
+                          setShowAllRecipients(false);
+                          if (!isSelected) {
+                            setMobilePanel('details');
+                          }
+                        }}
+                        data-testid={`event-card-${event.id}`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                              {event.organizationName || 'Unknown Organization'}
+                            </h3>
+                            <ChevronRight className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-700">
+                            <Calendar className="w-4 h-4 flex-shrink-0" />
+                            <span className="font-medium">
+                              {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
+                            </span>
+                            {event.eventStartTime && (
+                              <span className="text-gray-500">
+                                at {formatTime12Hour(event.eventStartTime)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <MapPin className="w-4 h-4 flex-shrink-0" />
+                            <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
+                              className="text-xs px-2 py-0.5"
+                            >
+                              <Truck className="w-3.5 h-3.5 mr-1" />
+                              {driversAssigned}/{driversNeeded} drivers
+                            </Badge>
+                            {event.estimatedSandwichCount && (
+                              <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                  {upcomingEvents.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No scheduled events in this period</p>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span>Recipient</span>
-                </div>
-              </>
+              </ScrollArea>
             )}
           </div>
-        </div>
+        )}
       </div>
-
-      {/* Mobile Events Sheet */}
-      <Sheet open={mobilePanel === 'events'} onOpenChange={(open) => setMobilePanel(open ? 'events' : null)}>
-        <SheetContent side="bottom" className="h-[70vh] p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#007E8C]" />
-              Upcoming Events ({upcomingEvents.length})
-            </SheetTitle>
-          </SheetHeader>
-          <ScrollArea className="h-[calc(70vh-80px)]">
-            <div className="p-4 space-y-3">
-              {upcomingEvents.map((event) => {
-                const isSelected = selectedEvent?.id === event.id;
-                const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
-
-                return (
-                  <Card
-                    key={event.id}
-                    className={`p-3 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
-                        : 'hover:shadow-md'
-                    }`}
-                    onClick={() => {
-                      setSelectedEvent(isSelected ? null : event);
-                      setShowAllHosts(false);
-                      setShowAllRecipients(false);
-                      if (!isSelected) {
-                        setMobilePanel('details');
-                      }
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
-                          {event.organizationName || 'Unknown Organization'}
-                        </h3>
-                        <ChevronRight className={`w-4 h-4 text-gray-400 flex-shrink-0 ${isSelected ? 'rotate-90' : ''}`} />
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-700">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="font-medium">
-                          {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
-                        </span>
-                        {event.eventStartTime && (
-                          <span className="text-gray-500">
-                            at {formatTime12Hour(event.eventStartTime)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          <Truck className="w-3 h-3 mr-1" />
-                          {driversAssigned}/{driversNeeded} drivers
-                        </Badge>
-                        {event.estimatedSandwichCount && (
-                          <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-              {upcomingEvents.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No scheduled events in this period</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
 
       {/* Mobile Details Sheet */}
       <Sheet open={mobilePanel === 'details' && selectedEvent !== null} onOpenChange={(open) => setMobilePanel(open ? 'details' : null)}>
@@ -1770,65 +2011,109 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
-                {/* Suggested Drivers */}
+                {/* Nearby Drivers with Distance */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#007E8C]" />
-                    Suggested Drivers ({suggestedDrivers.length})
+                    Closest Drivers ({nearbyDrivers.length})
                   </h3>
-                  {suggestedDrivers.length > 0 ? (
+                  {nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
-                      {suggestedDrivers.map((driver) => (
+                      {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
                         <Card key={driver.id} className="p-3">
                           <div className="space-y-2">
                             <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-medium text-sm">{driver.name}</h4>
-                                <p className="text-xs text-gray-500">
-                                  {driver.hostLocation || driver.area || 'No location'}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm truncate">{driver.name}</h4>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                                </p>
+                                <p className="text-[11px] text-[#007E8C] font-medium mt-1">
+                                  {distance.toFixed(1)} miles away
                                 </p>
                               </div>
                               <Badge
                                 variant={driver.availability === 'available' ? 'default' : 'secondary'}
-                                className="text-xs"
+                                className="text-xs flex-shrink-0"
                               >
                                 {driver.availability || 'Unknown'}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
                               {driver.phone && (
                                 <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
                                   <Phone className="w-3 h-3" />
                                   {driver.phone}
                                 </a>
                               )}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => copyDriverSMS(driver)}
-                            >
-                              {copiedDriverId === driver.id ? (
-                                <>
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3 mr-1" />
-                                  Copy SMS Request
-                                </>
+                              {driver.vehicleType && (
+                                <span className="flex items-center gap-1">
+                                  <Truck className="w-3 h-3" />
+                                  {driver.vehicleType}
+                                  {driver.vanApproved && ' (Van OK)'}
+                                </span>
                               )}
-                            </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-8"
+                                onClick={() => copyDriverSMS(driver)}
+                              >
+                                {copiedDriverId === driver.id ? (
+                                  <>
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 mr-1" />
+                                    SMS
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="text-xs h-8"
+                                disabled={assigningDriverId === driver.id}
+                                onClick={() => {
+                                  if (!selectedEvent) return;
+                                  setAssigningDriverId(driver.id);
+                                  assignDriverMutation.mutate({
+                                    eventId: selectedEvent.id,
+                                    driverId: driver.id,
+                                    currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  });
+                                }}
+                              >
+                                {assigningDriverId === driver.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? (
+                                  <Check className="w-3 h-3 mr-1" />
+                                ) : (
+                                  <Check className="w-3 h-3 mr-1" />
+                                )}
+                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign'}
+                              </Button>
+                            </div>
                           </div>
                         </Card>
                       ))}
+                      {nearbyDrivers.length > 5 && (
+                        <button
+                          onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
+                          className="w-full text-sm text-[#007E8C] font-medium py-2"
+                        >
+                          {showAllNearbyDrivers ? 'Show top 5' : `View ${nearbyDrivers.length - 5} more drivers`}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-4 text-gray-500 bg-gray-100 rounded-lg">
                       <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">No matching drivers</p>
+                      <p className="text-sm">No drivers with location data found</p>
+                      <p className="text-xs mt-1 text-gray-400">Add area/location to drivers to see suggestions</p>
                     </div>
                   )}
                 </div>

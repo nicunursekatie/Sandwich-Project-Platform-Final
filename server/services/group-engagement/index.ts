@@ -2,6 +2,7 @@ import { db } from '../../db';
 import { eventRequests, sandwichCollections, organizationEngagementScores } from '../../../shared/schema';
 import { eq, sql, desc, and, gte, isNotNull } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
+import { canonicalizeOrgName } from '../../utils/organization-canonicalization';
 
 // ============================================================================
 // Types
@@ -93,19 +94,6 @@ export interface GroupInsightsSummary {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Canonicalize organization names for robust matching
- */
-function canonicalizeOrgName(orgName: string): string {
-  if (!orgName || typeof orgName !== 'string') return '';
-  return orgName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .replace(/[&.,;:!?"'_-]/g, '')
-    .replace(/\s/g, '');
-}
 
 /**
  * Calculate days between two dates
@@ -263,6 +251,29 @@ function determineEngagementLevel(
 }
 
 /**
+ * Detect high-value partners who were recently active and have now gone quiet
+ */
+function hasSignificantDropOff(metrics: EngagementMetrics): boolean {
+  if (!metrics.eventDates.length) return false;
+
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+  const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+
+  // Activity windows
+  const recentEvents = metrics.eventDates.filter(d => d >= sixMonthsAgo).length;
+  const previousWindowEvents = metrics.eventDates.filter(d =>
+    d >= oneYearAgo && d < sixMonthsAgo
+  ).length;
+
+  const hadMeaningfulVolume = metrics.totalSandwiches >= 500;
+  const hadRegularActivity = previousWindowEvents >= 2;
+
+  // No activity in the last 6 months, but regular/high-volume activity in the 6-12 months prior
+  return hadMeaningfulVolume && hadRegularActivity && recentEvents === 0;
+}
+
+/**
  * Determine outreach priority based on engagement level and potential
  */
 function determineOutreachPriority(
@@ -270,36 +281,17 @@ function determineOutreachPriority(
   metrics: EngagementMetrics,
   scores: EngagementScores
 ): OrganizationEngagement['outreachPriority'] {
-  // Dormant orgs with good historical volume are high priority
-  if (engagementLevel === 'dormant' && metrics.totalSandwiches > 500) {
-    return 'urgent';
+  const significantDropOff = hasSignificantDropOff(metrics);
+
+  if (significantDropOff) {
+    // Recently went dark after being active and high-volume
+    return metrics.daysSinceLastEvent !== null && metrics.daysSinceLastEvent > 365
+      ? 'urgent'
+      : 'high';
   }
 
-  // At-risk orgs need attention
-  if (engagementLevel === 'at_risk') {
-    return 'high';
-  }
-
-  // Low engagement with some history
-  if (engagementLevel === 'low' && metrics.totalEvents >= 2) {
-    return 'high';
-  }
-
-  // New orgs with completed events - nurture them
-  if (engagementLevel === 'new' && metrics.completedEvents > 0) {
-    return 'normal';
-  }
-
-  // Moderate engagement - maintain relationship
-  if (engagementLevel === 'moderate') {
-    return 'normal';
-  }
-
-  // Highly engaged - low priority for outreach (they're doing well)
-  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') {
-    return 'low';
-  }
-
+  // Otherwise, deprioritize long-gone or sporadic partners
+  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') return 'low';
   return 'normal';
 }
 
@@ -312,6 +304,16 @@ function generateInsights(
   engagementLevel: OrganizationEngagement['engagementLevel']
 ): EngagementInsight[] {
   const insights: EngagementInsight[] = [];
+  const significantDropOff = hasSignificantDropOff(metrics);
+
+  if (significantDropOff) {
+    insights.push({
+      type: 'warning',
+      title: 'Significant Drop-Off',
+      description: 'Previously a regular high-volume partner but no activity in the last 6 months. Prioritize re-engagement.',
+      priority: 1
+    });
+  }
 
   // Recency insights
   if (metrics.daysSinceLastEvent !== null) {

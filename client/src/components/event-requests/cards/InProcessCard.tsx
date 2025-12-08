@@ -480,10 +480,16 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onCall,
   onContact,
 }) => {
+  const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
+
   return (
-    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+      {/* Primary Contact */}
       <div className="flex items-center justify-between gap-2">
         <div className="space-y-1 min-w-0 flex-1">
+          {hasBackupContact && (
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Primary Contact</div>
+          )}
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <span className="font-medium text-base break-words min-w-0">
@@ -539,6 +545,48 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
       </div>
+
+      {/* Backup Contact */}
+      {hasBackupContact && (
+        <div className="border-t border-gray-200 pt-3">
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Backup Contact</div>
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <span className="font-medium text-base break-words min-w-0">
+                  {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                  {(request as any).backupContactRole && (
+                    <span className="text-gray-500 font-normal ml-2">({(request as any).backupContactRole})</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {(request as any).backupContactEmail && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`mailto:${(request as any).backupContactEmail}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
+                >
+                  {(request as any).backupContactEmail}
+                </a>
+              </div>
+            )}
+            {(request as any).backupContactPhone && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`tel:${(request as any).backupContactPhone}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                >
+                  {(request as any).backupContactPhone}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -999,6 +1047,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -1166,32 +1215,34 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </Tooltip>
             )}
             {canDelete && (
-              <ConfirmationDialog
-                trigger={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700 h-8"
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this event request</p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-                title="Delete In-Process Event"
-                description={`Are you sure you want to delete the in-process event from ${request.organizationName}? This will remove all progress and cannot be undone.`}
-              confirmText="Delete Request"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 h-8"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete In-Process Event"
+                      description={`Are you sure you want to delete the in-process event from ${request.organizationName}? This will remove all progress and cannot be undone.`}
+                      confirmText="Delete Request"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </TooltipProvider>
 

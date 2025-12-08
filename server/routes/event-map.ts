@@ -83,6 +83,10 @@ router.get('/', async (req, res) => {
         eventEndTime: eventRequests.eventEndTime,
         googleSheetRowId: eventRequests.googleSheetRowId,
         externalId: eventRequests.externalId,
+        driversNeeded: eventRequests.driversNeeded,
+        assignedDriverIds: eventRequests.assignedDriverIds,
+        pickupTime: eventRequests.pickupTime,
+        pickupTimeWindow: eventRequests.pickupTimeWindow,
       })
       .from(eventRequests)
       .where(and(...conditions));

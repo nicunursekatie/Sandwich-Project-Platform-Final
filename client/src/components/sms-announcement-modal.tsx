@@ -16,6 +16,26 @@ import { useLocation } from 'wouter';
 
 const ANNOUNCEMENT_ID = 'sms_alerts_launch_2024';
 
+/**
+ * Detects if user is on a mobile device
+ */
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // Check screen width
+  const isSmallScreen = window.innerWidth < 768;
+
+  // Check user agent for mobile devices
+  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+  // Check for touch capability
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  return (isSmallScreen && hasTouch) || isMobileUserAgent;
+}
+
 export function SMSAnnouncementModal() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -44,6 +64,11 @@ export function SMSAnnouncementModal() {
 
   // Show modal if user hasn't dismissed it
   useEffect(() => {
+    // Don't show on mobile devices - let the mobile layout prompt take priority
+    if (isMobileDevice()) {
+      return;
+    }
+
     if (!isLoading && dismissStatus && !dismissStatus.dismissed) {
       setIsOpen(true);
     }

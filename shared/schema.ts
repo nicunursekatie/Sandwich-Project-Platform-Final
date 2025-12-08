@@ -816,6 +816,9 @@ export const drivers = pgTable('drivers', {
   longitude: text('longitude'), // Geocoded longitude for map display
   geocodedAt: timestamp('geocoded_at'), // When the location was geocoded
   willingToSpeak: boolean('willing_to_speak').notNull().default(false),
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -842,6 +845,11 @@ export const volunteers = pgTable('volunteers', {
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
   volunteerType: text('volunteer_type').notNull().default('general'), // 'general', 'former_driver', 'driver_candidate', etc.
+  isDriver: boolean('is_driver').notNull().default(false), // Whether this volunteer can drive
+  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events
+  latitude: decimal('latitude'),
+  longitude: decimal('longitude'),
+  geocodedAt: timestamp('geocoded_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -1879,17 +1887,31 @@ export const eventRequests = pgTable(
   'event_requests',
   {
     id: serial('id').primaryKey(),
-    // Submitter information
+    // Submitter information (primary contact)
     firstName: varchar('first_name'), // Made optional for manual entries
     lastName: varchar('last_name'), // Made optional for manual entries
     email: varchar('email'), // Made optional - can be null
     phone: varchar('phone'),
+
+    // Backup/secondary contact information
+    backupContactFirstName: varchar('backup_contact_first_name'),
+    backupContactLastName: varchar('backup_contact_last_name'),
+    backupContactEmail: varchar('backup_contact_email'),
+    backupContactPhone: varchar('backup_contact_phone'),
+    backupContactRole: varchar('backup_contact_role'), // Role/title (e.g., "Assistant Principal", "Events Coordinator")
 
     // Organization information
     organizationName: varchar('organization_name'), // Made optional for manual entries
     department: varchar('department'),
     organizationCategory: varchar('organization_category'), // 'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'school', 'neighborhood', 'club', 'greek_life', 'cultural', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
+
+    // Partner/co-hosting organizations (for events hosted by multiple organizations)
+    partnerOrganizations: jsonb('partner_organizations').$type<Array<{
+      name: string;
+      department?: string;
+      role?: 'co-host' | 'partner' | 'sponsor';
+    }>>(),
 
     // AI-generated categorization (optional, auto-populated)
     autoCategories: jsonb('auto_categories').$type<{
@@ -2082,6 +2104,20 @@ export const eventRequests = pgTable(
     externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
+
+    // Pre-event critical flags (time-sensitive issues that need attention before event)
+    preEventFlags: jsonb('pre_event_flags').$type<Array<{
+      id: string;
+      type: 'critical' | 'important' | 'attention';
+      message: string;
+      createdAt: string;
+      createdBy: string;
+      createdByName: string;
+      resolvedAt: string | null;
+      resolvedBy: string | null;
+      resolvedByName: string | null;
+      dueDate: string | null;
+    }>>().default('[]'), // Critical flags that need resolution before event
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
     speakerAudienceType: text('speaker_audience_type'), // Type of audience for speaker (e.g., "Elementary School", "Adults", "Mixed")
     speakerDuration: text('speaker_duration'), // Duration of speaker session (e.g., "30 minutes", "1 hour")
@@ -2259,6 +2295,23 @@ export const eventCollaborationComments = pgTable(
     eventIdIdx: index('idx_event_collab_comments_event_id').on(table.eventRequestId),
     userIdIdx: index('idx_event_collab_comments_user_id').on(table.userId),
     createdAtIdx: index('idx_event_collab_comments_created_at').on(table.createdAt),
+  })
+);
+
+// Event collaboration comment likes table
+export const eventCollaborationCommentLikes = pgTable(
+  'event_collaboration_comment_likes',
+  {
+    id: serial('id').primaryKey(),
+    commentId: integer('comment_id').notNull().references(() => eventCollaborationComments.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique constraint: one like per user per comment
+    userCommentIdx: unique().on(table.commentId, table.userId),
+    commentIdIdx: index('idx_comment_likes_comment_id').on(table.commentId),
+    userIdIdx: index('idx_comment_likes_user_id').on(table.userId),
   })
 );
 
@@ -2554,6 +2607,15 @@ export const insertEventCollaborationCommentSchema = createInsertSchema(eventCol
 
 export type EventCollaborationComment = typeof eventCollaborationComments.$inferSelect;
 export type InsertEventCollaborationComment = z.infer<typeof insertEventCollaborationCommentSchema>;
+
+// Event collaboration comment like schema types
+export const insertEventCollaborationCommentLikeSchema = createInsertSchema(eventCollaborationCommentLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EventCollaborationCommentLike = typeof eventCollaborationCommentLikes.$inferSelect;
+export type InsertEventCollaborationCommentLike = z.infer<typeof insertEventCollaborationCommentLikeSchema>;
 
 // Event field lock schema types
 export const insertEventFieldLockSchema = createInsertSchema(eventFieldLocks).omit({

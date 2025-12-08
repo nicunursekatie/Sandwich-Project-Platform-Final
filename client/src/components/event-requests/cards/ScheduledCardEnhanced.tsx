@@ -271,15 +271,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
-  // Debug logging for host contacts
-  React.useEffect(() => {
-    if (hostContacts.length > 0) {
-      console.log('ScheduledCardEnhanced: hostContacts loaded', hostContacts.length, 'contacts');
-      console.log('ScheduledCardEnhanced: First few contacts:', hostContacts.slice(0, 3));
-    } else if (!isLoadingHostContacts) {
-      console.warn('ScheduledCardEnhanced: No host contacts loaded!');
-    }
-  }, [hostContacts, isLoadingHostContacts]);
 
   const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
@@ -976,25 +967,27 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       <p>Edit event</p>
                     </TooltipContent>
                   </Tooltip>
-                  <ConfirmationDialog
-                    trigger={
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
-                            <Trash2 className="w-4 h-4" aria-hidden="true" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete event</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    }
-                    title="Delete Event"
-                    description={`Delete ${request.organizationName}?`}
-                    confirmText="Delete"
-                    onConfirm={onDelete}
-                    variant="destructive"
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
+                              <Trash2 className="w-4 h-4" aria-hidden="true" />
+                            </Button>
+                          }
+                          title="Delete Event"
+                          description={`Delete ${request.organizationName}?`}
+                          confirmText="Delete"
+                          onConfirm={onDelete}
+                          variant="destructive"
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete event</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               )}
             </div>
@@ -2298,6 +2291,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}

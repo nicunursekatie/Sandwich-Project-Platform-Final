@@ -7,6 +7,7 @@ import twilio from 'twilio';
 import { logger } from '../utils/production-safe-logger';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { NotificationService } from '../notification-service';
+import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -19,6 +20,7 @@ const webhookRouter = Router();
 const smsOptInSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   consent: z.boolean(),
+  category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
 
 const smsConfirmationSchema = z.object({
@@ -56,6 +58,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
       hasConfirmedOptIn: hasConfirmedOptIn,
       confirmedAt: smsConsent.confirmedAt || null,
       confirmationMethod: smsConsent.confirmationMethod || null,
+      campaignType: smsConsent.campaignType || null,
     });
   } catch (error) {
     logger.error('Error getting SMS status:', error);
@@ -71,7 +74,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
  */
 router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
   try {
-    const { phoneNumber, consent } = smsOptInSchema.parse(req.body);
+    const { phoneNumber, consent, category } = smsOptInSchema.parse(req.body);
     const userId = req.user?.id;
 
     if (!userId) {
@@ -120,18 +123,20 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
         verificationCodeExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         consentTimestamp: new Date().toISOString(),
         consentVersion: '1.0',
+        campaignType: category, // 'hosts' for collection reminders, 'events' for event coordination
       },
     };
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
+    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone}) - campaign: ${category}`);
 
     res.json({
       success: true,
       message: 'Confirmation SMS sent! Please reply with your verification code or "YES" to complete signup.',
       phoneNumber: formattedPhone,
       status: 'pending_confirmation',
+      campaignType: category,
     });
   } catch (error) {
     logger.error('Error processing SMS opt-in:', error);
@@ -166,13 +171,18 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user metadata to disable SMS consent
+    // Get existing smsConsent to preserve campaignType
+    const currentMetadata = user.metadata as any || {};
+    const existingSmsConsent = currentMetadata.smsConsent || {};
+
+    // Update user metadata to disable SMS consent while preserving campaignType
     const updatedMetadata = {
-      ...(user.metadata as any || {}),
+      ...currentMetadata,
       smsConsent: {
         enabled: false,
         phoneNumber: null,
         optOutTimestamp: new Date().toISOString(),
+        campaignType: existingSmsConsent.campaignType,
       },
     };
 
@@ -253,8 +263,10 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
         status: 'confirmed',
         enabled: true,
         confirmedAt: new Date().toISOString(),
+        confirmationMethod: 'verification_code',
         verificationCode: undefined, // Remove verification code after confirmation
         verificationCodeExpiry: undefined,
+        campaignType: smsConsent.campaignType, // Explicitly preserve campaignType
       },
       notificationPreferences: {
         ...notificationPreferences,
@@ -291,10 +303,11 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 
     if (!hasReceivedWelcome) {
       try {
-        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
+        const campaignType = freshSmsConsent.campaignType || 'hosts';
+        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId} (campaign: ${campaignType})`);
 
         const { sendWelcomeSMS } = await import('../sms-service');
-        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
         if (welcomeResult.success) {
           logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
@@ -470,6 +483,11 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
  * NOTE: This is on webhookRouter (not router) - NO auth middleware, just Twilio signature validation
  */
 webhookRouter.post('/sms/webhook', async (req, res) => {
+  // DEBUG: Log that webhook was hit (before any validation)
+  logger.log('🔔 SMS WEBHOOK HIT - Request received');
+  logger.log(`🔔 Headers: host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}`);
+  logger.log(`🔔 Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+  
   try {
     // SECURITY VALIDATION: Verify Twilio request signature
     const twilioSignature = req.headers['x-twilio-signature'] as string;
@@ -478,22 +496,35 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       logger.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
       return res.status(403).json({ error: 'Forbidden: Missing signature' });
     }
-    
-    if (!process.env.TWILIO_AUTH_TOKEN) {
-      logger.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
-      return res.status(500).json({ error: 'Server configuration error' });
+
+    // Get auth token from environment or Replit connector
+    const authToken = await getTwilioAuthToken();
+    if (!authToken) {
+      logger.error('❌ SECURITY ERROR: No Twilio auth token available for webhook validation');
+      logger.error('   Set TWILIO_AUTH_TOKEN in environment/secrets, or ensure Replit Twilio connection provides auth_token');
+      return res.status(500).json({ error: 'Server configuration error: Missing auth token for webhook validation' });
     }
+
+    // DEBUG: Log auth token info (first 4 chars only for security)
+    logger.log(`🔔 Auth token configured: ${authToken.substring(0, 4)}...${authToken.substring(authToken.length - 4)}`);
     
     // Construct the full webhook URL that matches Twilio console configuration
     // Use x-forwarded-proto header for proxy environments (Replit, Heroku, etc.)
     // SSL terminates at the proxy level, so req.secure is false even for HTTPS connections
-    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    // Handle comma-separated values in x-forwarded-proto (e.g., "https, http")
+    const forwardedProto = req.get('x-forwarded-proto');
+    const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : (req.secure ? 'https' : 'http');
     const host = req.get('host');
+    // Use only the path portion (originalUrl may include query string which should be included)
     const webhookUrl = `${protocol}://${host}${req.originalUrl}`;
+
+    // DEBUG: Log the URL being used for validation
+    logger.log(`🔔 Validating signature with URL: ${webhookUrl}`);
+    logger.log(`🔔 Expected Twilio webhook URL should be: https://sandwich-project-platform-final-katielong2316.replit.app/api/sms/webhook`);
     
     // Validate the Twilio request signature
     const isValidRequest = validateRequest(
-      process.env.TWILIO_AUTH_TOKEN,
+      authToken,
       twilioSignature,
       webhookUrl,
       req.body
@@ -503,6 +534,13 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       logger.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
       logger.warn(`Attempted URL: ${webhookUrl}`);
       logger.warn(`Signature: ${twilioSignature}`);
+      logger.warn(`Auth token prefix: ${authToken.substring(0, 4)}...`);
+      logger.warn(`x-forwarded-proto: ${forwardedProto}`);
+      logger.warn(`host header: ${host}`);
+      logger.warn(`originalUrl: ${req.originalUrl}`);
+      logger.warn(`Body keys: ${Object.keys(req.body || {}).join(', ')}`);
+      logger.warn(`🔧 TROUBLESHOOTING: Ensure TWILIO_AUTH_TOKEN is set to your Twilio Auth Token (not API Key Secret)`);
+      logger.warn(`   You can find your Auth Token in Twilio Console > Account > API keys and tokens`);
       return res.status(403).json({ error: 'Forbidden: Invalid signature' });
     }
     
@@ -605,11 +643,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
       if (!hasReceivedWelcome) {
         try {
+          const campaignType = freshSmsConsent.campaignType || 'hosts';
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
           if (welcomeResult.success) {
-            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation (campaign: ${campaignType})`);
 
             // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {
@@ -729,11 +768,12 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
       if (!hasReceivedWelcome) {
         try {
+          const campaignType = freshSmsConsent.campaignType || 'hosts';
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber, campaignType);
 
           if (welcomeResult.success) {
-            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation (campaign: ${campaignType})`);
 
             // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {

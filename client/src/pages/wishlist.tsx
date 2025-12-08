@@ -11,6 +11,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useEffect } from 'react';
 import {
   Copy,
@@ -33,6 +34,7 @@ export default function WishlistPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { trackView, trackClick } = useActivityTracker();
+  const { track } = useOnboardingTracker();
 
   useEffect(() => {
     trackView(
@@ -41,6 +43,7 @@ export default function WishlistPage() {
       'Amazon Wishlist',
       'User accessed wishlist page'
     );
+    track('view_wishlist');
   }, [trackView]);
 
   const [newSuggestion, setNewSuggestion] = useState({

@@ -1,21 +1,10 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import { logger } from '../utils/production-safe-logger';
+import { canonicalizeOrgName } from '../utils/organization-canonicalization';
 
 interface GroupsCatalogDependencies {
   isAuthenticated: any;
-}
-
-// Canonicalize organization names for robust matching
-function canonicalizeOrgName(orgName: string): string {
-  if (!orgName || typeof orgName !== 'string') return '';
-
-  return orgName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ') // Collapse multiple whitespace to single space
-    .replace(/[&\.,;:!?"'\-_]/g, '') // Remove common punctuation
-    .replace(/\s/g, ''); // Remove all remaining spaces
 }
 
 export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {

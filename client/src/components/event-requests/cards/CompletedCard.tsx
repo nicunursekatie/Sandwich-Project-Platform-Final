@@ -358,6 +358,28 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <span className="ml-2">• {request.phone}</span>
               )}
             </div>
+            {/* Backup Contact */}
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone) && (
+              <div className="text-sm text-gray-600 mb-2 pl-2 border-l-2 border-gray-300">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Backup Contact</div>
+                <div>
+                  {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+                    <strong>
+                      {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                      {(request as any).backupContactRole && (
+                        <span className="text-gray-500 font-normal ml-1">({(request as any).backupContactRole})</span>
+                      )}
+                    </strong>
+                  )}
+                  {(request as any).backupContactEmail && (
+                    <span className="ml-2">• {(request as any).backupContactEmail}</span>
+                  )}
+                  {(request as any).backupContactPhone && (
+                    <span className="ml-2">• {(request as any).backupContactPhone}</span>
+                  )}
+                </div>
+              </div>
+            )}
             {/* TSP Contact */}
             <div className="text-sm text-[#D68319] mb-2 group relative">
               <span className="font-medium">TSP Contact: </span>
@@ -2618,6 +2640,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -2811,31 +2834,33 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             </Tooltip>
 
             {canDelete && (
-              <ConfirmationDialog
-                trigger={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700"
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this event</p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-                title="Delete Completed Event"
-                description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
-                confirmText="Delete Event"
-                cancelText="Cancel"
-                onConfirm={onDelete}
-                variant="destructive"
-              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete Completed Event"
+                      description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
+                      confirmText="Delete Event"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </TooltipProvider>

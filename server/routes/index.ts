@@ -1,7 +1,7 @@
 import { Router } from 'express';
 // Import organized feature routers from feature-first folders
 import usersRouter from './users';
-import createAuthRoutes from './users/auth';
+import createAuthRouter from './auth'; // New consolidated auth router
 import createProjectRoutes from './projects';
 import createAdminRoutes from './core/admin';
 import createGroupsCatalogRoutes from './collections/groups-catalog';
@@ -75,6 +75,7 @@ import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
+import { createOrganizationsAdminRoutes } from './organizations-admin';
 
 // Import centralized middleware
 import {
@@ -106,6 +107,12 @@ export function createMainRoutes(deps: RouterDependencies) {
     smsWebhookRoutes
   );
 
+  // ========================================================================
+  // AUTHENTICATION - Single consolidated auth router
+  // ========================================================================
+  const authRouter = createAuthRouter();
+  router.use('/api/auth', authRouter);
+
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
     isAuthenticated: deps.isAuthenticated,
@@ -114,22 +121,16 @@ export function createMainRoutes(deps: RouterDependencies) {
   });
   router.use('/api', adminRoutes);
 
-  const authRoutes = createAuthRoutes({
-    isAuthenticated: deps.isAuthenticated,
-  });
-  router.use('/api/auth', authRoutes);
-
-  // Backwards compatibility: redirect /api/login to /api/auth/login
-  router.all('/api/login', (req, res, next) => {
-    req.url = '/api/auth/login';
-    next('route');
-  });
-  router.use('/api/login', authRoutes);
-
   const groupsCatalogRoutes = createGroupsCatalogRoutes({
     isAuthenticated: deps.isAuthenticated,
   });
   router.use('/api/groups-catalog', groupsCatalogRoutes);
+
+  const organizationsAdminRoutes = createOrganizationsAdminRoutes({
+    isAuthenticated: deps.isAuthenticated,
+    requirePermission: deps.requirePermission,
+  });
+  router.use('/api/organizations-admin', organizationsAdminRoutes);
 
   // New organized feature routes with consistent middleware
   // Core application routes (health checks, session management)

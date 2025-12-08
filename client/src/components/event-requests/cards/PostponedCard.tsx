@@ -397,6 +397,7 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -525,31 +526,33 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
             </Tooltip>
 
             {canDelete && (
-              <ConfirmationDialog
-                trigger={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700 h-8"
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this event request</p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-                title="Delete Postponed Event"
-                description={`Are you sure you want to delete the postponed event request from ${request.organizationName}? This action cannot be undone.`}
-                confirmText="Delete Request"
-                cancelText="Cancel"
-                onConfirm={onDelete}
-                variant="destructive"
-              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 h-8"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete Postponed Event"
+                      description={`Are you sure you want to delete the postponed event request from ${request.organizationName}? This action cannot be undone.`}
+                      confirmText="Delete Request"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event request</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </TooltipProvider>
