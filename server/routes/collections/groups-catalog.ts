@@ -15,6 +15,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
     try {
       const user = req.user;
       const viewMode = (req.query.viewMode as string) || 'aggregated';
+      if (viewMode !== 'aggregated' && viewMode !== 'individual') {
+        return res.status(400).json({ message: 'Invalid viewMode. Must be "aggregated" or "individual"' });
+      }
 
       // Get all event requests and aggregate by organization + department
       const allEventRequests = await storage.getAllEventRequests();
