@@ -289,6 +289,19 @@ const date = parseCollectionDate(dateString);
 id: serial("id").primaryKey(),  // If already serial, keep it
 ```
 
+#### Raw SQL Queries with db.execute()
+
+**CRITICAL**: When using `db.execute()` with raw SQL, results return as a `QueryResult` object, NOT as an array directly.
+
+```typescript
+// CORRECT: Access .rows property
+const result = await db.execute(sql`SELECT * FROM users WHERE id = ${userId}`);
+const users = result.rows;  // ✅ Access .rows
+
+// WRONG: Treating result as array
+const users = await db.execute(sql`SELECT * FROM users`); // ❌ Returns { rows: [...], rowCount: n }
+```
+
 ### React Query Patterns
 
 #### Query Keys
@@ -329,11 +342,13 @@ These sections are critical and have complex dependencies:
 - Background sync scheduler (`background-sync-service.ts`)
 - Google Sheets ingestion pipeline (`google-sheets-*.ts`)
 - Cron jobs (`server/index.ts` - cron section)
+- Organization Merge System (duplicate detection and batch updates)
 
 #### Data Integrity
 - `sandwich_collections` table - operational source of truth
 - External ID blacklist system (prevents duplicate imports)
 - User permission system (`PERMISSIONS` constants)
+- Event Impact Report data source logic (only `sandwichCollections`, never `eventRequests`)
 
 ---
 
@@ -486,6 +501,51 @@ socket.emit('new_event', data);
 
 ---
 
+## Key Features & Implementation Details
+
+### Organization Merge System
+
+Admin tool to merge duplicate organizations (e.g., "Dutton Family" vs "Dutton family"). Includes:
+- Duplicate detection with similarity scoring
+- Merge preview
+- Batch updates across `event_requests` and `sandwich_collections` tables
+
+**CRITICAL**: When using `db.execute()` with raw SQL in this system, results return as `{ rows: [...], rowCount: n }` QueryResult object. Always access `.rows` to get the data array.
+
+### SMS Alert Configuration System
+
+- Users can opt-in to SMS notifications via the SMS opt-in page
+- Event reminders support SMS delivery (configurable in Alert Preferences as email/sms/both)
+- Other alert types (TSP contact assignments, chat mentions, task assignments, collection reminders) show "Coming Soon" for SMS
+- All alert types support email delivery
+- Key files:
+  - `client/src/components/alert-preferences.tsx` (UI with `smsImplemented` flag per alert)
+  - `client/src/pages/sms-opt-in.tsx` (opt-in flow)
+  - `server/services/cron-jobs.ts` (SMS sending via Twilio)
+
+### Guided Tours & Onboarding System
+
+Interactive step-by-step tours for new users covering all major features. Tours are defined in `client/src/lib/tourDefinitions.ts` with permission-based filtering. Available tours include:
+- Resources Overview
+- Host Location Map
+- Event Planning Overview
+- Collections Log
+- Dashboard & Analytics
+- Team Chat
+- TSP Holding Zone
+- Projects
+- Hosts Management
+- Event Reminders
+- Availability
+- Volunteers
+- Driver Planning
+
+### Automated Reminders
+
+24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels.
+
+---
+
 ## External Integrations
 
 ### Twilio SMS
@@ -509,6 +569,17 @@ socket.emit('new_event', data);
 - Background sync every 5 minutes
 - Uses permanent external_id blacklist to prevent duplicate imports
 - Advisory locks replaced with in-memory locking (Neon serverless limitation)
+- Comprehensive monitoring and email alerts for no sync, stale sync, failures, and service stoppage
+
+### Data Source Rules
+
+#### Event Impact Reports
+
+**CRITICAL**: Event Impact Reports ONLY count sandwiches from actual `sandwichCollections` records. They do NOT fall back to estimated/planned counts from `eventRequests`.
+
+#### Sandwich Collections
+
+The `sandwich_collections` table is the **operational source of truth** for all sandwich data.
 
 ---
 
@@ -590,21 +661,35 @@ See **[SECURITY-NUMERIC-PERMISSIONS.md](docs/SECURITY-NUMERIC-PERMISSIONS.md)** 
 
 ---
 
-## UI/UX Conventions
+## UI/UX Conventions & Philosophy
 
-### Form Labels
+### User Preferences
 
-- Button labels must be specific: "Save Event" not "Submit"
-- Avoid ambiguous labels
+- **Communication Style**: Use simple, everyday language - avoid technical jargon
+- **Button Labels**: Must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data" or "Save Event"
+- **Form Design**: Eliminate redundant or confusing form fields - host dialogs should have a single "Host Location Name" field instead of separate "Name" and "Host Location" fields
+- **Mobile UX Priority**: Mobile user experience is critical - chat positioning and space efficiency are key concerns. Vehicle type should NOT be required for new driver entries
+- **Desktop Chat UX**: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently
 
-### Mobile Priority
+### Design System
 
-- Chat positioning and space efficiency are critical
-- Desktop requires proper scrolling without nested containers
+- **Color Palette**: Adheres to The Sandwich Project's official color palette
+- **Typography**: Roboto font family
+- **Visual Style**: Modern, compact design with:
+  - White card backgrounds
+  - Colored left borders for status indicators
+  - Warm paper tone page background
+  - Subtle shadows
+  - Strong tonal hierarchy
+- **Map Markers**:
+  - Purple markers for recipients
+  - Blue markers for events
+  - Green markers for hosts
+- **Week Boundaries**: Operational monitoring uses Wednesday-Tuesday week boundaries
 
 ### Analytics Philosophy
 
-**NEVER compare or rank hosts against each other** - The Sandwich Project focuses on increasing volunteer turnout globally, not ranking hosts.
+**NEVER compare or rank hosts against each other** - The Sandwich Project focuses on increasing volunteer turnout globally, not ranking hosts. All host comparison features, "top performing hosts", "underperforming hosts", and similar language must be removed from analytics.
 
 ---
 
