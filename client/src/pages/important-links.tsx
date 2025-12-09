@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Calculator,
   Link as LinkIcon,
+  Heart,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
@@ -49,6 +50,8 @@ export default function ImportantLinks() {
     'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
   const donationReceiptUrl =
     'https://nicunursekatie.github.io/sandwichinventory/donation-receipt.html';
+  const donorManagementUrl =
+    'https://bread-and-butter-donors.lovable.app/';
   // Flyers configuration - add more flyers here as they become available
   const flyers = [
     {
@@ -58,16 +61,16 @@ export default function ImportantLinks() {
       description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
     },
     {
-      id: 'volunteer',
-      name: 'Volunteer Recruitment Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/volunteer.html',
-      description: 'Flyer for recruiting volunteers',
+      id: 'digital',
+      name: 'Digital Flyer',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/digital-flyer.html',
+      description: 'Digital promotional flyer for The Sandwich Project',
     },
     {
-      id: 'group-host',
-      name: 'Group Host Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/grouphost.html',
-      description: 'Information for organizations that want to host group events',
+      id: 'qr-margins',
+      name: 'QR Code Flyer with Margins',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
+      description: 'Printable QR code flyer with margins for easy printing',
     },
   ];
 
@@ -188,7 +191,7 @@ export default function ImportantLinks() {
       </div>
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="toolkit" className="flex items-center gap-2">
             📦 Event Toolkit
           </TabsTrigger>
@@ -201,6 +204,10 @@ export default function ImportantLinks() {
           </TabsTrigger>
           <TabsTrigger value="donation-receipt" className="flex items-center gap-2">
             🧾 Donation Receipt
+          </TabsTrigger>
+          <TabsTrigger value="donor-management" className="flex items-center gap-2">
+            <Heart className="h-4 w-4" />
+            Donor Management
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             📅 Events Sheet
@@ -541,6 +548,91 @@ export default function ImportantLinks() {
           </Card>
         </TabsContent>
 
+        {/* Donor Management Platform Tab */}
+        <TabsContent value="donor-management" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-pink-500" />
+                Donor Management Platform
+              </CardTitle>
+              <CardDescription>
+                Track and manage donor relationships, donations, and engagement for The Sandwich Project
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1 flex flex-col">
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => window.open(donorManagementUrl, '_blank')}
+                    className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-8 py-3 text-base flex-1"
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Donor Management Platform
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(donorManagementUrl);
+                        alert('Link copied to clipboard!');
+                      } catch (error) {
+                        logger.error('Failed to copy:', error);
+                      }
+                    }}
+                    className="border-pink-600 text-pink-600 hover:bg-pink-50 px-6 py-3 font-medium"
+                  >
+                    📋 Copy Link
+                  </Button>
+                </div>
+
+                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-pink-900 mb-2">Platform Link:</h3>
+                  <code className="text-sm bg-white px-3 py-2 rounded border border-pink-200 block break-all">
+                    {donorManagementUrl}
+                  </code>
+                  <p className="text-sm text-pink-700 mt-2">
+                    Manage donor information, track donations, and build lasting relationships with supporters
+                  </p>
+                </div>
+
+                {/* Feature highlights */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">👥 Donor Profiles</p>
+                    <p className="text-xs text-gray-600">Track donor information & history</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">💰 Donation Tracking</p>
+                    <p className="text-xs text-gray-600">Log and manage contributions</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">📊 Analytics</p>
+                    <p className="text-xs text-gray-600">View donation trends & insights</p>
+                  </div>
+                </div>
+
+                {/* Embedded Platform */}
+                <div className="border rounded-lg overflow-hidden flex-1">
+                  <iframe
+                    src={donorManagementUrl}
+                    className="w-full h-full border-0"
+                    style={{
+                      minHeight: '800px',
+                      height: '100%',
+                    }}
+                    title="Donor Management Platform"
+                    loading="eager"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Events Google Sheet Tab */}
         <TabsContent value="events" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
@@ -821,7 +913,7 @@ export default function ImportantLinks() {
         contextData={{
           currentView: 'important-links',
           summaryStats: {
-            totalTools: 4,
+            totalTools: 5,
             totalFlyers: flyers.length,
           },
         }}
@@ -831,6 +923,7 @@ export default function ImportantLinks() {
             { name: 'Event Estimator', url: eventEstimatorUrl, type: 'tool' },
             { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
             { name: 'Donation Receipt Generator', url: donationReceiptUrl, type: 'tool', description: 'Generate tax-deductible donation receipts for in-kind donations' },
+            { name: 'Donor Management Platform', url: donorManagementUrl, type: 'tool', description: 'Track and manage donor relationships, donations, and engagement' },
             ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
           ],
         })}

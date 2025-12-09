@@ -1136,6 +1136,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
                 <SelectItem value="postponed">Postponed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -55,6 +55,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -72,6 +73,9 @@ import { Info } from 'lucide-react';
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
   const { track } = useOnboardingTracker();
+
+  // Enable real-time updates for event requests (e.g., from Google Sheets imports)
+  useEventRequestSocket();
 
   // Track onboarding challenge on component mount
   useEffect(() => {

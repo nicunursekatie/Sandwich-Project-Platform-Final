@@ -78,6 +78,7 @@ import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
+import peopleSearchRouter from './people-search';
 
 // Import centralized middleware
 import {
@@ -333,6 +334,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     searchRouter
   );
   router.use('/api/search', createErrorHandler('search'));
+
+  // People search - unified search across all contact databases
+  router.use(
+    '/api/people',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    peopleSearchRouter
+  );
+  router.use('/api/people', createErrorHandler('people-search'));
 
   // Smart Search - AI-powered app navigation
   const smartSearchRouter = createSmartSearchRouter(smartSearchService);

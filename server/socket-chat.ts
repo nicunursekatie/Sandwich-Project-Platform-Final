@@ -45,10 +45,25 @@ export function emitMessagingEvent(userId: string, eventType: 'new_message' | 'm
     logger.warn('Socket.IO not initialized, cannot emit messaging event');
     return;
   }
-  
+
   const messagingChannel = `messaging:${userId}`;
   socketInstance.to(messagingChannel).emit(eventType, data);
   logger.log(`Emitted ${eventType} to ${messagingChannel}`);
+}
+
+/**
+ * Emit an event request update to all connected clients
+ * Use this to broadcast new/updated event requests for real-time UI updates
+ */
+export function emitEventRequestUpdate(eventType: 'event_request_created' | 'event_request_updated' | 'event_request_deleted', data: any): void {
+  if (!socketInstance) {
+    logger.warn('Socket.IO not initialized, cannot emit event request update');
+    return;
+  }
+
+  // Broadcast to all connected clients
+  socketInstance.emit(eventType, data);
+  logger.log(`Emitted ${eventType} to all clients`);
 }
 
 export function setupSocketChat(httpServer: HttpServer) {
