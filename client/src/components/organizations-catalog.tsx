@@ -1104,16 +1104,28 @@ export default function GroupCatalog({
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
-                            onClick={() => handleEditName({
-                              organizationName: group.groupName,
-                              contactName: group.departments[0]?.contactName || '',
-                              department: undefined, // Don't include department for org-level edits - affects all departments
-                              latestRequestDate: group.departments[0]?.latestRequestDate || '',
-                              latestActivityDate: group.departments[0]?.latestActivityDate || '',
-                              totalRequests: group.departments[0]?.totalRequests || 0,
-                              status: group.departments[0]?.status || 'new',
-                              hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
-                            })}
+                            onClick={() => {
+                              // Collect all event IDs from all departments in this group
+                              const allEventIds = group.departments.flatMap(dept => dept.eventIds || []);
+                              const uniqueEventIds = [...new Set(allEventIds)].filter(id => id !== null && id !== undefined);
+                              
+                              // Get the first department's data as a base
+                              const firstDept = group.departments[0];
+                              
+                              handleEditName({
+                                organizationName: group.groupName,
+                                contactName: firstDept?.contactName || '',
+                                department: firstDept?.department || '',
+                                latestRequestDate: firstDept?.latestRequestDate || '',
+                                latestActivityDate: firstDept?.latestActivityDate || '',
+                                totalRequests: firstDept?.totalRequests || 0,
+                                status: firstDept?.status || 'new',
+                                hasHostedEvent: firstDept?.hasHostedEvent || false,
+                                // Include event IDs so department editing is enabled
+                                eventIds: uniqueEventIds.length > 0 ? uniqueEventIds : undefined,
+                                linkedEventId: uniqueEventIds.length === 1 ? uniqueEventIds[0] : undefined,
+                              });
+                            }}
                             title="Rename organization"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
