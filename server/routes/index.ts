@@ -431,9 +431,18 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/activities', createErrorHandler('activities'));
 
   // Google Sheets Import route - MUST be before authenticated routes
-  // This endpoint uses its own API key authentication
-  router.post(
-    '/api/event-requests/import-from-sheets',
+  // This endpoint uses its own API key authentication (bypasses session auth)
+  // Mount at /api/event-requests so the router's /import-from-sheets path matches
+  router.use(
+    '/api/event-requests',
+    (req, res, next) => {
+      // Only allow unauthenticated access to the import-from-sheets endpoint
+      if (req.path === '/import-from-sheets' && req.method === 'POST') {
+        return next();
+      }
+      // All other paths need authentication - skip to next middleware
+      return next('route');
+    },
     ...createStandardMiddleware(),
     eventRequestsRouter
   );
