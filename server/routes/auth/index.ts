@@ -84,10 +84,9 @@ export function createAuthRouter() {
       }
 
       // Get user permissions (prefer stored permissions, fall back to role defaults)
-      const basePermissions =
-        Array.isArray(user.permissions) && user.permissions.length > 0
-          ? user.permissions
-          : getDefaultPermissionsForRole(user.role);
+      const basePermissions = Array.isArray(user.permissions)
+        ? user.permissions // Honor explicitly-set permissions, even empty
+        : getDefaultPermissionsForRole(user.role); // Fallback only when not set
       const permissions = applyPermissionDependencies(basePermissions);
 
       // Create session user object
@@ -198,10 +197,9 @@ export function createAuthRouter() {
       }
 
       // Get permissions (prefer stored permissions, fall back to role defaults)
-      const basePermissions =
-        Array.isArray(freshUser.permissions) && freshUser.permissions.length > 0
-          ? freshUser.permissions
-          : getDefaultPermissionsForRole(freshUser.role);
+      const basePermissions = Array.isArray(freshUser.permissions)
+        ? freshUser.permissions
+        : getDefaultPermissionsForRole(freshUser.role);
       const permissions = applyPermissionDependencies(basePermissions);
 
       return res.json({
