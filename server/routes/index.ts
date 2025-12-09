@@ -430,7 +430,15 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/activities', createErrorHandler('activities'));
 
-  // Event Requests routes
+  // Google Sheets Import route - MUST be before authenticated routes
+  // This endpoint uses its own API key authentication
+  router.post(
+    '/api/event-requests/import-from-sheets',
+    ...createStandardMiddleware(),
+    eventRequestsRouter
+  );
+
+  // Event Requests routes (authenticated)
   router.use(
     '/api/event-requests',
     deps.isAuthenticated,
