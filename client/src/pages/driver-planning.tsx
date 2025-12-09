@@ -420,6 +420,7 @@ export default function DriverPlanningDashboard() {
   const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
   const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
+  const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -592,6 +593,26 @@ export default function DriverPlanningDashboard() {
         return dateA.getTime() - dateB.getTime();
       });
   }, [allEvents, weeksAhead]);
+
+  // Filter events based on staffing needs toggle
+  const events = useMemo(() => {
+    if (!showOnlyUnmetStaffing) return upcomingEvents;
+
+    return upcomingEvents.filter(event => {
+      const driversNeeded = event.driversNeeded || 1;
+      const driversAssigned = event.assignedDriverIds?.length || 0;
+      return driversAssigned < driversNeeded;
+    });
+  }, [upcomingEvents, showOnlyUnmetStaffing]);
+
+  // Count of events with unmet staffing needs
+  const unmetStaffingCount = useMemo(() => {
+    return upcomingEvents.filter(event => {
+      const driversNeeded = event.driversNeeded || 1;
+      const driversAssigned = event.assignedDriverIds?.length || 0;
+      return driversAssigned < driversNeeded;
+    }).length;
+  }, [upcomingEvents]);
 
   // Get active drivers
   const activeDrivers = useMemo(() => {
@@ -788,7 +809,7 @@ export default function DriverPlanningDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Driver Planning</h1>
               <p className="text-sm text-gray-600">
-                {upcomingEvents.length} upcoming event{upcomingEvents.length !== 1 ? 's' : ''} needing drivers
+                {unmetStaffingCount} event{unmetStaffingCount !== 1 ? 's' : ''} needing drivers ({upcomingEvents.length} total upcoming)
               </p>
             </div>
           </div>
@@ -823,7 +844,7 @@ export default function DriverPlanningDashboard() {
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-gray-900 truncate">Driver Planning</h1>
               <p className="text-xs text-gray-600">
-                {upcomingEvents.length} event{upcomingEvents.length !== 1 ? 's' : ''}
+                {unmetStaffingCount} needing drivers
               </p>
             </div>
           </div>
@@ -850,15 +871,29 @@ export default function DriverPlanningDashboard() {
       <div className="flex-1 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
         <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list">
-          <div className="p-3 border-b bg-white">
+          <div className="p-3 border-b bg-white space-y-2">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#007E8C]" />
-              Upcoming Events ({upcomingEvents.length})
+              Events ({events.length}{showOnlyUnmetStaffing ? ` of ${upcomingEvents.length}` : ''})
             </h2>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOnlyUnmetStaffing}
+                onChange={(e) => setShowOnlyUnmetStaffing(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Only show events needing drivers</span>
+              {showOnlyUnmetStaffing && unmetStaffingCount > 0 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                  {unmetStaffingCount}
+                </Badge>
+              )}
+            </label>
           </div>
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-2">
-              {upcomingEvents.map((event) => {
+              {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
@@ -928,10 +963,24 @@ export default function DriverPlanningDashboard() {
                 );
               })}
 
-              {upcomingEvents.length === 0 && (
+              {events.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No scheduled events in this period</p>
+                  <p className="text-sm">
+                    {showOnlyUnmetStaffing && upcomingEvents.length > 0
+                      ? 'All events have drivers assigned!'
+                      : 'No scheduled events in this period'}
+                  </p>
+                  {showOnlyUnmetStaffing && upcomingEvents.length > 0 && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setShowOnlyUnmetStaffing(false)}
+                      className="text-[#007E8C] mt-2"
+                    >
+                      Show all {upcomingEvents.length} events
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -1333,15 +1382,24 @@ export default function DriverPlanningDashboard() {
       <div className="flex-1 hidden md:flex lg:hidden overflow-hidden">
         {/* Left Panel - Event List */}
         <div className="w-72 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list-tablet">
-          <div className="p-3 border-b bg-white">
+          <div className="p-3 border-b bg-white space-y-2">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-sm">
               <Calendar className="w-4 h-4 text-[#007E8C]" />
-              Events ({upcomingEvents.length})
+              Events ({events.length}{showOnlyUnmetStaffing ? ` of ${upcomingEvents.length}` : ''})
             </h2>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOnlyUnmetStaffing}
+                onChange={(e) => setShowOnlyUnmetStaffing(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Needing drivers only</span>
+            </label>
           </div>
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-2">
-              {upcomingEvents.map((event) => {
+              {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
@@ -1379,10 +1437,14 @@ export default function DriverPlanningDashboard() {
                   </Card>
                 );
               })}
-              {upcomingEvents.length === 0 && (
+              {events.length === 0 && (
                 <div className="text-center py-4 text-gray-500">
                   <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-xs">No events</p>
+                  <p className="text-xs">
+                    {showOnlyUnmetStaffing && upcomingEvents.length > 0
+                      ? 'All staffed!'
+                      : 'No events'}
+                  </p>
                 </div>
               )}
             </div>
@@ -1753,7 +1815,7 @@ export default function DriverPlanningDashboard() {
             >
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="font-semibold text-sm">Events ({upcomingEvents.length})</span>
+                <span className="font-semibold text-sm">Events ({events.length}{showOnlyUnmetStaffing ? `/${upcomingEvents.length}` : ''})</span>
                 {selectedEvent && mobileEventsCollapsed && (
                   <Badge variant="outline" className="text-[10px]">
                     {selectedEvent.organizationName?.substring(0, 15)}...
@@ -1781,12 +1843,27 @@ export default function DriverPlanningDashboard() {
                 )}
               </div>
             </button>
-            
+
+            {/* Filter Toggle */}
+            {!mobileEventsCollapsed && (
+              <div className="px-3 py-2 border-b bg-gray-50">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyUnmetStaffing}
+                    onChange={(e) => setShowOnlyUnmetStaffing(e.target.checked)}
+                    className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+                  />
+                  <span className="text-gray-600">Only show events needing drivers</span>
+                </label>
+              </div>
+            )}
+
             {/* Events List Content */}
             {!mobileEventsCollapsed && (
               <ScrollArea className="flex-1">
                 <div className="p-3 space-y-2">
-                  {upcomingEvents.map((event) => {
+                  {events.map((event) => {
                     const isSelected = selectedEvent?.id === event.id;
                     const eventDate = event.scheduledEventDate || event.desiredEventDate;
                     const driversAssigned = event.assignedDriverIds?.length || 0;
@@ -1848,10 +1925,24 @@ export default function DriverPlanningDashboard() {
                       </Card>
                     );
                   })}
-                  {upcomingEvents.length === 0 && (
+                  {events.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">No scheduled events in this period</p>
+                      <p className="text-sm">
+                        {showOnlyUnmetStaffing && upcomingEvents.length > 0
+                          ? 'All events have drivers assigned!'
+                          : 'No scheduled events in this period'}
+                      </p>
+                      {showOnlyUnmetStaffing && upcomingEvents.length > 0 && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setShowOnlyUnmetStaffing(false)}
+                          className="text-[#007E8C] mt-2"
+                        >
+                          Show all {upcomingEvents.length} events
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
