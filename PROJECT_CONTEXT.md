@@ -311,6 +311,12 @@ const mutation = useMutation({
 
 - Uses Replit Twilio integration with API Key authentication
 - Configured via environment secrets: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+- Text-to-App (Holding Zone ideas) pipeline:
+  - Inbound SMS webhook at `/api/sms/webhook` (Twilio signature validated) handled in `server/routes/sms-users.ts`
+  - Users text `IDEA <their idea>`; message is turned into a Holding Zone item (`teamBoardItems` table) with `createdByName` marked as “(via SMS)” and `createdBy` set to the matched user or `sms-system`
+  - Confirmation SMS is sent back; failures return a polite error via Twilio response
+  - Opt-in/consent is stored on the user (`metadata.smsConsent`) and checked before use
+  - Keep the webhook URL in Twilio console synced with deployment URL (`https://<host>/api/sms/webhook`)
 
 ### SendGrid Email
 
