@@ -14,7 +14,7 @@
 import { Router, type Request, type Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { authService, AuthError } from '../../services/auth.service';
-import { getDefaultPermissionsForRole } from '../../../shared/auth-utils';
+import { applyPermissionDependencies, getDefaultPermissionsForRole } from '../../../shared/auth-utils';
 import { logger } from '../../utils/production-safe-logger';
 import { isAuthenticated } from '../../middleware/auth';
 import { loginRateLimiter } from '../../middleware/rate-limiter';
@@ -83,8 +83,12 @@ export function createAuthRouter() {
         });
       }
 
-      // Get user permissions
-      const permissions = getDefaultPermissionsForRole(user.role);
+      // Get user permissions (prefer stored permissions, fall back to role defaults)
+      const basePermissions =
+        Array.isArray(user.permissions) && user.permissions.length > 0
+          ? user.permissions
+          : getDefaultPermissionsForRole(user.role);
+      const permissions = applyPermissionDependencies(basePermissions);
 
       // Create session user object
       const sessionUser = authService.createSessionUser(user, permissions);
@@ -193,8 +197,12 @@ export function createAuthRouter() {
         return res.status(401).json({ message: 'User not found' });
       }
 
-      // Get permissions
-      const permissions = getDefaultPermissionsForRole(freshUser.role);
+      // Get permissions (prefer stored permissions, fall back to role defaults)
+      const basePermissions =
+        Array.isArray(freshUser.permissions) && freshUser.permissions.length > 0
+          ? freshUser.permissions
+          : getDefaultPermissionsForRole(freshUser.role);
+      const permissions = applyPermissionDependencies(basePermissions);
 
       return res.json({
         ...freshUser,
