@@ -1283,12 +1283,34 @@ export default function GroupCatalog({
                                         </Badge>
                                       </div>
                                     )}
+                                    {/* Partner Organizations Display - show below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="flex items-center mt-2 text-xs sm:text-sm text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
+                                      </div>
+                                    )}
                                     {/* Co-host Badge (for primary entries that have co-hosts) - hidden on mobile */}
                                     {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
                                       <div className="hidden sm:flex items-center mt-2">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           Co-hosted with {org.coHostNames.join(', ')}
                                         </Badge>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Organization Name */}
+                                  <div className="mb-2 sm:mb-3">
+                                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base font-semibold text-gray-900">
+                                      <Building className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0" />
+                                      <span>{org.organizationName}</span>
+                                    </div>
+                                    {/* Partner Organizations Display - below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600 ml-6">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
                                       </div>
                                     )}
                                   </div>
@@ -1622,6 +1644,13 @@ export default function GroupCatalog({
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           {org.partnerRole === 'co-host' ? 'Co-host' : org.partnerRole === 'sponsor' ? 'Sponsor' : 'Partner'}: {org.primaryOrganization}
                                         </Badge>
+                                      </div>
+                                    )}
+                                    {/* Partner Organizations Display - Compact */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
                                       </div>
                                     )}
                                     {/* Co-host Badge - Compact (for primary entries that have co-hosts) */}

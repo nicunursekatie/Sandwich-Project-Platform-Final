@@ -748,6 +748,71 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   title="Add department"
                 />
               ) : null}
+              
+              {/* Partner Organizations */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1.5 mt-1">
+                  <span className="text-[#236383]/60 text-sm">Partner:</span>
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <React.Fragment key={index}>
+                      {isEditingThisCard && editingField === `partnerOrg_${index}` ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-8 text-base w-48"
+                            autoFocus
+                            placeholder="Partner organization"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit();
+                              if (e.key === 'Escape') cancelEdit();
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span
+                          className={`text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                          onClick={() => canEdit && startEditing(`partnerOrg_${index}`, partner.name || '')}
+                        >
+                          {partner.name}
+                          {partner.department && ` • ${partner.department}`}
+                          {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
+                        </span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                  {canEdit && request.partnerOrganizations.length < 2 && (
+                    <Edit2
+                      className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
+                      onClick={() => {
+                        // Add new partner organization (max 2)
+                        const currentPartners = Array.isArray(request.partnerOrganizations) ? request.partnerOrganizations : [];
+                        const newPartners = [...currentPartners, { name: '', department: '', role: 'partner' }];
+                        startEditing('partnerOrganizations', JSON.stringify(newPartners));
+                      }}
+                      title="Add partner organization"
+                    />
+                  )}
+                </div>
+              )}
+              {(!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-[#236383]/60 text-sm">Partner:</span>
+                  <Edit2
+                    className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
+                    onClick={() => {
+                      startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                    }}
+                    title="Add partner organization"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Status Badges */}

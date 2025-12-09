@@ -258,6 +258,57 @@ export const ScheduledTab: React.FC = () => {
             estimatedAttendance: total > 0 ? total : null,
           },
         });
+      } else if (editingField === 'partnerOrganizations' || editingField.startsWith('partnerOrg_')) {
+        // Special handling for partner organizations
+        let partnerOrgs: Array<{ name: string; department?: string; role?: string }>;
+        
+        if (editingField.startsWith('partnerOrg_')) {
+          // Editing a single partner organization name
+          const index = parseInt(editingField.split('_')[1]);
+          const currentEvent = eventRequests.find(r => r.id === editingScheduledId);
+          const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
+            ? (currentEvent.partnerOrganizations as any[]) 
+            : [];
+          partnerOrgs = [...currentPartners];
+          if (partnerOrgs[index]) {
+            // Preserve existing department and role, only update name
+            partnerOrgs[index] = { 
+              ...partnerOrgs[index], 
+              name: editingValue.trim(),
+              // Ensure role exists, default to 'partner'
+              role: partnerOrgs[index].role || 'partner'
+            };
+          } else if (editingValue.trim()) {
+            // If index doesn't exist but we have a value, add it
+            partnerOrgs.push({ 
+              name: editingValue.trim(), 
+              department: '', 
+              role: 'partner' 
+            });
+          }
+        } else {
+          // Editing the full array
+          try {
+            partnerOrgs = JSON.parse(editingValue);
+          } catch {
+            partnerOrgs = [];
+          }
+        }
+        
+        // Filter out empty partners (where name is empty or just whitespace)
+        partnerOrgs = partnerOrgs.filter(p => p && p.name && p.name.trim() !== '');
+        
+        // Ensure each partner has a role
+        partnerOrgs = partnerOrgs.map(p => ({
+          ...p,
+          role: p.role || 'partner'
+        }));
+        
+        // Send the update - use empty array instead of null to ensure it's saved
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { partnerOrganizations: partnerOrgs.length > 0 ? partnerOrgs : [] },
+        });
       } else {
         // Regular field update
         const numericFields = ['driversNeeded', 'speakersNeeded', 'volunteersNeeded'];

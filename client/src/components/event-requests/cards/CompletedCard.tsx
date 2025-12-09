@@ -317,12 +317,29 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         data-testid="button-edit-department"
                       >
                         <Edit2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Partner Organizations */}
+          {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-gray-600 text-sm">&bull;</span>
+              <span className="text-sm text-gray-600">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
 
             <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />

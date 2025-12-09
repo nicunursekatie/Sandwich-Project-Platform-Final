@@ -260,6 +260,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            {/* Partner Organizations */}
+            {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+              <div className="text-sm text-gray-600 mt-1">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </div>
+            )}
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
               onClick={handleConfirmToggleClick}

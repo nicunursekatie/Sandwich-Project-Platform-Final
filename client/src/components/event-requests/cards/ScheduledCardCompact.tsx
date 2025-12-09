@@ -127,6 +127,25 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-lg font-bold text-[#236383] truncate">
                 {request.organizationName}
+                {request.department && (
+                  <span className="text-sm text-gray-600 ml-2">
+                    • {request.department}
+                  </span>
+                )}
+              </h3>
+              {/* Partner Organizations */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="text-xs text-gray-600 mt-1">
+                  <span className="font-medium">Partner:</span>{' '}
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <span key={index}>
+                      {partner.name}
+                      {partner.department && ` • ${partner.department}`}
+                      {index < request.partnerOrganizations.length - 1 && ', '}
+                    </span>
+                  ))}
+                </div>
+              )}
               </h3>
               {request.isConfirmed ? (
                 <Badge className="bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/30 shrink-0">
