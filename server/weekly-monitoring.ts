@@ -4,6 +4,7 @@ import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
 import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
 import { batchSendEmails } from './utils/batch-operations';
+import { FROM_EMAIL } from './config/organization';
 
 if (!process.env.SENDGRID_API_KEY) {
   logger.error(
@@ -43,7 +44,7 @@ const LOCATION_CONTACT_EMAILS: Record<string, string> = {
 
 // Admin email to receive notifications
 const ADMIN_EMAIL = 'katielong2316@gmail.com';
-const FROM_EMAIL = 'katie@thesandwichproject.org'; // Using verified domain sender to avoid spam filters
+// FROM_EMAIL imported from config/organization.ts
 
 interface WeeklySubmissionStatus {
   location: string;

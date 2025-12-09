@@ -1,6 +1,7 @@
 import { logger } from './production-safe-logger';
+import { ADMIN_EMAIL } from '../config/organization';
 
-const ADMIN_MONITORING_EMAIL = 'katie@thesandwichproject.org';
+const ADMIN_MONITORING_EMAIL = ADMIN_EMAIL;
 
 /**
  * Send email notification to admin whenever an SMS is sent
