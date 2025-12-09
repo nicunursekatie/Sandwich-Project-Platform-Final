@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "yearly_calendar_items" (
   "year" integer NOT NULL,
   "title" text NOT NULL,
   "description" text,
-  "category" varchar DEFAULT 'planning',
+  "category" varchar DEFAULT 'preparation',
   "priority" varchar DEFAULT 'medium',
   "created_by" varchar NOT NULL,
   "created_by_name" varchar NOT NULL,

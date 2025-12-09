@@ -52,10 +52,11 @@ const MONTH_NAMES = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  planning: 'bg-blue-100 text-blue-800 border-blue-300',
-  event: 'bg-green-100 text-green-800 border-green-300',
-  review: 'bg-purple-100 text-purple-800 border-purple-300',
-  recruitment: 'bg-orange-100 text-orange-800 border-orange-300',
+  preparation: 'bg-blue-100 text-blue-800 border-blue-300',
+  'event-rush': 'bg-red-100 text-red-800 border-red-300',
+  staffing: 'bg-orange-100 text-orange-800 border-orange-300',
+  board: 'bg-purple-100 text-purple-800 border-purple-300',
+  seasonal: 'bg-green-100 text-green-800 border-green-300',
   other: 'bg-gray-100 text-gray-800 border-gray-300',
 };
 
@@ -77,7 +78,7 @@ export default function YearlyCalendar() {
   const [formMonth, setFormMonth] = useState<number>(new Date().getMonth() + 1);
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formCategory, setFormCategory] = useState<string>('planning');
+  const [formCategory, setFormCategory] = useState<string>('preparation');
   const [formPriority, setFormPriority] = useState<string>('medium');
   const [formIsRecurring, setFormIsRecurring] = useState(true);
 
@@ -96,7 +97,7 @@ export default function YearlyCalendar() {
     enabled: canView,
   });
 
-  // Group items by month
+  // Group items by month and sort them
   const itemsByMonth = useMemo(() => {
     const grouped: Record<number, YearlyCalendarItem[]> = {};
     for (let i = 1; i <= 12; i++) {
@@ -107,6 +108,23 @@ export default function YearlyCalendar() {
         grouped[item.month] = [];
       }
       grouped[item.month].push(item);
+    });
+    // Sort items within each month: incomplete first, then by priority (high -> medium -> low), then by creation date
+    Object.keys(grouped).forEach(month => {
+      const monthNum = parseInt(month);
+      grouped[monthNum].sort((a, b) => {
+        // Incomplete items first
+        if (a.isCompleted !== b.isCompleted) {
+          return a.isCompleted ? 1 : -1;
+        }
+        // Then by priority
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityDiff = (priorityOrder[b.priority as keyof typeof priorityOrder] || 2) - 
+                            (priorityOrder[a.priority as keyof typeof priorityOrder] || 2);
+        if (priorityDiff !== 0) return priorityDiff;
+        // Finally by creation date (newest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
     });
     return grouped;
   }, [items]);
@@ -129,7 +147,7 @@ export default function YearlyCalendar() {
       setIsCreateDialogOpen(false);
       setFormTitle('');
       setFormDescription('');
-      setFormCategory('planning');
+      setFormCategory('preparation');
       setFormPriority('medium');
       setFormIsRecurring(true);
       toast({
@@ -352,11 +370,11 @@ export default function YearlyCalendar() {
             return (
               <Card
                 key={monthNumber}
-                className={`transition-all hover:shadow-md ${
+                className={`transition-all hover:shadow-md flex flex-col ${
                   isCurrentMonth ? 'ring-2 ring-[#236383]' : ''
                 } ${isPastMonth ? 'opacity-75' : ''}`}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-3 flex-shrink-0">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span>{monthName}</span>
                     {monthItems.length > 0 && (
@@ -366,7 +384,7 @@ export default function YearlyCalendar() {
                     )}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-2 flex-1 overflow-y-auto max-h-[500px] min-h-[100px]">
                   {monthItems.length === 0 ? (
                     <p className="text-sm text-gray-400 italic text-center py-4">
                       No items planned
@@ -514,10 +532,11 @@ export default function YearlyCalendar() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="planning">Planning</SelectItem>
-                    <SelectItem value="event">Event</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="recruitment">Recruitment</SelectItem>
+                    <SelectItem value="preparation">Preparation</SelectItem>
+                    <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
+                    <SelectItem value="staffing">Staffing</SelectItem>
+                    <SelectItem value="board">Board/Governance</SelectItem>
+                    <SelectItem value="seasonal">Seasonal Planning</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -616,10 +635,11 @@ export default function YearlyCalendar() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="planning">Planning</SelectItem>
-                    <SelectItem value="event">Event</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="recruitment">Recruitment</SelectItem>
+                    <SelectItem value="preparation">Preparation</SelectItem>
+                    <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
+                    <SelectItem value="staffing">Staffing</SelectItem>
+                    <SelectItem value="board">Board/Governance</SelectItem>
+                    <SelectItem value="seasonal">Seasonal Planning</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>

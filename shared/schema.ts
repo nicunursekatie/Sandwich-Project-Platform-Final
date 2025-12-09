@@ -1810,7 +1810,7 @@ export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
   year: integer('year').notNull(), // Year for this calendar item (allows multiple years)
   title: text('title').notNull(), // Short title/description
   description: text('description'), // Optional longer description
-  category: varchar('category').default('planning'), // 'planning', 'event', 'review', 'recruitment', etc.
+  category: varchar('category').default('preparation'), // 'preparation', 'event-rush', 'staffing', 'board', 'seasonal', 'other'
   priority: varchar('priority').default('medium'), // 'low', 'medium', 'high'
   createdBy: varchar('created_by').notNull(), // User ID who created it
   createdByName: varchar('created_by_name').notNull(), // Display name of creator
