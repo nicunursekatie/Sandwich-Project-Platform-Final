@@ -77,3 +77,9 @@ Desktop.ini*_session.txt
 *.txt
 attached_assets/*.json
 attached_assets/
+
+# Windows reserved device names (cannot be deleted normally)
+nul
+con
+prn
+aux

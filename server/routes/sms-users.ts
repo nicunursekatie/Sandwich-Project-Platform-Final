@@ -10,6 +10,7 @@ import { NotificationService } from '../notification-service';
 import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
 import { db } from '../db';
 import { teamBoardItems } from '@shared/schema';
+import { parseCollectionSMS, generateConfirmationMessage } from '../services/sms-collection-parser';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -934,18 +935,172 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
       }
     }
+    // Handle LOG submissions for Collection Log
+    else if (messageBody.startsWith('LOG ') || messageBody.startsWith('LOG:')) {
+      logger.info(`📊 Collection log received from ${redactedPhone}`);
+
+      try {
+        // Parse the collection message using AI-powered parser
+        const parseResult = await parseCollectionSMS(Body.trim());
+
+        if (!parseResult.success || !parseResult.data) {
+          logger.info(`❌ Failed to parse collection from ${redactedPhone}: ${parseResult.error}`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${parseResult.error || 'Could not parse message. Try: LOG [count] [location name]'}</Message></Response>`);
+        }
+
+        const parsedData = parseResult.data;
+        logger.info(`✅ Parsed collection: ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+
+        // Find user by phone number to attribute the collection
+        const allUsers = await storage.getAllUsers();
+        const senderUser = allUsers.find((user) => {
+          const metadata = user.metadata as any || {};
+          const smsConsent = metadata.smsConsent || {};
+          return smsConsent.phoneNumber === phoneNumber;
+        });
+
+        // Build collection data
+        const collectionData: any = {
+          collectionDate: parsedData.collectionDate,
+          hostName: parsedData.hostName,
+          individualSandwiches: parsedData.individualSandwiches,
+          createdBy: senderUser?.id || 'sms-system',
+          createdByName: senderUser
+            ? (senderUser.firstName && senderUser.lastName
+                ? `${senderUser.firstName} ${senderUser.lastName} (via SMS)`
+                : senderUser.firstName
+                  ? `${senderUser.firstName} (via SMS)`
+                  : senderUser.email
+                    ? `${senderUser.email} (via SMS)`
+                    : `SMS: ${redactedPhone}`)
+            : `SMS: ${redactedPhone}`,
+        };
+
+        // Add sandwich type breakdowns if provided
+        if (parsedData.individualDeli) collectionData.individualDeli = parsedData.individualDeli;
+        if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
+        if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
+        if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+
+        // Add group collections if provided
+        if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
+          collectionData.groupCollections = parsedData.groupCollections;
+          // Set legacy fields for first two groups
+          if (parsedData.groupCollections[0]) {
+            collectionData.group1Name = parsedData.groupCollections[0].name;
+            collectionData.group1Count = parsedData.groupCollections[0].count;
+          }
+          if (parsedData.groupCollections[1]) {
+            collectionData.group2Name = parsedData.groupCollections[1].name;
+            collectionData.group2Count = parsedData.groupCollections[1].count;
+          }
+        }
+
+        // Create the collection
+        const collection = await storage.createSandwichCollection(collectionData);
+        logger.info(`✅ Collection created from SMS: ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+
+        // Generate and send confirmation message
+        const confirmationMsg = generateConfirmationMessage(parsedData);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+      } catch (createError) {
+        logger.error('❌ Failed to create collection from SMS');
+        logger.error('Error:', createError instanceof Error ? createError.message : String(createError));
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your collection right now. Please try again or log in to the app.</Message></Response>`);
+      }
+    }
+    // Handle natural language collection messages (AI-powered parsing)
+    // Check if message looks like a collection log (starts with a number followed by text)
+    else if (/^\d+\s+.+/i.test(Body.trim()) && Body.trim().length >= 5) {
+      logger.info(`📊 Potential collection log (natural language) from ${redactedPhone}: "${Body}"`);
+
+      try {
+        // Parse the collection message using AI-powered parser
+        const parseResult = await parseCollectionSMS(Body.trim());
+
+        // Only process if high confidence parse
+        if (parseResult.success && parseResult.data && parseResult.data.confidence >= 0.7) {
+          const parsedData = parseResult.data;
+          logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+
+          // Find user by phone number
+          const allUsers = await storage.getAllUsers();
+          const senderUser = allUsers.find((user) => {
+            const metadata = user.metadata as any || {};
+            const smsConsent = metadata.smsConsent || {};
+            return smsConsent.phoneNumber === phoneNumber;
+          });
+
+          // Build collection data
+          const collectionData: any = {
+            collectionDate: parsedData.collectionDate,
+            hostName: parsedData.hostName,
+            individualSandwiches: parsedData.individualSandwiches,
+            createdBy: senderUser?.id || 'sms-system',
+            createdByName: senderUser
+              ? (senderUser.firstName && senderUser.lastName
+                  ? `${senderUser.firstName} ${senderUser.lastName} (via SMS)`
+                  : senderUser.firstName
+                    ? `${senderUser.firstName} (via SMS)`
+                    : senderUser.email
+                      ? `${senderUser.email} (via SMS)`
+                      : `SMS: ${redactedPhone}`)
+              : `SMS: ${redactedPhone}`,
+          };
+
+          // Add sandwich type breakdowns if provided
+          if (parsedData.individualDeli) collectionData.individualDeli = parsedData.individualDeli;
+          if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
+          if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
+          if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+
+          // Add group collections if provided
+          if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
+            collectionData.groupCollections = parsedData.groupCollections;
+            if (parsedData.groupCollections[0]) {
+              collectionData.group1Name = parsedData.groupCollections[0].name;
+              collectionData.group1Count = parsedData.groupCollections[0].count;
+            }
+            if (parsedData.groupCollections[1]) {
+              collectionData.group2Name = parsedData.groupCollections[1].name;
+              collectionData.group2Count = parsedData.groupCollections[1].count;
+            }
+          }
+
+          // Create the collection
+          const collection = await storage.createSandwichCollection(collectionData);
+          logger.info(`✅ Collection created from SMS (AI): ID ${collection.id}`);
+
+          // Generate and send confirmation message
+          const confirmationMsg = generateConfirmationMessage(parsedData);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+        } else {
+          // Low confidence or failed parse - send helpful message
+          logger.info(`ℹ️ Low confidence or failed parse from ${redactedPhone}, showing help`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To log sandwiches, text: LOG [count] [location]\nExample: LOG 50 Downtown Library\n\nText HELP for all commands.</Message></Response>`);
+        }
+      } catch (parseError) {
+        logger.error('❌ Error parsing potential collection:', parseError);
+        // Fall through to unrecognized message handler
+      }
+    }
     // Handle HELP requests
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe from messages\n• HELP - Show this message</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] - Log sandwiches\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe\n• HELP - Show this message\n\nExample: LOG 50 Downtown Library</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);
 
       // Send helpful response for unrecognized messages
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To submit an idea to the TSP Holding Zone, text: IDEA followed by your suggestion. Text HELP for more commands.</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP Commands:\n• LOG [count] [location] - Log sandwiches\n• IDEA [text] - Submit idea\n\nExample: LOG 50 Downtown Library\n\nText HELP for more.</Message></Response>`);
     }
 
     // Always respond with TwiML (empty response for unrecognized messages)
