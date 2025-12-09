@@ -215,15 +215,17 @@ export default function TeamAvailability() {
     const grouped: Record<string, CalendarEvent[]> = {};
     events.forEach((event) => {
       if (!event.scheduledEventDate) return;
-      const dateKey = format(new Date(event.scheduledEventDate), 'yyyy-MM-dd');
+      // Parse date string directly without timezone conversion
+      // scheduledEventDate comes as "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS..."
+      const dateStr = String(event.scheduledEventDate);
+      const dateKey = dateStr.split('T')[0]; // Extract just the date portion
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey].push(event);
     });
     Object.values(grouped).forEach((list) =>
       list.sort(
         (a, b) =>
-          new Date(a.scheduledEventDate).getTime() -
-          new Date(b.scheduledEventDate).getTime()
+          String(a.scheduledEventDate).localeCompare(String(b.scheduledEventDate))
       )
     );
     return grouped;
