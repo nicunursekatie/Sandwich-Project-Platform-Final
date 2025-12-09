@@ -955,7 +955,7 @@ export default function Dashboard({
           <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0">
             <ErrorBoundary>
               <Suspense fallback={<SectionLoader />}>
-                {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
+                {activeSection === 'gmail-inbox' || activeSection === 'inbox' || activeSection === 'messages' || activeSection === 'chat' ? (
                   // Special full-height layout for inbox and chat
                   <div className="h-full">{renderContent()}</div>
                 ) : (
