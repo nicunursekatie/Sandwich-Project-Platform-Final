@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
+import { useToast } from '@/hooks/use-toast';
 
 export interface ChatUser {
   id: string;
@@ -55,6 +56,16 @@ const MAX_OPEN_WINDOWS = 3;
 export function InstantMessagingProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [openWindows, setOpenWindows] = useState<ChatWindow[]>([]);
+  const { toast } = useToast();
+
+  // Use refs to access current state in socket handler
+  const openWindowsRef = useRef<ChatWindow[]>([]);
+  const openChatRef = useRef<(user: ChatUser) => void>(() => {});
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    openWindowsRef.current = openWindows;
+  }, [openWindows]);
 
   // Join messaging channel for real-time updates
   useEffect(() => {
@@ -68,14 +79,37 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
     // Listen for new instant messages
     const handleNewMessage = (message: InstantMessage) => {
-      // Add message to the appropriate window
-      setOpenWindows(prev => {
-        const otherUserId = message.senderId === user.id ? message.recipientId : message.senderId;
-        const existingWindow = prev.find(w => w.user.id === otherUserId);
+      // Skip messages from yourself
+      if (message.senderId === user.id) {
+        // Still add to window if open (for multi-device sync)
+        setOpenWindows(prev => {
+          const existingWindow = prev.find(w => w.user.id === message.recipientId);
+          if (existingWindow) {
+            const messageExists = existingWindow.messages.some(m => m.id === message.id);
+            if (messageExists) return prev;
+            return prev.map(w => {
+              if (w.user.id === message.recipientId) {
+                return { ...w, messages: [...w.messages, message] };
+              }
+              return w;
+            });
+          }
+          return prev;
+        });
+        return;
+      }
 
-        if (existingWindow) {
+      const senderId = message.senderId;
+      const currentWindows = openWindowsRef.current;
+      const existingWindow = currentWindows.find(w => w.user.id === senderId);
+
+      if (existingWindow) {
+        // Window is open - add message to it
+        setOpenWindows(prev => {
           return prev.map(w => {
-            if (w.user.id === otherUserId) {
+            if (w.user.id === senderId) {
+              const messageExists = w.messages.some(m => m.id === message.id);
+              if (messageExists) return w;
               return {
                 ...w,
                 messages: [...w.messages, message],
@@ -84,9 +118,37 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
             }
             return w;
           });
-        }
-        return prev;
-      });
+        });
+      } else {
+        // No window open - show toast notification
+        const truncatedContent = message.content.length > 50
+          ? message.content.substring(0, 50) + '...'
+          : message.content;
+
+        toast({
+          title: `New message from ${message.senderName}`,
+          description: truncatedContent,
+          duration: 5000,
+          action: (
+            <button
+              onClick={() => {
+                // Open chat with this user
+                openChatRef.current({
+                  id: message.senderId,
+                  firstName: null,
+                  lastName: null,
+                  displayName: message.senderName,
+                  email: null,
+                  profileImageUrl: null,
+                });
+              }}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+            >
+              Reply
+            </button>
+          ),
+        });
+      }
     };
 
     socket.on('instant_message', handleNewMessage);
@@ -94,7 +156,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     return () => {
       socket.off('instant_message', handleNewMessage);
     };
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   const openChat = useCallback((chatUser: ChatUser) => {
     if (!user?.id) return;
@@ -130,6 +192,11 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     // Load message history
     loadMessageHistory(chatUser.id);
   }, [user?.id]);
+
+  // Keep openChatRef in sync
+  useEffect(() => {
+    openChatRef.current = openChat;
+  }, [openChat]);
 
   const loadMessageHistory = async (otherUserId: string) => {
     try {
