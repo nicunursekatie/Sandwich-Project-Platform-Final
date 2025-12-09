@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
-import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import { VolunteerOpportunitiesMap } from './VolunteerOpportunitiesMap';
 
 export const VolunteerOpportunitiesTab: React.FC = () => {
   const { user } = useAuth();
-  const { filterRequestsByStatus } = useEventFilters();
+  const { eventRequests } = useEventRequestContext();
   const {
     handleSelfSignup,
     canSelfSignup,
@@ -45,23 +44,32 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     return { needsSpeaker, needsVolunteer, needsDriver };
   };
 
-  // Get ONLY scheduled events
-  const scheduledRequests = filterRequestsByStatus('scheduled');
-
-  // Filter events that need volunteers, speakers, or drivers
+  // Filter events that need volunteers, speakers, or drivers (all scheduled events, regardless of current tab/pagination/search)
   const opportunities = useMemo(() => {
-    return scheduledRequests.filter((request: EventRequest) => {
-      const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
+    const needs = eventRequests
+      .filter((request: EventRequest) => request.status === 'scheduled')
+      .filter((request: EventRequest) => {
+        const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
 
-      // Filter by role selection
-      if (roleFilter === 'speaker' && !needsSpeaker) return false;
-      if (roleFilter === 'volunteer' && !needsVolunteer) return false;
-      if (roleFilter === 'driver' && !needsDriver) return false;
+        // Filter by role selection
+        if (roleFilter === 'speaker' && !needsSpeaker) return false;
+        if (roleFilter === 'volunteer' && !needsVolunteer) return false;
+        if (roleFilter === 'driver' && !needsDriver) return false;
 
-      // Show if any role is needed and unfilled
-      return needsSpeaker || needsVolunteer || needsDriver;
-    });
-  }, [scheduledRequests, roleFilter]);
+        // Show if any role is needed and unfilled
+        return needsSpeaker || needsVolunteer || needsDriver;
+      })
+      // Sort by scheduled date (ascending), fallback to desired date
+      .sort((a: EventRequest, b: EventRequest) => {
+        const dateA = a.scheduledEventDate || a.desiredEventDate;
+        const dateB = b.scheduledEventDate || b.desiredEventDate;
+        const timeA = dateA ? new Date(dateA).getTime() : 0;
+        const timeB = dateB ? new Date(dateB).getTime() : 0;
+        return timeA - timeB;
+      });
+
+    return needs;
+  }, [eventRequests, roleFilter]);
 
   const formatEventDate = (request: EventRequest) => {
     const date = request.scheduledEventDate || request.desiredEventDate;

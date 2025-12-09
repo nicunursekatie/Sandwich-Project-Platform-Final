@@ -952,6 +952,17 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         const parsedData = parseResult.data;
         logger.info(`✅ Parsed collection: ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
 
+        // Default collection date to the most recent Wednesday (including today if Wednesday) when message looks like a weekly count
+        const computeMostRecentWednesday = (date: Date) => {
+          const d = new Date(date);
+          const day = d.getDay(); // 0=Sun, 3=Wed
+          const diff = day >= 3 ? day - 3 : day + 4; // days to subtract
+          d.setDate(d.getDate() - diff);
+          return d.toISOString().split('T')[0];
+        };
+        const isWeeklyCount = /weekly\s+count/i.test(Body);
+        const fallbackWednesday = computeMostRecentWednesday(new Date());
+
         // Find user by phone number to attribute the collection
         const allUsers = await storage.getAllUsers();
         const senderUser = allUsers.find((user) => {
@@ -962,7 +973,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         // Build collection data
         const collectionData: any = {
-          collectionDate: parsedData.collectionDate,
+          collectionDate: parsedData.collectionDate || (isWeeklyCount ? fallbackWednesday : new Date().toISOString().split('T')[0]),
           hostName: parsedData.hostName,
           individualSandwiches: parsedData.individualSandwiches,
           createdBy: senderUser?.id || 'sms-system',
