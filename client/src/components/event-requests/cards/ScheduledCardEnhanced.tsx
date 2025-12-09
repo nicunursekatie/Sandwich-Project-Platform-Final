@@ -742,11 +742,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </span>
                 </>
               ) : canEdit ? (
-                <Edit2
-                  className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
+                <button
+                  type="button"
+                  className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline-offset-2 underline"
                   onClick={() => startEditing('department', '')}
                   title="Add department"
-                />
+                >
+                  Add department
+                </button>
               ) : null}
               
               {/* Partner Organizations */}
@@ -756,13 +759,51 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {request.partnerOrganizations.map((partner, index) => (
                     <React.Fragment key={index}>
                       {isEditingThisCard && editingField === `partnerOrg_${index}` ? (
+                        (() => {
+                          let parsed = { name: partner.name || '', department: partner.department || '' };
+                          try {
+                            const maybeParsed = JSON.parse(editingValue || '{}');
+                            if (maybeParsed && typeof maybeParsed === 'object') {
+                              parsed = {
+                                name: (maybeParsed as any).name ?? parsed.name,
+                                department: (maybeParsed as any).department ?? parsed.department,
+                              };
+                            }
+                          } catch {
+                            // ignore parse errors, fall back to partner defaults
+                          }
+                          return (
                         <div className="flex items-center gap-2">
                           <Input
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
+                            value={parsed.name}
+                            onChange={(e) =>
+                              setEditingValue(
+                                JSON.stringify({
+                                  name: e.target.value,
+                                  department: parsed.department,
+                                })
+                              )
+                            }
                             className="h-8 text-base w-48"
                             autoFocus
                             placeholder="Partner organization"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit();
+                              if (e.key === 'Escape') cancelEdit();
+                            }}
+                          />
+                          <Input
+                            value={parsed.department || ''}
+                            onChange={(e) => {
+                              // Store name|department together for save handler
+                              const nextValue = JSON.stringify({
+                                name: parsed.name || '',
+                                department: e.target.value,
+                              });
+                              setEditingValue(nextValue);
+                            }}
+                            className="h-8 text-base w-40"
+                            placeholder="Department"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') saveEdit();
                               if (e.key === 'Escape') cancelEdit();
@@ -775,10 +816,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
+                          );
+                        })()
                       ) : (
                         <span
                           className={`text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                          onClick={() => canEdit && startEditing(`partnerOrg_${index}`, partner.name || '')}
+                          onClick={() =>
+                            canEdit &&
+                            startEditing(
+                              `partnerOrg_${index}`,
+                              JSON.stringify({ name: partner.name || '', department: partner.department || '' })
+                            )
+                          }
                         >
                           {partner.name}
                           {partner.department && ` • ${partner.department}`}
@@ -788,8 +837,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </React.Fragment>
                   ))}
                   {canEdit && request.partnerOrganizations.length < 2 && (
-                    <Edit2
-                      className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
+                    <button
+                      type="button"
+                      className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline underline-offset-2"
                       onClick={() => {
                         // Add new partner organization (max 2)
                         const currentPartners = Array.isArray(request.partnerOrganizations) ? request.partnerOrganizations : [];
@@ -797,21 +847,23 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         startEditing('partnerOrganizations', JSON.stringify(newPartners));
                       }}
                       title="Add partner organization"
-                    />
+                    >
+                      Add partner
+                    </button>
                   )}
                 </div>
               )}
               {(!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[#236383]/60 text-sm">Partner:</span>
-                  <Edit2
-                    className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
-                    onClick={() => {
-                      startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
-                    }}
-                    title="Add partner organization"
-                  />
-                </div>
+                <button
+                  type="button"
+                  className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline underline-offset-2 mt-1"
+                  onClick={() => {
+                    startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                  }}
+                  title="Add partner organization"
+                >
+                  Add partner organization
+                </button>
               )}
             </div>
 
