@@ -22,6 +22,7 @@ import {
   Pause,
   BarChart3,
   ClipboardList,
+  LayoutList,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -56,6 +57,7 @@ interface RequestFiltersProps {
 
   // Status counts for tab badges
   statusCounts: {
+    all: number;
     new: number;
     in_process: number;
     scheduled: number;
@@ -68,6 +70,7 @@ interface RequestFiltersProps {
 
   // Content for each tab
   children: {
+    all: ReactNode;
     new: ReactNode;
     in_process: ReactNode;
     scheduled: ReactNode;
@@ -146,6 +149,13 @@ export default function RequestFilters({
   // Add remaining tabs
   tabConfig.push(
     {
+      value: 'all',
+      label: 'All',
+      shortLabel: 'All',
+      icon: LayoutList,
+      count: statusCounts.all,
+    },
+    {
       value: 'new',
       label: 'New',
       shortLabel: 'New',
@@ -213,6 +223,16 @@ export default function RequestFilters({
             className="pl-10 w-full"
             data-testid="input-search-requests"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#007E8C] hover:text-[#004f57] font-semibold"
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+          )}
         </div>
         <Select
           value={confirmationFilter}

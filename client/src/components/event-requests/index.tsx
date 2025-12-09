@@ -12,6 +12,7 @@ import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { PostponedTab } from './tabs/PostponedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
+import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
@@ -335,6 +336,7 @@ const EventRequestsManagementContent: React.FC = () => {
   // Memoize tab children to prevent recreation on every render
   const tabChildren = useMemo(() => {
     const tabs: any = {
+      all: <AllEventsTab />,
       new: <NewRequestsTab />,
       in_process: <InProcessTab />,
       scheduled: <ScheduledTab />,
