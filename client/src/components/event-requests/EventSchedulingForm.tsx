@@ -162,6 +162,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
     acknowledged: boolean;
   } | null>(null);
+  const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -542,8 +543,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const performSubmit = async () => {
-    // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
+  const performSubmit = async (skipSpeakerWarning = false) => {
+    // Warning: Events with >500 sandwiches usually need a speaker
     let totalRelevantSandwiches = 0;
     
     // Check sandwich types mode
@@ -563,24 +564,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .reduce((sum: number, item: { type: string; quantity: number }) => sum + item.quantity, 0);
     } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
       // If using total mode and >500, we can't determine types, so check if speakers are needed
-      // This is a conservative check - we'll require speakers if total >500
+      // This is a conservative check - we'll warn if total >500
       totalRelevantSandwiches = formData.totalSandwichCount;
     } else if (sandwichMode === 'range') {
       // For range mode, check the max value
       const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
       if (maxCount > 500) {
-        // Can't determine types in range mode, so conservatively require speakers if max >500
+        // Can't determine types in range mode, so conservatively warn if max >500
         totalRelevantSandwiches = maxCount;
       }
     }
     
-    if (totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
-      toast({
-        title: 'Speaker Required',
-        description: 'Events with more than 500 deli, turkey, or unknown type sandwiches must have at least 1 speaker. Please set "How many speakers needed?" to at least 1.',
-        variant: 'destructive',
-      });
-      return; // Stop submission
+    // Show warning dialog if event has >500 sandwiches and no speakers, but allow proceeding
+    if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      setShowSpeakerWarningDialog(true);
+      return; // Stop submission until user responds
     }
 
     // All fields are optional - no validation required
@@ -739,7 +737,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
 
     // All checks passed, proceed with submission
-    await performSubmit();
+    await performSubmit(false);
   };
 
   const addSandwichType = () => {
@@ -1315,6 +1313,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   }))}
                   data-testid="pickup-datetime-picker"
                 />
+                {/* Can hold overnight checkbox */}
+                <div className="flex items-center space-x-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="canHoldOvernight"
+                    checked={!!formData.overnightHoldingLocation}
+                    onChange={(e) => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        overnightHoldingLocation: e.target.checked ? 'Yes' : ''
+                      }));
+                    }}
+                    className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
+                    data-testid="checkbox-can-hold-overnight"
+                  />
+                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Can hold sandwiches overnight
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
@@ -2553,11 +2570,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 setShowVanConflictDialog(false);
                 setVanConflictChecked(true);
                 // Directly call performSubmit now that conflict is acknowledged
-                await performSubmit();
+                await performSubmit(false);
               }}
               className="bg-amber-600 hover:bg-amber-700"
             >
               I've Verified Van Availability
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Speaker Warning Dialog */}
+      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={setShowSpeakerWarningDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              ⚠️ Speaker Recommendation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                We usually send a speaker to events making more than 500 sandwiches. Are you sure this event doesn't need one?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSpeakerWarningDialog(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowSpeakerWarningDialog(false);
+                // Proceed with submission even without a speaker
+                await performSubmit(true);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Continue Without Speaker
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

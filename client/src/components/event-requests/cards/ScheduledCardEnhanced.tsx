@@ -814,9 +814,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </Badge>
                   ) : (
                     <>
-                      {driverNeeded > driverAssigned && (
+                      {/* Show regular driver needed only if van driver is not needed OR if both are needed */}
+                      {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
                         <Badge className={`${staffingBadgeColors} font-medium`}>
                           {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                        </Badge>
+                      )}
+                      {/* Show van driver needed badge when van driver is needed and no regular drivers are needed */}
+                      {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
+                        <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
+                          <Car className="w-3 h-3 mr-1" />
+                          Van Driver Needed
                         </Badge>
                       )}
                       {speakerNeeded > speakerAssigned && (
@@ -832,7 +840,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </>
                   )}
 
-                  {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                  {/* Show van driver needed badge when both van driver and regular drivers are needed */}
+                  {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && (
                     <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
                       <Car className="w-3 h-3 mr-1" />
                       Van Driver Needed
@@ -1169,8 +1178,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                          {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                        <div>
+                          <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                            {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                          </div>
+                          {/* Show "Can hold overnight" if overnightHoldingLocation is set */}
+                          {request.overnightHoldingLocation && (
+                            <div className="text-xs text-[#236383] font-medium mt-1">
+                              Can hold overnight
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -222,11 +222,21 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
             {/* Staffing Status Bar */}
             {totalNeeded > 0 && (
               <div className="mt-3 flex items-center gap-4 text-xs">
-                {driverNeeded > 0 && (
+                {/* Show regular driver needed only if van driver is not needed OR if both are needed */}
+                {driverNeeded > 0 && !(request.vanDriverNeeded && driverNeeded === 0) && (
                   <div className="flex items-center gap-1">
                     <Car className="w-3 h-3 text-gray-500" />
                     <span className={driverAssigned >= driverNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {driverAssigned}/{driverNeeded} drivers
+                    </span>
+                  </div>
+                )}
+                {/* Show van driver needed when van driver is needed and no regular drivers are needed */}
+                {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
+                  <div className="flex items-center gap-1">
+                    <Car className="w-3 h-3 text-[#236383]" />
+                    <span className={staffingNeededColor}>
+                      Van Driver Needed
                     </span>
                   </div>
                 )}
