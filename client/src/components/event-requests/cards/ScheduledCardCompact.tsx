@@ -146,7 +146,6 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                   ))}
                 </div>
               )}
-              </h3>
               {request.isConfirmed ? (
                 <Badge className="bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/30 shrink-0">
                   <Check className="w-3 h-3 mr-1" />

@@ -99,6 +99,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     message: '',
     schedulingNotes: '',
     planningNotes: '',
+    nextAction: '',
     totalSandwichCount: 0,
     estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0,
@@ -321,6 +322,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         message: (eventRequest as any)?.message || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
+        nextAction: (eventRequest as any)?.nextAction || '',
         totalSandwichCount: totalCount,
         estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
         estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
@@ -616,6 +618,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
       planningNotes: formData.planningNotes || null,
+      nextAction: formData.nextAction || null,
       // Contact information fields
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -2025,13 +2028,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 )}
               </div>
 
+              {/* Next Action - Prominent field for intake tracking */}
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="nextAction" className="text-amber-800 font-semibold">Next Action</Label>
+                  {isCollaborationEnabled && isFieldLockedByOther('nextAction') && (
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('nextAction')?.lockedByName || 'Another user'}
+                      expiresAt={getFieldLock('nextAction')?.expiresAt}
+                      data-testid="field-lock-next-action"
+                    />
+                  )}
+                </div>
+                <p className="text-sm text-amber-700 mb-2">What needs to happen next for this event? (e.g., "Waiting for callback", "Need to confirm date", "Follow up on van availability")</p>
+                <Input
+                  id="nextAction"
+                  value={formData.nextAction}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nextAction: e.target.value }))}
+                  onFocus={() => handleFieldFocus('nextAction')}
+                  onBlur={() => handleFieldBlur('nextAction')}
+                  placeholder="Enter the next action needed..."
+                  className="bg-white border-amber-300 focus:border-amber-500"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('nextAction')}
+                  data-testid="input-next-action"
+                />
+              </div>
+
               {/* Scheduling Notes */}
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
                   {isCollaborationEnabled && isFieldLockedByOther('schedulingNotes') && (
-                    <FieldLockIndicator 
-                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'} 
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'}
                       expiresAt={getFieldLock('schedulingNotes')?.expiresAt}
                       data-testid="field-lock-scheduling-notes"
                     />

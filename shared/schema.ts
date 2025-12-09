@@ -2030,6 +2030,8 @@ export const eventRequests = pgTable(
     status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
+    nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
+    nextActionUpdatedAt: timestamp('next_action_updated_at'), // When nextAction was last updated
 
     // Postponement tracking (for 'postponed' status)
     postponementReason: text('postponement_reason'), // Reason why event was postponed
