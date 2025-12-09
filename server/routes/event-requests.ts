@@ -23,6 +23,7 @@ import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
+import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
 
 const router = Router();
@@ -523,6 +524,10 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       // Notes
       planningNotes,
 
+      // Event is confirmed and on calendar since it's coming from the official sheet
+      isConfirmed: true,
+      addedToOfficialSheet: true,
+
       // Audit
       createdBy: 'google-sheets-import',
     };
@@ -532,6 +537,9 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
 
     // Log the import
     logger.info(`Google Sheets import: Created event request ${createdEvent.id} for "${data['Group Name']}" on ${data.date}`);
+
+    // Emit real-time update to all connected clients
+    emitEventRequestUpdate('event_request_created', createdEvent);
 
     return res.status(201).json({
       success: true,
