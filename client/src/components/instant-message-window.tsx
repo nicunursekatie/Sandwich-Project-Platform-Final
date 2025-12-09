@@ -1,13 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Minus, Send, Loader2 } from 'lucide-react';
+import { X, Minus, Send, Loader2, Heart } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { apiRequest } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
 import type { ChatWindow, InstantMessage } from '@/contexts/instant-messaging-context';
+
+interface MessageLike {
+  id: number;
+  messageId: number;
+  userId: string;
+  userName: string;
+  emoji: string;
+  createdAt: string;
+}
 
 interface InstantMessageWindowProps {
   window: ChatWindow;
@@ -195,6 +206,7 @@ export function InstantMessageWindow({
               key={msg.id}
               message={msg}
               isOwn={msg.senderId === currentUser?.id}
+              currentUserId={currentUser?.id}
             />
           ))
         )}
@@ -231,26 +243,143 @@ export function InstantMessageWindow({
   );
 }
 
-function MessageBubble({ message, isOwn }: { message: InstantMessage; isOwn: boolean }) {
+function MessageBubble({
+  message,
+  isOwn,
+  currentUserId
+}: {
+  message: InstantMessage;
+  isOwn: boolean;
+  currentUserId?: string;
+}) {
+  const [likes, setLikes] = useState<MessageLike[]>([]);
+  const [isLiking, setIsLiking] = useState(false);
+  const [showLikeButton, setShowLikeButton] = useState(false);
+
+  // Fetch likes for this message on mount
+  useEffect(() => {
+    const fetchLikes = async () => {
+      try {
+        const response = await fetch(`/api/instant-messages/${message.id}/likes`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLikes(data.likes || []);
+        }
+      } catch (error) {
+        // Silently fail - likes are not critical
+      }
+    };
+    fetchLikes();
+  }, [message.id]);
+
+  const hasLiked = currentUserId ? likes.some(l => l.userId === currentUserId) : false;
+
+  const handleLike = async () => {
+    if (isLiking || !currentUserId) return;
+    setIsLiking(true);
+
+    try {
+      if (hasLiked) {
+        // Unlike
+        await apiRequest('DELETE', `/api/instant-messages/${message.id}/like`, { emoji: '❤️' });
+        setLikes(prev => prev.filter(l => l.userId !== currentUserId));
+      } else {
+        // Like
+        const response = await apiRequest('POST', `/api/instant-messages/${message.id}/like`, { emoji: '❤️' });
+        if (response.likes) {
+          setLikes(response.likes);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle like:', error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
   return (
-    <div className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}>
-      <div
-        className={cn(
-          'max-w-[80%] px-3 py-2 rounded-2xl text-sm',
-          isOwn
-            ? 'bg-teal-500 text-white rounded-br-md'
-            : 'bg-white text-gray-900 border rounded-bl-md'
+    <div
+      className={cn('flex group', isOwn ? 'justify-end' : 'justify-start')}
+      onMouseEnter={() => setShowLikeButton(true)}
+      onMouseLeave={() => setShowLikeButton(false)}
+    >
+      <div className="relative">
+        {/* Like button - appears on hover */}
+        {!isOwn && showLikeButton && (
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className={cn(
+              'absolute -right-6 top-1/2 -translate-y-1/2 p-1 rounded-full transition-all',
+              hasLiked
+                ? 'text-red-500 hover:text-red-600'
+                : 'text-gray-400 hover:text-red-500'
+            )}
+          >
+            <Heart className={cn('w-4 h-4', hasLiked && 'fill-current')} />
+          </button>
         )}
-      >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        <p
+
+        {/* For own messages, like button on left */}
+        {isOwn && showLikeButton && (
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className={cn(
+              'absolute -left-6 top-1/2 -translate-y-1/2 p-1 rounded-full transition-all',
+              hasLiked
+                ? 'text-red-500 hover:text-red-600'
+                : 'text-gray-400 hover:text-red-500'
+            )}
+          >
+            <Heart className={cn('w-4 h-4', hasLiked && 'fill-current')} />
+          </button>
+        )}
+
+        <div
           className={cn(
-            'text-[10px] mt-1',
-            isOwn ? 'text-white/70' : 'text-gray-400'
+            'max-w-[80%] px-3 py-2 rounded-2xl text-sm',
+            isOwn
+              ? 'bg-teal-500 text-white rounded-br-md'
+              : 'bg-white text-gray-900 border rounded-bl-md'
           )}
         >
-          {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-        </p>
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p
+              className={cn(
+                'text-[10px]',
+                isOwn ? 'text-white/70' : 'text-gray-400'
+              )}
+            >
+              {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+            </p>
+
+            {/* Like count */}
+            {likes.length > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className={cn(
+                        'flex items-center gap-0.5 text-[10px] cursor-default',
+                        isOwn ? 'text-white/70' : 'text-gray-400'
+                      )}
+                    >
+                      <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                      {likes.length}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p>Liked by {likes.map(l => l.userName).join(', ')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
-import { instantMessages, users } from '@shared/schema';
-import { eq, or, and, desc } from 'drizzle-orm';
+import { instantMessages, instantMessageLikes, users } from '@shared/schema';
+import { eq, or, and, desc, sql } from 'drizzle-orm';
 import { isAuthenticated } from '../auth';
 import { AuthenticatedRequest } from '../types';
 import { logger } from '../utils/production-safe-logger';
@@ -264,6 +264,202 @@ router.get('/conversations/recent', isAuthenticated, async (req: AuthenticatedRe
   } catch (error) {
     logger.error('[Instant Messages] Error getting recent conversations:', error);
     res.status(500).json({ message: 'Failed to get recent conversations' });
+  }
+});
+
+// Like/react to a message
+router.post('/:messageId/like', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user;
+    if (!currentUser?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    const { emoji = '❤️' } = req.body;
+
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    // Verify message exists
+    const [message] = await db
+      .select()
+      .from(instantMessages)
+      .where(eq(instantMessages.id, messageId))
+      .limit(1);
+
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Get user's display name
+    const userName =
+      currentUser.displayName ||
+      `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+      currentUser.email ||
+      'Unknown User';
+
+    // Insert like (will fail silently if already liked due to unique constraint)
+    const [like] = await db
+      .insert(instantMessageLikes)
+      .values({
+        messageId,
+        userId: currentUser.id,
+        userName,
+        emoji,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!like) {
+      // Already liked - return existing like count
+      const likes = await db
+        .select()
+        .from(instantMessageLikes)
+        .where(eq(instantMessageLikes.messageId, messageId));
+
+      return res.json({
+        liked: true,
+        alreadyLiked: true,
+        likes,
+        likeCount: likes.length,
+      });
+    }
+
+    // Get all likes for this message
+    const likes = await db
+      .select()
+      .from(instantMessageLikes)
+      .where(eq(instantMessageLikes.messageId, messageId));
+
+    logger.log(`[Instant Messages] Message ${messageId} liked by ${currentUser.id}`);
+
+    // Emit real-time update via Socket.IO
+    const io = getSocketInstance();
+    if (io) {
+      // Notify both sender and recipient of the message about the like
+      io.to(`messaging:${message.senderId}`).emit('instant_message_like', {
+        messageId,
+        like,
+        likes,
+        likeCount: likes.length,
+      });
+      io.to(`messaging:${message.recipientId}`).emit('instant_message_like', {
+        messageId,
+        like,
+        likes,
+        likeCount: likes.length,
+      });
+    }
+
+    res.status(201).json({
+      liked: true,
+      like,
+      likes,
+      likeCount: likes.length,
+    });
+  } catch (error) {
+    logger.error('[Instant Messages] Error liking message:', error);
+    res.status(500).json({ message: 'Failed to like message' });
+  }
+});
+
+// Unlike/remove reaction from a message
+router.delete('/:messageId/like', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user;
+    if (!currentUser?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    const { emoji = '❤️' } = req.body;
+
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    // Get the message for socket notification
+    const [message] = await db
+      .select()
+      .from(instantMessages)
+      .where(eq(instantMessages.id, messageId))
+      .limit(1);
+
+    // Delete the like
+    const result = await db
+      .delete(instantMessageLikes)
+      .where(
+        and(
+          eq(instantMessageLikes.messageId, messageId),
+          eq(instantMessageLikes.userId, currentUser.id),
+          eq(instantMessageLikes.emoji, emoji)
+        )
+      );
+
+    // Get remaining likes
+    const likes = await db
+      .select()
+      .from(instantMessageLikes)
+      .where(eq(instantMessageLikes.messageId, messageId));
+
+    logger.log(`[Instant Messages] Message ${messageId} unliked by ${currentUser.id}`);
+
+    // Emit real-time update via Socket.IO
+    if (message) {
+      const io = getSocketInstance();
+      if (io) {
+        io.to(`messaging:${message.senderId}`).emit('instant_message_unlike', {
+          messageId,
+          userId: currentUser.id,
+          emoji,
+          likes,
+          likeCount: likes.length,
+        });
+        io.to(`messaging:${message.recipientId}`).emit('instant_message_unlike', {
+          messageId,
+          userId: currentUser.id,
+          emoji,
+          likes,
+          likeCount: likes.length,
+        });
+      }
+    }
+
+    res.json({
+      unliked: true,
+      likes,
+      likeCount: likes.length,
+    });
+  } catch (error) {
+    logger.error('[Instant Messages] Error unliking message:', error);
+    res.status(500).json({ message: 'Failed to unlike message' });
+  }
+});
+
+// Get likes for a message
+router.get('/:messageId/likes', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const messageId = parseInt(req.params.messageId);
+
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    const likes = await db
+      .select()
+      .from(instantMessageLikes)
+      .where(eq(instantMessageLikes.messageId, messageId))
+      .orderBy(instantMessageLikes.createdAt);
+
+    res.json({
+      likes,
+      likeCount: likes.length,
+    });
+  } catch (error) {
+    logger.error('[Instant Messages] Error fetching likes:', error);
+    res.status(500).json({ message: 'Failed to fetch likes' });
   }
 });
 

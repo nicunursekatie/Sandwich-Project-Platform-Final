@@ -198,6 +198,32 @@ export const insertInstantMessageSchema = createInsertSchema(instantMessages).om
 export type InstantMessage = typeof instantMessages.$inferSelect;
 export type InsertInstantMessage = typeof instantMessages.$inferInsert;
 
+// Instant message likes table for reactions
+export const instantMessageLikes = pgTable(
+  'instant_message_likes',
+  {
+    id: serial('id').primaryKey(),
+    messageId: integer('message_id').notNull(),
+    userId: varchar('user_id').notNull(),
+    userName: varchar('user_name').notNull(),
+    emoji: varchar('emoji').notNull().default('❤️'), // Support different reactions
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    messageIdx: index('idx_instant_message_likes_message').on(table.messageId),
+    userIdx: index('idx_instant_message_likes_user').on(table.userId),
+    uniqueLike: unique().on(table.messageId, table.userId, table.emoji),
+  })
+);
+
+export const insertInstantMessageLikeSchema = createInsertSchema(instantMessageLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InstantMessageLike = typeof instantMessageLikes.$inferSelect;
+export type InsertInstantMessageLike = typeof instantMessageLikes.$inferInsert;
+
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
