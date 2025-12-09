@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { NotificationActionButton } from './NotificationActionButton';
@@ -98,6 +99,7 @@ const getPriorityBadgeColor = (priority: string) => {
 };
 
 function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentTab, setCurrentTab] = React.useState('all');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -200,7 +202,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
       // Return context with previous value
       return { previousNotifications };
     },
-    onError: (err, notificationId, context: any) => {
+    onError: (err: any, notificationId, context: any) => {
       // Rollback on error
       if (context?.previousNotifications) {
         queryClient.setQueryData(
@@ -208,10 +210,18 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
           context.previousNotifications
         );
       }
+      // Show error toast
+      toast({
+        title: 'Failed to archive notification',
+        description: err?.message || 'An error occurred while archiving the notification',
+        variant: 'destructive',
+      });
+      console.error('Archive notification error:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
+      // Success is handled by optimistic update - no need for toast
     },
   });
 

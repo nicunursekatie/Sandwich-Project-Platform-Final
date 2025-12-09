@@ -242,8 +242,9 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
   const sendMessage = useCallback(async (windowId: string, content: string) => {
     if (!user?.id || !content.trim()) return;
 
-    const window = openWindows.find(w => w.id === windowId);
-    if (!window) return;
+    // Use ref to get current windows to avoid stale closure
+    const currentWindow = openWindowsRef.current.find(w => w.id === windowId);
+    if (!currentWindow) return;
 
     try {
       const response = await fetch('/api/instant-messages', {
@@ -251,7 +252,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          recipientId: window.user.id,
+          recipientId: currentWindow.user.id,
           content: content.trim(),
         }),
       });
@@ -274,14 +275,15 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       console.error('Failed to send message:', error);
       throw error;
     }
-  }, [user?.id, openWindows]);
+  }, [user?.id]);
 
   const markAsRead = useCallback((windowId: string) => {
-    const window = openWindows.find(w => w.id === windowId);
-    if (!window) return;
+    // Use ref to get current windows to avoid stale closure
+    const currentWindow = openWindowsRef.current.find(w => w.id === windowId);
+    if (!currentWindow) return;
 
     // Mark messages as read on server
-    fetch(`/api/instant-messages/${window.user.id}/read`, {
+    fetch(`/api/instant-messages/${currentWindow.user.id}/read`, {
       method: 'POST',
       credentials: 'include',
     }).catch(console.error);
@@ -291,7 +293,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
         w.id === windowId ? { ...w, unreadCount: 0 } : w
       )
     );
-  }, [openWindows]);
+  }, []);
 
   const addMessage = useCallback((message: InstantMessage) => {
     setOpenWindows(prev => {
