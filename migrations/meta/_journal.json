@@ -71,6 +71,13 @@
       "when": 1765135434004,
       "tag": "0009_add_partner_organizations",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1765299749453,
+      "tag": "0010_add_next_action_to_events",
+      "breakpoints": true
     }
   ]
 }
