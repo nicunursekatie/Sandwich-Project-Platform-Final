@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getSocket } from '@/lib/socket-singleton';
+import { getOrCreateSocket } from '@/lib/socket-singleton';
 
 export interface ChatUser {
   id: string;
@@ -60,7 +60,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
   useEffect(() => {
     if (!user?.id) return;
 
-    const socket = getSocket();
+    const socket = getOrCreateSocket();
     if (!socket) return;
 
     // Join user's messaging channel
