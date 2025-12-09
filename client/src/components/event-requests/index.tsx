@@ -17,7 +17,7 @@ import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -312,6 +312,25 @@ const EventRequestsManagementContent: React.FC = () => {
 
   // State for volunteer opportunities dialog
   const [showVolunteerOpportunities, setShowVolunteerOpportunities] = useState(false);
+
+  // State for back to top button
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Track scroll position for back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when scrolled down more than 400px
+      setShowBackToTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Memoize tab children to prevent recreation on every render
   const tabChildren = useMemo(() => {
@@ -1207,6 +1226,20 @@ const EventRequestsManagementContent: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Back to Top Floating Button */}
+        {showBackToTop && (
+          <div className="fixed bottom-24 sm:bottom-6 left-4 sm:left-6 z-50">
+            <button
+              onClick={scrollToTop}
+              className="h-12 w-12 rounded-full shadow-xl bg-slate-600 hover:bg-slate-700 active:bg-slate-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              title="Back to Top"
+              aria-label="Scroll back to top"
+            >
+              <ArrowUp className="h-5 w-5" />
+            </button>
+          </div>
+        )}
 
         {/* Floating Action Button for Spreadsheet View - Only show when NOT on scheduled tab */}
         {activeTab !== 'scheduled' && (
