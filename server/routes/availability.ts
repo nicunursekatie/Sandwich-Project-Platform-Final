@@ -7,6 +7,9 @@ import {
 } from '../middleware/auth';
 import { logger } from '../middleware/logger';
 import { insertAvailabilitySlotSchema } from '@shared/schema';
+import { db } from '../db';
+import { eventRequests, eventVolunteers, users } from '@shared/schema';
+import { and, gte, lte, inArray, isNotNull, isNull, eq } from 'drizzle-orm';
 
 const availabilityRouter = Router();
 
@@ -41,6 +44,100 @@ availabilityRouter.get('/', requirePermission('AVAILABILITY_VIEW'), async (req, 
   } catch (error) {
     logger.error('Failed to fetch availability slots', error);
     res.status(500).json({ message: 'Failed to fetch availability slots' });
+  }
+});
+
+// Events + assignments for Team Availability calendar
+availabilityRouter.get('/events', requirePermission('AVAILABILITY_VIEW'), async (req, res) => {
+  try {
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required (yyyy-MM-dd)' });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format for startDate or endDate' });
+    }
+
+    // Fetch scheduled events in range
+    const events = await db
+      .select({
+        id: eventRequests.id,
+        organizationName: eventRequests.organizationName,
+        status: eventRequests.status,
+        scheduledEventDate: eventRequests.scheduledEventDate,
+        startTime: eventRequests.eventStartTime,
+        endTime: eventRequests.eventEndTime,
+        eventAddress: eventRequests.eventAddress,
+        createdAt: eventRequests.createdAt,
+      })
+      .from(eventRequests)
+      .where(
+        and(
+          isNotNull(eventRequests.scheduledEventDate),
+          gte(eventRequests.scheduledEventDate, start),
+          lte(eventRequests.scheduledEventDate, end),
+          // Respect soft-delete
+          isNull(eventRequests.deletedAt)
+        )
+      )
+      .orderBy(eventRequests.scheduledEventDate);
+
+    const eventIds = events.map((e) => e.id);
+    if (eventIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Fetch volunteer assignments for the events in one query
+    const volunteerRows = await db
+      .select({
+        id: eventVolunteers.id,
+        eventRequestId: eventVolunteers.eventRequestId,
+        volunteerUserId: eventVolunteers.volunteerUserId,
+        volunteerName: eventVolunteers.volunteerName,
+        role: eventVolunteers.role,
+        status: eventVolunteers.status,
+        userDisplayName: users.displayName,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+      })
+      .from(eventVolunteers)
+      .leftJoin(users, eq(eventVolunteers.volunteerUserId, users.id))
+      .where(inArray(eventVolunteers.eventRequestId, eventIds));
+
+    const volunteersByEvent = volunteerRows.reduce<Record<number, any[]>>((acc, vol) => {
+      if (!acc[vol.eventRequestId]) acc[vol.eventRequestId] = [];
+      const name =
+        vol.userDisplayName ||
+        [vol.userFirstName, vol.userLastName].filter(Boolean).join(' ').trim() ||
+        vol.volunteerName ||
+        vol.userEmail ||
+        'Unknown';
+      acc[vol.eventRequestId].push({
+        id: vol.id,
+        userId: vol.volunteerUserId,
+        name,
+        role: vol.role,
+        status: vol.status,
+      });
+      return acc;
+    }, {});
+
+    const response = events.map((event) => ({
+      ...event,
+      title: event.organizationName || 'Event',
+      volunteers: volunteersByEvent[event.id] || [],
+    }));
+
+    res.json(response);
+  } catch (error) {
+    logger.error('Failed to fetch event assignments for availability view', error);
+    res.status(500).json({ message: 'Failed to fetch events' });
   }
 });
 
