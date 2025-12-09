@@ -35,7 +35,8 @@
       "Bash(python3:*)",
       "Bash(PRODUCTION_DATABASE_URL=\"$PRODUCTION_DATABASE_URL\" npx tsx:*)",
       "Bash(npm install:*)",
-      "Bash(npm run drizzle:generate:*)"
+      "Bash(npm run drizzle:generate:*)",
+      "Bash(npx vite build:*)"
     ],
     "deny": [],
     "ask": []
