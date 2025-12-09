@@ -79,23 +79,9 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
     // Listen for new instant messages
     const handleNewMessage = (message: InstantMessage) => {
-      // Skip messages from yourself
+      // Skip messages from yourself entirely - they're added by the sendMessage API response
+      // This prevents duplicate messages (the API adds it, then socket would add it again)
       if (message.senderId === user.id) {
-        // Still add to window if open (for multi-device sync)
-        setOpenWindows(prev => {
-          const existingWindow = prev.find(w => w.user.id === message.recipientId);
-          if (existingWindow) {
-            const messageExists = existingWindow.messages.some(m => m.id === message.id);
-            if (messageExists) return prev;
-            return prev.map(w => {
-              if (w.user.id === message.recipientId) {
-                return { ...w, messages: [...w.messages, message] };
-              }
-              return w;
-            });
-          }
-          return prev;
-        });
         return;
       }
 
