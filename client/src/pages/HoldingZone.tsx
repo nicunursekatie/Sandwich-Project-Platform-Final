@@ -621,6 +621,27 @@ export default function HoldingZone() {
     enabled: canView,
   });
 
+  // Fetch promoted subtasks (from project tasks)
+  interface PromotedSubtask {
+    id: number;
+    parentTaskId: number | null;
+    projectId: number | null;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: string;
+    promotedToTodo: boolean;
+    dueDate: string | null;
+    assigneeIds: string[] | null;
+    assigneeNames: string[] | null;
+    createdAt: string;
+  }
+
+  const { data: promotedSubtasks = [] } = useQuery<PromotedSubtask[]>({
+    queryKey: ['/api/tasks/promoted-to-todo'],
+    enabled: canView,
+  });
+
   // Helper function to sort items so children appear right after their parents
   const sortItemsWithChildren = (items: HoldingZoneItem[]): HoldingZoneItem[] => {
     const itemMap = new Map<number, HoldingZoneItem>();
@@ -1317,9 +1338,9 @@ export default function HoldingZone() {
           <TabsTrigger value="todo" className="flex items-center gap-2" data-testid="tab-todo">
             <CheckCircle2 className="h-4 w-4" />
             To-Do List
-            {filteredTodo.length > 0 && (
+            {(filteredTodo.length + promotedSubtasks.length) > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {filteredTodo.length}
+                {filteredTodo.length + promotedSubtasks.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -1340,7 +1361,7 @@ export default function HoldingZone() {
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#236383]" />
         </div>
-      ) : currentItems.length === 0 ? (
+      ) : currentItems.length === 0 && !(activeTab === 'todo' && promotedSubtasks.length > 0) ? (
         <Card>
           <CardContent className="p-12 text-center">
             {activeTab === 'tasks' ? (
@@ -1354,7 +1375,7 @@ export default function HoldingZone() {
               <>
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 dark:text-gray-400 text-lg">
-                  No items in To-Do List. Promote task-drafts to add them here!
+                  No items in To-Do List. Promote task-drafts or subtasks to add them here!
                 </p>
               </>
             ) : (
@@ -1707,6 +1728,106 @@ export default function HoldingZone() {
             </Card>
           );
           })}
+
+          {/* Promoted Subtasks Section - only show in todo tab */}
+          {activeTab === 'todo' && promotedSubtasks.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <FolderKanban className="h-5 w-5 text-teal-600" />
+                Project Subtasks
+              </h3>
+              <div className="space-y-3">
+                {promotedSubtasks.map((subtask) => (
+                  <Card
+                    key={`subtask-${subtask.id}`}
+                    className="transition-all hover:shadow-md border-l-4 border-l-teal-500"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {subtask.title}
+                          </h3>
+                          {subtask.description && (
+                            <p className="text-sm text-gray-600 mb-2">{subtask.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="capitalize bg-teal-50 text-teal-700 border-teal-200">
+                              Subtask
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                subtask.priority === 'high'
+                                  ? 'bg-red-100 text-red-800 border-red-200'
+                                  : subtask.priority === 'medium'
+                                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                  : 'bg-green-100 text-green-800 border-green-200'
+                              }
+                            >
+                              {subtask.priority}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                subtask.status === 'completed'
+                                  ? 'bg-green-100 text-green-800 border-green-200'
+                                  : subtask.status === 'in_progress'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                  : 'bg-gray-100 text-gray-800 border-gray-200'
+                              }
+                            >
+                              {subtask.status.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={async () => {
+                              try {
+                                await apiRequest('DELETE', `/api/tasks/${subtask.id}/promote-to-todo`);
+                                queryClient.invalidateQueries({ queryKey: ['/api/tasks/promoted-to-todo'] });
+                                toast({
+                                  title: 'Removed from To-Do List',
+                                  description: 'The subtask has been removed from your to-do list.',
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to remove from to-do list.',
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                            title="Remove from To-Do List"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        {subtask.assigneeNames && subtask.assigneeNames.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span>{subtask.assigneeNames.join(', ')}</span>
+                          </div>
+                        )}
+                        {subtask.dueDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(subtask.dueDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

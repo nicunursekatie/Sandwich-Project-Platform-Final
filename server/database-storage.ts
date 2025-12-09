@@ -728,6 +728,76 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Subtask methods
+  async getSubtasks(parentTaskId: number): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.parentTaskId, parentTaskId))
+      .orderBy(projectTasks.createdAt);
+  }
+
+  async createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask> {
+    const [subtask] = await db
+      .insert(projectTasks)
+      .values({
+        projectId: data.projectId,
+        parentTaskId: data.parentTaskId,
+        title: data.title,
+        description: data.description || null,
+        status: 'pending',
+        priority: data.priority || 'medium',
+        dueDate: data.dueDate || null,
+        assigneeIds: data.assigneeIds || null,
+        assigneeNames: data.assigneeNames || null,
+        originType: 'manual',
+        promotedToTodo: false,
+      })
+      .returning();
+    return subtask;
+  }
+
+  async promoteTaskToTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async demoteTaskFromTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async getTasksPromotedToTodo(): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.promotedToTodo, true))
+      .orderBy(desc(projectTasks.updatedAt));
+  }
+
   // Project Comments
   async getProjectComments(projectId: number): Promise<ProjectComment[]> {
     return await db

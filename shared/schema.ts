@@ -320,6 +320,10 @@ export const projectTasks = pgTable('project_tasks', {
   sourceMeetingId: integer('source_meeting_id'), // If created in a meeting context
   sourceTeamBoardId: integer('source_team_board_id'), // If promoted from team board
   selectedForAgenda: boolean('selected_for_agenda').notNull().default(false), // Whether to include in agenda
+  // Subtask support - allows tasks to have parent tasks
+  parentTaskId: integer('parent_task_id'), // References project_tasks.id for subtasks
+  // Promotion to to-do list
+  promotedToTodo: boolean('promoted_to_todo').notNull().default(false), // Whether subtask is promoted to to-do list
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

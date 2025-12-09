@@ -269,13 +269,17 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
       const newMessage: InstantMessage = await response.json();
 
-      // Add message to window (socket will also broadcast it)
+      // Add message to window with deduplication check
+      // The socket may also broadcast this message, so we need to prevent duplicates
       setOpenWindows(prev =>
-        prev.map(w =>
-          w.id === windowId
-            ? { ...w, messages: [...w.messages, newMessage] }
-            : w
-        )
+        prev.map(w => {
+          if (w.id === windowId) {
+            const messageExists = w.messages.some(m => m.id === newMessage.id);
+            if (messageExists) return w;
+            return { ...w, messages: [...w.messages, newMessage] };
+          }
+          return w;
+        })
       );
     } catch (error) {
       console.error('Failed to send message:', error);

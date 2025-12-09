@@ -170,6 +170,22 @@ export interface IStorage {
   deleteProjectTask(id: number): Promise<boolean>;
   getProjectCongratulations(projectId: number): Promise<any[]>;
 
+  // Subtasks
+  getSubtasks(parentTaskId: number): Promise<ProjectTask[]>;
+  createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask>;
+  promoteTaskToTodo(taskId: number): Promise<ProjectTask>;
+  demoteTaskFromTodo(taskId: number): Promise<ProjectTask>;
+  getTasksPromotedToTodo(): Promise<ProjectTask[]>;
+
   // Task Completions
   createTaskCompletion(
     completion: InsertTaskCompletion
@@ -1236,6 +1252,86 @@ export class MemStorage implements IStorage {
   async removeTaskCompletion(taskId: number, userId: string): Promise<boolean> {
     // For fallback storage, always return true
     return true;
+  }
+
+  // Subtask methods (for fallback storage)
+  async getSubtasks(parentTaskId: number): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter((task) => task.parentTaskId === parentTaskId)
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+  }
+
+  async createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask> {
+    const id = this.currentIds.projectTask++;
+    const subtask: ProjectTask = {
+      id,
+      projectId: data.projectId,
+      parentTaskId: data.parentTaskId,
+      title: data.title,
+      description: data.description || null,
+      status: 'pending',
+      priority: data.priority || 'medium',
+      assigneeId: null,
+      assigneeName: null,
+      assigneeIds: data.assigneeIds || null,
+      assigneeNames: data.assigneeNames || null,
+      dueDate: data.dueDate || null,
+      completedAt: null,
+      attachments: null,
+      order: 0,
+      orderNum: 0,
+      completedBy: null,
+      completedByName: null,
+      originType: 'manual',
+      sourceNoteId: null,
+      sourceMeetingId: null,
+      sourceTeamBoardId: null,
+      selectedForAgenda: false,
+      promotedToTodo: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(id, subtask);
+    return subtask;
+  }
+
+  async promoteTaskToTodo(taskId: number): Promise<ProjectTask> {
+    const task = this.projectTasks.get(taskId);
+    if (!task) throw new Error('Task not found');
+    task.promotedToTodo = true;
+    task.updatedAt = new Date();
+    this.projectTasks.set(taskId, task);
+    return task;
+  }
+
+  async demoteTaskFromTodo(taskId: number): Promise<ProjectTask> {
+    const task = this.projectTasks.get(taskId);
+    if (!task) throw new Error('Task not found');
+    task.promotedToTodo = false;
+    task.updatedAt = new Date();
+    this.projectTasks.set(taskId, task);
+    return task;
+  }
+
+  async getTasksPromotedToTodo(): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter((task) => task.promotedToTodo === true)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
   }
 
   // Project Comment methods
