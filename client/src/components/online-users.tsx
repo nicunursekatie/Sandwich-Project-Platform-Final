@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Users, X } from 'lucide-react';
+import { Users, X, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useInstantMessaging } from '@/contexts/instant-messaging-context';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OnlineUser {
   id: string;
@@ -59,6 +62,8 @@ function getTimeAgo(lastActiveAt: string | null): string {
 
 export function OnlineUsers() {
   const [isOpen, setIsOpen] = useState(false);
+  const { openChat } = useInstantMessaging();
+  const { user: currentUser } = useAuth();
 
   const { data: onlineUsers = [], isLoading } = useQuery<OnlineUser[]>({
     queryKey: ['/api/users/online'],
@@ -123,10 +128,17 @@ export function OnlineUsers() {
             </div>
           ) : (
             <ul className="divide-y">
-              {onlineUsers.map((user) => (
+              {onlineUsers
+                .filter((user) => user.id !== currentUser?.id) // Don't show yourself
+                .map((user) => (
                 <li
                   key={user.id}
-                  className="p-3 hover:bg-slate-50 flex items-center gap-3"
+                  className="p-3 hover:bg-slate-50 flex items-center gap-3 cursor-pointer group"
+                  onClick={() => {
+                    openChat(user);
+                    setIsOpen(false);
+                  }}
+                  title={`Message ${getDisplayName(user)}`}
                 >
                   <div className="relative">
                     <Avatar className="h-8 w-8">
@@ -145,8 +157,25 @@ export function OnlineUsers() {
                       {getTimeAgo(user.lastActiveAt)}
                     </p>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openChat(user);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
                 </li>
               ))}
+              {onlineUsers.filter((user) => user.id !== currentUser?.id).length === 0 && (
+                <div className="p-4 text-center text-sm text-slate-500">
+                  No one else is online right now
+                </div>
+              )}
             </ul>
           )}
         </div>

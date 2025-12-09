@@ -11,6 +11,7 @@ import recipientsRouter from './recipients';
 import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
+import instantMessagesRouter from './instant-messages';
 import eventRequestsRouter from './event-requests';
 import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
@@ -300,6 +301,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     messagingRouter
   );
   router.use('/api/messaging', createErrorHandler('messaging'));
+
+  router.use(
+    '/api/instant-messages',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    instantMessagesRouter
+  );
+  router.use('/api/instant-messages', createErrorHandler('instant-messages'));
 
   router.use(
     '/api/notifications',

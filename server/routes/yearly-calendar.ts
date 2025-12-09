@@ -56,7 +56,7 @@ export const yearlyCalendarRouter = Router();
 // GET /api/yearly-calendar - Get all calendar items for a specific year
 yearlyCalendarRouter.get(
   '/',
-  requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), // Reuse holding zone permission
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_VIEW),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -98,7 +98,7 @@ yearlyCalendarRouter.get(
 // POST /api/yearly-calendar - Create new calendar item
 yearlyCalendarRouter.post(
   '/',
-  requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), // Reuse holding zone permission
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -158,7 +158,7 @@ yearlyCalendarRouter.post(
 // PATCH /api/yearly-calendar/:id - Update calendar item
 yearlyCalendarRouter.patch(
   '/:id',
-  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE), // Reuse holding zone permission
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -238,7 +238,7 @@ yearlyCalendarRouter.patch(
 // DELETE /api/yearly-calendar/:id - Delete calendar item
 yearlyCalendarRouter.delete(
   '/:id',
-  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE), // Reuse holding zone permission
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -284,7 +284,7 @@ yearlyCalendarRouter.delete(
 // POST /api/yearly-calendar/:id/copy-to-next-year - Copy recurring item to next year
 yearlyCalendarRouter.post(
   '/:id/copy-to-next-year',
-  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE),
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {

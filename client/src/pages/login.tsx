@@ -210,7 +210,7 @@ export default function LoginPage() {
 
               <div className="text-center space-y-2 pt-2">
                 <Link
-                  href="/reset-password"
+                  href="/forgot-password"
                   className="text-sm text-gray-600 hover:text-amber-600 hover:underline"
                 >
                   Forgot your password?

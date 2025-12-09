@@ -15,11 +15,14 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ScrollToTop } from '@/components/ScrollToTop';
 import { ChatWindowsProvider } from '@/context/chat-windows-context';
 import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
+import { InstantMessagingProvider } from '@/contexts/instant-messaging-context';
+import { InstantMessageContainer } from '@/components/instant-message-container';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
 import LoginPage from '@/pages/login';
+import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
@@ -130,6 +133,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/signup" component={SignupPage} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/sms-opt-in">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
@@ -494,11 +498,14 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ChatWindowsProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <FloatingChatWindowsContainer />
-          </TooltipProvider>
+          <InstantMessagingProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+              <FloatingChatWindowsContainer />
+              <InstantMessageContainer />
+            </TooltipProvider>
+          </InstantMessagingProvider>
         </ChatWindowsProvider>
       </QueryClientProvider>
     </ErrorBoundary>

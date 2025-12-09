@@ -166,6 +166,38 @@ export const chatMessageReads = pgTable(
     ),
   })
 );
+
+// Instant messages table for 1:1 direct messaging
+export const instantMessages = pgTable(
+  'instant_messages',
+  {
+    id: serial('id').primaryKey(),
+    senderId: varchar('sender_id').notNull(),
+    senderName: varchar('sender_name').notNull(),
+    recipientId: varchar('recipient_id').notNull(),
+    content: text('content').notNull(),
+    read: boolean('read').default(false),
+    readAt: timestamp('read_at'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    senderIdx: index('idx_instant_messages_sender').on(table.senderId),
+    recipientIdx: index('idx_instant_messages_recipient').on(table.recipientId),
+    conversationIdx: index('idx_instant_messages_conversation').on(
+      table.senderId,
+      table.recipientId
+    ),
+  })
+);
+
+export const insertInstantMessageSchema = createInsertSchema(instantMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InstantMessage = typeof instantMessages.$inferSelect;
+export type InsertInstantMessage = typeof instantMessages.$inferInsert;
+
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
