@@ -72,9 +72,11 @@ export function InstantMessageWindow({
   useEffect(() => {
     if (!window.minimized) {
       inputRef.current?.focus();
+      // Only mark as read when window becomes maximized (not on every render)
       onMarkAsRead();
     }
-  }, [window.minimized, onMarkAsRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [window.minimized]); // Only depend on minimized state, not onMarkAsRead
 
   const handleSend = async () => {
     if (!message.trim() || sending) return;

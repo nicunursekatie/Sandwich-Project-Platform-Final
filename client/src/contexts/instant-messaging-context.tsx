@@ -220,6 +220,12 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
   };
 
   const closeChat = useCallback((windowId: string) => {
+    // Clear any pending markAsRead timeout for this window
+    const timeout = markAsReadTimeouts.current.get(windowId);
+    if (timeout) {
+      clearTimeout(timeout);
+      markAsReadTimeouts.current.delete(windowId);
+    }
     setOpenWindows(prev => prev.filter(w => w.id !== windowId));
   }, []);
 
@@ -277,22 +283,39 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     }
   }, [user?.id]);
 
+  // Debounce markAsRead calls to prevent excessive API requests
+  const markAsReadTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   const markAsRead = useCallback((windowId: string) => {
     // Use ref to get current windows to avoid stale closure
     const currentWindow = openWindowsRef.current.find(w => w.id === windowId);
     if (!currentWindow) return;
 
-    // Mark messages as read on server
-    fetch(`/api/instant-messages/${currentWindow.user.id}/read`, {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(console.error);
+    // Clear any existing timeout for this window
+    const existingTimeout = markAsReadTimeouts.current.get(windowId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
 
+    // Update UI immediately
     setOpenWindows(prev =>
       prev.map(w =>
         w.id === windowId ? { ...w, unreadCount: 0 } : w
       )
     );
+
+    // Debounce the API call - only send after 500ms of no calls
+    const timeout = setTimeout(() => {
+      fetch(`/api/instant-messages/${currentWindow.user.id}/read`, {
+        method: 'POST',
+        credentials: 'include',
+      }).catch((error) => {
+        console.error('Failed to mark messages as read:', error);
+      });
+      markAsReadTimeouts.current.delete(windowId);
+    }, 500);
+
+    markAsReadTimeouts.current.set(windowId, timeout);
   }, []);
 
   const addMessage = useCallback((message: InstantMessage) => {
@@ -312,6 +335,16 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       });
     });
   }, [user?.id]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      markAsReadTimeouts.current.forEach((timeout) => {
+        clearTimeout(timeout);
+      });
+      markAsReadTimeouts.current.clear();
+    };
+  }, []);
 
   return (
     <InstantMessagingContext.Provider
