@@ -109,28 +109,39 @@ export const NewRequestsTab: React.FC = () => {
           let partnerOrgs: Array<{ name: string; department?: string; role?: string }>;
           
           if (editingField.startsWith('partnerOrg_')) {
-            // Editing a single partner organization name
+            // Editing a single partner organization (name + optional department)
             const index = parseInt(editingField.split('_')[1]);
             const currentEvent = eventRequests.find(r => r.id === editingNewRequestId);
             const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
               ? (currentEvent.partnerOrganizations as any[]) 
               : [];
             partnerOrgs = [...currentPartners];
+
+            let parsed = { name: editingValue?.trim?.() || '', department: '' };
+            try {
+              const maybe = JSON.parse(editingValue);
+              if (maybe && typeof maybe === 'object') {
+                parsed = {
+                  name: (maybe as any).name?.toString().trim() || '',
+                  department: (maybe as any).department?.toString() || '',
+                };
+              }
+            } catch {
+              // ignore parse errors
+            }
+
+            const target = partnerOrgs[index] || {};
+            const updated = {
+              ...target,
+              name: parsed.name || target.name || '',
+              department: parsed.department ?? target.department ?? '',
+              role: target.role || 'partner',
+            };
+
             if (partnerOrgs[index]) {
-              // Preserve existing department and role, only update name
-              partnerOrgs[index] = { 
-                ...partnerOrgs[index], 
-                name: editingValue.trim(),
-                // Ensure role exists, default to 'partner'
-                role: partnerOrgs[index].role || 'partner'
-              };
-            } else if (editingValue.trim()) {
-              // If index doesn't exist but we have a value, add it
-              partnerOrgs.push({ 
-                name: editingValue.trim(), 
-                department: '', 
-                role: 'partner' 
-              });
+              partnerOrgs[index] = updated;
+            } else if (updated.name) {
+              partnerOrgs.push(updated);
             }
           } else {
             // Editing the full array
