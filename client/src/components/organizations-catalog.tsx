@@ -316,18 +316,20 @@ export default function GroupCatalog({
 
     // For single-event cards (linkedEventId), we can edit the department
     // For aggregated cards (eventIds), we can still edit but it affects all events in the card
+    // For cards without event IDs, we can still edit but it will match by organization name
     const hasLinkedEvent = !!editNameOrganization.linkedEventId;
     const hasEventIds = editNameOrganization.eventIds && editNameOrganization.eventIds.length > 0;
+    const hasOrgName = !!editNameOrganization.organizationName;
 
-    // Department editing is allowed if we have either linkedEventId OR eventIds
-    // (meaning we can target specific events, not all matching by name)
-    const canEditDepartment = hasLinkedEvent || hasEventIds;
+    // Department editing is allowed if we have linkedEventId, eventIds, or organization name
+    // (organization name allows matching by name, which is less precise but still works)
+    const canEditDepartment = hasLinkedEvent || hasEventIds || hasOrgName;
 
     const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
-      // Include department data when we have specific events to update
-      // ALWAYS include oldDepartment to prevent matching all events with that org name
+      // Include department data when we can edit
+      // Include oldDepartment to help match the right events (especially when no event IDs)
       oldDepartment: canEditDepartment ? (editNameOrganization.department || '') : undefined,
       newDepartment: canEditDepartment ? (editDeptName.trim() || '') : undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
@@ -2595,8 +2597,10 @@ export default function GroupCatalog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-dept-name">Department (optional)</Label>
-              {/* Allow department edits when we have specific events to target */}
-              {(editNameOrganization?.linkedEventId || (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0)) ? (
+              {/* Allow department edits when we have specific events to target OR when we have an organization name to match */}
+              {(editNameOrganization?.linkedEventId || 
+                (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0) ||
+                editNameOrganization?.organizationName) ? (
                 <>
                   <Input
                     id="edit-dept-name"
@@ -2608,6 +2612,12 @@ export default function GroupCatalog({
                   {editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 1 && (
                     <p className="text-xs text-amber-600">
                       This will update the department for all {editNameOrganization.eventIds.length} events in this card.
+                    </p>
+                  )}
+                  {!editNameOrganization?.linkedEventId && 
+                   (!editNameOrganization?.eventIds || editNameOrganization.eventIds.length === 0) && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all events matching this organization name.
                     </p>
                   )}
                 </>
