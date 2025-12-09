@@ -61,16 +61,16 @@ export default function ImportantLinks() {
       description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
     },
     {
-      id: 'volunteer',
-      name: 'Volunteer Recruitment Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/volunteer.html',
-      description: 'Flyer for recruiting volunteers',
+      id: 'digital',
+      name: 'Digital Flyer',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/digital-flyer.html',
+      description: 'Digital promotional flyer for The Sandwich Project',
     },
     {
-      id: 'group-host',
-      name: 'Group Host Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/grouphost.html',
-      description: 'Information for organizations that want to host group events',
+      id: 'qr-margins',
+      name: 'QR Code Flyer with Margins',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
+      description: 'Printable QR code flyer with margins for easy printing',
     },
   ];
 
