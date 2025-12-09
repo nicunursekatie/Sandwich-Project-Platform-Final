@@ -7,6 +7,7 @@ import type {
   InsertEventCollaborationComment,
   InsertEventFieldLock,
   InsertEventEditRevision,
+  InsertAvailabilitySlot,
 } from '@shared/schema';
 
 class StorageWrapper implements IStorage {
@@ -2010,6 +2011,56 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventEditRevision(data),
       () => this.fallbackStorage.createEventEditRevision(data)
+    );
+  }
+
+  // Availability Slots
+  async getAllAvailabilitySlots() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllAvailabilitySlots(),
+      () => this.fallbackStorage.getAllAvailabilitySlots()
+    );
+  }
+
+  async getAvailabilitySlotById(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotById(id),
+      () => this.fallbackStorage.getAvailabilitySlotById(id)
+    );
+  }
+
+  async getAvailabilitySlotsByUserId(userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotsByUserId(userId),
+      () => this.fallbackStorage.getAvailabilitySlotsByUserId(userId)
+    );
+  }
+
+  async getAvailabilitySlotsByDateRange(startDate: Date, endDate: Date) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotsByDateRange(startDate, endDate),
+      () => this.fallbackStorage.getAvailabilitySlotsByDateRange(startDate, endDate)
+    );
+  }
+
+  async createAvailabilitySlot(slot: InsertAvailabilitySlot) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createAvailabilitySlot(slot),
+      () => this.fallbackStorage.createAvailabilitySlot(slot)
+    );
+  }
+
+  async updateAvailabilitySlot(id: number, updates: Partial<InsertAvailabilitySlot>) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateAvailabilitySlot(id, updates),
+      () => this.fallbackStorage.updateAvailabilitySlot(id, updates)
+    );
+  }
+
+  async deleteAvailabilitySlot(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteAvailabilitySlot(id),
+      () => this.fallbackStorage.deleteAvailabilitySlot(id)
     );
   }
 }

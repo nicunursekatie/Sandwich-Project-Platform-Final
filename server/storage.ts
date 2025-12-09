@@ -3370,6 +3370,74 @@ export class MemStorage implements IStorage {
 
     return deletedCount;
   }
+
+  // Availability Slots (stub implementations for MemStorage fallback)
+  private availabilitySlots = new Map<number, AvailabilitySlot>();
+  private currentAvailabilitySlotId = 1;
+
+  async getAllAvailabilitySlots(): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values());
+  }
+
+  async getAvailabilitySlotById(id: number): Promise<AvailabilitySlot | undefined> {
+    return this.availabilitySlots.get(id);
+  }
+
+  async getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values()).filter(
+      (slot) => slot.userId === userId
+    );
+  }
+
+  async getAvailabilitySlotsByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values()).filter(
+      (slot) =>
+        new Date(slot.startAt) <= endDate && new Date(slot.endAt) >= startDate
+    );
+  }
+
+  async createAvailabilitySlot(
+    slot: InsertAvailabilitySlot
+  ): Promise<AvailabilitySlot> {
+    const id = this.currentAvailabilitySlotId++;
+    const now = new Date();
+    const newSlot: AvailabilitySlot = {
+      id,
+      userId: slot.userId,
+      type: slot.type,
+      startAt: slot.startAt,
+      endAt: slot.endAt,
+      notes: slot.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.availabilitySlots.set(id, newSlot);
+    return newSlot;
+  }
+
+  async updateAvailabilitySlot(
+    id: number,
+    updates: Partial<InsertAvailabilitySlot>
+  ): Promise<AvailabilitySlot> {
+    const existing = this.availabilitySlots.get(id);
+    if (!existing) {
+      throw new Error(`Availability slot ${id} not found`);
+    }
+    const updated: AvailabilitySlot = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.availabilitySlots.set(id, updated);
+    return updated;
+  }
+
+  async deleteAvailabilitySlot(id: number): Promise<void> {
+    this.availabilitySlots.delete(id);
+  }
 }
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system
