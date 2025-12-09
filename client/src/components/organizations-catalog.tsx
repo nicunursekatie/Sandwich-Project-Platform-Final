@@ -35,6 +35,7 @@ import {
   Edit,
   Plus,
   X,
+  ArrowUp,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
@@ -198,6 +199,7 @@ export default function GroupCatalog({
   const [editOrgName, setEditOrgName] = useState('');
   const [editDeptName, setEditDeptName] = useState('');
   const [partnerOrganizations, setPartnerOrganizations] = useState<Array<{ name: string; role: string }>>([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -716,6 +718,25 @@ export default function GroupCatalog({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, searchScope, filters, sortBy, sortOrder, viewMode]);
+
+  // Handle scroll to show/hide back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setShowBackToTop(scrollTop > 300); // Show button after scrolling 300px
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -2742,6 +2763,18 @@ export default function GroupCatalog({
           "Which groups were recently active?",
         ]}
       />
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 rounded-full h-12 w-12 p-0 shadow-lg bg-[#236383] hover:bg-[#007E8C] text-white transition-all duration-300"
+          aria-label="Back to top"
+          title="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }
