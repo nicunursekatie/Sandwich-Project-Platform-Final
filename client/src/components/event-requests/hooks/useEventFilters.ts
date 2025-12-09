@@ -397,16 +397,21 @@ export const useEventFilters = () => {
 
   // Filter by status for tab display
   const filterRequestsByStatus = (status: string) => {
-    return eventRequests
+    const source =
+      status === 'all' || status === 'my_assignments'
+        ? eventRequests
+        : eventRequests.filter((req: EventRequest) => req.status === status);
+
+    return source
       .filter((request: EventRequest) => {
-        let matchesStatus: boolean;
+        let matchesStatus = true;
 
         if (status === 'my_assignments') {
           // Special handling for my assignments - check if user is assigned
           // AND filter by selected statuses in myAssignmentsStatusFilter
           matchesStatus = isUserAssignedToEvent(request) && myAssignmentsStatusFilter.includes(request.status);
-        } else {
-          // Regular status filtering
+        } else if (status !== 'all') {
+          // Regular status filtering (already scoped source, but keep guard)
           matchesStatus = request.status === status;
         }
 

@@ -165,6 +165,7 @@ interface EventRequestContextType {
   // Computed data
   requestsByStatus: Record<string, EventRequest[]>;
   statusCounts: {
+    all: number;
     new: number;
     in_process: number;
     scheduled: number;
@@ -241,7 +242,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    const validTabs = ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
     if (initialTab && validTabs.includes(initialTab)) {
       logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
@@ -259,7 +260,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
     const sectionFromUrl = urlParams.get('section');
-    const validTabs = ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
     
     // Only update if we're on the event-requests section and there's a valid tab in the URL
     if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
@@ -447,6 +448,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Calculate status counts
   const statusCounts = {
+    all: eventRequests.length,
     new: requestsByStatus.new?.length || 0,
     in_process: requestsByStatus.in_process?.length || 0,
     scheduled: requestsByStatus.scheduled?.length || 0,
@@ -477,7 +479,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
     // Only sync statusFilter for tabs that correspond to status values
-    if (['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(activeTab)) {
+    if (['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
     // For admin_overview and planning tabs, don't change statusFilter
@@ -486,7 +488,9 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Auto-sort by appropriate default for each tab (only when tab changes)
   // This provides smart defaults but user can still override
   useEffect(() => {
-    if (activeTab === 'new') {
+    if (activeTab === 'all') {
+      setSortBy('event_date_asc');
+    } else if (activeTab === 'new') {
       setSortBy('created_date_desc');
     } else if (activeTab === 'scheduled' || activeTab === 'in_process' || activeTab === 'my_assignments') {
       // For scheduled and my_assignments, show upcoming events first
