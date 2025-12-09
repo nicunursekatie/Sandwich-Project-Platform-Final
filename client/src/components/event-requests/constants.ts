@@ -79,6 +79,8 @@ export const statusIcons = {
   scheduled: Calendar,
   completed: CheckCircle,
   declined: XCircle,
+  postponed: Clock,
+  cancelled: XCircle,
 };
 
 export const previouslyHostedOptions = [
@@ -92,5 +94,7 @@ export const statusOptions = [
   { value: 'in_process', label: 'In Process' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'completed', label: 'Completed' },
-  { value: 'declined', label: 'Declined/Postponed' },
+  { value: 'declined', label: 'Declined' },
+  { value: 'postponed', label: 'Postponed' },
+  { value: 'cancelled', label: 'Cancelled' },
 ];
