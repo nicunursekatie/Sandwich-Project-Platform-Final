@@ -849,104 +849,106 @@ export default function TeamAvailability() {
         </Card>
       )}
 
-      {/* Scheduled Events with Assignments */}
-      <div className="mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Scheduled Events & Assignments</h2>
-            <p className="text-gray-600">
-              Who is assigned to events in the selected date range.
-            </p>
+      {/* Scheduled Events with Assignments - Only show in list view */}
+      {viewMode === 'list' && (
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Scheduled Events & Assignments</h2>
+              <p className="text-gray-600">
+                Who is assigned to events in the selected date range.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-sm">
+              {events.length} event{events.length === 1 ? '' : 's'}
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-sm">
-            {events.length} event{events.length === 1 ? '' : 's'}
-          </Badge>
-        </div>
 
-        {Object.keys(eventsByDate).length === 0 ? (
-          <Card className="p-4">
-            <p className="text-gray-600">No scheduled events in this range.</p>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(eventsByDate)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([dateKey, dateEvents]) => (
-                <Card key={dateKey} className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {format(new Date(dateKey), 'EEEE, MMMM d, yyyy')}
-                    </h3>
-                  </div>
-                  <div className="space-y-3">
-                    {dateEvents.map((event) => {
-                      const startTime =
-                        event.startTime ||
-                        (event.scheduledEventDate
-                          ? format(new Date(event.scheduledEventDate), 'p')
-                          : null);
-                      const endTime =
-                        event.endTime ||
-                        (event.scheduledEventDate
-                          ? format(new Date(event.scheduledEventDate), 'p')
-                          : null);
+          {Object.keys(eventsByDate).length === 0 ? (
+            <Card className="p-4">
+              <p className="text-gray-600">No scheduled events in this range.</p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(eventsByDate)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([dateKey, dateEvents]) => (
+                  <Card key={dateKey} className="p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {format(new Date(dateKey), 'EEEE, MMMM d, yyyy')}
+                      </h3>
+                    </div>
+                    <div className="space-y-3">
+                      {dateEvents.map((event) => {
+                        const startTime =
+                          event.startTime ||
+                          (event.scheduledEventDate
+                            ? format(new Date(event.scheduledEventDate), 'p')
+                            : null);
+                        const endTime =
+                          event.endTime ||
+                          (event.scheduledEventDate
+                            ? format(new Date(event.scheduledEventDate), 'p')
+                            : null);
 
-                      return (
-                        <div
-                          key={event.id}
-                          className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <div className="text-sm text-gray-600">
-                                {event.organizationName || 'Event'}
+                        return (
+                          <div
+                            key={event.id}
+                            className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div>
+                                <div className="text-sm text-gray-600">
+                                  {event.organizationName || 'Event'}
+                                </div>
+                                <div className="text-lg font-semibold text-gray-900">
+                                  {event.title || 'Event'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {startTime
+                                    ? `${startTime}${
+                                        endTime && endTime !== startTime ? ` – ${endTime}` : ''
+                                      }`
+                                    : 'Time TBD'}
+                                </div>
+                                {event.eventAddress && (
+                                  <div className="text-sm text-gray-500">{event.eventAddress}</div>
+                                )}
                               </div>
-                              <div className="text-lg font-semibold text-gray-900">
-                                {event.title || 'Event'}
+                              <Badge variant="secondary" className="w-fit">
+                                {event.status}
+                              </Badge>
+                            </div>
+                            <div className="mt-3">
+                              <div className="text-sm font-medium text-gray-800 mb-1">
+                                Assigned team
                               </div>
-                              <div className="text-sm text-gray-600">
-                                {startTime
-                                  ? `${startTime}${
-                                      endTime && endTime !== startTime ? ` – ${endTime}` : ''
-                                    }`
-                                  : 'Time TBD'}
-                              </div>
-                              {event.eventAddress && (
-                                <div className="text-sm text-gray-500">{event.eventAddress}</div>
+                              {event.volunteers.length === 0 ? (
+                                <div className="text-sm text-gray-500">No assignments yet.</div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {event.volunteers.map((volunteer) => (
+                                    <Badge key={volunteer.id} variant="outline" className="text-sm">
+                                      {volunteer.name}
+                                      <span className="ml-1 text-gray-500">
+                                        ({volunteer.role}, {volunteer.status})
+                                      </span>
+                                    </Badge>
+                                  ))}
+                                </div>
                               )}
                             </div>
-                            <Badge variant="secondary" className="w-fit">
-                              {event.status}
-                            </Badge>
                           </div>
-                          <div className="mt-3">
-                            <div className="text-sm font-medium text-gray-800 mb-1">
-                              Assigned team
-                            </div>
-                            {event.volunteers.length === 0 ? (
-                              <div className="text-sm text-gray-500">No assignments yet.</div>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {event.volunteers.map((volunteer) => (
-                                  <Badge key={volunteer.id} variant="outline" className="text-sm">
-                                    {volunteer.name}
-                                    <span className="ml-1 text-gray-500">
-                                      ({volunteer.role}, {volunteer.status})
-                                    </span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              ))}
-          </div>
-        )}
-      </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
