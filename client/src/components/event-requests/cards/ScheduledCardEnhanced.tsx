@@ -742,14 +742,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </span>
                 </>
               ) : canEdit ? (
-                <button
-                  type="button"
-                  className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline-offset-2 underline"
-                  onClick={() => startEditing('department', '')}
-                  title="Add department"
-                >
-                  Add department
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors"
+                      onClick={() => startEditing('department', '')}
+                    >
+                      <Building2 className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add department</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
               
               {/* Partner Organizations */}
@@ -854,16 +860,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
               {(!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit && (
-                <button
-                  type="button"
-                  className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline underline-offset-2 mt-1"
-                  onClick={() => {
-                    startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
-                  }}
-                  title="Add partner organization"
-                >
-                  Add partner organization
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors"
+                      onClick={() => {
+                        startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                      }}
+                    >
+                      <Users className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add partner organization</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
 
