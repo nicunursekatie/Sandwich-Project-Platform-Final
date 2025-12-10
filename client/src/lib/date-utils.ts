@@ -47,13 +47,15 @@ export function formatDateForDisplay(dateString: string): string {
   try {
     let date: Date;
 
-    // Check if it's already a full datetime string (contains time portion)
-    if (dateString.includes(' ') || dateString.includes('T')) {
-      // It's a full datetime string, parse directly
-      date = new Date(dateString);
+    // Extract just the date portion (YYYY-MM-DD) from various formats
+    // Handles: "2025-12-16", "2025-12-16 00:00:00", "2025-12-16T00:00:00", etc.
+    const dateMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      // Always parse at noon to avoid timezone boundary issues
+      date = new Date(dateMatch[1] + 'T12:00:00');
     } else {
-      // It's a date-only string, add noon time to avoid timezone edge cases
-      date = new Date(dateString + 'T12:00:00');
+      // Fallback for other formats
+      date = new Date(dateString);
     }
 
     // Check if date is valid
@@ -196,9 +198,12 @@ export function formatDateShort(dateValue: string | Date | null | undefined): st
     if (dateValue instanceof Date) {
       date = dateValue;
     } else if (typeof dateValue === 'string') {
-      // If it's a date-only string (YYYY-MM-DD), add noon time to avoid timezone issues
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-        date = new Date(dateValue + 'T12:00:00');
+      // Extract just the date portion (YYYY-MM-DD) from various formats
+      // Handles: "2025-12-16", "2025-12-16 00:00:00", "2025-12-16T00:00:00", etc.
+      const dateMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        // Always parse at noon to avoid timezone boundary issues
+        date = new Date(dateMatch[1] + 'T12:00:00');
       } else {
         date = new Date(dateValue);
       }
