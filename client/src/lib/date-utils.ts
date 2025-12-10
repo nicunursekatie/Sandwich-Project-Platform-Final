@@ -178,6 +178,47 @@ export function formatTimeForDisplay(timeString: string): string {
   }
 }
 
+/**
+ * Format a date-only string (YYYY-MM-DD) for short display (e.g., "Wed, Dec 15")
+ * ALWAYS use this for event dates to avoid the "day early" timezone bug.
+ * 
+ * The bug: `new Date("2024-12-15")` is parsed as UTC midnight, which shifts
+ * to the previous day when displayed in Eastern time.
+ * 
+ * The fix: Parse with `T12:00:00` (noon) to avoid timezone boundary issues.
+ */
+export function formatDateShort(dateValue: string | Date | null | undefined): string {
+  if (!dateValue) return 'Date TBD';
+
+  try {
+    let date: Date;
+
+    if (dateValue instanceof Date) {
+      date = dateValue;
+    } else if (typeof dateValue === 'string') {
+      // If it's a date-only string (YYYY-MM-DD), add noon time to avoid timezone issues
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        date = new Date(dateValue + 'T12:00:00');
+      } else {
+        date = new Date(dateValue);
+      }
+    } else {
+      return 'Date TBD';
+    }
+
+    if (isNaN(date.getTime())) return 'Date TBD';
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      timeZone: APP_TIMEZONE,
+    });
+  } catch {
+    return 'Date TBD';
+  }
+}
+
 export type DateLike = string | Date | null | undefined;
 
 /**
