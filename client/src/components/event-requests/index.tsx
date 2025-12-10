@@ -456,40 +456,48 @@ const EventRequestsManagementContent: React.FC = () => {
       <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4">
         {/* Header */}
         <div className="premium-card p-4 sm:p-6">
-          <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className={`premium-text-h1 ${isMobile ? '' : ''}`}>Event Requests Management</h1>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="text-teal-600 hover:text-teal-800 transition-colors">
-                      <HelpCircle className="w-5 h-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs premium-tooltip">
-                    <p className="font-semibold mb-1">Event Requests Help</p>
-                    <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
-                  </TooltipContent>
-                </Tooltip>
+          <div className="space-y-4">
+            {/* Title row */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="premium-text-h1">Event Requests Management</h1>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs premium-tooltip">
+                      <p className="font-semibold mb-1">Event Requests Help</p>
+                      <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="premium-text-body text-brand-primary">
+                  {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+                </p>
               </div>
-              <p className="premium-text-body text-brand-primary">
-                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-              </p>
-            </div>
-            <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-3 flex-wrap'}`}>
+              
+              {/* Primary action - always visible */}
               <button
                 onClick={() => setShowVolunteerOpportunities(true)}
-                className="premium-btn-primary"
+                className="premium-btn-primary flex-shrink-0"
                 style={{ backgroundColor: '#007E8C' }}
               >
                 <Users className="w-4 h-4" />
-                {isMobile ? 'Opportunities' : 'Volunteer Opportunities'}
+                {isMobile ? 'Volunteer' : 'Volunteer Opportunities'}
               </button>
+            </div>
+            
+            {/* Action buttons row */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+              {/* Admin actions */}
               {canManageEvents && (
                 <button
                   onClick={() => syncFromSheetsMutation.mutate()}
                   disabled={syncFromSheetsMutation.isPending}
-                  className="premium-btn-outline"
+                  className="premium-btn-outline text-sm"
                   title="Sync new event requests from Google Sheets (safe - won't create duplicates)"
                 >
                   <RefreshCw className={`w-4 h-4 ${syncFromSheetsMutation.isPending ? 'animate-spin' : ''}`} />
@@ -506,12 +514,17 @@ const EventRequestsManagementContent: React.FC = () => {
                   setIsEditing(true);
                   setShowEventDetails(true);
                 }}
-                className="premium-btn-outline"
+                className="premium-btn-outline text-sm"
                 data-testid="button-add-manual-event"
               >
                 <Plus className="w-4 h-4" />
-                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+                {isMobile ? 'Add' : 'Add Manual Event Request'}
               </button>
+              
+              {/* Separator */}
+              <div className="hidden sm:block w-px h-6 bg-gray-200 mx-1" />
+              
+              {/* Status alert buttons */}
               <MissingInfoSummaryDialog />
               <ToolkitSentPendingDialog />
             </div>
