@@ -1690,14 +1690,33 @@ router.patch(
       }
 
       // Get original data for audit logging
+      logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);
       const originalEvent = await storage.getEventRequestById(id);
+      logger.info(`[PATCH /:id] Storage returned:`, originalEvent ? `Event found (${originalEvent.organizationName})` : 'null/undefined');
+
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);
         logger.error(`[PATCH /:id] Attempted update fields:`, Object.keys(updates).join(', '));
         logger.error(`[PATCH /:id] User: ${req.user?.id} (${req.user?.email})`);
         logger.error(`[PATCH /:id] Request body preview:`, JSON.stringify(updates).substring(0, 200));
-        
-        return res.status(404).json({ 
+
+        // Try direct database check to see if event exists but is soft-deleted
+        try {
+          const { db } = await import('../db');
+          const { eventRequests } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          const [directCheck] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+          if (directCheck) {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} EXISTS in DB but storage returned null!`);
+            logger.error(`[PATCH /:id] DIAGNOSTIC: deletedAt = ${directCheck.deletedAt}, status = ${directCheck.status}`);
+          } else {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} truly does NOT exist in database`);
+          }
+        } catch (diagError) {
+          logger.error(`[PATCH /:id] DIAGNOSTIC check failed:`, diagError);
+        }
+
+        return res.status(404).json({
           message: 'Event request not found',
           eventId: id,
           error: 'EVENT_NOT_FOUND',
