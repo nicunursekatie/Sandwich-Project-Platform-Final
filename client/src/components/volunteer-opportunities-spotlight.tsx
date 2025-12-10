@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Users, Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDateShort } from '@/lib/date-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface VolunteerOpportunitiesSpotlightProps {
@@ -60,12 +60,7 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
 
   const formatEventDate = (request: EventRequest) => {
     const date = request.scheduledEventDate || request.desiredEventDate;
-    if (!date) return 'Date TBD';
-    try {
-      return format(new Date(date), 'EEE, MMM d');
-    } catch {
-      return 'Date TBD';
-    }
+    return formatDateShort(date);
   };
 
   if (isLoading) {
