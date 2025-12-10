@@ -685,7 +685,7 @@ export default function Dashboard({
                     <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Messages</TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>Messages</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -707,7 +707,7 @@ export default function Dashboard({
                     <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Comments</TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>Comments</TooltipContent>
               </Tooltip>
 
               {/* Online Users Indicator */}
@@ -762,7 +762,7 @@ export default function Dashboard({
                         )}
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" sideOffset={8}>
                       {item.label}{showNewBadge ? ' (Moved here!)' : ''}
                     </TooltipContent>
                   </Tooltip>
@@ -798,7 +798,7 @@ export default function Dashboard({
                     <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Account Settings</TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>Account Settings</TooltipContent>
               </Tooltip>
 
               {/* Logout button - ALWAYS visible and accessible */}
@@ -839,7 +839,7 @@ export default function Dashboard({
                     </span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Logout</TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>Logout</TooltipContent>
               </Tooltip>
             </div>
             </TooltipProvider>
