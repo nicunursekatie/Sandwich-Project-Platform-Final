@@ -1606,12 +1606,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Handlers for sandwich count editing
   const startEditingSandwichCount = () => {
-    const currentCount = request.actualSandwichCount || request.estimatedSandwichCount || 0;
-    const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
+    // IMPORTANT: Only use ACTUAL values, not estimated/planned values
+    // For completed events, we're recording what was actually delivered, not what was planned
+    const currentCount = request.actualSandwichCount || 0;
+    const currentTypes = request.actualSandwichTypes;
 
-    // Check if we have type data
+    // Check if we have ACTUAL type data (not planned types)
     if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
-      // Parse existing types into editing state
+      // Parse existing actual types into editing state
       const typeMap: Record<string, number> = {};
       currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
@@ -1622,6 +1624,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       setEditingTypes(typeMap);
       setEditingMode('detailed');
     } else {
+      // No actual types recorded yet - start in simple mode with current actual count (or 0)
       setEditingSandwichCount(currentCount.toString());
       setEditingMode('simple');
     }
@@ -1641,12 +1644,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         });
         return;
       }
-      
-      // Preserve existing types - only update the count
-      const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
+
+      // IMPORTANT: Only preserve ACTUAL types, not planned types
+      // We don't want to accidentally copy planned types to actual types
+      const existingActualTypes = request.actualSandwichTypes;
       updateSandwichCountMutation.mutate({
         actualSandwichCount: count,
-        actualSandwichTypes: currentTypes || null
+        actualSandwichTypes: existingActualTypes || null
       });
     } else {
       // Detailed mode - save types and calculate total
