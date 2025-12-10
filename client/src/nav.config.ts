@@ -89,6 +89,26 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
 
+  // RESOURCES & QUICK TOOLS - Moved up for better visibility
+  {
+    id: 'quick-tools',
+    label: 'Quick Tools',
+    icon: Link,
+    href: 'important-links',
+    permission: PERMISSIONS.NAV_IMPORTANT_LINKS,
+    group: 'dashboard',
+    highlighted: true,
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
+    icon: FileText,
+    href: 'resources',
+    permission: PERMISSIONS.NAV_RESOURCES,
+    group: 'dashboard',
+    highlighted: true,
+  },
+
   // COLLECTIONS LOG
   {
     id: 'collections',
@@ -378,23 +398,6 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // DOCUMENTATION
-  {
-    id: 'resources',
-    label: 'Resources',
-    icon: FileText,
-    href: 'resources',
-    permission: PERMISSIONS.NAV_RESOURCES,
-    group: 'documentation',
-    highlighted: true,
-  },
-  {
-    id: 'quick-tools',
-    label: 'Quick Tools',
-    icon: Link,
-    href: 'important-links',
-    permission: PERMISSIONS.NAV_IMPORTANT_LINKS,
-    group: 'documentation',
-  },
   {
     id: 'auto-form-filler',
     label: 'Auto Form Filler',
