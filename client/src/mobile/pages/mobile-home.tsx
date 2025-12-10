@@ -84,7 +84,7 @@ export function MobileHome() {
         <section className="bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-2xl p-5 text-white shadow-lg">
           <p className="text-white/80 text-sm">{greeting}</p>
           <h2 className="text-xl font-bold mt-1">
-            {user?.name?.split(' ')[0] || 'Volunteer'}
+            {user?.displayName || user?.firstName || 'Volunteer'}
           </h2>
           <p className="text-white/70 text-sm mt-2">
             Ready to make a difference today?
