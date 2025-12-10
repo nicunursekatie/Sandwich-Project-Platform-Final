@@ -859,7 +859,51 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   )}
                 </div>
               )}
-              {(!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit && (
+              {/* Show input form when adding new partner organization */}
+              {isEditingThisCard && editingField === 'partnerOrganizations' && (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) ? (
+                (() => {
+                  let parsed = { name: '', department: '' };
+                  try {
+                    const arr = JSON.parse(editingValue || '[]');
+                    if (Array.isArray(arr) && arr.length > 0) {
+                      parsed = { name: arr[0]?.name || '', department: arr[0]?.department || '' };
+                    }
+                  } catch {
+                    // ignore
+                  }
+                  return (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        value={parsed.name}
+                        onChange={(e) => setEditingValue(JSON.stringify([{ name: e.target.value, department: parsed.department, role: 'partner' }]))}
+                        className="h-8 text-base w-48"
+                        autoFocus
+                        placeholder="Partner organization name"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit();
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                      />
+                      <Input
+                        value={parsed.department}
+                        onChange={(e) => setEditingValue(JSON.stringify([{ name: parsed.name, department: e.target.value, role: 'partner' }]))}
+                        className="h-8 text-base w-40"
+                        placeholder="Department (optional)"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit();
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                      />
+                      <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                        <Save className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  );
+                })()
+              ) : (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -876,7 +920,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <p>Add partner organization</p>
                   </TooltipContent>
                 </Tooltip>
-              )}
+              ) : null}
             </div>
 
             {/* Status Badges */}
