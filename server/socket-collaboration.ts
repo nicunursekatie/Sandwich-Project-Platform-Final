@@ -613,11 +613,22 @@ export function setupSocketCollaboration(httpServer: HttpServer, io: SocketServe
 
     socket.on('heartbeat', async (data) => {
       try {
+        // Skip invalid/empty heartbeats silently - this can happen when client
+        // sends heartbeat while not viewing an event details page
+        if (!data || typeof data !== 'object' || !data.eventRequestId || !data.userId) {
+          return; // Silently ignore invalid heartbeats
+        }
+
         const validated = HeartbeatSchema.parse(data);
         const { eventRequestId, userId } = validated;
 
         updateHeartbeat(eventRequestId, userId);
       } catch (error) {
+        // Don't log Zod validation errors for heartbeats - they're expected when
+        // client navigates away from event pages but still has socket connected
+        if (error instanceof z.ZodError) {
+          return; // Silently ignore validation errors for heartbeats
+        }
         logger.error('Error processing heartbeat:', error);
       }
     });
