@@ -2115,10 +2115,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               <p className="text-sm text-[#236383]">{eventTimeDisplay}</p>
             </div>
 
-            {/* Sandwiches Delivered Section */}
+            {/* Sandwiches Section - Planned vs Delivered */}
             <div className="text-center group relative">
               <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
+              <p className="text-sm text-gray-600 font-medium">Sandwiches</p>
               {isEditingSandwichCount ? (
                 <div className="flex flex-col items-center gap-2 mt-1 min-w-0 sm:min-w-[200px]">
                   {editingMode === 'simple' ? (
@@ -2230,36 +2230,47 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="relative">
-                  <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl mt-1 break-words">
-                    {(() => {
-                      const count = request.actualSandwichCount || request.estimatedSandwichCount;
-                      const types = request.actualSandwichTypes || request.sandwichTypes;
+                <div className="relative space-y-2">
+                  {/* Planned count */}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Planned</p>
+                    <p className="font-medium text-gray-600 text-lg">
+                      {request.estimatedSandwichCount || <span className="text-gray-400 italic text-sm">Not set</span>}
+                    </p>
+                  </div>
+                  {/* Actual delivered count */}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Delivered</p>
+                    <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
+                      {(() => {
+                        const count = request.actualSandwichCount;
+                        const types = request.actualSandwichTypes;
 
-                      if (!count) {
-                        return <span className="text-gray-400 italic text-base">Not recorded</span>;
-                      }
+                        if (!count) {
+                          return <span className="text-gray-400 italic text-base">Not recorded</span>;
+                        }
 
-                      // If we have types, show count with type
-                      if (types && Array.isArray(types) && types.length > 0) {
-                        const typeDisplay = formatSandwichTypesDisplay(types);
-                        return typeDisplay;
-                      }
+                        // If we have types, show count with type
+                        if (types && Array.isArray(types) && types.length > 0) {
+                          const typeDisplay = formatSandwichTypesDisplay(types);
+                          return typeDisplay;
+                        }
 
-                      // Otherwise just show count
-                      return count;
-                    })()}
-                  </p>
+                        // Otherwise just show count
+                        return count;
+                      })()}
+                    </p>
+                  </div>
                   <div className="flex justify-center mt-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={startEditingSandwichCount}
                       className="h-7 px-3 text-xs opacity-60 group-hover:opacity-100 transition-opacity bg-white/80 hover:bg-white border-[#FBAD3F]/30 hover:border-[#FBAD3F]"
-                      title="Edit sandwich count"
+                      title="Edit delivered count"
                     >
                       <Edit2 className="w-3 h-3 mr-1" />
-                      Edit Count
+                      Edit Delivered
                     </Button>
                   </div>
                 </div>
