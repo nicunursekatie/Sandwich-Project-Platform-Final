@@ -3,6 +3,46 @@ import { useAuth } from '@/hooks/useAuth';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
 import { useToast } from '@/hooks/use-toast';
 
+// Simple notification sound - uses Web Audio API to generate a pleasant chime
+function playNotificationSound() {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    // Create a pleasant two-tone chime
+    const playTone = (frequency: number, startTime: number, duration: number) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+
+      // Fade in and out for a smoother sound
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+      gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    };
+
+    const now = audioContext.currentTime;
+    // Play two tones for a pleasant "ding-ding" sound
+    playTone(880, now, 0.15); // A5
+    playTone(1047, now + 0.1, 0.15); // C6
+
+    // Clean up audio context after sound plays
+    setTimeout(() => {
+      audioContext.close();
+    }, 500);
+  } catch (error) {
+    // Silently fail if audio is not supported or blocked
+    console.debug('Could not play notification sound:', error);
+  }
+}
+
 export interface ChatUser {
   id: string;
   firstName: string | null;
@@ -88,6 +128,9 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       const senderId = message.senderId;
       const currentWindows = openWindowsRef.current;
       const existingWindow = currentWindows.find(w => w.user.id === senderId);
+
+      // Play notification sound for new messages
+      playNotificationSound();
 
       if (existingWindow) {
         // Window is open - add message to it
