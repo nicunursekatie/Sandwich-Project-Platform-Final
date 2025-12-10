@@ -35,6 +35,12 @@ import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useState, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -658,42 +664,51 @@ export default function Dashboard({
             )}
 
             {/* Essential buttons - always visible */}
+            <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
-              <button
-                onClick={() => {
-                  logger.log('Messages button clicked');
-                  trackButtonClick('messages', 'dashboard_header');
-                  setActiveSection('messages');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'messages'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Messages"
-                aria-label="Messages"
-              >
-                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      logger.log('Messages button clicked');
+                      trackButtonClick('messages', 'dashboard_header');
+                      setActiveSection('messages');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                      activeSection === 'messages'
+                        ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                        : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                    }`}
+                    aria-label="Messages"
+                  >
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Messages</TooltipContent>
+              </Tooltip>
 
-              <button
-                onClick={() => {
-                  logger.log('Comments button clicked');
-                  trackButtonClick('comments', 'dashboard_header');
-                  setActiveSection('messaging-inbox');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'messaging-inbox'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Comments"
-                aria-label="Comments"
-              >
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      logger.log('Comments button clicked');
+                      trackButtonClick('comments', 'dashboard_header');
+                      setActiveSection('messaging-inbox');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                      activeSection === 'messaging-inbox'
+                        ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                        : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                    }`}
+                    aria-label="Comments"
+                  >
+                    <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Comments</TooltipContent>
+              </Tooltip>
 
               {/* Online Users Indicator */}
               <OnlineUsers />
@@ -712,117 +727,122 @@ export default function Dashboard({
                 const showNewBadge = !localStorage.getItem('navigation_update_2024_v2_seen');
 
                 return (
-                  <div key={item.id} className="relative group">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        logger.log(`${item.label} button clicked`);
-                        trackButtonClick(item.id, 'dashboard_header');
-                        // Dismiss the "NEW" badge when clicked
-                        if (showNewBadge) {
-                          localStorage.setItem('navigation_update_2024_v2_seen', 'true');
-                        }
-                        if (item.href === 'help') {
-                          setLocation('/help');
-                        } else {
-                          setActiveSection(item.href);
-                          window.history.pushState({}, '', `/dashboard?section=${item.href}`);
-                        }
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`p-2 rounded-lg transition-all duration-200 relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                        activeSection === item.href
-                          ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                          : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800 hover:shadow-md'
-                      } ${showNewBadge ? 'ring-2 ring-amber-400 ring-offset-2 animate-pulse' : ''}`}
-                      title={`${item.label}${showNewBadge ? ' (Moved here!)' : ''}`}
-                      aria-label={item.label}
-                    >
-                      {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5" />}
-                      {showNewBadge && (
-                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
-                          NEW
-                        </span>
-                      )}
-                    </button>
-                    {/* Enhanced tooltip for moved items */}
-                    {showNewBadge && (
-                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[60]">
-                        <div className="font-semibold">{item.label}</div>
-                        <div className="text-gray-300 text-[10px]">Moved from sidebar</div>
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                      </div>
-                    )}
-                  </div>
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          logger.log(`${item.label} button clicked`);
+                          trackButtonClick(item.id, 'dashboard_header');
+                          // Dismiss the "NEW" badge when clicked
+                          if (showNewBadge) {
+                            localStorage.setItem('navigation_update_2024_v2_seen', 'true');
+                          }
+                          if (item.href === 'help') {
+                            setLocation('/help');
+                          } else {
+                            setActiveSection(item.href);
+                            window.history.pushState({}, '', `/dashboard?section=${item.href}`);
+                          }
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`p-2 rounded-lg transition-all duration-200 relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                          activeSection === item.href
+                            ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                            : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800 hover:shadow-md'
+                        } ${showNewBadge ? 'ring-2 ring-amber-400 ring-offset-2 animate-pulse' : ''}`}
+                        aria-label={item.label}
+                      >
+                        {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5" />}
+                        {showNewBadge && (
+                          <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
+                            NEW
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {item.label}{showNewBadge ? ' (Moved here!)' : ''}
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  logger.log(
-                    'Profile button clicked, current section:',
-                    activeSection
-                  );
-                  trackButtonClick('profile', 'dashboard_header');
-                  setActiveSection('profile');
-                  window.history.pushState(
-                    {},
-                    '',
-                    '/dashboard?section=profile'
-                  );
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'profile'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Account Settings"
-                aria-label="Account Settings"
-              >
-                <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      logger.log(
+                        'Profile button clicked, current section:',
+                        activeSection
+                      );
+                      trackButtonClick('profile', 'dashboard_header');
+                      setActiveSection('profile');
+                      window.history.pushState(
+                        {},
+                        '',
+                        '/dashboard?section=profile'
+                      );
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                      activeSection === 'profile'
+                        ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                        : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                    }`}
+                    aria-label="Account Settings"
+                  >
+                    <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Account Settings</TooltipContent>
+              </Tooltip>
 
               {/* Logout button - ALWAYS visible and accessible */}
-              <button
-                onClick={async () => {
-                  try {
-                    trackButtonClick('logout', 'dashboard_header');
-                    await fetch('/api/auth/logout', {
-                      method: 'POST',
-                      credentials: 'include',
-                    });
-                    // Clear all cached data and force auth state refresh
-                    queryClient.clear();
-                    queryClient.invalidateQueries({
-                      queryKey: ['/api/auth/user'],
-                    });
-                    queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                    // Force immediate redirect to login page
-                    window.location.href = '/login';
-                  } catch (error) {
-                    logger.error('Logout error:', error);
-                    queryClient.clear();
-                    queryClient.invalidateQueries({
-                      queryKey: ['/api/auth/user'],
-                    });
-                    queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                    window.location.href = '/login';
-                  }
-                }}
-                className="flex items-center gap-1 px-2 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300 flex-shrink-0 min-w-[44px]"
-                aria-label="Logout"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
-                <span className="text-xs hidden md:block whitespace-nowrap">
-                  Logout
-                </span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={async () => {
+                      try {
+                        trackButtonClick('logout', 'dashboard_header');
+                        await fetch('/api/auth/logout', {
+                          method: 'POST',
+                          credentials: 'include',
+                        });
+                        // Clear all cached data and force auth state refresh
+                        queryClient.clear();
+                        queryClient.invalidateQueries({
+                          queryKey: ['/api/auth/user'],
+                        });
+                        queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                        // Force immediate redirect to login page
+                        window.location.href = '/login';
+                      } catch (error) {
+                        logger.error('Logout error:', error);
+                        queryClient.clear();
+                        queryClient.invalidateQueries({
+                          queryKey: ['/api/auth/user'],
+                        });
+                        queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                        window.location.href = '/login';
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300 flex-shrink-0 min-w-[44px]"
+                    aria-label="Logout"
+                  >
+                    <LogOut className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-xs hidden md:block whitespace-nowrap">
+                      Logout
+                    </span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Logout</TooltipContent>
+              </Tooltip>
             </div>
+            </TooltipProvider>
           </div>
         </div>
         <div className="flex flex-1 relative pt-[60px] md:pt-0">
