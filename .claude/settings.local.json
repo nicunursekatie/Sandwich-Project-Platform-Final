@@ -42,7 +42,8 @@
       "Bash(do echo \"Checking $f\")",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(npx esbuild:*)"
+      "Bash(npx esbuild:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

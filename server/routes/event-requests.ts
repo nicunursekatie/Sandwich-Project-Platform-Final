@@ -1047,6 +1047,54 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
   }
 });
 
+// Diagnostic endpoint to check if event exists in database
+// This bypasses the storage wrapper to directly query the database
+router.get(
+  '/:id(\\d+)/diagnose',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      logger.info(`[DIAGNOSE] Checking event ${id}`);
+
+      // Method 1: Storage wrapper (normal method)
+      const storageResult = await storage.getEventRequest(id);
+
+      // Method 2: Direct database query
+      const { db } = await import('../db');
+      const { eventRequests } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const [directResult] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+
+      const diagnosis = {
+        requestedId: id,
+        storageFound: !!storageResult,
+        directDbFound: !!directResult,
+        storageSummary: storageResult ? {
+          id: storageResult.id,
+          organizationName: storageResult.organizationName,
+          status: storageResult.status,
+          deletedAt: storageResult.deletedAt,
+        } : null,
+        directDbSummary: directResult ? {
+          id: directResult.id,
+          organizationName: directResult.organizationName,
+          status: directResult.status,
+          deletedAt: directResult.deletedAt,
+        } : null,
+        mismatch: !!storageResult !== !!directResult,
+      };
+
+      logger.info(`[DIAGNOSE] Results:`, JSON.stringify(diagnosis, null, 2));
+      res.json(diagnosis);
+    } catch (error) {
+      logger.error('[DIAGNOSE] Error:', error);
+      res.status(500).json({ error: String(error) });
+    }
+  }
+);
+
 // Get single event request
 router.get(
   '/:id(\\d+)',
