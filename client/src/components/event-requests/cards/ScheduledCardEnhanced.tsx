@@ -678,15 +678,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     >
       <CardContent className="p-3">
         {/* Header Row - Organization & Status */}
-        <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
+          {/* Top: Date + Organization Name */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            {/* Organization Name */}
+            <div className="min-w-0 flex-1">
               {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Input
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-xl font-bold w-64"
+                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
@@ -702,22 +704,295 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <h2
-                  className={`text-2xl font-bold text-[#236383] ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  className={`text-lg sm:text-xl md:text-2xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
                   onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
                 >
                   {request.organizationName}
-                  {canEdit && <Edit2 className="w-4 h-4 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
+                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
-              {isEditingThisCard && editingField === 'department' ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[#236383]/60">•</span>
+              {/* Partner Organizations - inline on same row */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1 mt-1">
+                  <span className="text-[#236383]/60 text-xs sm:text-sm">Partner:</span>
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <span
+                      key={index}
+                      className={`text-sm sm:text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C]' : ''}`}
+                      onClick={() =>
+                        canEdit &&
+                        startEditing(
+                          `partnerOrg_${index}`,
+                          JSON.stringify({ name: partner.name || '', department: partner.department || '' })
+                        )
+                      }
+                    >
+                      {partner.name}
+                      {partner.department && ` • ${partner.department}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Date Display */}
+            <div className="flex items-center shrink-0">
+              {isEditingThisCard && editingField === dateFieldToEdit ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <Input
+                    type="date"
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 text-lg w-48"
+                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
+                    <Save className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
+                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors"
+                      aria-label="Edit date"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.isConfirmed
+                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+            </Badge>
+
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.addedToOfficialSheet
+                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
+            </Badge>
+
+            {request.isMlkDayEvent && <MlkDayBadge />}
+
+            {/* Sandwich count badge */}
+            <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+              <span>🥪</span>
+              <span>{sandwichInfo}</span>
+            </Badge>
+
+            {/* Self-transport badge */}
+            {request.selfTransport && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <Car className="w-3 h-3" />
+                <span className="hidden sm:inline">Driving Own</span>
+                <span className="sm:hidden">Self</span>
+              </Badge>
+            )}
+
+            {/* Overnight holding badge */}
+            {request.overnightHoldingLocation && (
+              <Badge className="bg-[#236383] text-white border border-[#236383] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <span>🌙</span>
+                <span className="hidden sm:inline">Holding Overnight</span>
+                <span className="sm:hidden">O/N</span>
+              </Badge>
+            )}
+
+            {request.externalId && request.externalId.startsWith('manual-') && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium">
+                <FileText className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Manual Entry</span>
+                <span className="sm:hidden">Manual</span>
+              </Badge>
+            )}
+
+            {/* Only show staffing badges if NOT self-transport */}
+            {!request.selfTransport && (
+              <>
+                {staffingComplete ? (
+                  <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] text-xs sm:text-sm font-medium">
+                    Fully Staffed
+                  </Badge>
+                ) : (
+                  <>
+                    {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
+                      <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                        <Car className="w-3 h-3 mr-1" />
+                        Van
+                      </Badge>
+                    )}
+                    {speakerNeeded > speakerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {volunteerNeeded > volunteerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {volunteerNeeded - volunteerAssigned} vol{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </>
+                )}
+
+                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && (
+                  <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                    <Car className="w-3 h-3 mr-1" />
+                    Van
+                  </Badge>
+                )}
+
+                {request.assignedVanDriverId && (
+                  <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
+                    🚐 Van
+                  </Badge>
+                )}
+              </>
+            )}
+
+            {missingInfo.length > 0 && (
+              <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] text-xs sm:text-sm font-medium animate-pulse">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                {missingInfo.length} Missing
+              </Badge>
+            )}
+          </div>
+
+          {/* Add department/partner buttons - hidden on mobile, shown on hover on desktop */}
+          {canEdit && (
+            <div className="hidden sm:flex items-center gap-2 mt-1">
+              {!request.department && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => startEditing('department', '')}
+                    >
+                      <Building2 className="w-3 h-3 inline mr-1" />
+                      Add dept
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add department</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {(!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => {
+                        startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                      }}
+                    >
+                      <Users className="w-3 h-3 inline mr-1" />
+                      Add partner
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add partner organization</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Partner/Department editing modals */}
+        {isEditingThisCard && editingField === 'department' && (
+          <div className="flex items-center gap-2 mb-3">
+            <Input
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-8 text-base w-48"
+              autoFocus
+              placeholder="Department"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+              <Save className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              const index = parseInt(editingField.split('_')[1]);
+              const partner = request.partnerOrganizations?.[index];
+              let parsed = { name: partner?.name || '', department: partner?.department || '' };
+              try {
+                const maybeParsed = JSON.parse(editingValue || '{}');
+                if (maybeParsed && typeof maybeParsed === 'object') {
+                  parsed = {
+                    name: (maybeParsed as any).name ?? parsed.name,
+                    department: (maybeParsed as any).department ?? parsed.department,
+                  };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: e.target.value, department: parsed.department }))
+                    }
+                    className="h-8 text-base w-40 sm:w-48"
                     autoFocus
-                    placeholder="Department"
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department || ''}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: parsed.name, department: e.target.value }))
+                    }
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
                       if (e.key === 'Escape') cancelEdit();
@@ -729,353 +1004,57 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
                     <X className="h-3 w-3" />
                   </Button>
-                </div>
-              ) : request.department ? (
-                <>
-                  <span className="text-[#236383]/60">•</span>
-                  <span
-                    className={`text-xl text-[#236383]/70 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                    onClick={() => canEdit && startEditing('department', request.department || '')}
-                  >
-                    {request.department}
-                    {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                  </span>
                 </>
-              ) : canEdit ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors"
-                      onClick={() => startEditing('department', '')}
-                    >
-                      <Building2 className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Add department</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
-              
-              {/* Partner Organizations */}
-              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
-                <div className="flex items-center flex-wrap gap-1.5 mt-1">
-                  <span className="text-[#236383]/60 text-sm">Partner:</span>
-                  {request.partnerOrganizations.map((partner, index) => (
-                    <React.Fragment key={index}>
-                      {isEditingThisCard && editingField === `partnerOrg_${index}` ? (
-                        (() => {
-                          let parsed = { name: partner.name || '', department: partner.department || '' };
-                          try {
-                            const maybeParsed = JSON.parse(editingValue || '{}');
-                            if (maybeParsed && typeof maybeParsed === 'object') {
-                              parsed = {
-                                name: (maybeParsed as any).name ?? parsed.name,
-                                department: (maybeParsed as any).department ?? parsed.department,
-                              };
-                            }
-                          } catch {
-                            // ignore parse errors, fall back to partner defaults
-                          }
-                          return (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={parsed.name}
-                            onChange={(e) =>
-                              setEditingValue(
-                                JSON.stringify({
-                                  name: e.target.value,
-                                  department: parsed.department,
-                                })
-                              )
-                            }
-                            className="h-8 text-base w-48"
-                            autoFocus
-                            placeholder="Partner organization"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveEdit();
-                              if (e.key === 'Escape') cancelEdit();
-                            }}
-                          />
-                          <Input
-                            value={parsed.department || ''}
-                            onChange={(e) => {
-                              // Store name|department together for save handler
-                              const nextValue = JSON.stringify({
-                                name: parsed.name || '',
-                                department: e.target.value,
-                              });
-                              setEditingValue(nextValue);
-                            }}
-                            className="h-8 text-base w-40"
-                            placeholder="Department"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveEdit();
-                              if (e.key === 'Escape') cancelEdit();
-                            }}
-                          />
-                          <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
-                            <Save className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                          );
-                        })()
-                      ) : (
-                        <span
-                          className={`text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                          onClick={() =>
-                            canEdit &&
-                            startEditing(
-                              `partnerOrg_${index}`,
-                              JSON.stringify({ name: partner.name || '', department: partner.department || '' })
-                            )
-                          }
-                        >
-                          {partner.name}
-                          {partner.department && ` • ${partner.department}`}
-                          {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                        </span>
-                      )}
-                    </React.Fragment>
-                  ))}
-                  {canEdit && request.partnerOrganizations.length < 2 && (
-                    <button
-                      type="button"
-                      className="text-sm text-[#236383]/70 hover:text-[#007E8C] underline underline-offset-2"
-                      onClick={() => {
-                        // Add new partner organization (max 2)
-                        const currentPartners = Array.isArray(request.partnerOrganizations) ? request.partnerOrganizations : [];
-                        const newPartners = [...currentPartners, { name: '', department: '', role: 'partner' }];
-                        startEditing('partnerOrganizations', JSON.stringify(newPartners));
-                      }}
-                      title="Add partner organization"
-                    >
-                      Add partner
-                    </button>
-                  )}
-                </div>
-              )}
-              {/* Show input form when adding new partner organization */}
-              {isEditingThisCard && editingField === 'partnerOrganizations' && (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) ? (
-                (() => {
-                  let parsed = { name: '', department: '' };
-                  try {
-                    const arr = JSON.parse(editingValue || '[]');
-                    if (Array.isArray(arr) && arr.length > 0) {
-                      parsed = { name: arr[0]?.name || '', department: arr[0]?.department || '' };
-                    }
-                  } catch {
-                    // ignore
-                  }
-                  return (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Input
-                        value={parsed.name}
-                        onChange={(e) => setEditingValue(JSON.stringify([{ name: e.target.value, department: parsed.department, role: 'partner' }]))}
-                        className="h-8 text-base w-48"
-                        autoFocus
-                        placeholder="Partner organization name"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit();
-                          if (e.key === 'Escape') cancelEdit();
-                        }}
-                      />
-                      <Input
-                        value={parsed.department}
-                        onChange={(e) => setEditingValue(JSON.stringify([{ name: parsed.name, department: e.target.value, role: 'partner' }]))}
-                        className="h-8 text-base w-40"
-                        placeholder="Department (optional)"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit();
-                          if (e.key === 'Escape') cancelEdit();
-                        }}
-                      />
-                      <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
-                        <Save className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                })()
-              ) : (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations) || request.partnerOrganizations.length === 0) && canEdit ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors"
-                      onClick={() => {
-                        startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
-                      }}
-                    >
-                      <Users className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Add partner organization</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
-            </div>
-
-            {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2 w-full">
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
-              </Badge>
-
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.addedToOfficialSheet
-                    ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
-              </Badge>
-
-              {request.isMlkDayEvent && <MlkDayBadge />}
-
-              {/* Self-transport badge */}
-              {request.selfTransport && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                  <Car className="w-3 h-3" />
-                  <span>Driving Own Sandwiches</span>
-                </Badge>
-              )}
-
-              {/* Overnight holding badge */}
-              {request.overnightHoldingLocation && (
-                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
-                  <span>🌙</span>
-                  <span>Holding Overnight</span>
-                </Badge>
-              )}
-
-              {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                <span>🥪</span>
-                <span>{sandwichInfo} Sandwiches</span>
-              </Badge>
-
-              {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
-                  <FileText className="w-3 h-3 mr-1" />
-                  Manual Entry
-                </Badge>
-              )}
-
-              {/* Only show staffing badges if NOT self-transport */}
-              {!request.selfTransport && (
-                <>
-                  {staffingComplete ? (
-                    <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
-                      Fully Staffed
-                    </Badge>
-                  ) : (
-                    <>
-                      {/* Show regular driver needed only if van driver is not needed OR if both are needed */}
-                      {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {/* Show van driver needed badge when van driver is needed and no regular drivers are needed */}
-                      {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
-                        <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
-                          <Car className="w-3 h-3 mr-1" />
-                          Van Driver Needed
-                        </Badge>
-                      )}
-                      {speakerNeeded > speakerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {volunteerNeeded > volunteerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                    </>
-                  )}
-
-                  {/* Show van driver needed badge when both van driver and regular drivers are needed */}
-                  {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && (
-                    <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
-                      <Car className="w-3 h-3 mr-1" />
-                      Van Driver Needed
-                    </Badge>
-                  )}
-
-                  {request.assignedVanDriverId && (
-                    <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
-                      🚐 Van Assigned
-                    </Badge>
-                  )}
-                </>
-              )}
-
-              {missingInfo.length > 0 && (
-                <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {missingInfo.length} Missing
-                </Badge>
-              )}
-            </div>
+              );
+            })()}
           </div>
-
-          {/* Date Display - Right Side */}
-          <div className="flex items-center shrink-0">
-            {isEditingThisCard && editingField === dateFieldToEdit ? (
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="date"
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                />
-                <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
-                  <Save className="w-3 h-3" aria-hidden="true" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                  <X className="w-3 h-3" aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 group">
-                <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="text-2xl font-bold text-[#47B3CB] whitespace-nowrap">
-                  {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
-                </span>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                    className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 transition-colors"
-                    aria-label="Edit date"
-                  >
-                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+        )}
+        {isEditingThisCard && editingField === 'partnerOrganizations' && (!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              let parsed = { name: '', department: '' };
+              try {
+                const arr = JSON.parse(editingValue || '[]');
+                if (Array.isArray(arr) && arr.length > 0) {
+                  parsed = { name: arr[0]?.name || '', department: arr[0]?.department || '' };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: e.target.value, department: parsed.department, role: 'partner' }]))}
+                    className="h-8 text-base w-40 sm:w-48"
+                    autoFocus
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: parsed.name, department: e.target.value, role: 'partner' }]))}
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                    <Save className="h-3 w-3" />
                   </Button>
-                )}
-              </div>
-            )}
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </>
+              );
+            })()}
           </div>
-        </div>
+        )}
 
         {/* Action Buttons Section */}
         <TooltipProvider>
