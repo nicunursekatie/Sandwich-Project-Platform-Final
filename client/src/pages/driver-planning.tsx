@@ -599,18 +599,35 @@ export default function DriverPlanningDashboard() {
     if (!showOnlyUnmetStaffing) return upcomingEvents;
 
     return upcomingEvents.filter(event => {
-      const driversNeeded = event.driversNeeded || 1;
+      // Skip self-transport events - they don't need TSP drivers
+      if (event.selfTransport) return false;
+      
+      // Only consider events with explicit driver requirements
+      const driversNeeded = event.driversNeeded || 0;
+      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId;
+      
+      // If no driver requirement configured, don't show as needing drivers
+      if (driversNeeded === 0 && !vanDriverNeeded) return false;
+      
       const driversAssigned = event.assignedDriverIds?.length || 0;
-      return driversAssigned < driversNeeded;
+      return driversAssigned < driversNeeded || vanDriverNeeded;
     });
   }, [upcomingEvents, showOnlyUnmetStaffing]);
 
   // Count of events with unmet staffing needs
   const unmetStaffingCount = useMemo(() => {
     return upcomingEvents.filter(event => {
-      const driversNeeded = event.driversNeeded || 1;
+      // Skip self-transport events
+      if (event.selfTransport) return false;
+      
+      // Only count events with explicit driver requirements
+      const driversNeeded = event.driversNeeded || 0;
+      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId;
+      
+      if (driversNeeded === 0 && !vanDriverNeeded) return false;
+      
       const driversAssigned = event.assignedDriverIds?.length || 0;
-      return driversAssigned < driversNeeded;
+      return driversAssigned < driversNeeded || vanDriverNeeded;
     }).length;
   }, [upcomingEvents]);
 
@@ -897,7 +914,8 @@ export default function DriverPlanningDashboard() {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
+                const driversNeeded = event.driversNeeded || 0;
+                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
                 return (
                   <Card
@@ -948,15 +966,26 @@ export default function DriverPlanningDashboard() {
                         <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
                       </div>
 
-                      {/* Driver status */}
+                      {/* Driver status - only show if event has driver requirements */}
                       <div className="flex items-center gap-2">
-                        <Badge
-                          variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          <Truck className="w-3 h-3 mr-1" />
-                          {driversAssigned}/{driversNeeded} drivers
-                        </Badge>
+                        {event.selfTransport ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Self-transport
+                          </Badge>
+                        ) : hasDriverRequirement ? (
+                          <Badge
+                            variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                            className="text-xs"
+                          >
+                            <Truck className="w-3 h-3 mr-1" />
+                            {driversAssigned}/{driversNeeded} drivers
+                            {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van ✓' : ' + Van needed')}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-gray-500">
+                            No driver requirement
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -1403,7 +1432,8 @@ export default function DriverPlanningDashboard() {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
+                const driversNeeded = event.driversNeeded || 0;
+                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
                 return (
                   <Card
@@ -1427,12 +1457,23 @@ export default function DriverPlanningDashboard() {
                         <Calendar className="w-3 h-3" />
                         {eventDate ? format(parseLocalDate(eventDate), 'MMM d') : 'No date'}
                       </div>
-                      <Badge
-                        variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                        className="text-[10px] px-1 py-0"
-                      >
-                        {driversAssigned}/{driversNeeded} drivers
-                      </Badge>
+                      {event.selfTransport ? (
+                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                          Self
+                        </Badge>
+                      ) : hasDriverRequirement ? (
+                        <Badge
+                          variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                          className="text-[10px] px-1 py-0"
+                        >
+                          {driversAssigned}/{driversNeeded}
+                          {event.vanDriverNeeded && (event.assignedVanDriverId ? '+Van' : '+Van!')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 text-gray-400">
+                          No req
+                        </Badge>
+                      )}
                     </div>
                   </Card>
                 );
@@ -1781,12 +1822,19 @@ export default function DriverPlanningDashboard() {
                         ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
                         : 'No date'}
                     </span>
-                    <Badge
-                      variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 1) ? 'default' : 'destructive'}
-                      className="text-[10px] px-1.5"
-                    >
-                      {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 1} drivers
-                    </Badge>
+                    {selectedEvent.selfTransport ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5">Self</Badge>
+                    ) : (selectedEvent.driversNeeded || 0) > 0 || selectedEvent.vanDriverNeeded ? (
+                      <Badge
+                        variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 0) && (!selectedEvent.vanDriverNeeded || selectedEvent.assignedVanDriverId) ? 'default' : 'destructive'}
+                        className="text-[10px] px-1.5"
+                      >
+                        {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 0}
+                        {selectedEvent.vanDriverNeeded && (selectedEvent.assignedVanDriverId ? '+Van' : '+Van!')}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] px-1.5 text-gray-400">No req</Badge>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -1867,7 +1915,8 @@ export default function DriverPlanningDashboard() {
                     const isSelected = selectedEvent?.id === event.id;
                     const eventDate = event.scheduledEventDate || event.desiredEventDate;
                     const driversAssigned = event.assignedDriverIds?.length || 0;
-                    const driversNeeded = event.driversNeeded || 1;
+                    const driversNeeded = event.driversNeeded || 0;
+                    const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
                     return (
                       <Card
@@ -1910,13 +1959,24 @@ export default function DriverPlanningDashboard() {
                             <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                              className="text-xs px-2 py-0.5"
-                            >
-                              <Truck className="w-3.5 h-3.5 mr-1" />
-                              {driversAssigned}/{driversNeeded} drivers
-                            </Badge>
+                            {event.selfTransport ? (
+                              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                Self-transport
+                              </Badge>
+                            ) : hasDriverRequirement ? (
+                              <Badge
+                                variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                                className="text-xs px-2 py-0.5"
+                              >
+                                <Truck className="w-3.5 h-3.5 mr-1" />
+                                {driversAssigned}/{driversNeeded} drivers
+                                {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van' : ' + Van needed')}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">
+                                No driver requirement
+                              </Badge>
+                            )}
                             {event.estimatedSandwichCount && (
                               <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
                             )}
