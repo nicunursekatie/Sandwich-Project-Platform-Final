@@ -1242,35 +1242,35 @@ const EventRequestsManagementContent: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Back to Top Floating Button */}
+        {/* Back to Top Floating Button - Desktop only to avoid mobile crowding */}
         {showBackToTop && (
-          <div className="fixed bottom-24 sm:bottom-6 left-4 sm:left-6 z-50">
+          <div className="hidden sm:block fixed bottom-6 left-6 z-50">
             <button
               onClick={scrollToTop}
-              className="h-12 w-12 rounded-full shadow-xl bg-slate-600 hover:bg-slate-700 active:bg-slate-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              className="h-10 w-10 rounded-full shadow-lg bg-slate-600 hover:bg-slate-700 active:bg-slate-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
               title="Back to Top"
               aria-label="Scroll back to top"
             >
-              <ArrowUp className="h-5 w-5" />
+              <ArrowUp className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        {/* Floating Action Button for Spreadsheet View - Only show when NOT on scheduled tab */}
+        {/* Floating Action Button for Spreadsheet View - Desktop only, hidden on mobile to avoid crowding */}
         {activeTab !== 'scheduled' && (
-          <div className="fixed bottom-24 sm:bottom-6 right-20 sm:right-6 z-50">
+          <div className="hidden sm:block fixed bottom-6 right-6 z-50">
             <button
               onClick={handleSwitchToSpreadsheet}
-              className="h-16 w-16 rounded-full shadow-2xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              className="h-14 w-14 rounded-full shadow-xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
               title="Switch to Spreadsheet View"
               aria-label="Switch to Spreadsheet View"
             >
-              <Sheet className="h-6 w-6" />
+              <Sheet className="h-5 w-5" />
             </button>
 
-            {/* Tooltip that appears on first few visits */}
+            {/* Tooltip that appears on first few visits - desktop only */}
             {showFloatingTip && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border-2 border-green-500 rounded-lg shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white border border-green-500 rounded-lg shadow-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <button
                   onClick={handleDismissFloatingTip}
                   className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1279,13 +1279,13 @@ const EventRequestsManagementContent: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-sm mb-1 text-gray-900">
-                      Quick access to Spreadsheet View!
+                    <p className="font-medium text-xs text-gray-900">
+                      Spreadsheet View
                     </p>
-                    <p className="text-xs text-gray-600">
-                      Click here anytime to jump to the familiar table layout (like your Google Sheet)
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Click for table layout
                     </p>
                   </div>
                 </div>
