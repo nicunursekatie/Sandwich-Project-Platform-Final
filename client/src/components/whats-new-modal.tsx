@@ -56,23 +56,32 @@ export function WhatsNewModal() {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Instant Messaging */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border-2 border-blue-200">
+          {/* Online Users & Instant Messaging - Combined feature */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200">
             <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-blue-600" />
-              Instant Messaging
+              <Users className="w-5 h-5 text-green-600" />
+              See Who's Online & Send Instant Messages
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Send direct messages to any team member instantly! No more waiting for emails.
+              See who's currently active and send them a direct message instantly!
             </p>
             <div className="space-y-2">
+              <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
+                <div className="p-2 bg-green-100 rounded-md">
+                  <Users className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">Click the people icon</span>
+                  <p className="text-xs text-gray-600">Find it in the top navigation bar to see who's online</p>
+                </div>
+              </div>
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
                 <div className="p-2 bg-blue-100 rounded-md">
                   <MessageCircle className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">Click the message icon</span>
-                  <p className="text-xs text-gray-600">Find it in the top navigation bar to start chatting</p>
+                  <span className="font-medium text-gray-900">Click any name to message</span>
+                  <p className="text-xs text-gray-600">Select a person from the list to start a conversation</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
@@ -87,33 +96,10 @@ export function WhatsNewModal() {
             </div>
           </div>
 
-          {/* Online Users */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200">
-            <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-600" />
-              See Who's Online
-            </h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Know who's currently active so you can reach out at the right time.
-            </p>
-            <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
-              <div className="p-2 bg-green-100 rounded-md">
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full" />
-                </div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-900">Green dot = Online</span>
-                <p className="text-xs text-gray-600">Look for the green indicator next to team members' names</p>
-              </div>
-            </div>
-          </div>
-
           {/* Quick tip */}
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <p className="text-sm text-gray-700">
-              <strong>💡 Tip:</strong> Click the message icon in the top right corner to start a conversation,
-              or click on any online user to send them a direct message!
+              <strong>💡 Tip:</strong> Look for the green dot next to names - it means they're online right now!
             </p>
           </div>
         </div>
