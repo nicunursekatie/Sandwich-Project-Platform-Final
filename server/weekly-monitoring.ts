@@ -42,8 +42,9 @@ const LOCATION_CONTACT_EMAILS: Record<string, string> = {
   'Dunwoody/PTC': 'mdlouza@gmail.com', // Marcy Louza (primary)
 };
 
-// Admin email to receive notifications
-const ADMIN_EMAIL = 'katielong2316@gmail.com';
+// Personal admin email to receive weekly monitoring notifications
+// This is different from the organizational admin email in config/organization.ts
+const WEEKLY_MONITORING_RECIPIENT = 'katielong2316@gmail.com';
 // FROM_EMAIL imported from config/organization.ts
 
 interface WeeklySubmissionStatus {
@@ -516,7 +517,7 @@ export async function sendMissingSubmissionsEmail(
   }
 
   const emailContent = {
-    to: ADMIN_EMAIL,
+    to: WEEKLY_MONITORING_RECIPIENT,
     from: FROM_EMAIL,
     subject: isTest
       ? `🧪 TEST EMAIL - Missing Sandwich Collection Numbers - Week of ${weekOf}`
@@ -632,7 +633,7 @@ Check the Collections Log in the platform for real-time updates.
   try {
     await mailService.send(emailContent);
     logger.log(
-      `Missing submissions email sent successfully to ${ADMIN_EMAIL}`
+      `Missing submissions email sent successfully to ${WEEKLY_MONITORING_RECIPIENT}`
     );
     return true;
   } catch (error) {
@@ -673,7 +674,7 @@ export async function runWeeklyMonitoring(): Promise<void> {
     if (process.env.SENDGRID_API_KEY) {
       try {
         await mailService.send({
-          to: ADMIN_EMAIL,
+          to: WEEKLY_MONITORING_RECIPIENT,
           from: FROM_EMAIL,
           subject: '🚨 Sandwich Monitoring System Error',
           text: `The weekly sandwich submission monitoring system encountered an error:\n\n${error}\n\nPlease check the system logs.`,
@@ -912,7 +913,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     await mailService.send({
       to: contactEmail,
       from: FROM_EMAIL,
-      bcc: ADMIN_EMAIL, // BCC admin on all host reminder emails
+      bcc: WEEKLY_MONITORING_RECIPIENT, // BCC admin on all host reminder emails
       subject: emailSubject,
       text: emailText,
       html: emailHtml,
@@ -1084,7 +1085,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       return await mailService.send({
         to: contact.email!,
         from: FROM_EMAIL,
-        bcc: ADMIN_EMAIL, // BCC admin on all Dunwoody reminder emails
+        bcc: WEEKLY_MONITORING_RECIPIENT, // BCC admin on all Dunwoody reminder emails
         subject: emailSubject,
         text: emailText,
         html: emailHtml,
