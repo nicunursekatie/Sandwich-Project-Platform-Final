@@ -430,11 +430,22 @@ export const useEventMutations = () => {
 
   // Recipient assignment mutation - uses the specific recipients endpoint
   const assignRecipientsMutation = useMutation({
-    mutationFn: ({ id, assignedRecipientIds }: { id: number; assignedRecipientIds: string[] }) => {
+    mutationFn: ({ id, assignedRecipientIds, recipientAllocations }: {
+      id: number;
+      assignedRecipientIds?: string[];
+      recipientAllocations?: Array<{
+        recipientId: string;
+        recipientName: string;
+        sandwichCount: number;
+        sandwichType?: string;
+        notes?: string;
+      }>;
+    }) => {
       logger.log('=== RECIPIENT ASSIGNMENT MUTATION ===');
       logger.log('Event ID:', id);
       logger.log('Recipient IDs:', assignedRecipientIds);
-      return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds });
+      logger.log('Recipient Allocations:', recipientAllocations);
+      return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds, recipientAllocations });
     },
     onSuccess: (updatedEvent, variables) => {
       logger.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');

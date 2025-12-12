@@ -1156,13 +1156,35 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       },
     },
-    // 4b. Assigned Recipients
+    // 4b. Assigned Recipients (with allocations if available)
     {
       id: 'recipients',
       label: 'Recipients',
-      width: '180px',
+      width: '220px',
       hideOnMobile: true,
       render: (event) => {
+        // First check for new recipient allocations
+        const allocations = (event as any).recipientAllocations as Array<{
+          recipientId: string;
+          recipientName: string;
+          sandwichCount: number;
+          sandwichType?: string;
+        }> | null | undefined;
+
+        if (allocations && allocations.length > 0) {
+          // Show allocations with counts
+          return allocations
+            .filter(a => a.sandwichCount > 0)
+            .map(a => {
+              const typeLabel = a.sandwichType
+                ? SANDWICH_TYPES.find(t => t.value === a.sandwichType)?.label
+                : null;
+              return `${a.recipientName}: ${a.sandwichCount}${typeLabel ? ` (${typeLabel})` : ''}`;
+            })
+            .join('; ') || '';
+        }
+
+        // Fall back to legacy assignedRecipientIds
         if (!event.assignedRecipientIds || event.assignedRecipientIds.length === 0) {
           return '';
         }

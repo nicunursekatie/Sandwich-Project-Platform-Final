@@ -2138,6 +2138,13 @@ export const eventRequests = pgTable(
     assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
+    recipientAllocations: jsonb('recipient_allocations').$type<Array<{
+      recipientId: string;
+      recipientName: string; // Cached name for display
+      sandwichCount: number;
+      sandwichType?: string; // Optional type like 'pbj', 'deli', 'cheese', etc.
+      notes?: string; // Optional notes for this allocation
+    }>>(), // Detailed tracking of sandwich distribution to each recipient
 
     // Van driver assignment
     vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required

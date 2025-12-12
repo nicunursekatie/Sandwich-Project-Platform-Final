@@ -68,6 +68,11 @@ import {
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import {
+  RecipientAllocationEditor,
+  RecipientAllocationDisplay,
+  type RecipientAllocation,
+} from '../RecipientAllocationEditor';
 import SendKudosButton from '@/components/send-kudos-button';
 import {
   Tooltip,
@@ -1421,6 +1426,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [instagramLink, setInstagramLink] = useState('');
   const [showComments, setShowComments] = useState(false);
+  const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
@@ -2376,64 +2382,43 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             {/* Combined Recipients & Team Section */}
             <div className="bg-[#e6f2f5] rounded-lg p-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                {/* Recipients & Hosts */}
+                {/* Recipients with Allocations */}
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-[#236383]" />
                   <span className="font-medium text-[#236383]">Recipients:</span>
-                  {isEditingField && editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2">
-                      <MultiRecipientSelector
-                        value={editingValue ? JSON.parse(editingValue) : []}
-                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                        placeholder="Select recipient organizations..."
-                        data-testid="assigned-recipients-editor"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
+                  {/* Show allocations if available */}
+                  {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
+                    <RecipientAllocationDisplay
+                      allocations={(request as any).recipientAllocations as RecipientAllocation[]}
+                      className="text-xs"
+                    />
+                  ) : assignedRecipientInfo.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {assignedRecipientInfo.map((item, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
+                          data-testid={`badge-${item.type}-${index}`}
+                        >
+                          {item.icon}
+                          {item.name}
+                        </Badge>
+                      ))}
                     </div>
                   ) : (
-                    <>
-                      {assignedRecipientInfo.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {assignedRecipientInfo.map((item, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
-                              data-testid={`badge-${item.type}-${index}`}
-                            >
-                              {item.icon}
-                              {item.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 italic text-xs">(none)</span>
-                      )}
-                      {canEditOrgDetails && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingField('assignedRecipientIds');
-                            setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
-                            setIsEditingField(true);
-                          }}
-                          className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
-                          title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </>
+                    <span className="text-gray-500 italic text-xs">(none)</span>
+                  )}
+                  {canEditOrgDetails && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowRecipientAllocationDialog(true)}
+                      className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                      title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
                   )}
                 </div>
 
@@ -2999,6 +2984,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Recipient Allocation Editor Dialog */}
+      <RecipientAllocationEditor
+        open={showRecipientAllocationDialog}
+        onOpenChange={setShowRecipientAllocationDialog}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        estimatedSandwichCount={request.estimatedSandwichCount}
+        currentAllocations={(request as any).recipientAllocations as RecipientAllocation[] | null}
+      />
     </Card>
   );
 };

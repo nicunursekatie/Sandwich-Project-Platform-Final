@@ -4214,7 +4214,7 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
 router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
-    const { assignedRecipientIds } = req.body;
+    const { assignedRecipientIds, recipientAllocations } = req.body;
 
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: 'Valid event ID required' });
@@ -4232,11 +4232,23 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
-    // Update the event with recipient assignment
-    const updatedEventRequest = await storage.updateEventRequest(eventId, {
-      assignedRecipientIds: assignedRecipientIds || [],
+    // Build update data
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
-    });
+    };
+
+    // Update assignedRecipientIds if provided
+    if (assignedRecipientIds !== undefined) {
+      updateData.assignedRecipientIds = assignedRecipientIds || [];
+    }
+
+    // Update recipientAllocations if provided
+    if (recipientAllocations !== undefined) {
+      updateData.recipientAllocations = recipientAllocations || [];
+    }
+
+    // Update the event with recipient assignment
+    const updatedEventRequest = await storage.updateEventRequest(eventId, updateData);
 
     if (!updatedEventRequest) {
       return res.status(404).json({ error: 'Failed to update event request' });
@@ -4247,7 +4259,7 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       res,
       'EVENT_REQUESTS_EDIT',
       `Updated recipient assignments for event request: ${eventId}`,
-      { recipientIds: assignedRecipientIds }
+      { recipientIds: assignedRecipientIds, recipientAllocations }
     );
 
     res.json(updatedEventRequest);
