@@ -686,12 +686,12 @@ export default function Dashboard({
                           ? 'bg-brand-primary text-white shadow-sm'
                           : 'text-gray-600 hover:bg-white hover:text-gray-900'
                       }`}
-                      aria-label="Messages"
+                      aria-label="Inbox"
                     >
                       <MessageCircle className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Team Chat</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={8}>Inbox</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
@@ -713,7 +713,7 @@ export default function Dashboard({
                       <MessageSquare className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Inbox</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={8}>Comments</TooltipContent>
                 </Tooltip>
 
                 <OnlineUsers />
