@@ -17,6 +17,8 @@ import { ChatWindowsProvider } from '@/context/chat-windows-context';
 import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
 import { InstantMessagingProvider } from '@/contexts/instant-messaging-context';
 import { InstantMessageContainer } from '@/components/instant-message-container';
+import { ReviewerProvider } from '@/contexts/reviewer-context';
+import { ReviewerBlockedModal } from '@/components/reviewer-blocked-modal';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -497,16 +499,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ChatWindowsProvider>
-          <InstantMessagingProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-              <FloatingChatWindowsContainer />
-              <InstantMessageContainer />
-            </TooltipProvider>
-          </InstantMessagingProvider>
-        </ChatWindowsProvider>
+        <ReviewerProvider>
+          <ChatWindowsProvider>
+            <InstantMessagingProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <FloatingChatWindowsContainer />
+                <InstantMessageContainer />
+                <ReviewerBlockedModal />
+              </TooltipProvider>
+            </InstantMessagingProvider>
+          </ChatWindowsProvider>
+        </ReviewerProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

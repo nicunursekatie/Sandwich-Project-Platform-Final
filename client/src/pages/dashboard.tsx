@@ -65,6 +65,7 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 import { WhatsNewModal } from '@/components/whats-new-modal';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { ReviewerBanner } from '@/components/reviewer-banner';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -593,6 +594,8 @@ export default function Dashboard({
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+        {/* Reviewer Banner - shows for read-only reviewer accounts */}
+        <ReviewerBanner />
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
