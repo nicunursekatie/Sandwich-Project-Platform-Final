@@ -40,13 +40,80 @@ export interface CollectionParseResult {
   rawMessage: string;
 }
 
+// Parse date from text - supports various formats
+function parseDateFromText(text: string): { date: string; remainingText: string } {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
+  // Check for explicit date patterns at the end of the message
+  // Format: MM/DD or MM-DD or MM/DD/YY or MM/DD/YYYY
+  const dateMatch = text.match(/\s+(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/i);
+  if (dateMatch) {
+    const month = parseInt(dateMatch[1], 10);
+    const day = parseInt(dateMatch[2], 10);
+    let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : today.getFullYear();
+    if (year < 100) year += 2000; // Convert 24 to 2024
+    
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      return { date: dateStr, remainingText: text.replace(dateMatch[0], '').trim() };
+    }
+  }
+  
+  // Check for "yesterday"
+  if (/\s+yesterday$/i.test(text)) {
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    return { 
+      date: yesterday.toISOString().split('T')[0], 
+      remainingText: text.replace(/\s+yesterday$/i, '').trim() 
+    };
+  }
+  
+  // Check for "last Wednesday", "last Monday", etc.
+  const lastDayMatch = text.match(/\s+last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i);
+  if (lastDayMatch) {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const targetDay = dayNames.indexOf(lastDayMatch[1].toLowerCase());
+    const currentDay = today.getDay();
+    let daysBack = currentDay - targetDay;
+    if (daysBack <= 0) daysBack += 7; // Go back to previous week
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - daysBack);
+    return { 
+      date: targetDate.toISOString().split('T')[0], 
+      remainingText: text.replace(lastDayMatch[0], '').trim() 
+    };
+  }
+  
+  // Check for just day name (this week or last occurrence)
+  const dayMatch = text.match(/\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i);
+  if (dayMatch) {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const targetDay = dayNames.indexOf(dayMatch[1].toLowerCase());
+    const currentDay = today.getDay();
+    let daysBack = currentDay - targetDay;
+    if (daysBack < 0) daysBack += 7; // If target day is ahead, go back a week
+    if (daysBack === 0) daysBack = 0; // Today
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - daysBack);
+    return { 
+      date: targetDate.toISOString().split('T')[0], 
+      remainingText: text.replace(dayMatch[0], '').trim() 
+    };
+  }
+  
+  return { date: todayStr, remainingText: text };
+}
+
 // Simple regex-based parser for structured messages
 function parseStructuredMessage(message: string): CollectionParseResult | null {
-  // Format: LOG <count> <host> or LOG <count> at <host>
+  // Format: LOG <count> <host> [date]
   const logMatch = message.match(/^LOG\s+(\d+)\s+(?:at\s+)?(.+)$/i);
   if (logMatch) {
     const count = parseInt(logMatch[1], 10);
-    const host = logMatch[2].trim();
+    const hostAndDate = logMatch[2].trim();
+    const { date, remainingText: host } = parseDateFromText(hostAndDate);
 
     if (count > 0 && host.length >= 2) {
       return {
@@ -54,7 +121,7 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
         data: {
           hostName: host,
           individualSandwiches: count,
-          collectionDate: new Date().toISOString().split('T')[0],
+          collectionDate: date,
           confidence: 0.95,
           needsClarification: false,
         },
@@ -63,11 +130,12 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     }
   }
 
-  // Format: <count> sandwiches at <host>
+  // Format: <count> sandwiches at <host> [date]
   const simpleMatch = message.match(/^(\d+)\s+(?:sandwiches?\s+)?(?:at\s+)?(.+)$/i);
   if (simpleMatch) {
     const count = parseInt(simpleMatch[1], 10);
-    const host = simpleMatch[2].trim();
+    const hostAndDate = simpleMatch[2].trim();
+    const { date, remainingText: host } = parseDateFromText(hostAndDate);
 
     if (count > 0 && host.length >= 2) {
       return {
@@ -75,7 +143,7 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
         data: {
           hostName: host,
           individualSandwiches: count,
-          collectionDate: new Date().toISOString().split('T')[0],
+          collectionDate: date,
           confidence: 0.85,
           needsClarification: false,
         },
@@ -123,14 +191,22 @@ Output JSON with these fields:
 - individualHam: number (optional, ham sandwiches)
 - individualPbj: number (optional, PB&J sandwiches)
 - groupCollections: array of {name, count, deli?, turkey?, ham?, pbj?} (optional, for group breakdowns)
-- collectionDate: string YYYY-MM-DD (default to ${today} if not specified)
+- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified)
 - confidence: number 0-1 (how confident you are in the parse)
 - needsClarification: boolean (true if message is ambiguous)
 - clarificationMessage: string (what to ask if clarification needed)
 
+Date interpretation rules:
+- "12/10" or "12-10" = December 10 of current year
+- "yesterday" = ${new Date(Date.now() - 86400000).toISOString().split('T')[0]}
+- "last Wednesday" = most recent Wednesday before today
+- "Wednesday" = this week's Wednesday (or last if today is before Wednesday)
+- No date mentioned = use ${today}
+
 Examples:
 "50 sandwiches at Downtown Library" → {hostName: "Downtown Library", individualSandwiches: 50, collectionDate: "${today}", confidence: 0.95, needsClarification: false}
-"Made 30 today 20 deli 10 pbj at First Baptist" → {hostName: "First Baptist", individualSandwiches: 30, individualDeli: 20, individualPbj: 10, collectionDate: "${today}", confidence: 0.9, needsClarification: false}
+"LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,5)}12-10", confidence: 0.95, needsClarification: false}
+"Made 30 yesterday at First Baptist" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${new Date(Date.now() - 86400000).toISOString().split('T')[0]}", confidence: 0.9, needsClarification: false}
 "Youth group made 25, seniors made 15 at Community Center" → {hostName: "Community Center", individualSandwiches: 40, groupCollections: [{name: "Youth group", count: 25}, {name: "Seniors", count: 15}], collectionDate: "${today}", confidence: 0.85, needsClarification: false}
 "made some sandwiches" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Reply: LOG [count] [location]", confidence: 0.2}
 
@@ -218,8 +294,17 @@ export async function parseCollectionSMS(message: string): Promise<CollectionPar
 /**
  * Generate a confirmation message for parsed collection
  */
-export function generateConfirmationMessage(data: ParsedCollectionData): string {
-  let message = `✅ Logged ${data.individualSandwiches} sandwiches at ${data.hostName}`;
+export function generateConfirmationMessage(data: ParsedCollectionData, matchedHostName?: string): string {
+  const displayHost = matchedHostName || data.hostName;
+  let message = `✅ Logged ${data.individualSandwiches} sandwiches at ${displayHost}`;
+  
+  // Add date if not today
+  const today = new Date().toISOString().split('T')[0];
+  if (data.collectionDate && data.collectionDate !== today) {
+    const dateObj = new Date(data.collectionDate + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    message += ` for ${dateStr}`;
+  }
 
   // Add breakdown if available
   const breakdowns: string[] = [];
