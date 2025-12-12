@@ -344,6 +344,7 @@ export function ComprehensiveUserDialog({
                       <SelectItem value="recipient">Recipient</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
                       <SelectItem value="work_logger">Work Logger</SelectItem>
+                      <SelectItem value="reviewer">Reviewer (Read-Only)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

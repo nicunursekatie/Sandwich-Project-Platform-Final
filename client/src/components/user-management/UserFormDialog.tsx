@@ -173,6 +173,7 @@ export function UserFormDialog({
                   Committee Member
                 </SelectItem>
                 <SelectItem value="admin">Administrator</SelectItem>
+                <SelectItem value="reviewer">Reviewer (Read-Only)</SelectItem>
                 {mode === 'edit' && (
                   <>
                     <SelectItem value="super_admin">
