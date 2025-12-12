@@ -337,12 +337,17 @@ DATE INTERPRETATION:
 UNDERSTANDING GROUP COLLECTIONS:
 - Groups come AFTER the main location, separated by comma
 - Group format: "[GroupName] [count] [optional type]"
-- Example: "500 Dunwoody, Google 200 deli" = 500 at Dunwoody + Google group with 200 deli
+- Example: "1000 Dunwoody, Google 200, Acme 300" = 1000 TOTAL, with Google (200) and Acme (300) as groups
 
-IMPORTANT CALCULATION RULES:
-1. individualSandwiches = sum of ALL individual type counts (pbj + deli + ham + turkey + generic)
-2. If user says just "500 Dunwoody" with no types → individualSandwiches: 500, NO type breakdown needed
-3. Group collections are SEPARATE - do NOT add them to individualSandwiches
+CRITICAL CALCULATION RULE - THE FIRST NUMBER IS THE TOTAL:
+When a user texts "1000 Dunwoody, Google 200, Acme 300":
+- 1000 is the TOTAL sandwich count for that day (individual + all groups combined)
+- Google brought 200, Acme brought 300 (these are group collections)
+- individualSandwiches = 1000 - 200 - 300 = 500 (the remainder after subtracting groups)
+
+So: individualSandwiches = [first total] - [sum of all group counts]
+
+If the first number equals the sum of groups, then individualSandwiches = 0 is valid (all sandwiches came from groups).
 
 PARSING EXAMPLES (be this flexible!):
 
@@ -357,13 +362,19 @@ With sandwich types:
 "dunwoody 150 pb&j and 250 deli" → {hostName: "Dunwoody", individualSandwiches: 400, individualPbj: 150, individualDeli: 250, confidence: 0.95}
 "500 - 200 pbj 300 deli - intown" → {hostName: "Intown", individualSandwiches: 500, individualPbj: 200, individualDeli: 300, confidence: 0.90}
 
-With groups (groups come after comma):
-"600 dunwoody, google 200" → {hostName: "Dunwoody", individualSandwiches: 600, groupCollections: [{name: "Google", count: 200}], confidence: 0.95}
-"1000 intown 12/10, wells fargo 300 deli" → {hostName: "Intown", individualSandwiches: 1000, collectionDate: "${today.substring(0,4)}-12-10", groupCollections: [{name: "Wells Fargo", count: 300, deli: 300}], confidence: 0.95}
-"500 pbj 300 deli dunwoody, acme corp 400 ham" → {hostName: "Dunwoody", individualSandwiches: 800, individualPbj: 500, individualDeli: 300, groupCollections: [{name: "Acme Corp", count: 400, ham: 400}], confidence: 0.95}
+With groups (TOTAL minus groups = individual):
+"600 dunwoody, google 200" → {hostName: "Dunwoody", individualSandwiches: 400, groupCollections: [{name: "Google", count: 200}], confidence: 0.95}
+  (600 total - 200 google = 400 individual)
+"1000 intown 12/10, wells fargo 300, acme 200" → {hostName: "Intown", individualSandwiches: 500, collectionDate: "${today.substring(0,4)}-12-10", groupCollections: [{name: "Wells Fargo", count: 300}, {name: "Acme", count: 200}], confidence: 0.95}
+  (1000 total - 300 - 200 = 500 individual)
+"1200 dunwoody, google 400 deli, microsoft 300 pbj" → {hostName: "Dunwoody", individualSandwiches: 500, groupCollections: [{name: "Google", count: 400, deli: 400}, {name: "Microsoft", count: 300, pbj: 300}], confidence: 0.95}
+  (1200 total - 400 - 300 = 500 individual)
 
 Complex real-world examples:
-"hey! we made 745 today at dunwoody - 100 pbj, 245 deli and 400 generic. also willis towers watson brought 400 deli sandwiches" → {hostName: "Dunwoody", individualSandwiches: 745, individualPbj: 100, individualDeli: 245, individualGeneric: 400, groupCollections: [{name: "Willis Towers Watson", count: 400, deli: 400}], confidence: 0.95}
+"1145 dunwoody - 100 pbj, 245 deli and 400 generic from individuals. willis towers watson brought 400 deli" → {hostName: "Dunwoody", individualSandwiches: 745, individualPbj: 100, individualDeli: 245, individualGeneric: 400, groupCollections: [{name: "Willis Towers Watson", count: 400, deli: 400}], confidence: 0.95}
+  (1145 total - 400 WTW = 745 individual, broken down as 100+245+400)
+"800 intown, delta 500, coca cola 300" → {hostName: "Intown", individualSandwiches: 0, groupCollections: [{name: "Delta", count: 500}, {name: "Coca Cola", count: 300}], confidence: 0.95}
+  (800 total - 500 - 300 = 0 individual, all from groups)
 
 Too vague (ask for clarification):
 "made sandwiches today" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Example: 500 Dunwoody", confidence: 0.2}
@@ -398,10 +409,26 @@ If message clearly isn't about logging sandwiches, return needsClarification: tr
       };
     }
 
-    if (!parsed.hostName || !parsed.individualSandwiches || parsed.individualSandwiches < 1) {
+    // Validate required fields
+    // individualSandwiches can be 0 if all sandwiches came from groups
+    const hasGroupCollections = parsed.groupCollections && parsed.groupCollections.length > 0;
+    const totalGroupCount = hasGroupCollections
+      ? parsed.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0)
+      : 0;
+
+    if (!parsed.hostName) {
       return {
         success: false,
-        error: 'Missing count or location. Try: LOG [count] [location name]',
+        error: 'Missing location. Try: 500 Dunwoody',
+        rawMessage: message,
+      };
+    }
+
+    // Must have either individual sandwiches OR group collections with counts
+    if ((parsed.individualSandwiches === undefined || parsed.individualSandwiches < 0) && totalGroupCount === 0) {
+      return {
+        success: false,
+        error: 'Missing sandwich count. Try: 500 Dunwoody',
         rawMessage: message,
       };
     }
@@ -456,7 +483,19 @@ export async function parseCollectionSMS(message: string): Promise<CollectionPar
  */
 export function generateConfirmationMessage(data: ParsedCollectionData, matchedHostName?: string): string {
   const displayHost = matchedHostName || data.hostName;
-  let message = `✅ Logged ${data.individualSandwiches} sandwiches at ${displayHost}`;
+
+  // Calculate total (individual + groups)
+  const groupTotal = data.groupCollections?.reduce((sum, g) => sum + g.count, 0) || 0;
+  const grandTotal = data.individualSandwiches + groupTotal;
+
+  // Show total and individual breakdown
+  let message: string;
+  if (groupTotal > 0) {
+    message = `✅ Logged ${grandTotal} total at ${displayHost}`;
+    message += `\n(${data.individualSandwiches} individual + ${groupTotal} from groups)`;
+  } else {
+    message = `✅ Logged ${data.individualSandwiches} sandwiches at ${displayHost}`;
+  }
   
   // Add date if not today
   const today = new Date().toISOString().split('T')[0];
@@ -467,6 +506,7 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
   }
 
   // Add sandwich type breakdown if available (for individual)
+  // Only show if there are types AND either no groups or we want to detail individual types
   const breakdowns: string[] = [];
   if (data.individualPbj) breakdowns.push(`${data.individualPbj} PBJ`);
   if (data.individualDeli) breakdowns.push(`${data.individualDeli} deli`);
@@ -474,8 +514,12 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
   if (data.individualHam) breakdowns.push(`${data.individualHam} ham`);
   if (data.individualGeneric) breakdowns.push(`${data.individualGeneric} generic`);
 
-  if (breakdowns.length > 0) {
+  if (breakdowns.length > 0 && groupTotal === 0) {
+    // No groups - show type breakdown in parentheses
     message += `\n(${breakdowns.join(', ')})`;
+  } else if (breakdowns.length > 0 && groupTotal > 0) {
+    // Has groups - show individual types on separate line
+    message += `\nIndividual types: ${breakdowns.join(', ')}`;
   }
 
   // Add group info if available (show prominently with types)

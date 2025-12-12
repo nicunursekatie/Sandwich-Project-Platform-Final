@@ -87,6 +87,9 @@ router.get('/', async (req, res) => {
         assignedDriverIds: eventRequests.assignedDriverIds,
         pickupTime: eventRequests.pickupTime,
         pickupTimeWindow: eventRequests.pickupTimeWindow,
+        selfTransport: eventRequests.selfTransport,
+        vanDriverNeeded: eventRequests.vanDriverNeeded,
+        assignedVanDriverId: eventRequests.assignedVanDriverId,
       })
       .from(eventRequests)
       .where(and(...conditions));

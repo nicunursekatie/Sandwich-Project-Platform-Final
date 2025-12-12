@@ -108,6 +108,9 @@ interface EventMapData {
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
+  selfTransport: boolean | null;
+  vanDriverNeeded: boolean | null;
+  assignedVanDriverId: string | null;
 }
 
 interface Driver {
