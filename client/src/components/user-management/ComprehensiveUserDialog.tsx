@@ -179,6 +179,7 @@ export function ComprehensiveUserDialog({
                     Committee Member
                   </SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
+                  <SelectItem value="reviewer">Reviewer (Read-Only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
