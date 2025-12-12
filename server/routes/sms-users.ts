@@ -34,6 +34,39 @@ const smsOptInSchema = z.object({
   category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
 
+// Helper to normalize phone numbers for comparison (removes non-digits, handles +1 prefix)
+function normalizePhone(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  // Handle US numbers with or without country code
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return '+1' + digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return '+1' + digits;
+  }
+  return '+' + digits;
+}
+
+// Find user by phone number - checks both smsConsent.phoneNumber AND users.phoneNumber
+function findUserByPhone(users: any[], incomingPhone: string): any | undefined {
+  const normalizedIncoming = normalizePhone(incomingPhone);
+  
+  return users.find((user) => {
+    // Check SMS consent phone first
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+    if (smsConsent.phoneNumber && normalizePhone(smsConsent.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    // Fall back to user's direct phoneNumber field
+    if (user.phoneNumber && normalizePhone(user.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    return false;
+  });
+}
+
 const smsConfirmationSchema = z.object({
   verificationCode: z.string().min(1, 'Verification code is required'),
 });
@@ -863,11 +896,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       try {
         // Find user by phone number to attribute the idea
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Ensure createdByName is never empty (required field)
         // Format: "Name (via SMS)" or "SMS: ***1234" if no user found
@@ -965,11 +995,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         // Find user by phone number to attribute the collection
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Try to match host to existing host in database (fuzzy matching)
         const allHosts = await storage.getAllHosts();
@@ -1100,13 +1127,9 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           const parsedData = parseResult.data;
           logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
 
-          // Find user by phone number
+          // Find user by phone number - checks both SMS consent phone AND user's stored phone number
           const allUsers = await storage.getAllUsers();
-          const senderUser = allUsers.find((user) => {
-            const metadata = user.metadata as any || {};
-            const smsConsent = metadata.smsConsent || {};
-            return smsConsent.phoneNumber === phoneNumber;
-          });
+          const senderUser = findUserByPhone(allUsers, phoneNumber);
 
           // Try to match host to existing host in database (fuzzy matching)
           const allHosts = await storage.getAllHosts();
@@ -1227,7 +1250,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] [date] - Log sandwiches\n• Add groups with comma: LOG 500 Dunwoody 12/10, Acme Corp 200\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe\n\nDate formats: 12/10, yesterday, Wednesday\n\nExample: LOG 1074 Dunwoody 12/10, Willis Towers 400</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] [date]\n• With types: LOG 100 PBJ 200 Deli Dunwoody 12/10\n• With groups: LOG 500 Dunwoody, Acme 200 Ham\n• IDEA [your idea]\n• STOP - Unsubscribe\n\nTypes: PBJ, Deli, Ham, Turkey, Generic\nDates: 12/10, yesterday, Wednesday</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);

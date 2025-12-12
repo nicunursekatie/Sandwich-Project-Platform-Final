@@ -151,12 +151,12 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     }
     
     if (individualCount > 0 && hostName.length >= 2) {
-      logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${totalGroupCount} from ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
+      logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
       return {
         success: true,
         data: {
           hostName,
-          individualSandwiches: individualCount + totalGroupCount, // Total includes groups
+          individualSandwiches: individualCount, // Individual count stays separate from groups
           groupCollections: groupCollections.length > 0 ? groupCollections : undefined,
           collectionDate,
           confidence: 0.95,
@@ -244,16 +244,24 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
 
 Output JSON with these fields:
 - hostName: string (location/organization name, REQUIRED)
-- individualSandwiches: number (total sandwiches made INCLUDING group totals, REQUIRED, minimum 1)
-- individualDeli: number (optional, deli sandwiches)
-- individualTurkey: number (optional, turkey sandwiches)
-- individualHam: number (optional, ham sandwiches)
-- individualPbj: number (optional, PB&J sandwiches)
-- groupCollections: array of {name, count} (optional, for group/organization breakdowns - these are companies or groups that contributed sandwiches)
-- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified. ALL groups inherit the same date unless explicitly stated otherwise)
+- individualSandwiches: number (TOTAL individual count - sum of all typed sandwiches, REQUIRED, minimum 1)
+- individualDeli: number (optional, deli sandwiches count)
+- individualTurkey: number (optional, turkey sandwiches count)
+- individualHam: number (optional, ham sandwiches count)
+- individualPbj: number (optional, PB&J sandwiches count)
+- individualGeneric: number (optional, generic/untyped sandwiches count)
+- groupCollections: array of {name, count, deli?, turkey?, ham?, pbj?} (optional, for group/organization breakdowns with optional type breakdowns)
+- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified)
 - confidence: number 0-1 (how confident you are in the parse)
 - needsClarification: boolean (true if message is ambiguous)
 - clarificationMessage: string (what to ask if clarification needed)
+
+Sandwich type keywords:
+- "PBJ" or "pb&j" or "peanut butter" = pbj
+- "Deli" or "deli meat" = deli
+- "Ham" = ham
+- "Turkey" = turkey
+- "Generic" or no type specified = generic/untyped
 
 Date interpretation rules:
 - "12/10" or "12-10" = December 10 of current year (${today.substring(0,4)})
@@ -262,14 +270,17 @@ Date interpretation rules:
 - "Wednesday" = this week's Wednesday (or last if today is before Wednesday)
 - No date mentioned = use ${today}
 
-IMPORTANT: When groups are listed with counts, individualSandwiches should be the TOTAL (base count + all group counts combined).
+IMPORTANT RULES:
+1. individualSandwiches = sum of ALL individual typed sandwiches (pbj + deli + ham + turkey + generic)
+2. Group counts are recorded SEPARATELY in groupCollections - do NOT add to individualSandwiches
+3. Groups can also have sandwich types (e.g., "Willis Towers Watson 500 Ham")
 
 Examples:
 "50 sandwiches at Downtown Library" → {hostName: "Downtown Library", individualSandwiches: 50, collectionDate: "${today}", confidence: 0.95, needsClarification: false}
 "LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1474, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"LOG 500 Intown 12/11, Google 200, Delta 150" → {hostName: "Intown", individualSandwiches: 850, groupCollections: [{name: "Google", count: 200}, {name: "Delta", count: 150}], collectionDate: "${today.substring(0,4)}-12-11", confidence: 0.95, needsClarification: false}
-"Made 30 yesterday at First Baptist" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${new Date(Date.now() - 86400000).toISOString().split('T')[0]}", confidence: 0.9, needsClarification: false}
+"LOG 100 PBJ 245 Deli 400 Generic Dunwoody 12/10, Willis Towers Watson 500 Ham" → {hostName: "Dunwoody", individualSandwiches: 745, individualPbj: 100, individualDeli: 245, collectionDate: "${today.substring(0,4)}-12-10", groupCollections: [{name: "Willis Towers Watson", count: 500, ham: 500}], confidence: 0.95, needsClarification: false}
+"LOG 200 turkey 150 ham Intown 12/11, Google 200 pbj" → {hostName: "Intown", individualSandwiches: 350, individualTurkey: 200, individualHam: 150, collectionDate: "${today.substring(0,4)}-12-11", groupCollections: [{name: "Google", count: 200, pbj: 200}], confidence: 0.95, needsClarification: false}
+"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1074, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
 "made some sandwiches" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Reply: LOG [count] [location]", confidence: 0.2}
 
 If the message doesn't seem to be about logging sandwiches at all, return needsClarification: true.`,
@@ -368,21 +379,32 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
     message += ` for ${dateStr}`;
   }
 
-  // Add group info if available (show prominently)
-  if (data.groupCollections && data.groupCollections.length > 0) {
-    const groups = data.groupCollections.map(g => `${g.name}: ${g.count}`).join(', ');
-    message += `\nGroups: ${groups}`;
-  }
-
-  // Add sandwich type breakdown if available
+  // Add sandwich type breakdown if available (for individual)
   const breakdowns: string[] = [];
+  if (data.individualPbj) breakdowns.push(`${data.individualPbj} PBJ`);
   if (data.individualDeli) breakdowns.push(`${data.individualDeli} deli`);
   if (data.individualTurkey) breakdowns.push(`${data.individualTurkey} turkey`);
   if (data.individualHam) breakdowns.push(`${data.individualHam} ham`);
-  if (data.individualPbj) breakdowns.push(`${data.individualPbj} PB&J`);
 
   if (breakdowns.length > 0) {
-    message += ` (${breakdowns.join(', ')})`;
+    message += `\n(${breakdowns.join(', ')})`;
+  }
+
+  // Add group info if available (show prominently with types)
+  if (data.groupCollections && data.groupCollections.length > 0) {
+    const groupStrs = data.groupCollections.map(g => {
+      let groupStr = `${g.name}: ${g.count}`;
+      const typeBreakdown: string[] = [];
+      if (g.pbj) typeBreakdown.push(`${g.pbj} PBJ`);
+      if (g.deli) typeBreakdown.push(`${g.deli} deli`);
+      if (g.turkey) typeBreakdown.push(`${g.turkey} turkey`);
+      if (g.ham) typeBreakdown.push(`${g.ham} ham`);
+      if (typeBreakdown.length > 0) {
+        groupStr += ` (${typeBreakdown.join(', ')})`;
+      }
+      return groupStr;
+    });
+    message += `\nGroups: ${groupStrs.join('; ')}`;
   }
 
   message += '\n\n🥪 Thanks for making sandwiches!';
