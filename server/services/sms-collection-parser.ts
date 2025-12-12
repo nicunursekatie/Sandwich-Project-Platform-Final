@@ -151,12 +151,12 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     }
     
     if (individualCount > 0 && hostName.length >= 2) {
-      logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${totalGroupCount} from ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
+      logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
       return {
         success: true,
         data: {
           hostName,
-          individualSandwiches: individualCount + totalGroupCount, // Total includes groups
+          individualSandwiches: individualCount, // Individual count stays separate from groups
           groupCollections: groupCollections.length > 0 ? groupCollections : undefined,
           collectionDate,
           confidence: 0.95,
@@ -244,12 +244,12 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
 
 Output JSON with these fields:
 - hostName: string (location/organization name, REQUIRED)
-- individualSandwiches: number (total sandwiches made INCLUDING group totals, REQUIRED, minimum 1)
+- individualSandwiches: number (the individual count ONLY - do NOT add group counts to this, REQUIRED, minimum 1)
 - individualDeli: number (optional, deli sandwiches)
 - individualTurkey: number (optional, turkey sandwiches)
 - individualHam: number (optional, ham sandwiches)
 - individualPbj: number (optional, PB&J sandwiches)
-- groupCollections: array of {name, count} (optional, for group/organization breakdowns - these are companies or groups that contributed sandwiches)
+- groupCollections: array of {name, count} (optional, for group/organization breakdowns - these are companies or groups that contributed sandwiches, recorded SEPARATELY)
 - collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified. ALL groups inherit the same date unless explicitly stated otherwise)
 - confidence: number 0-1 (how confident you are in the parse)
 - needsClarification: boolean (true if message is ambiguous)
@@ -262,13 +262,13 @@ Date interpretation rules:
 - "Wednesday" = this week's Wednesday (or last if today is before Wednesday)
 - No date mentioned = use ${today}
 
-IMPORTANT: When groups are listed with counts, individualSandwiches should be the TOTAL (base count + all group counts combined).
+IMPORTANT: individualSandwiches is the INDIVIDUAL count only. Group counts are recorded SEPARATELY in groupCollections. Do NOT combine them.
 
 Examples:
 "50 sandwiches at Downtown Library" → {hostName: "Downtown Library", individualSandwiches: 50, collectionDate: "${today}", confidence: 0.95, needsClarification: false}
 "LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1474, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"LOG 500 Intown 12/11, Google 200, Delta 150" → {hostName: "Intown", individualSandwiches: 850, groupCollections: [{name: "Google", count: 200}, {name: "Delta", count: 150}], collectionDate: "${today.substring(0,4)}-12-11", confidence: 0.95, needsClarification: false}
+"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1074, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
+"LOG 500 Intown 12/11, Google 200, Delta 150" → {hostName: "Intown", individualSandwiches: 500, groupCollections: [{name: "Google", count: 200}, {name: "Delta", count: 150}], collectionDate: "${today.substring(0,4)}-12-11", confidence: 0.95, needsClarification: false}
 "Made 30 yesterday at First Baptist" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${new Date(Date.now() - 86400000).toISOString().split('T')[0]}", confidence: 0.9, needsClarification: false}
 "made some sandwiches" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Reply: LOG [count] [location]", confidence: 0.2}
 
