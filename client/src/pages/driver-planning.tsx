@@ -105,6 +105,7 @@ interface EventMapData {
   eventEndTime: string | null;
   driversNeeded: number | null;
   assignedDriverIds: string[] | null;
+  tentativeDriverIds: string[] | null;
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
@@ -458,30 +459,54 @@ export default function DriverPlanningDashboard() {
     },
   });
 
-  // Assign driver to event
+  // Assign driver to event (supports tentative assignments)
   const assignDriverMutation = useMutation({
-    mutationFn: async ({ eventId, driverId, currentAssigned }: { eventId: number; driverId: string; currentAssigned: string[] }) => {
+    mutationFn: async ({ eventId, driverId, currentAssigned, currentTentative, tentative }: {
+      eventId: number;
+      driverId: string;
+      currentAssigned: string[];
+      currentTentative?: string[];
+      tentative?: boolean;
+    }) => {
       const assignedSet = new Set(currentAssigned);
-      assignedSet.add(driverId);
+      const tentativeSet = new Set(currentTentative || []);
+
+      if (tentative) {
+        // Add to tentative, remove from confirmed if present
+        tentativeSet.add(driverId);
+        assignedSet.delete(driverId);
+      } else {
+        // Add to confirmed, remove from tentative if present
+        assignedSet.add(driverId);
+        tentativeSet.delete(driverId);
+      }
+
       const assignedDriverIds = Array.from(assignedSet);
+      const tentativeDriverIds = Array.from(tentativeSet);
 
       const response = await fetch(`/api/event-requests/${eventId}/drivers`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ assignedDriverIds }),
+        body: JSON.stringify({ assignedDriverIds, tentativeDriverIds }),
       });
       if (!response.ok) throw new Error('Failed to assign driver');
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast({
-        title: 'Driver assigned',
-        description: 'Driver has been marked as assigned for this event.',
+        title: variables.tentative ? 'Driver marked tentative' : 'Driver assigned',
+        description: variables.tentative
+          ? 'Driver has been marked as tentative (?) for this event.'
+          : 'Driver has been confirmed for this event.',
       });
       // Refresh events and update selected event locally
       queryClient.invalidateQueries();
-      setSelectedEvent((prev) => (prev ? { ...prev, assignedDriverIds: data.assignedDriverIds || [] } : prev));
+      setSelectedEvent((prev) => (prev ? {
+        ...prev,
+        assignedDriverIds: data.assignedDriverIds || [],
+        tentativeDriverIds: data.tentativeDriverIds || []
+      } : prev));
     },
     onError: () => {
       toast({
@@ -929,6 +954,7 @@ export default function DriverPlanningDashboard() {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
+                const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
                 const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
@@ -993,7 +1019,7 @@ export default function DriverPlanningDashboard() {
                             className="text-xs"
                           >
                             <Truck className="w-3 h-3 mr-1" />
-                            {driversAssigned}/{driversNeeded} drivers
+                            {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
                             {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van ✓' : ' + Van needed')}
                           </Badge>
                         ) : (
@@ -1355,27 +1381,57 @@ export default function DriverPlanningDashboard() {
                           )}
                         </div>
                         {selectedEvent && (
-                          <Button
-                            size="sm"
-                            className="w-full mt-3 text-xs"
-                            disabled={assigningDriverId === driver.id}
-                            onClick={() => {
-                              if (!selectedEvent) return;
-                              setAssigningDriverId(driver.id);
-                              assignDriverMutation.mutate({
-                                eventId: selectedEvent.id,
-                                driverId: driver.id,
-                                currentAssigned: selectedEvent.assignedDriverIds || [],
-                              });
-                            }}
-                          >
-                            {assigningDriverId === driver.id ? (
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            ) : (
-                              <Check className="w-3 h-3 mr-1" />
-                            )}
-                            {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign driver'}
-                          </Button>
+                          <div className="flex gap-1 mt-3">
+                            {/* Tentative assignment button */}
+                            <Button
+                              size="sm"
+                              variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                              className="flex-1 text-xs"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={() => {
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: true,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <span className="mr-1 font-bold">?</span>
+                              )}
+                              {selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                            </Button>
+                            {/* Confirmed assignment button */}
+                            <Button
+                              size="sm"
+                              className="flex-1 text-xs"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={() => {
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: false,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3 mr-1" />
+                              )}
+                              {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                            </Button>
+                          </div>
                         )}
                       </Card>
                     ))}
@@ -1447,6 +1503,7 @@ export default function DriverPlanningDashboard() {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
+                const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
                 const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
@@ -1481,7 +1538,7 @@ export default function DriverPlanningDashboard() {
                           variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
                           className="text-[10px] px-1 py-0"
                         >
-                          {driversAssigned}/{driversNeeded}
+                          {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded}
                           {event.vanDriverNeeded && (event.assignedVanDriverId ? '+Van' : '+Van!')}
                         </Badge>
                       ) : (
@@ -1844,7 +1901,7 @@ export default function DriverPlanningDashboard() {
                         variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 0) && (!selectedEvent.vanDriverNeeded || selectedEvent.assignedVanDriverId) ? 'default' : 'destructive'}
                         className="text-[10px] px-1.5"
                       >
-                        {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 0}
+                        {selectedEvent.assignedDriverIds?.length || 0}{(selectedEvent.tentativeDriverIds?.length || 0) > 0 && <span className="text-amber-300">+{selectedEvent.tentativeDriverIds?.length}?</span>}/{selectedEvent.driversNeeded || 0}
                         {selectedEvent.vanDriverNeeded && (selectedEvent.assignedVanDriverId ? '+Van' : '+Van!')}
                       </Badge>
                     ) : (
@@ -1939,6 +1996,7 @@ export default function DriverPlanningDashboard() {
                     const isSelected = selectedEvent?.id === event.id;
                     const eventDate = event.scheduledEventDate || event.desiredEventDate;
                     const driversAssigned = event.assignedDriverIds?.length || 0;
+                    const driversTentative = event.tentativeDriverIds?.length || 0;
                     const driversNeeded = event.driversNeeded || 0;
                     const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
@@ -1993,7 +2051,7 @@ export default function DriverPlanningDashboard() {
                                 className="text-xs px-2 py-0.5"
                               >
                                 <Truck className="w-3.5 h-3.5 mr-1" />
-                                {driversAssigned}/{driversNeeded} drivers
+                                {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
                                 {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van' : ' + Van needed')}
                               </Badge>
                             ) : (
@@ -2248,6 +2306,32 @@ export default function DriverPlanningDashboard() {
                                   </>
                                 )}
                               </Button>
+                              {/* Tentative assignment button */}
+                              <Button
+                                size="sm"
+                                variant={selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                                className="text-xs h-8"
+                                disabled={assigningDriverId === driver.id}
+                                onClick={() => {
+                                  if (!selectedEvent) return;
+                                  setAssigningDriverId(driver.id);
+                                  assignDriverMutation.mutate({
+                                    eventId: selectedEvent.id,
+                                    driverId: String(driver.id),
+                                    currentAssigned: selectedEvent.assignedDriverIds || [],
+                                    currentTentative: selectedEvent.tentativeDriverIds || [],
+                                    tentative: true,
+                                  });
+                                }}
+                              >
+                                {assigningDriverId === driver.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : (
+                                  <span className="mr-1 font-bold">?</span>
+                                )}
+                                {selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                              </Button>
+                              {/* Confirmed assignment button */}
                               <Button
                                 size="sm"
                                 className="text-xs h-8"
@@ -2257,19 +2341,19 @@ export default function DriverPlanningDashboard() {
                                   setAssigningDriverId(driver.id);
                                   assignDriverMutation.mutate({
                                     eventId: selectedEvent.id,
-                                    driverId: driver.id,
+                                    driverId: String(driver.id),
                                     currentAssigned: selectedEvent.assignedDriverIds || [],
+                                    currentTentative: selectedEvent.tentativeDriverIds || [],
+                                    tentative: false,
                                   });
                                 }}
                               >
                                 {assigningDriverId === driver.id ? (
                                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                ) : selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? (
-                                  <Check className="w-3 h-3 mr-1" />
                                 ) : (
                                   <Check className="w-3 h-3 mr-1" />
                                 )}
-                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign'}
+                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
                               </Button>
                             </div>
                           </div>

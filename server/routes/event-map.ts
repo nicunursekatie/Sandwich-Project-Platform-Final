@@ -85,6 +85,7 @@ router.get('/', async (req, res) => {
         externalId: eventRequests.externalId,
         driversNeeded: eventRequests.driversNeeded,
         assignedDriverIds: eventRequests.assignedDriverIds,
+        tentativeDriverIds: eventRequests.tentativeDriverIds,
         pickupTime: eventRequests.pickupTime,
         pickupTimeWindow: eventRequests.pickupTimeWindow,
         selfTransport: eventRequests.selfTransport,

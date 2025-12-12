@@ -2130,6 +2130,7 @@ export const eventRequests = pgTable(
 
     // Driver, speaker, and volunteer assignments
     assignedDriverIds: text('assigned_driver_ids').array(), // Array of assigned driver IDs/names
+    tentativeDriverIds: text('tentative_driver_ids').array(), // Array of driver IDs that are tentatively assigned (shown with ? badge)
     driverPickupTime: varchar('driver_pickup_time'), // Pickup time for drivers
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed

@@ -85,6 +85,13 @@
       "when": 1765515257487,
       "tag": "0011_add_needs_password_setup",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1765573851644,
+      "tag": "0012_add_tentative_driver_ids",
+      "breakpoints": true
     }
   ]
 }

@@ -2933,6 +2933,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     const eventId = parseInt(req.params.id);
     const {
       assignedDriverIds,
+      tentativeDriverIds,
       driverPickupTime,
       driverNotes,
       driversArranged,
@@ -2952,6 +2953,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     // Update the event with driver assignments
     const updateData: Partial<EventRequest> = {
       assignedDriverIds: assignedDriverIds || [],
+      tentativeDriverIds: tentativeDriverIds !== undefined ? (tentativeDriverIds || []) : undefined,
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
       driversArranged:
@@ -2959,6 +2961,11 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
           ? driversArranged
           : assignedDriverIds && assignedDriverIds.length > 0,
     };
+
+    // Only include tentativeDriverIds if it was actually provided in the request
+    if (tentativeDriverIds === undefined) {
+      delete updateData.tentativeDriverIds;
+    }
 
     // Add van driver fields if provided
     if (vanDriverNeeded !== undefined)
