@@ -641,6 +641,65 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           data: { firstName, lastName },
         });
       }
+      // Handle recipients - parse comma-separated names and convert to recipient IDs
+      else if (editingField === 'recipients') {
+        // Parse input: "Recipient 1: 50, Recipient 2: 30" or "Recipient 1, Recipient 2"
+        const recipientParts = editingValue.split(',').map(p => p.trim()).filter(p => p.length > 0);
+        const recipientIds: string[] = [];
+        const recipientAllocations: Array<{
+          recipientId: string;
+          recipientName: string;
+          sandwichCount: number;
+          sandwichType?: string;
+        }> = [];
+
+        recipientParts.forEach(part => {
+          // Check if format is "Name: Count" or just "Name"
+          const countMatch = part.match(/^(.+?):\s*(\d+)$/);
+          const recipientName = countMatch ? countMatch[1].trim() : part.trim();
+          const sandwichCount = countMatch ? parseInt(countMatch[2], 10) : 0;
+
+          if (!recipientName) return;
+
+          // Find recipient by name (case-insensitive partial match)
+          const recipient = recipients.find(r => 
+            r.name.toLowerCase().includes(recipientName.toLowerCase()) ||
+            recipientName.toLowerCase().includes(r.name.toLowerCase())
+          );
+
+          if (recipient) {
+            const recipientId = `recipient:${recipient.id}`;
+            recipientIds.push(recipientId);
+            
+            // If count is specified, add to allocations
+            if (sandwichCount > 0) {
+              recipientAllocations.push({
+                recipientId,
+                recipientName: recipient.name,
+                sandwichCount,
+              });
+            }
+          }
+        });
+
+        // Update both assignedRecipientIds and recipientAllocations
+        // If allocations are provided, use them; otherwise clear allocations
+        const updateData: any = {
+          assignedRecipientIds: recipientIds,
+        };
+        
+        if (recipientAllocations.length > 0) {
+          updateData.recipientAllocations = recipientAllocations;
+        } else {
+          // Clear allocations if no counts specified
+          updateData.recipientAllocations = [];
+        }
+        
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: updateData,
+        });
+      }
       // Handle volunteersNeeded (Staff Needed) - parse combined format "2 vol, 1 driver, 1 speaker"
       else if (editingField === 'volunteersNeeded') {
         const parts = editingValue.split(',').map(p => p.trim().toLowerCase());
@@ -1607,7 +1666,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       'tspContact', 'address', 'notes', 'additionalNotes',
       'eventDate', 'groupName', 'department', 'vanBooked',
       'contactName', 'phone', 'email', 'finalSandwiches',
-      'socialPost', 'volunteersNeeded' // This is the combined "Staff Needed" column
+      'socialPost', 'volunteersNeeded', // This is the combined "Staff Needed" column
+      'recipients' // Recipients column
     ].includes(column.id);
 
     // Get the raw value for editing (not the formatted display)
@@ -1664,6 +1724,36 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           return parts.join(', ') || '';
         case 'socialPost':
           return event.socialMediaPostRequested ? 'Requested' : '';
+        case 'recipients':
+          // Get current recipients as comma-separated names for editing
+          const allocations = (event as any).recipientAllocations as Array<{
+            recipientId: string;
+            recipientName: string;
+            sandwichCount: number;
+            sandwichType?: string;
+          }> | null | undefined;
+          
+          if (allocations && allocations.length > 0) {
+            // Return format: "Recipient 1: 50, Recipient 2: 30" or just names if no counts
+            return allocations
+              .filter(a => a.sandwichCount > 0)
+              .map(a => {
+                if (a.sandwichCount > 0) {
+                  return `${a.recipientName}: ${a.sandwichCount}`;
+                }
+                return a.recipientName;
+              })
+              .join(', ') || '';
+          }
+          
+          // Fall back to legacy assignedRecipientIds
+          if (event.assignedRecipientIds && event.assignedRecipientIds.length > 0) {
+            const names = event.assignedRecipientIds
+              .map(id => resolveRecipientName(id))
+              .filter(name => name && name !== 'Loading...');
+            return names.join(', ') || '';
+          }
+          return '';
         default:
           return '';
       }
@@ -1890,6 +1980,32 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
               value={editingValue}
               onChange={(e) => setEditingValue(e.target.value)}
               className="h-7 text-sm px-1.5 py-0.5 w-20"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+          </div>
+        );
+      }
+
+      // Special handling for recipients - allow editing as comma-separated names with optional counts
+      if (column.id === 'recipients') {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              type="text"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-7 text-sm px-1.5 py-0.5 min-w-[200px]"
+              placeholder="Recipient 1, Recipient 2 or Recipient 1: 50, Recipient 2: 30"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') saveEdit();
