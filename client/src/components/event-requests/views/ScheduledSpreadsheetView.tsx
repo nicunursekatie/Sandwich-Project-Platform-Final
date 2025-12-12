@@ -2580,10 +2580,133 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         </div>
       </div>
 
-      {/* Table Container with Horizontal and Vertical Scroll */}
-      <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="overflow-x-auto" style={{ minHeight: '500px', maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'none', overflowY: 'auto', willChange: 'scroll-position' }}>
-          <table className="w-full border-collapse">
+      {/* Mobile Card View */}
+      {isMobile ? (
+        <div className="space-y-3">
+          {sortedEvents.map((event, rowIndex) => {
+            const dayIndex = eventDayIndices.get(`${event.id}`) || 0;
+            const borderColor = dayBorderColors[dayIndex % dayBorderColors.length];
+            const rowBgColor = getRowColor(event, rowIndex);
+            
+            return (
+              <div
+                key={event.id}
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
+                style={{ borderLeft: `4px solid ${borderColor}` }}
+                onClick={() => handleEventDateClick(event)}
+              >
+                <div className={`p-3 ${rowBgColor}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-[#236383]">
+                          {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                        </span>
+                        <span className="text-xs text-[#007E8C] font-medium">
+                          {formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate)?.slice(0, 3)}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-semibold text-[#236383] truncate">
+                        {event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A'}
+                      </h3>
+                      {event.department && (
+                        <p className="text-xs text-[#236383]/70 truncate">{event.department}</p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-lg font-bold text-[#007E8C]">
+                        {event.estimatedSandwichCount || '-'}
+                      </div>
+                      <div className="text-xs text-[#236383]/60">sandwiches</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#236383]/80">
+                    {event.eventStartTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-[#007E8C]" />
+                        <span>{formatTime(event.eventStartTime)}</span>
+                      </div>
+                    )}
+                    {event.eventAddress && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[#007E8C] hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span className="truncate max-w-[120px]">
+                          {(() => {
+                            const parts = event.eventAddress.split(',');
+                            return parts.length >= 2 ? parts[parts.length - 2].trim() : parts[0].trim();
+                          })()}
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                  
+                  {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded) && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-[#47B3CB]/20">
+                      {event.driversNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedDriverIds?.length || 0) >= event.driversNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Car className="h-3 w-3 mr-1" />
+                          {(event.assignedDriverIds?.length || 0)}/{event.driversNeeded}
+                        </Badge>
+                      )}
+                      {event.speakersNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedSpeakerIds?.length || 0) >= event.speakersNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Megaphone className="h-3 w-3 mr-1" />
+                          {(event.assignedSpeakerIds?.length || 0)}/{event.speakersNeeded}
+                        </Badge>
+                      )}
+                      {event.volunteersNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedVolunteerIds?.length || 0) >= event.volunteersNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Users className="h-3 w-3 mr-1" />
+                          {(event.assignedVolunteerIds?.length || 0)}/{event.volunteersNeeded}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          
+          {sortedEvents.length === 0 && (
+            <div className="text-center py-8 text-[#236383]/60">
+              No events found for the selected time period
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Table Container with Horizontal and Vertical Scroll */}
+          <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
+            <div className="overflow-x-auto" style={{ minHeight: '500px', maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'none', overflowY: 'auto', willChange: 'scroll-position' }}>
+              <table className="w-full border-collapse">
             <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-30" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
               <tr>
                 {columns.map((column, colIndex) => {
@@ -2724,21 +2847,23 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-4 text-xs text-[#236383]/70 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4" />
-          <span>Drag column headers to reorder columns. Your preference will be saved.</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Maximize2 className="h-4 w-4" />
-          <span>Click Fullscreen for a larger workspace. Press Escape to exit fullscreen mode.</span>
-        </div>
-      </div>
+          {/* Instructions */}
+          <div className="mt-4 text-xs text-[#236383]/70 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4" />
+              <span>Drag column headers to reorder columns. Your preference will be saved.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Maximize2 className="h-4 w-4" />
+              <span>Click Fullscreen for a larger workspace. Press Escape to exit fullscreen mode.</span>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Sandwich Types Dialog */}
       <Dialog open={showSandwichDialog} onOpenChange={setShowSandwichDialog}>
