@@ -131,7 +131,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
-  setUserPassword(id: string, password: string): Promise<void>;
+  setUserPassword(id: string, password: string): Promise<boolean>;
   findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined>;
   getUsersByNameOrEmail(searchTerms: string[]): Promise<User[]>;
 
@@ -1036,7 +1036,7 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  async setUserPassword(id: string, password: string): Promise<void> {
+  async setUserPassword(id: string, password: string): Promise<boolean> {
     const user = await this.getUser(id);
     if (user) {
       const updated: User = {
@@ -1045,7 +1045,9 @@ export class MemStorage implements IStorage {
         updatedAt: new Date(),
       };
       this.users.set(id, updated);
+      return true;
     }
+    return false;
   }
 
   async deleteUser(id: string): Promise<boolean> {
