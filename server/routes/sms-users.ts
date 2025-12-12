@@ -976,17 +976,33 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         let matchedHostId: number | null = null;
         let matchedHostName = parsedData.hostName;
         
+        // Helper to split text into segments (by whitespace, slashes, dashes)
+        const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+        
         if (allHosts.length > 0) {
           const inputLower = parsedData.hostName.toLowerCase().trim();
+          const inputSegments = getSegments(parsedData.hostName);
           let bestMatch: { host: any; score: number } | null = null;
           
           for (const host of allHosts) {
             const hostLower = host.name.toLowerCase().trim();
+            const hostSegments = getSegments(host.name);
+            
             // Exact match
             if (hostLower === inputLower) {
               bestMatch = { host, score: 1.0 };
               break;
             }
+            
+            // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+            if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+              const score = 0.95;
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+              continue;
+            }
+            
             // Contains match
             if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
               const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
@@ -994,12 +1010,13 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
                 bestMatch = { host, score };
               }
             }
-            // Word overlap match
-            const inputWords = inputLower.split(/\s+/).filter(w => w.length > 2);
-            const hostWords = hostLower.split(/\s+/).filter(w => w.length > 2);
-            const commonWords = inputWords.filter(w => hostWords.some(hw => hw.includes(w) || w.includes(hw)));
-            if (commonWords.length > 0) {
-              const score = commonWords.length / Math.max(inputWords.length, hostWords.length) * 0.8;
+            
+            // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+            const commonSegments = inputSegments.filter(seg => 
+              hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+            );
+            if (commonSegments.length > 0) {
+              const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
               if (!bestMatch || score > bestMatch.score) {
                 bestMatch = { host, score };
               }
@@ -1096,27 +1113,47 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           let matchedHostId: number | null = null;
           let matchedHostName = parsedData.hostName;
           
+          // Helper to split text into segments (by whitespace, slashes, dashes)
+          const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+          
           if (allHosts.length > 0) {
             const inputLower = parsedData.hostName.toLowerCase().trim();
+            const inputSegments = getSegments(parsedData.hostName);
             let bestMatch: { host: any; score: number } | null = null;
             
             for (const host of allHosts) {
               const hostLower = host.name.toLowerCase().trim();
+              const hostSegments = getSegments(host.name);
+              
+              // Exact match
               if (hostLower === inputLower) {
                 bestMatch = { host, score: 1.0 };
                 break;
               }
+              
+              // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+              if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+                const score = 0.95;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+                continue;
+              }
+              
+              // Contains match
               if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
                 const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
                 if (!bestMatch || score > bestMatch.score) {
                   bestMatch = { host, score };
                 }
               }
-              const inputWords = inputLower.split(/\s+/).filter(w => w.length > 2);
-              const hostWords = hostLower.split(/\s+/).filter(w => w.length > 2);
-              const commonWords = inputWords.filter(w => hostWords.some(hw => hw.includes(w) || w.includes(hw)));
-              if (commonWords.length > 0) {
-                const score = commonWords.length / Math.max(inputWords.length, hostWords.length) * 0.8;
+              
+              // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+              const commonSegments = inputSegments.filter(seg => 
+                hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+              );
+              if (commonSegments.length > 0) {
+                const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
                 if (!bestMatch || score > bestMatch.score) {
                   bestMatch = { host, score };
                 }
