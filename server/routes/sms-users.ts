@@ -1083,6 +1083,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
         if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
         if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+        if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
 
         // Add group collections if provided
         if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
@@ -1213,6 +1214,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
           if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
           if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+          if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
 
           // Add group collections if provided
           if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {

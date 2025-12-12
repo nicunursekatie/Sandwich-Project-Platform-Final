@@ -19,6 +19,7 @@ export interface ParsedCollectionData {
   individualTurkey?: number;
   individualHam?: number;
   individualPbj?: number;
+  individualGeneric?: number;
   groupCollections?: Array<{
     name: string;
     count: number;
@@ -108,8 +109,20 @@ function parseDateFromText(text: string): { date: string; remainingText: string 
   return { date: todayStr, remainingText: text };
 }
 
+// Check if message contains sandwich type keywords that require AI parsing
+function hasSandwichTypeKeywords(message: string): boolean {
+  const typePattern = /\b(pbj|pb&j|peanut\s*butter|deli|ham|turkey|generic)\b/i;
+  return typePattern.test(message);
+}
+
 // Simple regex-based parser for structured messages
 function parseStructuredMessage(message: string): CollectionParseResult | null {
+  // If message contains sandwich type keywords, skip to AI parsing for accurate extraction
+  if (hasSandwichTypeKeywords(message)) {
+    logger.info(`[StructuredParser] Sandwich types detected, routing to AI parser for: "${message}"`);
+    return null; // Let AI handle the complex parsing
+  }
+
   // Format with groups: LOG <count> <host> [date], <group1> <count1>, <group2> <count2>
   // Example: "LOG 1074 Dunwoody 12/10, Willis Towers Watson 400"
   const groupMatch = message.match(/^LOG\s+(\d+)\s+(.+?)(?:\s+(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?))?\s*,\s*(.+)$/i);
