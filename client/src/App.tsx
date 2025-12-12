@@ -26,6 +26,7 @@ import SignupPage from '@/pages/signup';
 import LoginPage from '@/pages/login';
 import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
+import SetPassword from '@/pages/set-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
@@ -137,6 +138,7 @@ function Router() {
         <Route path="/signup" component={SignupPage} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/set-password" component={SetPassword} />
         <Route path="/sms-opt-in">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSOptIn />

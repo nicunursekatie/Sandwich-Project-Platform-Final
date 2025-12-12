@@ -47,6 +47,7 @@ export const users = pgTable('users', {
   permissionsModifiedBy: varchar('permissions_modified_by'),
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
+  needsPasswordSetup: boolean('needs_password_setup').default(false), // True for manually created accounts without password
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in
   lastActiveAt: timestamp('last_active_at'), // Track when user was last active (updated on API requests)
   createdAt: timestamp('created_at').defaultNow(),

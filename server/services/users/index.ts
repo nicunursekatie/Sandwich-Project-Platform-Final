@@ -2,6 +2,7 @@ import { storage } from '../../storage-wrapper';
 import { getDefaultPermissionsForRole } from '@shared/auth-utils';
 import { AuditLogger } from '../../audit-logger';
 import { logger } from '../../utils/production-safe-logger';
+import { authService } from '../auth.service';
 
 export interface IUserService {
   // User CRUD operations
@@ -36,6 +37,7 @@ export interface CreateUserData {
   firstName: string;
   lastName: string;
   role?: string;
+  password?: string;
 }
 
 export interface UserUpdateData {
@@ -114,6 +116,15 @@ export class UserService implements IUserService {
       const userRole = userData.role || 'volunteer';
       const defaultPermissions = getDefaultPermissionsForRole(userRole);
 
+      // Handle password - if provided, hash it; otherwise mark for setup
+      let hashedPassword: string | null = null;
+      let needsPasswordSetup = true;
+
+      if (userData.password && userData.password.trim().length > 0) {
+        hashedPassword = await authService.hashPassword(userData.password);
+        needsPasswordSetup = false;
+      }
+
       const newUser = await storage.createUser({
         id: userId,
         email: userData.email,
@@ -124,6 +135,8 @@ export class UserService implements IUserService {
         isActive: true,
         profileImageUrl: null,
         metadata: {},
+        password: hashedPassword,
+        needsPasswordSetup,
       });
 
       return newUser;

@@ -78,6 +78,13 @@
       "when": 1765299749453,
       "tag": "0010_add_next_action_to_events",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1765515257487,
+      "tag": "0011_add_needs_password_setup",
+      "breakpoints": true
     }
   ]
 }

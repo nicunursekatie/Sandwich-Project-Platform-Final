@@ -48,13 +48,14 @@ usersRouter.post(
   requirePermission('USERS_EDIT'),
   async (req, res, next) => {
     try {
-      const { email, firstName, lastName, role } = req.body;
+      const { email, firstName, lastName, role, password } = req.body;
 
       const newUser = await userService.createUser({
         email,
         firstName,
         lastName,
         role,
+        password,
       });
 
       res.status(201).json(newUser);

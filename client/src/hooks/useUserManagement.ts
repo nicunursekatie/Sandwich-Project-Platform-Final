@@ -91,6 +91,7 @@ export function useUserManagement() {
       firstName: string;
       lastName: string;
       role: string;
+      password?: string;
     }) => {
       return apiRequest('POST', '/api/users', userData);
     },
