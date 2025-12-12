@@ -27,6 +27,7 @@ export interface ParsedCollectionData {
     turkey?: number;
     ham?: number;
     pbj?: number;
+    generic?: number;
   }>;
   collectionDate: string; // YYYY-MM-DD
   confidence: number; // 0.0-1.0
@@ -115,11 +116,75 @@ function hasSandwichTypeKeywords(message: string): boolean {
   return typePattern.test(message);
 }
 
+// Check if message needs AI parsing (complex formats, multiple numbers, groups)
+function needsAIParsing(message: string): boolean {
+  // Multiple numbers suggest complex parsing (groups, types breakdown)
+  const numbers = message.match(/\d+/g);
+  if (numbers && numbers.length > 2) return true;
+
+  // Contains comma (likely groups)
+  if (message.includes(',')) return true;
+
+  // Sandwich types need AI
+  if (hasSandwichTypeKeywords(message)) return true;
+
+  // Contains group indicators
+  if (/\b(group|team|corp|company|inc\.|llc)\b/i.test(message)) return true;
+
+  return false;
+}
+
+// Extract a number and location from simple messages
+function parseSimpleMessage(message: string): CollectionParseResult | null {
+  // Remove common filler words to make parsing easier
+  const cleaned = message
+    .replace(/^(log|logged|made|collected|we made|we collected|just made|just collected)\s*/i, '')
+    .replace(/\s*(sandwiches?|sammies|sammiches)\s*/gi, ' ')
+    .replace(/\s*(today|this morning|this afternoon|tonight)\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Try to find a number anywhere in the message
+  const numberMatch = cleaned.match(/(\d+)/);
+  if (!numberMatch) return null;
+
+  const count = parseInt(numberMatch[1], 10);
+  if (count < 1 || count > 50000) return null; // Sanity check
+
+  // Extract the location - everything that's not the number, cleaned up
+  let location = cleaned
+    .replace(/\d+/g, '')
+    .replace(/\s*(at|from|for|@)\s*/gi, ' ')
+    .replace(/^\s*[-:,]\s*/, '')
+    .replace(/\s*[-:,]\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Apply date parsing to extract any date from the location
+  const { date, remainingText: locationWithoutDate } = parseDateFromText(location);
+  location = locationWithoutDate.trim();
+
+  // Need at least some location info
+  if (location.length < 2) return null;
+
+  return {
+    success: true,
+    data: {
+      hostName: location,
+      individualSandwiches: count,
+      collectionDate: date,
+      confidence: 0.80,
+      needsClarification: false,
+    },
+    rawMessage: message,
+  };
+}
+
 // Simple regex-based parser for structured messages
 function parseStructuredMessage(message: string): CollectionParseResult | null {
-  // If message contains sandwich type keywords, skip to AI parsing for accurate extraction
-  if (hasSandwichTypeKeywords(message)) {
-    logger.info(`[StructuredParser] Sandwich types detected, routing to AI parser for: "${message}"`);
+  // If message needs complex parsing, route to AI
+  if (needsAIParsing(message)) {
+    logger.info(`[StructuredParser] Complex message detected, routing to AI parser for: "${message}"`);
     return null; // Let AI handle the complex parsing
   }
 
@@ -131,7 +196,7 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     const hostName = groupMatch[2].trim();
     const dateStr = groupMatch[3];
     const groupsPart = groupMatch[4];
-    
+
     // Parse the date
     let collectionDate: string;
     if (dateStr) {
@@ -144,12 +209,12 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     } else {
       collectionDate = new Date().toISOString().split('T')[0];
     }
-    
+
     // Parse groups: "Willis Towers Watson 400, Another Group 200"
     const groupCollections: Array<{ name: string; count: number }> = [];
     const groupEntries = groupsPart.split(/\s*,\s*/);
     let totalGroupCount = 0;
-    
+
     for (const entry of groupEntries) {
       // Match "Group Name 123" pattern - number at end
       const entryMatch = entry.match(/^(.+?)\s+(\d+)$/);
@@ -162,7 +227,7 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
         }
       }
     }
-    
+
     if (individualCount > 0 && hostName.length >= 2) {
       logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
       return {
@@ -202,26 +267,11 @@ function parseStructuredMessage(message: string): CollectionParseResult | null {
     }
   }
 
-  // Format: <count> sandwiches at <host> [date]
-  const simpleMatch = message.match(/^(\d+)\s+(?:sandwiches?\s+)?(?:at\s+)?(.+)$/i);
-  if (simpleMatch) {
-    const count = parseInt(simpleMatch[1], 10);
-    const hostAndDate = simpleMatch[2].trim();
-    const { date, remainingText: host } = parseDateFromText(hostAndDate);
-
-    if (count > 0 && host.length >= 2) {
-      return {
-        success: true,
-        data: {
-          hostName: host,
-          individualSandwiches: count,
-          collectionDate: date,
-          confidence: 0.85,
-          needsClarification: false,
-        },
-        rawMessage: message,
-      };
-    }
+  // Try flexible simple parsing for natural messages like:
+  // "50 downtown library", "made 100 at first baptist", "75 sandwiches community center"
+  const simpleResult = parseSimpleMessage(message);
+  if (simpleResult) {
+    return simpleResult;
   }
 
   return null;
@@ -253,50 +303,73 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
       messages: [
         {
           role: 'system',
-          content: `You are a parser for sandwich collection log SMS messages. Extract structured data from natural language texts about sandwich making events.
+          content: `You are a parser for sandwich collection log SMS messages from The Sandwich Project volunteers. Your job is to understand natural language texts about sandwich making events and extract structured data.
+
+BE FLEXIBLE AND SMART - volunteers text in casual, natural ways. Accept many formats!
 
 Output JSON with these fields:
-- hostName: string (location/organization name, REQUIRED)
+- hostName: string (location/organization name, REQUIRED - this is where sandwiches were made)
 - individualSandwiches: number (TOTAL individual count - sum of all typed sandwiches, REQUIRED, minimum 1)
 - individualDeli: number (optional, deli sandwiches count)
 - individualTurkey: number (optional, turkey sandwiches count)
 - individualHam: number (optional, ham sandwiches count)
 - individualPbj: number (optional, PB&J sandwiches count)
-- individualGeneric: number (optional, generic/untyped sandwiches count)
-- groupCollections: array of {name, count, deli?, turkey?, ham?, pbj?} (optional, for group/organization breakdowns with optional type breakdowns)
-- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified)
+- individualGeneric: number (optional, generic/untyped sandwiches count - use when type not specified)
+- groupCollections: array of {name, count, deli?, turkey?, ham?, pbj?, generic?} (optional, for corporate/organization group collections separate from the host location)
+- collectionDate: string YYYY-MM-DD (interpret dates, default to ${today} if not specified)
 - confidence: number 0-1 (how confident you are in the parse)
 - needsClarification: boolean (true if message is ambiguous)
 - clarificationMessage: string (what to ask if clarification needed)
 
-Sandwich type keywords:
-- "PBJ" or "pb&j" or "peanut butter" = pbj
-- "Deli" or "deli meat" = deli
+SANDWICH TYPE KEYWORDS (case-insensitive):
+- "PBJ", "pb&j", "peanut butter", "pb" = pbj
+- "Deli", "deli meat" = deli
 - "Ham" = ham
 - "Turkey" = turkey
-- "Generic" or no type specified = generic/untyped
+- When no type is specified, it's generic/untyped
 
-Date interpretation rules:
-- "12/10" or "12-10" = December 10 of current year (${today.substring(0,4)})
+DATE INTERPRETATION:
+- "12/10" or "12-10" = December 10, ${today.substring(0,4)}
 - "yesterday" = ${new Date(Date.now() - 86400000).toISOString().split('T')[0]}
-- "last Wednesday" = most recent Wednesday before today
-- "Wednesday" = this week's Wednesday (or last if today is before Wednesday)
-- No date mentioned = use ${today}
+- Day names like "Wednesday" = most recent or current week
+- No date = default to ${today}
 
-IMPORTANT RULES:
-1. individualSandwiches = sum of ALL individual typed sandwiches (pbj + deli + ham + turkey + generic)
-2. Group counts are recorded SEPARATELY in groupCollections - do NOT add to individualSandwiches
-3. Groups can also have sandwich types (e.g., "Willis Towers Watson 500 Ham")
+UNDERSTANDING GROUP COLLECTIONS:
+- Groups come AFTER the main location, separated by comma
+- Group format: "[GroupName] [count] [optional type]"
+- Example: "500 Dunwoody, Google 200 deli" = 500 at Dunwoody + Google group with 200 deli
 
-Examples:
-"50 sandwiches at Downtown Library" → {hostName: "Downtown Library", individualSandwiches: 50, collectionDate: "${today}", confidence: 0.95, needsClarification: false}
-"LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"LOG 100 PBJ 245 Deli 400 Generic Dunwoody 12/10, Willis Towers Watson 500 Ham" → {hostName: "Dunwoody", individualSandwiches: 745, individualPbj: 100, individualDeli: 245, collectionDate: "${today.substring(0,4)}-12-10", groupCollections: [{name: "Willis Towers Watson", count: 500, ham: 500}], confidence: 0.95, needsClarification: false}
-"LOG 200 turkey 150 ham Intown 12/11, Google 200 pbj" → {hostName: "Intown", individualSandwiches: 350, individualTurkey: 200, individualHam: 150, collectionDate: "${today.substring(0,4)}-12-11", groupCollections: [{name: "Google", count: 200, pbj: 200}], confidence: 0.95, needsClarification: false}
-"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1074, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
-"made some sandwiches" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Reply: LOG [count] [location]", confidence: 0.2}
+IMPORTANT CALCULATION RULES:
+1. individualSandwiches = sum of ALL individual type counts (pbj + deli + ham + turkey + generic)
+2. If user says just "500 Dunwoody" with no types → individualSandwiches: 500, NO type breakdown needed
+3. Group collections are SEPARATE - do NOT add them to individualSandwiches
 
-If the message doesn't seem to be about logging sandwiches at all, return needsClarification: true.`,
+PARSING EXAMPLES (be this flexible!):
+
+Simple counts:
+"500 dunwoody" → {hostName: "Dunwoody", individualSandwiches: 500, confidence: 0.95}
+"made 100 at first baptist" → {hostName: "First Baptist", individualSandwiches: 100, confidence: 0.90}
+"1000 intown today" → {hostName: "Intown", individualSandwiches: 1000, collectionDate: "${today}", confidence: 0.95}
+"log 250 downtown" → {hostName: "Downtown", individualSandwiches: 250, confidence: 0.95}
+
+With sandwich types:
+"100 pbj 200 deli dunwoody" → {hostName: "Dunwoody", individualSandwiches: 300, individualPbj: 100, individualDeli: 200, confidence: 0.95}
+"dunwoody 150 pb&j and 250 deli" → {hostName: "Dunwoody", individualSandwiches: 400, individualPbj: 150, individualDeli: 250, confidence: 0.95}
+"500 - 200 pbj 300 deli - intown" → {hostName: "Intown", individualSandwiches: 500, individualPbj: 200, individualDeli: 300, confidence: 0.90}
+
+With groups (groups come after comma):
+"600 dunwoody, google 200" → {hostName: "Dunwoody", individualSandwiches: 600, groupCollections: [{name: "Google", count: 200}], confidence: 0.95}
+"1000 intown 12/10, wells fargo 300 deli" → {hostName: "Intown", individualSandwiches: 1000, collectionDate: "${today.substring(0,4)}-12-10", groupCollections: [{name: "Wells Fargo", count: 300, deli: 300}], confidence: 0.95}
+"500 pbj 300 deli dunwoody, acme corp 400 ham" → {hostName: "Dunwoody", individualSandwiches: 800, individualPbj: 500, individualDeli: 300, groupCollections: [{name: "Acme Corp", count: 400, ham: 400}], confidence: 0.95}
+
+Complex real-world examples:
+"hey! we made 745 today at dunwoody - 100 pbj, 245 deli and 400 generic. also willis towers watson brought 400 deli sandwiches" → {hostName: "Dunwoody", individualSandwiches: 745, individualPbj: 100, individualDeli: 245, individualGeneric: 400, groupCollections: [{name: "Willis Towers Watson", count: 400, deli: 400}], confidence: 0.95}
+
+Too vague (ask for clarification):
+"made sandwiches today" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Example: 500 Dunwoody", confidence: 0.2}
+"great event!" → {needsClarification: true, clarificationMessage: "To log sandwiches, include the count and location. Example: 500 Dunwoody", confidence: 0.1}
+
+If message clearly isn't about logging sandwiches, return needsClarification: true with a helpful message.`,
         },
         {
           role: 'user',
@@ -342,6 +415,7 @@ If the message doesn't seem to be about logging sandwiches at all, return needsC
         individualTurkey: parsed.individualTurkey,
         individualHam: parsed.individualHam,
         individualPbj: parsed.individualPbj,
+        individualGeneric: parsed.individualGeneric,
         groupCollections: parsed.groupCollections,
         collectionDate: parsed.collectionDate || today,
         confidence: parsed.confidence || 0.7,
@@ -398,6 +472,7 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
   if (data.individualDeli) breakdowns.push(`${data.individualDeli} deli`);
   if (data.individualTurkey) breakdowns.push(`${data.individualTurkey} turkey`);
   if (data.individualHam) breakdowns.push(`${data.individualHam} ham`);
+  if (data.individualGeneric) breakdowns.push(`${data.individualGeneric} generic`);
 
   if (breakdowns.length > 0) {
     message += `\n(${breakdowns.join(', ')})`;
@@ -412,6 +487,7 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
       if (g.deli) typeBreakdown.push(`${g.deli} deli`);
       if (g.turkey) typeBreakdown.push(`${g.turkey} turkey`);
       if (g.ham) typeBreakdown.push(`${g.ham} ham`);
+      if (g.generic) typeBreakdown.push(`${g.generic} generic`);
       if (typeBreakdown.length > 0) {
         groupStr += ` (${typeBreakdown.join(', ')})`;
       }

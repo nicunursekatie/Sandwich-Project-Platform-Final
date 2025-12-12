@@ -1115,8 +1115,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       }
     }
     // Handle natural language collection messages (AI-powered parsing)
-    // Check if message looks like a collection log (starts with a number followed by text)
-    else if (/^\d+\s+.+/i.test(Body.trim()) && Body.trim().length >= 5) {
+    // Check if message looks like it might be a sandwich collection log:
+    // - Contains a number (count)
+    // - Has some text (location name)
+    // - Or contains keywords like "sandwiches", "made", location names
+    else if (
+      (/\d+/.test(Body.trim()) && Body.trim().length >= 5) || // Has a number and some content
+      /\b(dunwoody|intown|kirkwood|ptc|downtown|first baptist|made|sandwiches?|pbj|deli|ham|turkey)\b/i.test(Body.trim()) // Contains collection keywords
+    ) {
       logger.info(`📊 Potential collection log (natural language) from ${redactedPhone}: "${Body}"`);
 
       try {
@@ -1241,7 +1247,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           // Low confidence or failed parse - send helpful message
           logger.info(`ℹ️ Low confidence or failed parse from ${redactedPhone}, showing help`);
           res.type('text/xml');
-          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To log sandwiches, text: LOG [count] [location]\nExample: LOG 50 Downtown Library\n\nText HELP for all commands.</Message></Response>`);
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Couldn't understand that. Just text:\n• 500 Dunwoody\n• 100 pbj 200 deli Intown\n\nOr add groups:\n• 500 Dunwoody, Acme 200\n\nText HELP for more.</Message></Response>`);
         }
       } catch (parseError) {
         logger.error('❌ Error parsing potential collection:', parseError);
@@ -1252,14 +1258,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] [date]\n• With types: LOG 100 PBJ 200 Deli Dunwoody 12/10\n• With groups: LOG 500 Dunwoody, Acme 200 Ham\n• IDEA [your idea]\n• STOP - Unsubscribe\n\nTypes: PBJ, Deli, Ham, Turkey, Generic\nDates: 12/10, yesterday, Wednesday</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - How to Log Sandwiches:\n\nSimple: 500 Dunwoody\nWith types: 100 pbj 200 deli Intown\nWith date: 500 Dunwoody 12/10\nWith groups: 500 Dunwoody, Acme 200\n\nIDEA [text] - Submit idea\nSTOP - Unsubscribe</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);
 
       // Send helpful response for unrecognized messages
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP Commands:\n• LOG [count] [location] - Log sandwiches\n• IDEA [text] - Submit idea\n\nExample: LOG 50 Downtown Library\n\nText HELP for more.</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - Just text the count and location!\n\nExample: 500 Dunwoody\nOr: 100 pbj 200 deli Intown\n\nText HELP for more options.</Message></Response>`);
     }
 
     // Always respond with TwiML (empty response for unrecognized messages)
