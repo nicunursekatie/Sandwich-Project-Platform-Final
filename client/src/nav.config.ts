@@ -336,6 +336,16 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
   {
+    id: 'recipient-map',
+    label: 'Recipient Map',
+    icon: MapPin,
+    href: 'recipient-map',
+    permission: PERMISSIONS.NAV_RECIPIENTS,
+    group: 'operations',
+    parentId: 'tsp-network',
+    isSubItem: true,
+  },
+  {
     id: 'groups-catalog',
     label: 'Groups Catalog',
     icon: Building,

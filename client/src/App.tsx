@@ -420,6 +420,9 @@ function Router() {
         <Route path="/event-map">
           {() => <Dashboard initialSection="event-map" />}
         </Route>
+        <Route path="/recipient-map">
+          {() => <Dashboard initialSection="recipient-map" />}
+        </Route>
         <Route path="/driver-planning">
           {() => <Dashboard initialSection="driver-planning" />}
         </Route>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -244,6 +245,26 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const { resolveUserName } = useEventAssignments();
   const { trackEvent, trackButtonClick } = useAnalytics();
   const isMobile = useIsMobile();
+
+  // Fetch recipients for displaying assigned recipient names
+  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/recipients'],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Resolve recipient ID to name
+  const resolveRecipientName = (recipientId: string): string => {
+    if (!recipientId) return '';
+
+    // Handle prefixed format like "recipient:5"
+    const [prefix, id] = recipientId.includes(':') ? recipientId.split(':') : ['', recipientId];
+    const numId = parseInt(id, 10);
+
+    if (isNaN(numId)) return recipientId;
+
+    const recipient = recipients.find(r => r.id === numId);
+    return recipient?.name || `Recipient ${numId}`;
+  };
 
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -1135,6 +1156,22 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       },
     },
+    // 4b. Assigned Recipients
+    {
+      id: 'recipients',
+      label: 'Recipients',
+      width: '180px',
+      hideOnMobile: true,
+      render: (event) => {
+        if (!event.assignedRecipientIds || event.assignedRecipientIds.length === 0) {
+          return '';
+        }
+        const names = event.assignedRecipientIds
+          .map(id => resolveRecipientName(id))
+          .filter(name => name && name !== 'Loading...');
+        return names.join(', ') || '';
+      },
+    },
     // 5. Driver/speaker/volunteer need (only show unfilled positions)
     {
       id: 'volunteersNeeded',
@@ -1365,7 +1402,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return '';
       },
     },
-  ], [resolveUserName]);
+  ], [resolveUserName, resolveRecipientName, recipients]);
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {

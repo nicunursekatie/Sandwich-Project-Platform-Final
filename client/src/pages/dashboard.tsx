@@ -130,6 +130,7 @@ const TeamAvailability = lazyWithRetry(() => import('@/pages/team-availability')
 const GoogleCalendarAvailability = lazyWithRetry(() => import('@/pages/google-calendar-availability'));
 const RouteMapView = lazyWithRetry(() => import('@/pages/route-map'));
 const EventMapView = lazyWithRetry(() => import('@/pages/event-map'));
+const RecipientMapView = lazyWithRetry(() => import('@/pages/recipient-map'));
 const Help = lazyWithRetry(() => import('@/pages/Help'));
 const ExpensesPage = lazyWithRetry(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
@@ -395,6 +396,8 @@ export default function Dashboard({
         return <RouteMapView />;
       case 'event-map':
         return <EventMapView />;
+      case 'recipient-map':
+        return <RecipientMapView />;
       case 'driver-planning':
         return <DriverPlanningDashboard />;
       case 'recipients':
