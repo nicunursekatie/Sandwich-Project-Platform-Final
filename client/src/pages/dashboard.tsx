@@ -59,7 +59,6 @@ import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
-import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
 import { TextIdeaAnnouncementModal } from '@/components/text-idea-announcement-modal';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
@@ -588,7 +587,6 @@ export default function Dashboard({
     <>
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
-      <SMSAnnouncementModal />
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />
 
