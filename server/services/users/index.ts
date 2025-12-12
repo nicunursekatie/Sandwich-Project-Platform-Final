@@ -250,7 +250,9 @@ export class UserService implements IUserService {
         throw new Error(passwordValidation.errors.join(', '));
       }
 
-      await storage.setUserPassword(id, password);
+      // Hash the password with bcrypt before storing
+      const hashedPassword = await authService.hashPassword(password);
+      await storage.setUserPassword(id, hashedPassword);
     } catch (error) {
       logger.error('Error setting user password:', error);
       throw error;
