@@ -424,6 +424,7 @@ export default function DriverPlanningDashboard() {
   const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
+  const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -580,8 +581,10 @@ export default function DriverPlanningDashboard() {
         // Must have coordinates
         if (!event.latitude || !event.longitude) return false;
 
-        // Must be scheduled status
-        if (event.status !== 'scheduled') return false;
+        // Check status - scheduled always included, pending/new_request when toggled
+        const isScheduled = event.status === 'scheduled';
+        const isPendingOrNew = event.status === 'pending' || event.status === 'new_request';
+        if (!isScheduled && !(showPendingEvents && isPendingOrNew)) return false;
 
         // Must have a date
         const dateStr = event.scheduledEventDate || event.desiredEventDate;
@@ -595,7 +598,7 @@ export default function DriverPlanningDashboard() {
         const dateB = parseLocalDate(b.scheduledEventDate || b.desiredEventDate!);
         return dateA.getTime() - dateB.getTime();
       });
-  }, [allEvents, weeksAhead]);
+  }, [allEvents, weeksAhead, showPendingEvents]);
 
   // Filter events based on staffing needs toggle
   const events = useMemo(() => {
@@ -909,6 +912,15 @@ export default function DriverPlanningDashboard() {
                   {unmetStaffingCount}
                 </Badge>
               )}
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPendingEvents}
+                onChange={(e) => setShowPendingEvents(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Include pending/new requests</span>
             </label>
           </div>
           <ScrollArea className="flex-1">
@@ -1895,9 +1907,9 @@ export default function DriverPlanningDashboard() {
               </div>
             </button>
 
-            {/* Filter Toggle */}
+            {/* Filter Toggles */}
             {!mobileEventsCollapsed && (
-              <div className="px-3 py-2 border-b bg-gray-50">
+              <div className="px-3 py-2 border-b bg-gray-50 space-y-2">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
                     type="checkbox"
@@ -1906,6 +1918,15 @@ export default function DriverPlanningDashboard() {
                     className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
                   />
                   <span className="text-gray-600">Only show events needing drivers</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPendingEvents}
+                    onChange={(e) => setShowPendingEvents(e.target.checked)}
+                    className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+                  />
+                  <span className="text-gray-600">Include pending/new requests</span>
                 </label>
               </div>
             )}
