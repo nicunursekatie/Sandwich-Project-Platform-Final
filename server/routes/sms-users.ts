@@ -1227,7 +1227,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] - Log sandwiches\n• LOG [count] [location] [date] - With specific date\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe\n\nDate formats: 12/10, yesterday, Wednesday, last Wednesday\n\nExample: LOG 50 Downtown Library 12/10</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] [date] - Log sandwiches\n• Add groups with comma: LOG 500 Dunwoody 12/10, Acme Corp 200\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe\n\nDate formats: 12/10, yesterday, Wednesday\n\nExample: LOG 1074 Dunwoody 12/10, Willis Towers 400</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);

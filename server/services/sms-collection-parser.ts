@@ -110,6 +110,63 @@ function parseDateFromText(text: string): { date: string; remainingText: string 
 
 // Simple regex-based parser for structured messages
 function parseStructuredMessage(message: string): CollectionParseResult | null {
+  // Format with groups: LOG <count> <host> [date], <group1> <count1>, <group2> <count2>
+  // Example: "LOG 1074 Dunwoody 12/10, Willis Towers Watson 400"
+  const groupMatch = message.match(/^LOG\s+(\d+)\s+(.+?)(?:\s+(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?))?\s*,\s*(.+)$/i);
+  if (groupMatch) {
+    const individualCount = parseInt(groupMatch[1], 10);
+    const hostName = groupMatch[2].trim();
+    const dateStr = groupMatch[3];
+    const groupsPart = groupMatch[4];
+    
+    // Parse the date
+    let collectionDate: string;
+    if (dateStr) {
+      const parts = dateStr.split(/[\/\-]/);
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      let year = parts[2] ? parseInt(parts[2], 10) : new Date().getFullYear();
+      if (year < 100) year += 2000;
+      collectionDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    } else {
+      collectionDate = new Date().toISOString().split('T')[0];
+    }
+    
+    // Parse groups: "Willis Towers Watson 400, Another Group 200"
+    const groupCollections: Array<{ name: string; count: number }> = [];
+    const groupEntries = groupsPart.split(/\s*,\s*/);
+    let totalGroupCount = 0;
+    
+    for (const entry of groupEntries) {
+      // Match "Group Name 123" pattern - number at end
+      const entryMatch = entry.match(/^(.+?)\s+(\d+)$/);
+      if (entryMatch) {
+        const groupName = entryMatch[1].trim();
+        const groupCount = parseInt(entryMatch[2], 10);
+        if (groupName && groupCount > 0) {
+          groupCollections.push({ name: groupName, count: groupCount });
+          totalGroupCount += groupCount;
+        }
+      }
+    }
+    
+    if (individualCount > 0 && hostName.length >= 2) {
+      logger.info(`[StructuredParser] Parsed with groups: ${individualCount} individual + ${totalGroupCount} from ${groupCollections.length} groups at ${hostName} on ${collectionDate}`);
+      return {
+        success: true,
+        data: {
+          hostName,
+          individualSandwiches: individualCount + totalGroupCount, // Total includes groups
+          groupCollections: groupCollections.length > 0 ? groupCollections : undefined,
+          collectionDate,
+          confidence: 0.95,
+          needsClarification: false,
+        },
+        rawMessage: message,
+      };
+    }
+  }
+
   // Format: LOG <count> <host> [date]
   const logMatch = message.match(/^LOG\s+(\d+)\s+(?:at\s+)?(.+)$/i);
   if (logMatch) {
@@ -187,29 +244,32 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
 
 Output JSON with these fields:
 - hostName: string (location/organization name, REQUIRED)
-- individualSandwiches: number (total sandwiches made, REQUIRED, minimum 1)
+- individualSandwiches: number (total sandwiches made INCLUDING group totals, REQUIRED, minimum 1)
 - individualDeli: number (optional, deli sandwiches)
 - individualTurkey: number (optional, turkey sandwiches)
 - individualHam: number (optional, ham sandwiches)
 - individualPbj: number (optional, PB&J sandwiches)
-- groupCollections: array of {name, count, deli?, turkey?, ham?, pbj?} (optional, for group breakdowns)
-- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified)
+- groupCollections: array of {name, count} (optional, for group/organization breakdowns - these are companies or groups that contributed sandwiches)
+- collectionDate: string YYYY-MM-DD (interpret dates like "12/10", "yesterday", "last Wednesday", "Wednesday" - default to ${today} if not specified. ALL groups inherit the same date unless explicitly stated otherwise)
 - confidence: number 0-1 (how confident you are in the parse)
 - needsClarification: boolean (true if message is ambiguous)
 - clarificationMessage: string (what to ask if clarification needed)
 
 Date interpretation rules:
-- "12/10" or "12-10" = December 10 of current year
+- "12/10" or "12-10" = December 10 of current year (${today.substring(0,4)})
 - "yesterday" = ${new Date(Date.now() - 86400000).toISOString().split('T')[0]}
 - "last Wednesday" = most recent Wednesday before today
 - "Wednesday" = this week's Wednesday (or last if today is before Wednesday)
 - No date mentioned = use ${today}
 
+IMPORTANT: When groups are listed with counts, individualSandwiches should be the TOTAL (base count + all group counts combined).
+
 Examples:
 "50 sandwiches at Downtown Library" → {hostName: "Downtown Library", individualSandwiches: 50, collectionDate: "${today}", confidence: 0.95, needsClarification: false}
-"LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,5)}12-10", confidence: 0.95, needsClarification: false}
+"LOG 30 First Baptist 12/10" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
+"LOG 1074 Dunwoody 12/10, Willis Towers Watson 400" → {hostName: "Dunwoody", individualSandwiches: 1474, groupCollections: [{name: "Willis Towers Watson", count: 400}], collectionDate: "${today.substring(0,4)}-12-10", confidence: 0.95, needsClarification: false}
+"LOG 500 Intown 12/11, Google 200, Delta 150" → {hostName: "Intown", individualSandwiches: 850, groupCollections: [{name: "Google", count: 200}, {name: "Delta", count: 150}], collectionDate: "${today.substring(0,4)}-12-11", confidence: 0.95, needsClarification: false}
 "Made 30 yesterday at First Baptist" → {hostName: "First Baptist", individualSandwiches: 30, collectionDate: "${new Date(Date.now() - 86400000).toISOString().split('T')[0]}", confidence: 0.9, needsClarification: false}
-"Youth group made 25, seniors made 15 at Community Center" → {hostName: "Community Center", individualSandwiches: 40, groupCollections: [{name: "Youth group", count: 25}, {name: "Seniors", count: 15}], collectionDate: "${today}", confidence: 0.85, needsClarification: false}
 "made some sandwiches" → {needsClarification: true, clarificationMessage: "How many sandwiches and where? Reply: LOG [count] [location]", confidence: 0.2}
 
 If the message doesn't seem to be about logging sandwiches at all, return needsClarification: true.`,
@@ -304,11 +364,17 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
   const today = new Date().toISOString().split('T')[0];
   if (data.collectionDate && data.collectionDate !== today) {
     const dateObj = new Date(data.collectionDate + 'T12:00:00');
-    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
     message += ` for ${dateStr}`;
   }
 
-  // Add breakdown if available
+  // Add group info if available (show prominently)
+  if (data.groupCollections && data.groupCollections.length > 0) {
+    const groups = data.groupCollections.map(g => `${g.name}: ${g.count}`).join(', ');
+    message += `\nGroups: ${groups}`;
+  }
+
+  // Add sandwich type breakdown if available
   const breakdowns: string[] = [];
   if (data.individualDeli) breakdowns.push(`${data.individualDeli} deli`);
   if (data.individualTurkey) breakdowns.push(`${data.individualTurkey} turkey`);
@@ -317,12 +383,6 @@ export function generateConfirmationMessage(data: ParsedCollectionData, matchedH
 
   if (breakdowns.length > 0) {
     message += ` (${breakdowns.join(', ')})`;
-  }
-
-  // Add group info if available
-  if (data.groupCollections && data.groupCollections.length > 0) {
-    const groups = data.groupCollections.map(g => `${g.name}: ${g.count}`).join(', ');
-    message += `\nGroups: ${groups}`;
   }
 
   message += '\n\n🥪 Thanks for making sandwiches!';
