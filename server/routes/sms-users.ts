@@ -34,6 +34,39 @@ const smsOptInSchema = z.object({
   category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
 
+// Helper to normalize phone numbers for comparison (removes non-digits, handles +1 prefix)
+function normalizePhone(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  // Handle US numbers with or without country code
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return '+1' + digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return '+1' + digits;
+  }
+  return '+' + digits;
+}
+
+// Find user by phone number - checks both smsConsent.phoneNumber AND users.phoneNumber
+function findUserByPhone(users: any[], incomingPhone: string): any | undefined {
+  const normalizedIncoming = normalizePhone(incomingPhone);
+  
+  return users.find((user) => {
+    // Check SMS consent phone first
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+    if (smsConsent.phoneNumber && normalizePhone(smsConsent.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    // Fall back to user's direct phoneNumber field
+    if (user.phoneNumber && normalizePhone(user.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    return false;
+  });
+}
+
 const smsConfirmationSchema = z.object({
   verificationCode: z.string().min(1, 'Verification code is required'),
 });
@@ -863,11 +896,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       try {
         // Find user by phone number to attribute the idea
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Ensure createdByName is never empty (required field)
         // Format: "Name (via SMS)" or "SMS: ***1234" if no user found
@@ -965,11 +995,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         // Find user by phone number to attribute the collection
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Try to match host to existing host in database (fuzzy matching)
         const allHosts = await storage.getAllHosts();
@@ -1100,13 +1127,9 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           const parsedData = parseResult.data;
           logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
 
-          // Find user by phone number
+          // Find user by phone number - checks both SMS consent phone AND user's stored phone number
           const allUsers = await storage.getAllUsers();
-          const senderUser = allUsers.find((user) => {
-            const metadata = user.metadata as any || {};
-            const smsConsent = metadata.smsConsent || {};
-            return smsConsent.phoneNumber === phoneNumber;
-          });
+          const senderUser = findUserByPhone(allUsers, phoneNumber);
 
           // Try to match host to existing host in database (fuzzy matching)
           const allHosts = await storage.getAllHosts();
