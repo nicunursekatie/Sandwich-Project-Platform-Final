@@ -46,8 +46,8 @@ function parseDateFromText(text: string): { date: string; remainingText: string 
   const todayStr = today.toISOString().split('T')[0];
   
   // Check for explicit date patterns at the end of the message
-  // Format: MM/DD or MM-DD or MM/DD/YY or MM/DD/YYYY
-  const dateMatch = text.match(/\s+(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/i);
+  // Format: MM/DD or MM-DD or MM/DD/YY or MM/DD/YYYY (with or without leading space)
+  const dateMatch = text.match(/\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/i);
   if (dateMatch) {
     const month = parseInt(dateMatch[1], 10);
     const day = parseInt(dateMatch[2], 10);
@@ -56,7 +56,9 @@ function parseDateFromText(text: string): { date: string; remainingText: string 
     
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      return { date: dateStr, remainingText: text.replace(dateMatch[0], '').trim() };
+      const remaining = text.substring(0, text.length - dateMatch[0].length).trim();
+      logger.info(`[DateParser] Extracted date ${dateStr} from "${text}", remaining: "${remaining}"`);
+      return { date: dateStr, remainingText: remaining };
     }
   }
   
