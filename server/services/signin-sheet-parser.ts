@@ -64,7 +64,7 @@ async function fileToBase64(filePath: string): Promise<{ base64: string; mediaTy
       mediaType = 'image/jpeg';
       break;
     default:
-      // Default to jpeg for unknown types
+      // Default to jpeg for unknown or unsupported file extensions
       mediaType = 'image/jpeg';
   }
 

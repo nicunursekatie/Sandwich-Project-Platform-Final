@@ -47,6 +47,7 @@ interface EditableEntry {
 type ScanStage = 'upload' | 'scanning' | 'review' | 'saving' | 'success';
 
 export default function PhotoScanner() {
+  const [, navigate] = useLocation();
   const [stage, setStage] = useState<ScanStage>('upload');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -155,15 +156,13 @@ export default function PhotoScanner() {
   });
 
   const handleFileSelect = useCallback((file: File) => {
-    // Validate file type
-    // Note: HEIC/HEIF are only supported via direct file upload to /scan endpoint
-    // Frontend uses /scan-base64 which only accepts JPEG, PNG, WebP since browsers
-    // automatically convert HEIC to JPEG when using FileReader
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    // Validate file type - must match Claude's vision API supported formats
+    // Note: HEIC/HEIF not included because browsers auto-convert to JPEG
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.type)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload a JPEG, PNG, or WebP image',
+        description: 'Please upload a JPEG, PNG, WebP, or GIF image',
         variant: 'destructive',
       });
       return;
@@ -375,7 +374,7 @@ export default function PhotoScanner() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                 capture="environment"
                 onChange={handleInputChange}
                 className="hidden"
@@ -612,7 +611,7 @@ export default function PhotoScanner() {
                     Scan Another Sheet
                   </Button>
                   <Button
-                    onClick={() => navigate('/sandwich-collections')}
+                    onClick={() => navigate('/collections')}
                     className="bg-brand-primary hover:bg-brand-primary-dark"
                   >
                     View Collections

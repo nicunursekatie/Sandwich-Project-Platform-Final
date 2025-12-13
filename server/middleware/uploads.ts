@@ -223,16 +223,17 @@ export const signInSheetUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit for high-res photos
   fileFilter: (req, file, cb) => {
     // Allow common image types that mobile phones produce
+    // Note: HEIC/HEIF not included because Claude's vision API doesn't support them
+    // Browsers typically auto-convert HEIC to JPEG when users select files
     const allowedTypes = [
       'image/jpeg',
       'image/jpg',
       'image/png',
       'image/webp',
-      'image/heic',
-      'image/heif',
+      'image/gif',
     ];
 
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
     const hasValidType = allowedTypes.includes(file.mimetype);
     const hasValidExtension = allowedExtensions.some((ext) =>
       file.originalname.toLowerCase().endsWith(ext)
@@ -241,7 +242,7 @@ export const signInSheetUpload = multer({
     if (hasValidType || hasValidExtension) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files (JPG, PNG, WEBP, HEIC) are allowed for sign-in sheet photos'));
+      cb(new Error('Only image files (JPG, PNG, WEBP, GIF) are allowed for sign-in sheet photos'));
     }
   },
 });
