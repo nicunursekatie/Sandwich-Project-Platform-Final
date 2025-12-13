@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,16 @@ export default function PhotoScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+
+  // Cleanup blob URL on unmount or when it changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // Get list of known hosts for location matching
   const { data: hostsData } = useQuery<{ success: boolean; hosts: Array<{ id: number; name: string }> }>({
@@ -177,7 +188,7 @@ export default function PhotoScanner() {
       });
     };
     reader.readAsDataURL(file);
-  }, [scanMutation, toast, contextHint]);
+  }, [scanMutation, toast]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -259,6 +270,9 @@ export default function PhotoScanner() {
 
   const handleReset = () => {
     setStage('upload');
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(null);
     setScanResult(null);
     setEditableEntries([]);
@@ -471,7 +485,7 @@ export default function PhotoScanner() {
                               <Input
                                 type="number"
                                 value={entry.sandwichCount || ''}
-                                onChange={(e) => updateEntry(index, 'sandwichCount', parseInt(e.target.value) || 0)}
+                                onChange={(e) => updateEntry(index, 'sandwichCount', parseInt(e.target.value, 10) || 0)}
                                 placeholder="0"
                                 className="h-10"
                               />
@@ -595,7 +609,7 @@ export default function PhotoScanner() {
                     Scan Another Sheet
                   </Button>
                   <Button
-                    onClick={() => window.location.href = '/sandwich-collections'}
+                    onClick={() => navigate('/sandwich-collections')}
                     className="bg-brand-primary hover:bg-brand-primary-dark"
                   >
                     View Collections
