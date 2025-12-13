@@ -75,7 +75,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
 
@@ -88,7 +88,6 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing color)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
   const isWithin7Days = (() => {
     if (!displayDate) return false;
     // Parse as local date to avoid timezone issues
@@ -250,7 +249,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                   </div>
                 )}
                 {/* Show van driver needed when van driver is needed and no regular drivers are needed */}
-                {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
+                {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
                   <div className="flex items-center gap-1">
                     <Car className="w-3 h-3 text-[#236383]" />
                     <span className={staffingNeededColor}>
@@ -410,6 +409,16 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                           {resolveUserName(id)}
                         </Badge>
                       ))}
+                      {request.assignedVanDriverId && (
+                        <Badge variant="secondary" className="mr-1 bg-blue-100 text-blue-900 border-blue-300">
+                          {resolveUserName(request.assignedVanDriverId)} (Van)
+                        </Badge>
+                      )}
+                      {request.isDhlVan && (
+                        <Badge variant="secondary" className="mr-1 bg-amber-100 text-amber-900 border-amber-300">
+                          DHL Van
+                        </Badge>
+                      )}
                       {driverAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
                     </div>
                   )}

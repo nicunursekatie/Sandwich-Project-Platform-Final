@@ -91,6 +91,7 @@ router.get('/', async (req, res) => {
         selfTransport: eventRequests.selfTransport,
         vanDriverNeeded: eventRequests.vanDriverNeeded,
         assignedVanDriverId: eventRequests.assignedVanDriverId,
+        isDhlVan: eventRequests.isDhlVan,
         assignedRecipientIds: eventRequests.assignedRecipientIds,
         recipientAllocations: eventRequests.recipientAllocations,
       })

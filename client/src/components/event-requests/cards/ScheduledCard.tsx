@@ -493,7 +493,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   // Calculate staffing status
   const driverAssigned =
     parsePostgresArray(request.assignedDriverIds).length +
-    (request.assignedVanDriverId ? 1 : 0);
+    (request.assignedVanDriverId ? 1 : 0) +
+    (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(
     request.assignedVolunteerIds
@@ -1001,7 +1002,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </>
                 )}
 
-                {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
                   <Badge variant="outline" className={`${isWithin7Days ? 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30' : 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'} font-medium`}>
                     <Car className="w-3 h-3 mr-1" />
                     Van Driver Needed
@@ -1563,6 +1564,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <X className="w-3 h-3" />
                         </Button>
                       )}
+                    </Badge>
+                  )}
+                  {request.isDhlVan && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300 text-sm px-3 py-1.5 font-medium">
+                      DHL Van
                     </Badge>
                   )}
                   {parsePostgresArray(request.assignedDriverIds).map((driverId) => {

@@ -1838,6 +1838,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       driversList.push({ id: vanDriverIdStr, name: vanDriverName });
     }
 
+    if (request.isDhlVan) {
+      driversList.push({ id: 'dhl-van', name: 'DHL Van' });
+    }
+
     return driversList;
   };
 

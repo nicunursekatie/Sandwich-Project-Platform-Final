@@ -253,6 +253,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
+  const toggleDhlVan = (value: boolean) => {
+    const payload: Record<string, unknown> = { isDhlVan: value };
+    if (value) {
+      payload.vanDriverNeeded = true;
+      payload.assignedVanDriverId = null;
+    }
+    updateFieldsMutation.mutate(payload);
+  };
+
   // Fetch data for recipient resolution
   const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
     id: number;
@@ -392,7 +401,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
@@ -574,7 +583,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
       // Determine van booked status with AM/PM based on event start time
       let vanBookedStatus = '';
-      if (request.assignedVanDriverId || request.customVanDriverName) {
+      if (request.isDhlVan) {
+        vanBookedStatus = 'DHL Van';
+      } else if (request.assignedVanDriverId || request.customVanDriverName) {
         // Van is booked - determine AM/PM/All Day from event start time
         if (request.eventStartTime) {
           // Parse time string (could be "14:00", "2:00 PM", etc.)
@@ -847,7 +858,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
                       </Badge>
                     )}
-                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && (
+                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
                       <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
                         <Car className="w-3 h-3 mr-1" />
                         Van
@@ -866,7 +877,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </>
                 )}
 
-                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && (
+                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
                   <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
                     <Car className="w-3 h-3 mr-1" />
                     Van
@@ -876,6 +887,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {request.assignedVanDriverId && (
                   <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
                     🚐 Van
+                  </Badge>
+                )}
+
+                {request.isDhlVan && (
+                  <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-medium">
+                    🚚 DHL Van
                   </Badge>
                 )}
               </>
@@ -1741,10 +1758,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           <Car className="w-5 h-5" />
                           {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
                         </span>
-                        {canEdit && driverNeeded > 0 && (
-                          <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
-                            <UserPlus className="w-3 h-3" aria-hidden="true" />
-                          </Button>
+                        {canEdit && (
+                          <div className="flex items-center gap-2">
+                            {driverNeeded > 0 && (
+                              <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
+                                <UserPlus className="w-3 h-3" aria-hidden="true" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={request.isDhlVan ? 'secondary' : 'outline'}
+                              className="h-7 px-3"
+                              onClick={() => toggleDhlVan(!request.isDhlVan)}
+                            >
+                              {request.isDhlVan ? 'Remove DHL Van' : 'Mark DHL Van'}
+                            </Button>
+                          </div>
                         )}
                       </>
                     )}
@@ -1775,6 +1804,23 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               size="sm"
                               variant="ghost"
                               onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {request.isDhlVan && (
+                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
+                            DHL Van 🚚
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleDhlVan(false)}
                               className="h-5 w-5 p-0 text-red-600 shrink-0"
                             >
                               <X className="w-3 h-3" />

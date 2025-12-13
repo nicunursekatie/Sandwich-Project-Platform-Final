@@ -38,7 +38,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
     // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
     const driversNeededCount = request.driversNeeded ?? 0;
-    const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0);
+    const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
     const needsDriver = driversNeededCount > driversAssignedCount;
 
     return { needsSpeaker, needsVolunteer, needsDriver };
@@ -463,7 +463,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                             <span className="font-semibold text-lg">
                               {[
                                 ...(request.assignedDriverIds || []).map(id => resolveUserName(id)),
-                                ...(request.assignedVanDriverId ? [resolveUserName(request.assignedVanDriverId) + ' (Van)'] : [])
+                        ...(request.assignedVanDriverId ? [resolveUserName(request.assignedVanDriverId) + ' (Van)'] : []),
+                        ...(request.isDhlVan ? ['DHL Van'] : [])
                               ].join(', ')}
                             </span>
                           </div>

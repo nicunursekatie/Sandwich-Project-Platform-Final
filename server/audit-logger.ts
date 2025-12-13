@@ -127,6 +127,7 @@ export class AuditLogger {
     assignedVanDriverId: 'Assigned Van Driver',
     customVanDriverName: 'Custom Van Driver',
     vanDriverNotes: 'Van Driver Notes',
+    isDhlVan: 'DHL Van',
 
     // Follow-up completion
     followUpOneDayCompleted: '1-Day Follow-up Completed',

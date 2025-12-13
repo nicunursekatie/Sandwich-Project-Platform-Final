@@ -30,7 +30,7 @@ const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
   const volunteersNeeded = Math.max(0, volunteersNeededCount - volunteersAssignedCount);
 
   const driversNeededCount = request.driversNeeded ?? 0;
-  const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0);
+  const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const needsDriver = driversNeededCount > driversAssignedCount;
   const driversNeeded = Math.max(0, driversNeededCount - driversAssignedCount);
 

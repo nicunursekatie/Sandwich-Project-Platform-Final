@@ -112,6 +112,7 @@ interface EventMapData {
   selfTransport: boolean | null;
   vanDriverNeeded: boolean | null;
   assignedVanDriverId: string | null;
+  isDhlVan?: boolean | null;
 }
 
 interface Driver {
@@ -635,7 +636,7 @@ export default function DriverPlanningDashboard() {
       
       // Only consider events with explicit driver requirements
       const driversNeeded = event.driversNeeded || 0;
-      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId;
+      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
       
       // If no driver requirement configured, don't show as needing drivers
       if (driversNeeded === 0 && !vanDriverNeeded) return false;
@@ -653,7 +654,7 @@ export default function DriverPlanningDashboard() {
       
       // Only count events with explicit driver requirements
       const driversNeeded = event.driversNeeded || 0;
-      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId;
+      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
       
       if (driversNeeded === 0 && !vanDriverNeeded) return false;
       
@@ -1015,12 +1016,14 @@ export default function DriverPlanningDashboard() {
                           </Badge>
                         ) : hasDriverRequirement ? (
                           <Badge
-                            variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                            variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
                             className="text-xs"
                           >
                             <Truck className="w-3 h-3 mr-1" />
                             {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                            {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van ✓' : ' + Van needed')}
+                            {event.vanDriverNeeded && (
+                              event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van ✓' : ' + Van needed')
+                            )}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-gray-500">
@@ -1535,11 +1538,11 @@ export default function DriverPlanningDashboard() {
                         </Badge>
                       ) : hasDriverRequirement ? (
                         <Badge
-                          variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                          variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
                           className="text-[10px] px-1 py-0"
                         >
                           {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded}
-                          {event.vanDriverNeeded && (event.assignedVanDriverId ? '+Van' : '+Van!')}
+                          {event.vanDriverNeeded && (event.isDhlVan ? '+DHL' : (event.assignedVanDriverId ? '+Van' : '+Van!'))}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 text-gray-400">
@@ -1898,11 +1901,11 @@ export default function DriverPlanningDashboard() {
                       <Badge variant="secondary" className="text-[10px] px-1.5">Self</Badge>
                     ) : (selectedEvent.driversNeeded || 0) > 0 || selectedEvent.vanDriverNeeded ? (
                       <Badge
-                        variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 0) && (!selectedEvent.vanDriverNeeded || selectedEvent.assignedVanDriverId) ? 'default' : 'destructive'}
+                        variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 0) && (!selectedEvent.vanDriverNeeded || selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan) ? 'default' : 'destructive'}
                         className="text-[10px] px-1.5"
                       >
                         {selectedEvent.assignedDriverIds?.length || 0}{(selectedEvent.tentativeDriverIds?.length || 0) > 0 && <span className="text-amber-300">+{selectedEvent.tentativeDriverIds?.length}?</span>}/{selectedEvent.driversNeeded || 0}
-                        {selectedEvent.vanDriverNeeded && (selectedEvent.assignedVanDriverId ? '+Van' : '+Van!')}
+                        {selectedEvent.vanDriverNeeded && (selectedEvent.isDhlVan ? '+DHL' : (selectedEvent.assignedVanDriverId ? '+Van' : '+Van!'))}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-[10px] px-1.5 text-gray-400">No req</Badge>
@@ -2047,12 +2050,14 @@ export default function DriverPlanningDashboard() {
                               </Badge>
                             ) : hasDriverRequirement ? (
                               <Badge
-                                variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId) ? 'default' : 'destructive'}
+                                variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
                                 className="text-xs px-2 py-0.5"
                               >
                                 <Truck className="w-3.5 h-3.5 mr-1" />
                                 {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                                {event.vanDriverNeeded && (event.assignedVanDriverId ? ' + Van' : ' + Van needed')}
+                                {event.vanDriverNeeded && (
+                                  event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van' : ' + Van needed')
+                                )}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">

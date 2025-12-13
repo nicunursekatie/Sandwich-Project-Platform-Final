@@ -1,1 +1,0 @@
-ALTER TABLE "event_requests" ADD COLUMN "tentative_driver_ids" text[];

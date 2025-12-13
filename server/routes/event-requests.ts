@@ -1868,7 +1868,11 @@ router.patch(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const hasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const usesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const hasAssignedVanDriver = usesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const totalAssignedDrivers = assignedRegularDrivers + (hasAssignedVanDriver ? 1 : 0);
@@ -2185,6 +2189,7 @@ router.put(
         'hasRefrigeration',
         'volunteersNeeded',
         'vanDriverNeeded',
+        'isDhlVan',
         'isConfirmed',
         'addedToOfficialSheet',
       ];
@@ -2198,6 +2203,16 @@ router.put(
           logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
         }
       });
+
+      // Keep van-related flags in sync when transport changes
+      if (processedUpdates.selfTransport === true) {
+        processedUpdates.vanDriverNeeded = false;
+        processedUpdates.assignedVanDriverId = null;
+        processedUpdates.isDhlVan = false;
+      }
+      if (processedUpdates.vanDriverNeeded === false) {
+        processedUpdates.isDhlVan = false;
+      }
 
       // Process comprehensive scheduling data if status is scheduled
       if (processedUpdates.status === 'scheduled') {
@@ -2257,7 +2272,11 @@ router.put(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const putHasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const putUsesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const putHasAssignedVanDriver = putUsesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const putTotalAssignedDrivers = putAssignedRegularDrivers + (putHasAssignedVanDriver ? 1 : 0);
@@ -2270,7 +2289,7 @@ router.put(
       }
       
       // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
-      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
+      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined || processedUpdates.isDhlVan !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
         
         if (putTotalAssignedDrivers > currentDriversNeeded) {
@@ -2942,6 +2961,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       assignedVanDriverId,
       customVanDriverName,
       vanDriverNotes,
+      isDhlVan,
     } = req.body;
 
     // Validate that the event exists first
@@ -2976,12 +2996,23 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.customVanDriverName = customVanDriverName;
     if (vanDriverNotes !== undefined)
       updateData.vanDriverNotes = vanDriverNotes;
+    if (isDhlVan !== undefined)
+      updateData.isDhlVan = !!isDhlVan;
+    if (vanDriverNeeded === false) {
+      updateData.isDhlVan = false;
+      if (assignedVanDriverId === undefined) {
+        updateData.assignedVanDriverId = null;
+      }
+    }
 
     // Validate and auto-adjust driversNeeded based on assignments
     const regularDriverCount = Array.isArray(assignedDriverIds) ? assignedDriverIds.length : 0;
     
     // Check if van driver is assigned (either being set now or already exists)
-    const hasVanDriver = (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
+    const dhlVan =
+      isDhlVan !== undefined ? !!isDhlVan : (existingEvent as any).isDhlVan === true;
+    const hasVanDriver = dhlVan ||
+      (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
       || (assignedVanDriverId === undefined && existingEvent.assignedVanDriverId !== null && existingEvent.assignedVanDriverId !== '');
     
     const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);

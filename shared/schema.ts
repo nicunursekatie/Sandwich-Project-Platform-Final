@@ -2151,6 +2151,7 @@ export const eventRequests = pgTable(
     assignedVanDriverId: text('assigned_van_driver_id'), // Van driver ID from database
     customVanDriverName: text('custom_van_driver_name'), // Custom van driver name (text entry)
     vanDriverNotes: text('van_driver_notes'), // Special notes for van driver
+    isDhlVan: boolean('is_dhl_van').notNull().default(false), // Flag when DHL is providing the van/driver
 
     // Follow-up tracking for completed events
     followUpOneDayCompleted: boolean('follow_up_one_day_completed').default(

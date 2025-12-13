@@ -1261,7 +1261,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       hideOnMobile: true,
       render: (event) => {
         // Calculate assigned counts
-        const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+        const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
         const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
         const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
 
@@ -1290,6 +1290,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         // Van driver
         if (event.assignedVanDriverId) {
           assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
+        }
+        if (event.isDhlVan) {
+          assigned.push('🚚 DHL Van');
         }
 
         // Drivers
@@ -1401,7 +1404,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       width: '55px',
       hideOnMobile: true,
       center: true,
-      render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
+      render: (event) => event.isDhlVan ? 'DHL' : event.vanDriverNeeded ? 'Yes' : 'No',
     },
     // 11. Contact name, #, and email for organization
     {
@@ -1696,7 +1699,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         case 'toolkitSent':
           return event.toolkitSent ? 'Yes' : 'No';
         case 'vanBooked':
-          return event.vanDriverNeeded ? 'Yes' : 'No';
+          return event.isDhlVan ? 'DHL' : event.vanDriverNeeded ? 'Yes' : 'No';
         case 'tspContact':
           return event.tspContact || event.tspContactAssigned || '';
         case 'address':
@@ -2311,7 +2314,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // Special handling for assignedStaff column - with assignment buttons
     if (column.id === 'assignedStaff') {
       // Calculate current assignments
-      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
       const speakersAssigned = event.assignedSpeakerIds?.length || 0;
       const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
 
@@ -3071,5 +3074,3 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   return spreadsheetContent;
 };
-
-
