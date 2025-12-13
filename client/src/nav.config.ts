@@ -85,8 +85,8 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'quick-links',
   },
   {
-    id: 'planning-calc-link',
-    label: 'Planning Calc Link',
+    id: 'inventory-calculator',
+    label: 'Inventory Calculator',
     icon: Calculator,
     href: 'inventory-calculator',
     permission: PERMISSIONS.NAV_INVENTORY_CALCULATOR,
