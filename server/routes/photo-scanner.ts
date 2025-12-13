@@ -11,16 +11,6 @@ import { getSocketInstance } from '../socket-chat';
 
 const photoScannerRouter = Router();
 
-// Schema for validating extracted data before saving
-const extractedEntrySchema = z.object({
-  location: z.string().min(1, 'Location is required'),
-  sandwichCount: z.number().int().min(0, 'Count must be non-negative'),
-  volunteerName: z.string().optional(),
-  date: z.string().optional(),
-  confidence: z.number().min(0).max(1),
-  notes: z.string().optional(),
-});
-
 const confirmDataSchema = z.object({
   entries: z.array(z.object({
     location: z.string().min(1),
@@ -143,6 +133,24 @@ photoScannerRouter.post(
       let base64Data = imageData;
       if (imageData.includes(',')) {
         base64Data = imageData.split(',')[1];
+      }
+
+      // Validate base64 decoded size (limit: 15MB)
+      const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15MB
+      let imageBuffer: Buffer;
+      try {
+        imageBuffer = Buffer.from(base64Data, 'base64');
+      } catch (e) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid base64 image data',
+        });
+      }
+      if (imageBuffer.length > MAX_IMAGE_SIZE) {
+        return res.status(413).json({
+          success: false,
+          message: 'Image too large. Maximum allowed size is 15MB.',
+        });
       }
 
       // Parse the image
