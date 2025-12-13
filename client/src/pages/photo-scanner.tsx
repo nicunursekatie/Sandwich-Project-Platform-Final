@@ -156,6 +156,9 @@ export default function PhotoScanner() {
 
   const handleFileSelect = useCallback((file: File) => {
     // Validate file type
+    // Note: HEIC/HEIF are only supported via direct file upload to /scan endpoint
+    // Frontend uses /scan-base64 which only accepts JPEG, PNG, WebP since browsers
+    // automatically convert HEIC to JPEG when using FileReader
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast({

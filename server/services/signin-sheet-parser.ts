@@ -57,9 +57,10 @@ async function fileToBase64(filePath: string): Promise<{ base64: string; mediaTy
       break;
     case '.heic':
     case '.heif':
-      // HEIC/HEIF are treated as JPEG for Claude's API compatibility
-      // Note: This assumes the file has been converted to a compatible format
-      // or that Claude's API can handle these formats as JPEG
+      // HEIC/HEIF formats are only supported via file upload endpoint (/scan)
+      // They are treated as JPEG for Claude's API. The base64 endpoint (/scan-base64)
+      // used by the frontend does not accept these formats since browsers typically
+      // convert HEIC to JPEG automatically when reading files.
       mediaType = 'image/jpeg';
       break;
     default:
