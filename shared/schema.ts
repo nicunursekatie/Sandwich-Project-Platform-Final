@@ -1814,7 +1814,7 @@ export type InsertHoldingZoneCategory = z.infer<typeof insertHoldingZoneCategory
 export const teamBoardItems = pgTable('team_board_items', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(), // The actual task/note/idea - can be anything
-  type: varchar('type').default('task'), // 'task', 'note', 'idea' (removed 'reminder')
+  type: varchar('type').default('task'), // 'task', 'note', 'idea', 'canvas' (removed 'reminder')
   createdBy: varchar('created_by').notNull(), // User ID who posted it
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
@@ -1834,6 +1834,13 @@ export const teamBoardItems = pgTable('team_board_items', {
   parentItemId: integer('parent_item_id').references(() => teamBoardItems.id, { onDelete: 'set null' }), // Optional parent item for nesting
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
+  // Canvas-specific fields
+  isCanvas: boolean('is_canvas').notNull().default(false), // Whether this item uses the structured canvas
+  canvasSections: jsonb('canvas_sections'), // Structured content: [{id,title,cards:[{id,type,content}]}]
+  canvasStatus: varchar('canvas_status').default('draft'), // 'draft', 'in_review', 'published', 'archived'
+  canvasPublishedSnapshot: jsonb('canvas_published_snapshot'), // Snapshot of last published version
+  canvasPublishedAt: timestamp('canvas_published_at'),
+  canvasPublishedBy: varchar('canvas_published_by'),
 });
 
 export const insertTeamBoardItemSchema = createInsertSchema(

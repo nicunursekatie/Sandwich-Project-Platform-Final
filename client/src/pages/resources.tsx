@@ -103,6 +103,12 @@ interface Resource {
     updatedAt: string;
     isActive: boolean;
   };
+  document?: {
+    id: number;
+    mimeType: string;
+    originalName: string;
+    fileSize: number;
+  } | null;
   isFavorite: boolean;
   tags: Array<{ id: number; name: string; color: string | null }>;
 }
@@ -277,10 +283,18 @@ export function Resources() {
 
     // Check if file type supports iframe preview (PDFs and images only)
     const canPreviewInIframe = () => {
-      // Extract file extension from title or original name
-      const title = item.resource.title.toLowerCase();
-      const previewableExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp'];
-      return previewableExtensions.some(ext => title.endsWith(ext));
+      if (!item.document?.mimeType) {
+        return false;
+      }
+      const previewableMimeTypes = [
+        'application/pdf',
+        'image/png',
+        'image/jpg',
+        'image/jpeg',
+        'image/gif',
+        'image/webp',
+      ];
+      return previewableMimeTypes.includes(item.document.mimeType);
     };
 
     // Get preview URL for documents (only for previewable types)
