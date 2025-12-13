@@ -2205,47 +2205,81 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       };
 
-      // If no staff needs exist, show a compact "Add" dropdown
-      if (!hasAnyNeeds) {
+      // Reusable component for the "Add Staff Need" dropdown menu
+      const AddStaffNeedDropdown = ({
+        compact = false,
+        onlyShowMissing = false,
+      }: {
+        compact?: boolean;
+        onlyShowMissing?: boolean;
+      }) => {
+        const showDriver = !onlyShowMissing || driversNeeded === 0;
+        const showSpeaker = !onlyShowMissing || speakersNeeded === 0;
+        const showVolunteer = !onlyShowMissing || volunteersNeeded === 0;
+        const hasAnyOptions = showDriver || showSpeaker || showVolunteer;
+
         return (
           <Popover>
             <PopoverTrigger asChild>
-              <button
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-                title="Add staff need"
-              >
-                <Plus className="h-3 w-3" />
-                <span>Add Need</span>
-              </button>
+              {compact ? (
+                <button
+                  className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                  title="Add another staff need"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              ) : (
+                <button
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                  title="Add staff need"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>Add Need</span>
+                </button>
+              )}
             </PopoverTrigger>
             <PopoverContent className="w-44 p-2" align="start">
               <div className="space-y-1">
                 <div className="text-xs font-medium text-gray-600 mb-2">Add Staff Need</div>
-                <button
-                  onClick={() => updateStaffCount('driversNeeded', 1)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Car className="h-4 w-4 text-[#236383]" />
-                  <span>Driver</span>
-                </button>
-                <button
-                  onClick={() => updateStaffCount('speakersNeeded', 1)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Megaphone className="h-4 w-4 text-[#236383]" />
-                  <span>Speaker</span>
-                </button>
-                <button
-                  onClick={() => updateStaffCount('volunteersNeeded', 1)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <UserPlus className="h-4 w-4 text-[#236383]" />
-                  <span>Volunteer</span>
-                </button>
+                {showDriver && (
+                  <button
+                    onClick={() => updateStaffCount('driversNeeded', 1)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Car className="h-4 w-4 text-[#236383]" />
+                    <span>Driver</span>
+                  </button>
+                )}
+                {showSpeaker && (
+                  <button
+                    onClick={() => updateStaffCount('speakersNeeded', 1)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Megaphone className="h-4 w-4 text-[#236383]" />
+                    <span>Speaker</span>
+                  </button>
+                )}
+                {showVolunteer && (
+                  <button
+                    onClick={() => updateStaffCount('volunteersNeeded', 1)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <UserPlus className="h-4 w-4 text-[#236383]" />
+                    <span>Volunteer</span>
+                  </button>
+                )}
+                {!hasAnyOptions && (
+                  <div className="text-xs text-gray-400 text-center py-1">All roles added</div>
+                )}
               </div>
             </PopoverContent>
           </Popover>
         );
+      };
+
+      // If no staff needs exist, show a compact "Add" dropdown
+      if (!hasAnyNeeds) {
+        return <AddStaffNeedDropdown />;
       }
 
       // Show only the roles that have needs
@@ -2256,51 +2290,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           <StaffNeedBadge field="volunteersNeeded" needed={volunteersNeeded} unfilled={volunteersUnfilled} Icon={UserPlus} label="Volunteers" />
 
           {/* Small add button for adding additional roles */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                title="Add another staff need"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-44 p-2" align="start">
-              <div className="space-y-1">
-                <div className="text-xs font-medium text-gray-600 mb-2">Add Staff Need</div>
-                {driversNeeded === 0 && (
-                  <button
-                    onClick={() => updateStaffCount('driversNeeded', 1)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Car className="h-4 w-4 text-[#236383]" />
-                    <span>Driver</span>
-                  </button>
-                )}
-                {speakersNeeded === 0 && (
-                  <button
-                    onClick={() => updateStaffCount('speakersNeeded', 1)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Megaphone className="h-4 w-4 text-[#236383]" />
-                    <span>Speaker</span>
-                  </button>
-                )}
-                {volunteersNeeded === 0 && (
-                  <button
-                    onClick={() => updateStaffCount('volunteersNeeded', 1)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <UserPlus className="h-4 w-4 text-[#236383]" />
-                    <span>Volunteer</span>
-                  </button>
-                )}
-                {driversNeeded > 0 && speakersNeeded > 0 && volunteersNeeded > 0 && (
-                  <div className="text-xs text-gray-400 text-center py-1">All roles added</div>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <AddStaffNeedDropdown compact={true} onlyShowMissing={true} />
         </div>
       );
     }
