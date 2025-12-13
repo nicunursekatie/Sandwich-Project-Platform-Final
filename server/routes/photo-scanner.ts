@@ -118,12 +118,12 @@ photoScannerRouter.post(
         });
       }
 
-      // Validate mime type
-      const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      // Validate mime type - must match Claude's vision API supported formats
+      const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
       if (!validMimeTypes.includes(mimeType)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid image type. Supported types: JPEG, PNG, WebP',
+          message: 'Invalid image type. Supported types: JPEG, PNG, WebP, GIF',
         });
       }
 

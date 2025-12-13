@@ -56,7 +56,6 @@ export default function PhotoScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
 
   // Cleanup blob URL on unmount or when it changes
   useEffect(() => {
