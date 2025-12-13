@@ -11,6 +11,7 @@ import {
   User,
   Check,
   Calendar,
+  Camera,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
@@ -153,21 +154,35 @@ export function MobileCollections() {
           )}
         </div>
 
-        {/* Floating action button */}
-        <button
-          onClick={() => navigate('/collections/new')}
-          className={cn(
-            "fixed right-4 bottom-20 z-40",
-            "w-14 h-14 rounded-full",
-            "bg-brand-primary text-white shadow-lg",
-            "flex items-center justify-center",
-            "active:scale-95 transition-transform"
-          )}
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-          aria-label="Log new collection"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
+        {/* Floating action buttons */}
+        <div className="fixed right-4 bottom-20 z-40 flex flex-col gap-3" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+          {/* Photo scanner button */}
+          <button
+            onClick={() => navigate('/m/photo-scanner')}
+            className={cn(
+              "w-12 h-12 rounded-full",
+              "bg-white border-2 border-brand-primary text-brand-primary shadow-lg",
+              "flex items-center justify-center",
+              "active:scale-95 transition-transform"
+            )}
+            aria-label="Scan sign-in sheet"
+          >
+            <Camera className="w-5 h-5" />
+          </button>
+          {/* Add collection button */}
+          <button
+            onClick={() => navigate('/collections/new')}
+            className={cn(
+              "w-14 h-14 rounded-full",
+              "bg-brand-primary text-white shadow-lg",
+              "flex items-center justify-center",
+              "active:scale-95 transition-transform"
+            )}
+            aria-label="Log new collection"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
       </div>
     </MobileShell>
   );

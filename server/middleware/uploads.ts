@@ -216,3 +216,32 @@ export const promotionGraphicsUpload = multer({
     }
   },
 });
+
+// Configure multer for sign-in sheet photo uploads (for photo scanner feature)
+export const signInSheetUpload = multer({
+  dest: 'uploads/signin-sheets/',
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit for high-res photos
+  fileFilter: (req, file, cb) => {
+    // Allow common image types that mobile phones produce
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ];
+
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+    const hasValidType = allowedTypes.includes(file.mimetype);
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      file.originalname.toLowerCase().endsWith(ext)
+    );
+
+    if (hasValidType || hasValidExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPG, PNG, WEBP, HEIC) are allowed for sign-in sheet photos'));
+    }
+  },
+});
