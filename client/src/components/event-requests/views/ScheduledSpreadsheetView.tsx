@@ -77,6 +77,65 @@ interface ScheduledSpreadsheetViewProps {
   openAssignmentDialog?: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => void;
 }
 
+// Standalone component for staff need badge with popover (extracted to prevent re-mount on parent re-render)
+interface StaffNeedBadgeProps {
+  field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded';
+  needed: number;
+  unfilled: number;
+  Icon: React.ElementType;
+  label: string;
+  onUpdate: (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => void;
+}
+
+const StaffNeedBadge: React.FC<StaffNeedBadgeProps> = ({ field, needed, unfilled, Icon, label, onUpdate }) => {
+  if (needed === 0) return null;
+
+  const isFilled = unfilled === 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+            isFilled
+              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+          }`}
+          title={`${label}: ${needed} needed, ${unfilled} unfilled. Click to edit.`}
+        >
+          <Icon className="h-3 w-3" />
+          <span>{needed}</span>
+          {!isFilled && <span className="text-amber-500">({unfilled})</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-40 p-2" align="start">
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-gray-600">{label} Needed</div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => onUpdate(field, -1)}
+              disabled={needed === 0}
+              className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 font-bold"
+            >
+              -
+            </button>
+            <span className="min-w-[32px] text-center text-lg font-semibold text-[#236383]">{needed}</span>
+            <button
+              onClick={() => onUpdate(field, 1)}
+              className="w-8 h-8 flex items-center justify-center rounded bg-[#47B3CB]/30 hover:bg-[#47B3CB]/50 text-[#236383] font-bold"
+            >
+              +
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 text-center">
+            {unfilled > 0 ? `${unfilled} still needed` : 'All filled ✓'}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 // US state abbreviations for address parsing
 const US_STATES: Record<string, string> = {
   'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
@@ -2143,68 +2202,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         });
       };
 
-      // Helper component for staff need badge with popover
-      const StaffNeedBadge = ({
-        field,
-        needed,
-        unfilled,
-        Icon,
-        label
-      }: {
-        field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded';
-        needed: number;
-        unfilled: number;
-        Icon: React.ElementType;
-        label: string;
-      }) => {
-        if (needed === 0) return null;
-
-        const isFilled = unfilled === 0;
-
-        return (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                  isFilled
-                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                    : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                }`}
-                title={`${label}: ${needed} needed, ${unfilled} unfilled. Click to edit.`}
-              >
-                <Icon className="h-3 w-3" />
-                <span>{needed}</span>
-                {!isFilled && <span className="text-amber-500">({unfilled})</span>}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2" align="start">
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-gray-600">{label} Needed</div>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => updateStaffCount(field, -1)}
-                    disabled={needed === 0}
-                    className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[32px] text-center text-lg font-semibold text-[#236383]">{needed}</span>
-                  <button
-                    onClick={() => updateStaffCount(field, 1)}
-                    className="w-8 h-8 flex items-center justify-center rounded bg-[#47B3CB]/30 hover:bg-[#47B3CB]/50 text-[#236383] font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="text-xs text-gray-500 text-center">
-                  {unfilled > 0 ? `${unfilled} still needed` : 'All filled ✓'}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        );
-      };
-
       // If no staff needs exist, show a compact "Add" dropdown
       if (!hasAnyNeeds) {
         return (
@@ -2251,9 +2248,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       // Show only the roles that have needs
       return (
         <div className="flex items-center gap-1 flex-wrap">
-          <StaffNeedBadge field="driversNeeded" needed={driversNeeded} unfilled={driversUnfilled} Icon={Car} label="Drivers" />
-          <StaffNeedBadge field="speakersNeeded" needed={speakersNeeded} unfilled={speakersUnfilled} Icon={Megaphone} label="Speakers" />
-          <StaffNeedBadge field="volunteersNeeded" needed={volunteersNeeded} unfilled={volunteersUnfilled} Icon={UserPlus} label="Volunteers" />
+          <StaffNeedBadge field="driversNeeded" needed={driversNeeded} unfilled={driversUnfilled} Icon={Car} label="Drivers" onUpdate={updateStaffCount} />
+          <StaffNeedBadge field="speakersNeeded" needed={speakersNeeded} unfilled={speakersUnfilled} Icon={Megaphone} label="Speakers" onUpdate={updateStaffCount} />
+          <StaffNeedBadge field="volunteersNeeded" needed={volunteersNeeded} unfilled={volunteersUnfilled} Icon={UserPlus} label="Volunteers" onUpdate={updateStaffCount} />
 
           {/* Small add button for adding additional roles */}
           <Popover>
