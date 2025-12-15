@@ -552,7 +552,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             if (!date) return 0;
             const dateStr = typeof date === 'string' ? date : date.toISOString();
             let dateObj: Date;
-            
+
             if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
               const dateOnly = dateStr.split(' ')[0];
               dateObj = new Date(dateOnly + 'T12:00:00');
@@ -571,8 +571,45 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             }
             return dateObj.getTime();
           };
+
+          // Helper to parse time string to minutes (for secondary sort)
+          const parseTimeToMinutes = (time: string | null | undefined): number => {
+            if (!time) return 999999; // Events without time go to the end
+            const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!timeMatch) return 999999;
+
+            let hours = parseInt(timeMatch[1]);
+            const minutes = parseInt(timeMatch[2]);
+            const isPM = timeMatch[3]?.toUpperCase() === 'PM';
+            const isAM = timeMatch[3]?.toUpperCase() === 'AM';
+
+            // Convert to 24-hour format
+            if (isPM && hours !== 12) hours += 12;
+            if (isAM && hours === 12) hours = 0;
+
+            return hours * 60 + minutes;
+          };
+
           aValue = parseDateSafe(a.scheduledEventDate || a.desiredEventDate);
           bValue = parseDateSafe(b.scheduledEventDate || b.desiredEventDate);
+
+          // If dates are equal, sort by event start time, then pickup time
+          if (aValue === bValue) {
+            const aStartTime = parseTimeToMinutes(a.eventStartTime);
+            const bStartTime = parseTimeToMinutes(b.eventStartTime);
+
+            if (aStartTime !== bStartTime) {
+              return sortDirection === 'asc' ? aStartTime - bStartTime : bStartTime - aStartTime;
+            }
+
+            // If start times are also equal, sort by pickup time
+            const aPickupTime = parseTimeToMinutes(a.pickupTime);
+            const bPickupTime = parseTimeToMinutes(b.pickupTime);
+
+            if (aPickupTime !== bPickupTime) {
+              return sortDirection === 'asc' ? aPickupTime - bPickupTime : bPickupTime - aPickupTime;
+            }
+          }
           break;
         case 'groupName':
           aValue = a.organizationName || `${a.firstName} ${a.lastName}`.trim() || '';
