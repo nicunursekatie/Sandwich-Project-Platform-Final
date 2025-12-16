@@ -99,6 +99,7 @@ export async function checkEventConflicts(
     eventEndTime?: string | null;
     pickupTime?: string | null; // Pickup time for drivers
     vanDriverNeeded?: boolean | null; // Whether a van driver is required
+    isDhlVan?: boolean | null; // External DHL van covers transportation
     selfTransport?: boolean | null; // Organization transporting sandwiches themselves
     assignedVanDriverId?: string | null; // Van driver ID from database
     assignedSpeakerIds?: string[] | null; // Array of speaker IDs
@@ -203,8 +204,10 @@ export async function checkEventConflicts(
 
     // Determine if current event needs van (using proper schema fields)
     // Support both new schema fields and legacy vanBooked field for backwards compatibility
-    const currentNeedsVan = eventData.vanDriverNeeded === true && eventData.selfTransport !== true ||
-      (eventData.vanBooked && eventData.vanBooked.toLowerCase() !== 'no' && eventData.vanBooked.toLowerCase() !== 'false');
+    const currentNeedsVan = eventData.isDhlVan === true ? false : (
+      (eventData.vanDriverNeeded === true && eventData.selfTransport !== true) ||
+      (eventData.vanBooked && eventData.vanBooked.toLowerCase() !== 'no' && eventData.vanBooked.toLowerCase() !== 'false')
+    );
 
     // Get van driver ID (new field or legacy driverName)
     const currentVanDriverId = eventData.assignedVanDriverId || eventData.driverName || null;
@@ -272,7 +275,7 @@ export async function checkEventConflicts(
 
       // Check 2: Van booking conflict
       // An event needs the van if vanDriverNeeded is true AND selfTransport is false
-      const existingNeedsVan = existingEvent.vanDriverNeeded === true && existingEvent.selfTransport !== true;
+      const existingNeedsVan = existingEvent.vanDriverNeeded === true && existingEvent.selfTransport !== true && existingEvent.isDhlVan !== true;
 
       if (currentNeedsVan && existingNeedsVan && hasTimeOverlap && !reportedVanConflicts.has(existingEvent.id)) {
         reportedVanConflicts.add(existingEvent.id);

@@ -34,6 +34,39 @@ const smsOptInSchema = z.object({
   category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
 
+// Helper to normalize phone numbers for comparison (removes non-digits, handles +1 prefix)
+function normalizePhone(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  // Handle US numbers with or without country code
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return '+1' + digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return '+1' + digits;
+  }
+  return '+' + digits;
+}
+
+// Find user by phone number - checks both smsConsent.phoneNumber AND users.phoneNumber
+function findUserByPhone(users: any[], incomingPhone: string): any | undefined {
+  const normalizedIncoming = normalizePhone(incomingPhone);
+  
+  return users.find((user) => {
+    // Check SMS consent phone first
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+    if (smsConsent.phoneNumber && normalizePhone(smsConsent.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    // Fall back to user's direct phoneNumber field
+    if (user.phoneNumber && normalizePhone(user.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    return false;
+  });
+}
+
 const smsConfirmationSchema = z.object({
   verificationCode: z.string().min(1, 'Verification code is required'),
 });
@@ -863,11 +896,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       try {
         // Find user by phone number to attribute the idea
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Ensure createdByName is never empty (required field)
         // Format: "Name (via SMS)" or "SMS: ***1234" if no user found
@@ -950,7 +980,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         }
 
         const parsedData = parseResult.data;
-        logger.info(`✅ Parsed collection: ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+        logger.info(`✅ Parsed collection: ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
 
         // Default collection date to the most recent Wednesday (including today if Wednesday) when message looks like a weekly count
         const computeMostRecentWednesday = (date: Date) => {
@@ -965,16 +995,76 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         // Find user by phone number to attribute the collection
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+        // Try to match host to existing host in database (fuzzy matching)
+        const allHosts = await storage.getAllHosts();
+        let matchedHostId: number | null = null;
+        let matchedHostName = parsedData.hostName;
+        
+        // Helper to split text into segments (by whitespace, slashes, dashes)
+        const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+        
+        if (allHosts.length > 0) {
+          const inputLower = parsedData.hostName.toLowerCase().trim();
+          const inputSegments = getSegments(parsedData.hostName);
+          let bestMatch: { host: any; score: number } | null = null;
+          
+          for (const host of allHosts) {
+            const hostLower = host.name.toLowerCase().trim();
+            const hostSegments = getSegments(host.name);
+            
+            // Exact match
+            if (hostLower === inputLower) {
+              bestMatch = { host, score: 1.0 };
+              break;
+            }
+            
+            // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+            if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+              const score = 0.95;
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+              continue;
+            }
+            
+            // Contains match
+            if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+              const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+            }
+            
+            // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+            const commonSegments = inputSegments.filter(seg => 
+              hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+            );
+            if (commonSegments.length > 0) {
+              const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+            }
+          }
+          
+          // Use match if confidence is reasonable (> 0.5)
+          if (bestMatch && bestMatch.score >= 0.5) {
+            matchedHostId = bestMatch.host.id;
+            matchedHostName = bestMatch.host.name; // Use canonical host name
+            logger.info(`📍 Matched host "${parsedData.hostName}" to existing host: "${matchedHostName}" (ID: ${matchedHostId}, score: ${bestMatch.score.toFixed(2)})`);
+          } else {
+            logger.info(`📍 No close host match found for "${parsedData.hostName}" - will use as-is`);
+          }
+        }
 
         // Build collection data
         const collectionData: any = {
           collectionDate: parsedData.collectionDate || (isWeeklyCount ? fallbackWednesday : new Date().toISOString().split('T')[0]),
-          hostName: parsedData.hostName,
+          hostName: matchedHostName,
+          hostId: matchedHostId,
           individualSandwiches: parsedData.individualSandwiches,
           createdBy: senderUser?.id || 'sms-system',
           createdByName: senderUser
@@ -993,6 +1083,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
         if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
         if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+        if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
 
         // Add group collections if provided
         if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
@@ -1010,10 +1101,10 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         // Create the collection
         const collection = await storage.createSandwichCollection(collectionData);
-        logger.info(`✅ Collection created from SMS: ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+        logger.info(`✅ Collection created from SMS: ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${matchedHostName} for ${collectionData.collectionDate}`);
 
-        // Generate and send confirmation message
-        const confirmationMsg = generateConfirmationMessage(parsedData);
+        // Generate and send confirmation message (include matched host name if different)
+        const confirmationMsg = generateConfirmationMessage(parsedData, matchedHostId ? matchedHostName : undefined);
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
       } catch (createError) {
@@ -1024,8 +1115,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       }
     }
     // Handle natural language collection messages (AI-powered parsing)
-    // Check if message looks like a collection log (starts with a number followed by text)
-    else if (/^\d+\s+.+/i.test(Body.trim()) && Body.trim().length >= 5) {
+    // Check if message looks like it might be a sandwich collection log:
+    // - Contains a number (count)
+    // - Has some text (location name)
+    // - Or contains keywords like "sandwiches", "made", location names
+    else if (
+      (/\d+/.test(Body.trim()) && Body.trim().length >= 5) || // Has a number and some content
+      /\b(dunwoody|intown|kirkwood|ptc|downtown|first baptist|made|sandwiches?|pbj|deli|ham|turkey)\b/i.test(Body.trim()) // Contains collection keywords
+    ) {
       logger.info(`📊 Potential collection log (natural language) from ${redactedPhone}: "${Body}"`);
 
       try {
@@ -1035,20 +1132,76 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         // Only process if high confidence parse
         if (parseResult.success && parseResult.data && parseResult.data.confidence >= 0.7) {
           const parsedData = parseResult.data;
-          logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName}`);
+          logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
 
-          // Find user by phone number
+          // Find user by phone number - checks both SMS consent phone AND user's stored phone number
           const allUsers = await storage.getAllUsers();
-          const senderUser = allUsers.find((user) => {
-            const metadata = user.metadata as any || {};
-            const smsConsent = metadata.smsConsent || {};
-            return smsConsent.phoneNumber === phoneNumber;
-          });
+          const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+          // Try to match host to existing host in database (fuzzy matching)
+          const allHosts = await storage.getAllHosts();
+          let matchedHostId: number | null = null;
+          let matchedHostName = parsedData.hostName;
+          
+          // Helper to split text into segments (by whitespace, slashes, dashes)
+          const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+          
+          if (allHosts.length > 0) {
+            const inputLower = parsedData.hostName.toLowerCase().trim();
+            const inputSegments = getSegments(parsedData.hostName);
+            let bestMatch: { host: any; score: number } | null = null;
+            
+            for (const host of allHosts) {
+              const hostLower = host.name.toLowerCase().trim();
+              const hostSegments = getSegments(host.name);
+              
+              // Exact match
+              if (hostLower === inputLower) {
+                bestMatch = { host, score: 1.0 };
+                break;
+              }
+              
+              // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+              if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+                const score = 0.95;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+                continue;
+              }
+              
+              // Contains match
+              if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+                const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+              
+              // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+              const commonSegments = inputSegments.filter(seg => 
+                hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+              );
+              if (commonSegments.length > 0) {
+                const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+            }
+            
+            if (bestMatch && bestMatch.score >= 0.5) {
+              matchedHostId = bestMatch.host.id;
+              matchedHostName = bestMatch.host.name;
+              logger.info(`📍 Matched host "${parsedData.hostName}" to existing host: "${matchedHostName}" (ID: ${matchedHostId})`);
+            }
+          }
 
           // Build collection data
           const collectionData: any = {
             collectionDate: parsedData.collectionDate,
-            hostName: parsedData.hostName,
+            hostName: matchedHostName,
+            hostId: matchedHostId,
             individualSandwiches: parsedData.individualSandwiches,
             createdBy: senderUser?.id || 'sms-system',
             createdByName: senderUser
@@ -1067,6 +1220,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
           if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
           if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
           if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+          if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
 
           // Add group collections if provided
           if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
@@ -1083,17 +1237,17 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
           // Create the collection
           const collection = await storage.createSandwichCollection(collectionData);
-          logger.info(`✅ Collection created from SMS (AI): ID ${collection.id}`);
+          logger.info(`✅ Collection created from SMS (AI): ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${matchedHostName}`);
 
           // Generate and send confirmation message
-          const confirmationMsg = generateConfirmationMessage(parsedData);
+          const confirmationMsg = generateConfirmationMessage(parsedData, matchedHostId ? matchedHostName : undefined);
           res.type('text/xml');
           return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
         } else {
           // Low confidence or failed parse - send helpful message
           logger.info(`ℹ️ Low confidence or failed parse from ${redactedPhone}, showing help`);
           res.type('text/xml');
-          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To log sandwiches, text: LOG [count] [location]\nExample: LOG 50 Downtown Library\n\nText HELP for all commands.</Message></Response>`);
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Couldn't understand that. Just text:\n• 500 Dunwoody\n• 100 pbj 200 deli Intown\n\nOr add groups:\n• 500 Dunwoody, Acme 200\n\nText HELP for more.</Message></Response>`);
         }
       } catch (parseError) {
         logger.error('❌ Error parsing potential collection:', parseError);
@@ -1104,14 +1258,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• LOG [count] [location] - Log sandwiches\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe\n• HELP - Show this message\n\nExample: LOG 50 Downtown Library</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - How to Log Sandwiches:\n\nSimple: 500 Dunwoody\nWith types: 100 pbj 200 deli Intown\nWith date: 500 Dunwoody 12/10\nWith groups: 500 Dunwoody, Acme 200\n\nIDEA [text] - Submit idea\nSTOP - Unsubscribe</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);
 
       // Send helpful response for unrecognized messages
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP Commands:\n• LOG [count] [location] - Log sandwiches\n• IDEA [text] - Submit idea\n\nExample: LOG 50 Downtown Library\n\nText HELP for more.</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - Just text the count and location!\n\nExample: 500 Dunwoody\nOr: 100 pbj 200 deli Intown\n\nText HELP for more options.</Message></Response>`);
     }
 
     // Always respond with TwiML (empty response for unrecognized messages)

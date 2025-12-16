@@ -17,6 +17,8 @@ import { ChatWindowsProvider } from '@/context/chat-windows-context';
 import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
 import { InstantMessagingProvider } from '@/contexts/instant-messaging-context';
 import { InstantMessageContainer } from '@/components/instant-message-container';
+import { ReviewerProvider } from '@/contexts/reviewer-context';
+import { ReviewerBlockedModal } from '@/components/reviewer-blocked-modal';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -24,6 +26,7 @@ import SignupPage from '@/pages/signup';
 import LoginPage from '@/pages/login';
 import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
+import SetPassword from '@/pages/set-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
@@ -135,6 +138,7 @@ function Router() {
         <Route path="/signup" component={SignupPage} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/set-password" component={SetPassword} />
         <Route path="/sms-opt-in">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSOptIn />
@@ -416,6 +420,9 @@ function Router() {
         <Route path="/event-map">
           {() => <Dashboard initialSection="event-map" />}
         </Route>
+        <Route path="/recipient-map">
+          {() => <Dashboard initialSection="recipient-map" />}
+        </Route>
         <Route path="/driver-planning">
           {() => <Dashboard initialSection="driver-planning" />}
         </Route>
@@ -497,16 +504,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ChatWindowsProvider>
-          <InstantMessagingProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-              <FloatingChatWindowsContainer />
-              <InstantMessageContainer />
-            </TooltipProvider>
-          </InstantMessagingProvider>
-        </ChatWindowsProvider>
+        <ReviewerProvider>
+          <ChatWindowsProvider>
+            <InstantMessagingProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <FloatingChatWindowsContainer />
+                <InstantMessageContainer />
+                <ReviewerBlockedModal />
+              </TooltipProvider>
+            </InstantMessagingProvider>
+          </ChatWindowsProvider>
+        </ReviewerProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

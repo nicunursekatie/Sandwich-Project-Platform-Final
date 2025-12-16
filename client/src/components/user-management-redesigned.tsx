@@ -168,43 +168,33 @@ export default function UserManagementFinal() {
   };
 
   const handleAddUser = (formData: any) => {
-    addUserMutation.mutate(formData, {
-      onSuccess: (newUser: any) => {
-        // If password was provided, set it immediately after user creation
-        if (formData.password && formData.password.trim()) {
-          setPasswordMutation.mutate(
-            {
-              userId: newUser.id,
-              password: formData.password,
-            },
-            {
-              onSuccess: () => {
-                setShowAddUserDialog(false);
-                toast({
-                  title: 'User Created',
-                  description: `User ${formData.firstName} ${formData.lastName} created with password successfully.`,
-                });
-              },
-              onError: () => {
-                setShowAddUserDialog(false);
-                toast({
-                  title: 'Password Warning',
-                  description: `User created but password failed to set. Please set password manually.`,
-                  variant: 'destructive',
-                });
-              },
-            }
-          );
-        } else {
-          setShowAddUserDialog(false);
-          toast({
-            title: 'User Created',
-            description: `User ${formData.firstName} ${formData.lastName} created. Remember to set their password!`,
-            variant: 'default',
-          });
-        }
+    // Include password in the mutation - server will hash it with bcrypt
+    addUserMutation.mutate(
+      {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+        password: formData.password, // Server hashes this with bcrypt
       },
-    });
+      {
+        onSuccess: () => {
+          setShowAddUserDialog(false);
+          if (formData.password && formData.password.trim()) {
+            toast({
+              title: 'User Created',
+              description: `User ${formData.firstName} ${formData.lastName} created with password successfully.`,
+            });
+          } else {
+            toast({
+              title: 'User Created',
+              description: `User ${formData.firstName} ${formData.lastName} created. They will need to set their password on first login.`,
+              variant: 'default',
+            });
+          }
+        },
+      }
+    );
   };
 
   const handleEditUserSubmit = (formData: any) => {

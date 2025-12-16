@@ -31,10 +31,15 @@ export function createAuthRouter() {
     try {
       const { email, password } = req.body;
 
-      // Validate input
-      authService.validateLoginInput(email, password);
+      // Email is always required
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+      }
 
-      // Find user by email
+      // Find user by email first (to check if they need password setup)
       const user = await storage.getUserByEmail(email);
       if (!user) {
         logger.warn(`Failed login attempt for non-existent user: ${email}`);
@@ -57,6 +62,27 @@ export function createAuthRouter() {
           });
         }
         throw error;
+      }
+
+      // Check if user needs to set up their password (manually created without password)
+      // This check happens BEFORE password validation so users can login with blank password
+      if (user.needsPasswordSetup) {
+        logger.log(`🔐 User ${email} needs to set up password`);
+        return res.status(403).json({
+          success: false,
+          code: 'PASSWORD_SETUP_REQUIRED',
+          message: 'Please set up your password to complete your account.',
+          needsPasswordSetup: true,
+          email: user.email,
+        });
+      }
+
+      // Now validate that password was provided (only for users who already have a password)
+      if (!password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required',
+        });
       }
 
       // Verify password (bcrypt only - no plaintext)
@@ -335,10 +361,19 @@ export function createAuthRouter() {
         });
       }
 
-      // Validate new password
+      // Validate new password strength - must match frontend requirements
+      // Frontend requires: 8+ characters, lowercase, uppercase, and digit
       if (newPassword.length < 8) {
         return res.status(400).json({
           message: 'New password must be at least 8 characters long',
+        });
+      }
+
+      // Validate password contains lowercase, uppercase, and digit
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({
+          message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number',
         });
       }
 
@@ -361,6 +396,311 @@ export function createAuthRouter() {
 
       logger.error('Change password error:', error);
       return res.status(500).json({ message: 'An error occurred' });
+    }
+  });
+
+  // Store initial password setup tokens temporarily (in production, use Redis or database)
+  const initialPasswordTokens = new Map<
+    string,
+    { userId: string; email: string; expires: number }
+  >();
+
+  // Clean up expired tokens periodically
+  setInterval(() => {
+    const now = Date.now();
+    initialPasswordTokens.forEach((data, token) => {
+      if (now > data.expires) {
+        initialPasswordTokens.delete(token);
+      }
+    });
+  }, 60000 * 60); // Clean up every hour
+
+  /**
+   * POST /api/auth/request-initial-password
+   * Request initial password setup token for users who were created without one
+   * Sends an email with a secure token that must be used to set the password
+   */
+  router.post('/request-initial-password', async (req: MaybeAuthenticatedRequest, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      // Validate input
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if email exists for security reasons
+        return res.json({
+          success: true,
+          message: 'If an account with this email exists and requires password setup, you will receive an email.',
+        });
+      }
+
+      // Verify that this user actually needs password setup
+      if (!user.needsPasswordSetup) {
+        // Don't reveal if email exists - return same message
+        return res.json({
+          success: true,
+          message: 'If an account with this email exists and requires password setup, you will receive an email.',
+        });
+      }
+
+      // Generate secure token
+      const crypto = await import('crypto');
+      const setupToken = crypto.randomBytes(32).toString('hex');
+      const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+
+      // Store token
+      initialPasswordTokens.set(setupToken, {
+        userId: user.id,
+        email: user.email,
+        expires,
+      });
+
+      // Send password setup email
+      try {
+        // Use the proper domain for setup links
+        let baseUrl;
+        if (process.env.RESET_BASE_URL) {
+          baseUrl = process.env.RESET_BASE_URL;
+        } else if (process.env.REPLIT_DEPLOYMENT) {
+          const domains = process.env.REPLIT_DOMAINS;
+          if (domains) {
+            baseUrl = `https://${domains.split(',')[0].trim()}`;
+          } else {
+            baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+          }
+        } else {
+          const host = req.get('host') || 'localhost:5000';
+          const protocol = req.protocol || 'http';
+          if (process.env.REPLIT_DOMAINS) {
+            const devDomain = process.env.REPLIT_DOMAINS.split(',')[0].trim();
+            baseUrl = `https://${devDomain}`;
+          } else {
+            baseUrl = `${protocol}://${host}`;
+          }
+        }
+
+        const setupLink = `${baseUrl}/set-password?token=${setupToken}`;
+
+        // Use SendGrid for password setup emails
+        const sgMail = (await import('@sendgrid/mail')).default;
+        if (!process.env.SENDGRID_API_KEY) {
+          throw new Error('SendGrid API key not configured');
+        }
+
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+        await sgMail.send({
+          to: email,
+          from: 'katie@thesandwichproject.org',
+          subject: 'Set Up Your Password - The Sandwich Project',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+              <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h1 style="color: #236383; margin: 0; font-size: 28px;">The Sandwich Project</h1>
+                  <p style="color: #666; margin: 10px 0 0 0;">Volunteer Management Platform</p>
+                </div>
+                
+                <h2 style="color: #333; margin-bottom: 20px;">Set Up Your Password</h2>
+                
+                <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+                  Your account has been created! To complete your account setup, please set a password by clicking the button below:
+                </p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${setupLink}" 
+                     style="background-color: #236383; color: white; padding: 15px 30px; text-decoration: none; 
+                            border-radius: 8px; font-weight: bold; display: inline-block; 
+                            transition: background-color 0.3s;">
+                    Set Your Password
+                  </a>
+                </div>
+                
+                <p style="color: #555; line-height: 1.6; margin-bottom: 15px;">
+                  This link will expire in 1 hour for security reasons.
+                </p>
+                
+                <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+                  If you didn't expect this email, please contact support immediately.
+                </p>
+                
+                <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+                  <p style="color: #888; font-size: 14px; margin: 0;">
+                    If the button doesn't work, copy and paste this link into your browser:<br>
+                    <a href="${setupLink}" style="color: #236383; word-break: break-all;">${setupLink}</a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          `,
+          text: `
+Set Up Your Password - The Sandwich Project
+
+Your account has been created! To complete your account setup, please set a password by visiting this link:
+
+${setupLink}
+
+This link will expire in 1 hour for security reasons.
+
+If you didn't expect this email, please contact support immediately.
+
+The Sandwich Project
+Fighting food insecurity one sandwich at a time
+          `,
+        });
+
+        logger.log(`✅ Initial password setup email sent successfully to: ${email}`);
+      } catch (emailError) {
+        logger.error('❌ Failed to send initial password setup email:', emailError);
+        // For development, log the setup link as fallback
+        if (process.env.NODE_ENV === 'development') {
+          logger.log(`
+🔧 DEVELOPMENT FALLBACK - Email failed, but setup link available:
+📧 Email: ${email}
+🔗 Setup Link: ${req.protocol}://${req.get('host') || 'localhost:5000'}/set-password?token=${setupToken}
+⏰ Expires: ${new Date(expires).toLocaleString()}
+          `);
+        }
+      }
+
+      // Always return success message (don't reveal if email exists)
+      return res.json({
+        success: true,
+        message: 'If an account with this email exists and requires password setup, you will receive an email.',
+      });
+    } catch (error) {
+      logger.error('Request initial password error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred. Please try again later.',
+      });
+    }
+  });
+
+  /**
+   * POST /api/auth/set-initial-password
+   * Set password for users who were created without one (needsPasswordSetup = true)
+   * REQUIRES a valid token from the request-initial-password endpoint
+   */
+  router.post('/set-initial-password', async (req: MaybeAuthenticatedRequest, res: Response) => {
+    try {
+      const { token, password } = req.body;
+
+      // Validate input
+      if (!token || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token and password are required',
+        });
+      }
+
+      // Validate password strength - must match frontend requirements
+      // Frontend requires: 8+ characters, lowercase, uppercase, and digit
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters long',
+        });
+      }
+
+      // Validate password contains lowercase, uppercase, and digit
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+        });
+      }
+
+      // Check if token exists and is valid
+      const tokenData = initialPasswordTokens.get(token);
+      if (!tokenData || Date.now() > tokenData.expires) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired setup token. Please request a new password setup link.',
+        });
+      }
+
+      // Get user and verify they still need password setup
+      const user = await storage.getUserById(tokenData.userId);
+      if (!user) {
+        initialPasswordTokens.delete(token);
+        return res.status(400).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      // Verify that this user still needs password setup (may have been set already)
+      if (!user.needsPasswordSetup) {
+        initialPasswordTokens.delete(token);
+        return res.status(400).json({
+          success: false,
+          message: 'This account already has a password. Use forgot password to reset it.',
+        });
+      }
+
+      // Hash the new password
+      const hashedPassword = await authService.hashPassword(password);
+
+      // Update user with new password and clear the needsPasswordSetup flag
+      await storage.updateUser(user.id, {
+        password: hashedPassword,
+        needsPasswordSetup: false,
+      });
+
+      // Remove used token
+      initialPasswordTokens.delete(token);
+
+      logger.log(`✅ Initial password set for user: ${user.email}`);
+
+      return res.json({
+        success: true,
+        message: 'Password set successfully! You can now log in.',
+      });
+    } catch (error) {
+      logger.error('Set initial password error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred while setting password',
+      });
+    }
+  });
+
+  /**
+   * GET /api/auth/verify-initial-password-token/:token
+   * Verify if an initial password setup token is valid (for frontend to check)
+   */
+  router.get('/verify-initial-password-token/:token', (req: MaybeAuthenticatedRequest, res: Response) => {
+    try {
+      const { token } = req.params;
+      const tokenData = initialPasswordTokens.get(token);
+
+      if (!tokenData || Date.now() > tokenData.expires) {
+        return res.status(400).json({
+          valid: false,
+          message: 'Invalid or expired setup token',
+        });
+      }
+
+      return res.json({
+        valid: true,
+        email: tokenData.email,
+      });
+    } catch (error) {
+      logger.error('Verify initial password token error:', error);
+      return res.status(500).json({
+        valid: false,
+        message: 'An error occurred while verifying token',
+      });
     }
   });
 

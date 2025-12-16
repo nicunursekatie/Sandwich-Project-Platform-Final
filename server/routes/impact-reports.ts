@@ -1195,17 +1195,33 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
 
     // Calculate comprehensive metrics
     let totalSandwiches = 0;
+    let totalEvents = 0; // Track total events including unlinked collections
     const categoryStats: Record<string, { events: number; sandwiches: number; counts: number[] }> = {};
     const monthlyStats: Record<string, { events: number; sandwiches: number }> = {};
     const organizationStats: Record<string, { events: number; sandwiches: number; category: string }> = {};
 
+    // Track which event weeks have events (for deduplication of unlinked collections)
+    // Key: "orgName-weekStart" to check for duplicates
+    const eventWeekKeys = new Set<string>();
+
     events.forEach(e => {
+      totalEvents++;
       const linkedCollection = collectionsByEventId.get(e.id);
       const sandwichCount = linkedCollection
         ? getCollectionSandwichCount(linkedCollection)
         : (e.actualSandwichCount || e.estimatedSandwichCount || 0);
 
       totalSandwiches += sandwichCount;
+
+      // Track this event's week for deduplication
+      const eventDateRaw = e.scheduledEventDate || e.desiredEventDate;
+      if (eventDateRaw) {
+        const eventDate = eventDateRaw instanceof Date ? eventDateRaw : new Date(eventDateRaw);
+        const weekStart = new Date(eventDate);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday of that week
+        const weekKey = `${(e.organizationName || '').toLowerCase().trim()}-${toDateString(weekStart)}`;
+        eventWeekKeys.add(weekKey);
+      }
 
       // Category stats
       const category = e.organizationCategory || 'other';
@@ -1238,11 +1254,133 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       organizationStats[orgName].sandwiches += sandwichCount;
     });
 
-    // Add unlinked and orphaned collections
+    // Process unlinked collections - count as separate events if >200 sandwiches and not a duplicate
+    // of an event request in the same week
+    const unlinkedEventsFromCollections: Array<{
+      groupName: string;
+      sandwichCount: number;
+      collectionDate: string;
+      isCountedAsEvent: boolean;
+    }> = [];
+
     unlinkedCollections.forEach(c => {
-      totalSandwiches += getCollectionSandwichCount(c);
+      const collectionTotal = getCollectionSandwichCount(c);
+      totalSandwiches += collectionTotal;
+
+      // Check each group in the collection for >200 sandwiches
+      const hasGroupCollections = c.groupCollections &&
+        Array.isArray(c.groupCollections) &&
+        c.groupCollections.length > 0;
+
+      if (hasGroupCollections) {
+        c.groupCollections.forEach((group: any) => {
+          const groupCount = Number(group.count) || Number(group.sandwichCount) || 0;
+          const groupName = group.name || group.groupName || 'Unknown Group';
+
+          if (groupCount >= 200) {
+            // Check if this is a duplicate of an event request in the same week
+            const collectionDate = new Date(c.collectionDate);
+            const weekStart = new Date(collectionDate);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday of that week
+            const weekKey = `${groupName.toLowerCase().trim()}-${toDateString(weekStart)}`;
+
+            const isDuplicate = eventWeekKeys.has(weekKey);
+
+            if (!isDuplicate) {
+              // Count this as a separate event
+              totalEvents++;
+
+              // Add to monthly stats
+              const monthKey = `${collectionDate.getFullYear()}-${String(collectionDate.getMonth() + 1).padStart(2, '0')}`;
+              if (!monthlyStats[monthKey]) {
+                monthlyStats[monthKey] = { events: 0, sandwiches: 0 };
+              }
+              monthlyStats[monthKey].events++;
+              // Note: sandwiches already counted above in collectionTotal
+
+              // Add to organization stats
+              if (!organizationStats[groupName]) {
+                organizationStats[groupName] = { events: 0, sandwiches: 0, category: 'collection_only' };
+              }
+              organizationStats[groupName].events++;
+              organizationStats[groupName].sandwiches += groupCount;
+
+              // Add to category stats as 'collection_only'
+              if (!categoryStats['collection_only']) {
+                categoryStats['collection_only'] = { events: 0, sandwiches: 0, counts: [] };
+              }
+              categoryStats['collection_only'].events++;
+              categoryStats['collection_only'].sandwiches += groupCount;
+              categoryStats['collection_only'].counts.push(groupCount);
+
+              // Track for AI context
+              unlinkedEventsFromCollections.push({
+                groupName,
+                sandwichCount: groupCount,
+                collectionDate: c.collectionDate,
+                isCountedAsEvent: true,
+              });
+            } else {
+              unlinkedEventsFromCollections.push({
+                groupName,
+                sandwichCount: groupCount,
+                collectionDate: c.collectionDate,
+                isCountedAsEvent: false, // Duplicate of existing event
+              });
+            }
+          }
+        });
+      } else {
+        // Legacy format - check group1Count and group2Count
+        const group1Count = c.group1Count || 0;
+        const group2Count = c.group2Count || 0;
+        const group1Name = c.group1Name || 'Group 1';
+        const group2Name = c.group2Name || 'Group 2';
+
+        [{ name: group1Name, count: group1Count }, { name: group2Name, count: group2Count }].forEach(({ name, count }) => {
+          if (count >= 200) {
+            const collectionDate = new Date(c.collectionDate);
+            const weekStart = new Date(collectionDate);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            const weekKey = `${name.toLowerCase().trim()}-${toDateString(weekStart)}`;
+
+            const isDuplicate = eventWeekKeys.has(weekKey);
+
+            if (!isDuplicate) {
+              totalEvents++;
+
+              const monthKey = `${collectionDate.getFullYear()}-${String(collectionDate.getMonth() + 1).padStart(2, '0')}`;
+              if (!monthlyStats[monthKey]) {
+                monthlyStats[monthKey] = { events: 0, sandwiches: 0 };
+              }
+              monthlyStats[monthKey].events++;
+
+              if (!organizationStats[name]) {
+                organizationStats[name] = { events: 0, sandwiches: 0, category: 'collection_only' };
+              }
+              organizationStats[name].events++;
+              organizationStats[name].sandwiches += count;
+
+              if (!categoryStats['collection_only']) {
+                categoryStats['collection_only'] = { events: 0, sandwiches: 0, counts: [] };
+              }
+              categoryStats['collection_only'].events++;
+              categoryStats['collection_only'].sandwiches += count;
+              categoryStats['collection_only'].counts.push(count);
+
+              unlinkedEventsFromCollections.push({
+                groupName: name,
+                sandwichCount: count,
+                collectionDate: c.collectionDate,
+                isCountedAsEvent: true,
+              });
+            }
+          }
+        });
+      }
     });
 
+    // Also check orphaned collections (linked to events outside date range)
     collectionsByEventId.forEach((collection, eventRequestId) => {
       if (!validEventIds.has(eventRequestId)) {
         totalSandwiches += getCollectionSandwichCount(collection);
@@ -1293,12 +1431,15 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       .sort((a, b) => b[1].events - a[1].events)
       .map(([name, stats]) => ({ name, ...stats }));
 
+    // Count events from unlinked collections that were counted as separate events
+    const unlinkedEventCount = unlinkedEventsFromCollections.filter(e => e.isCountedAsEvent).length;
+
     // Build data summary for AI
     const dataSummary = `
 ## Current Data Summary (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})
 
 ### Overall Metrics
-- Total Events: ${events.length}
+- Total Events: ${totalEvents} (${events.length} from event requests + ${unlinkedEventCount} from collection logs with 200+ sandwiches)
 - Total Sandwiches: ${totalSandwiches.toLocaleString()}
 - Unique Organizations: ${Object.keys(organizationStats).length}
 - Repeat Organizations (2+ events): ${repeatOrgs.length}
@@ -1306,9 +1447,12 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
 ### Category Breakdown
 ${Object.entries(categoryAnalysis)
   .filter(([cat]) => cat !== 'other')
-  .map(([category, stats]) =>
-    `- ${category}: ${stats.eventCount} events, ${stats.totalSandwiches.toLocaleString()} sandwiches, avg ${stats.avgSandwiches}, median ${stats.medianSandwiches}, std dev ${stats.stdDeviation}`
-  ).join('\n')}
+  .map(([category, stats]) => {
+    const categoryLabel = category === 'collection_only'
+      ? 'Collection-Only Events (not linked to event requests)'
+      : category;
+    return `- ${categoryLabel}: ${stats.eventCount} events, ${stats.totalSandwiches.toLocaleString()} sandwiches, avg ${stats.avgSandwiches}, median ${stats.medianSandwiches}, std dev ${stats.stdDeviation}`;
+  }).join('\n')}
 
 ### Monthly Trends
 ${Object.entries(monthlyStats)
@@ -1321,6 +1465,10 @@ ${topOrgs.slice(0, 10).map((org, i) => `${i + 1}. ${org.name}: ${org.sandwiches.
 
 ### Repeat Organizations (Top 10 by Event Count)
 ${repeatOrgs.slice(0, 10).map((org, i) => `${i + 1}. ${org.name}: ${org.events} events, ${org.sandwiches.toLocaleString()} sandwiches`).join('\n')}
+${unlinkedEventsFromCollections.filter(e => e.isCountedAsEvent).length > 0 ? `
+### Events from Collection Logs Only (200+ sandwiches, not linked to event requests)
+${unlinkedEventsFromCollections.filter(e => e.isCountedAsEvent).slice(0, 10).map((e, i) => `${i + 1}. ${e.groupName}: ${e.sandwichCount.toLocaleString()} sandwiches on ${e.collectionDate}`).join('\n')}
+` : ''}
 `;
 
     // Build conversation for OpenAI
@@ -1390,7 +1538,9 @@ ${dataSummary}`;
       response: cleanedResponse,
       chart: chartData,
       dataContext: {
-        totalEvents: events.length,
+        totalEvents,
+        eventsFromRequests: events.length,
+        eventsFromCollectionsOnly: unlinkedEventCount,
         totalSandwiches,
         dateRange: { start: startDate.toISOString(), end: endDate.toISOString() },
       }

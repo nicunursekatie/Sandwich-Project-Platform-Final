@@ -7,10 +7,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, Settings, HelpCircle, FileSpreadsheet, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { MessageCircle, Users, Sparkles, Bell } from 'lucide-react';
 import { isMobileDevice } from '@/lib/device-detection';
 
-const STORAGE_KEY = 'navigation_update_2024_v2_seen';
+const STORAGE_KEY = 'whats_new_2024_v3_instant_messaging';
 
 export function WhatsNewModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,81 +47,59 @@ export function WhatsNewModal() {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <DialogTitle className="text-2xl font-bold text-gray-900">
-              Navigation Updates!
+              New Features!
             </DialogTitle>
           </div>
           <DialogDescription className="text-base text-gray-600">
-            We've reorganized the navigation to make things easier to find.
+            We've added new ways to connect and collaborate with your team.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Top Nav Items */}
-          <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-4 border-2 border-teal-200">
+          {/* Online Users & Instant Messaging - Combined feature */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200">
             <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <ArrowRight className="w-5 h-5 text-brand-primary" />
-              Moved to Top Navigation Bar
+              <Users className="w-5 h-5 text-green-600" />
+              See Who's Online & Send Instant Messages
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              These items are now in the top navigation bar (next to your profile) for quick access:
+              See who's currently active and send them a direct message instantly!
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
-                <div className="p-2 bg-yellow-100 rounded-md">
-                  <Lightbulb className="w-4 h-4 text-yellow-600" />
+                <div className="p-2 bg-green-100 rounded-md">
+                  <Users className="w-4 h-4 text-green-600" />
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">Suggestions</span>
-                  <p className="text-xs text-gray-600">Submit feedback and ideas</p>
+                  <span className="font-medium text-gray-900">Click the people icon</span>
+                  <p className="text-xs text-gray-600">Find it in the top navigation bar to see who's online</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
                 <div className="p-2 bg-blue-100 rounded-md">
-                  <Settings className="w-4 h-4 text-blue-600" />
+                  <MessageCircle className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">Admin Panel</span>
-                  <p className="text-xs text-gray-600">System settings and configuration</p>
+                  <span className="font-medium text-gray-900">Click any name to message</span>
+                  <p className="text-xs text-gray-600">Select a person from the list to start a conversation</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white rounded-md p-3 shadow-sm">
                 <div className="p-2 bg-purple-100 rounded-md">
-                  <HelpCircle className="w-4 h-4 text-purple-600" />
+                  <Bell className="w-4 h-4 text-purple-600" />
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">Help</span>
-                  <p className="text-xs text-gray-600">Support and documentation</p>
+                  <span className="font-medium text-gray-900">Sound notifications</span>
+                  <p className="text-xs text-gray-600">You'll hear a chime when you receive a new message</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Collections Reports Organization */}
-          <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-4 border-2 border-orange-200">
-            <h3 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <ArrowRight className="w-5 h-5 text-brand-orange" />
-              Items Grouped Together
-            </h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Several items are now organized together for easier navigation:
-            </p>
-            <div className="space-y-3">
-              <div>
-                <div className="font-medium text-gray-900 mb-1">TSP Network</div>
-                <p className="text-xs text-gray-600 mb-2">Find Hosts, Drivers, Volunteers, and Recipients all in one place</p>
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 mb-1">Collections Log</div>
-                <p className="text-xs text-gray-600 mb-2">Weekly Collections Report and Group Collections Viewer are now under Collections Log</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Visual Guide */}
+          {/* Quick tip */}
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <p className="text-sm text-gray-700">
-              <strong>💡 Tip:</strong> Look for new buttons in the top right corner of your screen,
-              between the notification bell and your profile icon.
+              <strong>💡 Tip:</strong> Look for the green dot next to names - it means they're online right now!
             </p>
           </div>
         </div>

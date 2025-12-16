@@ -16,12 +16,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useLocation } from 'wouter';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -29,7 +26,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format, addWeeks, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -108,9 +105,14 @@ interface EventMapData {
   driversNeeded: number | null;
   assignedDriverIds: string[] | null;
   assignedRecipientIds: string[] | null;
+  tentativeDriverIds: string[] | null;
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
+  selfTransport: boolean | null;
+  vanDriverNeeded: boolean | null;
+  assignedVanDriverId: string | null;
+  isDhlVan?: boolean | null;
 }
 
 interface Driver {
@@ -142,6 +144,10 @@ interface DriverCandidate {
   phone: string | null;
   latitude: string;
   longitude: string;
+  area?: string | null;
+  zone?: string | null;
+  routeDescription?: string | null;
+  homeAddress?: string | null;
   availability?: string | null;
   vehicleType?: string | null;
   vanApproved?: boolean | null;
@@ -357,7 +363,7 @@ function MapController({
       if (points.length > 1) {
         // Compute zoom that includes event + closest host + closest recipient, but keep the event centered
         const bounds = L.latLngBounds(points);
-        const zoomForBounds = map.getBoundsZoom(bounds, { padding: [60, 60], maxZoom: 14 });
+        const zoomForBounds = Math.min(map.getBoundsZoom(bounds, false, L.point(60, 60)), 14);
         map.setView(
           [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
           zoomForBounds,
@@ -399,7 +405,9 @@ function MapController({
 }
 
 // Generate SMS message for driver outreach
-const generateDriverSMS = (event: EventMapData, driver: Driver): string => {
+type SMSDriver = { id: string | number; name: string; phone?: string | null };
+
+const generateDriverSMS = (event: EventMapData, driver: SMSDriver): string => {
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'EEEE, MMMM d') : 'TBD';
   const time = event.pickupTime || event.eventStartTime;
@@ -425,10 +433,9 @@ export default function DriverPlanningDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
-  const [copiedDriverId, setCopiedDriverId] = useState<number | null>(null);
+  const [copiedDriverId, setCopiedDriverId] = useState<string | number | null>(null);
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
@@ -439,6 +446,7 @@ export default function DriverPlanningDashboard() {
   const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
+  const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -472,30 +480,54 @@ export default function DriverPlanningDashboard() {
     },
   });
 
-  // Assign driver to event
+  // Assign driver to event (supports tentative assignments)
   const assignDriverMutation = useMutation({
-    mutationFn: async ({ eventId, driverId, currentAssigned }: { eventId: number; driverId: string; currentAssigned: string[] }) => {
+    mutationFn: async ({ eventId, driverId, currentAssigned, currentTentative, tentative }: {
+      eventId: number;
+      driverId: string;
+      currentAssigned: string[];
+      currentTentative?: string[];
+      tentative?: boolean;
+    }) => {
       const assignedSet = new Set(currentAssigned);
-      assignedSet.add(driverId);
+      const tentativeSet = new Set(currentTentative || []);
+
+      if (tentative) {
+        // Add to tentative, remove from confirmed if present
+        tentativeSet.add(driverId);
+        assignedSet.delete(driverId);
+      } else {
+        // Add to confirmed, remove from tentative if present
+        assignedSet.add(driverId);
+        tentativeSet.delete(driverId);
+      }
+
       const assignedDriverIds = Array.from(assignedSet);
+      const tentativeDriverIds = Array.from(tentativeSet);
 
       const response = await fetch(`/api/event-requests/${eventId}/drivers`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ assignedDriverIds }),
+        body: JSON.stringify({ assignedDriverIds, tentativeDriverIds }),
       });
       if (!response.ok) throw new Error('Failed to assign driver');
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast({
-        title: 'Driver assigned',
-        description: 'Driver has been marked as assigned for this event.',
+        title: variables.tentative ? 'Driver marked tentative' : 'Driver assigned',
+        description: variables.tentative
+          ? 'Driver has been marked as tentative (?) for this event.'
+          : 'Driver has been confirmed for this event.',
       });
       // Refresh events and update selected event locally
       queryClient.invalidateQueries();
-      setSelectedEvent((prev) => (prev ? { ...prev, assignedDriverIds: data.assignedDriverIds || [] } : prev));
+      setSelectedEvent((prev) => (prev ? {
+        ...prev,
+        assignedDriverIds: data.assignedDriverIds || [],
+        tentativeDriverIds: data.tentativeDriverIds || []
+      } : prev));
     },
     onError: () => {
       toast({
@@ -647,8 +679,11 @@ export default function DriverPlanningDashboard() {
 
     return allEvents
       .filter(event => {
-        // Must be scheduled status
-        if ((event.status || '').toLowerCase() !== 'scheduled') return false;
+        // Status filter - scheduled always included, pending/new_request when toggled
+        const status = (event.status || '').toLowerCase();
+        const isScheduled = status === 'scheduled';
+        const isPendingOrNew = status === 'pending' || status === 'new_request';
+        if (!isScheduled && !(showPendingEvents && isPendingOrNew)) return false;
 
         // Must have a date
         const dateStr = event.scheduledEventDate || event.desiredEventDate;
@@ -662,7 +697,7 @@ export default function DriverPlanningDashboard() {
         const dateB = parseLocalDate(b.scheduledEventDate || b.desiredEventDate!);
         return dateA.getTime() - dateB.getTime();
       });
-  }, [allEvents, weeksAhead]);
+  }, [allEvents, weeksAhead, showPendingEvents]);
 
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
@@ -674,8 +709,21 @@ export default function DriverPlanningDashboard() {
     if (!showOnlyUnmetStaffing) return upcomingEvents;
 
     return upcomingEvents.filter(event => {
-      const driversNeeded = event.driversNeeded || 1;
-      const driversAssigned = event.assignedDriverIds?.length || 0;
+      // Skip self-transport events - they don't need TSP drivers
+      if (event.selfTransport) return false;
+
+      // Only consider events with explicit driver requirements
+      const driversNeeded = event.driversNeeded || 0;
+
+      // If no driver requirement configured, don't show as needing drivers
+      if (driversNeeded === 0) return false;
+
+      // Count ALL assigned drivers including van drivers
+      // Van driver and DHL van both count toward the total driver requirement
+      const driversAssigned = (event.assignedDriverIds?.length || 0) +
+                              (event.assignedVanDriverId ? 1 : 0) +
+                              (event.isDhlVan ? 1 : 0);
+
       return driversAssigned < driversNeeded;
     });
   }, [upcomingEvents, showOnlyUnmetStaffing]);
@@ -683,8 +731,20 @@ export default function DriverPlanningDashboard() {
   // Count of events with unmet staffing needs
   const unmetStaffingCount = useMemo(() => {
     return upcomingEvents.filter(event => {
-      const driversNeeded = event.driversNeeded || 1;
-      const driversAssigned = event.assignedDriverIds?.length || 0;
+      // Skip self-transport events
+      if (event.selfTransport) return false;
+
+      // Only count events with explicit driver requirements
+      const driversNeeded = event.driversNeeded || 0;
+
+      if (driversNeeded === 0) return false;
+
+      // Count ALL assigned drivers including van drivers
+      // Van driver and DHL van both count toward the total driver requirement
+      const driversAssigned = (event.assignedDriverIds?.length || 0) +
+                              (event.assignedVanDriverId ? 1 : 0) +
+                              (event.isDhlVan ? 1 : 0);
+
       return driversAssigned < driversNeeded;
     }).length;
   }, [upcomingEvents]);
@@ -693,11 +753,6 @@ export default function DriverPlanningDashboard() {
   const activeDrivers = useMemo(() => {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
-
-  // Get drivers with geocoded coordinates for map display (drivers only)
-  const driversWithGeocoding = useMemo(() => {
-    return activeDrivers.filter(d => d.latitude && d.longitude);
-  }, [activeDrivers]);
 
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
   const nearbyDrivers = useMemo(() => {
@@ -927,7 +982,7 @@ export default function DriverPlanningDashboard() {
   };
 
   // Copy SMS to clipboard
-  const copyDriverSMS = async (driver: Driver) => {
+  const copyDriverSMS = async (driver: SMSDriver) => {
     if (!selectedEvent) return;
 
     const sms = generateDriverSMS(selectedEvent, driver);
@@ -1071,14 +1126,32 @@ export default function DriverPlanningDashboard() {
                 </Badge>
               )}
             </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPendingEvents}
+                onChange={(e) => setShowPendingEvents(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Include pending/new requests</span>
+            </label>
           </div>
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-2">
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
+                const regularDriversAssigned = event.assignedDriverIds?.length || 0;
+                const driversTentative = event.tentativeDriverIds?.length || 0;
+                const driversNeeded = event.driversNeeded || 0;
+                const hasDriverRequirement = driversNeeded > 0;
+
+                // Count ALL assigned drivers including van drivers for status calculation
+                // Van driver and DHL van both count toward the total driver requirement
+                const totalDriversAssigned = regularDriversAssigned +
+                                             (event.assignedVanDriverId ? 1 : 0) +
+                                             (event.isDhlVan ? 1 : 0);
+                const driversFulfilled = totalDriversAssigned >= driversNeeded;
 
                 return (
                   <Card
@@ -1129,15 +1202,27 @@ export default function DriverPlanningDashboard() {
                         <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
                       </div>
 
-                      {/* Driver status */}
+                      {/* Driver status - only show if event has driver requirements */}
                       <div className="flex items-center gap-2">
-                        <Badge
-                          variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          <Truck className="w-3 h-3 mr-1" />
-                          {driversAssigned}/{driversNeeded} drivers
-                        </Badge>
+                        {event.selfTransport ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Self-transport
+                          </Badge>
+                        ) : hasDriverRequirement ? (
+                          <Badge
+                            variant={driversFulfilled ? 'default' : 'destructive'}
+                            className="text-xs"
+                          >
+                            <Truck className="w-3 h-3 mr-1" />
+                            {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                            {event.assignedVanDriverId && ' (incl. van)'}
+                            {event.isDhlVan && ' (incl. DHL)'}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-gray-500">
+                            No driver requirement
+                          </Badge>
+                        )}
                         {(!event.latitude || !event.longitude) && (
                           <Badge variant="outline" className="text-xs">
                             Needs geocode
@@ -1590,27 +1675,57 @@ export default function DriverPlanningDashboard() {
                           )}
                         </div>
                         {selectedEvent && (
-                          <Button
-                            size="sm"
-                            className="w-full mt-3 text-xs"
-                            disabled={assigningDriverId === driver.id}
-                            onClick={() => {
-                              if (!selectedEvent) return;
-                              setAssigningDriverId(driver.id);
-                              assignDriverMutation.mutate({
-                                eventId: selectedEvent.id,
-                                driverId: driver.id,
-                                currentAssigned: selectedEvent.assignedDriverIds || [],
-                              });
-                            }}
-                          >
-                            {assigningDriverId === driver.id ? (
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            ) : (
-                              <Check className="w-3 h-3 mr-1" />
-                            )}
-                            {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign driver'}
-                          </Button>
+                          <div className="flex gap-1 mt-3">
+                            {/* Tentative assignment button */}
+                            <Button
+                              size="sm"
+                              variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                              className="flex-1 text-xs"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={() => {
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: true,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <span className="mr-1 font-bold">?</span>
+                              )}
+                              {selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                            </Button>
+                            {/* Confirmed assignment button */}
+                            <Button
+                              size="sm"
+                              className="flex-1 text-xs"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={() => {
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: false,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3 mr-1" />
+                              )}
+                              {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                            </Button>
+                          </div>
                         )}
                       </Card>
                     ))}
@@ -1682,7 +1797,12 @@ export default function DriverPlanningDashboard() {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
                 const driversAssigned = event.assignedDriverIds?.length || 0;
-                const driversNeeded = event.driversNeeded || 1;
+                const driversTentative = event.tentativeDriverIds?.length || 0;
+                const driversNeeded = event.driversNeeded || 0;
+                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
+                const driversFulfilled =
+                  driversAssigned >= driversNeeded &&
+                  (!event.vanDriverNeeded || !!event.assignedVanDriverId || !!event.isDhlVan);
 
                 return (
                   <Card
@@ -1706,12 +1826,23 @@ export default function DriverPlanningDashboard() {
                         <Calendar className="w-3 h-3" />
                         {eventDate ? format(parseLocalDate(eventDate), 'MMM d') : 'No date'}
                       </div>
-                      <Badge
-                        variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                        className="text-[10px] px-1 py-0"
-                      >
-                        {driversAssigned}/{driversNeeded} drivers
-                      </Badge>
+                      {event.selfTransport ? (
+                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                          Self
+                        </Badge>
+                      ) : hasDriverRequirement ? (
+                        <Badge
+                          variant={driversFulfilled ? 'default' : 'destructive'}
+                          className="text-[10px] px-1 py-0"
+                        >
+                          {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded}
+                          {event.vanDriverNeeded && (event.isDhlVan ? '+DHL' : (event.assignedVanDriverId ? '+Van' : '+Van!'))}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 text-gray-400">
+                          No req
+                        </Badge>
+                      )}
                       {isSelected && (
                         <div className="pt-2 border-t border-gray-100 space-y-1">
                           {getAssignedStaffLabel(event) && (
@@ -2114,12 +2245,31 @@ export default function DriverPlanningDashboard() {
                         ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
                         : 'No date'}
                     </span>
-                    <Badge
-                      variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 1) ? 'default' : 'destructive'}
-                      className="text-[10px] px-1.5"
-                    >
-                      {selectedEvent.assignedDriverIds?.length || 0}/{selectedEvent.driversNeeded || 1} drivers
-                    </Badge>
+                    {(() => {
+                      const totalDrivers = (selectedEvent.assignedDriverIds?.length || 0) +
+                                          (selectedEvent.assignedVanDriverId ? 1 : 0) +
+                                          (selectedEvent.isDhlVan ? 1 : 0);
+                      const needed = selectedEvent.driversNeeded || 0;
+                      const fulfilled = totalDrivers >= needed;
+                      const tentative = selectedEvent.tentativeDriverIds?.length || 0;
+
+                      if (selectedEvent.selfTransport) {
+                        return <Badge variant="secondary" className="text-[10px] px-1.5">Self</Badge>;
+                      }
+                      if (needed > 0) {
+                        return (
+                          <Badge
+                            variant={fulfilled ? 'default' : 'destructive'}
+                            className="text-[10px] px-1.5"
+                          >
+                            {totalDrivers}{tentative > 0 && <span className="text-amber-300">+{tentative}?</span>}/{needed}
+                            {selectedEvent.assignedVanDriverId && ' van'}
+                            {selectedEvent.isDhlVan && ' DHL'}
+                          </Badge>
+                        );
+                      }
+                      return <Badge variant="outline" className="text-[10px] px-1.5 text-gray-400">No req</Badge>;
+                    })()}
                   </div>
                 </div>
                 <Button
@@ -2177,9 +2327,9 @@ export default function DriverPlanningDashboard() {
               </div>
             </button>
 
-            {/* Filter Toggle */}
+            {/* Filter Toggles */}
             {!mobileEventsCollapsed && (
-              <div className="px-3 py-2 border-b bg-gray-50">
+              <div className="px-3 py-2 border-b bg-gray-50 space-y-2">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
                     type="checkbox"
@@ -2188,6 +2338,15 @@ export default function DriverPlanningDashboard() {
                     className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
                   />
                   <span className="text-gray-600">Only show events needing drivers</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPendingEvents}
+                    onChange={(e) => setShowPendingEvents(e.target.checked)}
+                    className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+                  />
+                  <span className="text-gray-600">Include pending/new requests</span>
                 </label>
               </div>
             )}
@@ -2200,7 +2359,9 @@ export default function DriverPlanningDashboard() {
                     const isSelected = selectedEvent?.id === event.id;
                     const eventDate = event.scheduledEventDate || event.desiredEventDate;
                     const driversAssigned = event.assignedDriverIds?.length || 0;
-                    const driversNeeded = event.driversNeeded || 1;
+                    const driversTentative = event.tentativeDriverIds?.length || 0;
+                    const driversNeeded = event.driversNeeded || 0;
+                    const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
 
                     return (
                       <Card
@@ -2243,13 +2404,26 @@ export default function DriverPlanningDashboard() {
                             <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant={driversAssigned >= driversNeeded ? 'default' : 'destructive'}
-                              className="text-xs px-2 py-0.5"
-                            >
-                              <Truck className="w-3.5 h-3.5 mr-1" />
-                              {driversAssigned}/{driversNeeded} drivers
-                            </Badge>
+                            {event.selfTransport ? (
+                              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                Self-transport
+                              </Badge>
+                            ) : hasDriverRequirement ? (
+                              <Badge
+                                variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
+                                className="text-xs px-2 py-0.5"
+                              >
+                                <Truck className="w-3.5 h-3.5 mr-1" />
+                                {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                                {event.vanDriverNeeded && (
+                                  event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van' : ' + Van needed')
+                                )}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">
+                                No driver requirement
+                              </Badge>
+                            )}
                             {event.estimatedSandwichCount && (
                               <span className="text-xs text-gray-500">~{event.estimatedSandwichCount} sandwiches</span>
                             )}
@@ -2523,6 +2697,32 @@ export default function DriverPlanningDashboard() {
                                   </>
                                 )}
                               </Button>
+                              {/* Tentative assignment button */}
+                              <Button
+                                size="sm"
+                                variant={selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                                className="text-xs h-8"
+                                disabled={assigningDriverId === driver.id}
+                                onClick={() => {
+                                  if (!selectedEvent) return;
+                                  setAssigningDriverId(driver.id);
+                                  assignDriverMutation.mutate({
+                                    eventId: selectedEvent.id,
+                                    driverId: String(driver.id),
+                                    currentAssigned: selectedEvent.assignedDriverIds || [],
+                                    currentTentative: selectedEvent.tentativeDriverIds || [],
+                                    tentative: true,
+                                  });
+                                }}
+                              >
+                                {assigningDriverId === driver.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : (
+                                  <span className="mr-1 font-bold">?</span>
+                                )}
+                                {selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                              </Button>
+                              {/* Confirmed assignment button */}
                               <Button
                                 size="sm"
                                 className="text-xs h-8"
@@ -2532,19 +2732,19 @@ export default function DriverPlanningDashboard() {
                                   setAssigningDriverId(driver.id);
                                   assignDriverMutation.mutate({
                                     eventId: selectedEvent.id,
-                                    driverId: driver.id,
+                                    driverId: String(driver.id),
                                     currentAssigned: selectedEvent.assignedDriverIds || [],
+                                    currentTentative: selectedEvent.tentativeDriverIds || [],
+                                    tentative: false,
                                   });
                                 }}
                               >
                                 {assigningDriverId === driver.id ? (
                                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                ) : selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? (
-                                  <Check className="w-3 h-3 mr-1" />
                                 ) : (
                                   <Check className="w-3 h-3 mr-1" />
                                 )}
-                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Assigned' : 'Assign'}
+                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
                               </Button>
                             </div>
                           </div>

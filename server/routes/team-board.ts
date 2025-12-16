@@ -45,7 +45,7 @@ const createItemSchema = insertTeamBoardItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
-    type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
+    type: z.enum(['task', 'note', 'idea', 'canvas']).optional(), // Match database schema - 'reminder' removed
     categoryId: z.number().int().positive().optional().nullable(), // Holding zone category (legacy single)
     categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
@@ -54,6 +54,26 @@ const createItemSchema = insertTeamBoardItemSchema
     dueDate: z.string().datetime().optional().nullable(), // Optional due date
     assignedTo: z.array(z.string()).nullable().optional(), // Allow assignment on creation
     assignedToNames: z.array(z.string()).nullable().optional(), // Allow assignment names on creation
+    isCanvas: z.boolean().optional(),
+    canvasStatus: z.enum(['draft', 'in_review', 'published', 'archived']).optional(),
+    canvasSections: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          cards: z
+            .array(
+              z.object({
+                id: z.string(),
+                type: z.string().default('text'),
+                content: z.any(),
+              })
+            )
+            .optional(),
+        })
+      )
+      .optional()
+      .nullable(),
   });
 
 const updateItemSchema = z.object({
@@ -66,9 +86,32 @@ const updateItemSchema = z.object({
   isUrgent: z.boolean().optional(), // Urgent flag for priority items
   isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
   content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
-  type: z.enum(['task', 'note', 'idea']).optional(),
+  type: z.enum(['task', 'note', 'idea', 'canvas']).optional(),
   details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
   dueDate: z.string().datetime().optional().nullable(), // Optional due date
+  isCanvas: z.boolean().optional(),
+  canvasStatus: z.enum(['draft', 'in_review', 'published', 'archived']).optional(),
+  canvasSections: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        cards: z
+          .array(
+            z.object({
+              id: z.string(),
+              type: z.string().default('text'),
+              content: z.any(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .optional()
+    .nullable(),
+  canvasPublishedSnapshot: z.any().optional(),
+  canvasPublishedAt: z.string().datetime().optional().nullable(),
+  canvasPublishedBy: z.string().optional().nullable(),
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
@@ -366,10 +409,21 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
         ? [itemData.categoryId]
         : [];
 
+    const isCanvas = itemData.isCanvas === true || itemData.type === 'canvas';
+    const canvasSections = isCanvas
+      ? itemData.canvasSections && itemData.canvasSections.length > 0
+        ? itemData.canvasSections
+        : [
+            { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: itemData.details || '' }] },
+            { id: 'working-notes', title: 'Working Notes', cards: [] },
+          ]
+      : null;
+    const canvasStatus = isCanvas ? itemData.canvasStatus || 'draft' : null;
+
     // Prepare the item data for insertion (keep legacy categoryId for backward compatibility)
     const newItem: InsertTeamBoardItem = {
       content: itemData.content,
-      type: itemData.type || 'note',
+      type: isCanvas ? 'canvas' : itemData.type || 'note',
       createdBy: req.user.id,
       createdByName: displayName,
       status: 'open',
@@ -381,6 +435,12 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       isPrivate: itemData.isPrivate ?? false,
       details: itemData.details ?? null,
       dueDate: itemData.dueDate ? new Date(itemData.dueDate) : null,
+      isCanvas,
+      canvasSections,
+      canvasStatus: canvasStatus || 'draft',
+      canvasPublishedSnapshot: null,
+      canvasPublishedAt: null,
+      canvasPublishedBy: null,
     };
 
     // Insert the new item
@@ -495,8 +555,41 @@ teamBoardRouter.patch('/:id',
         : null; // null means don't update categories
 
     // Prepare update data, setting legacy categoryId if categories are being updated
+    const willBeCanvas =
+      updateData.isCanvas === true ||
+      updateData.type === 'canvas' ||
+      existingItem.isCanvas === true;
+
     const dbUpdateData = {
       ...updateData,
+      isCanvas: willBeCanvas,
+      ...(willBeCanvas
+        ? {
+            canvasStatus: updateData.canvasStatus || existingItem.canvasStatus || 'draft',
+            canvasSections:
+              updateData.canvasSections !== undefined
+                ? updateData.canvasSections
+                : existingItem.canvasSections,
+            canvasPublishedSnapshot:
+              updateData.canvasPublishedSnapshot !== undefined
+                ? updateData.canvasPublishedSnapshot
+                : existingItem.canvasPublishedSnapshot,
+            canvasPublishedAt:
+              updateData.canvasPublishedAt !== undefined
+                ? updateData.canvasPublishedAt
+                : existingItem.canvasPublishedAt,
+            canvasPublishedBy:
+              updateData.canvasPublishedBy !== undefined
+                ? updateData.canvasPublishedBy
+                : existingItem.canvasPublishedBy,
+          }
+        : {
+            canvasSections: null,
+            canvasStatus: null,
+            canvasPublishedSnapshot: null,
+            canvasPublishedAt: null,
+            canvasPublishedBy: null,
+          }),
       ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
       ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
       ...(categoryIdsToAssign !== null ? { categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null } : {}),

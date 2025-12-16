@@ -1047,6 +1047,54 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
   }
 });
 
+// Diagnostic endpoint to check if event exists in database
+// This bypasses the storage wrapper to directly query the database
+router.get(
+  '/:id(\\d+)/diagnose',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      logger.info(`[DIAGNOSE] Checking event ${id}`);
+
+      // Method 1: Storage wrapper (normal method)
+      const storageResult = await storage.getEventRequest(id);
+
+      // Method 2: Direct database query
+      const { db } = await import('../db');
+      const { eventRequests } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const [directResult] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+
+      const diagnosis = {
+        requestedId: id,
+        storageFound: !!storageResult,
+        directDbFound: !!directResult,
+        storageSummary: storageResult ? {
+          id: storageResult.id,
+          organizationName: storageResult.organizationName,
+          status: storageResult.status,
+          deletedAt: storageResult.deletedAt,
+        } : null,
+        directDbSummary: directResult ? {
+          id: directResult.id,
+          organizationName: directResult.organizationName,
+          status: directResult.status,
+          deletedAt: directResult.deletedAt,
+        } : null,
+        mismatch: !!storageResult !== !!directResult,
+      };
+
+      logger.info(`[DIAGNOSE] Results:`, JSON.stringify(diagnosis, null, 2));
+      res.json(diagnosis);
+    } catch (error) {
+      logger.error('[DIAGNOSE] Error:', error);
+      res.status(500).json({ error: String(error) });
+    }
+  }
+);
+
 // Get single event request
 router.get(
   '/:id(\\d+)',
@@ -1690,14 +1738,33 @@ router.patch(
       }
 
       // Get original data for audit logging
+      logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);
       const originalEvent = await storage.getEventRequestById(id);
+      logger.info(`[PATCH /:id] Storage returned:`, originalEvent ? `Event found (${originalEvent.organizationName})` : 'null/undefined');
+
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);
         logger.error(`[PATCH /:id] Attempted update fields:`, Object.keys(updates).join(', '));
         logger.error(`[PATCH /:id] User: ${req.user?.id} (${req.user?.email})`);
         logger.error(`[PATCH /:id] Request body preview:`, JSON.stringify(updates).substring(0, 200));
-        
-        return res.status(404).json({ 
+
+        // Try direct database check to see if event exists but is soft-deleted
+        try {
+          const { db } = await import('../db');
+          const { eventRequests } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          const [directCheck] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+          if (directCheck) {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} EXISTS in DB but storage returned null!`);
+            logger.error(`[PATCH /:id] DIAGNOSTIC: deletedAt = ${directCheck.deletedAt}, status = ${directCheck.status}`);
+          } else {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} truly does NOT exist in database`);
+          }
+        } catch (diagError) {
+          logger.error(`[PATCH /:id] DIAGNOSTIC check failed:`, diagError);
+        }
+
+        return res.status(404).json({
           message: 'Event request not found',
           eventId: id,
           error: 'EVENT_NOT_FOUND',
@@ -1801,7 +1868,11 @@ router.patch(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const hasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const usesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const hasAssignedVanDriver = usesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const totalAssignedDrivers = assignedRegularDrivers + (hasAssignedVanDriver ? 1 : 0);
@@ -2118,6 +2189,7 @@ router.put(
         'hasRefrigeration',
         'volunteersNeeded',
         'vanDriverNeeded',
+        'isDhlVan',
         'isConfirmed',
         'addedToOfficialSheet',
       ];
@@ -2131,6 +2203,16 @@ router.put(
           logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
         }
       });
+
+      // Keep van-related flags in sync when transport changes
+      if (processedUpdates.selfTransport === true) {
+        processedUpdates.vanDriverNeeded = false;
+        processedUpdates.assignedVanDriverId = null;
+        processedUpdates.isDhlVan = false;
+      }
+      if (processedUpdates.vanDriverNeeded === false) {
+        processedUpdates.isDhlVan = false;
+      }
 
       // Process comprehensive scheduling data if status is scheduled
       if (processedUpdates.status === 'scheduled') {
@@ -2190,7 +2272,11 @@ router.put(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const putHasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const putUsesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const putHasAssignedVanDriver = putUsesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const putTotalAssignedDrivers = putAssignedRegularDrivers + (putHasAssignedVanDriver ? 1 : 0);
@@ -2203,7 +2289,7 @@ router.put(
       }
       
       // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
-      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
+      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined || processedUpdates.isDhlVan !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
         
         if (putTotalAssignedDrivers > currentDriversNeeded) {
@@ -2866,6 +2952,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     const eventId = parseInt(req.params.id);
     const {
       assignedDriverIds,
+      tentativeDriverIds,
       driverPickupTime,
       driverNotes,
       driversArranged,
@@ -2874,6 +2961,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       assignedVanDriverId,
       customVanDriverName,
       vanDriverNotes,
+      isDhlVan,
     } = req.body;
 
     // Validate that the event exists first
@@ -2885,6 +2973,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     // Update the event with driver assignments
     const updateData: Partial<EventRequest> = {
       assignedDriverIds: assignedDriverIds || [],
+      tentativeDriverIds: tentativeDriverIds !== undefined ? (tentativeDriverIds || []) : undefined,
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
       driversArranged:
@@ -2892,6 +2981,11 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
           ? driversArranged
           : assignedDriverIds && assignedDriverIds.length > 0,
     };
+
+    // Only include tentativeDriverIds if it was actually provided in the request
+    if (tentativeDriverIds === undefined) {
+      delete updateData.tentativeDriverIds;
+    }
 
     // Add van driver fields if provided
     if (vanDriverNeeded !== undefined)
@@ -2902,12 +2996,23 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.customVanDriverName = customVanDriverName;
     if (vanDriverNotes !== undefined)
       updateData.vanDriverNotes = vanDriverNotes;
+    if (isDhlVan !== undefined)
+      updateData.isDhlVan = !!isDhlVan;
+    if (vanDriverNeeded === false) {
+      updateData.isDhlVan = false;
+      if (assignedVanDriverId === undefined) {
+        updateData.assignedVanDriverId = null;
+      }
+    }
 
     // Validate and auto-adjust driversNeeded based on assignments
     const regularDriverCount = Array.isArray(assignedDriverIds) ? assignedDriverIds.length : 0;
     
     // Check if van driver is assigned (either being set now or already exists)
-    const hasVanDriver = (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
+    const dhlVan =
+      isDhlVan !== undefined ? !!isDhlVan : (existingEvent as any).isDhlVan === true;
+    const hasVanDriver = dhlVan ||
+      (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
       || (assignedVanDriverId === undefined && existingEvent.assignedVanDriverId !== null && existingEvent.assignedVanDriverId !== '');
     
     const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);
@@ -4140,7 +4245,7 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
 router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
-    const { assignedRecipientIds } = req.body;
+    const { assignedRecipientIds, recipientAllocations } = req.body;
 
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: 'Valid event ID required' });
@@ -4158,11 +4263,23 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
-    // Update the event with recipient assignment
-    const updatedEventRequest = await storage.updateEventRequest(eventId, {
-      assignedRecipientIds: assignedRecipientIds || [],
+    // Build update data
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
-    });
+    };
+
+    // Update assignedRecipientIds if provided
+    if (assignedRecipientIds !== undefined) {
+      updateData.assignedRecipientIds = assignedRecipientIds || [];
+    }
+
+    // Update recipientAllocations if provided
+    if (recipientAllocations !== undefined) {
+      updateData.recipientAllocations = recipientAllocations || [];
+    }
+
+    // Update the event with recipient assignment
+    const updatedEventRequest = await storage.updateEventRequest(eventId, updateData);
 
     if (!updatedEventRequest) {
       return res.status(404).json({ error: 'Failed to update event request' });
@@ -4173,7 +4290,7 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       res,
       'EVENT_REQUESTS_EDIT',
       `Updated recipient assignments for event request: ${eventId}`,
-      { recipientIds: assignedRecipientIds }
+      { recipientIds: assignedRecipientIds, recipientAllocations }
     );
 
     res.json(updatedEventRequest);

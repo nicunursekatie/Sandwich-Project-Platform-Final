@@ -81,6 +81,11 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
+import {
+  RecipientAllocationEditor,
+  RecipientAllocationDisplay,
+  type RecipientAllocation,
+} from '../RecipientAllocationEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
@@ -326,6 +331,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
+  const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -487,7 +493,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   // Calculate staffing status
   const driverAssigned =
     parsePostgresArray(request.assignedDriverIds).length +
-    (request.assignedVanDriverId ? 1 : 0);
+    (request.assignedVanDriverId ? 1 : 0) +
+    (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(
     request.assignedVolunteerIds
@@ -995,7 +1002,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </>
                 )}
 
-                {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
                   <Badge variant="outline" className={`${isWithin7Days ? 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30' : 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'} font-medium`}>
                     <Car className="w-3 h-3 mr-1" />
                     Van Driver Needed
@@ -1455,35 +1462,34 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Delivery & Logistics
           </h3>
 
-          {/* Recipients */}
+          {/* Recipients with Allocations */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-[#236383]" />
-              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
-            </div>
-            {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-              <div className="ml-8 space-y-2">
-                <MultiRecipientSelector
-                  value={editingValue ? JSON.parse(editingValue) : []}
-                  onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                  placeholder="Select recipient organizations..."
-                  data-testid="assigned-recipients-editor"
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={saveEdit}>
-                    <Save className="w-3 h-3 mr-1" />
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                    <X className="w-3 h-3 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-[#236383]" />
+                <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
               </div>
-            ) : (
-              <div className="ml-8 flex flex-wrap gap-2 group">
-                {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                  request.assignedRecipientIds.map((recipientId, index) => {
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowRecipientAllocationDialog(true)}
+                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              )}
+            </div>
+            <div className="ml-8">
+              {/* Show allocations if available, otherwise fall back to legacy display */}
+              {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
+                <RecipientAllocationDisplay
+                  allocations={(request as any).recipientAllocations as RecipientAllocation[]}
+                />
+              ) : request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {request.assignedRecipientIds.map((recipientId, index) => {
                     const { name, type } = resolveRecipientName(recipientId);
                     return (
                       <Badge
@@ -1498,30 +1504,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {name}
                       </Badge>
                     );
-                  })
-                ) : (
-                  <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] font-medium">
-                    <Building className="w-3 h-3 mr-1" />
-                    No recipients assigned
-                  </Badge>
-                )}
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      startEditing(
-                        'assignedRecipientIds',
-                        JSON.stringify(request.assignedRecipientIds || [])
-                      )
-                    }
-                    className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            )}
+                  })}
+                </div>
+              ) : (
+                <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] font-medium">
+                  <Building className="w-3 h-3 mr-1" />
+                  No recipients assigned
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Overnight Holding */}
@@ -1573,6 +1564,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <X className="w-3 h-3" />
                         </Button>
                       )}
+                    </Badge>
+                  )}
+                  {request.isDhlVan && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300 text-sm px-3 py-1.5 font-medium">
+                      DHL Van
                     </Badge>
                   )}
                   {parsePostgresArray(request.assignedDriverIds).map((driverId) => {
@@ -2242,6 +2238,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         isOpen={showSendCorrectionDialog}
         onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
+      />
+
+      {/* Recipient Allocation Editor Dialog */}
+      <RecipientAllocationEditor
+        open={showRecipientAllocationDialog}
+        onOpenChange={setShowRecipientAllocationDialog}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        estimatedSandwichCount={request.estimatedSandwichCount}
+        currentAllocations={(request as any).recipientAllocations as RecipientAllocation[] | null}
       />
     </Card>
   );

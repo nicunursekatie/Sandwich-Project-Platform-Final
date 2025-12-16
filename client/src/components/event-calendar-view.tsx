@@ -92,7 +92,10 @@ const getUnfilledNeeds = (event: EventRequest) => {
 
   // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
   const driversNeededCount = event.driversNeeded ?? 0;
-  const driversAssignedCount = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+  const driversAssignedCount =
+    (event.assignedDriverIds?.length || 0) +
+    (event.assignedVanDriverId ? 1 : 0) +
+    (event.isDhlVan ? 1 : 0);
   const needsDriver = driversNeededCount > driversAssignedCount;
   const driversUnfilled = Math.max(0, driversNeededCount - driversAssignedCount);
 
@@ -137,6 +140,15 @@ const getStaffingIndicators = (event: EventRequest) => {
     });
   }
 
+  if (event.isDhlVan) {
+    indicators.push({
+      icon: Truck,
+      count: null,
+      color: 'text-amber-700',
+      tooltip: 'DHL van assigned',
+    });
+  }
+
   if (event.speakersNeeded && event.speakersNeeded > 0) {
     indicators.push({
       icon: Mic,
@@ -168,6 +180,10 @@ const getAssignedStaffNames = (event: EventRequest, resolveUserName: (id: string
     if (name && name !== 'Not assigned') {
       assigned.push({ type: 'van', name, icon: '🚐' });
     }
+  }
+
+  if (event.isDhlVan) {
+    assigned.push({ type: 'van', name: 'DHL Van', icon: '🚚' });
   }
 
   // Drivers
@@ -354,8 +370,8 @@ const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
       const hasTimeOverlap = timesOverlap(start1, end1, start2, end2);
 
       // Check van conflict
-      const event1NeedsVan = event1.assignedVanDriverId || (event1.vanBooked && event1.vanBooked.toLowerCase() !== 'no');
-      const event2NeedsVan = event2.assignedVanDriverId || (event2.vanBooked && event2.vanBooked.toLowerCase() !== 'no');
+      const event1NeedsVan = !event1.isDhlVan && (event1.assignedVanDriverId || (event1.vanBooked && event1.vanBooked.toLowerCase() !== 'no'));
+      const event2NeedsVan = !event2.isDhlVan && (event2.assignedVanDriverId || (event2.vanBooked && event2.vanBooked.toLowerCase() !== 'no'));
 
       if (event1NeedsVan && event2NeedsVan && hasTimeOverlap) {
         vanConflicts++;

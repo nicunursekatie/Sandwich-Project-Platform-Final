@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
-import { isNotNull, and, or, ne, eq } from 'drizzle-orm';
+import { isNotNull, and, ne, eq } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
@@ -87,9 +87,15 @@ router.get('/', async (req, res) => {
         externalId: eventRequests.externalId,
         driversNeeded: eventRequests.driversNeeded,
         assignedDriverIds: eventRequests.assignedDriverIds,
-        assignedRecipientIds: eventRequests.assignedRecipientIds,
+        tentativeDriverIds: eventRequests.tentativeDriverIds,
         pickupTime: eventRequests.pickupTime,
         pickupTimeWindow: eventRequests.pickupTimeWindow,
+        selfTransport: eventRequests.selfTransport,
+        vanDriverNeeded: eventRequests.vanDriverNeeded,
+        assignedVanDriverId: eventRequests.assignedVanDriverId,
+        isDhlVan: eventRequests.isDhlVan,
+        assignedRecipientIds: eventRequests.assignedRecipientIds,
+        recipientAllocations: eventRequests.recipientAllocations,
       })
       .from(eventRequests)
       .where(and(...conditions));

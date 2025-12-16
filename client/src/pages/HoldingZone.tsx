@@ -42,6 +42,7 @@ import {
   Unlink,
   ChevronRight,
   Copy,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -70,7 +71,7 @@ interface HoldingZoneCategory {
 interface HoldingZoneItem {
   id: number;
   content: string;
-  type: 'task' | 'note' | 'idea';
+  type: 'task' | 'note' | 'idea' | 'canvas';
   status: 'open' | 'todo' | 'done';
   createdBy: string;
   createdByName: string;
@@ -90,7 +91,25 @@ interface HoldingZoneItem {
   userHasLiked?: boolean;
   parentItemId?: number | null; // Parent item for nesting
   childCount?: number; // Number of items nested under this item
+  isCanvas?: boolean;
+  canvasSections?: CanvasSection[] | null;
+  canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived' | null;
+  canvasPublishedSnapshot?: CanvasSection[] | null;
+  canvasPublishedAt?: Date | string | null;
+  canvasPublishedBy?: string | null;
 }
+
+type CanvasCard = {
+  id: string;
+  type: 'text';
+  content: string;
+};
+
+type CanvasSection = {
+  id: string;
+  title: string;
+  cards: CanvasCard[];
+};
 
 interface Comment {
   id: number;
@@ -524,11 +543,15 @@ export default function HoldingZone() {
   const [selectedStatus, setSelectedStatus] = useState<string>('active');
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
-  const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
+  const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea' | 'canvas'>('task');
   const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [newItemDetails, setNewItemDetails] = useState('');
+  const [newCanvasSections, setNewCanvasSections] = useState<CanvasSection[]>([
+    { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: '' }] },
+    { id: 'working-notes', title: 'Working Notes', cards: [] },
+  ]);
   const [newItemDueDate, setNewItemDueDate] = useState('');
   const [newItemAssignedTo, setNewItemAssignedTo] = useState<string[]>([]);
   const [newItemAssignedToNames, setNewItemAssignedToNames] = useState<string[]>([]);
@@ -544,11 +567,12 @@ export default function HoldingZone() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
   const [editItemContent, setEditItemContent] = useState('');
-  const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
+  const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea' | 'canvas'>('task');
   const [editItemCategoryIds, setEditItemCategoryIds] = useState<number[]>([]);
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
   const [editItemDetails, setEditItemDetails] = useState('');
+  const [editCanvasSections, setEditCanvasSections] = useState<CanvasSection[]>([]);
   const [editItemDueDate, setEditItemDueDate] = useState('');
   const [isEditCreatingNewCategory, setIsEditCreatingNewCategory] = useState(false);
   const [editNewCategoryName, setEditNewCategoryName] = useState('');
@@ -557,7 +581,7 @@ export default function HoldingZone() {
   const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
   const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
   const [editingDetailsContent, setEditingDetailsContent] = useState('');
-  const [activeTab, setActiveTab] = useState<'tasks' | 'todo' | 'notes'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'todo' | 'notes' | 'canvas'>('tasks');
   const [upgradeToProjectDialogOpen, setUpgradeToProjectDialogOpen] = useState(false);
   const [itemToUpgrade, setItemToUpgrade] = useState<HoldingZoneItem | null>(null);
   const [upgradeProjectTitle, setUpgradeProjectTitle] = useState('');
@@ -694,7 +718,7 @@ export default function HoldingZone() {
   };
 
   // Filter items - split by type and status
-  const { filteredTasks, filteredTodo, filteredNotes } = useMemo(() => {
+  const { filteredTasks, filteredTodo, filteredNotes, filteredCanvases } = useMemo(() => {
     let filtered = items;
 
     // Filter by active/archived status
@@ -718,17 +742,25 @@ export default function HoldingZone() {
     const tasks = filtered.filter(item => item.type === 'task' && item.status !== 'todo');
     const todo = filtered.filter(item => item.status === 'todo'); // To-Do List items (any type)
     const notes = filtered.filter(item => (item.type === 'note' || item.type === 'idea') && item.status !== 'todo');
+    const canvases = filtered.filter(item => (item.isCanvas || item.type === 'canvas') && item.status !== 'todo');
 
     // Sort each array so children appear right after their parents
     return { 
       filteredTasks: sortItemsWithChildren(tasks), 
       filteredTodo: sortItemsWithChildren(todo), 
-      filteredNotes: sortItemsWithChildren(notes) 
+      filteredNotes: sortItemsWithChildren(notes),
+      filteredCanvases: sortItemsWithChildren(canvases),
     };
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
 
   // Get current items based on active tab
-  const currentItems = activeTab === 'tasks' ? filteredTasks : activeTab === 'todo' ? filteredTodo : filteredNotes;
+  const currentItems = activeTab === 'tasks'
+    ? filteredTasks
+    : activeTab === 'todo'
+      ? filteredTodo
+      : activeTab === 'canvas'
+        ? filteredCanvases
+        : filteredNotes;
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -759,7 +791,7 @@ export default function HoldingZone() {
   const createItemMutation = useMutation({
     mutationFn: async (data: {
       content: string;
-      type: 'task' | 'note' | 'idea';
+      type: 'task' | 'note' | 'idea' | 'canvas';
       categoryIds: number[] | null;
       isUrgent: boolean;
       isPrivate: boolean;
@@ -767,6 +799,9 @@ export default function HoldingZone() {
       dueDate: string | null;
       assignedTo: string[] | null;
       assignedToNames: string[] | null;
+      isCanvas?: boolean;
+      canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived';
+      canvasSections?: CanvasSection[] | null;
     }) => {
       return await apiRequest('POST', '/api/team-board', data);
     },
@@ -782,6 +817,10 @@ export default function HoldingZone() {
       setNewItemDueDate('');
       setNewItemAssignedTo([]);
       setNewItemAssignedToNames([]);
+      setNewCanvasSections([
+        { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: '' }] },
+        { id: 'working-notes', title: 'Working Notes', cards: [] },
+      ]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -822,17 +861,20 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate }: {
+    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas }: {
       id: number;
       content: string;
-      type: 'task' | 'note' | 'idea';
+      type: 'task' | 'note' | 'idea' | 'canvas';
       categoryIds: number[];
       isUrgent: boolean;
       isPrivate: boolean;
       details?: string | null;
       dueDate?: string | null;
+      canvasSections?: CanvasSection[] | null;
+      canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived';
+      isCanvas?: boolean;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -845,6 +887,7 @@ export default function HoldingZone() {
       setEditItemIsPrivate(false);
       setEditItemDetails('');
       setEditItemDueDate('');
+      setEditCanvasSections([]);
       toast({
         title: 'Item updated',
         description: 'Your item has been updated successfully',
@@ -1102,6 +1145,45 @@ export default function HoldingZone() {
     });
   };
 
+  const addCanvasSection = (setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>) => {
+    setter(prev => [
+      ...prev,
+      {
+        id: `section-${Date.now()}`,
+        title: `Section ${prev.length + 1}`,
+        cards: [],
+      },
+    ]);
+  };
+
+  const updateCanvasSectionTitle = (
+    setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>,
+    sectionId: string,
+    title: string
+  ) => {
+    setter(prev =>
+      prev.map(section => (section.id === sectionId ? { ...section, title } : section))
+    );
+  };
+
+  const updateCanvasSectionContent = (
+    setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>,
+    sectionId: string,
+    content: string
+  ) => {
+    setter(prev =>
+      prev.map(section => {
+        if (section.id !== sectionId) return section;
+        const cards = section.cards && section.cards.length > 0
+          ? section.cards.map((card, idx) =>
+              idx === 0 ? { ...card, type: 'text', content } : card
+            )
+          : [{ id: `${sectionId}-card-1`, type: 'text' as const, content }];
+        return { ...section, cards };
+      })
+    );
+  };
+
   const handleSubmitItem = () => {
     if (!newItemContent.trim()) {
       toast({
@@ -1111,6 +1193,8 @@ export default function HoldingZone() {
       });
       return;
     }
+
+    const isCanvas = newItemType === 'canvas';
 
     createItemMutation.mutate({
       content: newItemContent.trim(),
@@ -1122,6 +1206,9 @@ export default function HoldingZone() {
       dueDate: newItemDueDate ? new Date(newItemDueDate).toISOString() : null,
       assignedTo: newItemAssignedTo.length > 0 ? newItemAssignedTo : null,
       assignedToNames: newItemAssignedToNames.length > 0 ? newItemAssignedToNames : null,
+      isCanvas,
+      canvasStatus: isCanvas ? 'draft' : undefined,
+      canvasSections: isCanvas ? newCanvasSections : null,
     });
   };
 
@@ -1323,9 +1410,9 @@ export default function HoldingZone() {
         </Card>
       </div>
 
-      {/* Tabs for Tasks, To-Do List, and Notes */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'todo' | 'notes')} className="mb-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+      {/* Tabs for Tasks, To-Do List, Notes, and Canvases */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'todo' | 'notes' | 'canvas')} className="mb-6">
+        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
           <TabsTrigger value="tasks" className="flex items-center gap-2" data-testid="tab-tasks">
             <ListTodo className="h-4 w-4" />
             Task-Drafts
@@ -1353,6 +1440,15 @@ export default function HoldingZone() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="canvas" className="flex items-center gap-2" data-testid="tab-canvas">
+            <LayoutTemplate className="h-4 w-4" />
+            Canvases
+            {filteredCanvases.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredCanvases.length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -1376,6 +1472,13 @@ export default function HoldingZone() {
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 dark:text-gray-400 text-lg">
                   No items in To-Do List. Promote task-drafts or subtasks to add them here!
+                </p>
+              </>
+            ) : activeTab === 'canvas' ? (
+              <>
+                <LayoutTemplate className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No canvases yet. {canSubmit && "Click 'Submit Item' and choose Canvas to start one."}
                 </p>
               </>
             ) : (
@@ -1469,6 +1572,7 @@ export default function HoldingZone() {
                           setEditItemIsUrgent(item.isUrgent);
                           setEditItemIsPrivate(item.isPrivate);
                           setEditItemDetails(item.details || '');
+                          setEditCanvasSections((item.canvasSections as CanvasSection[] | null) || []);
                           setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
                           setEditDialogOpen(true);
                         }}
@@ -1494,6 +1598,31 @@ export default function HoldingZone() {
                     </div>
                   )}
                 </div>
+
+                {(item.isCanvas || item.type === 'canvas') && (
+                  <div className="mb-3 space-y-2">
+                    <p className="text-sm font-semibold text-[#236383]">Canvas</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {((item.canvasSections as CanvasSection[] | null) || []).length === 0 ? (
+                        <p className="text-sm text-gray-500">No sections yet</p>
+                      ) : (
+                        ((item.canvasSections as CanvasSection[] | null) || []).map((section) => (
+                          <div key={section.id} className="rounded-lg border border-gray-200 p-3 bg-[#F9FBFC]">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-bold text-gray-800 truncate">{section.title}</span>
+                              <Badge variant="outline" className="text-[10px] capitalize">
+                                {item.canvasStatus || 'draft'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                              {section.cards?.[0]?.content || 'No content yet'}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Details Section with Inline Editing */}
                 <div className="mb-3">
@@ -1852,6 +1981,7 @@ export default function HoldingZone() {
                   <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
+                  <SelectItem value="canvas">Canvas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2009,6 +2139,45 @@ export default function HoldingZone() {
                 data-testid="textarea-new-item-details"
               />
             </div>
+
+            {newItemType === 'canvas' && (
+              <div className="space-y-3 rounded-lg border p-3 bg-[#F9FBFC]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Canvas Sections</Label>
+                    <p className="text-xs text-gray-500">Keep it light: Context + Working Notes by default.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addCanvasSection(setNewCanvasSections)}
+                  >
+                    + Add Section
+                  </Button>
+                </div>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {newCanvasSections.map((section, idx) => (
+                    <div key={section.id} className="rounded border border-gray-200 p-3 space-y-2 bg-white">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-600">Section {idx + 1}</Label>
+                        <Input
+                          value={section.title}
+                          onChange={(e) => updateCanvasSectionTitle(setNewCanvasSections, section.id, e.target.value)}
+                          placeholder="Section title"
+                          className="text-sm"
+                        />
+                      </div>
+                      <Textarea
+                        value={section.cards?.[0]?.content || ''}
+                        onChange={(e) => updateCanvasSectionContent(setNewCanvasSections, section.id, e.target.value)}
+                        placeholder="Add notes, ideas, or context..."
+                        className="min-h-[80px] text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="item-due-date">Due Date (Optional)</Label>
@@ -2177,6 +2346,7 @@ export default function HoldingZone() {
                   <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
+                  <SelectItem value="canvas">Canvas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2223,6 +2393,45 @@ export default function HoldingZone() {
                 className="min-h-[100px]"
               />
             </div>
+
+            {editItemType === 'canvas' && (
+              <div className="space-y-3 rounded-lg border p-3 bg-[#F9FBFC]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Canvas Sections</Label>
+                    <p className="text-xs text-gray-500">Light structure the team can collaborate on.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addCanvasSection(setEditCanvasSections)}
+                  >
+                    + Add Section
+                  </Button>
+                </div>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {editCanvasSections.map((section, idx) => (
+                    <div key={section.id} className="rounded border border-gray-200 p-3 space-y-2 bg-white">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-600">Section {idx + 1}</Label>
+                        <Input
+                          value={section.title}
+                          onChange={(e) => updateCanvasSectionTitle(setEditCanvasSections, section.id, e.target.value)}
+                          placeholder="Section title"
+                          className="text-sm"
+                        />
+                      </div>
+                      <Textarea
+                        value={section.cards?.[0]?.content || ''}
+                        onChange={(e) => updateCanvasSectionContent(setEditCanvasSections, section.id, e.target.value)}
+                        placeholder="Add notes, ideas, or context..."
+                        className="min-h-[80px] text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="edit-item-due-date">Due Date (Optional)</Label>
@@ -2368,6 +2577,7 @@ export default function HoldingZone() {
                 setEditItemIsPrivate(false);
                 setEditItemDetails('');
                 setEditItemDueDate('');
+                setEditCanvasSections([]);
                 setIsEditCreatingNewCategory(false);
                 setEditNewCategoryName('');
                 setEditNewCategoryColor('#236383');
@@ -2387,6 +2597,11 @@ export default function HoldingZone() {
                     isPrivate: editItemIsPrivate,
                     details: editItemDetails.trim() || null,
                     dueDate: editItemDueDate ? new Date(editItemDueDate).toISOString() : null,
+                    isCanvas: editItemType === 'canvas',
+                    canvasSections: editItemType === 'canvas' ? editCanvasSections : null,
+                    canvasStatus: editItemType === 'canvas'
+                      ? (itemToEdit.canvasStatus as 'draft' | 'in_review' | 'published' | 'archived' | undefined) || 'draft'
+                      : undefined,
                   });
                 }
               }}
@@ -2782,6 +2997,7 @@ export default function HoldingZone() {
                           {item.type === 'task' && <ListTodo className="h-4 w-4 flex-shrink-0" />}
                           {item.type === 'note' && <StickyNote className="h-4 w-4 flex-shrink-0" />}
                           {item.type === 'idea' && <Lightbulb className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'canvas' && <LayoutTemplate className="h-4 w-4 flex-shrink-0" />}
                           <span className="truncate">{item.content}</span>
                           {item.childCount != null && item.childCount > 0 && (
                             <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">

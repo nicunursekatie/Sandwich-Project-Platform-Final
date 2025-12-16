@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -75,6 +76,147 @@ interface ScheduledSpreadsheetViewProps {
   onEventDateClick?: (event: EventRequest) => void;
   openAssignmentDialog?: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => void;
 }
+
+// Standalone component for staff need badge with popover (extracted to prevent re-mount on parent re-render)
+interface StaffNeedBadgeProps {
+  field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded';
+  needed: number;
+  unfilled: number;
+  Icon: React.ElementType;
+  label: string;
+  onUpdate: (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => void;
+}
+
+const StaffNeedBadge: React.FC<StaffNeedBadgeProps> = ({ field, needed, unfilled, Icon, label, onUpdate }) => {
+  if (needed === 0) return null;
+
+  const isFilled = unfilled === 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+            isFilled
+              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+          }`}
+          title={`${label}: ${needed} needed, ${unfilled} unfilled. Click to edit.`}
+        >
+          <Icon className="h-3 w-3" />
+          <span>{needed}</span>
+          {!isFilled && <span className="text-amber-500">({unfilled})</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-40 p-2" align="start">
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-gray-600">{label} Needed</div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => onUpdate(field, -1)}
+              disabled={needed === 0}
+              className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 font-bold"
+            >
+              -
+            </button>
+            <span className="min-w-[32px] text-center text-lg font-semibold text-[#236383]">{needed}</span>
+            <button
+              onClick={() => onUpdate(field, 1)}
+              className="w-8 h-8 flex items-center justify-center rounded bg-[#47B3CB]/30 hover:bg-[#47B3CB]/50 text-[#236383] font-bold"
+            >
+              +
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 text-center">
+            {unfilled > 0 ? `${unfilled} still needed` : 'All filled ✓'}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// Standalone component for "Add Staff Need" dropdown (extracted to prevent re-mount on parent re-render)
+interface AddStaffNeedDropdownProps {
+  compact?: boolean;
+  onlyShowMissing?: boolean;
+  onUpdate: (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => void;
+  driversNeeded: number;
+  speakersNeeded: number;
+  volunteersNeeded: number;
+}
+
+const AddStaffNeedDropdown: React.FC<AddStaffNeedDropdownProps> = ({
+  compact = false,
+  onlyShowMissing = false,
+  onUpdate,
+  driversNeeded,
+  speakersNeeded,
+  volunteersNeeded
+}) => {
+  const showDriver = !onlyShowMissing || driversNeeded === 0;
+  const showSpeaker = !onlyShowMissing || speakersNeeded === 0;
+  const showVolunteer = !onlyShowMissing || volunteersNeeded === 0;
+  const hasAnyOptions = showDriver || showSpeaker || showVolunteer;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        {compact ? (
+          <button
+            className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            title="Add another staff need"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        ) : (
+          <button
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+            title="Add staff need"
+          >
+            <Plus className="h-3 w-3" />
+            <span>Add Need</span>
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-44 p-2" align="start">
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-gray-600 mb-2">Add Staff Need</div>
+          {showDriver && (
+            <button
+              onClick={() => onUpdate('driversNeeded', 1)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <Car className="h-4 w-4 text-[#236383]" />
+              <span>Driver</span>
+            </button>
+          )}
+          {showSpeaker && (
+            <button
+              onClick={() => onUpdate('speakersNeeded', 1)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <Megaphone className="h-4 w-4 text-[#236383]" />
+              <span>Speaker</span>
+            </button>
+          )}
+          {showVolunteer && (
+            <button
+              onClick={() => onUpdate('volunteersNeeded', 1)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <UserPlus className="h-4 w-4 text-[#236383]" />
+              <span>Volunteer</span>
+            </button>
+          )}
+          {!hasAnyOptions && (
+            <div className="text-xs text-gray-400 text-center py-1">All roles added</div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 // US state abbreviations for address parsing
 const US_STATES: Record<string, string> = {
@@ -245,6 +387,26 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const { trackEvent, trackButtonClick } = useAnalytics();
   const isMobile = useIsMobile();
 
+  // Fetch recipients for displaying assigned recipient names
+  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/recipients'],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Resolve recipient ID to name
+  const resolveRecipientName = (recipientId: string): string => {
+    if (!recipientId) return '';
+
+    // Handle prefixed format like "recipient:5"
+    const [prefix, id] = recipientId.includes(':') ? recipientId.split(':') : ['', recipientId];
+    const numId = parseInt(id, 10);
+
+    if (isNaN(numId)) return recipientId;
+
+    const recipient = recipients.find(r => r.id === numId);
+    return recipient?.name || `Recipient ${numId}`;
+  };
+
   const [sortField, setSortField] = useState<SortField>('eventDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
@@ -390,7 +552,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             if (!date) return 0;
             const dateStr = typeof date === 'string' ? date : date.toISOString();
             let dateObj: Date;
-            
+
             if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
               const dateOnly = dateStr.split(' ')[0];
               dateObj = new Date(dateOnly + 'T12:00:00');
@@ -409,8 +571,45 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             }
             return dateObj.getTime();
           };
+
+          // Helper to parse time string to minutes (for secondary sort)
+          const parseTimeToMinutes = (time: string | null | undefined): number => {
+            if (!time) return 999999; // Events without time go to the end
+            const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!timeMatch) return 999999;
+
+            let hours = parseInt(timeMatch[1]);
+            const minutes = parseInt(timeMatch[2]);
+            const isPM = timeMatch[3]?.toUpperCase() === 'PM';
+            const isAM = timeMatch[3]?.toUpperCase() === 'AM';
+
+            // Convert to 24-hour format
+            if (isPM && hours !== 12) hours += 12;
+            if (isAM && hours === 12) hours = 0;
+
+            return hours * 60 + minutes;
+          };
+
           aValue = parseDateSafe(a.scheduledEventDate || a.desiredEventDate);
           bValue = parseDateSafe(b.scheduledEventDate || b.desiredEventDate);
+
+          // If dates are equal, sort by event start time, then pickup time
+          if (aValue === bValue) {
+            const aStartTime = parseTimeToMinutes(a.eventStartTime);
+            const bStartTime = parseTimeToMinutes(b.eventStartTime);
+
+            if (aStartTime !== bStartTime) {
+              return sortDirection === 'asc' ? aStartTime - bStartTime : bStartTime - aStartTime;
+            }
+
+            // If start times are also equal, sort by pickup time
+            const aPickupTime = parseTimeToMinutes(a.pickupTime);
+            const bPickupTime = parseTimeToMinutes(b.pickupTime);
+
+            if (aPickupTime !== bPickupTime) {
+              return sortDirection === 'asc' ? aPickupTime - bPickupTime : bPickupTime - aPickupTime;
+            }
+          }
           break;
         case 'groupName':
           aValue = a.organizationName || `${a.firstName} ${a.lastName}`.trim() || '';
@@ -618,6 +817,65 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: { firstName, lastName },
+        });
+      }
+      // Handle recipients - parse comma-separated names and convert to recipient IDs
+      else if (editingField === 'recipients') {
+        // Parse input: "Recipient 1: 50, Recipient 2: 30" or "Recipient 1, Recipient 2"
+        const recipientParts = editingValue.split(',').map(p => p.trim()).filter(p => p.length > 0);
+        const recipientIds: string[] = [];
+        const recipientAllocations: Array<{
+          recipientId: string;
+          recipientName: string;
+          sandwichCount: number;
+          sandwichType?: string;
+        }> = [];
+
+        recipientParts.forEach(part => {
+          // Check if format is "Name: Count" or just "Name"
+          const countMatch = part.match(/^(.+?):\s*(\d+)$/);
+          const recipientName = countMatch ? countMatch[1].trim() : part.trim();
+          const sandwichCount = countMatch ? parseInt(countMatch[2], 10) : 0;
+
+          if (!recipientName) return;
+
+          // Find recipient by name (case-insensitive partial match)
+          const recipient = recipients.find(r => 
+            r.name.toLowerCase().includes(recipientName.toLowerCase()) ||
+            recipientName.toLowerCase().includes(r.name.toLowerCase())
+          );
+
+          if (recipient) {
+            const recipientId = `recipient:${recipient.id}`;
+            recipientIds.push(recipientId);
+            
+            // If count is specified, add to allocations
+            if (sandwichCount > 0) {
+              recipientAllocations.push({
+                recipientId,
+                recipientName: recipient.name,
+                sandwichCount,
+              });
+            }
+          }
+        });
+
+        // Update both assignedRecipientIds and recipientAllocations
+        // If allocations are provided, use them; otherwise clear allocations
+        const updateData: any = {
+          assignedRecipientIds: recipientIds,
+        };
+        
+        if (recipientAllocations.length > 0) {
+          updateData.recipientAllocations = recipientAllocations;
+        } else {
+          // Clear allocations if no counts specified
+          updateData.recipientAllocations = [];
+        }
+        
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: updateData,
         });
       }
       // Handle volunteersNeeded (Staff Needed) - parse combined format "2 vol, 1 driver, 1 speaker"
@@ -1135,15 +1393,53 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       },
     },
-    // 5. Driver/speaker/volunteer need (only show unfilled positions)
+    // 4b. Assigned Recipients (with allocations if available)
+    {
+      id: 'recipients',
+      label: 'Recipients',
+      width: '220px',
+      hideOnMobile: true,
+      render: (event) => {
+        // First check for new recipient allocations
+        const allocations = (event as any).recipientAllocations as Array<{
+          recipientId: string;
+          recipientName: string;
+          sandwichCount: number;
+          sandwichType?: string;
+        }> | null | undefined;
+
+        if (allocations && allocations.length > 0) {
+          // Show allocations with counts
+          return allocations
+            .filter(a => a.sandwichCount > 0)
+            .map(a => {
+              const typeLabel = a.sandwichType
+                ? SANDWICH_TYPES.find(t => t.value === a.sandwichType)?.label
+                : null;
+              return `${a.recipientName}: ${a.sandwichCount}${typeLabel ? ` (${typeLabel})` : ''}`;
+            })
+            .join('; ') || '';
+        }
+
+        // Fall back to legacy assignedRecipientIds
+        if (!event.assignedRecipientIds || event.assignedRecipientIds.length === 0) {
+          return '';
+        }
+        const names = event.assignedRecipientIds
+          .map(id => resolveRecipientName(id))
+          .filter(name => name && name !== 'Loading...');
+        return names.join(', ') || '';
+      },
+    },
+    // 5. Driver/speaker/volunteer need (compact badges with popover editing)
     {
       id: 'volunteersNeeded',
       label: 'Staff Needed',
-      width: '180px',
+      width: '150px',
       hideOnMobile: true,
       render: (event) => {
         // Calculate assigned counts
-        const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+        const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
         const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
         const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
 
@@ -1172,6 +1468,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         // Van driver
         if (event.assignedVanDriverId) {
           assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
+        }
+        if (event.isDhlVan) {
+          assigned.push('🚚 DHL Van');
         }
 
         // Drivers
@@ -1283,7 +1582,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       width: '55px',
       hideOnMobile: true,
       center: true,
-      render: (event) => event.vanDriverNeeded ? 'Yes' : 'No',
+      render: (event) => event.isDhlVan ? 'DHL' : event.vanDriverNeeded ? 'Yes' : 'No',
     },
     // 11. Contact name, #, and email for organization
     {
@@ -1365,7 +1664,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return '';
       },
     },
-  ], [resolveUserName]);
+  ], [resolveUserName, resolveRecipientName, recipients]);
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {
@@ -1548,7 +1847,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       'tspContact', 'address', 'notes', 'additionalNotes',
       'eventDate', 'groupName', 'department', 'vanBooked',
       'contactName', 'phone', 'email', 'finalSandwiches',
-      'socialPost', 'volunteersNeeded' // This is the combined "Staff Needed" column
+      'socialPost', 'volunteersNeeded', // This is the combined "Staff Needed" column
+      'recipients' // Recipients column
     ].includes(column.id);
 
     // Get the raw value for editing (not the formatted display)
@@ -1577,7 +1877,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         case 'toolkitSent':
           return event.toolkitSent ? 'Yes' : 'No';
         case 'vanBooked':
-          return event.vanDriverNeeded ? 'Yes' : 'No';
+          return event.isDhlVan ? 'DHL' : event.vanDriverNeeded ? 'Yes' : 'No';
         case 'tspContact':
           return event.tspContact || event.tspContactAssigned || '';
         case 'address':
@@ -1605,6 +1905,36 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           return parts.join(', ') || '';
         case 'socialPost':
           return event.socialMediaPostRequested ? 'Requested' : '';
+        case 'recipients':
+          // Get current recipients as comma-separated names for editing
+          const allocations = (event as any).recipientAllocations as Array<{
+            recipientId: string;
+            recipientName: string;
+            sandwichCount: number;
+            sandwichType?: string;
+          }> | null | undefined;
+          
+          if (allocations && allocations.length > 0) {
+            // Return format: "Recipient 1: 50, Recipient 2: 30" or just names if no counts
+            return allocations
+              .filter(a => a.sandwichCount > 0)
+              .map(a => {
+                if (a.sandwichCount > 0) {
+                  return `${a.recipientName}: ${a.sandwichCount}`;
+                }
+                return a.recipientName;
+              })
+              .join(', ') || '';
+          }
+          
+          // Fall back to legacy assignedRecipientIds
+          if (event.assignedRecipientIds && event.assignedRecipientIds.length > 0) {
+            const names = event.assignedRecipientIds
+              .map(id => resolveRecipientName(id))
+              .filter(name => name && name !== 'Loading...');
+            return names.join(', ') || '';
+          }
+          return '';
         default:
           return '';
       }
@@ -1847,6 +2177,32 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         );
       }
 
+      // Special handling for recipients - allow editing as comma-separated names with optional counts
+      if (column.id === 'recipients') {
+        return (
+          <div className="flex items-center gap-0.5">
+            <Input
+              type="text"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-7 text-sm px-1.5 py-0.5 min-w-[200px]"
+              placeholder="Recipient 1, Recipient 2 or Recipient 1: 50, Recipient 2: 30"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Save changes">
+              <Save className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-11 w-11 md:h-5 md:w-5 p-2 md:p-0 touch-manipulation" title="Cancel editing">
+              <X className="h-6 w-6 md:h-3 md:w-3" />
+            </Button>
+          </div>
+        );
+      }
+
       return (
         <div className="flex items-center gap-0.5">
           <Input
@@ -1940,11 +2296,23 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       );
     }
 
-    // Special handling for volunteersNeeded (Staff Needed) column - quick increment/decrement
+    // Special handling for volunteersNeeded (Staff Needed) column - compact badges with popover editing
     if (column.id === 'volunteersNeeded') {
       const driversNeeded = event.driversNeeded || 0;
       const speakersNeeded = event.speakersNeeded || 0;
       const volunteersNeeded = event.volunteersNeeded || 0;
+
+      // Calculate assigned counts
+      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+      const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
+      const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+
+      // Calculate unfilled needs
+      const driversUnfilled = Math.max(0, driversNeeded - driversAssigned);
+      const speakersUnfilled = Math.max(0, speakersNeeded - speakersAssigned);
+      const volunteersUnfilled = Math.max(0, volunteersNeeded - volunteersAssigned);
+
+      const hasAnyNeeds = driversNeeded > 0 || speakersNeeded > 0 || volunteersNeeded > 0;
 
       const updateStaffCount = (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => {
         const currentValue = event[field] || 0;
@@ -1956,64 +2324,34 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         });
       };
 
+      // If no staff needs exist, show a compact "Add" dropdown
+      if (!hasAnyNeeds) {
+        return (
+          <AddStaffNeedDropdown
+            onUpdate={updateStaffCount}
+            driversNeeded={driversNeeded}
+            speakersNeeded={speakersNeeded}
+            volunteersNeeded={volunteersNeeded}
+          />
+        );
+      }
+
+      // Show only the roles that have needs
       return (
-        <div className="flex items-center gap-2">
-          {/* Drivers */}
-          <div className="flex items-center gap-0.5" title="Drivers needed">
-            <Car className="h-3.5 w-3.5 text-[#236383]" />
-            <button
-              onClick={() => updateStaffCount('driversNeeded', -1)}
-              disabled={driversNeeded === 0}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
-            >
-              -
-            </button>
-            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{driversNeeded}</span>
-            <button
-              onClick={() => updateStaffCount('driversNeeded', 1)}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
-            >
-              +
-            </button>
-          </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <StaffNeedBadge field="driversNeeded" needed={driversNeeded} unfilled={driversUnfilled} Icon={Car} label="Drivers" onUpdate={updateStaffCount} />
+          <StaffNeedBadge field="speakersNeeded" needed={speakersNeeded} unfilled={speakersUnfilled} Icon={Megaphone} label="Speakers" onUpdate={updateStaffCount} />
+          <StaffNeedBadge field="volunteersNeeded" needed={volunteersNeeded} unfilled={volunteersUnfilled} Icon={UserPlus} label="Volunteers" onUpdate={updateStaffCount} />
 
-          {/* Speakers */}
-          <div className="flex items-center gap-0.5" title="Speakers needed">
-            <Megaphone className="h-3.5 w-3.5 text-[#236383]" />
-            <button
-              onClick={() => updateStaffCount('speakersNeeded', -1)}
-              disabled={speakersNeeded === 0}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
-            >
-              -
-            </button>
-            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{speakersNeeded}</span>
-            <button
-              onClick={() => updateStaffCount('speakersNeeded', 1)}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Volunteers */}
-          <div className="flex items-center gap-0.5" title="Volunteers needed">
-            <UserPlus className="h-3.5 w-3.5 text-[#236383]" />
-            <button
-              onClick={() => updateStaffCount('volunteersNeeded', -1)}
-              disabled={volunteersNeeded === 0}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 disabled:opacity-30 disabled:cursor-not-allowed text-[#236383] font-bold text-xs"
-            >
-              -
-            </button>
-            <span className="min-w-[20px] text-center text-sm font-medium text-[#236383]">{volunteersNeeded}</span>
-            <button
-              onClick={() => updateStaffCount('volunteersNeeded', 1)}
-              className="w-5 h-5 flex items-center justify-center rounded bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 text-[#236383] font-bold text-xs"
-            >
-              +
-            </button>
-          </div>
+          {/* Small add button for adding additional roles */}
+          <AddStaffNeedDropdown
+            compact={true}
+            onlyShowMissing={true}
+            onUpdate={updateStaffCount}
+            driversNeeded={driversNeeded}
+            speakersNeeded={speakersNeeded}
+            volunteersNeeded={volunteersNeeded}
+          />
         </div>
       );
     }
@@ -2136,7 +2474,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // Special handling for assignedStaff column - with assignment buttons
     if (column.id === 'assignedStaff') {
       // Calculate current assignments
-      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
       const speakersAssigned = event.assignedSpeakerIds?.length || 0;
       const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
 
@@ -2145,116 +2483,202 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       const speakersNeeded = event.speakersNeeded || 0;
       const volunteersNeeded = event.volunteersNeeded || 0;
 
-      // Build assigned text
-      const assigned: string[] = [];
-      if (event.assignedVanDriverId) {
-        assigned.push(`🚐 ${resolveUserName(event.assignedVanDriverId)}`);
-      }
-      if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
-        const driverNames = event.assignedDriverIds
-          .map(id => resolveUserName(id))
-          .filter(name => name && name !== 'Not assigned');
-        if (driverNames.length > 0) {
-          assigned.push(`🚗 ${driverNames.join(', ')}`);
-        }
-      }
-      if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
-        const speakerNames = event.assignedSpeakerIds
-          .map(id => resolveUserName(id))
-          .filter(name => name && name !== 'Not assigned');
-        if (speakerNames.length > 0) {
-          assigned.push(`🎤 ${speakerNames.join(', ')}`);
-        }
-      }
-      if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
-        const volunteerNames = event.assignedVolunteerIds
-          .map(id => resolveUserName(id))
-          .filter(name => name && name !== 'Not assigned');
-        if (volunteerNames.length > 0) {
-          assigned.push(`👥 ${volunteerNames.join(', ')}`);
-        }
-      }
-
-      const staffText = assigned.join(' • ');
-
-      // Check if any roles are needed
-      const hasAnyNeeds = driversNeeded > 0 || speakersNeeded > 0 || volunteersNeeded > 0;
+      // Check if any roles are needed OR any are assigned (show buttons in either case)
+      const hasDriversContent = driversNeeded > 0 || driversAssigned > 0;
+      const hasSpeakersContent = speakersNeeded > 0 || speakersAssigned > 0;
+      const hasVolunteersContent = volunteersNeeded > 0 || volunteersAssigned > 0;
+      const hasAnyContent = hasDriversContent || hasSpeakersContent || hasVolunteersContent;
 
       return (
         <div className="w-full space-y-1">
-          {/* Assignment buttons row - only show buttons for roles that are needed */}
-          {hasAnyNeeds && (
-            <div className="flex items-center gap-1 flex-wrap">
-              {/* Drivers button - only show if drivers needed */}
-              {driversNeeded > 0 && (
+          {/* Assignment buttons row - always show for managing staff */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Drivers button - show if drivers needed OR any assigned */}
+            {hasDriversContent && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'driver');
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                  driversNeeded === 0
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : driversAssigned >= driversNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                }`}
+                title={driversNeeded > 0
+                  ? `${driversAssigned}/${driversNeeded} drivers assigned. Click to manage.`
+                  : `${driversAssigned} drivers assigned. Click to manage.`
+                }
+              >
+                <Car className="h-3 w-3" />
+                {driversNeeded > 0 ? `${driversAssigned}/${driversNeeded}` : driversAssigned}
+              </button>
+            )}
+
+            {/* Speakers button - show if speakers needed OR any assigned */}
+            {hasSpeakersContent && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'speaker');
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                  speakersNeeded === 0
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : speakersAssigned >= speakersNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                }`}
+                title={speakersNeeded > 0
+                  ? `${speakersAssigned}/${speakersNeeded} speakers assigned. Click to manage.`
+                  : `${speakersAssigned} speakers assigned. Click to manage.`
+                }
+              >
+                <Megaphone className="h-3 w-3" />
+                {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded}` : speakersAssigned}
+              </button>
+            )}
+
+            {/* Volunteers button - show if volunteers needed OR any assigned */}
+            {hasVolunteersContent && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'volunteer');
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                  volunteersNeeded === 0
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : volunteersAssigned >= volunteersNeeded
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                }`}
+                title={volunteersNeeded > 0
+                  ? `${volunteersAssigned}/${volunteersNeeded} volunteers assigned. Click to manage.`
+                  : `${volunteersAssigned} volunteers assigned. Click to manage.`
+                }
+              >
+                <UserPlus className="h-3 w-3" />
+                {volunteersNeeded > 0 ? `${volunteersAssigned}/${volunteersNeeded}` : volunteersAssigned}
+              </button>
+            )}
+
+            {/* Add staff button - always show if no content yet to allow adding staff */}
+            {!hasAnyContent && (
+              <div className="flex items-center gap-1">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     openAssignmentDialog?.(event.id, 'driver');
                   }}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    driversAssigned >= driversNeeded
-                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  }`}
-                  title={`${driversAssigned}/${driversNeeded} drivers assigned. Click to manage.`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  title="Add driver"
                 >
                   <Car className="h-3 w-3" />
-                  {driversAssigned}/{driversNeeded}
+                  <Plus className="h-2.5 w-2.5" />
                 </button>
-              )}
-
-              {/* Speakers button - only show if speakers needed */}
-              {speakersNeeded > 0 && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     openAssignmentDialog?.(event.id, 'speaker');
                   }}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    speakersAssigned >= speakersNeeded
-                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  }`}
-                  title={`${speakersAssigned}/${speakersNeeded} speakers assigned. Click to manage.`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  title="Add speaker"
                 >
                   <Megaphone className="h-3 w-3" />
-                  {speakersAssigned}/{speakersNeeded}
+                  <Plus className="h-2.5 w-2.5" />
                 </button>
-              )}
-
-              {/* Volunteers button - only show if volunteers needed */}
-              {volunteersNeeded > 0 && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     openAssignmentDialog?.(event.id, 'volunteer');
                   }}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    volunteersAssigned >= volunteersNeeded
-                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  }`}
-                  title={`${volunteersAssigned}/${volunteersNeeded} volunteers assigned. Click to manage.`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  title="Add volunteer"
                 >
                   <UserPlus className="h-3 w-3" />
-                  {volunteersAssigned}/{volunteersNeeded}
+                  <Plus className="h-2.5 w-2.5" />
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
-          {/* Assigned names (if any) */}
-          {staffText && (
-            <div className="text-sm text-[#236383]/80 truncate" title={staffText}>
-              {staffText}
-            </div>
-          )}
-
-          {/* Show dash if no needs and no assignments */}
-          {!hasAnyNeeds && !staffText && (
-            <span className="text-base text-[#47B3CB]/60">-</span>
-          )}
+          {/* Assigned names with click-to-edit */}
+          <div className="space-y-0.5">
+            {/* Van Driver */}
+            {event.assignedVanDriverId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'driver');
+                }}
+                className="flex items-center gap-1 text-xs text-[#236383]/80 hover:text-[#236383] hover:bg-[#47B3CB]/10 rounded px-1 py-0.5 transition-colors w-full text-left"
+                title="Click to edit driver assignments"
+              >
+                <span>🚐</span>
+                <span className="truncate">{resolveUserName(event.assignedVanDriverId)}</span>
+              </button>
+            )}
+            {/* Regular Drivers */}
+            {event.assignedDriverIds && event.assignedDriverIds.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'driver');
+                }}
+                className="flex items-center gap-1 text-xs text-[#236383]/80 hover:text-[#236383] hover:bg-[#47B3CB]/10 rounded px-1 py-0.5 transition-colors w-full text-left"
+                title="Click to edit driver assignments"
+              >
+                <span>🚗</span>
+                <span className="truncate">
+                  {event.assignedDriverIds
+                    .map(id => resolveUserName(id))
+                    .filter(name => name && name !== 'Not assigned')
+                    .join(', ')}
+                </span>
+              </button>
+            )}
+            {/* Speakers */}
+            {event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'speaker');
+                }}
+                className="flex items-center gap-1 text-xs text-[#236383]/80 hover:text-[#236383] hover:bg-[#47B3CB]/10 rounded px-1 py-0.5 transition-colors w-full text-left"
+                title="Click to edit speaker assignments"
+              >
+                <span>🎤</span>
+                <span className="truncate">
+                  {event.assignedSpeakerIds
+                    .map(id => resolveUserName(id))
+                    .filter(name => name && name !== 'Not assigned')
+                    .join(', ')}
+                </span>
+              </button>
+            )}
+            {/* Volunteers */}
+            {event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog?.(event.id, 'volunteer');
+                }}
+                className="flex items-center gap-1 text-xs text-[#236383]/80 hover:text-[#236383] hover:bg-[#47B3CB]/10 rounded px-1 py-0.5 transition-colors w-full text-left"
+                title="Click to edit volunteer assignments"
+              >
+                <span>👥</span>
+                <span className="truncate">
+                  {event.assignedVolunteerIds
+                    .map(id => resolveUserName(id))
+                    .filter(name => name && name !== 'Not assigned')
+                    .join(', ')}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       );
     }
@@ -2435,10 +2859,133 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         </div>
       </div>
 
-      {/* Table Container with Horizontal and Vertical Scroll */}
-      <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="overflow-x-auto" style={{ minHeight: '500px', maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'none', overflowY: 'auto', willChange: 'scroll-position' }}>
-          <table className="w-full border-collapse">
+      {/* Mobile Card View */}
+      {isMobile ? (
+        <div className="space-y-3">
+          {sortedEvents.map((event, rowIndex) => {
+            const dayIndex = eventDayIndices.get(`${event.id}`) || 0;
+            const borderColor = dayBorderColors[dayIndex % dayBorderColors.length];
+            const rowBgColor = getRowColor(event, rowIndex);
+            
+            return (
+              <div
+                key={event.id}
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
+                style={{ borderLeft: `4px solid ${borderColor}` }}
+                onClick={() => handleEventDateClick(event)}
+              >
+                <div className={`p-3 ${rowBgColor}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-[#236383]">
+                          {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                        </span>
+                        <span className="text-xs text-[#007E8C] font-medium">
+                          {formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate)?.slice(0, 3)}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-semibold text-[#236383] truncate">
+                        {event.organizationName || `${event.firstName} ${event.lastName}`.trim() || 'N/A'}
+                      </h3>
+                      {event.department && (
+                        <p className="text-xs text-[#236383]/70 truncate">{event.department}</p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-lg font-bold text-[#007E8C]">
+                        {event.estimatedSandwichCount || '-'}
+                      </div>
+                      <div className="text-xs text-[#236383]/60">sandwiches</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#236383]/80">
+                    {event.eventStartTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-[#007E8C]" />
+                        <span>{formatTime(event.eventStartTime)}</span>
+                      </div>
+                    )}
+                    {event.eventAddress && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[#007E8C] hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span className="truncate max-w-[120px]">
+                          {(() => {
+                            const parts = event.eventAddress.split(',');
+                            return parts.length >= 2 ? parts[parts.length - 2].trim() : parts[0].trim();
+                          })()}
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                  
+                  {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded) && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-[#47B3CB]/20">
+                      {event.driversNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedDriverIds?.length || 0) >= event.driversNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Car className="h-3 w-3 mr-1" />
+                          {(event.assignedDriverIds?.length || 0)}/{event.driversNeeded}
+                        </Badge>
+                      )}
+                      {event.speakersNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedSpeakerIds?.length || 0) >= event.speakersNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Megaphone className="h-3 w-3 mr-1" />
+                          {(event.assignedSpeakerIds?.length || 0)}/{event.speakersNeeded}
+                        </Badge>
+                      )}
+                      {event.volunteersNeeded > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            (event.assignedVolunteerIds?.length || 0) >= event.volunteersNeeded
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          <Users className="h-3 w-3 mr-1" />
+                          {(event.assignedVolunteerIds?.length || 0)}/{event.volunteersNeeded}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          
+          {sortedEvents.length === 0 && (
+            <div className="text-center py-8 text-[#236383]/60">
+              No events found for the selected time period
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Table Container with Horizontal and Vertical Scroll */}
+          <div className="border border-[#47B3CB]/30 rounded-lg overflow-hidden bg-white shadow-sm">
+            <div className="overflow-x-auto" style={{ minHeight: '500px', maxHeight: isFullscreen ? 'calc(100vh - 180px)' : 'none', overflowY: 'auto', willChange: 'scroll-position' }}>
+              <table className="w-full border-collapse">
             <thead className="bg-[#236383] border-b border-[#007E8C] sticky top-0 z-30" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
               <tr>
                 {columns.map((column, colIndex) => {
@@ -2579,21 +3126,23 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-4 text-xs text-[#236383]/70 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4" />
-          <span>Drag column headers to reorder columns. Your preference will be saved.</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Maximize2 className="h-4 w-4" />
-          <span>Click Fullscreen for a larger workspace. Press Escape to exit fullscreen mode.</span>
-        </div>
-      </div>
+          {/* Instructions */}
+          <div className="mt-4 text-xs text-[#236383]/70 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span>Double-click any editable cell to edit. Press Enter to save, Escape to cancel.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4" />
+              <span>Drag column headers to reorder columns. Your preference will be saved.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Maximize2 className="h-4 w-4" />
+              <span>Click Fullscreen for a larger workspace. Press Escape to exit fullscreen mode.</span>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Sandwich Types Dialog */}
       <Dialog open={showSandwichDialog} onOpenChange={setShowSandwichDialog}>
@@ -2685,5 +3234,3 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   return spreadsheetContent;
 };
-
-

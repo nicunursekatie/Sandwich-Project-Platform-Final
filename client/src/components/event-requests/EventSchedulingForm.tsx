@@ -93,6 +93,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     selfTransport: false,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
+    isDhlVan: false,
     speakersNeeded: 0,
     volunteersNeeded: 0,
     tspContact: '',
@@ -348,6 +349,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         backupContactRole: (eventRequest as any)?.backupContactRole || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+        isDhlVan: (eventRequest as any)?.isDhlVan || false,
         // Status
         status: eventRequest?.status || 'new',
         // Toolkit status
@@ -489,7 +491,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Helper to check if event likely needs van based on user's criteria
   const eventLikelyNeedsVan = (): boolean => {
     // Check if van driver is explicitly needed
-    if (formData.vanDriverNeeded && !formData.selfTransport) return true;
+    if ((formData.vanDriverNeeded || formData.isDhlVan) && !formData.selfTransport) return true;
     
     // Check if sandwich count > 500 (implies van needed)
     const sandwichCount = sandwichMode === 'total' 
@@ -610,7 +612,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
       selfTransport: formData.selfTransport || false,
-      vanDriverNeeded: formData.selfTransport ? false : (formData.vanDriverNeeded || false),
+      vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
@@ -635,7 +637,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       backupContactPhone: formData.backupContactPhone || null,
       backupContactRole: formData.backupContactRole || null,
       // Van driver assignment
-      assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
+      assignedVanDriverId: formData.isDhlVan
+        ? null
+        : (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none')
+          ? formData.assignedVanDriverId
+          : null,
+      isDhlVan: formData.selfTransport ? false : !!formData.isDhlVan,
       // Toolkit information
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
@@ -1753,6 +1760,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       // Clear driver fields when self-transport is enabled
                       driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
                       vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
+                      isDhlVan: e.target.checked ? false : prev.isDhlVan,
                     }))}
                   />
                   <Label htmlFor="selfTransport" className="text-amber-800 font-medium">
@@ -1784,7 +1792,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         type="checkbox"
                         id="vanDriverNeeded"
                         checked={formData.vanDriverNeeded}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked, isDhlVan: e.target.checked ? prev.isDhlVan : false }))}
                       />
                       <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                     </div>
@@ -1794,10 +1802,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 {/* Van Driver Selection - Only show when van driver is needed and NOT self-transport */}
                 {formData.vanDriverNeeded && !formData.selfTransport && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="checkbox"
+                        id="isDhlVan"
+                        checked={formData.isDhlVan}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          isDhlVan: e.target.checked,
+                          assignedVanDriverId: e.target.checked ? '' : prev.assignedVanDriverId,
+                          vanDriverNeeded: e.target.checked ? true : prev.vanDriverNeeded,
+                        }))}
+                      />
+                      <Label htmlFor="isDhlVan">Use DHL van (external driver)</Label>
+                    </div>
+                    {formData.isDhlVan && (
+                      <p className="text-xs text-amber-700 mb-2">
+                        We will not assign an internal van driver. This still counts as the van being covered.
+                      </p>
+                    )}
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
                     <Select
                       value={formData.assignedVanDriverId || ''}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
+                      disabled={formData.isDhlVan}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a van-approved driver..." />

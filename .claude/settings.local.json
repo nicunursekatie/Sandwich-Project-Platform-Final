@@ -41,7 +41,9 @@
       "Bash(for f in migrations/meta/*.json)",
       "Bash(do echo \"Checking $f\")",
       "Bash(echo:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npx esbuild:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

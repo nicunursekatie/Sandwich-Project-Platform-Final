@@ -47,6 +47,7 @@ export const users = pgTable('users', {
   permissionsModifiedBy: varchar('permissions_modified_by'),
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
+  needsPasswordSetup: boolean('needs_password_setup').default(false), // True for manually created accounts without password
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in
   lastActiveAt: timestamp('last_active_at'), // Track when user was last active (updated on API requests)
   createdAt: timestamp('created_at').defaultNow(),
@@ -1813,7 +1814,7 @@ export type InsertHoldingZoneCategory = z.infer<typeof insertHoldingZoneCategory
 export const teamBoardItems = pgTable('team_board_items', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(), // The actual task/note/idea - can be anything
-  type: varchar('type').default('task'), // 'task', 'note', 'idea' (removed 'reminder')
+  type: varchar('type').default('task'), // 'task', 'note', 'idea', 'canvas' (removed 'reminder')
   createdBy: varchar('created_by').notNull(), // User ID who posted it
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
@@ -1833,6 +1834,13 @@ export const teamBoardItems = pgTable('team_board_items', {
   parentItemId: integer('parent_item_id').references(() => teamBoardItems.id, { onDelete: 'set null' }), // Optional parent item for nesting
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
+  // Canvas-specific fields
+  isCanvas: boolean('is_canvas').notNull().default(false), // Whether this item uses the structured canvas
+  canvasSections: jsonb('canvas_sections'), // Structured content: [{id,title,cards:[{id,type,content}]}]
+  canvasStatus: varchar('canvas_status').default('draft'), // 'draft', 'in_review', 'published', 'archived'
+  canvasPublishedSnapshot: jsonb('canvas_published_snapshot'), // Snapshot of last published version
+  canvasPublishedAt: timestamp('canvas_published_at'),
+  canvasPublishedBy: varchar('canvas_published_by'),
 });
 
 export const insertTeamBoardItemSchema = createInsertSchema(
@@ -2129,6 +2137,7 @@ export const eventRequests = pgTable(
 
     // Driver, speaker, and volunteer assignments
     assignedDriverIds: text('assigned_driver_ids').array(), // Array of assigned driver IDs/names
+    tentativeDriverIds: text('tentative_driver_ids').array(), // Array of driver IDs that are tentatively assigned (shown with ? badge)
     driverPickupTime: varchar('driver_pickup_time'), // Pickup time for drivers
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed
@@ -2136,12 +2145,20 @@ export const eventRequests = pgTable(
     assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
+    recipientAllocations: jsonb('recipient_allocations').$type<Array<{
+      recipientId: string;
+      recipientName: string; // Cached name for display
+      sandwichCount: number;
+      sandwichType?: string; // Optional type like 'pbj', 'deli', 'cheese', etc.
+      notes?: string; // Optional notes for this allocation
+    }>>(), // Detailed tracking of sandwich distribution to each recipient
 
     // Van driver assignment
     vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required
     assignedVanDriverId: text('assigned_van_driver_id'), // Van driver ID from database
     customVanDriverName: text('custom_van_driver_name'), // Custom van driver name (text entry)
     vanDriverNotes: text('van_driver_notes'), // Special notes for van driver
+    isDhlVan: boolean('is_dhl_van').notNull().default(false), // Flag when DHL is providing the van/driver
 
     // Follow-up tracking for completed events
     followUpOneDayCompleted: boolean('follow_up_one_day_completed').default(

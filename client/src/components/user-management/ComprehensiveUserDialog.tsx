@@ -179,6 +179,7 @@ export function ComprehensiveUserDialog({
                     Committee Member
                   </SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
+                  <SelectItem value="reviewer">Reviewer (Read-Only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -192,11 +193,10 @@ export function ComprehensiveUserDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                placeholder="Leave blank for no password"
+                placeholder="Leave blank to let user set their own"
               />
               <p className="text-xs text-gray-500 mt-1">
-                If no password is set, user will need to use email login or
-                reset password
+                If left blank, the user will be prompted to create a password on their first login.
               </p>
             </div>
 
@@ -344,6 +344,7 @@ export function ComprehensiveUserDialog({
                       <SelectItem value="recipient">Recipient</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
                       <SelectItem value="work_logger">Work Logger</SelectItem>
+                      <SelectItem value="reviewer">Reviewer (Read-Only)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
