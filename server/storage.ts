@@ -1291,7 +1291,7 @@ export class MemStorage implements IStorage {
   async getAllMessages(): Promise<Message[]> {
     return Array.from(this.messages.values()).sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
   }
 
@@ -1300,24 +1300,23 @@ export class MemStorage implements IStorage {
     return allMessages.slice(0, limit);
   }
 
-  async getMessagesByCommittee(committee: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter((message) => message.committee === committee)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  async getMessagesByCommittee(_committee: string): Promise<Message[]> {
+    // Committee field no longer exists in Message schema - return empty for MemStorage
+    return [];
   }
 
   async getDirectMessages(
     userId1: string,
     userId2: string
   ): Promise<Message[]> {
+    // Direct messaging now uses contextType='direct' - filter by that
     return Array.from(this.messages.values())
       .filter(
         (message) =>
-          message.committee === 'direct' &&
-          ((message.userId === userId1 && message.recipientId === userId2) ||
-            (message.userId === userId2 && message.recipientId === userId1))
+          message.contextType === 'direct' &&
+          (message.userId === userId1 || message.userId === userId2)
       )
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      .sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
   }
 
   async getMessageById(id: number): Promise<Message | undefined> {
@@ -1325,9 +1324,10 @@ export class MemStorage implements IStorage {
   }
 
   async markMessageAsRead(messageId: number, userId: string): Promise<void> {
-    // For the real-time messaging system, we don't have a read status field in the Message schema
-    // This is a placeholder implementation for now
-    // In a real implementation, you would need a separate table for message read status
+    const message = this.messages.get(messageId);
+    if (message) {
+      this.messages.set(messageId, { ...message, read: true });
+    }
     logger.log(
       `MemStorage: Marking message ${messageId} as read for user ${userId}`
     );
@@ -1336,13 +1336,25 @@ export class MemStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = this.currentIds.message++;
     const message: Message = {
-      ...insertMessage,
       id,
-      timestamp: new Date(),
-      parentId: insertMessage.parentId || null,
-      threadId: insertMessage.threadId || id,
-      replyCount: 0,
-      committee: insertMessage.committee || 'general',
+      userId: insertMessage.userId,
+      senderId: insertMessage.senderId,
+      content: insertMessage.content,
+      sender: insertMessage.sender || null,
+      conversationId: insertMessage.conversationId || null,
+      contextType: insertMessage.contextType || null,
+      contextId: insertMessage.contextId || null,
+      contextTitle: insertMessage.contextTitle || null,
+      read: insertMessage.read ?? false,
+      editedAt: insertMessage.editedAt || null,
+      editedContent: insertMessage.editedContent || null,
+      deletedAt: insertMessage.deletedAt || null,
+      deletedBy: insertMessage.deletedBy || null,
+      replyToMessageId: insertMessage.replyToMessageId || null,
+      replyToContent: insertMessage.replyToContent || null,
+      replyToSender: insertMessage.replyToSender || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.messages.set(id, message);
     return message;
@@ -1359,34 +1371,34 @@ export class MemStorage implements IStorage {
 
     const id = this.currentIds.message++;
     const message: Message = {
-      ...insertMessage,
       id,
-      timestamp: new Date(),
-      parentId: parentId,
-      threadId: parentMessage.threadId,
-      replyCount: 0,
+      userId: insertMessage.userId,
+      senderId: insertMessage.senderId,
+      content: insertMessage.content,
+      sender: insertMessage.sender || null,
+      conversationId: insertMessage.conversationId || parentMessage.conversationId,
+      contextType: insertMessage.contextType || parentMessage.contextType,
+      contextId: insertMessage.contextId || parentMessage.contextId,
+      contextTitle: insertMessage.contextTitle || parentMessage.contextTitle,
+      read: false,
+      editedAt: null,
+      editedContent: null,
+      deletedAt: null,
+      deletedBy: null,
+      replyToMessageId: parentId,
+      replyToContent: parentMessage.content,
+      replyToSender: parentMessage.sender,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     this.messages.set(id, message);
-    await this.updateReplyCount(
-      parentMessage.threadId === parentMessage.id
-        ? parentMessage.id
-        : parentMessage.threadId
-    );
-
     return message;
   }
 
-  async updateReplyCount(messageId: number): Promise<void> {
-    const message = this.messages.get(messageId);
-    if (message) {
-      const replyCount = Array.from(this.messages.values()).filter(
-        (m) => m.threadId === message.threadId && m.id !== message.id
-      ).length;
-
-      const updatedMessage = { ...message, replyCount };
-      this.messages.set(messageId, updatedMessage);
-    }
+  async updateReplyCount(_messageId: number): Promise<void> {
+    // Reply count is no longer stored in Message schema
+    // This is now a computed value from replyToMessageId references
   }
 
   async deleteMessage(id: number): Promise<boolean> {
@@ -1399,7 +1411,7 @@ export class MemStorage implements IStorage {
         (message) =>
           message.senderId === senderId || message.userId === senderId
       )
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }
 
   async getMessagesBySenderWithReadStatus(senderId: string): Promise<any[]> {
@@ -1416,7 +1428,7 @@ export class MemStorage implements IStorage {
   async getMessagesForRecipient(recipientId: string): Promise<Message[]> {
     return Array.from(this.messages.values())
       .filter((message) => message.contextId === recipientId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }
 
   // Committee management methods
