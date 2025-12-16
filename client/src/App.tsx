@@ -130,6 +130,7 @@ function Router() {
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
+  const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -282,6 +283,11 @@ function Router() {
                 <MobileCollectionEntry />
               </Suspense>
             </Route>
+            <Route path="/photo-scanner">
+              <Suspense fallback={<MobileLoader />}>
+                <PhotoScanner />
+              </Suspense>
+            </Route>
             <Route path="/collections/:id">
               <Suspense fallback={<MobileLoader />}>
                 <MobileCollectionDetail />
@@ -383,6 +389,11 @@ function Router() {
         </Route>
         <Route path="/collections">
           {() => <Dashboard initialSection="collections" />}
+        </Route>
+        <Route path="/photo-scanner">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <PhotoScanner />
+          </Suspense>
         </Route>
         <Route path="/google-sheets">
           {() => <Dashboard initialSection="google-sheets" />}

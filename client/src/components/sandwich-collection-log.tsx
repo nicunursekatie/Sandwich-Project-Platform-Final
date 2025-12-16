@@ -33,7 +33,9 @@ import {
   AlertCircle,
   MessageCircle,
   Info,
+  Camera,
 } from 'lucide-react';
+import { Link } from 'wouter';
 import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
@@ -2265,25 +2267,45 @@ export default function SandwichCollectionLog() {
           {/* Action buttons - Mobile optimized */}
           <div className="flex flex-col sm:flex-row gap-2">
             {canCreateCollections && (
-              <HelpBubble
-                title="Recording Collections"
-                content="Click here to submit new sandwich collection data. Fill in the host location, date, and sandwich counts to track your impact!"
-                character="sandy"
-                position="bottom"
-                trigger="hover"
-              >
-                <Button
-                  onClick={() => setShowSubmitForm(!showSubmitForm)}
-                  variant="default"
-                  size="sm"
-                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
+              <>
+                <HelpBubble
+                  title="Recording Collections"
+                  content="Click here to submit new sandwich collection data. Fill in the host location, date, and sandwich counts to track your impact!"
+                  character="sandy"
+                  position="bottom"
+                  trigger="hover"
                 >
-                  <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="font-medium">
-                    {showSubmitForm ? 'Hide Form' : 'Enter New Collection Data'}
-                  </span>
-                </Button>
-              </HelpBubble>
+                  <Button
+                    onClick={() => setShowSubmitForm(!showSubmitForm)}
+                    variant="default"
+                    size="sm"
+                    className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
+                  >
+                    <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <span className="font-medium">
+                      {showSubmitForm ? 'Hide Form' : 'Enter New Collection Data'}
+                    </span>
+                  </Button>
+                </HelpBubble>
+                <HelpBubble
+                  title="Photo Scanner"
+                  content="Take a photo of your handwritten sign-in sheet and let AI extract the collection data automatically!"
+                  character="guide"
+                  position="bottom"
+                  trigger="hover"
+                >
+                  <Link href="/photo-scanner">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center justify-center space-x-2 w-full sm:w-auto py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px] bg-white border-brand-primary text-brand-primary hover:bg-brand-primary/5"
+                    >
+                      <Camera className="w-5 h-5 sm:w-4 sm:h-4" />
+                      <span className="font-medium">Scan Sign-in Sheet</span>
+                    </Button>
+                  </Link>
+                </HelpBubble>
+              </>
             )}
             <HelpBubble
               title="Filter Collections"
