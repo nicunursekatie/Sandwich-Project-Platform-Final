@@ -760,6 +760,7 @@ export class MemStorage implements IStorage {
   private suggestionResponses: Map<number, SuggestionResponse>;
   private sandwichDistributions: Map<number, SandwichDistribution>;
   private shoutoutLogs: Map<number, any>;
+  private taskCompletions: Map<number, TaskCompletion>;
   private documents: Map<number, Document>;
   private documentPermissions: Map<number, DocumentPermission>;
   private documentAccessLogs: Map<number, DocumentAccessLog>;
@@ -792,6 +793,8 @@ export class MemStorage implements IStorage {
     suggestion: number;
     suggestionResponse: number;
     sandwichDistribution: number;
+    shoutoutLog: number;
+    taskCompletion: number;
     document: number;
     documentPermission: number;
     documentAccessLog: number;
@@ -862,6 +865,7 @@ export class MemStorage implements IStorage {
       suggestionResponse: 1,
       sandwichDistribution: 1,
       shoutoutLog: 1,
+      taskCompletion: 1,
       document: 1,
       documentPermission: 1,
       documentAccessLog: 1,
@@ -876,7 +880,7 @@ export class MemStorage implements IStorage {
 
   // User methods (required for authentication)
   async getUser(id: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.id === id) {
         return user;
       }
@@ -885,7 +889,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserById(id: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.id === id) {
         return user;
       }
@@ -894,7 +898,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.email === email) {
         return user;
       }
@@ -910,7 +914,7 @@ export class MemStorage implements IStorage {
     const matchedUsers: User[] = [];
     const lowerSearchTerms = searchTerms.map(term => term.toLowerCase().trim());
 
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       // SECURITY: Only search active users to prevent info leakage about inactive accounts
       if (!user.isActive) {
         continue;
@@ -956,23 +960,30 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
+    const id = (userData as any).id || `user_${this.currentIds.user++}`;
     const newUser: User = {
-      id: userData.id,
+      id,
       email: userData.email || null,
       password: userData.password || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
+      displayName: userData.displayName || null,
       profileImageUrl: userData.profileImageUrl || null,
+      phoneNumber: userData.phoneNumber || null,
+      preferredEmail: userData.preferredEmail || null,
       role: userData.role || 'volunteer',
-      permissions: userData.permissions || {},
+      permissions: userData.permissions ?? [],
       permissionsModifiedAt: userData.permissionsModifiedAt || null,
       permissionsModifiedBy: userData.permissionsModifiedBy || null,
-      metadata: userData.metadata || {},
+      metadata: userData.metadata ?? {},
       isActive: userData.isActive ?? true,
+      lastLoginAt: userData.lastLoginAt || null,
+      lastActiveAt: userData.lastActiveAt || null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      passwordBackup20241023: null,
     };
-    this.users.set(userData.id, newUser);
+    this.users.set(id, newUser);
     return newUser;
   }
 
@@ -982,6 +993,7 @@ export class MemStorage implements IStorage {
       const updated: User = {
         ...existingUser,
         ...userData,
+        permissions: userData.permissions ?? existingUser.permissions,
         updatedAt: new Date(),
       };
       this.users.set(userData.id, updated);
@@ -993,14 +1005,21 @@ export class MemStorage implements IStorage {
         password: userData.password || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
+        displayName: userData.displayName || null,
         profileImageUrl: userData.profileImageUrl || null,
+        phoneNumber: userData.phoneNumber || null,
+        preferredEmail: userData.preferredEmail || null,
         role: userData.role || 'volunteer',
-        permissions: userData.permissions || {},
+        permissions: userData.permissions ?? [],
         permissionsModifiedAt: userData.permissionsModifiedAt || null,
         permissionsModifiedBy: userData.permissionsModifiedBy || null,
+        metadata: userData.metadata ?? {},
         isActive: userData.isActive ?? true,
+        lastLoginAt: userData.lastLoginAt || null,
+        lastActiveAt: userData.lastActiveAt || null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        passwordBackup20241023: null,
       };
       this.users.set(userData.id, newUser);
       return newUser;
@@ -1028,7 +1047,7 @@ export class MemStorage implements IStorage {
     if (user) {
       const updated: User = {
         ...user,
-        passwordHash: password,
+        password: password,
         updatedAt: new Date(),
       };
       this.users.set(id, updated);
@@ -2948,7 +2967,7 @@ export class MemStorage implements IStorage {
   async getAllEventRequests(): Promise<EventRequest[]> {
     return Array.from(this.eventRequests.values()).sort(
       (a, b) =>
-        new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
 
@@ -2963,7 +2982,7 @@ export class MemStorage implements IStorage {
     const eventRequest: EventRequest = {
       ...insertEventRequest,
       id,
-      createdDate: new Date(),
+      createdAt: new Date(),
       lastUpdated: new Date(),
       status: insertEventRequest.status || 'new',
     };
@@ -2992,7 +3011,7 @@ export class MemStorage implements IStorage {
       .filter((request) => request.status === status)
       .sort(
         (a, b) =>
-          new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
   }
 
@@ -3007,7 +3026,7 @@ export class MemStorage implements IStorage {
       )
       .sort(
         (a, b) =>
-          new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
   }
 
@@ -3038,7 +3057,7 @@ export class MemStorage implements IStorage {
     const organization: Organization = {
       ...insertOrganization,
       id,
-      createdDate: new Date(),
+      createdAt: new Date(),
       lastUpdated: new Date(),
     };
     this.organizations.set(id, organization);
@@ -3270,10 +3289,9 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const document: ConfidentialDocument = {
       id,
-      filename: data.filename,
-      originalFilename: data.originalFilename,
-      mimeType: data.mimeType,
-      fileSize: data.fileSize,
+      fileName: data.fileName,
+      filePath: data.filePath,
+      originalName: data.originalName,
       allowedEmails: data.allowedEmails,
       uploadedBy: data.uploadedBy,
       uploadedAt: now,
