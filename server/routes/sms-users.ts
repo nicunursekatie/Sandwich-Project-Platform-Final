@@ -653,9 +653,34 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
         logger.info(`✅ Downloaded image from Twilio (${imageBuffer.byteLength} bytes, type: ${mimeType})`);
 
-        // Parse the sign-in sheet using the existing parser
+        // Parse location and date from text message if provided
+        let textLocation: string | null = null;
+        let textDate: string | null = null;
+        
+        if (Body && Body.trim()) {
+          // Import date parsing function from collection parser
+          const { parseDateFromText } = await import('../services/sms-collection-parser');
+          const dateParseResult = parseDateFromText(Body.trim());
+          textDate = dateParseResult.date;
+          
+          // Extract location from remaining text (everything that's not a date)
+          const locationText = dateParseResult.remainingText
+            .replace(/^(log|logged|made|collected|we made|we collected|just made|just collected)\s*/i, '')
+            .replace(/\s*(sandwiches?|sammies|sammiches)\s*/gi, ' ')
+            .replace(/\s*(today|this morning|this afternoon|tonight)\s*/gi, ' ')
+            .trim();
+          
+          if (locationText.length > 0 && !/^\d+$/.test(locationText)) {
+            // Only use as location if it's not just a number
+            textLocation = locationText;
+            logger.info(`📍 Extracted location from text: "${textLocation}", date: "${textDate}"`);
+          }
+        }
+
+        // Parse the sign-in sheet using the existing parser (use text as context hint)
         const { parseSignInSheetBase64 } = await import('../services/signin-sheet-parser');
-        const parseResult = await parseSignInSheetBase64(base64Image, mimeType, Body || undefined);
+        const contextHint = Body && Body.trim() ? Body.trim() : undefined;
+        const parseResult = await parseSignInSheetBase64(base64Image, mimeType, contextHint);
 
         if (!parseResult.success || parseResult.entries.length === 0) {
           logger.warn(`⚠️ Failed to parse sign-in sheet image from ${redactedPhone}`);
@@ -675,9 +700,15 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         // Create collections for each parsed entry
         const createdCollections = [];
         for (const entry of parseResult.entries) {
+          // Use text-provided location if available, otherwise use image-extracted location
+          const locationToUse = textLocation || entry.location;
+          
+          // Use text-provided date if available, otherwise use entry date, then suggested date
+          const dateToUse = textDate || entry.date || parseResult.suggestedDate || new Date().toISOString().split('T')[0];
+          
           // Try to match host location
           let matchedHostId: number | null = null;
-          let matchedHostName = entry.location;
+          let matchedHostName = locationToUse;
 
           if (allHosts.length > 0) {
             const inputLower = entry.location.toLowerCase().trim();
@@ -728,7 +759,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
 
           // Build collection data
           const collectionData: any = {
-            collectionDate: entry.date || parseResult.suggestedDate || new Date().toISOString().split('T')[0],
+            collectionDate: dateToUse,
             hostName: matchedHostName,
             hostId: matchedHostId,
             individualSandwiches: entry.sandwichCount,
@@ -753,9 +784,10 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         // Send confirmation message
         const totalSandwiches = parseResult.totalSandwiches;
         const entryCount = parseResult.entries.length;
+        const locationDisplay = textLocation || (entryCount === 1 ? parseResult.entries[0].location : 'multiple locations');
         const confirmationMsg = entryCount === 1
-          ? `✅ Logged ${totalSandwiches} sandwiches at ${parseResult.entries[0].location} from your photo!`
-          : `✅ Logged ${entryCount} entries (${totalSandwiches} total sandwiches) from your photo!`;
+          ? `✅ Logged ${totalSandwiches} sandwiches at ${locationDisplay} from your photo!`
+          : `✅ Logged ${entryCount} entries (${totalSandwiches} total sandwiches) at ${locationDisplay} from your photo!`;
 
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
