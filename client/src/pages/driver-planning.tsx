@@ -26,7 +26,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
-import { format, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, addWeeks, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,11 +100,14 @@ interface EventMapData {
   scheduledEventDate: string | null;
   status: string;
   estimatedSandwichCount: number | null;
+  tspContactAssigned: string | null;
   tspContact: string | null;
+  customTspContact: string | null;
   eventStartTime: string | null;
   eventEndTime: string | null;
   driversNeeded: number | null;
   assignedDriverIds: string[] | null;
+  assignedRecipientIds: string[] | null;
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
@@ -300,12 +303,14 @@ function MapController({
   focusedItem,
   nearbyHosts,
   nearbyRecipients,
+  designatedRecipients,
 }: {
   selectedEvent: EventMapData | null;
   events: EventMapData[];
   focusedItem: FocusedMapItem | null;
   nearbyHosts: { latitude: string; longitude: string }[];
   nearbyRecipients: { latitude: string; longitude: string }[];
+  designatedRecipients: { latitude: string; longitude: string }[];
 }) {
   const map = useMap();
 
@@ -336,8 +341,13 @@ function MapController({
         ]);
       }
 
-      // Add closest recipient if available
-      if (nearbyRecipients.length > 0) {
+      // Add designated recipient if available, otherwise add closest recipient
+      if (designatedRecipients.length > 0) {
+        points.push([
+          parseFloat(designatedRecipients[0].latitude),
+          parseFloat(designatedRecipients[0].longitude)
+        ]);
+      } else if (nearbyRecipients.length > 0) {
         points.push([
           parseFloat(nearbyRecipients[0].latitude),
           parseFloat(nearbyRecipients[0].longitude)
@@ -362,7 +372,15 @@ function MapController({
         );
       }
     }
-  }, [selectedEventId, selectedEvent?.latitude, selectedEvent?.longitude, nearbyHosts, nearbyRecipients, map]);
+  }, [
+    selectedEventId,
+    selectedEvent?.latitude,
+    selectedEvent?.longitude,
+    nearbyHosts,
+    nearbyRecipients,
+    designatedRecipients,
+    map
+  ]);
 
   // Fit bounds to all events on initial load (when no event selected)
   useEffect(() => {
@@ -537,6 +555,17 @@ export default function DriverPlanningDashboard() {
     },
   });
 
+  // Fetch basic users for resolving user IDs (for assigned staff / assigned drivers that are user IDs)
+  const { data: usersBasic = [] } = useQuery<Array<{ id: string; displayName?: string; firstName?: string; lastName?: string; email?: string }>>({
+    queryKey: ['/api/users/basic'],
+    queryFn: async () => {
+      const response = await fetch('/api/users/basic');
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    },
+    staleTime: 300000,
+  });
+
   // Fetch driver candidates (drivers + hosts + volunteers flagged as drivers)
   const { data: driverCandidates = [], isLoading: driverCandidatesLoading } = useQuery<DriverCandidate[]>({
     queryKey: ['/api/drivers/driver-candidates'],
@@ -567,25 +596,66 @@ export default function DriverPlanningDashboard() {
     },
   });
 
+  const usersById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of usersBasic) {
+      const name = (u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.id || '').trim();
+      if (u.id && name) map.set(u.id, name);
+    }
+    return map;
+  }, [usersBasic]);
+
+  const parsePostgresArrayLike = (arr: unknown): string[] => {
+    if (!arr) return [];
+    if (Array.isArray(arr)) return arr.map(String).map((s) => s.trim()).filter(Boolean);
+    if (typeof arr === 'string') {
+      if (arr === '{}' || arr === '') return [];
+      const cleaned = arr.replace(/^{|}$/g, '');
+      if (!cleaned) return [];
+      return cleaned.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const extractCustomName = (id: string): string => {
+    if (!id || typeof id !== 'string') return '';
+    if (id.startsWith('custom-')) {
+      const parts = id.split('-');
+      if (parts.length >= 3) {
+        const nameParts = parts.slice(2);
+        return nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
+      }
+      return 'Custom Volunteer';
+    }
+    if (id.startsWith('custom:')) {
+      return id.replace('custom:', '').trim();
+    }
+    return '';
+  };
+
+  const resolveUserName = (id: string): string => {
+    const custom = extractCustomName(id);
+    if (custom) return custom;
+    const name = usersById.get(id);
+    return name || id;
+  };
+
   // Filter events to upcoming scheduled events within selected weeks
   const upcomingEvents = useMemo(() => {
     const today = startOfDay(new Date());
-    const endDate = addWeeks(today, parseInt(weeksAhead));
+    const endDate = endOfDay(addWeeks(today, parseInt(weeksAhead)));
 
     return allEvents
       .filter(event => {
-        // Must have coordinates
-        if (!event.latitude || !event.longitude) return false;
-
         // Must be scheduled status
-        if (event.status !== 'scheduled') return false;
+        if ((event.status || '').toLowerCase() !== 'scheduled') return false;
 
         // Must have a date
         const dateStr = event.scheduledEventDate || event.desiredEventDate;
         if (!dateStr) return false;
 
         const eventDate = parseLocalDate(dateStr);
-        return isAfter(eventDate, today) && isBefore(eventDate, endDate);
+        return isWithinInterval(eventDate, { start: today, end: endDate });
       })
       .sort((a, b) => {
         const dateA = parseLocalDate(a.scheduledEventDate || a.desiredEventDate!);
@@ -593,6 +663,11 @@ export default function DriverPlanningDashboard() {
         return dateA.getTime() - dateB.getTime();
       });
   }, [allEvents, weeksAhead]);
+
+  // Map-safe subset: only events with coordinates
+  const upcomingEventsWithCoords = useMemo(() => {
+    return upcomingEvents.filter((e) => e.latitude && e.longitude);
+  }, [upcomingEvents]);
 
   // Filter events based on staffing needs toggle
   const events = useMemo(() => {
@@ -745,6 +820,112 @@ export default function DriverPlanningDashboard() {
     return recipientsWithDistance.slice(0, 10);
   }, [selectedEvent, recipientMapData]);
 
+  // Designated recipient(s) explicitly assigned on the event (if any)
+  const designatedRecipients = useMemo(() => {
+    const assigned = selectedEvent?.assignedRecipientIds || [];
+    if (!selectedEvent || assigned.length === 0) return [];
+
+    const numericIds = assigned
+      .map((v) => Number(v))
+      .filter((n) => Number.isFinite(n));
+
+    const normalizedNames = assigned
+      .map((v) => (v || '').trim().toLowerCase())
+      .filter((v) => v.length > 0 && Number.isNaN(Number(v)));
+
+    const matches = recipientMapData.filter((r) => {
+      if (!r.latitude || !r.longitude) return false;
+      if (numericIds.length > 0 && numericIds.includes(r.id)) return true;
+      if (normalizedNames.length > 0) {
+        const name = (r.name || '').trim().toLowerCase();
+        return normalizedNames.some((n) => n === name);
+      }
+      return false;
+    });
+
+    return matches;
+  }, [selectedEvent, recipientMapData]);
+
+  const nonDesignatedNearbyRecipients = useMemo(() => {
+    if (!selectedEvent) return [];
+    if (designatedRecipients.length === 0) return nearbyRecipients;
+    const designatedIds = new Set(designatedRecipients.map((r) => r.id));
+    return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
+  }, [selectedEvent, designatedRecipients, nearbyRecipients]);
+
+  const getAssignedStaffLabel = (event: EventMapData): string | null => {
+    const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
+      .map((v) => (v || '').trim())
+      .filter(Boolean)
+      .map((v) => (v.startsWith('user_') || v.startsWith('auth0|') || v.startsWith('google-oauth2|')) ? resolveUserName(v) : v);
+    if (parts.length === 0) return null;
+    // De-dupe while preserving order
+    return Array.from(new Set(parts)).join(' • ');
+  };
+
+  const getAssignedDriversLabel = (event: EventMapData): string | null => {
+    const ids = parsePostgresArrayLike(event.assignedDriverIds);
+    if (ids.length === 0) return null;
+
+    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
+    const driverByNumericId = new Map(activeDrivers.map((d) => [String(d.id), d]));
+
+    const labels = ids.map((raw) => {
+      const id = String(raw).trim();
+      if (!id) return '';
+
+      // 1) custom name formats
+      const custom = extractCustomName(id);
+      if (custom) return custom;
+
+      // 2) user IDs (common across event-request staffing)
+      const userName = usersById.get(id);
+      if (userName) return userName;
+
+      // 3) driver candidate IDs (driver-12 / host-3 / volunteer-9)
+      const candidate = candidateById.get(id);
+      if (candidate) return candidate.name;
+
+      // 4) numeric IDs (plain "12") -> drivers table
+      if (/^\d+$/.test(id)) {
+        const driver = driverByNumericId.get(id);
+        if (driver?.name) return driver.name;
+        const asCandidate = candidateById.get(`driver-${id}`);
+        if (asCandidate) return asCandidate.name;
+      }
+
+      // 5) prefixed numeric IDs -> drivers table
+      const tail = id.includes('-') ? id.split('-').pop() : null;
+      if (tail && /^\d+$/.test(tail)) {
+        const driver = driverByNumericId.get(tail);
+        if (driver?.name) return driver.name;
+      }
+
+      return id;
+    }).filter(Boolean);
+
+    const deduped = Array.from(new Set(labels));
+    return deduped.length > 0 ? deduped.join(', ') : null;
+  };
+
+  const getDesignatedRecipientLabel = (event: EventMapData): string | null => {
+    const assigned = event.assignedRecipientIds || [];
+    if (assigned.length === 0) return null;
+
+    const numericIds = assigned
+      .map((v) => Number(v))
+      .filter((n) => Number.isFinite(n));
+
+    const names = recipientMapData
+      .filter((r) => numericIds.includes(r.id))
+      .map((r) => r.name)
+      .filter(Boolean);
+
+    if (names.length > 0) return Array.from(new Set(names)).join(', ');
+    // Fallback: show whatever was stored
+    return assigned.filter(Boolean).join(', ');
+  };
+
   // Copy SMS to clipboard
   const copyDriverSMS = async (driver: Driver) => {
     if (!selectedEvent) return;
@@ -770,13 +951,13 @@ export default function DriverPlanningDashboard() {
 
   // Map center
   const mapCenter: [number, number] = useMemo(() => {
-    if (upcomingEvents.length === 0) return [33.7490, -84.3880]; // Atlanta default
+    if (upcomingEventsWithCoords.length === 0) return [33.7490, -84.3880]; // Atlanta default
 
-    const avgLat = upcomingEvents.reduce((sum, e) => sum + parseFloat(e.latitude!), 0) / upcomingEvents.length;
-    const avgLng = upcomingEvents.reduce((sum, e) => sum + parseFloat(e.longitude!), 0) / upcomingEvents.length;
+    const avgLat = upcomingEventsWithCoords.reduce((sum, e) => sum + parseFloat(e.latitude!), 0) / upcomingEventsWithCoords.length;
+    const avgLng = upcomingEventsWithCoords.reduce((sum, e) => sum + parseFloat(e.longitude!), 0) / upcomingEventsWithCoords.length;
 
     return [avgLat, avgLng];
-  }, [upcomingEvents]);
+  }, [upcomingEventsWithCoords]);
 
   const isLoading = eventsLoading || driversLoading || driverCandidatesLoading;
 
@@ -957,7 +1138,41 @@ export default function DriverPlanningDashboard() {
                           <Truck className="w-3 h-3 mr-1" />
                           {driversAssigned}/{driversNeeded} drivers
                         </Badge>
+                        {(!event.latitude || !event.longitude) && (
+                          <Badge variant="outline" className="text-xs">
+                            Needs geocode
+                          </Badge>
+                        )}
                       </div>
+
+                    {/* Expanded details on selected card */}
+                    {isSelected && (
+                      <div className="pt-2 border-t border-gray-100 space-y-1">
+                        {getAssignedStaffLabel(event) && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Assigned staff:</span>{' '}
+                            <span className="text-gray-600">{getAssignedStaffLabel(event)}</span>
+                          </div>
+                        )}
+                        {getAssignedDriversLabel(event) && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Assigned drivers:</span>{' '}
+                            <span className="text-gray-600">{getAssignedDriversLabel(event)}</span>
+                          </div>
+                        )}
+                        {getDesignatedRecipientLabel(event) && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Recipient:</span>{' '}
+                            <span className="text-gray-600">{getDesignatedRecipientLabel(event)}</span>
+                          </div>
+                        )}
+                        {!getAssignedStaffLabel(event) && !getAssignedDriversLabel(event) && !getDesignatedRecipientLabel(event) && (
+                          <div className="text-[11px] text-gray-500">
+                            No staff or recipient assigned yet.
+                          </div>
+                        )}
+                      </div>
+                    )}
                     </div>
                   </Card>
                 );
@@ -1001,14 +1216,15 @@ export default function DriverPlanningDashboard() {
             />
             <MapController
               selectedEvent={selectedEvent}
-              events={upcomingEvents}
+              events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
+              designatedRecipients={designatedRecipients}
             />
 
             {/* Event markers */}
-            {upcomingEvents.map((event) => (
+            {upcomingEventsWithCoords.map((event) => (
               <Marker
                 key={event.id}
                 position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
@@ -1055,7 +1271,34 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Nearby recipient markers when event selected */}
-            {selectedEvent && nearbyRecipients.map((recipient) => (
+            {selectedEvent && designatedRecipients.map((recipient) => (
+              <Marker
+                key={`designated-recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+                eventHandlers={{
+                  click: () => setFocusedItem({
+                    type: 'recipient',
+                    id: recipient.id,
+                    latitude: recipient.latitude,
+                    longitude: recipient.longitude
+                  })
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <h3 className="font-semibold text-purple-700">{recipient.name}</h3>
+                    {recipient.address && (
+                      <p className="text-xs text-gray-600">{recipient.address}</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Nearby recipient markers when event selected */}
+            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -1213,9 +1456,45 @@ export default function DriverPlanningDashboard() {
                     <Heart className="w-4 h-4 text-purple-600" />
                     Nearby Recipients (Delivery Locations)
                   </h3>
+                  {designatedRecipients.length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-[11px] font-semibold text-gray-700 mb-1">Designated recipient</div>
+                      <div className="space-y-1">
+                        {designatedRecipients.map((recipient) => (
+                          <button
+                            key={`designated-recipient-sidebar-${recipient.id}`}
+                            onClick={() => setFocusedItem({
+                              type: 'recipient',
+                              id: recipient.id,
+                              latitude: recipient.latitude,
+                              longitude: recipient.longitude
+                            })}
+                            className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-purple-100 ${
+                              focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                                ? 'bg-purple-100 border-purple-400'
+                                : 'bg-purple-50 border-purple-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                                <span className="font-medium">{recipient.name}</span>
+                              </div>
+                              <span className="text-purple-700">Designated</span>
+                            </div>
+                            {recipient.address && (
+                              <div className="text-gray-500 pl-5 mt-0.5 text-[10px] line-clamp-1">
+                                {recipient.address}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {nearbyRecipients.length > 0 ? (
                     <div className="space-y-2">
-                      {(showAllRecipients ? nearbyRecipients : nearbyRecipients.slice(0, 3)).map((recipient) => (
+                      {(showAllRecipients ? nonDesignatedNearbyRecipients : nonDesignatedNearbyRecipients.slice(0, 3)).map((recipient) => (
                         <button
                           key={recipient.id}
                           onClick={() => setFocusedItem({
@@ -1250,12 +1529,12 @@ export default function DriverPlanningDashboard() {
                           )}
                         </button>
                       ))}
-                      {nearbyRecipients.length > 3 && (
+                      {nonDesignatedNearbyRecipients.length > 3 && (
                         <button
                           onClick={() => setShowAllRecipients(!showAllRecipients)}
                           className="w-full text-xs text-purple-700 hover:text-purple-900 font-medium py-1"
                         >
-                          {showAllRecipients ? 'Show less' : `View ${nearbyRecipients.length - 3} more recipients`}
+                          {showAllRecipients ? 'Show less' : `View ${nonDesignatedNearbyRecipients.length - 3} more recipients`}
                         </button>
                       )}
                     </div>
@@ -1433,6 +1712,28 @@ export default function DriverPlanningDashboard() {
                       >
                         {driversAssigned}/{driversNeeded} drivers
                       </Badge>
+                      {isSelected && (
+                        <div className="pt-2 border-t border-gray-100 space-y-1">
+                          {getAssignedStaffLabel(event) && (
+                            <div className="text-[11px] text-gray-700">
+                              <span className="font-semibold">Assigned staff:</span>{' '}
+                              <span className="text-gray-600">{getAssignedStaffLabel(event)}</span>
+                            </div>
+                          )}
+                          {getAssignedDriversLabel(event) && (
+                            <div className="text-[11px] text-gray-700">
+                              <span className="font-semibold">Assigned drivers:</span>{' '}
+                              <span className="text-gray-600">{getAssignedDriversLabel(event)}</span>
+                            </div>
+                          )}
+                          {getDesignatedRecipientLabel(event) && (
+                            <div className="text-[11px] text-gray-700">
+                              <span className="font-semibold">Recipient:</span>{' '}
+                              <span className="text-gray-600">{getDesignatedRecipientLabel(event)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Card>
                 );
@@ -1465,12 +1766,13 @@ export default function DriverPlanningDashboard() {
             />
             <MapController
               selectedEvent={selectedEvent}
-              events={upcomingEvents}
+              events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
+              designatedRecipients={designatedRecipients}
             />
-            {upcomingEvents.map((event) => (
+            {upcomingEventsWithCoords.map((event) => (
               <Marker
                 key={event.id}
                 position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
@@ -1501,7 +1803,22 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {selectedEvent && nearbyRecipients.map((recipient) => (
+            {selectedEvent && designatedRecipients.map((recipient) => (
+              <Marker
+                key={`designated-recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -1651,12 +1968,13 @@ export default function DriverPlanningDashboard() {
             />
             <MapController
               selectedEvent={selectedEvent}
-              events={upcomingEvents}
+              events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
+              designatedRecipients={designatedRecipients}
             />
-            {upcomingEvents.map((event) => (
+            {upcomingEventsWithCoords.map((event) => (
               <Marker
                 key={event.id}
                 position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
@@ -1690,7 +2008,22 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {selectedEvent && nearbyRecipients.map((recipient) => (
+            {selectedEvent && designatedRecipients.map((recipient) => (
+              <Marker
+                key={`designated-recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
+                icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -2001,6 +2334,32 @@ export default function DriverPlanningDashboard() {
                       <Package className="w-4 h-4 text-gray-500" />
                       <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
                     </div>
+                  )}
+                </div>
+
+                {/* Assignments */}
+                <div className="bg-white rounded-lg border p-3 space-y-2">
+                  <div className="text-sm font-semibold text-gray-700">Assignments</div>
+                  {getAssignedStaffLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Assigned staff:</span>{' '}
+                      {getAssignedStaffLabel(selectedEvent)}
+                    </div>
+                  )}
+                  {getAssignedDriversLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Assigned drivers:</span>{' '}
+                      {getAssignedDriversLabel(selectedEvent)}
+                    </div>
+                  )}
+                  {getDesignatedRecipientLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Recipient:</span>{' '}
+                      {getDesignatedRecipientLabel(selectedEvent)}
+                    </div>
+                  )}
+                  {!getAssignedStaffLabel(selectedEvent) && !getAssignedDriversLabel(selectedEvent) && !getDesignatedRecipientLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-500">No assignments yet.</div>
                   )}
                 </div>
 

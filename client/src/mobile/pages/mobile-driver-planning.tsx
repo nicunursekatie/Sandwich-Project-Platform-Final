@@ -51,7 +51,11 @@ interface EventForPlanning {
   location?: string;
   address?: string;
   driversNeeded: number;
-  assignedDriverIds?: number[];
+  assignedDriverIds?: Array<string | number>;
+  tspContactAssigned?: string | null;
+  tspContact?: string | null;
+  customTspContact?: string | null;
+  assignedRecipientIds?: string[] | null;
   estimatedSandwichCount?: number;
   status?: string;
   hostName?: string;
@@ -96,6 +100,42 @@ export function MobileDriverPlanning() {
     queryKey: ['/api/drivers'],
     staleTime: 300000,
   });
+
+  // Fetch basic users to resolve assigned staff/driver user IDs to names
+  const { data: usersBasic = [] } = useQuery<Array<{ id: string; displayName?: string; firstName?: string; lastName?: string; email?: string }>>({
+    queryKey: ['/api/users/basic'],
+    staleTime: 300000,
+  });
+
+  const usersById = new Map(usersBasic.map((u) => [
+    u.id,
+    (u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.id || '').trim()
+  ]));
+
+  const extractCustomName = (id: string): string => {
+    if (!id || typeof id !== 'string') return '';
+    if (id.startsWith('custom-')) {
+      const parts = id.split('-');
+      if (parts.length >= 3) return parts.slice(2).join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
+      return 'Custom Volunteer';
+    }
+    if (id.startsWith('custom:')) return id.replace('custom:', '').trim();
+    return '';
+  };
+
+  const resolvePersonName = (id: string): string => {
+    const custom = extractCustomName(id);
+    if (custom) return custom;
+    return usersById.get(id) || id;
+  };
+
+  const getAssignedStaffLabel = (event: EventForPlanning): string | null => {
+    const parts = [event.tspContactAssigned, event.tspContact, event.customTspContact]
+      .map((v) => (v || '').trim())
+      .filter(Boolean);
+    if (parts.length === 0) return null;
+    return Array.from(new Set(parts.map(resolvePersonName))).join(' • ');
+  };
 
   // Helper to get event date
   const getEventDate = (event: EventForPlanning): Date | null => {
@@ -147,6 +187,26 @@ export function MobileDriverPlanning() {
 
   // Get driver info by ID
   const getDriver = (id: number) => drivers.find((d) => d.id === id);
+
+  const resolveAssignedDriverLabel = (rawId: string | number): string => {
+    const idStr = String(rawId).trim();
+    if (!idStr) return '';
+
+    const custom = extractCustomName(idStr);
+    if (custom) return custom;
+
+    const userName = usersById.get(idStr);
+    if (userName) return userName;
+
+    // Allow formats like "driver-12"
+    const numericTail = idStr.includes('-') ? idStr.split('-').pop() : idStr;
+    if (numericTail && /^\d+$/.test(numericTail)) {
+      const driver = getDriver(Number(numericTail));
+      if (driver?.name) return driver.name;
+    }
+
+    return idStr;
+  };
 
   // Copy SMS message to clipboard
   const copySMSMessage = (event: EventForPlanning, driver?: Driver) => {
@@ -338,6 +398,26 @@ export function MobileDriverPlanning() {
                     {/* Expanded details */}
                     {selectedEvent?.id === event.id && (
                       <div className="px-4 pb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        {/* Assigned staff */}
+                        {getAssignedStaffLabel(event) && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ASSIGNED STAFF</p>
+                            <p className="text-sm text-slate-900 dark:text-slate-100">
+                              {getAssignedStaffLabel(event)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Designated recipient */}
+                        {Array.isArray(event.assignedRecipientIds) && event.assignedRecipientIds.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RECIPIENT</p>
+                            <p className="text-sm text-slate-900 dark:text-slate-100">
+                              {event.assignedRecipientIds.filter(Boolean).join(', ')}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Pickup info */}
                         {event.hostName && (
                           <div className="mb-3">
@@ -364,12 +444,13 @@ export function MobileDriverPlanning() {
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ASSIGNED</p>
                             <div className="space-y-1">
                               {event.assignedDriverIds?.map((driverId) => {
-                                const driver = getDriver(driverId);
-                                if (!driver) return null;
+                                const label = resolveAssignedDriverLabel(driverId);
+                                const numericTail = String(driverId).includes('-') ? String(driverId).split('-').pop() : String(driverId);
+                                const driver = numericTail && /^\d+$/.test(numericTail) ? getDriver(Number(numericTail)) : undefined;
                                 return (
-                                  <div key={driverId} className="flex items-center justify-between">
+                                  <div key={String(driverId)} className="flex items-center justify-between">
                                     <span className="text-sm text-slate-900 dark:text-slate-100">
-                                      {driver.name}
+                                      {label}
                                     </span>
                                     {driver.phone && (
                                       <div className="flex items-center gap-2">

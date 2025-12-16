@@ -50,10 +50,10 @@ export function MobileHome() {
   const greeting = getGreeting();
 
   const handleSwitchToDesktop = () => {
-    // Clear mobile preference
-    localStorage.setItem(MOBILE_PREFERENCE_KEY, 'desktop');
-    // Navigate to desktop view
-    window.location.href = '/';
+    // Clear mobile preference entirely (mobile layout is deprecated)
+    localStorage.removeItem(MOBILE_PREFERENCE_KEY);
+    // Navigate to desktop dashboard
+    window.location.href = '/dashboard';
   };
 
   return (
