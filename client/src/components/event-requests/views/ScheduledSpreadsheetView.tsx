@@ -2265,8 +2265,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       const speakersNeeded = event.speakersNeeded || 0;
       const volunteersNeeded = event.volunteersNeeded || 0;
 
-      // Calculate assigned counts
-      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0);
+      // Calculate assigned counts - include van driver and DHL van
+      const driversAssigned = (event.assignedDriverIds?.length || 0) +
+                              (event.assignedVanDriverId ? 1 : 0) +
+                              (event.isDhlVan ? 1 : 0);
       const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
       const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
 
@@ -2891,19 +2893,25 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                   
                   {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded) && (
                     <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-[#47B3CB]/20">
-                      {event.driversNeeded > 0 && (
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${
-                            (event.assignedDriverIds?.length || 0) >= event.driversNeeded
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                              : 'bg-amber-50 text-amber-700 border-amber-300'
-                          }`}
-                        >
-                          <Car className="h-3 w-3 mr-1" />
-                          {(event.assignedDriverIds?.length || 0)}/{event.driversNeeded}
-                        </Badge>
-                      )}
+                      {event.driversNeeded > 0 && (() => {
+                        // Include van driver and DHL van in total assigned count
+                        const totalDriversAssigned = (event.assignedDriverIds?.length || 0) +
+                                                     (event.assignedVanDriverId ? 1 : 0) +
+                                                     (event.isDhlVan ? 1 : 0);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              totalDriversAssigned >= event.driversNeeded
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                : 'bg-amber-50 text-amber-700 border-amber-300'
+                            }`}
+                          >
+                            <Car className="h-3 w-3 mr-1" />
+                            {totalDriversAssigned}/{event.driversNeeded}
+                          </Badge>
+                        );
+                      })()}
                       {event.speakersNeeded > 0 && (
                         <Badge 
                           variant="outline" 

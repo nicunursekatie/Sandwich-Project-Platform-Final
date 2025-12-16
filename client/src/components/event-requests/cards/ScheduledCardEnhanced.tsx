@@ -495,8 +495,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const name = extractCustomName(id) || resolveUserName(id);
         staffingParts.push(name ? `D: ${name}` : 'D');
       });
-      // Add unfilled driver slots
-      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
+      // Add unfilled driver slots - include van driver and DHL van in fulfilled count
+      const totalDriversAssigned = assignedDriverIds.length +
+                                   (request.assignedVanDriverId ? 1 : 0) +
+                                   (request.isDhlVan ? 1 : 0);
+      const unfilledDrivers = Math.max(0, driversNeededCount - totalDriversAssigned);
       for (let i = 0; i < unfilledDrivers; i++) {
         staffingParts.push('D');
       }
