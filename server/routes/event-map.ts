@@ -183,4 +183,84 @@ router.post('/geocode/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/event-map/geocode-all
+ * Batch geocode all events that have addresses but no coordinates
+ * RATE LIMITED: Processes with 1 second delay between each to comply with Nominatim usage policy
+ */
+router.post('/geocode-all', async (req, res) => {
+  try {
+    // Find all events with addresses but no coordinates
+    const eventsToGeocode = await db
+      .select({
+        id: eventRequests.id,
+        eventAddress: eventRequests.eventAddress,
+      })
+      .from(eventRequests)
+      .where(
+        and(
+          isNotNull(eventRequests.eventAddress),
+          ne(eventRequests.eventAddress, ''),
+          eq(eventRequests.latitude, null as any)
+        )
+      );
+
+    if (eventsToGeocode.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All events with addresses already have coordinates',
+        geocoded: 0,
+        failed: 0,
+      });
+    }
+
+    // Start background geocoding process
+    res.json({
+      success: true,
+      message: `Started geocoding ${eventsToGeocode.length} events in background. This may take a few minutes.`,
+      total: eventsToGeocode.length,
+    });
+
+    // Process geocoding in background (don't block response)
+    let geocodedCount = 0;
+    let failedCount = 0;
+
+    for (const event of eventsToGeocode) {
+      try {
+        await rateLimiter.checkAndWait('geocode', 1100);
+        
+        const cleanedAddress = cleanAddressForGeocoding(event.eventAddress!);
+        const coordinates = await geocodeAddress(cleanedAddress);
+
+        if (coordinates) {
+          await db
+            .update(eventRequests)
+            .set({
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+              updatedAt: new Date(),
+            })
+            .where(eq(eventRequests.id, event.id));
+          geocodedCount++;
+          logger.info(`✅ Batch geocoded event ${event.id}: ${event.eventAddress}`);
+        } else {
+          failedCount++;
+          logger.warn(`❌ Failed to geocode event ${event.id}: ${event.eventAddress}`);
+        }
+      } catch (err) {
+        failedCount++;
+        logger.error(`Error geocoding event ${event.id}:`, err);
+      }
+    }
+
+    logger.info(`Batch geocoding complete: ${geocodedCount} geocoded, ${failedCount} failed`);
+  } catch (error) {
+    logger.error('Error starting batch geocoding:', error);
+    res.status(500).json({ 
+      error: 'Failed to start batch geocoding',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
