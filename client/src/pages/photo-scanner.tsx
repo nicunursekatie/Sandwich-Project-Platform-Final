@@ -569,7 +569,7 @@ export default function PhotoScanner() {
               <Button
                 className="flex-1 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white"
                 onClick={handleConfirm}
-                disabled={editableEntries.filter((e) => e.location && e.sandwichCount > 0).length === 0}
+                disabled={editableEntries.filter((e) => e.location.trim() && e.sandwichCount > 0).length === 0}
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Confirm & Save
