@@ -67,8 +67,8 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '20mb' })); // Increased for base64 image uploads (sign-in sheet scanner)
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 
 // Security middleware - must come after body parsers
 import { prototypePollutionGuard } from './middleware/prototype-pollution-guard';
