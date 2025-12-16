@@ -258,20 +258,26 @@ export default function ActionCenter() {
       if (!['in_process', 'scheduled'].includes(event.status)) return false;
       if (!event.desiredEventDate) return false;
       if ((event.driversNeeded || 0) === 0) return false; // No drivers needed
+      if (event.selfTransport) return false; // Self-transport events don't need TSP drivers
 
       const eventDate = new Date(event.desiredEventDate);
       if (eventDate < today || eventDate > twoWeeksFromNow) return false;
 
-      // Check if drivers are assigned
-      const assignedDrivers = event.assignedDriverIds || [];
+      // Check if drivers are assigned - include van driver and DHL van in total
+      const totalDriversAssigned = (event.assignedDriverIds?.length || 0) +
+                                   (event.assignedVanDriverId ? 1 : 0) +
+                                   (event.isDhlVan ? 1 : 0);
       const driversNeeded = event.driversNeeded || 0;
 
-      return assignedDrivers.length < driversNeeded;
+      return totalDriversAssigned < driversNeeded;
     });
 
     if (upcomingEventsMissingDrivers.length > 0) {
       const totalDriversNeeded = upcomingEventsMissingDrivers.reduce((sum, e) => {
-        const assigned = (e.assignedDriverIds || []).length;
+        // Include van driver and DHL van in assigned count
+        const assigned = (e.assignedDriverIds?.length || 0) +
+                        (e.assignedVanDriverId ? 1 : 0) +
+                        (e.isDhlVan ? 1 : 0);
         const needed = e.driversNeeded || 0;
         return sum + (needed - assigned);
       }, 0);

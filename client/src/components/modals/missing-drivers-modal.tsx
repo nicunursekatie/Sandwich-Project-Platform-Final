@@ -83,8 +83,11 @@ export default function MissingDriversModal({
 
   const getDriversNeeded = (event: EventRequest) => {
     const needed = event.driversNeeded || 0;
-    const assigned = (event.assignedDriverIds || []).length;
-    return needed - assigned;
+    // Include van driver and DHL van in total assigned count
+    const assigned = (event.assignedDriverIds || []).length +
+                    (event.assignedVanDriverId ? 1 : 0) +
+                    (event.isDhlVan ? 1 : 0);
+    return Math.max(0, needed - assigned);
   };
 
   // Sort events by date (earliest first)
@@ -113,7 +116,10 @@ export default function MissingDriversModal({
           <div className="space-y-4">
             {sortedEvents.map((event) => {
               const driversNeeded = getDriversNeeded(event);
-              const assignedCount = (event.assignedDriverIds || []).length;
+              // Include van driver and DHL van in assigned count for display
+              const assignedCount = (event.assignedDriverIds || []).length +
+                                   (event.assignedVanDriverId ? 1 : 0) +
+                                   (event.isDhlVan ? 1 : 0);
               const totalNeeded = event.driversNeeded || 0;
 
               return (
