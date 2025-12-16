@@ -633,16 +633,20 @@ export default function DriverPlanningDashboard() {
     return upcomingEvents.filter(event => {
       // Skip self-transport events - they don't need TSP drivers
       if (event.selfTransport) return false;
-      
+
       // Only consider events with explicit driver requirements
       const driversNeeded = event.driversNeeded || 0;
-      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-      
+
       // If no driver requirement configured, don't show as needing drivers
-      if (driversNeeded === 0 && !vanDriverNeeded) return false;
-      
-      const driversAssigned = event.assignedDriverIds?.length || 0;
-      return driversAssigned < driversNeeded || vanDriverNeeded;
+      if (driversNeeded === 0) return false;
+
+      // Count ALL assigned drivers including van drivers
+      // Van driver and DHL van both count toward the total driver requirement
+      const driversAssigned = (event.assignedDriverIds?.length || 0) +
+                              (event.assignedVanDriverId ? 1 : 0) +
+                              (event.isDhlVan ? 1 : 0);
+
+      return driversAssigned < driversNeeded;
     });
   }, [upcomingEvents, showOnlyUnmetStaffing]);
 
@@ -651,15 +655,19 @@ export default function DriverPlanningDashboard() {
     return upcomingEvents.filter(event => {
       // Skip self-transport events
       if (event.selfTransport) return false;
-      
+
       // Only count events with explicit driver requirements
       const driversNeeded = event.driversNeeded || 0;
-      const vanDriverNeeded = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-      
-      if (driversNeeded === 0 && !vanDriverNeeded) return false;
-      
-      const driversAssigned = event.assignedDriverIds?.length || 0;
-      return driversAssigned < driversNeeded || vanDriverNeeded;
+
+      if (driversNeeded === 0) return false;
+
+      // Count ALL assigned drivers including van drivers
+      // Van driver and DHL van both count toward the total driver requirement
+      const driversAssigned = (event.assignedDriverIds?.length || 0) +
+                              (event.assignedVanDriverId ? 1 : 0) +
+                              (event.isDhlVan ? 1 : 0);
+
+      return driversAssigned < driversNeeded;
     }).length;
   }, [upcomingEvents]);
 
@@ -954,10 +962,17 @@ export default function DriverPlanningDashboard() {
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const driversAssigned = event.assignedDriverIds?.length || 0;
+                const regularDriversAssigned = event.assignedDriverIds?.length || 0;
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
-                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
+                const hasDriverRequirement = driversNeeded > 0;
+
+                // Count ALL assigned drivers including van drivers for status calculation
+                // Van driver and DHL van both count toward the total driver requirement
+                const totalDriversAssigned = regularDriversAssigned +
+                                             (event.assignedVanDriverId ? 1 : 0) +
+                                             (event.isDhlVan ? 1 : 0);
+                const driversFulfilled = totalDriversAssigned >= driversNeeded;
 
                 return (
                   <Card
@@ -1016,14 +1031,16 @@ export default function DriverPlanningDashboard() {
                           </Badge>
                         ) : hasDriverRequirement ? (
                           <Badge
-                            variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
+                            variant={driversFulfilled ? 'default' : 'destructive'}
                             className="text-xs"
                           >
                             <Truck className="w-3 h-3 mr-1" />
-                            {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                            {event.vanDriverNeeded && (
-                              event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van ✓' : ' + Van needed')
-                            )}
+                            {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                            {event.isDhlVan
+                              ? ' (incl. DHL)'
+                              : event.assignedVanDriverId
+                              ? ' (incl. van)'
+                              : ''}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-gray-500">
@@ -1897,19 +1914,34 @@ export default function DriverPlanningDashboard() {
                         ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
                         : 'No date'}
                     </span>
-                    {selectedEvent.selfTransport ? (
-                      <Badge variant="secondary" className="text-[10px] px-1.5">Self</Badge>
-                    ) : (selectedEvent.driversNeeded || 0) > 0 || selectedEvent.vanDriverNeeded ? (
-                      <Badge
-                        variant={(selectedEvent.assignedDriverIds?.length || 0) >= (selectedEvent.driversNeeded || 0) && (!selectedEvent.vanDriverNeeded || selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan) ? 'default' : 'destructive'}
-                        className="text-[10px] px-1.5"
-                      >
-                        {selectedEvent.assignedDriverIds?.length || 0}{(selectedEvent.tentativeDriverIds?.length || 0) > 0 && <span className="text-amber-300">+{selectedEvent.tentativeDriverIds?.length}?</span>}/{selectedEvent.driversNeeded || 0}
-                        {selectedEvent.vanDriverNeeded && (selectedEvent.isDhlVan ? '+DHL' : (selectedEvent.assignedVanDriverId ? '+Van' : '+Van!'))}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] px-1.5 text-gray-400">No req</Badge>
-                    )}
+                    {(() => {
+                      const totalDrivers = (selectedEvent.assignedDriverIds?.length || 0) +
+                                          (selectedEvent.assignedVanDriverId ? 1 : 0) +
+                                          (selectedEvent.isDhlVan ? 1 : 0);
+                      const needed = selectedEvent.driversNeeded || 0;
+                      const fulfilled = totalDrivers >= needed;
+                      const tentative = selectedEvent.tentativeDriverIds?.length || 0;
+
+                      if (selectedEvent.selfTransport) {
+                        return <Badge variant="secondary" className="text-[10px] px-1.5">Self</Badge>;
+                      }
+                      if (needed > 0) {
+                        return (
+                          <Badge
+                            variant={fulfilled ? 'default' : 'destructive'}
+                            className="text-[10px] px-1.5"
+                          >
+                            {totalDrivers}{tentative > 0 && <span className="text-amber-300">+{tentative}?</span>}/{needed}
+                            {selectedEvent.isDhlVan
+                              ? ' DHL'
+                              : selectedEvent.assignedVanDriverId
+                                ? ' van'
+                                : ''}
+                          </Badge>
+                        );
+                      }
+                      return <Badge variant="outline" className="text-[10px] px-1.5 text-gray-400">No req</Badge>;
+                    })()}
                   </div>
                 </div>
                 <Button

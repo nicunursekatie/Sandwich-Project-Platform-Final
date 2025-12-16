@@ -183,43 +183,60 @@ export default function LargeEventLogisticsModal({
                         )}
 
                         {/* Driver/Van Status */}
-                        {event.driversNeeded && event.driversNeeded > 0 ? (
-                          event.assignedDriverIds && event.assignedDriverIds.length >= event.driversNeeded ? (
-                            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                              <Truck className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        {(() => {
+                          // Include van driver and DHL van in total assigned count
+                          const totalDriversAssigned = (event.assignedDriverIds?.length || 0) +
+                                                       (event.assignedVanDriverId ? 1 : 0) +
+                                                       (event.isDhlVan ? 1 : 0);
+                          const driversNeeded = event.driversNeeded || 0;
+                          const driversFulfilled = totalDriversAssigned >= driversNeeded;
+                          const driversStillNeeded = Math.max(0, driversNeeded - totalDriversAssigned);
+
+                          if (driversNeeded > 0) {
+                            if (driversFulfilled) {
+                              return (
+                                <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                                  <Truck className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="font-medium text-green-900">✓ Driver(s) Assigned</p>
+                                    <p className="text-sm text-green-700">
+                                      {totalDriversAssigned} driver{totalDriversAssigned !== 1 ? 's' : ''} assigned for transportation.
+                                      {event.assignedVanDriverId && ' (includes van driver)'}
+                                      {event.isDhlVan && ' (includes DHL van)'}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                                  <Truck className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="font-medium text-amber-900">⚠️ Driver Assignment Needed</p>
+                                    <p className="text-sm text-amber-700">
+                                      Need {driversNeeded} driver{driversNeeded !== 1 ? 's' : ''} for this event.
+                                      {totalDriversAssigned > 0
+                                        ? ` ${totalDriversAssigned} assigned, ${driversStillNeeded} still needed.`
+                                        : ' Van likely required for transportation.'}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          }
+                          return (
+                            <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                              <Truck className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
-                                <p className="font-medium text-green-900">✓ Driver(s) Assigned</p>
-                                <p className="text-sm text-green-700">
-                                  {event.assignedDriverIds.length} driver{event.assignedDriverIds.length !== 1 ? 's' : ''} assigned for transportation.
+                                <p className="font-medium text-purple-900">Van/Driver Likely Needed</p>
+                                <p className="text-sm text-purple-700">
+                                  With {event.estimatedSandwichCount?.toLocaleString()} sandwiches,
+                                  transportation will likely be required. Consider adding driver requirement.
                                 </p>
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
-                              <Truck className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1">
-                                <p className="font-medium text-amber-900">⚠️ Driver Assignment Needed</p>
-                                <p className="text-sm text-amber-700">
-                                  Need {event.driversNeeded} driver{event.driversNeeded !== 1 ? 's' : ''} for this event.
-                                  {event.assignedDriverIds && event.assignedDriverIds.length > 0
-                                    ? ` ${event.assignedDriverIds.length} assigned, ${event.driversNeeded - event.assignedDriverIds.length} still needed.`
-                                    : ' Van likely required for transportation.'}
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        ) : (
-                          <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                            <Truck className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <p className="font-medium text-purple-900">Van/Driver Likely Needed</p>
-                              <p className="text-sm text-purple-700">
-                                With {event.estimatedSandwichCount?.toLocaleString()} sandwiches,
-                                transportation will likely be required. Consider adding driver requirement.
-                              </p>
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         {/* Sandwich Placement */}
                         {requiresPlacement === true && (

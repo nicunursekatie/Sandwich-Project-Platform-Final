@@ -194,14 +194,17 @@ export default function EventOperationalDashboard() {
       0
     );
 
-    // Drivers needed: events where drivers are needed but not arranged
-    const driversNeeded = scheduledEvents.filter(
-      (e) =>
-        (e.driversNeeded && e.driversNeeded > 0) &&
-        !e.driversArranged &&
-        !e.selfTransport &&
-        (!e.assignedDriverIds || e.assignedDriverIds.length === 0)
-    ).length;
+    // Drivers needed: events where total assigned drivers < drivers needed
+    // Include van driver and DHL van in the total assigned count
+    const driversNeeded = scheduledEvents.filter((e) => {
+      if (!e.driversNeeded || e.driversNeeded <= 0) return false;
+      if (e.driversArranged || e.selfTransport) return false;
+
+      const totalAssigned = (e.assignedDriverIds?.length || 0) +
+                           (e.assignedVanDriverId ? 1 : 0) +
+                           (e.isDhlVan ? 1 : 0);
+      return totalAssigned < e.driversNeeded;
+    }).length;
 
     // Volunteers needed: events where volunteers needed > volunteers assigned
     const volunteersNeeded = scheduledEvents.filter((e) => {
@@ -253,7 +256,11 @@ export default function EventOperationalDashboard() {
         if (!e.eventAddress && !e.deliveryDestination) missing.push('Address');
         if (!e.estimatedSandwichCount) missing.push('Sandwich count');
         if ((e.driversNeeded && e.driversNeeded > 0) && !e.driversArranged && !e.selfTransport) {
-          if (!e.assignedDriverIds || e.assignedDriverIds.length === 0) {
+          // Include van driver and DHL van in total assigned count
+          const totalDriversAssigned = (e.assignedDriverIds?.length || 0) +
+                                       (e.assignedVanDriverId ? 1 : 0) +
+                                       (e.isDhlVan ? 1 : 0);
+          if (totalDriversAssigned < e.driversNeeded) {
             missing.push('Driver');
           }
         }
@@ -268,7 +275,11 @@ export default function EventOperationalDashboard() {
         if (!e.eventAddress && !e.deliveryDestination) missing.push('Address');
         if (!e.estimatedSandwichCount) missing.push('Sandwich count');
         if ((e.driversNeeded && e.driversNeeded > 0) && !e.driversArranged && !e.selfTransport) {
-          if (!e.assignedDriverIds || e.assignedDriverIds.length === 0) {
+          // Include van driver and DHL van in total assigned count
+          const totalDriversAssigned = (e.assignedDriverIds?.length || 0) +
+                                       (e.assignedVanDriverId ? 1 : 0) +
+                                       (e.isDhlVan ? 1 : 0);
+          if (totalDriversAssigned < e.driversNeeded) {
             missing.push('Driver');
           }
         }

@@ -52,6 +52,9 @@ interface EventForPlanning {
   address?: string;
   driversNeeded: number;
   assignedDriverIds?: number[];
+  assignedVanDriverId?: string | null;
+  isDhlVan?: boolean | null;
+  selfTransport?: boolean | null;
   estimatedSandwichCount?: number;
   status?: string;
   hostName?: string;
@@ -104,6 +107,22 @@ export function MobileDriverPlanning() {
     return parseLocalDate(dateStr);
   };
 
+  // Helper to calculate total drivers assigned (including van drivers)
+  // Van driver and DHL van both count toward the total driver requirement
+  const getTotalDriversAssigned = (event: EventForPlanning): number => {
+    return (event.assignedDriverIds?.length || 0) +
+           (event.assignedVanDriverId ? 1 : 0) +
+           (event.isDhlVan ? 1 : 0);
+  };
+
+  // Helper to check if event needs drivers
+  const eventNeedsDrivers = (event: EventForPlanning): boolean => {
+    if (event.selfTransport) return false;
+    const needed = event.driversNeeded || 0;
+    if (needed === 0) return false;
+    return getTotalDriversAssigned(event) < needed;
+  };
+
   // Filter events
   const today = startOfToday();
   const filteredEvents = events
@@ -138,8 +157,9 @@ export function MobileDriverPlanning() {
       const bDate = getEventDate(b);
       const dateCompare = (aDate?.getTime() || 0) - (bDate?.getTime() || 0);
       if (dateCompare !== 0) return dateCompare;
-      const aNeedsDrivers = (a.driversNeeded || 0) > (a.assignedDriverIds?.length || 0);
-      const bNeedsDrivers = (b.driversNeeded || 0) > (b.assignedDriverIds?.length || 0);
+      // Use helper that properly counts van drivers
+      const aNeedsDrivers = eventNeedsDrivers(a);
+      const bNeedsDrivers = eventNeedsDrivers(b);
       if (aNeedsDrivers && !bNeedsDrivers) return -1;
       if (!aNeedsDrivers && bNeedsDrivers) return 1;
       return 0;
@@ -177,9 +197,8 @@ export function MobileDriverPlanning() {
     window.location.href = smsUrl;
   };
 
-  const needsDriversCount = filteredEvents.filter(
-    (e) => (e.driversNeeded || 0) > (e.assignedDriverIds?.length || 0)
-  ).length;
+  // Use helper that properly counts van drivers toward driver requirement
+  const needsDriversCount = filteredEvents.filter(eventNeedsDrivers).length;
 
   return (
     <MobileShell title="Driver Planning" showBack showNav>
@@ -267,10 +286,12 @@ export function MobileDriverPlanning() {
               </div>
             ) : (
               filteredEvents.map((event) => {
-                const assignedCount = event.assignedDriverIds?.length || 0;
+                // Use helpers that properly count van drivers toward total
+                const totalAssigned = getTotalDriversAssigned(event);
                 const needed = event.driversNeeded || 0;
-                const needsDrivers = needed > assignedCount;
-                const isFull = assignedCount >= needed && needed > 0;
+                const needsDrivers = eventNeedsDrivers(event);
+                const isFull = totalAssigned >= needed && needed > 0;
+                const driversShort = Math.max(0, needed - totalAssigned);
 
                 return (
                   <div
@@ -278,7 +299,9 @@ export function MobileDriverPlanning() {
                     className={cn(
                       "bg-white dark:bg-slate-800 rounded-xl shadow-sm",
                       "border",
-                      needsDrivers
+                      event.selfTransport
+                        ? "border-slate-200 dark:border-slate-700"
+                        : needsDrivers
                         ? "border-amber-300 dark:border-amber-700"
                         : isFull
                         ? "border-green-300 dark:border-green-700"
@@ -296,9 +319,13 @@ export function MobileDriverPlanning() {
                           {getEventDate(event) ? format(getEventDate(event)!, 'EEE, MMM d') : 'No date'}
                           {event.eventStartTime && ` at ${event.eventStartTime}`}
                         </span>
-                        {needsDrivers ? (
+                        {event.selfTransport ? (
+                          <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">
+                            Self-transport
+                          </span>
+                        ) : needsDrivers ? (
                           <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                            Needs {needed - assignedCount} driver{needed - assignedCount > 1 ? 's' : ''}
+                            Needs {driversShort} driver{driversShort > 1 ? 's' : ''}
                           </span>
                         ) : isFull ? (
                           <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
@@ -330,7 +357,12 @@ export function MobileDriverPlanning() {
                         <span className={cn(
                           needsDrivers ? "text-amber-600 dark:text-amber-400 font-medium" : "text-slate-500 dark:text-slate-400"
                         )}>
-                          {assignedCount}/{needed} drivers
+                          {totalAssigned}/{needed} drivers
+                          {event.isDhlVan
+                            ? ' (incl. DHL)'
+                            : event.assignedVanDriverId
+                              ? ' (incl. van)'
+                              : ''}
                         </span>
                       </div>
                     </button>
