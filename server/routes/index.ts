@@ -79,6 +79,7 @@ import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
+import photoScannerRouter from './photo-scanner';
 
 // Import centralized middleware
 import {
@@ -190,6 +191,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     collectionsRouter
   );
   router.use('/api/sandwich-collections', createErrorHandler('collections'));
+
+  // Photo scanner for sign-in sheets (uses vision AI to extract collection data)
+  router.use(
+    '/api/photo-scanner',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    photoScannerRouter
+  );
+  router.use('/api/photo-scanner', createErrorHandler('photo-scanner'));
 
   router.use(
     '/api/recipients',

@@ -418,8 +418,11 @@ export function MobileDriverPlanning() {
                           needsDrivers ? "text-amber-600 dark:text-amber-400 font-medium" : "text-slate-500 dark:text-slate-400"
                         )}>
                           {totalAssigned}/{needed} drivers
-                          {event.assignedVanDriverId && ' (incl. van)'}
-                          {event.isDhlVan && ' (incl. DHL)'}
+                          {event.isDhlVan
+                            ? ' (incl. DHL)'
+                            : event.assignedVanDriverId
+                              ? ' (incl. van)'
+                              : ''}
                         </span>
                       </div>
                     </button>

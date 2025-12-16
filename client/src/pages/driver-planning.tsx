@@ -1215,8 +1215,11 @@ export default function DriverPlanningDashboard() {
                           >
                             <Truck className="w-3 h-3 mr-1" />
                             {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                            {event.assignedVanDriverId && ' (incl. van)'}
-                            {event.isDhlVan && ' (incl. DHL)'}
+                            {event.isDhlVan
+                              ? ' (incl. DHL)'
+                              : event.assignedVanDriverId
+                              ? ' (incl. van)'
+                              : ''}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-gray-500">
@@ -2263,8 +2266,11 @@ export default function DriverPlanningDashboard() {
                             className="text-[10px] px-1.5"
                           >
                             {totalDrivers}{tentative > 0 && <span className="text-amber-300">+{tentative}?</span>}/{needed}
-                            {selectedEvent.assignedVanDriverId && ' van'}
-                            {selectedEvent.isDhlVan && ' DHL'}
+                            {selectedEvent.isDhlVan
+                              ? ' DHL'
+                              : selectedEvent.assignedVanDriverId
+                                ? ' van'
+                                : ''}
                           </Badge>
                         );
                       }
