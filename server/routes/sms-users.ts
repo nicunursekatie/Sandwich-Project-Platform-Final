@@ -621,15 +621,157 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     
     logger.log('✅ SECURITY: Twilio webhook signature validated successfully');
     
-    const { Body, From } = req.body;
+    const { Body, From, NumMedia, MediaUrl0, MediaContentType0 } = req.body;
     
-    if (!Body || !From) {
+    if (!From) {
+      return res.status(400).send('Missing required parameters');
+    }
+
+    const phoneNumber = From;
+    const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+
+    // Check if this is an MMS with an image (sign-in sheet photo)
+    const numMedia = parseInt(NumMedia || '0', 10);
+    if (numMedia > 0 && MediaUrl0) {
+      logger.info(`📷 Received MMS image from ${redactedPhone} (${numMedia} media item(s))`);
+      
+      try {
+        // Download the image from Twilio's MediaUrl
+        const mediaResponse = await fetch(MediaUrl0, {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${await getTwilioAuthToken()}`).toString('base64')}`,
+          },
+        });
+
+        if (!mediaResponse.ok) {
+          throw new Error(`Failed to download image: ${mediaResponse.status} ${mediaResponse.statusText}`);
+        }
+
+        const imageBuffer = await mediaResponse.arrayBuffer();
+        const base64Image = Buffer.from(imageBuffer).toString('base64');
+        const mimeType = MediaContentType0 || 'image/jpeg';
+
+        logger.info(`✅ Downloaded image from Twilio (${imageBuffer.byteLength} bytes, type: ${mimeType})`);
+
+        // Parse the sign-in sheet using the existing parser
+        const { parseSignInSheetBase64 } = await import('../services/signin-sheet-parser');
+        const parseResult = await parseSignInSheetBase64(base64Image, mimeType, Body || undefined);
+
+        if (!parseResult.success || parseResult.entries.length === 0) {
+          logger.warn(`⚠️ Failed to parse sign-in sheet image from ${redactedPhone}`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, I couldn't read the sign-in sheet. Please make sure the photo is clear and shows the full sheet. Try again or log in to upload it.</Message></Response>`);
+        }
+
+        logger.info(`✅ Parsed sign-in sheet: ${parseResult.entries.length} entries, ${parseResult.totalSandwiches} total sandwiches`);
+
+        // Find user by phone number
+        const allUsers = await storage.getAllUsers();
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+        // Get all hosts for matching
+        const allHosts = await storage.getAllHosts();
+
+        // Create collections for each parsed entry
+        const createdCollections = [];
+        for (const entry of parseResult.entries) {
+          // Try to match host location
+          let matchedHostId: number | null = null;
+          let matchedHostName = entry.location;
+
+          if (allHosts.length > 0) {
+            const inputLower = entry.location.toLowerCase().trim();
+            const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+            const inputSegments = getSegments(entry.location);
+            let bestMatch: { host: any; score: number } | null = null;
+
+            for (const host of allHosts) {
+              const hostLower = host.name.toLowerCase().trim();
+              const hostSegments = getSegments(host.name);
+
+              if (hostLower === inputLower) {
+                bestMatch = { host, score: 1.0 };
+                break;
+              }
+
+              if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+                const score = 0.95;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+                continue;
+              }
+
+              if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+                const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+
+              const commonSegments = inputSegments.filter(seg =>
+                hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+              );
+              if (commonSegments.length > 0) {
+                const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+            }
+
+            if (bestMatch && bestMatch.score >= 0.5) {
+              matchedHostId = bestMatch.host.id;
+              matchedHostName = bestMatch.host.name;
+            }
+          }
+
+          // Build collection data
+          const collectionData: any = {
+            collectionDate: entry.date || parseResult.suggestedDate || new Date().toISOString().split('T')[0],
+            hostName: matchedHostName,
+            hostId: matchedHostId,
+            individualSandwiches: entry.sandwichCount,
+            createdBy: senderUser?.id || 'sms-system',
+            createdByName: senderUser
+              ? (senderUser.firstName && senderUser.lastName
+                  ? `${senderUser.firstName} ${senderUser.lastName} (via SMS photo)`
+                  : senderUser.firstName
+                    ? `${senderUser.firstName} (via SMS photo)`
+                    : senderUser.email
+                      ? `${senderUser.email} (via SMS photo)`
+                      : `SMS: ${redactedPhone}`)
+              : `SMS: ${redactedPhone}`,
+            submissionMethod: 'sms-photo',
+          };
+
+          const collection = await storage.createSandwichCollection(collectionData);
+          createdCollections.push(collection);
+          logger.info(`✅ Collection created from SMS photo: ID ${collection.id}, ${entry.sandwichCount} sandwiches at ${matchedHostName}`);
+        }
+
+        // Send confirmation message
+        const totalSandwiches = parseResult.totalSandwiches;
+        const entryCount = parseResult.entries.length;
+        const confirmationMsg = entryCount === 1
+          ? `✅ Logged ${totalSandwiches} sandwiches at ${parseResult.entries[0].location} from your photo!`
+          : `✅ Logged ${entryCount} entries (${totalSandwiches} total sandwiches) from your photo!`;
+
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+      } catch (imageError) {
+        logger.error('❌ Error processing MMS image:', imageError);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, I couldn't process the photo. Please make sure it's a clear image of a sign-in sheet, or try logging in to upload it.</Message></Response>`);
+      }
+    }
+
+    // Handle text-only messages (existing logic)
+    if (!Body) {
       return res.status(400).send('Missing required parameters');
     }
 
     const messageBody = Body.trim().toUpperCase();
-    const phoneNumber = From;
-    const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
 
     logger.log(`📱 Received SMS from ${redactedPhone}: "${Body}"`);
 
