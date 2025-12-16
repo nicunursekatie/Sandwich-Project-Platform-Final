@@ -255,13 +255,12 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, only toggle expansion and don't navigate/scroll
+                // If item has children, toggle expansion AND navigate to the parent component
                 if (hasChildren) {
                   toggleParent(item.id);
-                  return; // Exit early - don't navigate or scroll when just expanding/collapsing
                 }
 
-                // Handle navigation only for leaf items (no children) or sub-items
+                // Handle navigation for all items (including parents with children)
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

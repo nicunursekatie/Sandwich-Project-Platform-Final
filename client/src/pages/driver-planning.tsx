@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useLocation } from 'wouter';
 
 import {
   MapPin, Calendar, Package, Phone, AlertCircle,
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
-  ChevronUp, ChevronDown, X, Maximize2, Minimize2, List
+  ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
@@ -433,6 +434,7 @@ export default function DriverPlanningDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
   const [copiedDriverId, setCopiedDriverId] = useState<string | number | null>(null);
@@ -447,6 +449,7 @@ export default function DriverPlanningDashboard() {
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
   const [showPendingEvents, setShowPendingEvents] = useState(false);
+  const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({
     driversNeeded: '',
     pickupTime: '',
@@ -565,6 +568,43 @@ export default function DriverPlanningDashboard() {
     if (editForm.pickupTimeWindow) updates.pickupTimeWindow = editForm.pickupTimeWindow;
 
     updateEventMutation.mutate({ id: selectedEvent.id, updates });
+  };
+
+  // Geocode event mutation
+  const geocodeEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/event-map/geocode/${eventId}`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to geocode event');
+      }
+      return response.json();
+    },
+    onSuccess: (data, eventId) => {
+      toast({
+        title: 'Event geocoded',
+        description: 'The event location has been added to the map.',
+      });
+      // Refetch events to get updated coordinates
+      refetchEvents();
+      setGeocodingEventId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Geocoding failed',
+        description: error.message || 'Could not geocode the event address. Please check the address in the event details.',
+        variant: 'destructive',
+      });
+      setGeocodingEventId(null);
+    },
+  });
+
+  const handleGeocodeEvent = (e: React.MouseEvent, eventId: number) => {
+    e.stopPropagation(); // Prevent card selection
+    setGeocodingEventId(eventId);
+    geocodeEventMutation.mutate(eventId);
   };
 
   // Fetch events
@@ -1227,8 +1267,20 @@ export default function DriverPlanningDashboard() {
                           </Badge>
                         )}
                         {(!event.latitude || !event.longitude) && (
-                          <Badge variant="outline" className="text-xs">
-                            Needs geocode
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:bg-gray-100"
+                            onClick={(e) => handleGeocodeEvent(e, event.id)}
+                            title="Click to geocode this event's address"
+                          >
+                            {geocodingEventId === event.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Geocoding...
+                              </>
+                            ) : (
+                              'Needs geocode'
+                            )}
                           </Badge>
                         )}
                       </div>
@@ -1257,6 +1309,23 @@ export default function DriverPlanningDashboard() {
                         {!getAssignedStaffLabel(event) && !getAssignedDriversLabel(event) && !getDesignatedRecipientLabel(event) && (
                           <div className="text-[11px] text-gray-500">
                             No staff or recipient assigned yet.
+                          </div>
+                        )}
+                        {canEditEvents && (
+                          <div className="pt-1 mt-1 border-t border-gray-100">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/dashboard?section=event-requests&eventId=${event.id}`);
+                              }}
+                            >
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              Edit Event Request
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </Button>
                           </div>
                         )}
                       </div>

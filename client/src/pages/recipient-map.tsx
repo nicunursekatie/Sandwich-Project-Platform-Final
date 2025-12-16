@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import type { Popup as LeafletPopup, Marker as LeafletMarker } from 'leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft,
   Users, Calendar, Package, RefreshCw
@@ -50,8 +51,18 @@ const highlightedIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Map controller component to handle zoom/pan
-function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
+// Map controller component to handle zoom/pan and popup opening
+function MapController({ 
+  center, 
+  zoom, 
+  selectedRecipientId,
+  markerRefs 
+}: { 
+  center: [number, number] | null; 
+  zoom: number;
+  selectedRecipientId: number | null;
+  markerRefs: React.MutableRefObject<Map<number, React.RefObject<LeafletMarker>>>;
+}) {
   const map = useMap();
   const isMountedRef = useRef(true);
 
@@ -81,6 +92,19 @@ function MapController({ center, zoom }: { center: [number, number] | null; zoom
     }
   }, [center, zoom, map]);
 
+  // Open popup when recipient is selected and map has centered
+  useEffect(() => {
+    if (selectedRecipientId && center && map) {
+      const timer = setTimeout(() => {
+        const markerRef = markerRefs.current.get(selectedRecipientId);
+        if (markerRef?.current) {
+          markerRef.current.openPopup();
+        }
+      }, 500); // Wait for map animation to complete
+      return () => clearTimeout(timer);
+    }
+  }, [selectedRecipientId, center, map, markerRefs]);
+
   return null;
 }
 
@@ -103,6 +127,7 @@ export default function RecipientMapView() {
   const [selectedRecipientId, setSelectedRecipientId] = useState<number | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState(10);
+  const markerRefs = useRef<Map<number, React.RefObject<LeafletMarker>>>(new Map());
 
   useEffect(() => {
     trackView(
@@ -194,6 +219,7 @@ export default function RecipientMapView() {
     setMapCenter([lat, lng]);
     setMapZoom(15);
   };
+
 
   // Permission check
   if (!canView) {
@@ -434,7 +460,12 @@ export default function RecipientMapView() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapController center={mapCenter} zoom={mapZoom} />
+            <MapController 
+              center={mapCenter} 
+              zoom={mapZoom} 
+              selectedRecipientId={selectedRecipientId}
+              markerRefs={markerRefs}
+            />
             <MapClickHandler onMapClick={() => setSelectedRecipientId(null)} />
 
             {filteredRecipients.map((recipient) => {
@@ -444,9 +475,16 @@ export default function RecipientMapView() {
               const lng = parseFloat(recipient.longitude as string);
               const isSelected = selectedRecipientId === recipient.id;
 
+              // Get or create marker ref for this recipient
+              if (!markerRefs.current.has(recipient.id)) {
+                markerRefs.current.set(recipient.id, React.createRef<LeafletMarker>());
+              }
+              const markerRef = markerRefs.current.get(recipient.id)!;
+
               return (
                 <Marker
                   key={recipient.id}
+                  ref={markerRef}
                   position={[lat, lng]}
                   icon={isSelected ? highlightedIcon : recipientIcon}
                   eventHandlers={{
