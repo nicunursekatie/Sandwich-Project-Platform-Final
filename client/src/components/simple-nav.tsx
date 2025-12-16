@@ -255,12 +255,13 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, toggle expansion first
+                // If item has children, only toggle expansion and don't navigate/scroll
                 if (hasChildren) {
                   toggleParent(item.id);
+                  return; // Exit early - don't navigate or scroll when just expanding/collapsing
                 }
 
-                // Then handle navigation
+                // Handle navigation only for leaf items (no children) or sub-items
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');
@@ -274,7 +275,7 @@ export default function SimpleNav({
                   onSectionChange(item.href);
                 }
 
-                // Scroll to top of page after navigation
+                // Scroll to top of page after navigation (only for actual navigation, not expansion)
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               title={isCollapsed ? item.label : undefined}
