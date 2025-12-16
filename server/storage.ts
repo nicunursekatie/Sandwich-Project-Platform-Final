@@ -121,6 +121,9 @@ import {
   type InsertEventFieldLock,
   type EventEditRevision,
   type InsertEventEditRevision,
+  type CompiledAgenda,
+  type UserActivityLog,
+  type InsertUserActivityLog,
 } from '@shared/schema';
 
 export interface IStorage {
