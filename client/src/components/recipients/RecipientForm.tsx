@@ -267,7 +267,7 @@ export function RecipientForm({
         <div className="border-t pt-4 mt-4">
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-              <h4 className="font-medium text-sm text-slate-700">Second Contact Person</h4>
+              <h4 className="font-medium text-sm text-slate-700">Second Contact Person (Optional)</h4>
               {sections[sectionKey('secondContact')] ? (
                 <ChevronDown className="h-4 w-4" />
               ) : (
