@@ -424,7 +424,7 @@ export default function SignupPage() {
                     <Label className="text-sm font-medium">
                       When are you available? (Select all that apply)
                     </Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                       {availabilityOptions.map((option) => (
                         <div
                           key={option}
@@ -448,7 +448,7 @@ export default function SignupPage() {
                               }
                             }}
                           />
-                          <Label htmlFor={option} className="text-sm">
+                          <Label htmlFor={option} className="text-sm truncate">
                             {option}
                           </Label>
                         </div>
