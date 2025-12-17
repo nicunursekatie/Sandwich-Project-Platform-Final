@@ -47,7 +47,7 @@ const QUICK_TOOLS: QuickTool[] = [
     name: 'Donation Receipt',
     description: 'Generate donation receipts for donors',
     icon: Receipt,
-    url: 'https://docs.google.com/document/d/1-GHI789/edit',
+    url: 'https://receipt-gen--katielong2316.replit.app/',
     color: 'bg-purple-500',
     category: 'document',
   },
