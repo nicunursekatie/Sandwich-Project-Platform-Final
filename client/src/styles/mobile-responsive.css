@@ -1070,7 +1070,7 @@
     font-size: 1rem !important; 
   }
 
-  /* Force all containers to respect 320px */
+  /* Force all containers to respect narrow viewport width */
   .container,
   .max-w-7xl,
   .max-w-6xl,
