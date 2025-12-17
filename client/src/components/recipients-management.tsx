@@ -89,7 +89,7 @@ export default function RecipientsManagement() {
     if (editingRecipient) {
       editForm.setRecipient(editingRecipient);
     }
-  }, [editingRecipient]);
+  }, [editingRecipient, editForm.setRecipient]);
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
     queryKey: ['/api/recipients'],
