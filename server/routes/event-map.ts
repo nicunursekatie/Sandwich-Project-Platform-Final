@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
-import { isNotNull, and, ne, eq } from 'drizzle-orm';
+import { isNotNull, isNull, and, ne, eq, or } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
@@ -184,13 +184,12 @@ router.post('/geocode/:id', async (req, res) => {
 });
 
 /**
- * POST /api/event-map/batch-geocode
+ * POST /api/event-map/geocode-all
  * Batch geocode all events that have addresses but no coordinates
- * RATE LIMITED: 1 request per second to comply with Nominatim usage policy
+ * RATE LIMITED: Processes with ~1 second delay between each to comply with Nominatim usage policy
  */
-router.post('/batch-geocode', async (req, res) => {
+async function startBatchGeocoding(req: Request, res: Response) {
   try {
-    // Fetch all events with addresses but no coordinates
     const eventsToGeocode = await db
       .select({
         id: eventRequests.id,
@@ -203,91 +202,88 @@ router.post('/batch-geocode', async (req, res) => {
           isNotNull(eventRequests.eventAddress),
           ne(eventRequests.eventAddress, ''),
           or(
-            eq(eventRequests.latitude, null),
-            eq(eventRequests.longitude, null)
+            isNull(eventRequests.latitude),
+            isNull(eventRequests.longitude)
           )
         )
       );
 
     if (eventsToGeocode.length === 0) {
       return res.json({
-        message: 'No events need geocoding',
+        success: true,
+        message: 'All events with addresses already have coordinates',
         total: 0,
-        alreadyGeocoded: 0,
+        started: false,
+        geocoded: 0,
+        failed: 0,
       });
     }
 
-    logger.log(`🗺️ Starting batch geocode for ${eventsToGeocode.length} events`);
-
-    const results = {
-      success: 0,
-      failed: 0,
-      total: eventsToGeocode.length,
-      failures: [] as Array<{
-        eventId: number;
-        organizationName: string;
-        address: string;
-      }>,
-    };
-
-    // Geocode each event with rate limiting
-    for (const event of eventsToGeocode) {
-      try {
-        // Rate limit: Wait if needed to comply with Nominatim 1 req/sec policy
-        await rateLimiter.checkAndWait('geocode', 1000);
-
-        // Clean address for geocoding
-        const cleanedAddress = cleanAddressForGeocoding(event.eventAddress!);
-
-        // Geocode the cleaned address
-        const coordinates = await geocodeAddress(cleanedAddress);
-
-        if (coordinates) {
-          // Update event with coordinates
-          await db
-            .update(eventRequests)
-            .set({
-              latitude: coordinates.latitude,
-              longitude: coordinates.longitude,
-              updatedAt: new Date(),
-            })
-            .where(eq(eventRequests.id, event.id));
-
-          results.success++;
-          logger.log(`✅ Geocoded event ${event.id}: ${event.organizationName} - ${cleanedAddress}`);
-        } else {
-          results.failed++;
-          results.failures.push({
-            eventId: event.id,
-            organizationName: event.organizationName || 'Unknown',
-            address: event.eventAddress || '',
-          });
-          logger.warn(`⚠️ Failed to geocode event ${event.id}: "${cleanedAddress}"`);
-        }
-      } catch (error) {
-        results.failed++;
-        results.failures.push({
-          eventId: event.id,
-          organizationName: event.organizationName || 'Unknown',
-          address: event.eventAddress || '',
-        });
-        logger.error(`Error geocoding event ${event.id}:`, error);
-      }
-    }
-
-    logger.log(`✅ Batch geocoding complete: ${results.success} succeeded, ${results.failed} failed`);
-
+    // Start background geocoding process
     res.json({
-      message: `Batch geocoding complete: ${results.success} succeeded, ${results.failed} failed`,
-      ...results,
+      success: true,
+      message: `Started geocoding ${eventsToGeocode.length} events in background. This may take a few minutes.`,
+      total: eventsToGeocode.length,
+      started: true,
     });
+
+    // Process geocoding in background (don't block response)
+    setTimeout(() => {
+      void (async () => {
+        let geocodedCount = 0;
+        let failedCount = 0;
+
+        for (const event of eventsToGeocode) {
+          try {
+            // Rate limit: Nominatim policy is 1 request/sec
+            await rateLimiter.checkAndWait('geocode', 1100);
+
+            const cleanedAddress = cleanAddressForGeocoding(event.eventAddress!);
+            const coordinates = await geocodeAddress(cleanedAddress);
+
+            if (coordinates) {
+              await db
+                .update(eventRequests)
+                .set({
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude,
+                  updatedAt: new Date(),
+                })
+                .where(eq(eventRequests.id, event.id));
+
+              geocodedCount++;
+              logger.info(
+                `✅ Batch geocoded event ${event.id}: ${event.organizationName || 'Unknown'} - ${cleanedAddress}`
+              );
+            } else {
+              failedCount++;
+              logger.warn(
+                `❌ Failed to geocode event ${event.id}: ${event.organizationName || 'Unknown'} - ${cleanedAddress}`
+              );
+            }
+          } catch (err) {
+            failedCount++;
+            logger.error(`Error geocoding event ${event.id}:`, err);
+          }
+        }
+
+        logger.info(
+          `Batch geocoding complete: ${geocodedCount} geocoded, ${failedCount} failed (total ${eventsToGeocode.length})`
+        );
+      })();
+    }, 0);
   } catch (error) {
-    logger.error('Error in batch geocoding:', error);
-    res.status(500).json({
-      error: 'Failed to batch geocode events',
-      details: error instanceof Error ? error.message : 'Unknown error',
+    logger.error('Error starting batch geocoding:', error);
+    res.status(500).json({ 
+      error: 'Failed to start batch geocoding',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-});
+}
+
+// Preferred route name
+router.post('/geocode-all', startBatchGeocoding);
+// Backwards-compatible alias (in case older tooling/UI calls this)
+router.post('/batch-geocode', startBatchGeocoding);
 
 export default router;

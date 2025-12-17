@@ -6,6 +6,7 @@ import { AuditLogger } from './audit-logger';
 import { db } from './db';
 import { eq, sql } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
+import { geocodeAddress } from './utils/geocoding';
 
 export interface EventRequestSheetRow {
   externalId: string;
@@ -713,6 +714,27 @@ export class EventRequestsGoogleSheetsService {
               },
               { actionType: 'CREATE', operation: 'GOOGLE_SHEETS_SYNC' }
             );
+            
+            // Auto-geocode new events with addresses (async, don't block sync)
+            const eventAddress = (sanitizedData as any).eventAddress;
+            if (eventAddress && eventAddress.trim()) {
+              geocodeAddress(eventAddress)
+                .then(async (coords) => {
+                  if (coords) {
+                    await db
+                      .update(eventRequests)
+                      .set({
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                      })
+                      .where(eq(eventRequests.id, result[0].id));
+                    logger.info(`✅ Auto-geocoded event ${result[0].id}: ${eventAddress}`);
+                  }
+                })
+                .catch((err) => {
+                  logger.warn(`Failed to auto-geocode event ${result[0].id}: ${err.message}`);
+                });
+            }
             
             createdCount++;
           } else {
