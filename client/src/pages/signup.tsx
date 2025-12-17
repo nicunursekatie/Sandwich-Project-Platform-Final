@@ -448,7 +448,11 @@ export default function SignupPage() {
                               }
                             }}
                           />
-                          <Label htmlFor={option} className="text-sm truncate">
+                          <Label 
+                            htmlFor={option} 
+                            className="text-sm break-words leading-tight"
+                            title={option}
+                          >
                             {option}
                           </Label>
                         </div>

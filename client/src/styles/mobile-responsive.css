@@ -1008,29 +1008,69 @@
 }
 
 /* ==========================================
-   20. NARROW MOBILE (320px) SPECIFIC FIXES
+   20. NARROW MOBILE (360px) SPECIFIC FIXES
    Critical fixes for the smallest supported devices
-   Target: 320px width (iPhone SE, older devices)
+   Target: 360px width and below (iPhone SE, older devices)
    ========================================== */
 @media (max-width: 360px) {
-  /* Force single column for all grids */
+  /* Force multi-column grids to single column to prevent overflow */
   .grid-cols-2,
-  .grid-cols-3 {
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6,
+  .grid-cols-7,
+  .grid-cols-8,
+  .grid-cols-9,
+  .grid-cols-10,
+  .grid-cols-11,
+  .grid-cols-12 {
     grid-template-columns: 1fr !important;
   }
 
-  /* Reduce all padding for tighter spacing */
-  .p-4 { padding: 0.75rem !important; }
-  .p-6 { padding: 1rem !important; }
-  .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-  .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  /* Reduce padding in main content areas */
+  main .p-4,
+  [role="main"] .p-4,
+  article .p-4 { 
+    padding: 0.75rem !important; 
+  }
+  
+  main .p-6,
+  [role="main"] .p-6,
+  article .p-6 { 
+    padding: 1rem !important; 
+  }
+  
+  main .px-4,
+  [role="main"] .px-4,
+  article .px-4 { 
+    padding-left: 0.75rem !important; 
+    padding-right: 0.75rem !important; 
+  }
+  
+  main .px-6,
+  [role="main"] .px-6,
+  article .px-6 { 
+    padding-left: 1rem !important; 
+    padding-right: 1rem !important; 
+  }
 
-  /* Force smaller text sizes */
-  .text-lg { font-size: 1rem !important; }
-  .text-xl { font-size: 1.125rem !important; }
-  .text-2xl { font-size: 1.25rem !important; }
+  /* Reduce heading sizes to prevent overflow */
+  h1.text-2xl,
+  h2.text-xl,
+  h3.text-lg { 
+    font-size: 1.25rem !important; 
+  }
+  
+  .text-xl { 
+    font-size: 1.125rem !important; 
+  }
+  
+  .text-lg { 
+    font-size: 1rem !important; 
+  }
 
-  /* Force all containers to respect 320px */
+  /* Force all containers to respect narrow viewport width */
   .container,
   .max-w-7xl,
   .max-w-6xl,
@@ -1051,7 +1091,7 @@
   .btn,
   [role="button"] {
     max-width: 100% !important;
-    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
   }
 
   /* Stack flex containers that might overflow */
@@ -1112,14 +1152,14 @@
 
   /* Table cells with word wrap */
   td, th {
-    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
     max-width: 150px !important;
   }
 }
 
 /* ==========================================
-   21. EXTRA NARROW MOBILE (280px-320px) EMERGENCY FIXES
-   For extremely narrow viewports
+   21. EXTRA NARROW MOBILE (320px and below) EMERGENCY FIXES
+   For extremely narrow viewports (0-320px)
    ========================================== */
 @media (max-width: 320px) {
   /* Emergency: hide non-critical UI */
@@ -1127,10 +1167,22 @@
     display: none !important;
   }
 
-  /* Extremely tight spacing */
-  .p-2, .p-3, .p-4 { padding: 0.5rem !important; }
-  .gap-2, .gap-3, .gap-4 { gap: 0.25rem !important; }
-  .space-x-2 > * + *, .space-x-3 > * + *, .space-x-4 > * + * {
+  /* Extremely tight spacing for specific components */
+  [role="dialog"] .p-2,
+  [role="dialog"] .p-3,
+  [role="dialog"] .p-4 { 
+    padding: 0.5rem !important; 
+  }
+  
+  [role="dialog"] .gap-2,
+  [role="dialog"] .gap-3,
+  [role="dialog"] .gap-4 { 
+    gap: 0.25rem !important; 
+  }
+  
+  [role="dialog"] .space-x-2 > * + *,
+  [role="dialog"] .space-x-3 > * + *,
+  [role="dialog"] .space-x-4 > * + * {
     margin-left: 0.25rem !important;
   }
 
