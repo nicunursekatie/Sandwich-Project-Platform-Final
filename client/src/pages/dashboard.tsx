@@ -142,6 +142,7 @@ const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
 const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
+const Directory = lazyWithRetry(() => import('@/pages/directory'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -406,6 +407,8 @@ export default function Dashboard({
         return <DriversManagement />;
       case 'volunteers':
         return <VolunteerManagement />;
+      case 'directory':
+        return <Directory />;
       case 'event-requests':
         return <EventRequestsManagement
           initialTab={urlParams.tab}

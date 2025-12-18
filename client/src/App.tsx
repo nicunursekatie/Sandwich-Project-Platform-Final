@@ -419,6 +419,9 @@ function Router() {
         <Route path="/quick-sms-links">
           {() => <Dashboard initialSection="quick-sms-links" />}
         </Route>
+        <Route path="/directory">
+          {() => <Dashboard initialSection="directory" />}
+        </Route>
         <Route path="/cooler-tracking">
           {() => <Dashboard initialSection="cooler-tracking" />}
         </Route>

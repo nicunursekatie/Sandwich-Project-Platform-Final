@@ -271,7 +271,7 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'directory',
     label: 'Directory',
     icon: Users,
-    href: 'volunteers',
+    href: 'directory',
     permission: PERMISSIONS.NAV_VOLUNTEERS,
     group: 'network',
     highlighted: true,
