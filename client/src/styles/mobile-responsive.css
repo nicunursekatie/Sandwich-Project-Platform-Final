@@ -1013,13 +1013,13 @@
    Target: 360px width and below (iPhone SE, older devices)
    ========================================== */
 @media (max-width: 360px) {
-  /* Force multi-column grids to single column to prevent overflow */
+  /* Force multi-column grids to single column to prevent overflow 
+     Note: .grid-cols-7 is excluded to preserve calendar layouts (7 days per week) */
   .grid-cols-2,
   .grid-cols-3,
   .grid-cols-4,
   .grid-cols-5,
   .grid-cols-6,
-  .grid-cols-7,
   .grid-cols-8,
   .grid-cols-9,
   .grid-cols-10,
