@@ -1191,14 +1191,17 @@ export default function DriverPlanningDashboard() {
                 const regularDriversAssigned = event.assignedDriverIds?.length || 0;
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
-                const hasDriverRequirement = driversNeeded > 0;
+                // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
+                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || regularDriversAssigned > 0 || !!event.assignedVanDriverId;
 
                 // Count ALL assigned drivers including van drivers for status calculation
                 // Van driver and DHL van both count toward the total driver requirement
                 const totalDriversAssigned = regularDriversAssigned +
                                              (event.assignedVanDriverId ? 1 : 0) +
                                              (event.isDhlVan ? 1 : 0);
-                const driversFulfilled = totalDriversAssigned >= driversNeeded;
+                // Check if all driver needs are fulfilled (both regular drivers AND van driver if needed)
+                const driversFulfilled = totalDriversAssigned >= driversNeeded &&
+                                        (!event.vanDriverNeeded || !!event.assignedVanDriverId || !!event.isDhlVan);
 
                 return (
                   <Card
@@ -1261,12 +1264,25 @@ export default function DriverPlanningDashboard() {
                             className="text-xs"
                           >
                             <Truck className="w-3 h-3 mr-1" />
-                            {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                            {event.isDhlVan
-                              ? ' (incl. DHL)'
-                              : event.assignedVanDriverId
-                              ? ' (incl. van)'
-                              : ''}
+                            {driversNeeded > 0 ? (
+                              <>
+                                {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                                {event.isDhlVan
+                                  ? ' + DHL'
+                                  : event.assignedVanDriverId
+                                  ? ' + Van'
+                                  : event.vanDriverNeeded
+                                  ? ' + Van needed'
+                                  : ''}
+                              </>
+                            ) : (
+                              // Only van driver needed (no regular drivers)
+                              event.isDhlVan
+                                ? 'DHL Van'
+                                : event.assignedVanDriverId
+                                ? 'Van assigned'
+                                : 'Van needed'
+                            )}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-gray-500">
@@ -1880,7 +1896,8 @@ export default function DriverPlanningDashboard() {
                 const driversAssigned = event.assignedDriverIds?.length || 0;
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
-                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
+                // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
+                const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
                 const driversFulfilled =
                   driversAssigned >= driversNeeded &&
                   (!event.vanDriverNeeded || !!event.assignedVanDriverId || !!event.isDhlVan);
@@ -2451,7 +2468,8 @@ export default function DriverPlanningDashboard() {
                     const driversAssigned = event.assignedDriverIds?.length || 0;
                     const driversTentative = event.tentativeDriverIds?.length || 0;
                     const driversNeeded = event.driversNeeded || 0;
-                    const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded;
+                    // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
+                    const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
 
                     return (
                       <Card

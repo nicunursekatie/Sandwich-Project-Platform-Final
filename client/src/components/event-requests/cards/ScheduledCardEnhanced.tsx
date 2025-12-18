@@ -1789,14 +1789,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 )}
                               </Button>
                             )}
-                            <Button
-                              size="sm"
-                              variant={request.isDhlVan ? 'secondary' : 'outline'}
-                              className="h-7 px-3"
-                              onClick={() => toggleDhlVan(!request.isDhlVan)}
-                            >
-                              {request.isDhlVan ? 'Remove DHL Van' : 'Mark DHL Van'}
-                            </Button>
                           </div>
                         )}
                       </>

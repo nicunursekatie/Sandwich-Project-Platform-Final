@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,7 +36,28 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const { toast } = useToast();
+
+  // Check if user is already logged in - redirect to home if so
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          // User is already authenticated, redirect to home
+          window.location.href = '/';
+          return;
+        }
+      } catch {
+        // Not logged in, continue showing login page
+      }
+      setCheckingAuth(false);
+    };
+    checkAuth();
+  }, []);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -45,6 +66,15 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  // Show nothing while checking auth to prevent flash
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
+        <div className="animate-pulse text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
