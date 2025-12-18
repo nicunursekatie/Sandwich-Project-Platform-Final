@@ -251,13 +251,19 @@ export const useEventAssignments = () => {
       let updateData: any = {};
 
       if (type === 'driver') {
-        const currentDrivers = eventRequest.assignedDriverIds || [];
-        updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
+        // Check if this is the van driver
+        if (eventRequest.assignedVanDriverId === personId) {
+          updateData.assignedVanDriverId = null;
+        } else {
+          // Regular driver - remove from assignedDriverIds array
+          const currentDrivers = eventRequest.assignedDriverIds || [];
+          updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
 
-        const currentDriverDetails = eventRequest.driverDetails || {};
-        const newDriverDetails = { ...currentDriverDetails };
-        delete newDriverDetails[personId];
-        updateData.driverDetails = newDriverDetails;
+          const currentDriverDetails = eventRequest.driverDetails || {};
+          const newDriverDetails = { ...currentDriverDetails };
+          delete newDriverDetails[personId];
+          updateData.driverDetails = newDriverDetails;
+        }
       } else if (type === 'speaker') {
         const currentSpeakerDetails = eventRequest.speakerDetails || {};
         const newSpeakerDetails = { ...currentSpeakerDetails };

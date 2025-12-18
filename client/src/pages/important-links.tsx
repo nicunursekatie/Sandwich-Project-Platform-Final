@@ -49,7 +49,7 @@ export default function ImportantLinks() {
   const eventToolkitUrl =
     'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
   const donationReceiptUrl =
-    'https://nicunursekatie.github.io/sandwichinventory/donation-receipt.html';
+    'https://receipt-gen--katielong2316.replit.app/';
   const donorManagementUrl =
     'https://bread-and-butter-donors.lovable.app/';
   // Flyers configuration - add more flyers here as they become available
