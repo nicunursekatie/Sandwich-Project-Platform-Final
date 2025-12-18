@@ -445,7 +445,7 @@ const generateClusterTooltip = (cluster: any): string => {
     : '';
 
   return `
-    <div class="p-3 min-w-[200px] max-w-[280px]">
+    <div class="p-3 min-w-[200px] max-w-[calc(100vw-3rem)]">
       <div class="font-bold text-base mb-2">${events.length} Events</div>
       <div class="text-sm space-y-1 mb-2">
         ${statusBreakdown}
@@ -569,8 +569,8 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
   };
 
   return (
-    <div className="p-2 min-w-[280px] max-w-[320px]">
-      <h3 className="font-semibold text-lg mb-1 text-gray-900">
+    <div className="p-2 w-full sm:w-[280px] max-w-[calc(100vw-3rem)]">
+      <h3 className="font-semibold text-base sm:text-lg mb-1 text-gray-900 truncate">
         {event.organizationName || 'Unknown Organization'}
       </h3>
       {event.department && (

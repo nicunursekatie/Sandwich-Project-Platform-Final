@@ -1007,3 +1007,199 @@
   }
 }
 
+/* ==========================================
+   20. NARROW MOBILE (360px) SPECIFIC FIXES
+   Critical fixes for the smallest supported devices
+   Target: 360px width and below (iPhone SE, older devices)
+   ========================================== */
+@media (max-width: 360px) {
+  /* Force multi-column grids to single column to prevent overflow 
+     Note: .grid-cols-7 is excluded to preserve calendar layouts (7 days per week) */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6,
+  .grid-cols-8,
+  .grid-cols-9,
+  .grid-cols-10,
+  .grid-cols-11,
+  .grid-cols-12 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce padding in main content areas */
+  main .p-4,
+  [role="main"] .p-4,
+  article .p-4 { 
+    padding: 0.75rem !important; 
+  }
+  
+  main .p-6,
+  [role="main"] .p-6,
+  article .p-6 { 
+    padding: 1rem !important; 
+  }
+  
+  main .px-4,
+  [role="main"] .px-4,
+  article .px-4 { 
+    padding-left: 0.75rem !important; 
+    padding-right: 0.75rem !important; 
+  }
+  
+  main .px-6,
+  [role="main"] .px-6,
+  article .px-6 { 
+    padding-left: 1rem !important; 
+    padding-right: 1rem !important; 
+  }
+
+  /* Reduce heading sizes to prevent overflow */
+  h1.text-2xl,
+  h2.text-xl,
+  h3.text-lg { 
+    font-size: 1.25rem !important; 
+  }
+  
+  .text-xl { 
+    font-size: 1.125rem !important; 
+  }
+  
+  .text-lg { 
+    font-size: 1rem !important; 
+  }
+
+  /* Force all containers to respect narrow viewport width */
+  .container,
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-2xl,
+  .max-w-xl,
+  .max-w-lg,
+  .max-w-md {
+    max-width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Ensure buttons don't overflow */
+  button,
+  .btn,
+  [role="button"] {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Stack flex containers that might overflow */
+  .flex.gap-4,
+  .flex.gap-3,
+  .flex.gap-2 {
+    flex-wrap: wrap !important;
+  }
+
+  /* Make dialogs use full width minus small margin */
+  [role="dialog"],
+  [data-state="open"][role="dialog"] {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    margin: 0.5rem !important;
+  }
+
+  /* Ensure popups/tooltips don't overflow */
+  .leaflet-popup-content,
+  [data-radix-popper-content-wrapper] > * {
+    max-width: calc(100vw - 2rem) !important;
+  }
+
+  /* Hide some non-essential elements at 320px */
+  .narrow-hidden {
+    display: none !important;
+  }
+
+  /* Make badges more compact */
+  .badge,
+  [class*="Badge"] {
+    font-size: 0.625rem !important;
+    padding: 0.125rem 0.375rem !important;
+  }
+
+  /* Compact header elements */
+  header,
+  .header,
+  [class*="header"] {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Dashboard sidebar should be full-width overlay */
+  aside,
+  [class*="sidebar"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Form elements with max-width */
+  input,
+  select,
+  textarea,
+  [role="combobox"] {
+    max-width: 100% !important;
+  }
+
+  /* Table cells with word wrap */
+  td, th {
+    overflow-wrap: break-word !important;
+    max-width: 150px !important;
+  }
+}
+
+/* ==========================================
+   21. EXTRA NARROW MOBILE (320px and below) EMERGENCY FIXES
+   For extremely narrow viewports (0-320px)
+   ========================================== */
+@media (max-width: 320px) {
+  /* Emergency: hide non-critical UI */
+  .hide-narrow {
+    display: none !important;
+  }
+
+  /* Extremely tight spacing for specific components */
+  [role="dialog"] .p-2,
+  [role="dialog"] .p-3,
+  [role="dialog"] .p-4 { 
+    padding: 0.5rem !important; 
+  }
+  
+  [role="dialog"] .gap-2,
+  [role="dialog"] .gap-3,
+  [role="dialog"] .gap-4 { 
+    gap: 0.25rem !important; 
+  }
+  
+  [role="dialog"] .space-x-2 > * + *,
+  [role="dialog"] .space-x-3 > * + *,
+  [role="dialog"] .space-x-4 > * + * {
+    margin-left: 0.25rem !important;
+  }
+
+  /* Extra small text */
+  .text-sm { font-size: 0.75rem !important; }
+  .text-xs { font-size: 0.625rem !important; }
+
+  /* Make icons smaller */
+  svg.w-5, svg.w-6 {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  /* Header should be as compact as possible */
+  .mobile-header-fix {
+    min-height: 50px !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+}
+
