@@ -98,6 +98,12 @@ function ComprehensivePersonSelector({
     }))
   );
 
+  // Create lookup map for ALL drivers (for name resolution of already-assigned drivers)
+  const driverNameLookup = new Map<string, string>();
+  drivers.forEach((driver: any) => {
+    driverNameLookup.set(driver.id.toString(), driver.name || 'Unknown Driver');
+  });
+
   // Filter all people based on search term
   const allPeople = [
     ...users.map((user: any) => ({
@@ -108,8 +114,12 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
-      // Filter for van-approved drivers when van driver is needed
+      // Filter for active drivers who are not busy/off-duty - van-approved when van driver is needed
       .filter((driver: any) => {
+        if (!driver.isActive) return false;
+        // Exclude busy or off-duty drivers
+        if (driver.availability === 'busy' || driver.availability === 'off-duty') return false;
+        // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;
         }
@@ -184,15 +194,21 @@ function ComprehensivePersonSelector({
     }
   };
 
-  // Helper to get display name for custom entries
+  // Helper to get display name for any person ID (including already-assigned unavailable drivers)
   const getPersonDisplayName = (personId: string) => {
     if (personId.startsWith('custom-')) {
       // Extract the custom name from the ID
       const parts = personId.split('-');
-      return parts.slice(2).join(' ').replace(/-/g, ' ');
+      return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
     }
+    // First check allPeople (for available/selectable people)
     const person = allPeople.find(p => p.id === personId);
-    return person?.displayName || personId;
+    if (person?.displayName) return person.displayName;
+    // Fall back to driver lookup (for already-assigned unavailable drivers)
+    const driverName = driverNameLookup.get(personId);
+    if (driverName) return driverName;
+    // Final fallback to personId
+    return personId;
   };
 
   return (
