@@ -802,7 +802,7 @@ export default function DriverPlanningDashboard() {
   }, [drivers]);
 
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
-  // Only show drivers who are not explicitly unavailable
+  // Only show drivers who are available (not busy or off-duty)
   const nearbyDrivers = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
@@ -810,7 +810,7 @@ export default function DriverPlanningDashboard() {
     const eventLng = parseFloat(selectedEvent.longitude);
 
     return driverCandidates
-      .filter((c) => c.latitude && c.longitude && c.availability !== 'unavailable')
+      .filter((c) => c.latitude && c.longitude && (!c.availability || c.availability === 'available'))
       .map((driver) => {
         const distance = calculateDistanceInMiles(
           eventLat,
@@ -823,14 +823,14 @@ export default function DriverPlanningDashboard() {
       .sort((a, b) => a.distance - b.distance);
   }, [driverCandidates, selectedEvent]);
 
-  // Get suggested drivers for selected event - exclude explicitly unavailable drivers
+  // Get suggested drivers for selected event - only show available drivers (not busy or off-duty)
   const suggestedDrivers = useMemo(() => {
     if (!selectedEvent) return [];
 
     return activeDrivers
       .filter(driver => {
-        // Exclude drivers explicitly marked as unavailable
-        if (driver.availability === 'unavailable') return false;
+        // Only include drivers who are available (treat null/undefined as available)
+        if (driver.availability && driver.availability !== 'available') return false;
 
         // Check if driver has any location info at all
         const hasLocation = driver.hostLocation || driver.area || driver.zone || driver.routeDescription || driver.homeAddress;
@@ -839,14 +839,7 @@ export default function DriverPlanningDashboard() {
         // Check if driver matches event area
         return doesDriverMatchEventArea(driver, selectedEvent.eventAddress);
       })
-      .sort((a, b) => {
-        // Prioritize 'available' drivers, then sort alphabetically
-        const aAvailable = a.availability === 'available' || !a.availability;
-        const bAvailable = b.availability === 'available' || !b.availability;
-        if (aAvailable && !bAvailable) return -1;
-        if (bAvailable && !aAvailable) return 1;
-        return (a.name || '').localeCompare(b.name || '');
-      });
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [selectedEvent, activeDrivers]);
 
   // Get drivers without location data

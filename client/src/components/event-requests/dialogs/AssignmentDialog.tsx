@@ -117,8 +117,8 @@ function ComprehensivePersonSelector({
       // Filter for active, available drivers - van-approved when van driver is needed
       .filter((driver: any) => {
         if (!driver.isActive) return false;
-        // Exclude explicitly unavailable drivers (consistent with driver-planning.tsx)
-        if (driver.availability === 'unavailable') return false;
+        // Only include available drivers (treat null/undefined as available, exclude busy/off-duty)
+        if (driver.availability && driver.availability !== 'available') return false;
         // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;
