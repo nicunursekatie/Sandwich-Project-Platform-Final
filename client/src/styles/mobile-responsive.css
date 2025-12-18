@@ -1056,10 +1056,16 @@
   }
 
   /* Reduce heading sizes to prevent overflow */
-  h1.text-2xl,
-  h2.text-xl,
-  h3.text-lg { 
+  h1.text-2xl { 
     font-size: 1.25rem !important; 
+  }
+  
+  h2.text-xl {
+    font-size: 1.125rem !important;
+  }
+  
+  h3.text-lg { 
+    font-size: 1rem !important; 
   }
   
   .text-xl { 
