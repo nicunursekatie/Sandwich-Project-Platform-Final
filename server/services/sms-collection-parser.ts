@@ -43,7 +43,7 @@ export interface CollectionParseResult {
 }
 
 // Parse date from text - supports various formats
-function parseDateFromText(text: string): { date: string; remainingText: string } {
+export function parseDateFromText(text: string): { date: string; remainingText: string } {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   

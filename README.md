@@ -272,12 +272,28 @@ sandwichTypes: array(text('sandwich_types')), // ❌
 
 #### Date Handling
 
-```typescript
-// ALWAYS use parseCollectionDate for date parsing
-import { parseCollectionDate } from '@/lib/date-utils';
+**CRITICAL RULE - NEVER USE `new Date(dateString)` DIRECTLY ON DATE-ONLY STRINGS:**
 
-// Timezone is America/New_York
+The bug: `new Date("2024-12-15")` is parsed as UTC midnight, which shifts to the PREVIOUS DAY when displayed in Eastern time.
+
+The fix: ALWAYS use helpers from `client/src/lib/date-utils.ts`:
+- `formatDateShort(date)` - For short display like "Wed, Dec 15"
+- `formatDateForDisplay(date)` - For full display like "Wednesday, December 15, 2024"
+- `formatDateForInput(date)` - For HTML date input values
+- `parseCollectionDate(dateString)` - For parsing collection dates (timezone is America/New_York)
+
+These helpers add `T12:00:00` (noon) to date-only strings before parsing, avoiding timezone boundary issues.
+
+```typescript
+// CORRECT: Use date-utils helpers
+import { parseCollectionDate, formatDateShort, formatDateForDisplay } from '@/lib/date-utils';
+
 const date = parseCollectionDate(dateString);
+const display = formatDateShort(date);
+
+// WRONG: Never use new Date() directly on date-only strings
+const date = new Date("2024-12-15"); // ❌ Causes day-early bug
+const display = format(new Date(dateString), 'MMM d'); // ❌ Also causes bug
 ```
 
 #### ID Column Types

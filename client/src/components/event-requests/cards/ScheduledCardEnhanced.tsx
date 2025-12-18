@@ -30,6 +30,7 @@ import {
   Calendar,
   Users,
   Car,
+  Truck,
   Megaphone,
   UserPlus,
   Phone,
@@ -495,8 +496,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const name = extractCustomName(id) || resolveUserName(id);
         staffingParts.push(name ? `D: ${name}` : 'D');
       });
-      // Add unfilled driver slots
-      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
+      // Add unfilled driver slots - include van driver and DHL van in fulfilled count
+      const totalDriversAssigned = assignedDriverIds.length +
+                                   (request.assignedVanDriverId ? 1 : 0) +
+                                   (request.isDhlVan ? 1 : 0);
+      const unfilledDrivers = Math.max(0, driversNeededCount - totalDriversAssigned);
       for (let i = 0; i < unfilledDrivers; i++) {
         staffingParts.push('D');
       }
@@ -1755,14 +1759,34 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     ) : (
                       <>
                         <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          <Car className="w-5 h-5" />
-                          {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                          {request.vanDriverNeeded ? (
+                            <>
+                              <Truck className="w-5 h-5 text-amber-600" />
+                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
+                            </>
+                          ) : (
+                            <>
+                              <Car className="w-5 h-5" />
+                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                            </>
+                          )}
                         </span>
                         {canEdit && (
                           <div className="flex items-center gap-2">
                             {driverNeeded > 0 && (
-                              <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
-                                <UserPlus className="w-3 h-3" aria-hidden="true" />
+                              <Button 
+                                size="sm" 
+                                onClick={() => openAssignmentDialog('driver')} 
+                                className={request.vanDriverNeeded 
+                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
+                                  : "h-7 bg-[#007E8C] text-white"} 
+                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
+                              >
+                                {request.vanDriverNeeded ? (
+                                  <Truck className="w-3 h-3" aria-hidden="true" />
+                                ) : (
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                )}
                               </Button>
                             )}
                             <Button

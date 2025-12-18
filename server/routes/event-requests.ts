@@ -25,6 +25,8 @@ import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
+import { geocodeAddress } from '../utils/geocoding';
+import { rateLimiter } from '../utils/rate-limiter';
 
 const router = Router();
 
@@ -1172,6 +1174,23 @@ router.post(
         createdBy: user?.id || 1,
       });
 
+      // Geocode address asynchronously (don't block response)
+      if (validatedData.eventAddress) {
+        geocodeAddress(validatedData.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(newEventRequest.id!, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
+          });
+      }
+
       // Enhanced audit logging for create operation
       await AuditLogger.logEventRequestChange(
         newEventRequest.id?.toString() || 'unknown',
@@ -1298,6 +1317,23 @@ router.patch(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (validatedData.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(validatedData.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
       }
 
       // Enhanced audit logging for contact completion
@@ -1621,6 +1657,23 @@ router.patch(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(processedUpdates.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
       }
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
@@ -2327,6 +2380,23 @@ router.put(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(processedUpdates.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
       }
 
       // Determine action type based on changes

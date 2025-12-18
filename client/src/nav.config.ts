@@ -123,7 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'inbox-consolidated',
-    label: 'Inbox',
+    label: 'Email',
     icon: Inbox,
     href: 'gmail-inbox',
     permission: PERMISSIONS.NAV_INBOX,
@@ -136,8 +136,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'chat',
     permission: PERMISSIONS.NAV_TEAM_CHAT,
     group: 'workspace',
-    parentId: 'inbox-consolidated',
-    isSubItem: true,
   },
   {
     id: 'team-board',

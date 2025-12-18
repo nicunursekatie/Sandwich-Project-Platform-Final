@@ -28,6 +28,7 @@ import {
 import {
   Clock,
   Package,
+  Truck,
   MapPin,
   Edit2,
   Save,
@@ -1534,17 +1535,38 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-base font-semibold text-[#236383]">
-                    <Car className="w-4 h-4 inline mr-2 text-[#007E8C]" />
-                    Drivers ({driverAssigned}/{driverNeeded})
+                    {request.vanDriverNeeded ? (
+                      <span className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 inline text-amber-600" />
+                        Van Driver Needed ({driverAssigned}/{driverNeeded})
+                      </span>
+                    ) : (
+                      <>
+                        <Car className="w-4 h-4 inline mr-2 text-[#007E8C]" />
+                        Drivers ({driverAssigned}/{driverNeeded})
+                      </>
+                    )}
                   </span>
                   {canEdit && (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant={request.vanDriverNeeded ? "default" : "outline"}
+                      className={request.vanDriverNeeded 
+                        ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600" 
+                        : ""}
                       onClick={() => openAssignmentDialog('driver')}
                     >
-                      <UserPlus className="w-3 h-3 mr-1" />
-                      Assign Driver
+                      {request.vanDriverNeeded ? (
+                        <>
+                          <Truck className="w-3 h-3 mr-1" />
+                          Assign Van Driver
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          Assign Driver
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>

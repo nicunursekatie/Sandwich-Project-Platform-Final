@@ -255,12 +255,12 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, toggle expansion first
+                // If item has children, toggle expansion AND navigate to the parent component
                 if (hasChildren) {
                   toggleParent(item.id);
                 }
 
-                // Then handle navigation
+                // Handle navigation for all items (including parents with children)
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');
@@ -274,7 +274,7 @@ export default function SimpleNav({
                   onSectionChange(item.href);
                 }
 
-                // Scroll to top of page after navigation
+                // Scroll to top of page after navigation (only for actual navigation, not expansion)
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               title={isCollapsed ? item.label : undefined}
