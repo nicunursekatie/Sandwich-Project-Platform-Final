@@ -959,7 +959,7 @@ export default function DriverPlanningDashboard() {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
       .map((v) => (v || '').trim())
       .filter(Boolean)
-      .map((v) => (v.startsWith('user_') || v.startsWith('auth0|') || v.startsWith('google-oauth2|')) ? resolveUserName(v) : v);
+      .map((v) => (v.startsWith('user_') || v.startsWith('admin_') || v.startsWith('auth0|') || v.startsWith('google-oauth2|')) ? resolveUserName(v) : v);
     if (parts.length === 0) return null;
     // De-dupe while preserving order
     return Array.from(new Set(parts)).join(' • ');
@@ -1065,7 +1065,7 @@ export default function DriverPlanningDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-full min-h-[260px] flex items-center justify-center">
+      <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <Skeleton className="h-12 w-12 rounded-full mx-auto mb-4" />
           <Skeleton className="h-6 w-48 mx-auto" />
@@ -1075,7 +1075,7 @@ export default function DriverPlanningDashboard() {
   }
 
   return (
-    <div className="h-full min-h-0 flex flex-col">
+    <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex flex-col">
       {/* Header - Desktop */}
       <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
@@ -1375,8 +1375,10 @@ export default function DriverPlanningDashboard() {
             className="z-0"
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={20}
             />
             <MapController
               selectedEvent={selectedEvent}
@@ -1971,8 +1973,10 @@ export default function DriverPlanningDashboard() {
             className="z-0"
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={20}
             />
             <MapController
               selectedEvent={selectedEvent}
@@ -2175,8 +2179,10 @@ export default function DriverPlanningDashboard() {
             className="z-0"
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={20}
             />
             <MapController
               selectedEvent={selectedEvent}
