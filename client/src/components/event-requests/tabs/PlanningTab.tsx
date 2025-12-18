@@ -248,7 +248,7 @@ export function PlanningTab({
           <Clock className="w-5 h-5" />
           Upcoming Events
         </h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
           <div className="premium-card-flat p-4 text-center">
             <div className="text-2xl font-bold" style={{ color: '#007E8C' }}>{metrics.upcoming7Days}</div>
             <div className="text-sm text-slate-600 mt-1">Next 7 Days</div>

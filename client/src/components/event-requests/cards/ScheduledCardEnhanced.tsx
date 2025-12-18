@@ -791,7 +791,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Status Badges */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2">
             <Badge
               onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
               className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
@@ -1189,8 +1189,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Main Info Section - 3 Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
+        {/* Main Info Section - 3 Column Grid - responsive at all widths */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
@@ -1282,8 +1282,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 /* Grid layout when viewing */
-                <div className="flex items-start justify-between gap-4">
-                  <div className="grid grid-cols-3 gap-3 text-sm flex-1">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 text-sm flex-1 w-full sm:w-auto">
                     {/* Start Time */}
                     <div>
                       <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
@@ -1607,7 +1607,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <Users className="w-5 h-5 shrink-0 mt-0.5" />
               {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
                 <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs text-gray-300 block mb-1">Adults</label>
                       <Input

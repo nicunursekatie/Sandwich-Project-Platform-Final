@@ -866,7 +866,7 @@ export default function ActionCenter() {
                 {/* Weekly Pace Details */}
                 {item.id === 'weekly-pace' && item.data && (
                   <div className="border-t pt-4 mt-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 text-center">
                       <div>
                         <p className="text-sm text-gray-600">This Week So Far</p>
                         <p className="text-2xl font-bold text-brand-primary">
