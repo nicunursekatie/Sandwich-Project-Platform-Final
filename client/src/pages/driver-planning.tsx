@@ -802,7 +802,7 @@ export default function DriverPlanningDashboard() {
   }, [drivers]);
 
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
-  // Only show drivers who are available
+  // Only show drivers who are not explicitly unavailable
   const nearbyDrivers = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
@@ -810,7 +810,7 @@ export default function DriverPlanningDashboard() {
     const eventLng = parseFloat(selectedEvent.longitude);
 
     return driverCandidates
-      .filter((c) => c.latitude && c.longitude && c.availability === 'available')
+      .filter((c) => c.latitude && c.longitude && c.availability !== 'unavailable')
       .map((driver) => {
         const distance = calculateDistanceInMiles(
           eventLat,
@@ -823,14 +823,14 @@ export default function DriverPlanningDashboard() {
       .sort((a, b) => a.distance - b.distance);
   }, [driverCandidates, selectedEvent]);
 
-  // Get suggested drivers for selected event - only show available drivers
+  // Get suggested drivers for selected event - exclude explicitly unavailable drivers
   const suggestedDrivers = useMemo(() => {
     if (!selectedEvent) return [];
 
     return activeDrivers
       .filter(driver => {
-        // Only show drivers who are available
-        if (driver.availability !== 'available') return false;
+        // Exclude drivers explicitly marked as unavailable
+        if (driver.availability === 'unavailable') return false;
 
         // Check if driver has any location info at all
         const hasLocation = driver.hostLocation || driver.area || driver.zone || driver.routeDescription || driver.homeAddress;

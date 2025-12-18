@@ -108,10 +108,10 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
-      // Filter for active, available drivers - and van-approved when van driver is needed
+      // Filter for active drivers - van-approved when van driver is needed
+      // Include all active drivers for name resolution, but mark availability status
       .filter((driver: any) => {
-        // Must be active and available
-        if (!driver.isActive || driver.availability !== 'available') return false;
+        if (!driver.isActive) return false;
         // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;
@@ -125,7 +125,9 @@ function ComprehensivePersonSelector({
         phone: driver.phone,
         type: 'driver',
         section: 'Drivers',
-        vanApproved: driver.vanApproved
+        vanApproved: driver.vanApproved,
+        availability: driver.availability,
+        isUnavailable: driver.availability === 'unavailable'
       })),
     ...volunteers.map((volunteer: any) => ({
       id: `volunteer-${volunteer.id}`,
@@ -356,6 +358,13 @@ function ComprehensivePersonSelector({
                                 )}
                                 {isLoadingAvailability && person.type === 'user' && (
                                   <Loader2 className="w-3 h-3 animate-spin text-[#007E8C]" aria-hidden="true" />
+                                )}
+                                {/* Driver availability indicator */}
+                                {person.type === 'driver' && (person as any).isUnavailable && (
+                                  <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 text-xs font-medium">
+                                    <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />
+                                    Unavailable
+                                  </Badge>
                                 )}
                               </div>
                               {person.email && (
