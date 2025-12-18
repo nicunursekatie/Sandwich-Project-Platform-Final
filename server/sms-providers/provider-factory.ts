@@ -1,14 +1,46 @@
 /**
  * SMS Provider Factory
  * Creates and manages SMS providers based on configuration
- * Prioritizes Replit's managed Twilio connection when available
+ *
+ * Supports multiple configurations:
+ * 1. Direct Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)
+ * 2. Replit's managed Twilio connection (when running in Replit environment)
+ * 3. Phone Gateway provider for local SMS gateway
  */
 
 import { SMSProvider, SMSProviderConfig } from './types';
 import { TwilioProvider } from './twilio-provider';
 import { PhoneGatewayProvider } from './phone-gateway-provider';
-import { isTwilioConnected, isReplitEnvironmentAvailable } from './replit-twilio-connector';
 import { logger } from '../utils/production-safe-logger';
+
+// Lazy load Replit connector only when needed
+let replitConnector: {
+  isTwilioConnected: () => Promise<boolean>;
+  isReplitEnvironmentAvailable: () => boolean;
+} | null = null;
+
+async function getReplitConnector() {
+  if (replitConnector) return replitConnector;
+
+  try {
+    const module = await import('./replit-twilio-connector');
+    replitConnector = {
+      isTwilioConnected: module.isTwilioConnected,
+      isReplitEnvironmentAvailable: module.isReplitEnvironmentAvailable,
+    };
+    return replitConnector;
+  } catch (error) {
+    logger.log('📝 Replit Twilio connector not available (this is normal outside Replit)');
+    return null;
+  }
+}
+
+function isReplitEnvironmentAvailableSync(): boolean {
+  // Quick sync check without importing the connector
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const hasAuthToken = !!(process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL);
+  return !!(hostname && hasAuthToken);
+}
 
 export class SMSProviderFactory {
   private static instance: SMSProviderFactory;
@@ -109,7 +141,7 @@ export class SMSProviderFactory {
 
   /**
    * Load configuration from environment variables
-   * Prioritizes Replit's managed Twilio connection when available
+   * Supports both direct Twilio credentials and Replit's managed connection
    */
   private async loadConfigFromEnv(): Promise<SMSProviderConfig> {
     // Determine which provider to use based on environment
@@ -134,15 +166,17 @@ export class SMSProviderFactory {
         process.env.TWILIO_PHONE_NUMBER;
 
       // Quick sync check - if Replit env vars aren't available, skip async check entirely
-      const replitEnvAvailable = isReplitEnvironmentAvailable();
+      const replitEnvAvailable = isReplitEnvironmentAvailableSync();
 
       // Priority 1: Check if Replit Twilio integration is connected (API Key authentication)
-      // This is preferred as it uses secure API key auth and is managed by Replit
-      // Only attempt Replit integration if env vars are present
+      // This is only attempted if we're running in Replit environment
       let isReplitConnected = false;
       if (replitEnvAvailable) {
         try {
-          isReplitConnected = await isTwilioConnected();
+          const connector = await getReplitConnector();
+          if (connector) {
+            isReplitConnected = await connector.isTwilioConnected();
+          }
         } catch (error) {
           logger.warn('⚠️ Replit Twilio integration check failed:', error instanceof Error ? error.message : error);
           isReplitConnected = false;
@@ -158,8 +192,8 @@ export class SMSProviderFactory {
           useReplitIntegration: true
         };
       } else if (hasManualCredentials) {
-        // Priority 2: Fallback to manual environment variables (Auth Token authentication)
-        logger.log('📝 Using manual Twilio environment variables (Auth Token authentication)');
+        // Priority 2: Use direct environment variables (standard for Firebase/Cloud deployments)
+        logger.log('📝 Using direct Twilio credentials from environment variables');
         config.twilio = {
           accountSid: process.env.TWILIO_ACCOUNT_SID || '',
           authToken: process.env.TWILIO_AUTH_TOKEN || '',
@@ -168,7 +202,7 @@ export class SMSProviderFactory {
         };
       } else {
         // No credentials available
-        logger.warn('⚠️ No Twilio credentials found (configure Replit Twilio integration or set manual env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)');
+        logger.warn('⚠️ No Twilio credentials found. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.');
         config.twilio = {
           accountSid: '',
           authToken: '',

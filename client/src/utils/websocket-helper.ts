@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 
 // WebSocket connection utility to handle various deployment environments
-// This helps fix WebSocket URL construction issues across different platforms
+// Supports: Replit, Firebase Hosting, Cloud Run, local development, and more
 
 export interface WebSocketConfig {
   path: string;
@@ -10,10 +10,29 @@ export interface WebSocketConfig {
   retryDelay?: number;
 }
 
+/**
+ * Detect the deployment environment
+ */
+function detectEnvironment(hostname: string): 'replit' | 'firebase' | 'cloudrun' | 'localhost' | 'production' {
+  if (hostname.includes('replit.app') || hostname.includes('replit.dev') || hostname.includes('replit.com')) {
+    return 'replit';
+  }
+  if (hostname.includes('web.app') || hostname.includes('firebaseapp.com')) {
+    return 'firebase';
+  }
+  if (hostname.includes('run.app')) {
+    return 'cloudrun';
+  }
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'localhost';
+  }
+  return 'production';
+}
+
 export function getWebSocketUrl(config: WebSocketConfig): string {
   if (typeof window === 'undefined') return '';
 
-  const { path, protocol: forcedProtocol, maxRetries = 3, retryDelay = 5000 } = config;
+  const { path, protocol: forcedProtocol } = config;
 
   // Determine protocol
   const protocol = forcedProtocol || (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
@@ -22,40 +41,42 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
   const hostname = window.location.hostname;
   const port = window.location.port;
 
-  logger.log('WebSocket URL Construction Debug:', {
+  const environment = detectEnvironment(hostname);
+
+  logger.log('WebSocket URL Construction:', {
     hostname,
     port,
     protocol,
     path,
-    fullHost: window.location.host,
-    origin: window.location.origin
+    environment
   });
 
   let host;
 
-  // Handle different deployment scenarios
-  if (hostname.includes('replit.app')) {
-    // Production Replit apps - DO NOT add port, reverse proxy handles routing
-    host = hostname;
-    logger.log('Detected Replit production environment, using host without port:', host);
-  } else if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('spock.replit.dev')) {
-    // Replit development environments - DO NOT add port, proxy handles routing
-    // Adding :5000 causes "Invalid frame header" errors as Replit's proxy corrupts WebSocket frames
-    host = hostname;
-    logger.log('Detected Replit dev environment, using host without port:', host);
-  } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Local development - force port 5000 if no port specified
-    const resolvedPort = port || '5000';
-    host = `${hostname}:${resolvedPort}`;
-    logger.log('Detected localhost environment, using host:', host);
-  } else if (hostname) {
-    // Other deployments - use hostname with port if available
-    host = port ? `${hostname}:${port}` : hostname;
-    logger.log('Detected other environment, using host:', host);
-  } else {
-    // Fallback
-    host = 'localhost:5000';
-    logger.warn('Unable to detect hostname, using fallback:', host);
+  switch (environment) {
+    case 'replit':
+      // Replit environments - DO NOT add port, reverse proxy handles routing
+      // Adding port causes "Invalid frame header" errors
+      host = hostname;
+      break;
+
+    case 'firebase':
+    case 'cloudrun':
+    case 'production':
+      // Cloud environments typically don't need explicit ports
+      // The load balancer/proxy handles routing
+      host = port ? `${hostname}:${port}` : hostname;
+      break;
+
+    case 'localhost':
+      // Local development - use port from URL or default to 5000
+      const resolvedPort = port || '5000';
+      host = `${hostname}:${resolvedPort}`;
+      break;
+
+    default:
+      // Fallback - use full host
+      host = port ? `${hostname}:${port}` : hostname;
   }
 
   const url = `${protocol}//${host}${path}`;

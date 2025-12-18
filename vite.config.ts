@@ -1,20 +1,43 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+
+// Conditionally load Replit plugins only when running in Replit environment
+// This allows the app to work both in Replit and in other environments (Firebase, Cloud Run, etc.)
+async function getReplitPlugins() {
+  // Only load Replit plugins if we're in a Replit environment
+  if (process.env.REPL_ID === undefined) {
+    return [];
+  }
+
+  const plugins = [];
+
+  try {
+    // Runtime error overlay for development
+    const runtimeErrorOverlay = await import('@replit/vite-plugin-runtime-error-modal');
+    plugins.push(runtimeErrorOverlay.default());
+  } catch (e) {
+    // Plugin not available, skip it
+  }
+
+  // Only load cartographer in development
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const cartographer = await import('@replit/vite-plugin-cartographer');
+      plugins.push(cartographer.cartographer());
+    } catch (e) {
+      // Plugin not available, skip it
+    }
+  }
+
+  return plugins;
+}
 
 export default defineConfig({
   plugins: [
     react(),
-    runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== 'production' &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer()
-          ),
-        ]
-      : []),
+    // Load Replit plugins only when in Replit environment
+    ...(await getReplitPlugins()),
   ],
   resolve: {
     alias: {
@@ -97,12 +120,9 @@ export default defineConfig({
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
   },
   server: {
-    allowedHosts: [
-      '.replit.dev',
-      '.spock.replit.dev',
-      'bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev',
-      'all',
-    ],
+    // Allow all hosts to support various deployment environments
+    // (Replit, Firebase, Cloud Run, local development, etc.)
+    allowedHosts: 'all',
     fs: {
       strict: true,
       deny: ['**/.*'],

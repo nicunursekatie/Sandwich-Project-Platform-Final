@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --external:./vite.js --external:vite --external:@google-cloud/storage --packages=external --bundle --format=esm --outdir=dist && esbuild server/meeting-agenda-pdf-generator.ts --platform=node --external:date-fns --packages=external --bundle --format=esm --outdir=dist",
+    "build": "vite build && esbuild server/index.ts --platform=node --external:./vite.js --external:vite --external:@google-cloud/storage --external:firebase-admin --packages=external --bundle --format=esm --outdir=dist && esbuild server/meeting-agenda-pdf-generator.ts --platform=node --external:date-fns --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "type-check": "tsc",
@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "firebase-admin": "^12.0.0",
     "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@google-cloud/local-auth": "^3.0.1",
     "@google-cloud/storage": "^7.7.0",
