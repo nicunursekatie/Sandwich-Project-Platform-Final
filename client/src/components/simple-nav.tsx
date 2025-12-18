@@ -255,13 +255,17 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, ONLY toggle expansion - don't navigate
+                // If item has children, toggle expansion
                 if (hasChildren) {
                   toggleParent(item.id);
-                  return; // Stop here - don't navigate for parent items
+
+                  // If item has navigateAndExpand flag, also navigate (don't return early)
+                  if (!item.navigateAndExpand) {
+                    return; // Stop here - don't navigate for regular parent items
+                  }
                 }
 
-                // Handle navigation for items WITHOUT children
+                // Handle navigation for items WITHOUT children, or items with navigateAndExpand
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

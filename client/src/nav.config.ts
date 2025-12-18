@@ -197,6 +197,7 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'logistics',
     highlighted: true,
+    navigateAndExpand: true,
   },
   {
     id: 'event-ops-dashboard',
