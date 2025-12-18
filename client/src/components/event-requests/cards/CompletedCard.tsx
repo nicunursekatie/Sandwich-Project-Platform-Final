@@ -2116,7 +2116,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
             {/* Event Time Section */}
             <div className="text-center">
               <Clock className="w-5 h-5 text-[#236383] mx-auto mb-2" />
