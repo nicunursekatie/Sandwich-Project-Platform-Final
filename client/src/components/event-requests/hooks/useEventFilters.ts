@@ -346,6 +346,28 @@ export const useEventFilters = () => {
       return matchesSearch && matchesStatus && matchesConfirmation;
     });
 
+    // Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
+    const parseTimeToMinutes = (timeStr: string | null | undefined): number => {
+      if (!timeStr) return 0;
+      const str = timeStr.trim().toUpperCase();
+      // Try 24-hour format first (HH:MM)
+      const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+      if (match24) {
+        return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+      }
+      // Try 12-hour format (H:MM AM/PM)
+      const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+      if (match12) {
+        let hours = parseInt(match12[1], 10);
+        const minutes = parseInt(match12[2], 10);
+        const isPM = match12[3] === 'PM';
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      }
+      return 0;
+    };
+
     // Sort the filtered results
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
@@ -357,7 +379,12 @@ export const useEventFilters = () => {
           const newestDateB = b.scheduledEventDate
             ? new Date(b.scheduledEventDate).getTime()
             : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-          return newestDateB - newestDateA;
+          // Primary sort by date descending
+          if (newestDateB !== newestDateA) {
+            return newestDateB - newestDateA;
+          }
+          // Secondary sort by time descending (later times first)
+          return parseTimeToMinutes(b.eventStartTime) - parseTimeToMinutes(a.eventStartTime);
         case 'event_date_asc':
           // Use scheduledEventDate if available, otherwise desiredEventDate
           const oldestDateA = a.scheduledEventDate
@@ -366,7 +393,12 @@ export const useEventFilters = () => {
           const oldestDateB = b.scheduledEventDate
             ? new Date(b.scheduledEventDate).getTime()
             : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-          return oldestDateA - oldestDateB;
+          // Primary sort by date ascending
+          if (oldestDateA !== oldestDateB) {
+            return oldestDateA - oldestDateB;
+          }
+          // Secondary sort by time ascending (earlier times first)
+          return parseTimeToMinutes(a.eventStartTime) - parseTimeToMinutes(b.eventStartTime);
         case 'organization_asc':
           return (a.organizationName || '').localeCompare(b.organizationName || '');
         case 'organization_desc':
@@ -466,6 +498,28 @@ export const useEventFilters = () => {
         return matchesStatus && matchesSearch && matchesConfirmation;
       })
       .sort((a: EventRequest, b: EventRequest) => {
+        // Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
+        const parseTimeToMinutes = (timeStr: string | null | undefined): number => {
+          if (!timeStr) return 0;
+          const str = timeStr.trim().toUpperCase();
+          // Try 24-hour format first (HH:MM)
+          const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+          if (match24) {
+            return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+          }
+          // Try 12-hour format (H:MM AM/PM)
+          const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+          if (match12) {
+            let hours = parseInt(match12[1], 10);
+            const minutes = parseInt(match12[2], 10);
+            const isPM = match12[3] === 'PM';
+            if (isPM && hours !== 12) hours += 12;
+            if (!isPM && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+          }
+          return 0;
+        };
+
         switch (sortBy) {
           case 'event_date_desc':
             // Use scheduledEventDate if available, otherwise desiredEventDate
@@ -475,7 +529,14 @@ export const useEventFilters = () => {
             const dateDescB = b.scheduledEventDate
               ? new Date(b.scheduledEventDate).getTime()
               : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-            return dateDescB - dateDescA;
+            // Primary sort by date descending
+            if (dateDescB !== dateDescA) {
+              return dateDescB - dateDescA;
+            }
+            // Secondary sort by time descending (later times first)
+            const timeDescA = parseTimeToMinutes(a.eventStartTime);
+            const timeDescB = parseTimeToMinutes(b.eventStartTime);
+            return timeDescB - timeDescA;
           case 'event_date_asc':
             // Use scheduledEventDate if available, otherwise desiredEventDate
             const dateAscA = a.scheduledEventDate
@@ -484,7 +545,14 @@ export const useEventFilters = () => {
             const dateAscB = b.scheduledEventDate
               ? new Date(b.scheduledEventDate).getTime()
               : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-            return dateAscA - dateAscB;
+            // Primary sort by date ascending
+            if (dateAscA !== dateAscB) {
+              return dateAscA - dateAscB;
+            }
+            // Secondary sort by time ascending (earlier times first)
+            const timeAscA = parseTimeToMinutes(a.eventStartTime);
+            const timeAscB = parseTimeToMinutes(b.eventStartTime);
+            return timeAscA - timeAscB;
           case 'organization_asc':
             return (a.organizationName || '').localeCompare(b.organizationName || '');
           case 'organization_desc':

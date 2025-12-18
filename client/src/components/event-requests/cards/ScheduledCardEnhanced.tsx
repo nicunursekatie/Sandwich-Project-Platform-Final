@@ -2265,6 +2265,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   )}
+
+                  {/* Next-Day Pickup Time */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
+                        {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingThisCard && editingField === 'overnightPickupTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="bg-white text-gray-900 h-8 text-sm w-32"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                              <Save className="w-3 h-3 mr-1" /> Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : <span className="text-gray-500 italic">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
