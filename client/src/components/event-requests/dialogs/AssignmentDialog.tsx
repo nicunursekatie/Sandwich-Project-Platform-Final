@@ -98,6 +98,12 @@ function ComprehensivePersonSelector({
     }))
   );
 
+  // Create lookup map for ALL drivers (for name resolution of already-assigned drivers)
+  const driverNameLookup = new Map<string, string>();
+  drivers.forEach((driver: any) => {
+    driverNameLookup.set(driver.id.toString(), driver.name || 'Unknown Driver');
+  });
+
   // Filter all people based on search term
   const allPeople = [
     ...users.map((user: any) => ({
@@ -108,10 +114,11 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
-      // Filter for active drivers - van-approved when van driver is needed
-      // Include all active drivers for name resolution, but mark availability status
+      // Filter for active, available drivers - van-approved when van driver is needed
       .filter((driver: any) => {
         if (!driver.isActive) return false;
+        // Exclude explicitly unavailable drivers (consistent with driver-planning.tsx)
+        if (driver.availability === 'unavailable') return false;
         // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;
@@ -125,9 +132,7 @@ function ComprehensivePersonSelector({
         phone: driver.phone,
         type: 'driver',
         section: 'Drivers',
-        vanApproved: driver.vanApproved,
-        availability: driver.availability,
-        isUnavailable: driver.availability === 'unavailable'
+        vanApproved: driver.vanApproved
       })),
     ...volunteers.map((volunteer: any) => ({
       id: `volunteer-${volunteer.id}`,
@@ -189,15 +194,20 @@ function ComprehensivePersonSelector({
     }
   };
 
-  // Helper to get display name for custom entries
+  // Helper to get display name for any person ID (including already-assigned unavailable drivers)
   const getPersonDisplayName = (personId: string) => {
     if (personId.startsWith('custom-')) {
       // Extract the custom name from the ID
       const parts = personId.split('-');
       return parts.slice(2).join(' ').replace(/-/g, ' ');
     }
+    // First check allPeople (for available/selectable people)
     const person = allPeople.find(p => p.id === personId);
-    return person?.displayName || personId;
+    if (person) return person.displayName;
+    // Fall back to driver lookup (for already-assigned unavailable drivers)
+    const driverName = driverNameLookup.get(personId);
+    if (driverName) return driverName;
+    return personId;
   };
 
   return (
@@ -358,13 +368,6 @@ function ComprehensivePersonSelector({
                                 )}
                                 {isLoadingAvailability && person.type === 'user' && (
                                   <Loader2 className="w-3 h-3 animate-spin text-[#007E8C]" aria-hidden="true" />
-                                )}
-                                {/* Driver availability indicator */}
-                                {person.type === 'driver' && (person as any).isUnavailable && (
-                                  <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 text-xs font-medium">
-                                    <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />
-                                    Unavailable
-                                  </Badge>
                                 )}
                               </div>
                               {person.email && (
