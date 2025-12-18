@@ -839,7 +839,14 @@ export default function DriverPlanningDashboard() {
         // Check if driver matches event area
         return doesDriverMatchEventArea(driver, selectedEvent.eventAddress);
       })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      .sort((a, b) => {
+        // Prioritize 'available' drivers, then sort alphabetically
+        const aAvailable = a.availability === 'available' || !a.availability;
+        const bAvailable = b.availability === 'available' || !b.availability;
+        if (aAvailable && !bAvailable) return -1;
+        if (bAvailable && !aAvailable) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      });
   }, [selectedEvent, activeDrivers]);
 
   // Get drivers without location data
