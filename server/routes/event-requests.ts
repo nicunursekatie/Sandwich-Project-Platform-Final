@@ -568,10 +568,9 @@ router.get('/drivers/available', isAuthenticated, async (req, res) => {
 
     const drivers = await storage.getAllDrivers();
 
-    // Only return active drivers who are available (not busy or off-duty)
-    // Treat null/undefined/empty availability as available
+    // Only return active drivers who are not busy or off-duty
     const availableDrivers = drivers
-      .filter((driver) => driver.isActive && (!driver.availability || driver.availability === 'available'))
+      .filter((driver) => driver.isActive && driver.availability !== 'busy' && driver.availability !== 'off-duty')
       .map((driver) => ({
         id: driver.id,
         name: driver.name,

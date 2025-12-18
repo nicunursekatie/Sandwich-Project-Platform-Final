@@ -114,11 +114,11 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
-      // Filter for active, available drivers - van-approved when van driver is needed
+      // Filter for active drivers who are not busy/off-duty - van-approved when van driver is needed
       .filter((driver: any) => {
         if (!driver.isActive) return false;
-        // Only include available drivers (treat null/undefined as available, exclude busy/off-duty)
-        if (driver.availability && driver.availability !== 'available') return false;
+        // Exclude busy or off-duty drivers
+        if (driver.availability === 'busy' || driver.availability === 'off-duty') return false;
         // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;

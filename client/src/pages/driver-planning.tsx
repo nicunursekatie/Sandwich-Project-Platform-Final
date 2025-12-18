@@ -802,7 +802,7 @@ export default function DriverPlanningDashboard() {
   }, [drivers]);
 
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
-  // Only show drivers who are available (not busy or off-duty)
+  // Only exclude drivers who are explicitly busy or off-duty
   const nearbyDrivers = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
@@ -810,7 +810,7 @@ export default function DriverPlanningDashboard() {
     const eventLng = parseFloat(selectedEvent.longitude);
 
     return driverCandidates
-      .filter((c) => c.latitude && c.longitude && (!c.availability || c.availability === 'available'))
+      .filter((c) => c.latitude && c.longitude && c.availability !== 'busy' && c.availability !== 'off-duty')
       .map((driver) => {
         const distance = calculateDistanceInMiles(
           eventLat,
@@ -823,14 +823,14 @@ export default function DriverPlanningDashboard() {
       .sort((a, b) => a.distance - b.distance);
   }, [driverCandidates, selectedEvent]);
 
-  // Get suggested drivers for selected event - only show available drivers (not busy or off-duty)
+  // Get suggested drivers for selected event - exclude busy/off-duty drivers
   const suggestedDrivers = useMemo(() => {
     if (!selectedEvent) return [];
 
     return activeDrivers
       .filter(driver => {
-        // Only include drivers who are available (treat null/undefined as available)
-        if (driver.availability && driver.availability !== 'available') return false;
+        // Exclude drivers who are busy or off-duty
+        if (driver.availability === 'busy' || driver.availability === 'off-duty') return false;
 
         // Check if driver has any location info at all
         const hasLocation = driver.hostLocation || driver.area || driver.zone || driver.routeDescription || driver.homeAddress;
