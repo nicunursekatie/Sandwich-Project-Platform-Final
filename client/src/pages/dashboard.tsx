@@ -952,8 +952,13 @@ export default function Dashboard({
             <ErrorBoundary>
               <Suspense fallback={<SectionLoader />}>
                 {activeSection === 'gmail-inbox' || activeSection === 'inbox' || activeSection === 'messages' || activeSection === 'chat' ? (
-                  // Special full-height layout for inbox and chat
+                  // Special full-height layout for inbox/chat (interactive, manages its own header/layout + scrolling)
                   <div className="h-full">{renderContent()}</div>
+                ) : activeSection === 'driver-planning' ? (
+                  // Driver Planning needs a scroll container on smaller screens (especially mobile “desktop mode”)
+                  <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+                    {renderContent()}
+                  </div>
                 ) : (
                   // Normal layout for other content
                   <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">

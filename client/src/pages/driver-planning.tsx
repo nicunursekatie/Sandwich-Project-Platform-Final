@@ -1065,7 +1065,7 @@ export default function DriverPlanningDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-200px)] flex items-center justify-center">
+      <div className="h-full min-h-[260px] flex items-center justify-center">
         <div className="text-center">
           <Skeleton className="h-12 w-12 rounded-full mx-auto mb-4" />
           <Skeleton className="h-6 w-48 mx-auto" />
@@ -1075,7 +1075,7 @@ export default function DriverPlanningDashboard() {
   }
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col">
+    <div className="h-full min-h-0 flex flex-col">
       {/* Header - Desktop */}
       <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
@@ -2159,13 +2159,15 @@ export default function DriverPlanningDashboard() {
       {/* Main Content - Mobile Layout (< md) */}
       <div className="flex-1 md:hidden flex flex-col" data-testid="driver-planning-mobile">
         {/* Map - Expands to full screen when mobileFullscreenMap is true */}
-        <div className={`relative transition-all duration-300 ${
-          mobileFullscreenMap 
-            ? 'h-[calc(100vh-60px)]' 
-            : mobileEventsCollapsed 
-              ? 'h-[calc(100vh-120px)]'
-              : 'h-[55vh] min-h-[280px]'
-        }`}>
+        <div
+          className={`relative transition-all duration-300 ${
+            mobileFullscreenMap
+              ? 'h-[calc(100dvh-60px)]'
+              : mobileEventsCollapsed
+                ? 'h-[calc(100dvh-120px)]'
+                : 'h-[55dvh] min-h-[280px]'
+          }`}
+        >
           <MapContainer
             center={mapCenter}
             zoom={10}
