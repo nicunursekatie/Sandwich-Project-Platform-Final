@@ -199,14 +199,15 @@ function ComprehensivePersonSelector({
     if (personId.startsWith('custom-')) {
       // Extract the custom name from the ID
       const parts = personId.split('-');
-      return parts.slice(2).join(' ').replace(/-/g, ' ');
+      return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
     }
     // First check allPeople (for available/selectable people)
     const person = allPeople.find(p => p.id === personId);
-    if (person) return person.displayName;
+    if (person?.displayName) return person.displayName;
     // Fall back to driver lookup (for already-assigned unavailable drivers)
     const driverName = driverNameLookup.get(personId);
     if (driverName) return driverName;
+    // Final fallback to personId
     return personId;
   };
 
