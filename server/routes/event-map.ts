@@ -202,8 +202,13 @@ async function startBatchGeocoding(req: Request, res: Response) {
           isNotNull(eventRequests.eventAddress),
           ne(eventRequests.eventAddress, ''),
           or(
+            // Treat empty-string coordinates as missing (common in imported rows)
             isNull(eventRequests.latitude),
-            isNull(eventRequests.longitude)
+            eq(eventRequests.latitude, ''),
+            eq(eventRequests.latitude, 'null'),
+            isNull(eventRequests.longitude),
+            eq(eventRequests.longitude, ''),
+            eq(eventRequests.longitude, 'null')
           )
         )
       );

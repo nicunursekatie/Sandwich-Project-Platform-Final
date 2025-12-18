@@ -741,7 +741,14 @@ export default function DriverPlanningDashboard() {
 
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
-    return upcomingEvents.filter((e) => e.latitude && e.longitude);
+    return upcomingEvents.filter((e) => {
+      const lat = (e.latitude || '').trim();
+      const lng = (e.longitude || '').trim();
+      if (!lat || !lng) return false;
+      const latNum = Number.parseFloat(lat);
+      const lngNum = Number.parseFloat(lng);
+      return Number.isFinite(latNum) && Number.isFinite(lngNum);
+    });
   }, [upcomingEvents]);
 
   // Filter events based on staffing needs toggle
