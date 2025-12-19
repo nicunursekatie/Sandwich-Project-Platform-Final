@@ -457,7 +457,7 @@ export function AiIntakeAssistantDialog({
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent position="popper" sideOffset={5}>
+            <SelectContent className="z-[200]" position="popper" sideOffset={5}>
               {config.options.map((opt) => (
                 <SelectItem key={String(opt.value)} value={String(opt.value)}>
                   {opt.label}

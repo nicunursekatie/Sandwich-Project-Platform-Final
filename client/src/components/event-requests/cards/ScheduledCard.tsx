@@ -576,7 +576,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <SelectTrigger className="h-8">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={5}>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {options.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -803,7 +803,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Type (optional)" />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={5}>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="none">No specific type</SelectItem>
                 {SANDWICH_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
@@ -826,7 +826,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={5}>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                     {SANDWICH_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
