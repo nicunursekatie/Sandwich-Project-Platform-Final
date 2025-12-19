@@ -485,6 +485,13 @@ function Router() {
             <SMSEvents />
           </Suspense>
         </Route>
+        <Route path="/login">
+          {() => {
+            // Authenticated users at /login should go to home
+            window.location.href = '/';
+            return <LoadingState text="Redirecting..." size="lg" className="min-h-screen" />;
+          }}
+        </Route>
         <Route path="/profile">
           {() => <Dashboard initialSection="profile" />}
         </Route>

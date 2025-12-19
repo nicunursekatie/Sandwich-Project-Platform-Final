@@ -4241,6 +4241,28 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(eventCollaborationComments.createdAt));
   }
 
+  async getBulkEventCollaborationComments(eventRequestIds: number[]): Promise<Map<number, EventCollaborationComment[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const comments = await db
+      .select()
+      .from(eventCollaborationComments)
+      .where(inArray(eventCollaborationComments.eventRequestId, eventRequestIds))
+      .orderBy(asc(eventCollaborationComments.createdAt));
+
+    const result = new Map<number, EventCollaborationComment[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    comments.forEach(comment => {
+      const list = result.get(comment.eventRequestId) || [];
+      list.push(comment);
+      result.set(comment.eventRequestId, list);
+    });
+
+    return result;
+  }
+
   async createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment> {
     try {
       const [comment] = await db
@@ -4346,6 +4368,34 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(eventFieldLocks.lockedAt));
+  }
+
+  async getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const now = new Date();
+    const locks = await db
+      .select()
+      .from(eventFieldLocks)
+      .where(
+        and(
+          inArray(eventFieldLocks.eventRequestId, eventRequestIds),
+          gt(eventFieldLocks.expiresAt, now)
+        )
+      )
+      .orderBy(desc(eventFieldLocks.lockedAt));
+
+    const result = new Map<number, EventFieldLock[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    locks.forEach(lock => {
+      const list = result.get(lock.eventRequestId) || [];
+      list.push(lock);
+      result.set(lock.eventRequestId, list);
+    });
+
+    return result;
   }
 
   async createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock> {

@@ -900,7 +900,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [isCollaborationEnabled, collaboration]);
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose}>
+    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -1001,7 +1001,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="previouslyHosted">
                         <SelectValue placeholder="Select hosting history" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="yes">Yes - Hosted Before</SelectItem>
                         <SelectItem value="no">No - First Time</SelectItem>
                         <SelectItem value="i_dont_know">I Don't Know</SelectItem>
@@ -1022,7 +1022,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="organizationCategory">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="school">School</SelectItem>
                         <SelectItem value="church_faith">Church/Faith Group</SelectItem>
                         <SelectItem value="religious">Religious Organization</SelectItem>
@@ -1051,7 +1051,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         <SelectTrigger id="schoolClassification">
                           <SelectValue placeholder="Select school type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           <SelectItem value="public">Public</SelectItem>
                           <SelectItem value="private">Private</SelectItem>
                           <SelectItem value="charter">Charter</SelectItem>
@@ -1137,7 +1137,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="new">New Request</SelectItem>
                 <SelectItem value="in_process">In Process</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
@@ -1159,7 +1159,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   <SelectTrigger data-testid="select-toolkit-status">
                     <SelectValue placeholder="Select toolkit status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                     <SelectItem value="not_sent">Not Sent</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
                     <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
@@ -1552,7 +1552,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <SelectTrigger id="rangeSandwichType" className="w-48">
                       <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                       <SelectItem value="none">No specific type</SelectItem>
                       {SANDWICH_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
@@ -1594,7 +1594,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                           <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                             {SANDWICH_TYPES.map((type) => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
@@ -1734,7 +1734,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Select refrigeration status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="true">Yes</SelectItem>
                 <SelectItem value="false">No</SelectItem>
                 <SelectItem value="unknown">Unknown</SelectItem>
@@ -1830,7 +1830,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a van-approved driver..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="none">No driver assigned yet</SelectItem>
                         {vanDrivers.map((driver) => (
                           <SelectItem key={driver.id} value={driver.id.toString()}>
@@ -1927,7 +1927,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               >
                 <SelectValue placeholder="Select TSP contact" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.firstName && user.lastName
@@ -2376,7 +2376,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                                   <SelectTrigger className="w-40">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                                     {SANDWICH_TYPES.map((type) => (
                                       <SelectItem key={type.value} value={type.value}>
                                         {type.label}
