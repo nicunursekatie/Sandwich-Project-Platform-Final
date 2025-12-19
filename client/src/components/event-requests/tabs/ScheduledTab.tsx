@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -15,6 +15,7 @@ import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Table2, Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { BatchedCollaborationProvider } from '@/contexts/batched-collaboration-context';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -125,6 +126,12 @@ export const ScheduledTab: React.FC = () => {
   } = useEventRequestContext();
 
   const scheduledRequests = filterRequestsByStatus('scheduled');
+
+  // Memoize event IDs for batched collaboration data fetching
+  const scheduledEventIds = useMemo(
+    () => scheduledRequests.map(r => r.id),
+    [scheduledRequests]
+  );
 
   // Inline editing functions - SPECIFIC to scheduled tab
   const startEditing = (id: number, field: string, currentValue: string) => {
@@ -522,10 +529,11 @@ export const ScheduledTab: React.FC = () => {
           No scheduled events
         </div>
       ) : (
-        <div className="space-y-4 max-w-7xl mx-auto px-4">
-          {scheduledRequests.map((request) => (
-            <div key={request.id} className="w-full" data-event-id={request.id}>
-              <ScheduledCardEnhanced
+        <BatchedCollaborationProvider eventIds={scheduledEventIds}>
+          <div className="space-y-4 max-w-7xl mx-auto px-4">
+            {scheduledRequests.map((request) => (
+              <div key={request.id} className="w-full" data-event-id={request.id}>
+                <ScheduledCardEnhanced
                 request={request}
                 editingField={editingField}
                 editingValue={editingValue}
@@ -591,9 +599,10 @@ export const ScheduledTab: React.FC = () => {
                 handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
                 canEdit={true}
               />
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        </BatchedCollaborationProvider>
       )}
 
       {/* Floating Action Button for Quick View Toggle */}

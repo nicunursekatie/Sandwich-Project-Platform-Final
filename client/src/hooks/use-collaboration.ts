@@ -79,6 +79,7 @@ import {
   type ResourceFieldLock,
   type ResourceState,
 } from '@/lib/collaboration-manager';
+import { useBatchedCollaborationContext } from '@/contexts/batched-collaboration-context';
 import type { EventCollaborationComment, EventEditRevision } from '@shared/schema';
 
 export type ResourceType = 'event' | 'holding-zone' | 'planning-workspace';
@@ -183,6 +184,12 @@ export function useCollaboration({
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if batched collaboration data is available from parent context
+  const batchedContext = useBatchedCollaborationContext();
+  const batchedData = resourceType === 'event' && typeof resourceId === 'number'
+    ? batchedContext?.getEventCollaboration(resourceId)
+    : undefined;
 
   // Presence tracking
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -352,6 +359,22 @@ export function useCollaboration({
   useEffect(() => {
     if (!resourceId || !user) return;
 
+    // If batched data is available from parent context, use it instead of making API calls
+    if (batchedData) {
+      logger.log('[Collaboration] Using batched data from context for resource:', resourceId);
+      setComments(batchedData.comments || []);
+      
+      const locksMap = new Map<string, ResourceFieldLock>();
+      (batchedData.locks || []).forEach((lock: ResourceFieldLock) => {
+        if (lock && lock.fieldName) {
+          locksMap.set(lock.fieldName, lock);
+        }
+      });
+      setLocks(locksMap);
+      setCommentsLoading(false);
+      return;
+    }
+
     const loadInitialData = async () => {
       setCommentsLoading(true);
       try {
@@ -392,7 +415,7 @@ export function useCollaboration({
     };
 
     loadInitialData();
-  }, [resourceId, resourceType, user]);
+  }, [resourceId, resourceType, user, batchedData]);
 
   // ==================== Field Locking (HTTP-based with optional real-time sync) ====================
 

@@ -34,12 +34,64 @@ const acquireLockSchema = z.object({
   expiresInMinutes: z.number().min(1).max(30).optional().default(5),
 });
 
+const bulkCollaborationSchema = z.object({
+  eventRequestIds: z.array(z.number()).min(1).max(100),
+});
+
 export function createEventCollaborationRouter(deps: RouterDependencies) {
   const router = Router();
   const { storage, requirePermission } = deps;
 
   // Note: Authentication is applied at mount time in server/routes/index.ts
   // Permissions are applied per-endpoint: VIEW for reads, EDIT for mutations
+
+  // ============================================================================
+  // BULK COLLABORATION ENDPOINT
+  // ============================================================================
+
+  /**
+   * POST /api/event-requests/collaboration/bulk
+   * Fetch collaboration data (comments and locks) for multiple event requests at once.
+   * This reduces N+1 API calls when displaying lists of events.
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.post('/collaboration/bulk', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const validatedData = bulkCollaborationSchema.parse(req.body);
+      const { eventRequestIds } = validatedData;
+
+      // Fetch comments and locks in parallel for all requested events
+      const [commentsMap, locksMap] = await Promise.all([
+        storage.getBulkEventCollaborationComments(eventRequestIds),
+        storage.getBulkEventFieldLocks(eventRequestIds),
+      ]);
+
+      // Build response object with event ID as key
+      const result: Record<number, { comments: any[]; locks: any[] }> = {};
+      
+      for (const eventId of eventRequestIds) {
+        result[eventId] = {
+          comments: commentsMap.get(eventId) || [],
+          locks: locksMap.get(eventId) || [],
+        };
+      }
+
+      res.json({ data: result });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: error.errors,
+        });
+      }
+
+      logger.error('[Event Collaboration] Error fetching bulk collaboration data:', error);
+      res.status(500).json({
+        error: 'Failed to fetch collaboration data',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
 
   // ============================================================================
   // COMMENTS ENDPOINTS

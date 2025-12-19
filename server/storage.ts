@@ -646,12 +646,14 @@ export interface IStorage {
 
   // Event Collaboration Comments
   getEventCollaborationComments(eventRequestId: number): Promise<EventCollaborationComment[]>;
+  getBulkEventCollaborationComments(eventRequestIds: number[]): Promise<Map<number, EventCollaborationComment[]>>;
   createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment>;
   updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined>;
   deleteEventCollaborationComment(id: number, userId: string): Promise<boolean>;
 
   // Event Field Locks
   getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]>;
+  getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>>;
   createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock>;
   releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string): Promise<boolean>;
   deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean>;
