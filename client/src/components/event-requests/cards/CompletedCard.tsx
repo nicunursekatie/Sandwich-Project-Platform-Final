@@ -38,7 +38,7 @@ import { formatTime12Hour, formatEventDate } from '@/components/event-requests/u
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
+import { statusIcons, statusOptions, statusBorderColors, statusBgColors, SANDWICH_TYPES } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1443,13 +1443,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [isEditingSandwichCount, setIsEditingSandwichCount] = useState(false);
   const [editingSandwichCount, setEditingSandwichCount] = useState('');
   const [editingMode, setEditingMode] = useState<'simple' | 'detailed'>('simple');
-  const [editingTypes, setEditingTypes] = useState<{
-    turkey?: number;
-    ham?: number;
-    deli?: number;
-    pbj?: number;
-    unknown?: number;
-  }>({});
+  const [editingTypes, setEditingTypes] = useState<Record<string, number>>({});
 
   // Inline editing state for TSP contact
   const [isEditingTspContact, setIsEditingTspContact] = useState(false);
@@ -1619,12 +1613,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
     // Check if we have ACTUAL type data (not planned types)
     if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
-      // Parse existing actual types into editing state
+      // Parse existing actual types into editing state using the actual type values
       const typeMap: Record<string, number> = {};
       currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
-          const typeLower = item.type.toLowerCase();
-          typeMap[typeLower] = item.quantity;
+          // Use the actual type value as stored (e.g., 'deli_turkey', 'deli_ham', 'pbj', etc.)
+          typeMap[item.type] = item.quantity;
         }
       });
       setEditingTypes(typeMap);
@@ -1666,7 +1660,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       Object.entries(editingTypes).forEach(([type, count]) => {
         if (count && count > 0) {
           types.push({
-            type: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize
+            type: type, // Keep the original type value as stored
             quantity: count
           });
           total += count;
@@ -1709,6 +1703,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       const total = Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0);
       setEditingSandwichCount(total.toString());
       setEditingMode('simple');
+      setEditingTypes({}); // Clear types when switching to simple
     }
   };
 
@@ -2156,64 +2151,25 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       </Button>
                     </>
                   ) : (
-                    // Detailed mode - inputs for each type
+                    // Detailed mode - inputs for each type using SANDWICH_TYPES
                     <div className="space-y-2 w-full">
                       <div className="grid grid-cols-2 gap-2 text-left">
-                        <div>
-                          <label className="text-xs text-gray-600">Turkey</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.turkey || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, turkey: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">Ham</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.ham || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, ham: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">Deli</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.deli || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, deli: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">PB&J</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.pbj || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, pbj: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-xs text-gray-600">Unknown</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.unknown || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, unknown: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
+                        {SANDWICH_TYPES.map((typeConfig) => {
+                          const typeValue = typeConfig.value;
+                          return (
+                            <div key={typeValue} className={typeValue === 'unknown' ? 'col-span-2' : ''}>
+                              <label className="text-xs text-gray-600">{typeConfig.label}</label>
+                              <Input
+                                type="number"
+                                value={editingTypes[typeValue] || ''}
+                                onChange={(e) => setEditingTypes({ ...editingTypes, [typeValue]: parseInt(e.target.value) || 0 })}
+                                className="h-8 text-sm"
+                                placeholder="0"
+                                min="0"
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="text-xs text-gray-600 text-center bg-gray-50 rounded p-1">
                         Total: <span className="font-semibold">{Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0)}</span>
@@ -2251,25 +2207,34 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   {/* Actual delivered count */}
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Delivered</p>
-                    <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
+                    <div className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
                       {(() => {
                         const count = request.actualSandwichCount;
                         const types = request.actualSandwichTypes;
 
-                        if (!count) {
+                        if (!count && (!types || !Array.isArray(types) || types.length === 0)) {
                           return <span className="text-gray-400 italic text-base">Not recorded</span>;
                         }
 
-                        // If we have types, show count with type
+                        // If we have types, show breakdown with total
                         if (types && Array.isArray(types) && types.length > 0) {
-                          const typeDisplay = formatSandwichTypesDisplay(types);
-                          return typeDisplay;
+                          const typeDisplay = formatSandwichTypesDisplay(types, count || undefined);
+                          return (
+                            <div className="space-y-1">
+                              <div>{typeDisplay}</div>
+                              {count && (
+                                <div className="text-xs text-[#FBAD3F]/80 font-normal">
+                                  Total: {count} sandwich{count !== 1 ? 'es' : ''}
+                                </div>
+                              )}
+                            </div>
+                          );
                         }
 
                         // Otherwise just show count
-                        return count;
+                        return <span>{count}</span>;
                       })()}
-                    </p>
+                    </div>
                   </div>
                   <div className="flex justify-center mt-2">
                     <Button
