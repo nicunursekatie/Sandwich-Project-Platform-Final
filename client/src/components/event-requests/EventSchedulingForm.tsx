@@ -82,6 +82,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     pickupDateTime: '',
+    pickupDate: '',
+    pickupTimeSeparate: '',
     eventAddress: '',
     deliveryDestination: '',
     holdingOvernight: false,
@@ -307,6 +309,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+        pickupDate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[0] : '';
+        })(),
+        pickupTimeSeparate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+        })(),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
@@ -603,7 +613,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventStartTime: formData.eventStartTime || null,
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
-      pickupDateTime: formData.pickupDateTime || null,
+      pickupDateTime: (() => {
+        // Combine pickupDate and pickupTimeSeparate into pickupDateTime if both are set
+        if (formData.pickupDate && formData.pickupTimeSeparate) {
+          return `${formData.pickupDate}T${formData.pickupTimeSeparate}`;
+        }
+        // Otherwise use the existing pickupDateTime value
+        return formData.pickupDateTime || null;
+      })(),
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
@@ -1312,19 +1329,65 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="pickupDateTime">Pickup Date & Time</Label>
-                <DateTimePicker
-                  value={formData.pickupDateTime}
-                  onChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    pickupDateTime: value,
-                    // Clear legacy pickupTime when datetime is set
-                    pickupTime: ''
-                  }))}
-                  data-testid="pickup-datetime-picker"
+                <Label htmlFor="pickupDate">Pickup Date</Label>
+                <Input
+                  id="pickupDate"
+                  type="date"
+                  value={formData.pickupDate}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      pickupDate: newDate,
+                      // Combine date and time into pickupDateTime
+                      pickupDateTime: newDate && prev.pickupTimeSeparate ? `${newDate}T${prev.pickupTimeSeparate}` : '',
+                      pickupTime: ''
+                    }));
+                  }}
+                  min={formData.eventDate || undefined}
+                  data-testid="pickup-date-input"
                 />
-                {/* Can hold overnight checkbox */}
-                <div className="flex items-center space-x-2 mt-2">
+              </div>
+              <div>
+                <Label htmlFor="pickupTimeSeparate">Pickup Time</Label>
+                <Input
+                  id="pickupTimeSeparate"
+                  type="time"
+                  value={formData.pickupTimeSeparate}
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    setFormData(prev => {
+                      // Validate: if pickup date is same as event date, time must be after event end time
+                      let validatedTime = newTime;
+                      if (prev.pickupDate === formData.eventDate && formData.eventEndTime && newTime) {
+                        if (newTime <= formData.eventEndTime) {
+                          // Time is before or equal to end time - keep the change but could show warning
+                          validatedTime = newTime;
+                        }
+                      }
+                      return { 
+                        ...prev, 
+                        pickupTimeSeparate: validatedTime,
+                        // Combine date and time into pickupDateTime
+                        pickupDateTime: prev.pickupDate && validatedTime ? `${prev.pickupDate}T${validatedTime}` : '',
+                        pickupTime: ''
+                      };
+                    });
+                  }}
+                  min={formData.pickupDate === formData.eventDate && formData.eventEndTime ? formData.eventEndTime : undefined}
+                  data-testid="pickup-time-input"
+                />
+                {formData.pickupDate === formData.eventDate && 
+                 formData.eventEndTime && 
+                 formData.pickupTimeSeparate && 
+                 formData.pickupTimeSeparate <= formData.eventEndTime && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Pickup time should be after event end time ({formData.eventEndTime})
+                  </p>
+                )}
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2 pb-0 mb-0">
                   <input
                     type="checkbox"
                     id="canHoldOvernight"
@@ -1338,7 +1401,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
                     data-testid="checkbox-can-hold-overnight"
                   />
-                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer mb-0">
                     Can hold sandwiches overnight
                   </Label>
                 </div>
