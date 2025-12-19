@@ -1517,7 +1517,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <SelectTrigger className="bg-white text-gray-900">
                           <SelectValue placeholder="Type (optional)" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={5}>
                           {SANDWICH_TYPES.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
@@ -1539,7 +1539,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             <SelectTrigger className="bg-white text-gray-900">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent position="popper" sideOffset={5}>
                               {SANDWICH_TYPES.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
                                   {type.label}
