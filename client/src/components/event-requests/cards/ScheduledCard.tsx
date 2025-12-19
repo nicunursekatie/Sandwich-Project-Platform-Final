@@ -572,7 +572,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="flex items-center gap-2">
             {icon && <span className="text-gray-500">{icon}</span>}
             <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
-            <Select value={editingValue} onValueChange={setEditingValue}>
+            <Select value={editingValue || undefined} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
               </SelectTrigger>
