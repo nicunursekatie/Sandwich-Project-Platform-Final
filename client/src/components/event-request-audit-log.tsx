@@ -45,10 +45,8 @@ import {
 import { format, parseISO, isValid } from 'date-fns';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  hasPermission,
-  PERMISSIONS,
-} from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { logger } from '@/lib/logger';
 
 interface AuditLogEntry {

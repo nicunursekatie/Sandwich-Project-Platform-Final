@@ -5,7 +5,8 @@ import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();

@@ -10,7 +10,8 @@ import { ChatSyncPanel } from '@/components/chat-sync-panel';
 import SpreadsheetAnalyticsDashboard from '@/components/spreadsheet-analytics-dashboard';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import {
   Card,

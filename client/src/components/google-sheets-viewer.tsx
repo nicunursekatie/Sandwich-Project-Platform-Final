@@ -22,7 +22,6 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
-import { hasPermission } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
 
 interface GoogleSheetsViewerProps {

@@ -879,72 +879,20 @@ export function hasAccessToChat(
   }
 
   if (typeof user.permissions === 'number') {
-    // 🚨 SECURITY WARNING: This grants ALL chat access to users with numeric format
-    // This is a known security issue - numeric permissions are not properly validated
-    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
-    // For now, returning true to avoid breaking existing users with numeric permissions
-    console.warn(
-      `⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`
+    // SECURITY FIX: Numeric permissions are not supported - deny access
+    // Users with numeric format must be migrated to string array format
+    console.error(
+      `🚨 SECURITY: User has unsupported numeric permissions (${user.permissions}) - access denied. Must migrate to array format.`
     );
-    return true;
+    return false;
   }
 
   return false;
 }
 
-// DEPRECATED: Use unified hasPermission from unified-auth-utils instead
-// This function is kept for backwards compatibility only
-export function hasPermission(
-  user: UserForPermissions | null | undefined,
-  permission: string
-): boolean {
-  // Simple permission check to avoid import issues in browser
-  if (!user || !permission) return false;
-
-  // Universal permissions: All authenticated users have these
-  if (permission === 'VOLUNTEERS_VIEW') return true;
-
-  // Super admins have all permissions
-  if (user.role === 'super_admin') return true;
-
-  // Admins get automatic access to navigation and core functionality (backward compatibility)
-  if (user.role === 'admin') {
-    if (
-      permission.startsWith('NAV_') ||
-      permission === 'ADMIN_PANEL_ACCESS' ||
-      permission.startsWith('EVENT_REQUESTS_') ||
-      permission.startsWith('DOCUMENTS_') ||
-      permission.startsWith('VOLUNTEERS_') ||
-      permission.startsWith('DRIVERS_') ||
-      permission.startsWith('HOSTS_') ||
-      permission.startsWith('RECIPIENTS_')
-    ) {
-      return true;
-    }
-  }
-
-  // If no permissions array, return false (except for admin/super_admin above)
-  if (!user.permissions) return false;
-
-  if (Array.isArray(user.permissions)) {
-    // Apply permission dependencies at runtime to handle legacy permissions
-    const effectivePermissions = applyPermissionDependencies(user.permissions);
-    return effectivePermissions.includes(permission);
-  }
-
-  if (typeof user.permissions === 'number') {
-    // 🚨 SECURITY WARNING: This grants ALL permissions to users with numeric format
-    // This is a known security issue - numeric permissions are not properly validated
-    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
-    // For now, returning true to avoid breaking existing users with numeric permissions
-    console.warn(
-      `⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`
-    );
-    return true;
-  }
-
-  return false;
-}
+// NOTE: hasPermission has been removed from auth-utils.ts
+// Use the unified hasPermission from unified-auth-utils.ts instead:
+// import { hasPermission } from '@shared/unified-auth-utils';
 
 // Function to check if user can edit a specific collection entry
 export function canEditCollection(
