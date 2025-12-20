@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAuth } from '@/hooks/useAuth';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 // Simple notification sound - uses Web Audio API to generate a pleasant chime
 function playNotificationSound() {
@@ -114,14 +115,13 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     const socket = getOrCreateSocket();
     if (!socket) return;
 
-    // Join user's messaging channel
-    socket.emit('join-messaging-channel', { userId: user.id });
-
     // Listen for new instant messages
     const handleNewMessage = (message: InstantMessage) => {
+      logger.log('[InstantMessaging] Received instant_message event:', message);
       // Skip messages from yourself entirely - they're added by the sendMessage API response
       // This prevents duplicate messages (the API adds it, then socket would add it again)
       if (message.senderId === user.id) {
+        logger.log('[InstantMessaging] Skipping own message');
         return;
       }
 
@@ -180,9 +180,29 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       }
     };
 
+    const handleConnect = () => {
+      // Join user's messaging channel only after socket is connected
+      logger.log('[InstantMessaging] Socket connected, joining messaging channel for user:', user.id);
+      socket.emit('join-messaging-channel', { userId: user.id });
+    };
+
+    const handleDisconnect = () => {
+      // Rejoin on reconnect
+    };
+
+    // Set up event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
     socket.on('instant_message', handleNewMessage);
 
+    // If already connected, join immediately
+    if (socket.connected) {
+      handleConnect();
+    }
+
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('instant_message', handleNewMessage);
     };
   }, [user?.id, toast]);
