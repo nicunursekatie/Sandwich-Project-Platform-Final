@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 interface IntakeCallDialogProps {
   isOpen: boolean;
@@ -66,6 +67,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [itemAnswers, setItemAnswers] = useState<Record<string, string>>({});
   const [callNotes, setCallNotes] = useState('');
 
   const toggleItem = (itemId: string) => {
@@ -92,10 +94,21 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     }
   };
 
+  const handleAnswerChange = (itemId: string, answer: string) => {
+    setItemAnswers((prev) => ({
+      ...prev,
+      [itemId]: answer,
+    }));
+  };
+
   const handleComplete = () => {
-    // TODO: Save callNotes to event request notes or contact log
+    // TODO: Save itemAnswers and callNotes to event request notes or contact log
+    // For now, we can log them or save to planning notes
+    console.log('Call completed with answers:', itemAnswers);
+    console.log('Call notes:', callNotes);
     onCallComplete?.();
     setCheckedItems(new Set());
+    setItemAnswers({});
     setCallNotes('');
     onClose();
   };
@@ -466,6 +479,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                             {item.notes}
                           </p>
                         )}
+                        {/* Answer input field */}
+                        <div className="mt-2 ml-7">
+                          <Input
+                            type="text"
+                            placeholder="Record answer here..."
+                            value={itemAnswers[item.id] || ''}
+                            onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                            className="text-sm h-8"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
