@@ -365,8 +365,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full px-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           <div className="space-y-6">
             {/* Quick Info Summary */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -515,7 +514,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               </p>
             </div>
           </div>
-          </ScrollArea>
         </div>
 
         {/* Footer Actions */}
