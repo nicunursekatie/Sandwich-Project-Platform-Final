@@ -4,11 +4,10 @@ This directory contains the smart notification delivery system that handles mult
 
 ## Overview
 
-The notification system now includes **actual integrations** for:
+The notification system includes **actual integrations** for:
 
 - **Email**: SendGrid integration ✅ Implemented
 - **SMS**: Twilio integration ✅ Implemented
-- **Push Notifications**: Framework ready, needs FCM/APNS setup ⚠️ Partial
 - **In-App**: WebSocket delivery ✅ Implemented
 
 ## Configuration
@@ -84,63 +83,7 @@ await smartDeliveryService.sendNotification(
 );
 ```
 
-### 3. Push Notifications (FCM/APNS)
-
-**Status**: Framework Implemented, Needs Configuration
-
-**Setup Steps for Firebase Cloud Messaging (FCM)**:
-
-1. Create a Firebase project at https://console.firebase.google.com
-2. Download your service account JSON file
-3. Install Firebase Admin SDK:
-   ```bash
-   npm install firebase-admin
-   ```
-4. Add to your `.env` file:
-   ```bash
-   FCM_SERVER_KEY=your_fcm_server_key_here
-   FCM_PROJECT_ID=your_fcm_project_id_here
-   FCM_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
-   ```
-5. Uncomment the FCM implementation in `/server/services/push-notification-service.ts`
-6. Add device token storage to your database schema
-
-**Setup Steps for Apple Push Notification Service (APNS)**:
-
-1. Generate an APNs auth key in Apple Developer Console
-2. Add to your `.env` file:
-   ```bash
-   APNS_KEY_ID=your_apns_key_id_here
-   APNS_TEAM_ID=your_apns_team_id_here
-   APNS_KEY_PATH=/path/to/apns-key.p8
-   ```
-
-**What's Included**:
-- Complete service interface (`push-notification-service.ts`)
-- Configuration checking
-- Multi-token sending support
-- Example FCM implementation (commented out)
-- Device token management functions
-- Comprehensive error handling
-
-**What's Needed**:
-- Install `firebase-admin` package
-- Uncomment FCM implementation code
-- Add device token storage schema to database
-- Implement device token registration endpoints
-
-**Testing** (once configured):
-```typescript
-import { sendPushToUser } from './services/push-notification-service';
-
-await sendPushToUser('user-id', {
-  title: 'Test Push',
-  body: 'This is a test push notification',
-  priority: 'high'
-});
-```
-
-### 4. In-App Notifications (WebSocket)
+### 3. In-App Notifications (WebSocket)
 
 **Status**: Fully Implemented
 
@@ -221,7 +164,6 @@ server/services/notifications/
 
 server/services/
 ├── sendgrid.ts                 # SendGrid email service ✅ INTEGRATED
-├── push-notification-service.ts # Push notification framework ⚠️ PARTIAL
 
 server/sms-providers/
 ├── provider-factory.ts         # SMS provider factory ✅ INTEGRATED
@@ -231,25 +173,24 @@ server/sms-providers/
 
 ### Integration Points
 
-The smart delivery service (`smart-delivery.ts`) now includes:
+The smart delivery service (`smart-delivery.ts`) includes:
 
-1. **Email Integration** (line 304-395)
+1. **Email Integration**
    - Direct SendGrid integration
    - HTML email templates
    - Configuration checking
    - Error handling
 
-2. **SMS Integration** (line 400-478)
+2. **SMS Integration**
    - SMS provider factory integration
    - Phone number formatting
    - Message optimization (160 chars)
    - Multi-provider support
 
-3. **Push Integration** (line 494-560)
-   - Configuration checking for FCM/APNS
-   - Framework for token management
-   - Extensible implementation
-   - Comprehensive documentation
+3. **In-App Integration**
+   - Socket.IO WebSocket delivery
+   - Real-time notifications
+   - Automatic user targeting
 
 ## Notification Channels
 
@@ -260,7 +201,6 @@ The system uses ML-powered scoring to select the optimal channel:
 1. **In-App** (WebSocket): Default for immediate, less critical updates
 2. **Email**: Best for detailed information, non-urgent updates
 3. **SMS**: High engagement, use for urgent/time-sensitive
-4. **Push**: Mobile users, real-time alerts
 
 You can override with `forceChannel` option or let the ML engine decide.
 
@@ -301,15 +241,6 @@ To complete the notification system:
    - Ensure users have phone numbers in database
    - Test with `forceChannel: 'sms'`
 
-3. **For Push Notifications**:
-   - Install `firebase-admin`: `npm install firebase-admin`
-   - Set up Firebase project and download service account
-   - Add FCM credentials to `.env` file
-   - Uncomment implementation in `push-notification-service.ts`
-   - Add device token storage to database schema
-   - Create endpoints for device token registration
-   - Test with mobile apps
-
 ## Database Schema
 
 The system uses these tables:
@@ -317,19 +248,6 @@ The system uses these tables:
 - `notificationHistory`: Tracks delivery attempts and interactions
 - `notificationABTests`: Manages A/B test configurations
 - `users`: User information including email and phoneNumber
-
-For push notifications, you'll need to add:
-```typescript
-// Add to shared/schema.ts
-export const userDeviceTokens = pgTable('user_device_tokens', {
-  id: serial('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
-  token: text('token').notNull(),
-  platform: text('platform').notNull(), // 'ios' | 'android' | 'web'
-  createdAt: timestamp('created_at').defaultNow(),
-  lastUsed: timestamp('last_used').defaultNow()
-});
-```
 
 ## Support
 
@@ -345,9 +263,8 @@ For issues or questions:
 |---------|--------|----------------------|
 | Email (SendGrid) | ✅ Fully Implemented | `SENDGRID_API_KEY` |
 | SMS (Twilio) | ✅ Fully Implemented | Twilio credentials |
-| Push (FCM/APNS) | ⚠️ Framework Ready | FCM/APNS setup needed |
 | In-App (WebSocket) | ✅ Fully Implemented | None (automatic) |
 | ML Scoring | ✅ Implemented | None |
 | A/B Testing | ✅ Implemented | None |
 
-The notification delivery system is now **production-ready** for Email, SMS, and In-App channels. Push notifications have a complete framework and just need the FCM/APNS configuration to be activated.
+The notification delivery system is **production-ready** for Email, SMS, and In-App channels.

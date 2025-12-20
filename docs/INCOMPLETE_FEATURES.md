@@ -6,35 +6,9 @@ This document catalogs all incomplete features and TODO items in the codebase, o
 
 ---
 
-## 🟠 Dead Code / Should Be Removed
+## 🟠 Medium Priority (Incomplete Features)
 
-### 1. Push Notification Service (Dead Code)
-**Location:** `server/services/push-notification-service.ts`
-
-This entire service references Firebase Cloud Messaging (FCM) but **the app doesn't use Firebase**. The service is completely non-functional and returns `NOT_IMPLEMENTED` for all calls.
-
-**Recommendation:** Remove this file entirely or refactor to use Web Push API if browser push notifications are desired in the future.
-
-| Line | Dead Code |
-|------|-----------|
-| 96 | FCM push notification stub |
-| 184 | FCM multicast stub |
-| 267-367 | Device token stubs |
-
----
-
-### 2. Smart Notification Push Channel (Dead Code)
-**Location:** `server/services/notifications/smart-delivery.ts:529-539`
-
-References the non-functional push notification service above.
-
-**Recommendation:** Remove push channel from smart delivery or implement Web Push API.
-
----
-
-## 🟠 Medium Priority (Actual Incomplete Features)
-
-### 3. Database Environment Configuration
+### 1. Database Environment Configuration
 **Location:** `server/db.ts:10`
 
 ```
@@ -49,7 +23,7 @@ TODO: Switch back to DEV_DATABASE_URL once dev database has schema pushed
 
 ---
 
-### 4. Project Files Endpoint
+### 2. Project Files Endpoint
 **Location:** `server/routes/projects/index.ts:477`
 
 ```typescript
@@ -64,7 +38,7 @@ res.json([]);
 
 ---
 
-### 5. Intake Call Data Persistence
+### 3. Intake Call Data Persistence
 **Location:** `client/src/components/event-requests/IntakeCallDialog.tsx:147`
 
 ```typescript
@@ -77,7 +51,7 @@ res.json([]);
 
 ---
 
-### 6. Smart Search Actions
+### 4. Smart Search Actions
 **Location:** `client/src/components/SmartSearch.tsx:179`
 
 ```typescript
@@ -93,7 +67,7 @@ if (result.feature.action) {
 
 ---
 
-### 7. A/B Testing for Notifications
+### 5. A/B Testing for Notifications
 **Location:** `server/routes/notifications/smart.ts:239`
 
 ```typescript
@@ -104,7 +78,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ---
 
-### 8. Search Analytics Tracking
+### 6. Search Analytics Tracking
 **Location:** `server/services/search/index.ts:428`
 
 ```typescript
@@ -115,7 +89,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ---
 
-### 9. Meeting Route Data Joins
+### 7. Meeting Route Data Joins
 **Location:** `server/routes/meetings.ts:589`
 
 ```typescript
@@ -128,7 +102,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ## 🟡 Low Priority (Memory Storage Stubs)
 
-### 10. In-Memory Storage Conversation Methods
+### 8. In-Memory Storage Conversation Methods
 **Location:** `server/storage.ts:2564-2595`
 
 These methods are stubs for the in-memory storage fallback (used when database is unavailable):
@@ -146,7 +120,7 @@ These methods are stubs for the in-memory storage fallback (used when database i
 
 ---
 
-### 11. Storage Interface Types
+### 9. Storage Interface Types
 **Location:** `server/index.ts:471`
 
 ```typescript
@@ -161,21 +135,19 @@ startBackgroundSync(storage as any); // TODO: Fix storage interface types
 
 | Priority | Count | Notes |
 |----------|-------|-------|
-| 🟠 Dead Code | 2 | Push notification stubs (Firebase references - not used) |
 | 🟠 Medium | 7 | Actual incomplete features |
 | 🟡 Low | 2 | Memory storage stubs, type issues |
-| **Total** | **11 items** | |
+| **Total** | **9 items** | |
 
 ---
 
 ## Recommended Action Order
 
-1. **Remove dead push notification code** - Reduces confusion, removes Firebase references
-2. **Intake Call Persistence** - Data loss issue
-3. **Project Files Endpoint** - Feature non-functional
-4. **Database Environment** - Development safety
-5. **Smart Search Actions** - UX improvement
-6. Others as time permits
+1. **Intake Call Persistence** - Data loss issue
+2. **Project Files Endpoint** - Feature non-functional
+3. **Database Environment** - Development safety
+4. **Smart Search Actions** - UX improvement
+5. Others as time permits
 
 ---
 
