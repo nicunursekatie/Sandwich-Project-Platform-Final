@@ -50,7 +50,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { hasPermission } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 

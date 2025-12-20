@@ -12,7 +12,8 @@ import {
   type EventRequest,
   type User,
 } from '@shared/schema';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly } from '@shared/date-utils';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';

@@ -67,7 +67,7 @@ import {
   Mail,
   BarChart3,
 } from 'lucide-react';
-import { hasPermission } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { MessageComposer } from '@/components/message-composer';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';

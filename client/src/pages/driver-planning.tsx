@@ -10,7 +10,8 @@ import {
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import {
   Dialog,

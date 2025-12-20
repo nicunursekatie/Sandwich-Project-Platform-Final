@@ -27,10 +27,10 @@ import {
 import {
   USER_ROLES,
   PERMISSIONS,
-  hasPermission,
   getDefaultPermissionsForRole,
   getRoleDisplayName,
 } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 // Sample user objects for each role
 const sampleUsers = {

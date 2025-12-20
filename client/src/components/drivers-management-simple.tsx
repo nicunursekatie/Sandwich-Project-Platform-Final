@@ -43,7 +43,8 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Driver, Host } from '@shared/schema';
 import { logger } from '@/lib/logger';
