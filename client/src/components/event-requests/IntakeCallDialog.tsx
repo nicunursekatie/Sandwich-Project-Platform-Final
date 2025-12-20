@@ -99,6 +99,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       ...prev,
       [itemId]: answer,
     }));
+    
+    // Automatically check the item when text is entered (but don't uncheck if cleared)
+    if (answer.trim() && !checkedItems.has(itemId)) {
+      setCheckedItems((prev) => new Set(prev).add(itemId));
+    }
   };
 
   const handleComplete = () => {
@@ -483,7 +488,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                         <div className="mt-2 ml-7">
                           <Input
                             type="text"
-                            placeholder="Record answer here..."
+                            placeholder="Record notes here"
                             value={itemAnswers[item.id] || ''}
                             onChange={(e) => handleAnswerChange(item.id, e.target.value)}
                             className="text-sm h-8"
