@@ -2,46 +2,37 @@
 
 This document catalogs all incomplete features and TODO items in the codebase, organized by priority and module.
 
+**Notification Infrastructure:** This app uses **SendGrid** (email) and **Twilio** (SMS) for notifications. There is no Firebase/FCM integration.
+
 ---
 
-## 🔴 Critical / High Priority
+## 🟠 Dead Code / Should Be Removed
 
-### 1. Push Notification Service (Not Implemented)
+### 1. Push Notification Service (Dead Code)
 **Location:** `server/services/push-notification-service.ts`
 
-The entire push notification service is stubbed out and returns `NOT_IMPLEMENTED`.
+This entire service references Firebase Cloud Messaging (FCM) but **the app doesn't use Firebase**. The service is completely non-functional and returns `NOT_IMPLEMENTED` for all calls.
 
-| Line | Issue |
-|------|-------|
-| 96 | FCM push notification not implemented |
-| 184 | FCM multicast not implemented |
-| 267 | Device token retrieval not implemented |
-| 311-319 | Device token storage not implemented |
-| 360-367 | Device token removal not implemented |
+**Recommendation:** Remove this file entirely or refactor to use Web Push API if browser push notifications are desired in the future.
 
-**Current State:** All push notification calls log a warning and return `{ success: false, error: 'NOT_IMPLEMENTED' }`
-
-**Required to Complete:**
-- Set up Firebase Cloud Messaging (FCM) credentials
-- Create `userDeviceTokens` database table
-- Implement token storage/retrieval endpoints
-- Integrate firebase-admin SDK
+| Line | Dead Code |
+|------|-----------|
+| 96 | FCM push notification stub |
+| 184 | FCM multicast stub |
+| 267-367 | Device token stubs |
 
 ---
 
-### 2. Smart Notification Delivery (Push Channel Incomplete)
-**Location:** `server/services/notifications/smart-delivery.ts`
+### 2. Smart Notification Push Channel (Dead Code)
+**Location:** `server/services/notifications/smart-delivery.ts:529-539`
 
-| Line | Issue |
-|------|-------|
-| 529 | Get user's device tokens from database - not implemented |
-| 539 | Send push notification using appropriate service - not implemented |
+References the non-functional push notification service above.
 
-**Current State:** Push channel in smart delivery system throws errors instead of sending notifications.
+**Recommendation:** Remove push channel from smart delivery or implement Web Push API.
 
 ---
 
-## 🟠 Medium Priority
+## 🟠 Medium Priority (Actual Incomplete Features)
 
 ### 3. Database Environment Configuration
 **Location:** `server/db.ts:10`
@@ -53,6 +44,8 @@ TODO: Switch back to DEV_DATABASE_URL once dev database has schema pushed
 **Current State:** Development environment uses production database URL as a workaround.
 
 **Impact:** Risk of accidental production data modification during development.
+
+**To Fix:** Push schema to dev database and update environment variable logic.
 
 ---
 
@@ -166,18 +159,18 @@ startBackgroundSync(storage as any); // TODO: Fix storage interface types
 
 ## Summary Statistics
 
-| Priority | Count |
-|----------|-------|
-| 🔴 Critical | 2 (Push notifications) |
-| 🟠 Medium | 7 |
-| 🟡 Low | 2 |
-| **Total** | **11 incomplete features** |
+| Priority | Count | Notes |
+|----------|-------|-------|
+| 🟠 Dead Code | 2 | Push notification stubs (Firebase references - not used) |
+| 🟠 Medium | 7 | Actual incomplete features |
+| 🟡 Low | 2 | Memory storage stubs, type issues |
+| **Total** | **11 items** | |
 
 ---
 
 ## Recommended Action Order
 
-1. **Push Notifications** - Significant feature gap, affects user engagement
+1. **Remove dead push notification code** - Reduces confusion, removes Firebase references
 2. **Intake Call Persistence** - Data loss issue
 3. **Project Files Endpoint** - Feature non-functional
 4. **Database Environment** - Development safety
