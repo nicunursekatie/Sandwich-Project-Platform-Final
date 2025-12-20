@@ -187,10 +187,6 @@ const EventRequestsManagementContent: React.FC = () => {
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
-    nextActionEventRequest,
-    setNextActionEventRequest,
-    nextActionMode,
-    setNextActionMode,
 
     // Other states
     scheduleCallDate,
