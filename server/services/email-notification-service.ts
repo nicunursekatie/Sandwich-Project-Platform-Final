@@ -5,7 +5,7 @@ import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata } from '@shared/types';
-import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS } from '../sms-service';
+import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS, sendEventCommentSMS } from '../sms-service';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -1032,6 +1032,27 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
         await sgMail.send(msg);
         logger.log(`Event comment notification sent to ${userEmail} for event ${eventId}`);
+
+        // Also send SMS notification if user has SMS enabled
+        try {
+          const metadata = getUserMetadata(user);
+          const smsConsent = metadata.smsConsent;
+
+          if (smsConsent?.enabled && smsConsent?.phoneNumber) {
+            await sendEventCommentSMS(
+              smsConsent.phoneNumber,
+              userName,
+              commenterFirstName,
+              organizationName,
+              commentContent,
+              eventUrl
+            );
+            logger.log(`Event comment SMS sent to ${smsConsent.phoneNumber} for event ${eventId}`);
+          }
+        } catch (smsError) {
+          // Don't fail the whole notification if SMS fails
+          logger.error(`Failed to send event comment SMS to user ${user.id}:`, smsError);
+        }
       }
 
       return true;

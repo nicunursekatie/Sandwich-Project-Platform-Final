@@ -1764,9 +1764,8 @@ router.patch(
 );
 
 // Update event request (PATCH) - handles basic updates like toolkit sent
-// MUST use regex pattern to match numeric IDs only, consistent with GET route
 router.patch(
-  '/:id(\\d+)',
+  '/:id',
   isAuthenticated,
   requirePermission('EVENT_REQUESTS_EDIT'),
   async (req, res) => {
@@ -1774,7 +1773,12 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
-      logger.info(`[PATCH /:id] Request received for event ${id}`);
+      if (isNaN(id)) {
+        logger.error(`[PATCH /:id] Invalid ID: ${req.params.id}`);
+        return res.status(400).json({ message: 'Invalid event request ID', id: req.params.id });
+      }
+
+      logger.info(`[PATCH /:id] Request received for event ${id}, path: ${req.path}, originalUrl: ${req.originalUrl}`);
       logger.info(`[PATCH /:id] Updates:`, JSON.stringify(updates, null, 2));
       
       // DEBUG: Log department field specifically
@@ -2130,6 +2134,7 @@ router.put(
         'tspContactAssignedDate',
         'statusChangedAt',
         'scheduledEventDate',
+        'nextActionUpdatedAt',
       ];
       
       timestampFields.forEach((field) => {
