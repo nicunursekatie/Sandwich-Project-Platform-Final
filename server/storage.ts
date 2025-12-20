@@ -1124,7 +1124,17 @@ export class MemStorage implements IStorage {
 
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = this.currentIds.project++;
-    const project: Project = { ...insertProject, id };
+    const now = new Date();
+    const project: Project = {
+      ...insertProject,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      description: insertProject.description ?? null,
+      priority: insertProject.priority ?? 'medium',
+      category: insertProject.category ?? 'general',
+      status: insertProject.status ?? 'active',
+    } as Project;
     this.projects.set(id, project);
     return project;
   }
@@ -1197,12 +1207,19 @@ export class MemStorage implements IStorage {
 
   async createProjectTask(insertTask: InsertProjectTask): Promise<ProjectTask> {
     const id = this.currentIds.projectTask++;
+    const now = new Date();
     const task: ProjectTask = {
       ...insertTask,
       id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+      createdAt: now,
+      updatedAt: now,
+      description: insertTask.description ?? null,
+      status: insertTask.status ?? 'pending',
+      priority: insertTask.priority ?? 'medium',
+      assigneeId: insertTask.assigneeId ?? null,
+      assigneeName: insertTask.assigneeName ?? null,
+      selectedForAgenda: insertTask.selectedForAgenda ?? false,
+    } as ProjectTask;
     this.projectTasks.set(id, task);
     return task;
   }
@@ -1249,8 +1266,8 @@ export class MemStorage implements IStorage {
   async updateTaskStatus(id: number, status: string): Promise<boolean> {
     const task = this.projectTasks.get(id);
     if (!task) return false;
-    task.status = status;
-    this.projectTasks.set(id, task);
+    const updatedTask = { ...task, status: status || task.status };
+    this.projectTasks.set(id, updatedTask);
     return true;
   }
 
@@ -1378,7 +1395,8 @@ export class MemStorage implements IStorage {
       ...insertComment,
       id,
       createdAt: new Date(),
-    };
+      commentType: insertComment.commentType ?? 'comment',
+    } as ProjectComment;
     this.projectComments.set(id, comment);
     return comment;
   }
@@ -1541,12 +1559,16 @@ export class MemStorage implements IStorage {
   }
 
   async createCommittee(committee: InsertCommittee): Promise<Committee> {
+    const id = (committee as any).id || this.currentIds.committeeMembership++;
     const newCommittee: Committee = {
-      ...committee,
+      id,
+      name: committee.name,
+      description: committee.description ?? null,
+      isActive: committee.isActive ?? true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.committees.set(newCommittee.id, newCommittee);
+    this.committees.set(String(id), newCommittee);
     return newCommittee;
   }
 
@@ -1613,7 +1635,11 @@ export class MemStorage implements IStorage {
       ...membership,
       id,
       joinedAt: new Date(),
-    };
+      role: membership.role ?? 'member',
+      permissions: membership.permissions ?? [],
+      isActive: membership.isActive ?? true,
+      createdAt: new Date(),
+    } as CommitteeMembership;
     this.committeeMemberships.set(id, newMembership);
     return newMembership;
   }
@@ -1676,7 +1702,8 @@ export class MemStorage implements IStorage {
       ...insertReport,
       id,
       submittedAt: new Date(),
-    };
+      notes: insertReport.notes ?? null,
+    } as WeeklyReport;
     this.weeklyReports.set(id, report);
     return report;
   }
@@ -1756,7 +1783,7 @@ export class MemStorage implements IStorage {
       ...insertCollection,
       id,
       submittedAt: new Date(),
-    };
+    } as SandwichCollection;
     this.sandwichCollections.set(id, collection);
     return collection;
   }
@@ -1805,7 +1832,11 @@ export class MemStorage implements IStorage {
     insertMinutes: InsertMeetingMinutes
   ): Promise<MeetingMinutes> {
     const id = this.currentIds.meetingMinutes++;
-    const minutes: MeetingMinutes = { ...insertMinutes, id };
+    const minutes: MeetingMinutes = {
+      ...insertMinutes,
+      id,
+      color: insertMinutes.color ?? 'blue',
+    } as MeetingMinutes;
     this.meetingMinutes.set(id, minutes);
     return minutes;
   }
@@ -1840,7 +1871,10 @@ export class MemStorage implements IStorage {
       ...insertItem,
       id,
       submittedAt: new Date(),
-    };
+      status: insertItem.status ?? 'pending',
+      description: insertItem.description ?? null,
+      section: insertItem.section ?? null,
+    } as AgendaItem;
     this.agendaItems.set(id, item);
     return item;
   }
@@ -1905,7 +1939,11 @@ export class MemStorage implements IStorage {
       ...insertMeeting,
       id,
       createdAt: new Date(),
-    };
+      status: insertMeeting.status ?? 'planning',
+      description: insertMeeting.description ?? null,
+      location: insertMeeting.location ?? null,
+      finalAgenda: insertMeeting.finalAgenda ?? null,
+    } as Meeting;
     this.meetings.set(id, meeting);
     return meeting;
   }
@@ -1953,7 +1991,8 @@ export class MemStorage implements IStorage {
       ...insertAgreement,
       id,
       submittedAt: new Date(),
-    };
+      agreementAccepted: insertAgreement.agreementAccepted ?? true,
+    } as DriverAgreement;
     this.driverAgreements.set(id, agreement);
     return agreement;
   }
@@ -1976,7 +2015,8 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+      isActive: insertDriver.isActive ?? true,
+    } as Driver;
     this.drivers.set(id, driver);
     return driver;
   }
@@ -2017,7 +2057,9 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+      isActive: insertVolunteer.isActive ?? true,
+      isSpeaker: insertVolunteer.isSpeaker ?? false,
+    } as Volunteer;
     this.volunteers.set(id, volunteer);
     return volunteer;
   }
@@ -2058,7 +2100,8 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+      status: insertHost.status ?? 'active',
+    } as Host;
     this.hosts.set(id, host);
     return host;
   }
@@ -2099,7 +2142,8 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+      status: insertRecipient.status ?? 'active',
+    } as Recipient;
     this.recipients.set(id, recipient);
     return recipient;
   }
