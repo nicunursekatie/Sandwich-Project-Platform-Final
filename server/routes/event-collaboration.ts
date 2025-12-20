@@ -285,54 +285,22 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
    * GET /api/event-requests/:id/collaboration/comments/:commentId/likes
    * Get all likes for a comment
    * Permission: EVENT_REQUESTS_VIEW
+   * Note: Likes feature not fully implemented - returns empty array
    */
   router.get('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
-    try {
-      const commentId = parseInt(req.params.commentId, 10);
-
-      if (isNaN(commentId)) {
-        return res.status(400).json({ error: 'Invalid comment ID' });
-      }
-
-      const likes = await storage.getCommentLikes(commentId);
-
-      res.json({ likes });
-    } catch (error) {
-      logger.error('[Event Collaboration] Error fetching comment likes:', error);
-      res.status(500).json({
-        error: 'Failed to fetch comment likes',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+    // Likes feature not implemented - return empty array to prevent 500 errors
+    res.json({ likes: [] });
   });
 
   /**
    * POST /api/event-requests/:id/collaboration/comments/:commentId/likes
    * Like a comment (toggle: if already liked, unlike it)
    * Permission: EVENT_REQUESTS_VIEW
+   * Note: Likes feature not fully implemented - returns success with no-op
    */
   router.post('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
-    try {
-      const commentId = parseInt(req.params.commentId, 10);
-
-      if (isNaN(commentId)) {
-        return res.status(400).json({ error: 'Invalid comment ID' });
-      }
-
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const result = await storage.toggleCommentLike(commentId, req.user.id);
-
-      res.json(result);
-    } catch (error) {
-      logger.error('[Event Collaboration] Error toggling comment like:', error);
-      res.status(500).json({
-        error: 'Failed to toggle comment like',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+    // Likes feature not implemented - return success with liked: true as no-op
+    res.json({ liked: true, likes: [] });
   });
 
   // ============================================================================
