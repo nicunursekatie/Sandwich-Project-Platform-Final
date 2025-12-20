@@ -1065,7 +1065,7 @@ export default function GroupCatalog({
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
             <div className="space-y-4 sm:space-y-8">
-              <div className="flex items-center flex-wrap gap-2 sm:space-x-3 mb-4 sm:mb-6">
+              <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-700" />
                 </div>
@@ -1190,7 +1190,7 @@ export default function GroupCatalog({
                           {/* Department Header - Only show for non-General departments */}
                           {deptName !== 'General' && (
                             <div className="mb-2 sm:mb-3 pb-2 border-b border-purple-300">
-                              <div className="flex items-start sm:items-center gap-1.5 sm:space-x-2 flex-wrap">
+                              <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
                                 <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0 mt-0.5 sm:mt-0" />
                                 <h3 className="text-sm sm:text-base font-semibold text-purple-900 break-words flex-1 min-w-0">
                                   {deptName}
@@ -1233,7 +1233,7 @@ export default function GroupCatalog({
                                         {org.department && org.department !== 'General' && (
                                           <>
                                             <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
-                                            <h4 className="text-sm sm:text-base font-semibold text-gray-800 break-words truncate">
+                                            <h4 className="text-sm sm:text-base font-semibold text-gray-800 break-words">
                                               {org.department}
                                             </h4>
                                           </>
@@ -1254,7 +1254,7 @@ export default function GroupCatalog({
                                     </div>
                                     {/* Event Date */}
                                     {org.eventDate ? (
-                                      <div className="flex items-center flex-wrap gap-1.5 sm:space-x-2 text-sm sm:text-base text-gray-700">
+                                      <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 text-sm sm:text-base text-gray-700">
                                         <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                                         <span className="font-semibold">
                                           {formatDateForDisplay(org.eventDate)}
@@ -1325,7 +1325,7 @@ export default function GroupCatalog({
                                       </Badge>
                                       {org.totalRequests > 1 && (
                                         <span className="text-gray-600 font-medium text-xs">
-                                          {org.totalRequests} req
+                                          {org.totalRequests} requests
                                         </span>
                                       )}
                                     </div>
@@ -1378,9 +1378,22 @@ export default function GroupCatalog({
                                         })()}
                                       </div>
                                       <div className="flex items-center space-x-1">
-                                        <span className="text-sm sm:text-lg">📦</span>
-                                        <span className="font-semibold text-brand-primary text-sm sm:text-base">
+                                        <span
+                                          className="text-sm sm:text-lg"
+                                          title="Events hosted"
+                                          aria-label="Events hosted"
+                                        >
+                                          📦
+                                        </span>
+                                        <span
+                                          className="font-semibold text-brand-primary text-sm sm:text-base"
+                                          title="Events hosted"
+                                          aria-label={`Events hosted: ${org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}`}
+                                        >
                                           {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}
+                                        </span>
+                                        <span className="text-[10px] sm:text-xs text-gray-600 not-italic sm:hidden" aria-hidden="true">
+                                          evts
                                         </span>
                                       </div>
                                     </div>
