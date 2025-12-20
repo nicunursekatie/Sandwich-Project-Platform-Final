@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -69,6 +69,35 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [itemAnswers, setItemAnswers] = useState<Record<string, string>>({});
   const [callNotes, setCallNotes] = useState('');
+  
+  // Contact person info - auto-filled from event request, editable during call
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  
+  // Initialize contact info from event request when dialog opens
+  useEffect(() => {
+    if (isOpen && eventRequest) {
+      const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
+      setContactName(fullName);
+      setContactPhone(eventRequest.phone || '');
+      setContactEmail(eventRequest.email || '');
+      
+      // Pre-fill answers for contact info items
+      if (fullName) {
+        setItemAnswers(prev => ({ ...prev, contact_name: fullName }));
+        setCheckedItems(prev => new Set(prev).add('contact_name'));
+      }
+      if (eventRequest.phone) {
+        setItemAnswers(prev => ({ ...prev, contact_phone: eventRequest.phone || '' }));
+        setCheckedItems(prev => new Set(prev).add('contact_phone'));
+      }
+      if (eventRequest.email) {
+        setItemAnswers(prev => ({ ...prev, contact_email: eventRequest.email || '' }));
+        setCheckedItems(prev => new Set(prev).add('contact_email'));
+      }
+    }
+  }, [isOpen, eventRequest]);
 
   const toggleItem = (itemId: string) => {
     setCheckedItems((prev) => {
@@ -100,21 +129,33 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       [itemId]: answer,
     }));
     
-    // Automatically check the item when text is entered (but don't uncheck if cleared)
+    // Automatically check the item when text is entered
     if (answer.trim() && !checkedItems.has(itemId)) {
       setCheckedItems((prev) => new Set(prev).add(itemId));
+    }
+    // Uncheck if answer is cleared
+    if (!answer.trim() && checkedItems.has(itemId)) {
+      setCheckedItems((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
     }
   };
 
   const handleComplete = () => {
-    // TODO: Save itemAnswers and callNotes to event request notes or contact log
+    // TODO: Save itemAnswers, contact info, and callNotes to event request notes or contact log
     // For now, we can log them or save to planning notes
     console.log('Call completed with answers:', itemAnswers);
+    console.log('Contact info:', { contactName, contactPhone, contactEmail });
     console.log('Call notes:', callNotes);
     onCallComplete?.();
     setCheckedItems(new Set());
     setItemAnswers({});
     setCallNotes('');
+    setContactName('');
+    setContactPhone('');
+    setContactEmail('');
     onClose();
   };
 
@@ -347,8 +388,21 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     (item) => item.required && checkedItems.has(item.id)
   ).length;
 
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      // Reset all state when dialog closes
+      setCheckedItems(new Set());
+      setItemAnswers({});
+      setCallNotes('');
+      setContactName('');
+      setContactPhone('');
+      setContactEmail('');
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -484,16 +538,57 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                             {item.notes}
                           </p>
                         )}
-                        {/* Answer input field */}
+                        {/* Answer input field - special handling for contact info */}
                         <div className="mt-2 ml-7">
-                          <Input
-                            type="text"
-                            placeholder="Record notes here"
-                            value={itemAnswers[item.id] || ''}
-                            onChange={(e) => handleAnswerChange(item.id, e.target.value)}
-                            className="text-sm h-8"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          {item.id === 'contact_name' ? (
+                            <Input
+                              type="text"
+                              placeholder="Record notes here"
+                              value={contactName}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setContactName(value);
+                                handleAnswerChange(item.id, value);
+                              }}
+                              className="text-sm h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : item.id === 'contact_phone' ? (
+                            <Input
+                              type="tel"
+                              placeholder="Record notes here"
+                              value={contactPhone}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setContactPhone(value);
+                                handleAnswerChange(item.id, value);
+                              }}
+                              className="text-sm h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : item.id === 'contact_email' ? (
+                            <Input
+                              type="email"
+                              placeholder="Record notes here"
+                              value={contactEmail}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setContactEmail(value);
+                                handleAnswerChange(item.id, value);
+                              }}
+                              className="text-sm h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <Input
+                              type="text"
+                              placeholder="Record notes here"
+                              value={itemAnswers[item.id] || ''}
+                              onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                              className="text-sm h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
