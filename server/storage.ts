@@ -820,6 +820,7 @@ export class MemStorage implements IStorage {
     organization: number;
     eventVolunteer: number;
     dashboardDocument: number;
+    userActivity: number;
   };
 
   constructor() {
@@ -891,6 +892,7 @@ export class MemStorage implements IStorage {
       organization: 1,
       eventVolunteer: 1,
       dashboardDocument: 1,
+      userActivity: 1,
     };
 
     // No sample data - start with clean storage
@@ -997,6 +999,7 @@ export class MemStorage implements IStorage {
       isActive: userData.isActive ?? true,
       lastLoginAt: userData.lastLoginAt || null,
       lastActiveAt: userData.lastActiveAt || null,
+      needsPasswordSetup: (userData as any).needsPasswordSetup ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
       passwordBackup20241023: null,
@@ -1035,6 +1038,7 @@ export class MemStorage implements IStorage {
         isActive: userData.isActive ?? true,
         lastLoginAt: userData.lastLoginAt || null,
         lastActiveAt: userData.lastActiveAt || null,
+        needsPasswordSetup: (userData as any).needsPasswordSetup ?? false,
         createdAt: new Date(),
         updatedAt: new Date(),
         passwordBackup20241023: null,
@@ -1660,10 +1664,10 @@ export class MemStorage implements IStorage {
     userId: string,
     committeeId: string
   ): Promise<boolean> {
-    for (const [id, membership] of this.committeeMemberships.entries()) {
+    for (const [id, membership] of Array.from(this.committeeMemberships.entries())) {
       if (
         membership.userId === userId &&
-        membership.committeeId === committeeId
+        String(membership.committeeId) === committeeId
       ) {
         return this.committeeMemberships.delete(id);
       }
@@ -1675,10 +1679,10 @@ export class MemStorage implements IStorage {
     userId: string,
     committeeId: string
   ): Promise<boolean> {
-    for (const membership of this.committeeMemberships.values()) {
+    for (const membership of Array.from(this.committeeMemberships.values())) {
       if (
         membership.userId === userId &&
-        membership.committeeId === committeeId
+        String(membership.committeeId) === committeeId
       ) {
         return true;
       }
