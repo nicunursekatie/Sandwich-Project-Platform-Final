@@ -382,12 +382,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 interface CardContactInfoProps {
   request: EventRequest;
   onCall?: () => void;
+  onIntakeCall?: () => void;
   onContact?: () => void;
 }
 
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
   request,
   onCall,
+  onIntakeCall,
   onContact
 }) => {
   const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
@@ -764,6 +766,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             <CardContactInfo
               request={request}
               onCall={onCall}
+              onIntakeCall={onIntakeCall}
               onContact={onContact}
             />
 
