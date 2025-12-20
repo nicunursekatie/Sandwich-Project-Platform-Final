@@ -2019,7 +2019,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <SelectValue placeholder="Select TSP contact" />
                   </SelectTrigger>
                   <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                    <SelectItem value="">None</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.firstName && user.lastName

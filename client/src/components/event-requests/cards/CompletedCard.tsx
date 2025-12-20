@@ -1613,12 +1613,33 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
     // Check if we have ACTUAL type data (not planned types)
     if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
-      // Parse existing actual types into editing state using the actual type values
+      // Parse existing actual types into editing state, normalizing to SANDWICH_TYPES format
       const typeMap: Record<string, number> = {};
       currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
-          // Use the actual type value as stored (e.g., 'deli_turkey', 'deli_ham', 'pbj', etc.)
-          typeMap[item.type] = item.quantity;
+          // Normalize type values to match SANDWICH_TYPES format
+          // Map old format types (e.g., "ham", "turkey") to new format (e.g., "deli_ham", "deli_turkey")
+          let normalizedType = item.type.toLowerCase();
+          
+          // Map common variations to SANDWICH_TYPES values
+          if (normalizedType === 'ham' || normalizedType === 'deli_ham') {
+            normalizedType = 'deli_ham';
+          } else if (normalizedType === 'turkey' || normalizedType === 'deli_turkey') {
+            normalizedType = 'deli_turkey';
+          } else if (normalizedType === 'pbj' || normalizedType === 'pb&j' || normalizedType === 'peanut butter and jelly') {
+            normalizedType = 'pbj';
+          } else if (normalizedType === 'deli' && !normalizedType.includes('_')) {
+            // If it's just "deli" without a subtype, keep it as "deli"
+            normalizedType = 'deli';
+          }
+          
+          // Accumulate quantities if the same normalized type appears multiple times
+          // This handles cases where old and new formats might both exist
+          if (typeMap[normalizedType]) {
+            typeMap[normalizedType] += item.quantity;
+          } else {
+            typeMap[normalizedType] = item.quantity;
+          }
         }
       });
       setEditingTypes(typeMap);
