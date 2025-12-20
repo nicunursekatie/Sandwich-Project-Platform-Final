@@ -331,7 +331,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -365,7 +365,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 py-4 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full px-6 py-4">
           <div className="space-y-6">
             {/* Quick Info Summary */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -514,7 +515,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               </p>
             </div>
           </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0 bg-gray-50">
