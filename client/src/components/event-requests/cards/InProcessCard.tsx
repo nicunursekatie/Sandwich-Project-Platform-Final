@@ -34,7 +34,6 @@ import {
   MapPin,
   FileText,
   MessageCircle,
-  CheckCircle,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
