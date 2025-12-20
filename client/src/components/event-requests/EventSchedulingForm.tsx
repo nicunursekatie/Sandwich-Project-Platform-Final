@@ -34,6 +34,7 @@ import {
   Trash2,
   Users,
   MessageSquare,
+  Edit,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -43,6 +44,7 @@ import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
 import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
 import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
@@ -99,6 +101,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     speakersNeeded: 0,
     volunteersNeeded: 0,
     tspContact: '',
+    customTspContact: '',
     message: '',
     schedulingNotes: '',
     planningNotes: '',
@@ -331,6 +334,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         speakersNeeded: eventRequest?.speakersNeeded || 0,
         volunteersNeeded: eventRequest?.volunteersNeeded || 0,
         tspContact: eventRequest?.tspContact || '',
+        customTspContact: (eventRequest as any)?.customTspContact || '',
         message: (eventRequest as any)?.message || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
@@ -635,6 +639,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
       tspContact: formData.tspContact || null,
+      customTspContact: formData.customTspContact?.trim() || null,
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
       planningNotes: formData.planningNotes || null,
@@ -1969,7 +1974,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
           {/* TSP Contact Assignment */}
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <Label htmlFor="tspContact">TSP Contact Assignment</Label>
               {isCollaborationEnabled && isFieldLockedByOther('tspContact') && (
                 <FieldLockIndicator 
@@ -1979,28 +1984,70 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 />
               )}
             </div>
-            <Select 
-              value={formData.tspContact} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, tspContact: value }))}
-              disabled={isCollaborationEnabled && isFieldLockedByOther('tspContact')}
+            <Tabs 
+              value={formData.customTspContact?.trim() ? 'custom' : 'user'} 
+              onValueChange={(value) => {
+                if (value === 'custom') {
+                  setFormData(prev => ({ ...prev, tspContact: '', customTspContact: prev.customTspContact || '' }));
+                } else {
+                  setFormData(prev => ({ ...prev, customTspContact: '', tspContact: prev.tspContact || '' }));
+                }
+              }}
             >
-              <SelectTrigger
-                onFocus={() => handleFieldFocus('tspContact')}
-                onBlur={() => handleFieldBlur('tspContact')}
-                data-testid="select-tsp-contact"
-              >
-                <SelectValue placeholder="Select TSP contact" />
-              </SelectTrigger>
-              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.firstName && user.lastName
-                      ? `${user.firstName} ${user.lastName}`
-                      : user.email} ({user.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <TabsList className="grid w-full grid-cols-2 mb-3">
+                <TabsTrigger value="user" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Select User
+                </TabsTrigger>
+                <TabsTrigger value="custom" className="flex items-center gap-2">
+                  <Edit className="w-4 h-4" />
+                  Custom Contact
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="user" className="space-y-2">
+                <Select 
+                  value={formData.tspContact} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, tspContact: value, customTspContact: '' }))}
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('tspContact')}
+                >
+                  <SelectTrigger
+                    onFocus={() => handleFieldFocus('tspContact')}
+                    onBlur={() => handleFieldBlur('tspContact')}
+                    data-testid="select-tsp-contact"
+                  >
+                    <SelectValue placeholder="Select TSP contact" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                    <SelectItem value="">None</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.firstName && user.lastName
+                          ? `${user.firstName} ${user.lastName}`
+                          : user.email} ({user.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TabsContent>
+              
+              <TabsContent value="custom" className="space-y-2">
+                <Textarea
+                  id="customTspContact"
+                  value={formData.customTspContact}
+                  onChange={(e) => setFormData(prev => ({ ...prev, customTspContact: e.target.value, tspContact: '' }))}
+                  onFocus={() => handleFieldFocus('tspContact')}
+                  onBlur={() => handleFieldBlur('tspContact')}
+                  placeholder="Enter custom TSP contact information (e.g., John Smith - john.smith@email.com - (555) 123-4567)"
+                  className="min-h-[100px]"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('tspContact')}
+                  data-testid="textarea-custom-tsp-contact"
+                />
+                <p className="text-xs text-gray-500">
+                  Use this for contacts not in the system. Enter name, email, phone, or other relevant information.
+                </p>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Contact Attempts History Section */}
