@@ -1533,6 +1533,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
             </div>
             )}
+          </div>
 
           {/* Overnight Holding */}
           {request.overnightHoldingLocation && (
