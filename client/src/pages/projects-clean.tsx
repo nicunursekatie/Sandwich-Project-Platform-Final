@@ -30,7 +30,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useCelebration } from '@/components/celebration-toast';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import {
   Plus,
   Circle,

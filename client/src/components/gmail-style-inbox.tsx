@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Inbox as InboxIcon,

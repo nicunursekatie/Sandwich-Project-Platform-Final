@@ -12,7 +12,8 @@ import {
   emailMessages,
 } from '../../shared/schema';
 import { db } from '../db';
-import { hasPermission, PERMISSIONS } from '../../shared/auth-utils';
+import { PERMISSIONS } from '../../shared/auth-utils';
+import { hasPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 
 // Helper function to check if user has permission for specific chat type

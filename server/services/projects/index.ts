@@ -9,7 +9,8 @@ import {
   type taskCompletions,
   users,
 } from '@shared/schema';
-import { hasPermission, isProjectOwnerOrAssignee } from '@shared/auth-utils';
+import { isProjectOwnerOrAssignee } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import type { z } from 'zod';
 import { logger } from '../../utils/production-safe-logger';
 import { NotificationService } from '../../notification-service';

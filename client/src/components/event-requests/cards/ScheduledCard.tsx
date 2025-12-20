@@ -88,7 +88,8 @@ import {
   type RecipientAllocation,
 } from '../RecipientAllocationEditor';
 import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 

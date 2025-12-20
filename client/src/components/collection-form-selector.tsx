@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import CompactCollectionForm from './compact-collection-form';
 import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 interface CollectionFormSelectorProps {
   onSuccess?: () => void;
