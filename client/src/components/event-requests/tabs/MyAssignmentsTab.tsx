@@ -60,6 +60,9 @@ export const MyAssignmentsTab: React.FC = () => {
     setLogContactEventRequest,
     setShowIntakeCallDialog,
     setIntakeCallEventRequest,
+    setShowNextActionDialog,
+    setNextActionEventRequest,
+    setNextActionMode,
     myAssignmentsStatusFilter,
     setMyAssignmentsStatusFilter,
 
@@ -164,6 +167,21 @@ export const MyAssignmentsTab: React.FC = () => {
             onLogContact={() => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
+            }}
+            onAddNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('add');
+              setShowNextActionDialog(true);
+            }}
+            onEditNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('edit');
+              setShowNextActionDialog(true);
+            }}
+            onCompleteNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('complete');
+              setShowNextActionDialog(true);
             }}
           />
         );
@@ -383,6 +401,21 @@ export const MyAssignmentsTab: React.FC = () => {
             onLogContact={() => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
+            }}
+            onAddNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('add');
+              setShowNextActionDialog(true);
+            }}
+            onEditNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('edit');
+              setShowNextActionDialog(true);
+            }}
+            onCompleteNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('complete');
+              setShowNextActionDialog(true);
             }}
           />
         );

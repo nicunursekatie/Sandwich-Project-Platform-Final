@@ -67,6 +67,7 @@ import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
 import IntakeCallDialog from './IntakeCallDialog';
+import NextActionDialog from './NextActionDialog';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -142,6 +143,12 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
+    showNextActionDialog,
+    setShowNextActionDialog,
+    nextActionEventRequest,
+    setNextActionEventRequest,
+    nextActionMode,
+    setNextActionMode,
 
     // Assignment dialog state
     assignmentType,
@@ -180,6 +187,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    nextActionEventRequest,
+    setNextActionEventRequest,
+    nextActionMode,
+    setNextActionMode,
 
     // Other states
     scheduleCallDate,
@@ -864,6 +875,25 @@ const EventRequestsManagementContent: React.FC = () => {
                   data: { status: 'in_process' },
                 });
               }
+            }}
+          />
+        )}
+
+        {/* Next Action Dialog */}
+        {nextActionEventRequest && (
+          <NextActionDialog
+            isOpen={showNextActionDialog}
+            onClose={() => {
+              setShowNextActionDialog(false);
+              setNextActionEventRequest(null);
+              setNextActionMode('add');
+            }}
+            eventRequest={nextActionEventRequest}
+            mode={nextActionMode}
+            onActionSaved={() => {
+              // Refresh event requests after action is saved
+              queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
             }}
           />
         )}

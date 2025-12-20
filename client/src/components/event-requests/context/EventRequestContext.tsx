@@ -103,6 +103,12 @@ interface EventRequestContextType {
   setPostponementEventRequest: (event: EventRequest | null) => void;
   intakeCallEventRequest: EventRequest | null;
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
+  showNextActionDialog: boolean;
+  setShowNextActionDialog: (show: boolean) => void;
+  nextActionEventRequest: EventRequest | null;
+  setNextActionEventRequest: (event: EventRequest | null) => void;
+  nextActionMode: 'add' | 'edit' | 'complete';
+  setNextActionMode: (mode: 'add' | 'edit' | 'complete') => void;
 
   // Assignment state
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
@@ -324,6 +330,9 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
   const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
   const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
+  const [showNextActionDialog, setShowNextActionDialog] = useState(false);
+  const [nextActionEventRequest, setNextActionEventRequest] = useState<EventRequest | null>(null);
+  const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
 
   // Assignment state
   const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
@@ -656,6 +665,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    showNextActionDialog,
+    setShowNextActionDialog,
+    nextActionEventRequest,
+    setNextActionEventRequest,
+    nextActionMode,
+    setNextActionMode,
 
     // Assignment
     assignmentType,

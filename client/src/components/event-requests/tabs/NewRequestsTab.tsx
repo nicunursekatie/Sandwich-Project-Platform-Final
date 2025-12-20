@@ -46,6 +46,9 @@ export const NewRequestsTab: React.FC = () => {
     setAiIntakeAssistantEventRequest,
     setShowIntakeCallDialog,
     setIntakeCallEventRequest,
+    setShowNextActionDialog,
+    setNextActionEventRequest,
+    setNextActionMode,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -304,6 +307,21 @@ export const NewRequestsTab: React.FC = () => {
               onAiIntakeAssist={() => {
                 setAiIntakeAssistantEventRequest(request);
                 setShowAiIntakeAssistantDialog(true);
+              }}
+              onAddNextAction={() => {
+                setNextActionEventRequest(request);
+                setNextActionMode('add');
+                setShowNextActionDialog(true);
+              }}
+              onEditNextAction={() => {
+                setNextActionEventRequest(request);
+                setNextActionMode('edit');
+                setShowNextActionDialog(true);
+              }}
+              onCompleteNextAction={() => {
+                setNextActionEventRequest(request);
+                setNextActionMode('complete');
+                setShowNextActionDialog(true);
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}

@@ -34,6 +34,7 @@ import {
   MapPin,
   FileText,
   MessageCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -86,6 +87,9 @@ interface InProcessCardProps {
   onDeleteContactAttempt?: (attemptNumber: number) => Promise<void>;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
+  onAddNextAction?: () => void;
+  onEditNextAction?: () => void;
+  onCompleteNextAction?: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
   // Inline editing props
@@ -627,6 +631,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onDeleteContactAttempt,
   onAiSuggest,
   onAiIntakeAssist,
+  onAddNextAction,
+  onEditNextAction,
+  onCompleteNextAction,
   canEdit = true,
   canDelete = true,
   // Inline editing props
@@ -727,17 +734,61 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         })()}
 
         {/* Next Action - Prominent display for intake tracking */}
-        {request.nextAction && (
-          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
-                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+        <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+          {request.nextAction ? (
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2 flex-1">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                  <p className="mt-1 text-amber-900 font-medium">{request.nextAction}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                {onEditNextAction && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onEditNextAction}
+                    className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                )}
+                {onCompleteNextAction && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={onCompleteNextAction}
+                    className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Complete
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">No Next Action Set</span>
+              </div>
+              {onAddNextAction && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onAddNextAction}
+                  className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
+                >
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Add Action
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
