@@ -27,6 +27,8 @@ import type { EventRequest } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface IntakeCallDialogProps {
   isOpen: boolean;
@@ -64,6 +66,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [callNotes, setCallNotes] = useState('');
 
   const toggleItem = (itemId: string) => {
     setCheckedItems((prev) => {
@@ -90,8 +93,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   };
 
   const handleComplete = () => {
+    // TODO: Save callNotes to event request notes or contact log
     onCallComplete?.();
     setCheckedItems(new Set());
+    setCallNotes('');
     onClose();
   };
 
@@ -106,17 +111,18 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
     },
     {
-      id: 'confirm_date',
-      label: 'Confirm date submitted is the date they want',
+      id: 'check_date_conflicts',
+      label: 'Check calendar for conflicts - do we have too many events that day?',
       category: 'Initial Questions',
       required: true,
+      notes: 'Check if requested date works / ask about flexibility (look for low weeks with fewer events)',
     },
     {
-      id: 'confirm_time',
-      label: 'Confirm event time (if not provided, get ASAP)',
+      id: 'get_event_time',
+      label: 'Get event time: Start/end times if >500 sandwiches or speaker/volunteers needed, pickup time if <500 without speaker',
       category: 'Initial Questions',
       required: true,
-      notes: 'Drivers are volunteers - need heads up to plan',
+      notes: '<500 sandwiches + no speaker: need pickup time. >500 sandwiches OR speaker/volunteers: need start and end times. Drivers are volunteers - need heads up to plan',
     },
 
     // Location & Area Check
@@ -325,7 +331,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -359,7 +365,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 py-4">
+        <ScrollArea className="flex-1 px-6 py-4 min-h-0">
           <div className="space-y-6">
             {/* Quick Info Summary */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -488,6 +494,24 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                   </Badge>
                 ))}
               </div>
+            </div>
+
+            {/* Call Notes Section */}
+            <div className="bg-white border border-gray-300 rounded-lg p-4">
+              <Label htmlFor="call-notes" className="text-base font-semibold text-[#236383] mb-2 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Call Notes & Information Collected
+              </Label>
+              <Textarea
+                id="call-notes"
+                value={callNotes}
+                onChange={(e) => setCallNotes(e.target.value)}
+                placeholder="Record information collected during the call: contact details, event specifics, logistics, etc..."
+                className="min-h-[150px] mt-2"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Use this space to record all the information you collect during the call. This will help ensure nothing is missed.
+              </p>
             </div>
           </div>
         </ScrollArea>
