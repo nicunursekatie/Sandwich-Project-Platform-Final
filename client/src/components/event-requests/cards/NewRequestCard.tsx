@@ -686,11 +686,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">No Next Action Set</span>
-              </div>
+            <div className="flex items-center justify-end">
               {onAddNextAction && (
                 <Button
                   size="sm"
