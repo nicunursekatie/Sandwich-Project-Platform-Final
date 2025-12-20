@@ -1813,9 +1813,9 @@ export class MemStorage implements IStorage {
     newHostName: string
   ): Promise<number> {
     let updatedCount = 0;
-    for (const collection of this.sandwichCollections.values()) {
+    for (const collection of Array.from(this.sandwichCollections.values())) {
       if (collection.hostName === oldHostName) {
-        collection.hostName = newHostName;
+        (collection as any).hostName = newHostName;
         updatedCount++;
       }
     }
@@ -2192,12 +2192,14 @@ export class MemStorage implements IStorage {
       createdAt: now,
       updatedAt: now,
       status: insertContact.status || 'active',
+      category: insertContact.category || 'general',
       email: insertContact.email || null,
       address: insertContact.address || null,
       organization: insertContact.organization || null,
       role: insertContact.role || null,
       notes: insertContact.notes || null,
-    };
+      isActive: insertContact.isActive ?? true,
+    } as Contact;
     this.contacts.set(id, contact);
     return contact;
   }
