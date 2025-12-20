@@ -6,6 +6,7 @@ import { sql, and, or, eq, lt, isNull, isNotNull } from 'drizzle-orm';
 import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
+import { ADMIN_EMAIL } from './config/organization';
 
 const syncLogger = createServiceLogger('background-sync');
 
@@ -110,7 +111,7 @@ export class BackgroundSyncService {
   private async sendServiceStoppedAlert() {
     try {
       const { sendEmail } = await import('./sendgrid');
-      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      const adminEmail = ADMIN_EMAIL;
       
       const lastSuccessTime = this.lastSuccessfulSync 
         ? this.lastSuccessfulSync.toLocaleString()
@@ -427,7 +428,7 @@ Action Required:
   private async sendNoSyncEverAlert(minutesSinceStart: number) {
     try {
       const { sendEmail } = await import('./sendgrid');
-      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      const adminEmail = ADMIN_EMAIL;
       
       await sendEmail({
         to: adminEmail,
@@ -520,7 +521,7 @@ Action Required:
 
     try {
       const { sendEmail } = await import('./sendgrid');
-      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      const adminEmail = ADMIN_EMAIL;
       
       const lastSuccessTime = this.lastSuccessfulSync 
         ? this.lastSuccessfulSync.toLocaleString()
@@ -599,7 +600,7 @@ This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unl
   private async sendStaleSyncAlert(minutesSinceLastSuccess: number) {
     try {
       const { sendEmail } = await import('./sendgrid');
-      const adminEmail = process.env.ADMIN_EMAIL || 'katie@thesandwichproject.org';
+      const adminEmail = ADMIN_EMAIL;
       
       const lastSuccessTime = this.lastSuccessfulSync 
         ? this.lastSuccessfulSync.toLocaleString()

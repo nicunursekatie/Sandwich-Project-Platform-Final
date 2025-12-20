@@ -1,6 +1,5 @@
 import { logger } from './production-safe-logger';
-
-const ADMIN_MONITORING_EMAIL = 'katie@thesandwichproject.org';
+import { ADMIN_EMAIL } from '../config/organization';
 
 /**
  * Send email notification to admin whenever an SMS is sent
@@ -108,14 +107,14 @@ ${EMAIL_FOOTER_TEXT}
     
     // Send the monitoring email
     await sendEmail({
-      to: ADMIN_MONITORING_EMAIL,
+      to: ADMIN_EMAIL,
       from: 'katie@thesandwichproject.org',
       subject,
       text,
       html,
     });
     
-    logger.log(`📧 SMS monitoring notification sent to ${ADMIN_MONITORING_EMAIL}`);
+    logger.log(`📧 SMS monitoring notification sent to ${ADMIN_EMAIL}`);
   } catch (error) {
     // Don't throw - monitoring should not break SMS functionality
     logger.error('Failed to send SMS monitoring notification:', error);
