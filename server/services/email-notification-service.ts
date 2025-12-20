@@ -5,7 +5,7 @@ import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata } from '@shared/types';
-import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS } from '../sms-service';
+import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS, sendEventCommentSMS } from '../sms-service';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -1030,8 +1030,34 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           `.trim(),
         };
 
-        await sgMail.send(msg);
-        logger.log(`Event comment notification sent to ${userEmail} for event ${eventId}`);
+        // Check if user has SMS enabled - if so, send SMS instead of email
+        const metadata = getUserMetadata(user);
+        const smsConsent = metadata.smsConsent;
+        const hasSmsEnabled = smsConsent?.enabled && smsConsent?.phoneNumber;
+
+        if (hasSmsEnabled) {
+          // Send SMS notification instead of email
+          try {
+            await sendEventCommentSMS(
+              smsConsent.phoneNumber,
+              userName,
+              commenterFirstName,
+              organizationName,
+              commentContent,
+              eventUrl
+            );
+            logger.log(`Event comment SMS sent to ${smsConsent.phoneNumber} for event ${eventId} (skipped email)`);
+          } catch (smsError) {
+            // If SMS fails, fall back to email
+            logger.error(`Failed to send event comment SMS to user ${user.id}, falling back to email:`, smsError);
+            await sgMail.send(msg);
+            logger.log(`Event comment notification sent to ${userEmail} for event ${eventId} (SMS fallback)`);
+          }
+        } else {
+          // Send email notification
+          await sgMail.send(msg);
+          logger.log(`Event comment notification sent to ${userEmail} for event ${eventId}`);
+        }
       }
 
       return true;

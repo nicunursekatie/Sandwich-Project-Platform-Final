@@ -1356,3 +1356,59 @@ export async function sendCollectionReminderSMS(
     };
   }
 }
+
+/**
+ * Send SMS notification when someone comments on an event where user is TSP contact
+ */
+export async function sendEventCommentSMS(
+  phoneNumber: string,
+  recipientName: string,
+  commenterName: string,
+  organizationName: string,
+  commentPreview: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    // Truncate comment preview if too long (keep SMS under 160 chars ideally)
+    const maxPreviewLength = 50;
+    const truncatedPreview = commentPreview.length > maxPreviewLength
+      ? commentPreview.substring(0, maxPreviewLength) + '...'
+      : commentPreview;
+
+    const message = `Hi ${recipientName}! 💬 ${commenterName} commented on ${organizationName}: "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Event comment SMS sent to ${phoneNumber} for comment by ${commenterName}`);
+      return {
+        success: true,
+        message: 'Event comment notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending event comment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send event comment notification: ${(error as Error).message}`,
+    };
+  }
+}
