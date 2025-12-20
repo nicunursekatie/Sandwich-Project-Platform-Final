@@ -307,6 +307,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       label: 'Review toolkit (food safety, setup, supplies)',
       category: 'Food Safety & Logistics',
       required: true,
+      notes: '• Food safety protocols\n• Setup requirements\n• Supplies needed\n• Tablecloths\n• Food-safe gloves',
     },
     {
       id: 'food_safe_gloves',
@@ -534,9 +535,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                           </label>
                         </div>
                         {item.notes && (
-                          <p className="text-xs text-gray-500 mt-1 ml-7 italic">
-                            {item.notes}
-                          </p>
+                          <div className="text-xs text-gray-500 mt-1 ml-7 italic">
+                            {item.notes.split('\n').map((line, idx) => (
+                              <div key={idx}>{line}</div>
+                            ))}
+                          </div>
                         )}
                         {/* Answer input field - special handling for contact info */}
                         <div className="mt-2 ml-7">
