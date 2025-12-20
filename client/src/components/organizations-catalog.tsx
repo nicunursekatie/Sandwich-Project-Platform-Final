@@ -33,11 +33,15 @@ import {
   CheckCircle,
   UserCheck,
   Edit,
+  Plus,
+  X,
+  ArrowUp,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -80,6 +84,16 @@ interface OrganizationContact {
   assignedTo?: string | null;
   assignedToName?: string | null;
   pastEvents?: Array<{ date: string; sandwichCount: number }>;
+  // Partner organization fields
+  isPartnerEntry?: boolean;
+  primaryOrganization?: string;
+  partnerRole?: 'co-host' | 'partner' | 'sponsor';
+  linkedEventId?: number;
+  eventIds?: number[]; // All event IDs aggregated in this card
+  isFromCollectionOnly?: boolean;
+  // Co-host tracking for primary entries
+  isCoHostedEvent?: boolean;
+  coHostNames?: string[];
 }
 
 interface GroupCatalogProps {
@@ -148,6 +162,7 @@ export default function GroupCatalog({
   const [searchScope, setSearchScope] = useState<'all' | 'organization' | 'department'>('all');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<'aggregated' | 'individual'>('aggregated');
 
   // Consolidated filter state
   const [filters, setFilters] = useState({
@@ -175,6 +190,16 @@ export default function GroupCatalog({
   const [editCategory, setEditCategory] = useState('');
   const [editSchoolClassification, setEditSchoolClassification] = useState('');
   const [editIsReligious, setEditIsReligious] = useState(false);
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  // Edit name dialog state
+  const [showEditNameDialog, setShowEditNameDialog] = useState(false);
+  const [editNameOrganization, setEditNameOrganization] = useState<OrganizationContact | null>(null);
+  const [editOrgName, setEditOrgName] = useState('');
+  const [editDeptName, setEditDeptName] = useState('');
+  const [partnerOrganizations, setPartnerOrganizations] = useState<Array<{ name: string; role: string }>>([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -188,10 +213,10 @@ export default function GroupCatalog({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['/api/groups-catalog'],
+    queryKey: ['/api/groups-catalog', viewMode],
     queryFn: async () => {
-      logger.log('🔄 Groups catalog fetching data from API...');
-      const response = await fetch('/api/groups-catalog');
+      logger.log('🔄 Groups catalog fetching data from API...', { viewMode });
+      const response = await fetch(`/api/groups-catalog?viewMode=${viewMode}`);
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
       logger.log('✅ Groups catalog received data:', data);
@@ -210,9 +235,11 @@ export default function GroupCatalog({
         title: 'Success',
         description: 'Organization category updated successfully',
       });
-      // Invalidate and refetch groups catalog
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
       setShowEditCategoryDialog(false);
+      setIsAddingNewCategory(false);
+      setNewCategoryName('');
     },
     onError: (error: any) => {
       toast({
@@ -222,6 +249,98 @@ export default function GroupCatalog({
       });
     },
   });
+
+  // Mutation for renaming organization/department
+  const renameOrganizationMutation = useMutation({
+    mutationFn: async (data: {
+      oldName: string;
+      newName: string | null; // Can be null for co-hosted events
+      oldDepartment?: string;
+      newDepartment?: string;
+      partnerOrganizations?: Array<{ name: string; role: string }>;
+      eventId?: number; // If provided, only update this specific event
+      eventIds?: number[]; // If provided, only update these specific events (for aggregated cards)
+    }) => {
+      return apiRequest('POST', '/api/groups-catalog/rename', data);
+    },
+    onSuccess: (data: any) => {
+      const eventCount = data.updatedEventRequests || 0;
+      const collectionCount = data.updatedCollections || 0;
+      const description = eventCount === 1 && collectionCount === 0
+        ? 'Event updated successfully.'
+        : `Updated ${eventCount} event${eventCount !== 1 ? 's' : ''} and ${collectionCount} collection${collectionCount !== 1 ? 's' : ''}.`;
+
+      toast({
+        title: 'Success',
+        description,
+      });
+      // Invalidate and force immediate refetch of groups catalog
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'], refetchType: 'all' });
+      setShowEditNameDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to rename organization',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Handler to open edit name dialog
+  const handleEditName = (org: OrganizationContact) => {
+    setEditNameOrganization(org);
+    setEditOrgName(org.organizationName);
+    setEditDeptName(org.department || '');
+    setPartnerOrganizations([]);
+    setShowEditNameDialog(true);
+  };
+
+  // Handler to save name changes
+  const handleSaveName = () => {
+    // Filter out empty partner organizations
+    const validPartners = partnerOrganizations.filter(p => p.name.trim());
+
+    // Allow empty primary org if we have co-hosts (for truly co-hosted events)
+    const hasValidPrimaryOrg = editOrgName.trim().length > 0;
+    const hasValidCoHosts = validPartners.length > 0;
+
+    if (!editNameOrganization || (!hasValidPrimaryOrg && !hasValidCoHosts)) {
+      toast({
+        title: 'Error',
+        description: 'Please enter an organization name or add co-hosting organizations',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // For single-event cards (linkedEventId), we can edit the department
+    // For aggregated cards (eventIds), we can still edit but it affects all events in the card
+    // For cards without event IDs, we can still edit but it will match by organization name
+    const hasLinkedEvent = !!editNameOrganization.linkedEventId;
+    const hasEventIds = editNameOrganization.eventIds && editNameOrganization.eventIds.length > 0;
+    const hasOrgName = !!editNameOrganization.organizationName;
+
+    // Department editing is allowed if we have linkedEventId, eventIds, or organization name
+    // (organization name allows matching by name, which is less precise but still works)
+    const canEditDepartment = hasLinkedEvent || hasEventIds || hasOrgName;
+
+    const mutationData = {
+      oldName: editNameOrganization.organizationName,
+      newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
+      // Include department data when we can edit
+      // Include oldDepartment to help match the right events (especially when no event IDs)
+      oldDepartment: canEditDepartment ? (editNameOrganization.department || '') : undefined,
+      newDepartment: canEditDepartment ? (editDeptName.trim() || '') : undefined,
+      partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
+      eventId: editNameOrganization.linkedEventId || undefined, // Only update this specific event if available
+      // If no single linkedEventId, pass all eventIds for aggregated cards
+      eventIds: hasEventIds ? editNameOrganization.eventIds : undefined,
+    };
+    console.log('🔵 Rename mutation data:', mutationData);
+    console.log('🔵 editNameOrganization:', editNameOrganization);
+    renameOrganizationMutation.mutate(mutationData);
+  };
 
   // Handler to open edit category dialog
   const handleEditCategory = (org: OrganizationContact) => {
@@ -368,13 +487,25 @@ export default function GroupCatalog({
       category: org.category || null,
       schoolClassification: org.schoolClassification || null,
       isReligious: org.isReligious || false,
+      // Event tracking for single-card edits
+      linkedEventId: contact.linkedEventId || null,
+      eventIds: contact.eventIds || [],
+      // Partner/co-host tracking
+      isPartnerEntry: contact.isPartnerEntry || false,
+      primaryOrganization: contact.primaryOrganization || null,
+      partnerRole: contact.partnerRole || null,
+      isFromCollectionOnly: contact.isFromCollectionOnly || false,
+      isCoHostedEvent: contact.isCoHostedEvent || false,
+      coHostNames: contact.coHostNames || [],
+      pastEvents: contact.pastEvents || [],
     }));
   });
 
-  // Deduplicate by creating unique key from organization + contact + email
+  // Deduplicate by creating unique key from organization + department + contact + email
+  // Include department to ensure cards with different departments are preserved
   const uniqueOrganizationsMap = new Map<string, OrganizationContact>();
   allContactsAndDepartments.forEach((org: any) => {
-    const uniqueKey = `${org.organizationName}|${org.contactName}|${org.email || 'no-email'}`;
+    const uniqueKey = `${org.organizationName}|${org.department || ''}|${org.contactName}|${org.email || 'no-email'}`;
     if (!uniqueOrganizationsMap.has(uniqueKey)) {
       uniqueOrganizationsMap.set(uniqueKey, org);
     }
@@ -490,11 +621,20 @@ export default function GroupCatalog({
       .values()
   );
 
+  // Helper to get sortable name (strips leading "The " for alphabetical sorting)
+  const getSortableName = (name: string): string => {
+    const trimmed = name.trim();
+    if (trimmed.toLowerCase().startsWith('the ')) {
+      return trimmed.substring(4).trim();
+    }
+    return trimmed;
+  };
+
   // Sort groups by organization name or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
-      const aName = a.groupName || '';
-      const bName = b.groupName || '';
+      const aName = getSortableName(a.groupName || '');
+      const bName = getSortableName(b.groupName || '');
       return sortOrder === 'desc'
         ? bName.localeCompare(aName)
         : aName.localeCompare(bName);
@@ -579,7 +719,26 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, searchScope, filters, sortBy, sortOrder]);
+  }, [searchTerm, searchScope, filters, sortBy, sortOrder, viewMode]);
+
+  // Handle scroll to show/hide back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setShowBackToTop(scrollTop > 300); // Show button after scrolling 300px
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -704,22 +863,22 @@ export default function GroupCatalog({
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-          <Building className="w-6 h-6 text-teal-600" />
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-100 flex-shrink-0">
+          <Building className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
-          <p className="text-gray-600">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Groups Catalog</h1>
+          <p className="text-sm sm:text-base text-gray-600 hidden sm:block">
             Directory of all organizations we've worked with from event requests
           </p>
         </div>
       </div>
 
       {/* Search and Filter Controls */}
-      <div className="bg-white rounded-lg border p-4 shadow-sm">
+      <div className="bg-white rounded-lg border p-3 sm:p-4 shadow-sm">
         <StandardFilterBar
           searchPlaceholder="Search organizations, contacts, emails, phone numbers, departments..."
           searchValue={searchTerm}
@@ -800,45 +959,46 @@ export default function GroupCatalog({
 
         {/* Search Scope Selector */}
         {searchTerm && (
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="text-sm font-medium text-gray-600">Search in:</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant={searchScope === 'all' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('all')}
-                className={searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                All Fields
+                All
               </Button>
               <Button
                 size="sm"
                 variant={searchScope === 'organization' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('organization')}
-                className={searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                Organization Name Only
+                Org Name
               </Button>
               <Button
                 size="sm"
                 variant={searchScope === 'department' ? 'default' : 'outline'}
                 onClick={() => setSearchScope('department')}
-                className={searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+                className={`min-h-[44px] sm:min-h-0 ${searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}`}
               >
-                Department Only
+                Department
               </Button>
             </div>
           </div>
         )}
 
         {/* Sort Controls */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex gap-2 items-center">
-            <span className="text-sm font-medium text-gray-600">Sort by:</span>
+        <div className="mt-4 flex flex-col gap-3">
+          {/* Row 1: Sort and Order */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-gray-600">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px] flex-1 sm:flex-none"
             >
               <option value="groupName">Group Name</option>
               <option value="contactName">Contact Name</option>
@@ -850,24 +1010,59 @@ export default function GroupCatalog({
               variant="outline"
               size="sm"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-3"
+              className="px-3 min-h-[44px] min-w-[44px]"
+              aria-label={sortOrder === 'asc' ? 'Sort ascending' : 'Sort descending'}
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Per page:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
-            >
-              <option value="12">12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
-              <option value="100">100</option>
-            </select>
+          {/* Row 2: View Mode and Per Page */}
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600 hidden sm:inline">View:</span>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => setViewMode('aggregated')}
+                  aria-pressed={viewMode === 'aggregated'}
+                  className={`px-4 py-2 text-sm font-medium transition-colors min-h-[44px] ${
+                    viewMode === 'aggregated'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Group events by organization + department + contact"
+                >
+                  Grouped
+                </button>
+                <button
+                  onClick={() => setViewMode('individual')}
+                  aria-pressed={viewMode === 'individual'}
+                  className={`px-4 py-2 text-sm font-medium transition-colors min-h-[44px] ${
+                    viewMode === 'individual'
+                      ? 'bg-[#236383] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Show each event as its own card"
+                >
+                  Individual
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px]"
+              >
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -896,49 +1091,113 @@ export default function GroupCatalog({
         <>
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
-            <div className="space-y-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
-                  <Calendar className="w-5 h-5 text-teal-700" />
+            <div className="space-y-4 sm:space-y-8">
+              <div className="flex items-center flex-wrap gap-2 sm:space-x-3 mb-4 sm:mb-6">
+                <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-700" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   Active Organizations
                 </h2>
-                <Badge className="bg-teal-100 text-teal-700">
-                  {totalActiveItems} organizations
+                <Badge className="bg-teal-100 text-teal-700 text-xs sm:text-sm">
+                  {totalActiveItems}
                 </Badge>
               </div>
 
               {/* Organization Grouped Layout - All Events and Departments Displayed */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
                   <div
                     key={`group-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-4 shadow-sm"
+                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-3 sm:p-4 shadow-sm"
                   >
                     {/* Organization Header */}
-                    <div className="mb-4 pb-3 border-b border-gray-200">
-                      <div className="flex items-center space-x-2 mb-3">
+                    <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-gray-200">
+                      {/* Organization Name with Rename Button */}
+                      <div className="flex items-start gap-2 mb-2">
                         <Building
-                          className="w-6 h-6"
+                          className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-xl font-bold text-gray-900 break-words">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex-1 break-words leading-tight">
                           {group.groupName}
                         </h2>
+                        {canEditCategories && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
+                            onClick={() => {
+                              // Collect all event IDs from all departments in this group
+                              const allEventIds = group.departments.flatMap(dept => dept.eventIds || []);
+                              const uniqueEventIds = [...new Set(allEventIds)].filter(id => id !== null && id !== undefined);
+                              
+                              // Get the first department's data as a base
+                              const firstDept = group.departments[0];
+                              
+                              handleEditName({
+                                organizationName: group.groupName,
+                                contactName: firstDept?.contactName || '',
+                                department: firstDept?.department || '',
+                                latestRequestDate: firstDept?.latestRequestDate || '',
+                                latestActivityDate: firstDept?.latestActivityDate || '',
+                                totalRequests: firstDept?.totalRequests || 0,
+                                status: firstDept?.status || 'new',
+                                hasHostedEvent: firstDept?.hasHostedEvent || false,
+                                // Include event IDs so department editing is enabled
+                                eventIds: uniqueEventIds.length > 0 ? uniqueEventIds : undefined,
+                                linkedEventId: uniqueEventIds.length === 1 ? uniqueEventIds[0] : undefined,
+                              });
+                            }}
+                            title="Rename organization"
+                            data-testid={`button-edit-name-${group.groupName}`}
+                          >
+                            <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-teal-600" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Category Badge with Inline Edit */}
+                      <div className="flex items-center gap-2 mb-2 ml-7 sm:ml-8">
                         {(() => {
                           const orgInfo = organizationCategoryMap.get(group.groupName);
                           const category = orgInfo?.category;
-                          return category ? (
-                            <Badge className={getCategoryBadgeColor(category)}>
-                              {getCategoryLabel(category)}
-                            </Badge>
-                          ) : null;
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={`${getCategoryBadgeColor(category)} text-xs sm:text-sm`}>
+                                {getCategoryLabel(category)}
+                              </Badge>
+                              {canEditCategories && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 sm:h-5 sm:w-5 p-0 hover:bg-teal-100 touch-manipulation"
+                                  onClick={() => handleEditCategory({
+                                    organizationName: group.groupName,
+                                    contactName: group.departments[0]?.contactName || '',
+                                    department: group.departments[0]?.department,
+                                    latestRequestDate: group.departments[0]?.latestRequestDate || '',
+                                    latestActivityDate: group.departments[0]?.latestActivityDate || '',
+                                    totalRequests: group.departments[0]?.totalRequests || 0,
+                                    status: group.departments[0]?.status || 'new',
+                                    hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
+                                    category: category,
+                                  })}
+                                  title="Edit category"
+                                  data-testid={`button-edit-category-header-${group.groupName}`}
+                                >
+                                  <Edit className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-teal-600" />
+                                </Button>
+                              )}
+                            </div>
+                          );
                         })()}
                       </div>
-                      <div className="flex items-center text-sm text-gray-600">
+
+                      {/* Department Count */}
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 ml-7 sm:ml-8">
                         <span className="flex items-center space-x-1">
-                          <Users className="w-4 h-4" />
+                          <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           <span>
                             {group.totalDepartments}{' '}
                             {group.totalDepartments === 1
@@ -963,19 +1222,19 @@ export default function GroupCatalog({
                       });
 
                       return Array.from(departmentGroups.entries()).map(([deptName, deptEvents], deptIndex) => (
-                        <div 
-                          key={`dept-${deptName}-${deptIndex}`} 
-                          className={`mb-4 ${deptName !== 'General' ? 'p-3 bg-purple-50/50 border-2 border-purple-200 rounded-lg' : ''}`}
+                        <div
+                          key={`dept-${deptName}-${deptIndex}`}
+                          className={`mb-3 sm:mb-4 ${deptName !== 'General' ? 'p-2 sm:p-3 bg-purple-50/50 border border-purple-200 sm:border-2 rounded-lg' : ''}`}
                         >
                           {/* Department Header - Only show for non-General departments */}
                           {deptName !== 'General' && (
-                            <div className="mb-3 pb-2 border-b border-purple-300">
-                              <div className="flex items-center space-x-2">
-                                <Building className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-base font-semibold text-purple-900 break-words">
+                            <div className="mb-2 sm:mb-3 pb-2 border-b border-purple-300">
+                              <div className="flex items-start sm:items-center gap-1.5 sm:space-x-2 flex-wrap">
+                                <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                                <h3 className="text-sm sm:text-base font-semibold text-purple-900 break-words flex-1 min-w-0">
                                   {deptName}
                                 </h3>
-                                <Badge className="bg-purple-200 text-purple-800 text-sm font-semibold">
+                                <Badge className="bg-purple-200 text-purple-800 text-xs sm:text-sm font-semibold">
                                   {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
@@ -1004,50 +1263,110 @@ export default function GroupCatalog({
                                     : { borderLeftColor: '#FBAD3F' }
                                 }
                               >
-                                <CardHeader className="pb-3 px-4 pt-4">
+                                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4 pt-3 sm:pt-4">
                                   {/* Department Name and Event Date - Top of Card */}
-                                  <div className="mb-4 pb-3 border-b border-gray-200">
-                                    {org.department && org.department !== 'General' && (
-                                      <div className="flex items-center space-x-2 mb-2">
-                                        <Building className="w-5 h-5 text-purple-600" />
-                                        <h4 className="text-base font-semibold text-gray-800 break-words">
-                                          {org.department}
-                                        </h4>
+                                  <div className="mb-2 sm:mb-4 pb-2 sm:pb-3 border-b border-gray-200">
+                                    {/* Edit button for this specific event card */}
+                                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                                      <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                                        {org.department && org.department !== 'General' && (
+                                          <>
+                                            <Building className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+                                            <h4 className="text-sm sm:text-base font-semibold text-gray-800 break-words truncate">
+                                              {org.department}
+                                            </h4>
+                                          </>
+                                        )}
                                       </div>
-                                    )}
+                                      {canEditCategories && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
+                                          onClick={() => handleEditName(org)}
+                                          title="Edit this event"
+                                          data-testid={`button-edit-event-${org.organizationName}-${org.department}-${index}`}
+                                        >
+                                          <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-teal-600" />
+                                        </Button>
+                                      )}
+                                    </div>
                                     {/* Event Date */}
                                     {org.eventDate ? (
-                                      <div className="flex items-center space-x-2 text-base text-gray-700">
-                                        <Calendar className="w-5 h-5 text-teal-600" />
+                                      <div className="flex items-center flex-wrap gap-1.5 sm:space-x-2 text-sm sm:text-base text-gray-700">
+                                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                                         <span className="font-semibold">
                                           {formatDateForDisplay(org.eventDate)}
                                         </span>
+                                        {org.isFromCollectionOnly && (
+                                          <Badge className="bg-gray-100 text-gray-600 text-[10px] sm:text-xs">
+                                            collection
+                                          </Badge>
+                                        )}
                                       </div>
                                     ) : (
-                                      <div className="flex items-center space-x-2 text-base text-gray-500">
-                                        <Calendar className="w-5 h-5 text-gray-400" />
-                                        <span>No date specified</span>
+                                      <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base text-gray-500">
+                                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                                        <span>No date</span>
+                                      </div>
+                                    )}
+                                    {/* Partner Organization Badge (for entries created from partner data) - hidden on mobile */}
+                                    {org.isPartnerEntry && org.primaryOrganization && (
+                                      <div className="hidden sm:flex items-center mt-2">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          {org.partnerRole === 'co-host' ? 'Co-hosted' : org.partnerRole === 'sponsor' ? 'Sponsored' : 'Partner'} with {org.primaryOrganization}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {/* Partner Organizations Display - show below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="flex items-center mt-2 text-xs sm:text-sm text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
+                                      </div>
+                                    )}
+                                    {/* Co-host Badge (for primary entries that have co-hosts) - hidden on mobile */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="hidden sm:flex items-center mt-2">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          Co-hosted with {org.coHostNames.join(', ')}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Organization Name */}
+                                  <div className="mb-2 sm:mb-3">
+                                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base font-semibold text-gray-900">
+                                      <Building className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0" />
+                                      <span>{org.organizationName}</span>
+                                    </div>
+                                    {/* Partner Organizations Display - below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600 ml-6">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
                                       </div>
                                     )}
                                   </div>
 
                                   {/* Contact Information */}
-                                  <div className="space-y-2 mb-3">
-                                    <div className="flex items-center space-x-2 text-base">
-                                      <User className="w-5 h-5 text-teal-600" />
+                                  <div className="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
+                                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base">
+                                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0" />
                                       <button
                                         onClick={() => {
                                           setSelectedContact(org);
                                           setShowContactDetailsModal(true);
                                         }}
-                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2 min-h-[44px] sm:min-h-0 flex items-center touch-manipulation"
                                         data-testid={`button-contact-${org.organizationName}-${org.contactName}`}
                                       >
                                         {org.contactName}
                                       </button>
                                     </div>
                                     {org.email && (
-                                      <div className="flex items-center space-x-2 text-sm">
+                                      <div className="hidden sm:flex items-center space-x-2 text-sm">
                                         <Mail className="w-4 h-4 text-teal-500" />
                                         <span className="text-teal-700 hover:text-teal-800 truncate">
                                           {org.email}
@@ -1057,100 +1376,77 @@ export default function GroupCatalog({
                                   </div>
 
                                   {/* Status and Metrics */}
-                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <Badge
-                                          className={getStatusBadgeColor(org.status)}
-                                          variant="outline"
-                                        >
-                                          {getStatusText(org.status)}
-                                        </Badge>
-                                        <div className="flex items-center gap-1">
-                                          <Badge className={getCategoryBadgeColor(org.category)}>
-                                            {getCategoryLabel(org.category)}
-                                          </Badge>
-                                          {canEditCategories && (
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-6 w-6 p-0 hover:bg-orange-200"
-                                              onClick={() => handleEditCategory(org)}
-                                              data-testid={`button-edit-category-${org.organizationName}`}
-                                            >
-                                              <Edit className="h-3 w-3 text-orange-700" />
-                                            </Button>
-                                          )}
-                                        </div>
-                                      </div>
+                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 sm:p-3 border border-orange-200 rounded text-xs sm:text-sm mt-2 sm:mt-3">
+                                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                                      <Badge
+                                        className={`${getStatusBadgeColor(org.status)} text-xs`}
+                                        variant="outline"
+                                      >
+                                        {getStatusText(org.status)}
+                                      </Badge>
                                       {org.totalRequests > 1 && (
-                                        <span className="text-gray-600 font-medium">
-                                          {org.totalRequests} requests
+                                        <span className="text-gray-600 font-medium text-xs">
+                                          {org.totalRequests} req
                                         </span>
                                       )}
                                     </div>
 
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-1.5">
-                                        <span className="text-lg">🥪</span>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-sm sm:text-lg">🥪</span>
                                         {(() => {
                                           const isFuture = isFutureEvent(org);
                                           const estimatedCount = org.totalSandwiches || 0;
                                           const actualCount = org.actualSandwichTotal || 0;
-                                          
+
                                           // For future events: show estimated with "planned" label, only if > 0
                                           if (isFuture) {
                                             if (estimatedCount > 0) {
                                               return (
-                                                <span className="font-semibold text-orange-700 text-base italic">
-                                                  {estimatedCount} <span className="text-xs not-italic text-gray-600">planned</span>
+                                                <span className="font-semibold text-orange-700 text-sm sm:text-base italic">
+                                                  {estimatedCount} <span className="text-[10px] sm:text-xs not-italic text-gray-600 hidden sm:inline">planned</span>
                                                 </span>
                                               );
                                             }
-                                            // Don't show anything for future events without estimates
                                             return null;
                                           }
-                                          
-                                          // For past/completed events: prioritize actual count
+
                                           if (actualCount > 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 {actualCount}
                                               </span>
                                             );
                                           }
-                                          
-                                          // Show estimated if available for past events
+
                                           if (estimatedCount > 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 {estimatedCount}
                                               </span>
                                             );
                                           }
-                                          
-                                          // Show 0 only if actualSandwichTotal is explicitly 0 (completed event with 0 sandwiches)
+
                                           if (org.actualSandwichTotal !== undefined && org.actualSandwichTotal === 0) {
                                             return (
-                                              <span className="font-semibold text-orange-700 text-base">
+                                              <span className="font-semibold text-orange-700 text-sm sm:text-base">
                                                 0
                                               </span>
                                             );
                                           }
-                                          
-                                          // Don't show anything if no count available
+
                                           return null;
                                         })()}
                                       </div>
-                                      <div className="flex items-center space-x-1.5">
-                                        <span className="text-lg">📦</span>
-                                        <span className="font-semibold text-brand-primary text-base">
-                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-sm sm:text-lg">📦</span>
+                                        <span className="font-semibold text-brand-primary text-sm sm:text-base">
+                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}
                                         </span>
                                       </div>
                                     </div>
 
-                                    {/* TSP Contact Display */}
+                                    {/* TSP Contact Display - hidden on mobile */}
                                     {(() => {
                                       let tspContactName = null;
 
@@ -1165,7 +1461,7 @@ export default function GroupCatalog({
                                       }
 
                                       return tspContactName ? (
-                                        <div className="flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
+                                        <div className="hidden sm:flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
                                           <UserCheck className="w-4 h-4 text-purple-500" />
                                           <span className="text-purple-700 font-medium truncate">
                                             TSP: {tspContactName}
@@ -1174,9 +1470,9 @@ export default function GroupCatalog({
                                       ) : null;
                                     })()}
 
-                                    {/* Past Events List - Compact */}
+                                    {/* Past Events List - hidden on mobile */}
                                     {org.pastEvents && org.pastEvents.length > 0 && (
-                                      <div className="mt-2 pt-2 border-t border-orange-300">
+                                      <div className="hidden sm:block mt-2 pt-2 border-t border-orange-300">
                                         <div className="text-sm font-semibold text-gray-700 mb-2">
                                           Past Events:
                                         </div>
@@ -1210,7 +1506,7 @@ export default function GroupCatalog({
                                   </div>
                                 </CardHeader>
 
-                                <CardContent className="pt-0 px-4 pb-4">
+                                <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
                                   {/* View Complete History Button */}
                                   <Button
                                     onClick={() => {
@@ -1220,19 +1516,20 @@ export default function GroupCatalog({
                                     }}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2"
+                                    className="w-full text-xs sm:text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 touch-manipulation"
                                   >
-                                    <ExternalLink className="w-4 h-4 mr-1.5" />
-                                    View Complete History
+                                    <ExternalLink className="w-4 h-4 mr-1" />
+                                    <span className="sm:hidden">View History</span>
+                                    <span className="hidden sm:inline">View Complete History</span>
                                   </Button>
                                 </CardContent>
                               </Card>
                             ))}
                             {/* Show indicator if there are more events */}
                             {deptEvents.length > 3 && (
-                              <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
-                                <p className="text-sm text-gray-600 font-medium">
-                                  + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
+                              <div className="text-center py-1.5 sm:py-2 px-2 sm:px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                  + {deptEvents.length - 3} more
                                 </p>
                               </div>
                             )}
@@ -1289,15 +1586,60 @@ export default function GroupCatalog({
                             }
                           >
                             <CardHeader className="pb-3">
-                              {/* Organization Header - Compact */}
-                              <div className="flex items-center space-x-2 mb-3">
-                                <Building
-                                  className="w-4 h-4 flex-shrink-0"
-                                  style={{ color: '#236383' }}
-                                />
-                                <h3 className="text-lg font-bold text-gray-900 break-words">
-                                  {group.groupName}
-                                </h3>
+                              {/* Organization Header */}
+                              <div className="mb-3">
+                                {/* Organization Name with Rename Button */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Building
+                                    className="w-5 h-5 flex-shrink-0"
+                                    style={{ color: '#236383' }}
+                                  />
+                                  <h3 className="text-lg font-bold text-gray-900 flex-1">
+                                    {group.groupName}
+                                  </h3>
+                                  {canEditCategories && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 hover:bg-teal-100 flex-shrink-0 ml-1"
+                                      onClick={() => handleEditName(org)}
+                                      title="Rename organization"
+                                      data-testid={`button-edit-name-single-${group.groupName}`}
+                                    >
+                                      <Edit className="h-3.5 w-3.5 text-teal-600" />
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* Category Badge with Inline Edit */}
+                                <div className="flex items-center gap-2 ml-7">
+                                  {(() => {
+                                    const orgInfo = organizationCategoryMap.get(group.groupName);
+                                    const category = orgInfo?.category;
+                                    return (
+                                      <div className="flex items-center gap-1">
+                                        <Badge className={getCategoryBadgeColor(category)}>
+                                          {getCategoryLabel(category)}
+                                        </Badge>
+                                        {canEditCategories && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0 hover:bg-teal-100"
+                                            onClick={() => handleEditCategory({
+                                              ...org,
+                                              category: category,
+                                            })}
+                                            title="Edit category"
+                                            data-testid={`button-edit-category-single-${group.groupName}`}
+                                          >
+                                            <Edit className="h-3 w-3 text-teal-600" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
                               </div>
 
                               {/* Main headline with org name and date */}
@@ -1312,18 +1654,46 @@ export default function GroupCatalog({
                                     {/* Event Date - Compact */}
                                     {org.eventDate ? (
                                       <div
-                                        className="flex items-center mt-1 text-sm font-semibold"
+                                        className="flex items-center flex-wrap gap-1 mt-1 text-sm font-semibold"
                                         style={{ color: '#FBAD3F' }}
                                       >
                                         <Calendar className="w-4 h-4 mr-1" />
                                         <span className="truncate">
                                           {formatDateForDisplay(org.eventDate)}
                                         </span>
+                                        {org.isFromCollectionOnly && (
+                                          <Badge className="bg-gray-100 text-gray-600 text-xs ml-1">
+                                            from log
+                                          </Badge>
+                                        )}
                                       </div>
                                     ) : (
                                       <div className="flex items-center mt-1 text-xs text-gray-500">
                                         <Calendar className="w-3 h-3 mr-1" />
                                         <span>No date specified</span>
+                                      </div>
+                                    )}
+                                    {/* Partner Organization Badge - Compact */}
+                                    {org.isPartnerEntry && org.primaryOrganization && (
+                                      <div className="mt-1">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          {org.partnerRole === 'co-host' ? 'Co-host' : org.partnerRole === 'sponsor' ? 'Sponsor' : 'Partner'}: {org.primaryOrganization}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {/* Partner Organizations Display - Compact */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
+                                      </div>
+                                    )}
+                                    {/* Co-host Badge - Compact (for primary entries that have co-hosts) */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          Co-host: {org.coHostNames.join(', ')}
+                                        </Badge>
                                       </div>
                                     )}
                                   </div>
@@ -2064,37 +2434,90 @@ export default function GroupCatalog({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-category">Organization Category</Label>
-              <Select
-                value={editCategory}
-                onValueChange={(value) => {
-                  setEditCategory(value);
-                  // Clear school classification if category changes to non-school
-                  if (value !== 'school') {
-                    setEditSchoolClassification('');
-                  }
-                }}
-              >
-                <SelectTrigger id="edit-category" data-testid="select-edit-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="school">School</SelectItem>
-                  <SelectItem value="church_faith">Church/Faith Group</SelectItem>
-                  <SelectItem value="religious">Religious Organization</SelectItem>
-                  <SelectItem value="nonprofit">Nonprofit</SelectItem>
-                  <SelectItem value="government">Government</SelectItem>
-                  <SelectItem value="hospital">Hospital</SelectItem>
-                  <SelectItem value="political">Political Organization</SelectItem>
-                  <SelectItem value="club">Club</SelectItem>
-                  <SelectItem value="neighborhood">Neighborhood</SelectItem>
-                  <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
-                  <SelectItem value="cultural">Cultural Organization</SelectItem>
-                  <SelectItem value="corp">Company</SelectItem>
-                  <SelectItem value="large_corp">Large Corporation</SelectItem>
-                  <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              {isAddingNewCategory ? (
+                <div className="space-y-2">
+                  <Input
+                    id="new-category-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Enter new category name"
+                    autoFocus
+                    data-testid="input-new-category"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingNewCategory(false);
+                        setNewCategoryName('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!newCategoryName.trim()}
+                      onClick={() => {
+                        // Convert to snake_case for the category value
+                        const categoryValue = newCategoryName.trim().toLowerCase().replace(/\s+/g, '_');
+                        setEditCategory(categoryValue);
+                        setIsAddingNewCategory(false);
+                        setNewCategoryName('');
+                      }}
+                    >
+                      Use Category
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  value={editCategory}
+                  onValueChange={(value) => {
+                    if (value === '__add_new__') {
+                      setIsAddingNewCategory(true);
+                      return;
+                    }
+                    setEditCategory(value);
+                    // Clear school classification if category changes to non-school
+                    if (value !== 'school') {
+                      setEditSchoolClassification('');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="edit-category" data-testid="select-edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="school">School</SelectItem>
+                    <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                    <SelectItem value="religious">Religious Organization</SelectItem>
+                    <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                    <SelectItem value="government">Government</SelectItem>
+                    <SelectItem value="hospital">Hospital</SelectItem>
+                    <SelectItem value="political">Political Organization</SelectItem>
+                    <SelectItem value="club">Club</SelectItem>
+                    <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                    <SelectItem value="greek_life">Fraternity/Sorority</SelectItem>
+                    <SelectItem value="cultural">Cultural Organization</SelectItem>
+                    <SelectItem value="corp">Company</SelectItem>
+                    <SelectItem value="large_corp">Large Corporation</SelectItem>
+                    <SelectItem value="small_medium_corp">Small/Medium Business</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="__add_new__" className="text-blue-600 font-medium">
+                      + Add New Category...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {/* Show the custom category if one was entered */}
+              {editCategory && !['school', 'church_faith', 'religious', 'nonprofit', 'government', 'hospital', 'political', 'club', 'neighborhood', 'greek_life', 'cultural', 'corp', 'large_corp', 'small_medium_corp', 'other'].includes(editCategory) && (
+                <p className="text-xs text-blue-600">
+                  Custom category: {editCategory.replace(/_/g, ' ')}
+                </p>
+              )}
             </div>
 
             {/* School Classification - only shown when category is 'school' */}
@@ -2120,7 +2543,11 @@ export default function GroupCatalog({
             <div className="flex items-center justify-end gap-2 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowEditCategoryDialog(false)}
+                onClick={() => {
+                  setShowEditCategoryDialog(false);
+                  setIsAddingNewCategory(false);
+                  setNewCategoryName('');
+                }}
                 data-testid="button-cancel-edit-category"
               >
                 Cancel
@@ -2137,20 +2564,227 @@ export default function GroupCatalog({
         </DialogContent>
       </Dialog>
 
+      {/* Edit Name Dialog */}
+      <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Organization</DialogTitle>
+            <DialogDescription>
+              Update the organization name and add partner organizations if this event is co-hosted.
+            </DialogDescription>
+          </DialogHeader>
+          {/* Warning for multi-event cards */}
+          {editNameOrganization && !editNameOrganization.linkedEventId && (editNameOrganization.eventIds?.length ?? 0) > 1 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800">
+              <strong>Note:</strong> This card represents {editNameOrganization.eventIds?.length} events.
+              Changes will apply to ALL events for this organization.
+            </div>
+          )}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-org-name">Organization Name</Label>
+              <Input
+                id="edit-org-name"
+                value={editOrgName}
+                onChange={(e) => setEditOrgName(e.target.value)}
+                placeholder="Enter organization name (or leave empty for co-hosted events)"
+                data-testid="input-edit-org-name"
+              />
+              <p className="text-xs text-gray-500">
+                For co-hosted events: leave this empty and add both organizations as co-hosts below.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-dept-name">Department (optional)</Label>
+              {/* Allow department edits when we have specific events to target OR when we have an organization name to match */}
+              {(editNameOrganization?.linkedEventId || 
+                (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0) ||
+                editNameOrganization?.organizationName) ? (
+                <>
+                  <Input
+                    id="edit-dept-name"
+                    value={editDeptName}
+                    onChange={(e) => setEditDeptName(e.target.value)}
+                    placeholder="Enter department name"
+                    data-testid="input-edit-dept-name"
+                  />
+                  {editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 1 && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all {editNameOrganization.eventIds.length} events in this card.
+                    </p>
+                  )}
+                  {!editNameOrganization?.linkedEventId && 
+                   (!editNameOrganization?.eventIds || editNameOrganization.eventIds.length === 0) && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all events matching this organization name.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded border">
+                  Department editing is disabled for this card type.
+                  Try editing from the event details view.
+                </div>
+              )}
+            </div>
+
+            {/* Partner Organizations Section */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Partner Organizations</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPartnerOrganizations([...partnerOrganizations, { name: '', role: 'partner' }])}
+                  data-testid="button-add-partner"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Partner
+                </Button>
+              </div>
+              {partnerOrganizations.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  No partner organizations. Click "Add Partner" if this event is co-hosted.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {partnerOrganizations.map((partner, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={partner.name}
+                        onChange={(e) => {
+                          const updated = [...partnerOrganizations];
+                          updated[index] = { ...updated[index], name: e.target.value };
+                          setPartnerOrganizations(updated);
+                        }}
+                        placeholder="Partner organization name"
+                        className="flex-1"
+                        data-testid={`input-partner-name-${index}`}
+                      />
+                      <Select
+                        value={partner.role}
+                        onValueChange={(value) => {
+                          const updated = [...partnerOrganizations];
+                          updated[index] = { ...updated[index], role: value };
+                          setPartnerOrganizations(updated);
+                        }}
+                      >
+                        <SelectTrigger className="w-28" data-testid={`select-partner-role-${index}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="co-host">Co-host</SelectItem>
+                          <SelectItem value="partner">Partner</SelectItem>
+                          <SelectItem value="sponsor">Sponsor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          const updated = partnerOrganizations.filter((_, i) => i !== index);
+                          setPartnerOrganizations(updated);
+                        }}
+                        data-testid={`button-remove-partner-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditNameDialog(false)}
+                data-testid="button-cancel-edit-name"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveName}
+                disabled={renameOrganizationMutation.isPending || (!editOrgName.trim() && partnerOrganizations.filter(p => p.name.trim()).length === 0)}
+                data-testid="button-save-name"
+              >
+                {renameOrganizationMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* AI Assistant */}
       <FloatingAIChat
         contextType="organizations"
         title="Groups Assistant"
         subtitle="Ask about partner organizations"
+        // Lightweight context - computed every render but cheap
+        contextData={{
+          currentView: 'groups-catalog',
+          filters: {
+            searchTerm: searchTerm || undefined,
+            status: filters.status,
+            category: filters.category,
+            hostedEvents: filters.hostedEvents,
+          },
+          summaryStats: {
+            totalOrganizations: sortedActiveGroups.length,
+            totalContacts: allOrganizations.length,
+            organizationsWithEvents: sortedActiveGroups.filter(g => g.hasHostedEvent).length,
+            organizationsWithoutEvents: sortedActiveGroups.filter(g => !g.hasHostedEvent).length,
+          },
+        }}
+        // Heavy context - only computed when user sends a message
+        getFullContext={() => ({
+          rawData: sortedActiveGroups.flatMap(group =>
+            group.departments.map(dept => ({
+              organizationName: group.groupName,
+              category: organizationCategoryMap.get(group.groupName)?.category || null,
+              status: dept.status,
+              hasHostedEvent: dept.hasHostedEvent,
+              totalRequests: dept.totalRequests,
+              actualSandwichTotal: dept.actualSandwichTotal,
+              eventDate: dept.eventDate,
+              contactName: dept.contactName,
+              department: dept.department,
+            }))
+          ),
+          selectedItem: selectedOrganization ? {
+            organizationName: selectedOrganization.organizationName,
+            contactName: selectedOrganization.contactName,
+            category: selectedOrganization.category,
+            status: selectedOrganization.status,
+            hasHostedEvent: selectedOrganization.hasHostedEvent,
+            totalRequests: selectedOrganization.totalRequests,
+          } : undefined,
+        })}
         suggestedQuestions={[
-          "Which organizations have had the most events?",
+          "How many groups are in our catalog?",
+          "Which groups have had the most events?",
           "How many schools vs churches do we partner with?",
-          "What organizations haven't had events yet?",
+          "What groups haven't hosted events yet?",
           "Show me the breakdown by category",
-          "Which organizations were recently added?",
-          "How many religious organizations do we work with?",
+          "Which groups were recently active?",
         ]}
       />
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 rounded-full h-12 w-12 p-0 shadow-lg bg-[#236383] hover:bg-[#007E8C] text-white transition-all duration-300"
+          aria-label="Back to top"
+          title="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }

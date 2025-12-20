@@ -23,6 +23,7 @@ import {
   UserPlus,
   Building,
   AlertTriangle,
+  CalendarCheck,
   Edit2,
   Save,
   X,
@@ -35,6 +36,7 @@ import {
 } from 'lucide-react';
 import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
@@ -47,12 +49,19 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface NewRequestCardProps {
   request: EventRequest;
   onEdit: () => void;
   onDelete: () => void;
-  onCall: () => void;
+  onCall?: () => void;
+  onIntakeCall?: () => void;
   onContact: () => void;
   onToolkit: () => void;
   onScheduleCall: () => void;
@@ -85,6 +94,56 @@ interface User {
   role?: string;
 }
 
+// Helper to linkify addresses in text
+// Matches patterns like "123 Main St" or "123 Main Street, City, ST 12345"
+const LinkifyAddresses: React.FC<{ text: string }> = ({ text }) => {
+  // Regex to match common US address patterns
+  // Matches: number + street name (+ optional suite/apt) + optional city, state zip
+  const addressRegex = /(\d+\s+[\w\s]+(?:St(?:reet)?|Ave(?:nue)?|Blvd|Boulevard|Dr(?:ive)?|Rd|Road|Ln|Lane|Way|Pl(?:ace)?|Ct|Court|Cir(?:cle)?|Pkwy|Parkway|Hwy|Highway)\.?(?:\s*(?:#|Suite|Ste|Apt|Unit)\s*[\w-]+)?(?:\s*,?\s*[\w\s]+,?\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?)?)/gi;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  // Reset regex state
+  addressRegex.lastIndex = 0;
+
+  while ((match = addressRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    // Add the address as a link
+    const address = match[1];
+    parts.push(
+      <a
+        key={match.index}
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#236383] hover:text-[#1a4a63] underline"
+      >
+        {address}
+      </a>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  // If no addresses found, return original text
+  if (parts.length === 0) {
+    return <>{text}</>;
+  }
+
+  return <>{parts}</>;
+};
+
 // CardHeader component - copied from shared
 interface CardHeaderProps {
   request: EventRequest;
@@ -100,10 +159,11 @@ interface CardHeaderProps {
   handleConfirmToggleClick?: () => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
+  datePopulationInfo?: DatePopulationInfo;
 }
 
-const CardHeader: React.FC<CardHeaderProps> = ({ 
-  request, 
+const CardHeader: React.FC<CardHeaderProps> = ({
+  request,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -116,6 +176,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   handleConfirmToggleClick,
   presentUsers = [],
   currentUserId = '',
+  datePopulationInfo,
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -200,6 +261,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            {/* Partner Organizations */}
+            {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+              <div className="text-sm text-gray-600 mt-1">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </div>
+            )}
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
               onClick={handleConfirmToggleClick}
@@ -241,7 +315,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 group">
+                <div className="flex items-center gap-2 group flex-wrap">
                   <span data-testid="text-date-label" className="text-sm uppercase text-gray-600">
                     {dateLabel}: {' '}
                     <strong className="text-base font-bold text-[#236383]" data-testid="text-date-value">
@@ -251,6 +325,37 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <span className="text-[#007E8C] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
                   </span>
+                  {/* Date Population Badges */}
+                  {datePopulationInfo && datePopulationInfo.isOpen && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: '#47B3CB' }}
+                      title="No other events scheduled or in process on this date"
+                    >
+                      <CalendarCheck className="w-3 h-3" />
+                      Open date
+                    </Badge>
+                  )}
+                  {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: '#FBAD3F' }}
+                      title={`${datePopulationInfo.scheduledCount} scheduled event${datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date`}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      {datePopulationInfo.scheduledCount} scheduled
+                    </Badge>
+                  )}
+                  {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
+                    <Badge
+                      className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                      style={{ backgroundColor: '#007E8C' }}
+                      title={`${datePopulationInfo.inProcessCount} in-process event${datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date`}
+                    >
+                      <Calendar className="w-3 h-3" />
+                      {datePopulationInfo.inProcessCount} in process
+                    </Badge>
+                  )}
                   {canEdit && startEditing && (
                     <Button
                       size="sm"
@@ -285,10 +390,16 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onCall,
   onContact
 }) => {
+  const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
+
   return (
-    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+      {/* Primary Contact */}
       <div className="flex items-center justify-between gap-2">
         <div className="space-y-1 min-w-0 flex-1">
+          {hasBackupContact && (
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Primary Contact</div>
+          )}
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <span className="font-medium text-base break-words min-w-0">
@@ -324,7 +435,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words min-w-0"
+                className="text-[#236383] hover:text-[#1a4a63] underline text-base break-words min-w-0"
               >
                 {request.eventAddress}
               </a>
@@ -332,16 +443,31 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
         <div className="flex flex-col gap-2 flex-shrink-0">
-          {request.phone && onCall && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onCall}
-              className="text-sm h-8"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Call
-            </Button>
+          {request.phone && (
+            <>
+              {onIntakeCall && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={onIntakeCall}
+                  className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Intake Call
+                </Button>
+              )}
+              {onCall && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCall}
+                  className="text-sm h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Call
+                </Button>
+              )}
+            </>
           )}
           {onContact && (
             <Button
@@ -356,6 +482,48 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
       </div>
+
+      {/* Backup Contact */}
+      {hasBackupContact && (
+        <div className="border-t border-gray-200 pt-3">
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Backup Contact</div>
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <span className="font-medium text-base break-words min-w-0">
+                  {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                  {(request as any).backupContactRole && (
+                    <span className="text-gray-500 font-normal ml-2">({(request as any).backupContactRole})</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {(request as any).backupContactEmail && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`mailto:${(request as any).backupContactEmail}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
+                >
+                  {(request as any).backupContactEmail}
+                </a>
+              </div>
+            )}
+            {(request as any).backupContactPhone && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`tel:${(request as any).backupContactPhone}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                >
+                  {(request as any).backupContactPhone}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -365,6 +533,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onEdit,
   onDelete,
   onCall,
+  onIntakeCall,
   onContact,
   onToolkit,
   onScheduleCall,
@@ -397,6 +566,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
+
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const datePopulationInfo = getDatePopulation(displayDate, request.id);
 
   // Mutation for toggling date confirmation
   const toggleConfirmMutation = useMutation({
@@ -463,7 +637,21 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           handleConfirmToggleClick={handleConfirmToggleClick}
           presentUsers={collaboration.presentUsers}
           currentUserId={user?.id}
+          datePopulationInfo={datePopulationInfo}
         />
+
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
@@ -552,6 +740,23 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Message from Event Request */}
+            {request.message && request.message.trim() && (
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm uppercase font-bold tracking-wide text-blue-700 mb-1">
+                      Message from Request:
+                    </p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                      <LinkifyAddresses text={request.message} />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Contact Info */}
@@ -632,6 +837,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -653,105 +859,167 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
-          {/* TSP Contact Assignment - only show if not already assigned */}
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+            {/* TSP Contact Assignment - only show if not already assigned */}
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* AI Date Suggestion - show if there are dates to analyze */}
-          {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiSuggest}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
-              data-testid="button-ai-suggest-date"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Date Suggest
-            </Button>
-          )}
+            {/* AI Date Suggestion - show if there are dates to analyze */}
+            {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiSuggest}
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
+                    data-testid="button-ai-suggest-date"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Date Suggest
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get AI suggestions for the best event date</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* AI Intake Assistant - always available */}
-          {onAiIntakeAssist && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiIntakeAssist}
-              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
-              data-testid="button-ai-intake-assist"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Intake Check
-            </Button>
-          )}
+            {/* AI Intake Assistant - always available */}
+            {onAiIntakeAssist && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiIntakeAssist}
+                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
+                    data-testid="button-ai-intake-assist"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Intake Check
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Use AI to check intake information</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onToolkit}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
-          >
-            <Package className="w-4 h-4 mr-1" />
-            Send Toolkit
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onScheduleCall}
-            className="h-8"
-          >
-            <Phone className="w-4 h-4 mr-1" />
-            Schedule Call
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-
-          <div className="flex-1" />
-
-          {/* Edit/Delete */}
-          {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
-              <Edit className="w-4 h-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <ConfirmationDialog
-              trigger={
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="text-red-600 hover:text-red-700 h-8"
-                  data-testid="button-delete-request"
+                  variant="default"
+                  onClick={onToolkit}
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Package className="w-4 h-4 mr-1" />
+                  Send Toolkit
                 </Button>
-              }
-              title="Delete Event Request"
-              description={`Are you sure you want to delete the event request from ${request.organizationName}? This action cannot be undone.`}
-              confirmText="Delete Request"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Send toolkit email to the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onScheduleCall}
+                  className="h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Schedule Call
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Schedule a call with the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex-1" />
+
+            {/* Edit/Delete */}
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 h-8"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete Event Request"
+                      description={`Are you sure you want to delete the event request from ${request.organizationName}? This action cannot be undone.`}
+                      confirmText="Delete Request"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Audit Log Section */}
         <div className="mt-4 border-t border-gray-200 pt-4">

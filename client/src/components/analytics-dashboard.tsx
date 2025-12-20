@@ -686,6 +686,40 @@ export default function AnalyticsDashboard() {
         contextType="collections"
         title="Analytics Assistant"
         subtitle="Ask about collection trends and data"
+        contextData={{
+          currentView: 'analytics-dashboard',
+          filters: {
+            selectedPeriod,
+          },
+          summaryStats: analyticsData ? {
+            totalSandwiches: analyticsData.totalSandwiches,
+            totalCollections: analyticsData.totalCollections,
+            activeLocations: analyticsData.activeLocations,
+            totalHosts: analyticsData.totalHosts,
+            activeHosts: analyticsData.activeHosts,
+            weeklyAverage: analyticsData.avgWeekly,
+            recordWeek: analyticsData.recordWeek,
+          } : undefined,
+        }}
+        getFullContext={() => ({
+          rawData: (collections || []).map((c: SandwichCollection) => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+          yearlyBreakdown: analyticsData?.yearlyBreakdown?.map((y: any) => ({
+            year: y.year,
+            totalSandwiches: y.totalSandwiches,
+            totalCollections: y.totalCollections,
+          })),
+        })}
         suggestedQuestions={[
           "What's our total sandwich count?",
           "Show me monthly trends",

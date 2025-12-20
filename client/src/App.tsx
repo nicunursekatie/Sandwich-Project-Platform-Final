@@ -13,16 +13,56 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ScrollToTop } from '@/components/ScrollToTop';
+import { ChatWindowsProvider } from '@/context/chat-windows-context';
+import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
+import { InstantMessagingProvider } from '@/contexts/instant-messaging-context';
+import { InstantMessageContainer } from '@/components/instant-message-container';
+import { ReviewerProvider } from '@/contexts/reviewer-context';
+import { ReviewerBlockedModal } from '@/components/reviewer-blocked-modal';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
+import LoginPage from '@/pages/login';
+import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
+import SetPassword from '@/pages/set-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
 import HoldingZone from '@/pages/HoldingZone';
 import { logger } from '@/lib/logger';
+
+// Mobile app lazy-loaded components
+const MobileHome = lazy(() => import('@/mobile/pages/mobile-home'));
+const MobileCollections = lazy(() => import('@/mobile/pages/mobile-collections'));
+const MobileCollectionEntry = lazy(() => import('@/mobile/pages/mobile-collection-entry'));
+const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
+const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
+const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
+const MobileHoldingZone = lazy(() => import('@/mobile/pages/mobile-holding-zone'));
+const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zone-add'));
+import { MobileDriverPlanning } from '@/mobile/pages/mobile-driver-planning';
+const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
+const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
+const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
+const MobileCollectionDetail = lazy(() => import('@/mobile/pages/mobile-collection-detail'));
+const MobileInbox = lazy(() => import('@/mobile/pages/mobile-inbox'));
+const MobileProfile = lazy(() => import('@/mobile/pages/mobile-profile'));
+const MobileNotifications = lazy(() => import('@/mobile/pages/mobile-notifications'));
+
+// Mobile layout prompt (shows for mobile users on desktop routes)
+const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
+
+// Mobile loading component
+const MobileLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary mx-auto mb-3"></div>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+    </div>
+  </div>
+);
 
 function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
@@ -73,7 +113,7 @@ function Router() {
             again.
           </p>
           <button
-            onClick={() => (window.location.href = '/api/login')}
+            onClick={() => (window.location.href = '/login')}
             className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
           >
             Try Again
@@ -85,16 +125,21 @@ function Router() {
 
   // Lazy-loaded components
   const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
+  const SMSSignup = lazy(() => import('./pages/sms-signup'));
+  const SMSEvents = lazy(() => import('./pages/sms-events'));
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
+  const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
     return (
       <Switch>
         <Route path="/signup" component={SignupPage} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/set-password" component={SetPassword} />
         <Route path="/sms-opt-in">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSOptIn />
@@ -110,19 +155,17 @@ function Router() {
             <SMSVerificationDocs />
           </Suspense>
         </Route>
-        <Route path="/login">
-          {() => {
-            // Redirect to the backend login page
-            window.location.href = '/api/login';
-            return (
-              <LoadingState
-                text="Redirecting to login..."
-                size="lg"
-                className="min-h-screen"
-              />
-            );
-          }}
+        <Route path="/sms-signup">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSSignup />
+          </Suspense>
         </Route>
+        <Route path="/sms-events">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSEvents />
+          </Suspense>
+        </Route>
+        <Route path="/login" component={LoginPage} />
         <Route path="/stream-messages">
           {() => (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -156,7 +199,7 @@ function Router() {
                   work.
                 </p>
                 <button
-                  onClick={() => (window.location.href = '/api/login')}
+                  onClick={() => (window.location.href = '/login')}
                   className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
                 >
                   Login to Continue
@@ -168,7 +211,7 @@ function Router() {
         <Route path="/">
           {() => {
             // Redirect unauthenticated users directly to login page
-            window.location.href = '/api/login';
+            window.location.href = '/login';
             return (
               <LoadingState
                 text="Redirecting to login..."
@@ -181,7 +224,7 @@ function Router() {
         <Route>
           {() => {
             // Default fallback - redirect to login page
-            window.location.href = '/api/login';
+            window.location.href = '/login';
             return (
               <LoadingState
                 text="Redirecting to login..."
@@ -222,7 +265,118 @@ function Router() {
   return (
     <>
       <ScrollToTop />
+      {/* Mobile layout prompt - shows for mobile users on desktop routes */}
+      <Suspense fallback={null}>
+        <MobileLayoutPrompt />
+      </Suspense>
       <Switch>
+        {/* Mobile App Routes - /m/* */}
+        <Route path="/m" nest>
+          <Switch>
+            <Route path="/collections">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollections />
+              </Suspense>
+            </Route>
+            <Route path="/collections/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollectionEntry />
+              </Suspense>
+            </Route>
+            <Route path="/photo-scanner">
+              <Suspense fallback={<MobileLoader />}>
+                <PhotoScanner />
+              </Suspense>
+            </Route>
+            <Route path="/collections/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileCollectionDetail />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZone />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/new">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/holding-zone/:id/edit">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHoldingZoneAdd />
+              </Suspense>
+            </Route>
+            <Route path="/driver-planning">
+              <MobileDriverPlanning />
+            </Route>
+            <Route path="/resources">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileResources />
+              </Suspense>
+            </Route>
+            <Route path="/quick-tools">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileQuickTools />
+              </Suspense>
+            </Route>
+            <Route path="/chat">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/chat/:channel">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileChat />
+              </Suspense>
+            </Route>
+            <Route path="/events">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEvents />
+              </Suspense>
+            </Route>
+            <Route path="/events/:id">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileEventDetail />
+              </Suspense>
+            </Route>
+            <Route path="/more">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileMore />
+              </Suspense>
+            </Route>
+            <Route path="/inbox">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileInbox />
+              </Suspense>
+            </Route>
+            <Route path="/profile">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileProfile />
+              </Suspense>
+            </Route>
+            <Route path="/notifications">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileNotifications />
+              </Suspense>
+            </Route>
+            {/* Mobile home should be evaluated after specific routes */}
+            <Route path="/">
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+            {/* Fallback to mobile home for unmatched mobile routes */}
+            <Route>
+              <Suspense fallback={<MobileLoader />}>
+                <MobileHome />
+              </Suspense>
+            </Route>
+          </Switch>
+        </Route>
+
+        {/* Desktop App Routes */}
         <Route path="/messages">
           {() => <Dashboard initialSection="messages" />}
         </Route>
@@ -235,6 +389,11 @@ function Router() {
         </Route>
         <Route path="/collections">
           {() => <Dashboard initialSection="collections" />}
+        </Route>
+        <Route path="/photo-scanner">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <PhotoScanner />
+          </Suspense>
         </Route>
         <Route path="/google-sheets">
           {() => <Dashboard initialSection="google-sheets" />}
@@ -260,6 +419,9 @@ function Router() {
         <Route path="/quick-sms-links">
           {() => <Dashboard initialSection="quick-sms-links" />}
         </Route>
+        <Route path="/directory">
+          {() => <Dashboard initialSection="directory" />}
+        </Route>
         <Route path="/cooler-tracking">
           {() => <Dashboard initialSection="cooler-tracking" />}
         </Route>
@@ -271,6 +433,12 @@ function Router() {
         </Route>
         <Route path="/event-map">
           {() => <Dashboard initialSection="event-map" />}
+        </Route>
+        <Route path="/recipient-map">
+          {() => <Dashboard initialSection="recipient-map" />}
+        </Route>
+        <Route path="/driver-planning">
+          {() => <Dashboard initialSection="driver-planning" />}
         </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}
@@ -307,6 +475,23 @@ function Router() {
             <SMSVerificationDocs />
           </Suspense>
         </Route>
+        <Route path="/sms-signup">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSSignup />
+          </Suspense>
+        </Route>
+        <Route path="/sms-events">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSEvents />
+          </Suspense>
+        </Route>
+        <Route path="/login">
+          {() => {
+            // Authenticated users at /login should go to home
+            window.location.href = '/';
+            return <LoadingState text="Redirecting..." size="lg" className="min-h-screen" />;
+          }}
+        </Route>
         <Route path="/profile">
           {() => <Dashboard initialSection="profile" />}
         </Route>
@@ -340,10 +525,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <ReviewerProvider>
+          <ChatWindowsProvider>
+            <InstantMessagingProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <FloatingChatWindowsContainer />
+                <InstantMessageContainer />
+                <ReviewerBlockedModal />
+              </TooltipProvider>
+            </InstantMessagingProvider>
+          </ChatWindowsProvider>
+        </ReviewerProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

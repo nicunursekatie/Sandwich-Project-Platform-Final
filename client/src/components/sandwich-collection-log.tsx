@@ -33,7 +33,9 @@ import {
   AlertCircle,
   MessageCircle,
   Info,
+  Camera,
 } from 'lucide-react';
+import { Link } from 'wouter';
 import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
@@ -489,11 +491,51 @@ export default function SandwichCollectionLog() {
                 group.groupName?.toLowerCase().includes(searchTerm)
               );
 
-              // Search in collection date
-              const formattedDate = formatDate(c.collectionDate);
-              const dateMatch = formattedDate
-                .toLowerCase()
-                .includes(searchTerm);
+              // Search in collection date - check multiple formats
+              let dateMatch = false;
+              if (c.collectionDate) {
+                try {
+                  // Parse the collection date
+                  const dateStr = c.collectionDate;
+                  let date: Date;
+                  if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    // YYYY-MM-DD format - add noon to prevent timezone shift
+                    date = new Date(dateStr + 'T12:00:00');
+                  } else {
+                    date = new Date(dateStr);
+                  }
+
+                  if (!isNaN(date.getTime())) {
+                    // Generate multiple date format strings to match against
+                    const formats = [
+                      // ISO format: YYYY-MM-DD
+                      `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
+                      // US format: MM/DD/YYYY
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`,
+                      // US format without leading zeros: M/D/YYYY
+                      `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`,
+                      // US format with dashes: MM-DD-YYYY
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear()}`,
+                      // Locale-specific formats
+                      date.toLocaleDateString('en-US'),
+                      date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                      // Just month/day for partial matches
+                      `${date.getMonth() + 1}/${date.getDate()}`,
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`,
+                      // Month name formats
+                      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+                    ];
+
+                    dateMatch = formats.some(format => format.toLowerCase().includes(searchTerm));
+                  }
+                } catch (error) {
+                  // If date parsing fails, fall back to string matching on the raw date string
+                  dateMatch = c.collectionDate?.toLowerCase().includes(searchTerm) || false;
+                }
+              }
 
               return hostNameMatch || groupNameMatch || dateMatch;
             }
@@ -2265,25 +2307,45 @@ export default function SandwichCollectionLog() {
           {/* Action buttons - Mobile optimized */}
           <div className="flex flex-col sm:flex-row gap-2">
             {canCreateCollections && (
-              <HelpBubble
-                title="Recording Collections"
-                content="Click here to submit new sandwich collection data. Fill in the host location, date, and sandwich counts to track your impact!"
-                character="sandy"
-                position="bottom"
-                trigger="hover"
-              >
-                <Button
-                  onClick={() => setShowSubmitForm(!showSubmitForm)}
-                  variant="default"
-                  size="sm"
-                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
+              <>
+                <HelpBubble
+                  title="Recording Collections"
+                  content="Click here to submit new sandwich collection data. Fill in the host location, date, and sandwich counts to track your impact!"
+                  character="sandy"
+                  position="bottom"
+                  trigger="hover"
                 >
-                  <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="font-medium">
-                    {showSubmitForm ? 'Hide Form' : 'Enter New Collection Data'}
-                  </span>
-                </Button>
-              </HelpBubble>
+                  <Button
+                    onClick={() => setShowSubmitForm(!showSubmitForm)}
+                    variant="default"
+                    size="sm"
+                    className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
+                  >
+                    <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <span className="font-medium">
+                      {showSubmitForm ? 'Hide Form' : 'Enter New Collection Data'}
+                    </span>
+                  </Button>
+                </HelpBubble>
+                <HelpBubble
+                  title="Photo Scanner"
+                  content="Take a photo of your handwritten sign-in sheet and let AI extract the collection data automatically!"
+                  character="guide"
+                  position="bottom"
+                  trigger="hover"
+                >
+                  <Link href="/photo-scanner">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center justify-center space-x-2 w-full sm:w-auto py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px] bg-white border-brand-primary text-brand-primary hover:bg-brand-primary/5"
+                    >
+                      <Camera className="w-5 h-5 sm:w-4 sm:h-4" />
+                      <span className="font-medium">Scan Sign-in Sheet</span>
+                    </Button>
+                  </Link>
+                </HelpBubble>
+              </>
             )}
             <HelpBubble
               title="Filter Collections"
@@ -3981,12 +4043,14 @@ export default function SandwichCollectionLog() {
         subtitle="Ask about your collection data"
         contextData={{
           currentView: 'collection-log',
-          dateRange: {
-            start: searchFilters.collectionDateFrom || undefined,
-            end: searchFilters.collectionDateTo || undefined,
+          filters: {
+            dateRange: {
+              start: searchFilters.collectionDateFrom || undefined,
+              end: searchFilters.collectionDateTo || undefined,
+            },
+            selectedHost: searchFilters.hostName || undefined,
+            searchQuery: searchFilters.globalSearch || undefined,
           },
-          selectedHost: searchFilters.hostName || undefined,
-          searchQuery: searchFilters.globalSearch || undefined,
           summaryStats: {
             totalCollections: totalStats?.totalCollections || totalItems,
             totalSandwiches: totalStats?.totalSandwiches || 0,
@@ -3994,6 +4058,20 @@ export default function SandwichCollectionLog() {
             displayedCollections: collections.length,
           },
         }}
+        getFullContext={() => ({
+          rawData: collections.map(c => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+        })}
         suggestedQuestions={[
           "What's our total sandwich count this month?",
           "What's our average collection size?",

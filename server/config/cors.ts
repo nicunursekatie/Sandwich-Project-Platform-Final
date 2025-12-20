@@ -81,15 +81,14 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return true;
     }
-  }
-  
-  // Allow any replit.dev domain (both development and production)
-  // Replit uses dynamic .replit.dev domains for deployments
-  if (origin.includes('.replit.dev')) {
-    return true;
+    // Allow Replit dev domains only in development
+    if (origin.includes('.replit.dev') || origin.includes('.spock.replit')) {
+      return true;
+    }
   }
 
   // In production, only allow explicitly configured domains
+  // The production domain is already in allowedOrigins from getAllowedOrigins()
   return false;
 }
 

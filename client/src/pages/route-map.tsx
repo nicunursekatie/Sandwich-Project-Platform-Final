@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft
 } from 'lucide-react';
@@ -27,6 +27,65 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Custom highlighted marker icon
+const highlightedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Map controller component to handle zoom/pan
+function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
+  const map = useMap();
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check if map is fully initialized by verifying it has the internal _leaflet_events property
+    // This prevents errors when the map is being unmounted or not yet ready
+    if (!isMountedRef.current) return;
+    
+    if (center && map) {
+      // Check if map is fully initialized
+      const mapInstance = map as any;
+      if (!mapInstance._leaflet_events || !mapInstance._container) {
+        // Map not ready yet, skip this update
+        return;
+      }
+
+      try {
+        map.setView(center, zoom, { animate: true, duration: 0.5 });
+      } catch (error) {
+        // Silently ignore errors if map is being destroyed
+        if (isMountedRef.current) {
+          console.warn('Map interaction error:', error);
+        }
+      }
+    }
+  }, [center, zoom, map]);
+
+  return null;
+}
+
+// Map click handler component using proper react-leaflet event handling
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
+  return null;
+}
+
 interface HostContactMapData {
   id: number;
   contactName: string;
@@ -44,13 +103,16 @@ export default function RouteMapView() {
   const { trackView, trackSearch } = useActivityTracker();
   const [searchTerm, setSearchTerm] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [selectedHostId, setSelectedHostId] = useState<number | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState(10);
 
   useEffect(() => {
     trackView(
       'Maps',
       'Maps',
-      'Route Map',
-      'User accessed route map'
+      'Host Map',
+      'User accessed host map'
     );
   }, [trackView]);
 
@@ -75,15 +137,24 @@ export default function RouteMapView() {
     );
   }, [hosts, searchTerm]);
 
-  // Calculate map center based on host contacts
-  const mapCenter: [number, number] = useMemo(() => {
+  // Calculate initial map center based on host contacts
+  const initialMapCenter: [number, number] = useMemo(() => {
     if (filteredHosts.length === 0) return [33.7490, -84.3880]; // Atlanta default
-    
+
     const avgLat = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.latitude), 0) / filteredHosts.length;
     const avgLng = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.longitude), 0) / filteredHosts.length;
-    
+
     return [avgLat, avgLng];
   }, [filteredHosts]);
+
+  // Handle host card click - zoom to host location
+  const handleHostClick = (contact: HostContactMapData) => {
+    const lat = parseFloat(contact.latitude);
+    const lng = parseFloat(contact.longitude);
+    setSelectedHostId(contact.id);
+    setMapCenter([lat, lng]);
+    setMapZoom(15); // Zoom in closer
+  };
 
   // Permission check
   if (!canView) {
@@ -232,15 +303,18 @@ export default function RouteMapView() {
       </div>
 
       {/* Main Content: Side Panel + Map */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Host List Panel */}
-        <div className={`
-          ${isPanelOpen ? 'w-80' : 'w-0'}
-          transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col
-        `}>
+        <div 
+          className={`
+            ${isPanelOpen ? 'w-96' : 'w-0'}
+            transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
+          `}
+          data-testid="host-list-panel"
+        >
           {isPanelOpen && (
             <>
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <List className="w-5 h-5 text-[#007E8C]" />
                   <h2 className="font-semibold text-gray-900">
@@ -248,48 +322,65 @@ export default function RouteMapView() {
                   </h2>
                 </div>
               </div>
-              
+
               <ScrollArea className="flex-1">
-                <div className="p-4 space-y-3">
+                <div className="p-3 space-y-3" data-testid="host-contact-list">
                   {filteredHosts.map(contact => (
-                    <Card key={contact.id} className="hover:shadow-md transition-shadow" data-testid={`card-host-${contact.id}`}>
-                      <CardContent className="p-4">
+                    <Card
+                      key={contact.id}
+                      className={`hover:shadow-md transition-all w-full cursor-pointer ${
+                        selectedHostId === contact.id
+                          ? 'ring-2 ring-[#007E8C] bg-teal-50'
+                          : ''
+                      }`}
+                      onClick={() => handleHostClick(contact)}
+                      data-testid={`card-host-${contact.id}`}
+                    >
+                      <CardContent className="p-3">
                         <div className="space-y-2">
                           <div>
-                            <div className="font-semibold text-gray-900">
+                            <div className="font-semibold text-gray-900 break-words">
                               {contact.contactName}
                             </div>
                             <div className="text-sm text-gray-600 flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
-                              {contact.hostLocationName}
+                              <Building2 className="w-3 h-3 flex-shrink-0" />
+                              <span className="break-words">{contact.hostLocationName}</span>
                             </div>
                           </div>
-                          
+
                           {contact.role && (
                             <Badge variant="outline" className="text-xs">
                               {contact.role}
                             </Badge>
                           )}
-                          
+
                           {contact.address && (
-                            <div className="text-xs text-gray-600">
+                            <div className="text-xs text-gray-600 break-words">
                               📍 {contact.address}
                             </div>
                           )}
-                          
+
                           <div className="space-y-1 pt-2 border-t border-gray-100">
                             {contact.phone && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Phone className="w-3 h-3" />
-                                <a href={`tel:${contact.phone}`} className="hover:text-[#007E8C]">
+                                <Phone className="w-3 h-3 flex-shrink-0" />
+                                <a
+                                  href={`tel:${contact.phone}`}
+                                  className="hover:text-[#007E8C] break-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {contact.phone}
                                 </a>
                               </div>
                             )}
                             {contact.email && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Mail className="w-3 h-3" />
-                                <a href={`mailto:${contact.email}`} className="hover:text-[#007E8C] break-all">
+                                <Mail className="w-3 h-3 flex-shrink-0" />
+                                <a
+                                  href={`mailto:${contact.email}`}
+                                  className="hover:text-[#007E8C] break-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {contact.email}
                                 </a>
                               </div>
@@ -309,8 +400,8 @@ export default function RouteMapView() {
         <Button
           variant="outline"
           size="sm"
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-[1000] rounded-r-lg rounded-l-none shadow-md"
-          style={{ left: isPanelOpen ? '320px' : '0' }}
+          className="absolute top-1/2 transform -translate-y-1/2 z-[1000] rounded-r-lg rounded-l-none shadow-md transition-all duration-300"
+          style={{ left: isPanelOpen ? '384px' : '0' }}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           data-testid="button-toggle-panel"
         >
@@ -318,13 +409,15 @@ export default function RouteMapView() {
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" data-testid="host-map-container">
           <MapContainer
-            center={mapCenter}
+            center={initialMapCenter}
             zoom={10}
             className="h-full w-full"
             data-testid="map-container"
           >
+            <MapController center={mapCenter} zoom={mapZoom} />
+            <MapClickHandler onMapClick={() => setSelectedHostId(null)} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -335,6 +428,12 @@ export default function RouteMapView() {
               <Marker
                 key={contact.id}
                 position={[parseFloat(contact.latitude), parseFloat(contact.longitude)]}
+                icon={selectedHostId === contact.id ? highlightedIcon : undefined}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedHostId(contact.id);
+                  },
+                }}
                 data-testid={`marker-host-${contact.id}`}
               >
                 <Popup>

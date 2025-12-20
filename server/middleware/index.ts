@@ -14,7 +14,7 @@ import { sanitizeMiddleware, sanitizeHtml, sanitizeText } from './sanitizer';
 import { requirePermission, requireOwnershipPermission } from './auth';
 
 // Authentication and authorization middleware
-export { requirePermission, requireOwnershipPermission } from './auth';
+export { isAuthenticated, requirePermission, requireOwnershipPermission } from './auth';
 
 // Input sanitization middleware
 export { sanitizeMiddleware, sanitizeHtml, sanitizeText } from './sanitizer';

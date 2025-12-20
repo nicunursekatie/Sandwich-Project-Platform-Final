@@ -63,6 +63,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.GRANT_METRICS_VIEW]: 'safe',
   [PERMISSIONS.COOLERS_VIEW]: 'safe',
   [PERMISSIONS.VOLUNTEER_CALENDAR_VIEW]: 'safe',
+  [PERMISSIONS.YEARLY_CALENDAR_VIEW]: 'safe',
   [PERMISSIONS.DOCUMENTS_VIEW]: 'safe',
   [PERMISSIONS.ANALYTICS_VIEW]: 'safe',
   [PERMISSIONS.MEETINGS_VIEW]: 'safe',
@@ -77,6 +78,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.NAV_MY_AVAILABILITY]: 'safe',
   [PERMISSIONS.NAV_TEAM_AVAILABILITY]: 'safe',
   [PERMISSIONS.NAV_VOLUNTEER_CALENDAR]: 'safe',
+  [PERMISSIONS.NAV_YEARLY_CALENDAR]: 'safe',
   [PERMISSIONS.NAV_COLLECTIONS_LOG]: 'safe',
   [PERMISSIONS.NAV_TEAM_CHAT]: 'safe',
   [PERMISSIONS.NAV_INBOX]: 'safe',
@@ -147,6 +149,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.AVAILABILITY_DELETE_OWN]: 'moderate',
   [PERMISSIONS.KUDOS_SEND]: 'moderate',
   [PERMISSIONS.COOLERS_REPORT]: 'moderate',
+  [PERMISSIONS.YEARLY_CALENDAR_EDIT]: 'moderate',
 
   // ELEVATED - Can edit others' data or manage resources
   [PERMISSIONS.HOSTS_ADD]: 'elevated',

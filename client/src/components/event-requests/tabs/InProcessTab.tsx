@@ -172,6 +172,68 @@ export const InProcessTab: React.FC = () => {
               isConfirmed: tempIsConfirmed,
             },
           });
+        } else if (editingField === 'partnerOrganizations' || editingField.startsWith('partnerOrg_')) {
+          // Special handling for partner organizations
+          let partnerOrgs: Array<{ name: string; department?: string; role?: string }>;
+          
+          if (editingField.startsWith('partnerOrg_')) {
+            // Editing a single partner organization (name + optional department)
+            const index = parseInt(editingField.split('_')[1]);
+            const currentEvent = eventRequests.find(r => r.id === editingInProcessId);
+            const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
+              ? (currentEvent.partnerOrganizations as any[]) 
+              : [];
+            partnerOrgs = [...currentPartners];
+
+            let parsed = { name: editingValue?.trim?.() || '', department: '' };
+            try {
+              const maybe = JSON.parse(editingValue);
+              if (maybe && typeof maybe === 'object') {
+                parsed = {
+                  name: (maybe as any).name?.toString().trim() || '',
+                  department: (maybe as any).department?.toString() || '',
+                };
+              }
+            } catch {
+              // ignore parse errors
+            }
+
+            const target = partnerOrgs[index] || {};
+            const updated = {
+              ...target,
+              name: parsed.name || target.name || '',
+              department: parsed.department ?? target.department ?? '',
+              role: target.role || 'partner',
+            };
+
+            if (partnerOrgs[index]) {
+              partnerOrgs[index] = updated;
+            } else if (updated.name) {
+              partnerOrgs.push(updated);
+            }
+          } else {
+            // Editing the full array
+            try {
+              partnerOrgs = JSON.parse(editingValue);
+            } catch {
+              partnerOrgs = [];
+            }
+          }
+          
+          // Filter out empty partners (where name is empty or just whitespace)
+          partnerOrgs = partnerOrgs.filter(p => p && p.name && p.name.trim() !== '');
+          
+          // Ensure each partner has a role
+          partnerOrgs = partnerOrgs.map(p => ({
+            ...p,
+            role: p.role || 'partner'
+          }));
+          
+          // Send the update - use empty array instead of null to ensure it's saved
+          updateEventRequestMutation.mutate({
+            id: editingInProcessId,
+            data: { partnerOrganizations: partnerOrgs.length > 0 ? partnerOrgs : [] },
+          });
         } else {
           // Default handling for other fields
           updateEventRequestMutation.mutate({

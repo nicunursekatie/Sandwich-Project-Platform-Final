@@ -35,6 +35,12 @@ import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useState, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,15 +53,18 @@ import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
+import { OnlineUsers } from '@/components/online-users';
+import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
-import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
+import { TextIdeaAnnouncementModal } from '@/components/text-idea-announcement-modal';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 import { WhatsNewModal } from '@/components/whats-new-modal';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { ReviewerBanner } from '@/components/reviewer-banner';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -121,14 +130,19 @@ const TeamAvailability = lazyWithRetry(() => import('@/pages/team-availability')
 const GoogleCalendarAvailability = lazyWithRetry(() => import('@/pages/google-calendar-availability'));
 const RouteMapView = lazyWithRetry(() => import('@/pages/route-map'));
 const EventMapView = lazyWithRetry(() => import('@/pages/event-map'));
+const RecipientMapView = lazyWithRetry(() => import('@/pages/recipient-map'));
 const Help = lazyWithRetry(() => import('@/pages/Help'));
 const ExpensesPage = lazyWithRetry(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-showcase'));
 const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
+const OrganizationsMerge = lazyWithRetry(() => import('@/pages/admin/organizations-merge'));
 const GenerateServiceHours = lazyWithRetry(() => import('@/pages/generate-service-hours'));
 const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
+const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
+const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
+const Directory = lazyWithRetry(() => import('@/pages/directory'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -154,6 +168,9 @@ export default function Dashboard({
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  // Show toast notifications when other users come online
+  useOnlinePresenceNotifications();
 
   React.useEffect(() => {
     trackView(
@@ -380,12 +397,18 @@ export default function Dashboard({
         return <RouteMapView />;
       case 'event-map':
         return <EventMapView />;
+      case 'recipient-map':
+        return <RecipientMapView />;
+      case 'driver-planning':
+        return <DriverPlanningDashboard />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':
         return <DriversManagement />;
       case 'volunteers':
         return <VolunteerManagement />;
+      case 'directory':
+        return <Directory />;
       case 'event-requests':
         return <EventRequestsManagement
           initialTab={urlParams.tab}
@@ -414,6 +437,8 @@ export default function Dashboard({
         return <WishlistPage />;
       case 'team-board':
         return <HoldingZone />;
+      case 'yearly-calendar':
+        return <YearlyCalendar />;
       case 'promotion':
         return <PromotionGraphics />;
       case 'quick-sms-links':
@@ -524,6 +549,8 @@ export default function Dashboard({
         return <DesignSystemShowcase />;
       case 'smart-search-admin':
         return <SmartSearchAdmin />;
+      case 'organizations-merge':
+        return <OrganizationsMerge />;
       case 'generate-service-hours':
         return <GenerateServiceHours />;
       default:
@@ -566,11 +593,13 @@ export default function Dashboard({
     <>
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
-      <SMSAnnouncementModal />
+      <TextIdeaAnnouncementModal />
       <WhatsNewModal />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+        {/* Reviewer Banner - shows for read-only reviewer accounts */}
+        <ReviewerBanner />
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
@@ -641,169 +670,155 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* Essential buttons - always visible */}
-            <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
-              <button
-                onClick={() => {
-                  logger.log('Messages button clicked');
-                  trackButtonClick('messages', 'dashboard_header');
-                  setActiveSection('messages');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'messages'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Messages"
-                aria-label="Messages"
-              >
-                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+            {/* Header actions - organized into logical groups */}
+            <TooltipProvider delayDuration={300}>
+            <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
+              
+              {/* Group 1: Communication */}
+              <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        logger.log('Messages button clicked');
+                        trackButtonClick('messages', 'dashboard_header');
+                        setActiveSection('messages');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`p-2 rounded-md transition-colors ${
+                        activeSection === 'messages'
+                          ? 'bg-brand-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                      }`}
+                      aria-label="Inbox"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8}>Inbox</TooltipContent>
+                </Tooltip>
 
-              <button
-                onClick={() => {
-                  logger.log('Comments button clicked');
-                  trackButtonClick('comments', 'dashboard_header');
-                  setActiveSection('messaging-inbox');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'messaging-inbox'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Comments"
-                aria-label="Comments"
-              >
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        logger.log('Comments button clicked');
+                        trackButtonClick('comments', 'dashboard_header');
+                        setActiveSection('messaging-inbox');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`p-2 rounded-md transition-colors ${
+                        activeSection === 'messaging-inbox'
+                          ? 'bg-brand-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                      }`}
+                      aria-label="Comments"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8}>Comments</TooltipContent>
+                </Tooltip>
 
-              {/* Enhanced In-App Notifications - the main notification bell */}
-              {typeof window !== 'undefined' && (
-                <EnhancedNotifications user={user} />
-              )}
+                <OnlineUsers />
+              </div>
 
-              {/* Onboarding Challenge Button */}
-              <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
+              {/* Group 2: Notifications & Progress */}
+              <div className="flex items-center gap-0.5">
+                {typeof window !== 'undefined' && (
+                  <EnhancedNotifications user={user} />
+                )}
+                <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
+              </div>
 
-              {/* Top Nav Items (from nav.config) */}
-              {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
-                const Icon = item.icon;
-                const showNewBadge = !localStorage.getItem('navigation_update_2024_v2_seen');
+              {/* Group 3: Help & Navigation */}
+              <div className="hidden sm:flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+                {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            logger.log(`${item.label} button clicked`);
+                            trackButtonClick(item.id, 'dashboard_header');
+                            localStorage.setItem('navigation_update_2024_v2_seen', 'true');
+                            if (item.href === 'help') {
+                              setLocation('/help');
+                            } else {
+                              setActiveSection(item.href);
+                              window.history.pushState({}, '', `/dashboard?section=${item.href}`);
+                            }
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`p-2 rounded-md transition-colors ${
+                            activeSection === item.href
+                              ? 'bg-brand-primary text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                          }`}
+                          aria-label={item.label}
+                        >
+                          {Icon && <Icon className="w-4 h-4" />}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" sideOffset={8}>{item.label}</TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
 
-                return (
-                  <div key={item.id} className="relative group">
+              {/* Group 4: Account Menu */}
+              <div className="flex items-center gap-1 pl-1 border-l border-gray-200">
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        logger.log(`${item.label} button clicked`);
-                        trackButtonClick(item.id, 'dashboard_header');
-                        // Dismiss the "NEW" badge when clicked
-                        if (showNewBadge) {
-                          localStorage.setItem('navigation_update_2024_v2_seen', 'true');
-                        }
-                        if (item.href === 'help') {
-                          setLocation('/help');
-                        } else {
-                          setActiveSection(item.href);
-                          window.history.pushState({}, '', `/dashboard?section=${item.href}`);
-                        }
+                        trackButtonClick('profile', 'dashboard_header');
+                        setActiveSection('profile');
+                        window.history.pushState({}, '', '/dashboard?section=profile');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-2 rounded-lg transition-all duration-200 relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                        activeSection === item.href
-                          ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                          : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800 hover:shadow-md'
-                      } ${showNewBadge ? 'ring-2 ring-amber-400 ring-offset-2 animate-pulse' : ''}`}
-                      title={`${item.label}${showNewBadge ? ' (Moved here!)' : ''}`}
-                      aria-label={item.label}
+                      className={`p-2 rounded-md transition-colors ${
+                        activeSection === 'profile'
+                          ? 'bg-brand-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                      aria-label="Account Settings"
                     >
-                      {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5" />}
-                      {showNewBadge && (
-                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
-                          NEW
-                        </span>
-                      )}
+                      <UserCog className="w-4 h-4" />
                     </button>
-                    {/* Enhanced tooltip for moved items */}
-                    {showNewBadge && (
-                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[60]">
-                        <div className="font-semibold">{item.label}</div>
-                        <div className="text-gray-300 text-[10px]">Moved from sidebar</div>
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8}>Account Settings</TooltipContent>
+                </Tooltip>
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  logger.log(
-                    'Profile button clicked, current section:',
-                    activeSection
-                  );
-                  trackButtonClick('profile', 'dashboard_header');
-                  setActiveSection('profile');
-                  window.history.pushState(
-                    {},
-                    '',
-                    '/dashboard?section=profile'
-                  );
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
-                  activeSection === 'profile'
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
-                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
-                }`}
-                title="Account Settings"
-                aria-label="Account Settings"
-              >
-                <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-
-              {/* Logout button - ALWAYS visible and accessible */}
-              <button
-                onClick={async () => {
-                  try {
-                    trackButtonClick('logout', 'dashboard_header');
-                    await fetch('/api/auth/logout', {
-                      method: 'POST',
-                      credentials: 'include',
-                    });
-                    // Clear all cached data and force auth state refresh
-                    queryClient.clear();
-                    queryClient.invalidateQueries({
-                      queryKey: ['/api/auth/user'],
-                    });
-                    queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                    // Force immediate redirect to login page
-                    window.location.href = '/api/login';
-                  } catch (error) {
-                    logger.error('Logout error:', error);
-                    queryClient.clear();
-                    queryClient.invalidateQueries({
-                      queryKey: ['/api/auth/user'],
-                    });
-                    queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                    window.location.href = '/api/login';
-                  }
-                }}
-                className="flex items-center gap-1 px-2 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300 flex-shrink-0 min-w-[44px]"
-                aria-label="Logout"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
-                <span className="text-xs hidden md:block whitespace-nowrap">
-                  Logout
-                </span>
-              </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      trackButtonClick('logout', 'dashboard_header');
+                      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                      queryClient.clear();
+                      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                      queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                      window.location.href = '/login';
+                    } catch (error) {
+                      logger.error('Logout error:', error);
+                      queryClient.clear();
+                      window.location.href = '/login';
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-600 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden md:inline">Logout</span>
+                </button>
+              </div>
             </div>
+            </TooltipProvider>
           </div>
         </div>
         <div className="flex flex-1 relative pt-[60px] md:pt-0">
@@ -936,9 +951,14 @@ export default function Dashboard({
           <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0">
             <ErrorBoundary>
               <Suspense fallback={<SectionLoader />}>
-                {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
-                  // Special full-height layout for inbox and chat
+                {activeSection === 'gmail-inbox' || activeSection === 'inbox' || activeSection === 'messages' || activeSection === 'chat' ? (
+                  // Special full-height layout for inbox/chat (interactive, manages its own header/layout + scrolling)
                   <div className="h-full">{renderContent()}</div>
+                ) : activeSection === 'driver-planning' ? (
+                  // Driver Planning needs a scroll container on smaller screens (especially mobile “desktop mode”)
+                  <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+                    {renderContent()}
+                  </div>
                 ) : (
                   // Normal layout for other content
                   <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
@@ -958,7 +978,7 @@ export default function Dashboard({
         <GuidedTour />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
-        {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'organizations'].includes(activeSection) && (
+        {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (
           <FloatingAIChat
             contextType="dashboard"
             title="TSP Assistant"

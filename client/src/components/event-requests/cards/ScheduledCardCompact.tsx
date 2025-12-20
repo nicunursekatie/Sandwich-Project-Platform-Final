@@ -29,6 +29,12 @@ import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ScheduledCardCompactProps {
   request: EventRequest;
@@ -69,7 +75,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
 
@@ -82,7 +88,6 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing color)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
   const isWithin7Days = (() => {
     if (!displayDate) return false;
     // Parse as local date to avoid timezone issues
@@ -121,7 +126,25 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-lg font-bold text-[#236383] truncate">
                 {request.organizationName}
+                {request.department && (
+                  <span className="text-sm text-gray-600 ml-2">
+                    • {request.department}
+                  </span>
+                )}
               </h3>
+              {/* Partner Organizations */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="text-xs text-gray-600 mt-1">
+                  <span className="font-medium">Partner:</span>{' '}
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <span key={index}>
+                      {partner.name}
+                      {partner.department && ` • ${partner.department}`}
+                      {index < request.partnerOrganizations.length - 1 && ', '}
+                    </span>
+                  ))}
+                </div>
+              )}
               {request.isConfirmed ? (
                 <Badge className="bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/30 shrink-0">
                   <Check className="w-3 h-3 mr-1" />
@@ -216,11 +239,21 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
             {/* Staffing Status Bar */}
             {totalNeeded > 0 && (
               <div className="mt-3 flex items-center gap-4 text-xs">
-                {driverNeeded > 0 && (
+                {/* Show regular driver needed only if van driver is not needed OR if both are needed */}
+                {driverNeeded > 0 && !(request.vanDriverNeeded && driverNeeded === 0) && (
                   <div className="flex items-center gap-1">
                     <Car className="w-3 h-3 text-gray-500" />
                     <span className={driverAssigned >= driverNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {driverAssigned}/{driverNeeded} drivers
+                    </span>
+                  </div>
+                )}
+                {/* Show van driver needed when van driver is needed and no regular drivers are needed */}
+                {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                  <div className="flex items-center gap-1">
+                    <Car className="w-3 h-3 text-[#236383]" />
+                    <span className={staffingNeededColor}>
+                      Van Driver Needed
                     </span>
                   </div>
                 )}
@@ -245,52 +278,86 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowDetails(!showDetails)}
-              className="h-8"
-            >
-              {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onContact}
-              className="h-8 bg-[#236383] text-white border-[#236383] hover:bg-[#007E8C]"
-            >
-              <Mail className="w-4 h-4" />
-            </Button>
-            {canEdit && (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  className="h-8"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  }
-                  title="Delete Event"
-                  description={`Delete the event from ${request.organizationName}?`}
-                  confirmText="Delete"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
-              </>
-            )}
-          </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-2 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="h-8"
+                  >
+                    {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{showDetails ? 'Hide details' : 'Show details'}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onContact}
+                    className="h-8 bg-[#236383] text-white border-[#236383] hover:bg-[#007E8C]"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contact organizer</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {canEdit && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onEdit}
+                        className="h-8"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          }
+                          title="Delete Event"
+                          description={`Delete the event from ${request.organizationName}?`}
+                          confirmText="Delete"
+                          onConfirm={onDelete}
+                          variant="destructive"
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+            </div>
+          </TooltipProvider>
         </div>
 
         {/* Expandable Details */}
@@ -342,6 +409,16 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
                           {resolveUserName(id)}
                         </Badge>
                       ))}
+                      {request.assignedVanDriverId && (
+                        <Badge variant="secondary" className="mr-1 bg-blue-100 text-blue-900 border-blue-300">
+                          {resolveUserName(request.assignedVanDriverId)} (Van)
+                        </Badge>
+                      )}
+                      {request.isDhlVan && (
+                        <Badge variant="secondary" className="mr-1 bg-amber-100 text-amber-900 border-amber-300">
+                          DHL Van
+                        </Badge>
+                      )}
                       {driverAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
                     </div>
                   )}

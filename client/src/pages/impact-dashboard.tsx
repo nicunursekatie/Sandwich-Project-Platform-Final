@@ -90,7 +90,7 @@ export default function ImpactDashboard() {
 
   // Fetch hybrid stats (authoritative data + collection log)
   const { data: hybridStats } = useQuery({
-    queryKey: ['/api/collections/hybrid-stats'],
+    queryKey: ['/api/sandwich-collections/hybrid-stats'],
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnMount: true,
     refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
@@ -432,7 +432,7 @@ export default function ImpactDashboard() {
       Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
         const y = parseInt(year);
         if (yearTotals[y] !== undefined) {
-          yearTotals[y] = data.sandwiches;
+          yearTotals[y] = data?.sandwiches ?? 0;
         }
       });
     } else {
@@ -732,9 +732,9 @@ export default function ImpactDashboard() {
                       />
                       <Tooltip
                         formatter={(value: number, name: string, props: any) => {
-                          if (name === 'sandwiches') return [value.toLocaleString(), 'Sandwiches'];
-                          if (name === 'collections') return [value, 'Collections'];
-                          return [value, name];
+                          if (name === 'sandwiches') return [(value ?? 0).toLocaleString(), 'Sandwiches'];
+                          if (name === 'collections') return [value ?? 0, 'Collections'];
+                          return [value ?? 0, name];
                         }}
                         labelFormatter={(label, payload) => {
                           if (payload && payload[0]) {
@@ -1185,9 +1185,9 @@ export default function ImpactDashboard() {
                       />
                       <Tooltip
                         formatter={(value: number, name: string) => {
-                          if (name === 'sandwiches') return [value.toLocaleString(), 'Sandwiches'];
-                          if (name === 'collections') return [value, 'Collections'];
-                          return [value, name];
+                          if (name === 'sandwiches') return [(value ?? 0).toLocaleString(), 'Sandwiches'];
+                          if (name === 'collections') return [value ?? 0, 'Collections'];
+                          return [value ?? 0, name];
                         }}
                         contentStyle={{
                           backgroundColor: 'rgba(255, 255, 255, 0.95)',

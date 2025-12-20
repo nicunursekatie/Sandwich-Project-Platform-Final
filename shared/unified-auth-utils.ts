@@ -96,17 +96,24 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 3.5: Admin backward compatibility for new navigation and event permissions
-  if (user.role === 'admin') {
-    if (permission.startsWith('NAV_') || 
-        permission === 'ADMIN_PANEL_ACCESS' ||
-        permission.startsWith('EVENT_REQUESTS_') ||
-        permission.startsWith('DOCUMENTS_')) {
+  // Step 3.5: Admin backward compatibility - for ADMIN_PANEL_ACCESS and NAV_ permissions
+  // Admins get automatic access to navigation items for backward compatibility
+  if (user.role === 'admin' || user.role === USER_ROLES.ADMIN) {
+    if (permission === 'ADMIN_PANEL_ACCESS' || permission === PERMISSIONS.ADMIN_PANEL_ACCESS) {
       return {
         granted: true,
-        reason: 'Admin role automatic access (backward compatibility)',
+        reason: 'Admin role automatic access to admin panel',
         userRole: user.role,
         userPermissions: userPermissions
+      };
+    }
+    // Admin backward compatibility: Admins get automatic access to navigation items
+    if (permission.startsWith('NAV_')) {
+      return {
+        granted: true,
+        reason: 'Admin role grants access to navigation items',
+        userRole: user.role,
+        userPermissions: ['NAV_*']
       };
     }
   }

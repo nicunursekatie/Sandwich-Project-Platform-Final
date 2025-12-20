@@ -7,6 +7,7 @@ import type {
   InsertEventCollaborationComment,
   InsertEventFieldLock,
   InsertEventEditRevision,
+  InsertAvailabilitySlot,
 } from '@shared/schema';
 
 class StorageWrapper implements IStorage {
@@ -155,7 +156,7 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async setUserPassword(id: string, password: string): Promise<void> {
+  async setUserPassword(id: string, password: string): Promise<boolean> {
     return this.executeWithFallback(
       () => this.primaryStorage.setUserPassword(id, password),
       () => this.fallbackStorage.setUserPassword(id, password)
@@ -181,6 +182,35 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.createUser(user),
       () => this.fallbackStorage.createUser(user)
+    );
+  }
+
+  // User activity tracking
+  async updateUserLastActive(userId: string): Promise<void> {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateUserLastActive(userId),
+      () => this.fallbackStorage.updateUserLastActive(userId)
+    );
+  }
+
+  async getOnlineUsers(sinceMinutes?: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getOnlineUsers(sinceMinutes),
+      () => this.fallbackStorage.getOnlineUsers(sinceMinutes)
+    );
+  }
+
+  async findUserByPhoneNumber(phoneNumber: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.findUserByPhoneNumber(phoneNumber),
+      () => this.fallbackStorage.findUserByPhoneNumber(phoneNumber)
+    );
+  }
+
+  async getUsersByNameOrEmail(searchTerms: string[]) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getUsersByNameOrEmail(searchTerms),
+      () => this.fallbackStorage.getUsersByNameOrEmail(searchTerms)
     );
   }
 
@@ -1981,6 +2011,56 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventEditRevision(data),
       () => this.fallbackStorage.createEventEditRevision(data)
+    );
+  }
+
+  // Availability Slots
+  async getAllAvailabilitySlots() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllAvailabilitySlots(),
+      () => this.fallbackStorage.getAllAvailabilitySlots()
+    );
+  }
+
+  async getAvailabilitySlotById(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotById(id),
+      () => this.fallbackStorage.getAvailabilitySlotById(id)
+    );
+  }
+
+  async getAvailabilitySlotsByUserId(userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotsByUserId(userId),
+      () => this.fallbackStorage.getAvailabilitySlotsByUserId(userId)
+    );
+  }
+
+  async getAvailabilitySlotsByDateRange(startDate: Date, endDate: Date) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAvailabilitySlotsByDateRange(startDate, endDate),
+      () => this.fallbackStorage.getAvailabilitySlotsByDateRange(startDate, endDate)
+    );
+  }
+
+  async createAvailabilitySlot(slot: InsertAvailabilitySlot) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createAvailabilitySlot(slot),
+      () => this.fallbackStorage.createAvailabilitySlot(slot)
+    );
+  }
+
+  async updateAvailabilitySlot(id: number, updates: Partial<InsertAvailabilitySlot>) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateAvailabilitySlot(id, updates),
+      () => this.fallbackStorage.updateAvailabilitySlot(id, updates)
+    );
+  }
+
+  async deleteAvailabilitySlot(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteAvailabilitySlot(id),
+      () => this.fallbackStorage.deleteAvailabilitySlot(id)
     );
   }
 }

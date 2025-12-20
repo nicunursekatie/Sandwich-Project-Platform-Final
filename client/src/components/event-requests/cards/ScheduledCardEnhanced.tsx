@@ -30,6 +30,7 @@ import {
   Calendar,
   Users,
   Car,
+  Truck,
   Megaphone,
   UserPlus,
   Phone,
@@ -71,6 +72,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread } from '@/components/collaboration';
+import { useToast } from '@/hooks/use-toast';
+import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
+import { Sheet } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -214,7 +224,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [tempEndTime, setTempEndTime] = useState('');
   const [tempPickupTime, setTempPickupTime] = useState('');
   const [tempOvernightHolding, setTempOvernightHolding] = useState('');
+  const [isExportingToSheet, setIsExportingToSheet] = useState(false);
 
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Mutation for updating event request fields
@@ -242,6 +254,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
+  const toggleDhlVan = (value: boolean) => {
+    const payload: Record<string, unknown> = { isDhlVan: value };
+    if (value) {
+      payload.vanDriverNeeded = true;
+      payload.assignedVanDriverId = null;
+    }
+    updateFieldsMutation.mutate(payload);
+  };
+
   // Fetch data for recipient resolution
   const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
     id: number;
@@ -260,15 +281,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
-  // Debug logging for host contacts
-  React.useEffect(() => {
-    if (hostContacts.length > 0) {
-      console.log('ScheduledCardEnhanced: hostContacts loaded', hostContacts.length, 'contacts');
-      console.log('ScheduledCardEnhanced: First few contacts:', hostContacts.slice(0, 3));
-    } else if (!isLoadingHostContacts) {
-      console.warn('ScheduledCardEnhanced: No host contacts loaded!');
-    }
-  }, [hostContacts, isLoadingHostContacts]);
 
   const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
@@ -390,7 +402,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
@@ -446,6 +458,234 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
 
+  // Handler to export event to Google Sheet
+  const handleExportToGoogleSheet = async () => {
+    const eventDate = request.scheduledEventDate || request.desiredEventDate;
+    if (!eventDate) {
+      toast({
+        title: 'Missing Date',
+        description: 'Cannot export event without a date.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!request.organizationName) {
+      toast({
+        title: 'Missing Organization Name',
+        description: 'Cannot export event without an organization name.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsExportingToSheet(true);
+
+    try {
+      // Build staffing string in the format the spreadsheet expects:
+      // D = driver needed, D: Name = driver assigned
+      // S = speaker needed, S: Name = speaker assigned
+      // V = volunteer needed, V: Name = volunteer assigned
+      // VD = van driver needed, VD: Name = van driver assigned
+      const staffingParts: string[] = [];
+
+      // Drivers
+      const assignedDriverIds = parsePostgresArray(request.assignedDriverIds);
+      const driversNeededCount = request.driversNeeded || 0;
+      assignedDriverIds.forEach(id => {
+        const name = extractCustomName(id) || resolveUserName(id);
+        staffingParts.push(name ? `D: ${name}` : 'D');
+      });
+      // Add unfilled driver slots - include van driver and DHL van in fulfilled count
+      const totalDriversAssigned = assignedDriverIds.length +
+                                   (request.assignedVanDriverId ? 1 : 0) +
+                                   (request.isDhlVan ? 1 : 0);
+      const unfilledDrivers = Math.max(0, driversNeededCount - totalDriversAssigned);
+      for (let i = 0; i < unfilledDrivers; i++) {
+        staffingParts.push('D');
+      }
+
+      // Van Driver (separate from regular drivers)
+      if (request.assignedVanDriverId) {
+        const name = resolveUserName(request.assignedVanDriverId);
+        staffingParts.push(name ? `VD: ${name}` : 'VD');
+      } else if (request.vanDriverNeeded) {
+        staffingParts.push('VD');
+      }
+
+      // Speakers
+      const speakerDetails = request.speakerDetails as Record<string, { name?: string }> | null;
+      const assignedSpeakerIds = speakerDetails ? Object.keys(speakerDetails) : [];
+      const speakersNeededCount = request.speakersNeeded || 0;
+      assignedSpeakerIds.forEach(id => {
+        const detailName = speakerDetails?.[id]?.name;
+        const customName = extractCustomName(id);
+        const userName = resolveUserName(id);
+        const name = detailName || customName || userName;
+        staffingParts.push(name ? `S: ${name}` : 'S');
+      });
+      // Add unfilled speaker slots
+      const unfilledSpeakers = Math.max(0, speakersNeededCount - assignedSpeakerIds.length);
+      for (let i = 0; i < unfilledSpeakers; i++) {
+        staffingParts.push('S');
+      }
+
+      // Volunteers
+      const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
+      const volunteersNeededCount = request.volunteersNeeded || 0;
+      assignedVolunteerIds.forEach(id => {
+        const name = extractCustomName(id) || resolveUserName(id);
+        staffingParts.push(name ? `V: ${name}` : 'V');
+      });
+      // Add unfilled volunteer slots
+      const unfilledVolunteers = Math.max(0, volunteersNeededCount - assignedVolunteerIds.length);
+      for (let i = 0; i < unfilledVolunteers; i++) {
+        staffingParts.push('V');
+      }
+
+      // Build details from various notes (planning notes go here)
+      const detailParts: string[] = [];
+      if (request.planningNotes) detailParts.push(request.planningNotes);
+      if (request.schedulingNotes) detailParts.push(request.schedulingNotes);
+      if (request.specialRequirements) detailParts.push(request.specialRequirements);
+      if (request.distributionNotes) detailParts.push(request.distributionNotes);
+
+      // Determine sandwich type (Deli or PBJ) and calculate total from sandwichTypes if needed
+      let sandwichTypeStr = '';
+      let sandwichTotal = request.estimatedSandwichCount || 0;
+      const parsedTypes = parseSandwichTypes(request.sandwichTypes);
+      if (parsedTypes && parsedTypes.length > 0) {
+        // Filter out unknown types and format type names nicely
+        const validTypes = parsedTypes.filter(t => t.type.toLowerCase() !== 'unknown' && t.quantity > 0);
+        sandwichTypeStr = validTypes.map(t => {
+          // Format type name: capitalize first letter, handle special cases
+          const typeName = t.type.toLowerCase();
+          if (typeName === 'pbj' || typeName === 'pb&j') return 'PB&J';
+          if (typeName === 'deli') return 'Deli';
+          return t.type.charAt(0).toUpperCase() + t.type.slice(1);
+        }).join(', ');
+        // Calculate total from sandwichTypes
+        const typesTotal = validTypes.reduce((sum, t) => sum + (t.quantity || 0), 0);
+        // Use the larger of estimatedSandwichCount or calculated total
+        if (typesTotal > sandwichTotal) {
+          sandwichTotal = typesTotal;
+        }
+      }
+
+      // Get TSP contact name - check multiple possible fields
+      let tspContactName = request.customTspContact || '';
+      if (!tspContactName && request.tspContactAssigned) {
+        tspContactName = resolveUserName(request.tspContactAssigned);
+      }
+      if (!tspContactName && request.tspContact) {
+        tspContactName = resolveUserName(request.tspContact);
+      }
+
+      // Get recipient/host info
+      const recipientIds = parsePostgresArray(request.assignedRecipientIds);
+      const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
+
+      // Determine van booked status with AM/PM based on event start time
+      let vanBookedStatus = '';
+      if (request.isDhlVan) {
+        vanBookedStatus = 'DHL Van';
+      } else if (request.assignedVanDriverId || request.customVanDriverName) {
+        // Van is booked - determine AM/PM/All Day from event start time
+        if (request.eventStartTime) {
+          // Parse time string (could be "14:00", "2:00 PM", etc.)
+          const timeStr = request.eventStartTime;
+          let hour = 0;
+
+          // Try parsing HH:MM format
+          const match24 = timeStr.match(/^(\d{1,2}):(\d{2})/);
+          if (match24) {
+            hour = parseInt(match24[1], 10);
+          }
+          // Check for PM indicator in 12-hour format
+          if (timeStr.toLowerCase().includes('pm') && hour < 12) {
+            hour += 12;
+          } else if (timeStr.toLowerCase().includes('am') && hour === 12) {
+            hour = 0;
+          }
+
+          vanBookedStatus = hour < 12 ? 'AM' : 'PM';
+        } else {
+          // No start time specified
+          vanBookedStatus = 'All Day';
+        }
+      } else if (request.vanDriverNeeded) {
+        vanBookedStatus = 'Needed';
+      } else if (request.selfTransport) {
+        vanBookedStatus = 'Self Transport';
+      }
+
+      // Build the payload for Google Sheets
+      const sheetPayload = {
+        // Required
+        date: formatDateForGoogleSheet(eventDate),
+        groupName: request.organizationName,
+        // Timing
+        startTime: request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '',
+        endTime: request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '',
+        pickupTime: request.pickupTime ? formatTime12Hour(request.pickupTime) : '',
+        // Details
+        details: detailParts.join(' | '),
+        socialPost: request.socialMediaPostNotes || '',
+        staffing: staffingParts.join(', '),
+        estimate: sandwichTotal ? String(sandwichTotal) : '',
+        sandwichType: sandwichTypeStr,
+        // Contact info - use submitter contact fields
+        contactName: [request.firstName, request.lastName].filter(Boolean).join(' ') || '',
+        contactEmail: request.email || '',
+        contactPhone: request.phone || '',
+        tspContact: tspContactName,
+        // Location
+        address: request.eventAddress || '',
+        vanBooked: vanBookedStatus,
+        // Notes
+        notes: request.followUpNotes || '',
+        additionalNotes: request.duplicateNotes || '',
+        waitingOn: '',
+        recipientHost: recipientNames,
+      };
+
+      // Debug logging - show exactly what's being sent to Google Sheets
+      console.log('=== GOOGLE SHEETS PAYLOAD ===');
+      console.log('estimate (Column J):', sheetPayload.estimate);
+      console.log('sandwichType (Column K):', sheetPayload.sandwichType);
+      console.log('tspContact (Column Q):', sheetPayload.tspContact);
+      console.log('vanBooked (Column S):', sheetPayload.vanBooked);
+      console.log('Full payload:', sheetPayload);
+
+      const result = await addEventToGoogleSheet(sheetPayload);
+
+      if (result.success) {
+        toast({
+          title: 'Added to Google Sheet',
+          description: result.message,
+        });
+        // Mark as added to official sheet
+        if (!request.addedToOfficialSheet) {
+          quickToggleBoolean('addedToOfficialSheet', false);
+        }
+      } else {
+        toast({
+          title: 'Export Failed',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Export Error',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingToSheet(false);
+    }
+  };
+
   return (
     <Card 
       className="w-full bg-[#E4EFF6] border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl"
@@ -453,15 +693,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     >
       <CardContent className="p-3">
         {/* Header Row - Organization & Status */}
-        <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
+          {/* Top: Date + Organization Name */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            {/* Organization Name */}
+            <div className="min-w-0 flex-1">
               {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Input
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-xl font-bold w-64"
+                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
@@ -477,22 +719,301 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <h2
-                  className={`text-2xl font-bold text-[#236383] ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  className={`text-lg sm:text-xl md:text-2xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
                   onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
                 >
                   {request.organizationName}
-                  {canEdit && <Edit2 className="w-4 h-4 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
+                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
-              {isEditingThisCard && editingField === 'department' ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[#236383]/60">•</span>
+              {/* Partner Organizations - inline on same row */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1 mt-1">
+                  <span className="text-[#236383]/60 text-xs sm:text-sm">Partner:</span>
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <span
+                      key={index}
+                      className={`text-sm sm:text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C]' : ''}`}
+                      onClick={() =>
+                        canEdit &&
+                        startEditing(
+                          `partnerOrg_${index}`,
+                          JSON.stringify({ name: partner.name || '', department: partner.department || '' })
+                        )
+                      }
+                    >
+                      {partner.name}
+                      {partner.department && ` • ${partner.department}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Date Display */}
+            <div className="flex items-center shrink-0">
+              {isEditingThisCard && editingField === dateFieldToEdit ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <Input
+                    type="date"
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 text-lg w-48"
+                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
+                    <Save className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
+                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors"
+                      aria-label="Edit date"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status Badges */}
+          <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2">
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.isConfirmed
+                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+            </Badge>
+
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.addedToOfficialSheet
+                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
+            </Badge>
+
+            {request.isMlkDayEvent && <MlkDayBadge />}
+
+            {/* Sandwich count badge */}
+            <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+              <span>🥪</span>
+              <span>{sandwichInfo}</span>
+            </Badge>
+
+            {/* Self-transport badge */}
+            {request.selfTransport && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <Car className="w-3 h-3" />
+                <span className="hidden sm:inline">Driving Own</span>
+                <span className="sm:hidden">Self</span>
+              </Badge>
+            )}
+
+            {/* Overnight holding badge */}
+            {request.overnightHoldingLocation && (
+              <Badge className="bg-[#236383] text-white border border-[#236383] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <span>🌙</span>
+                <span className="hidden sm:inline">Holding Overnight</span>
+                <span className="sm:hidden">O/N</span>
+              </Badge>
+            )}
+
+            {request.externalId && request.externalId.startsWith('manual-') && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium">
+                <FileText className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Manual Entry</span>
+                <span className="sm:hidden">Manual</span>
+              </Badge>
+            )}
+
+            {/* Only show staffing badges if NOT self-transport */}
+            {!request.selfTransport && (
+              <>
+                {staffingComplete ? (
+                  <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] text-xs sm:text-sm font-medium">
+                    Fully Staffed
+                  </Badge>
+                ) : (
+                  <>
+                    {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                      <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                        <Car className="w-3 h-3 mr-1" />
+                        Van
+                      </Badge>
+                    )}
+                    {speakerNeeded > speakerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {volunteerNeeded > volunteerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {volunteerNeeded - volunteerAssigned} vol{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </>
+                )}
+
+                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                  <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                    <Car className="w-3 h-3 mr-1" />
+                    Van
+                  </Badge>
+                )}
+
+                {request.assignedVanDriverId && (
+                  <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
+                    🚐 Van
+                  </Badge>
+                )}
+
+                {request.isDhlVan && (
+                  <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-medium">
+                    🚚 DHL Van
+                  </Badge>
+                )}
+              </>
+            )}
+
+            {missingInfo.length > 0 && (
+              <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] text-xs sm:text-sm font-medium animate-pulse">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                {missingInfo.length} Missing
+              </Badge>
+            )}
+          </div>
+
+          {/* Add department/partner buttons - hidden on mobile, shown on hover on desktop */}
+          {canEdit && (
+            <div className="hidden sm:flex items-center gap-2 mt-1">
+              {!request.department && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => startEditing('department', '')}
+                    >
+                      <Building2 className="w-3 h-3 inline mr-1" />
+                      Add dept
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add department</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {(!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => {
+                        startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                      }}
+                    >
+                      <Users className="w-3 h-3 inline mr-1" />
+                      Add partner
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add partner organization</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Partner/Department editing modals */}
+        {isEditingThisCard && editingField === 'department' && (
+          <div className="flex items-center gap-2 mb-3">
+            <Input
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-8 text-base w-48"
+              autoFocus
+              placeholder="Department"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+              <Save className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              const index = parseInt(editingField.split('_')[1]);
+              const partner = request.partnerOrganizations?.[index];
+              let parsed = { name: partner?.name || '', department: partner?.department || '' };
+              try {
+                const maybeParsed = JSON.parse(editingValue || '{}');
+                if (maybeParsed && typeof maybeParsed === 'object') {
+                  parsed = {
+                    name: (maybeParsed as any).name ?? parsed.name,
+                    department: (maybeParsed as any).department ?? parsed.department,
+                  };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: e.target.value, department: parsed.department }))
+                    }
+                    className="h-8 text-base w-40 sm:w-48"
                     autoFocus
-                    placeholder="Department"
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department || ''}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: parsed.name, department: e.target.value }))
+                    }
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
                       if (e.key === 'Escape') cancelEdit();
@@ -504,234 +1025,172 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
                     <X className="h-3 w-3" />
                   </Button>
-                </div>
-              ) : request.department ? (
-                <>
-                  <span className="text-[#236383]/60">•</span>
-                  <span
-                    className={`text-xl text-[#236383]/70 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                    onClick={() => canEdit && startEditing('department', request.department || '')}
-                  >
-                    {request.department}
-                    {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                  </span>
                 </>
-              ) : canEdit ? (
-                <Edit2
-                  className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
-                  onClick={() => startEditing('department', '')}
-                  title="Add department"
-                />
-              ) : null}
-            </div>
-
-            {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2 w-full">
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
-              </Badge>
-
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.addedToOfficialSheet
-                    ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
-              </Badge>
-
-              {request.isMlkDayEvent && <MlkDayBadge />}
-
-              {/* Self-transport badge */}
-              {request.selfTransport && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                  <Car className="w-3 h-3" />
-                  <span>Driving Own Sandwiches</span>
-                </Badge>
-              )}
-
-              {/* Overnight holding badge */}
-              {request.overnightHoldingLocation && (
-                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
-                  <span>🌙</span>
-                  <span>Holding Overnight</span>
-                </Badge>
-              )}
-
-              {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                <span>🥪</span>
-                <span>{sandwichInfo} Sandwiches</span>
-              </Badge>
-
-              {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
-                  <FileText className="w-3 h-3 mr-1" />
-                  Manual Entry
-                </Badge>
-              )}
-
-              {/* Only show staffing badges if NOT self-transport */}
-              {!request.selfTransport && (
-                <>
-                  {staffingComplete ? (
-                    <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
-                      Fully Staffed
-                    </Badge>
-                  ) : (
-                    <>
-                      {driverNeeded > driverAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {speakerNeeded > speakerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {volunteerNeeded > volunteerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                    </>
-                  )}
-
-                  {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                    <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
-                      <Car className="w-3 h-3 mr-1" />
-                      Van Driver Needed
-                    </Badge>
-                  )}
-
-                  {request.assignedVanDriverId && (
-                    <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
-                      🚐 Van Assigned
-                    </Badge>
-                  )}
-                </>
-              )}
-
-              {missingInfo.length > 0 && (
-                <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {missingInfo.length} Missing
-                </Badge>
-              )}
-            </div>
+              );
+            })()}
           </div>
-
-          {/* Date Display - Right Side */}
-          <div className="flex items-center shrink-0">
-            {isEditingThisCard && editingField === dateFieldToEdit ? (
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="date"
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                />
-                <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
-                  <Save className="w-3 h-3" aria-hidden="true" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                  <X className="w-3 h-3" aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 group">
-                <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="text-2xl font-bold text-[#47B3CB] whitespace-nowrap">
-                  {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
-                </span>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                    className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 transition-colors"
-                    aria-label="Edit date"
-                  >
-                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+        )}
+        {isEditingThisCard && editingField === 'partnerOrganizations' && (!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              let parsed = { name: '', department: '' };
+              try {
+                const arr = JSON.parse(editingValue || '[]');
+                if (Array.isArray(arr) && arr.length > 0) {
+                  parsed = { name: arr[0]?.name || '', department: arr[0]?.department || '' };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: e.target.value, department: parsed.department, role: 'partner' }]))}
+                    className="h-8 text-base w-40 sm:w-48"
+                    autoFocus
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: parsed.name, department: e.target.value, role: 'partner' }]))}
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                    <Save className="h-3 w-3" />
                   </Button>
-                )}
-              </div>
-            )}
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </>
+              );
+            })()}
           </div>
-        </div>
+        )}
 
         {/* Action Buttons Section */}
-        <div className="mb-3">
-          <div className="flex gap-2">
-            {/* Message - always visible */}
-            <Button
-              size="sm"
-              onClick={() => setShowMessageDialog(true)}
-              variant="ghost"
-              className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-              aria-label="Message about this event"
-            >
-              <MessageSquare className="w-4 h-4" aria-hidden="true" />
-            </Button>
+        <TooltipProvider>
+          <div className="mb-3">
+            <div className="flex gap-2">
+              {/* Message - always visible */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowMessageDialog(true)}
+                    variant="ghost"
+                    className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                    aria-label="Message about this event"
+                  >
+                    <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Message about this event</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {canEdit && (
-              <>
-                {canSendSMS && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() => setShowSendSmsDialog(true)}
-                      variant="ghost"
-                      className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
-                      aria-label="Send event details via SMS"
-                      data-testid="button-send-sms-card"
-                    >
-                      <Phone className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setShowSendCorrectionDialog(true)}
-                      variant="ghost"
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
-                      aria-label="Send correction SMS"
-                      data-testid="button-send-correction-card"
-                    >
-                      <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                  </>
-                )}
-                <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
-                  <Edit2 className="w-4 h-4" aria-hidden="true" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
-                    <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </Button>
-                  }
-                  title="Delete Event"
-                  description={`Delete ${request.organizationName}?`}
-                  confirmText="Delete"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
-              </>
-            )}
+              {canEdit && (
+                <>
+                  {canSendSMS && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowSendSmsDialog(true)}
+                            variant="ghost"
+                            className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
+                            aria-label="Send event details via SMS"
+                            data-testid="button-send-sms-card"
+                          >
+                            <Phone className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send event details via SMS</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowSendCorrectionDialog(true)}
+                            variant="ghost"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
+                            aria-label="Send correction SMS"
+                            data-testid="button-send-correction-card"
+                          >
+                            <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send correction SMS</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
+                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
+                              <Trash2 className="w-4 h-4" aria-hidden="true" />
+                            </Button>
+                          }
+                          title="Delete Event"
+                          description={`Delete ${request.organizationName}?`}
+                          confirmText="Delete"
+                          onConfirm={onDelete}
+                          variant="destructive"
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </TooltipProvider>
 
-        {/* Main Info Section - 3 Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Info Section - 3 Column Grid - responsive at all widths */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
@@ -742,88 +1201,99 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </h3>
               <div className="space-y-3">
             {/* Times Row with Add Times button */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid grid-cols-3 gap-3 text-sm flex-1">
-                {/* Start Time */}
-                <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
-                  {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        type="time"
-                        value={addingAllTimes ? tempStartTime : editingValue}
-                        onChange={(e) => addingAllTimes ? setTempStartTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                      />
-                      {!addingAllTimes && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
-                      {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
-                    </div>
-                  )}
+            <div className="space-y-3">
+              {/* Time fields - stacked layout when editing, grid when not */}
+              {addingAllTimes ? (
+                /* Stacked layout when editing all times */
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#236383] text-sm uppercase font-semibold w-16">Start</span>
+                    <Input
+                      type="time"
+                      value={tempStartTime}
+                      onChange={(e) => setTempStartTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#236383] text-sm uppercase font-semibold w-16">End</span>
+                    <Input
+                      type="time"
+                      value={tempEndTime}
+                      onChange={(e) => setTempEndTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-700 text-sm uppercase font-semibold w-16">Pickup</span>
+                    <Input
+                      type="time"
+                      value={tempPickupTime}
+                      onChange={(e) => setTempPickupTime(e.target.value)}
+                      className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 w-32"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const updates: Record<string, string> = {};
+                        const existingPickupTime = request.pickupDateTime
+                          ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                          : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
+                        if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
+                          updates.eventStartTime = tempStartTime;
+                        }
+                        if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
+                          updates.eventEndTime = tempEndTime;
+                        }
+                        if (tempPickupTime && tempPickupTime !== existingPickupTime) {
+                          updates.pickupTime = tempPickupTime;
+                        }
+                        if (Object.keys(updates).length > 0) {
+                          updateFieldsMutation.mutate(updates);
+                        } else {
+                          setAddingAllTimes(false);
+                        }
+                      }}
+                      className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-9 px-4 text-sm"
+                      disabled={updateFieldsMutation.isPending}
+                      aria-label="Save all times"
+                    >
+                      <Save className="w-4 h-4 mr-2" aria-hidden="true" />
+                      {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setAddingAllTimes(false);
+                        setTempStartTime('');
+                        setTempEndTime('');
+                        setTempPickupTime('');
+                      }}
+                      className="text-gray-600 hover:bg-gray-100 h-9 px-4 text-sm"
+                      aria-label="Cancel"
+                    >
+                      <X className="w-4 h-4 mr-2" aria-hidden="true" />
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-
-                {/* End Time */}
-                <div>
-                  <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
-                  {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        type="time"
-                        value={addingAllTimes ? tempEndTime : editingValue}
-                        onChange={(e) => addingAllTimes ? setTempEndTime(e.target.value) : setEditingValue(e.target.value)}
-                        className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                      />
-                      {!addingAllTimes && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                            <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                            <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
-                      {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
-                    </div>
-                  )}
-                </div>
-
-                {/* Pickup Time */}
-                <div>
-                  <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
-                  {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
-                    <div className="flex flex-col gap-2">
-                      {addingAllTimes ? (
-                        <Input
-                          type="time"
-                          value={tempPickupTime}
-                          onChange={(e) => setTempPickupTime(e.target.value)}
-                          className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3 min-w-[120px]"
-                        />
-                      ) : (
-                        <>
-                          <DateTimePicker
+              ) : (
+                /* Grid layout when viewing */
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 text-sm flex-1 w-full sm:w-auto">
+                    {/* Start Time */}
+                    <div>
+                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
+                      {isEditingThisCard && editingField === 'eventStartTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
                             value={editingValue}
-                            onChange={setEditingValue}
-                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 min-w-[200px]"
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                           />
                           <div className="flex gap-2">
                             <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
@@ -835,27 +1305,87 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               Cancel
                             </Button>
                           </div>
-                        </>
+                        </div>
+                      ) : (
+                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                          {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                        </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                      {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Add Times button or Save/Cancel buttons */}
-              {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
-                <div className="flex items-center gap-1 mt-4">
-                  {!addingAllTimes ? (
+                    {/* End Time */}
+                    <div>
+                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
+                      {isEditingThisCard && editingField === 'eventEndTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                          {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pickup Time */}
+                    <div>
+                      <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
+                      {isEditingThisCard && editingField === 'pickupDateTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <DateTimePicker
+                            value={editingValue}
+                            onChange={setEditingValue}
+                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                            {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                          </div>
+                          {/* Show "Can hold overnight" if overnightHoldingLocation is set */}
+                          {request.overnightHoldingLocation && (
+                            <div className="text-xs text-[#236383] font-medium mt-1">
+                              Can hold overnight
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add Times button - only show when not editing and times are missing */}
+                  {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm mt-4"
                       onClick={() => {
-                        // Initialize temp values with existing times
                         setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
                         setTempEndTime(formatTimeForInput(request.eventEndTime || ''));
                         setTempPickupTime(request.pickupDateTime ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTimeForInput(request.pickupTime) : ''));
@@ -865,59 +1395,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     >
                       <Clock className="w-4 h-4" aria-hidden="true" />
                     </Button>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          // Prepare updates object with all modified times
-                          const updates: Record<string, string> = {};
-
-                          // Get existing pickup time value for comparison
-                          const existingPickupTime = request.pickupDateTime
-                            ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
-                            : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
-
-                          if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
-                            updates.eventStartTime = tempStartTime;
-                          }
-                          if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
-                            updates.eventEndTime = tempEndTime;
-                          }
-                          if (tempPickupTime && tempPickupTime !== existingPickupTime) {
-                            updates.pickupTime = tempPickupTime;
-                          }
-
-                          // Save all fields at once
-                          if (Object.keys(updates).length > 0) {
-                            updateFieldsMutation.mutate(updates);
-                          } else {
-                            setAddingAllTimes(false);
-                          }
-                        }}
-                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap h-9 px-4 text-sm"
-                        disabled={updateFieldsMutation.isPending}
-                        aria-label="Save all times"
-                      >
-                        <Save className="w-4 h-4 mr-2" aria-hidden="true" />
-                        {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setAddingAllTimes(false);
-                          setTempStartTime('');
-                          setTempEndTime('');
-                          setTempPickupTime('');
-                        }}
-                        className="text-gray-600 hover:bg-gray-100 h-9 px-4 text-sm"
-                        aria-label="Cancel"
-                      >
-                        <X className="w-4 h-4 mr-2" aria-hidden="true" />
-                        Cancel
-                      </Button>
-                    </div>
                   )}
                 </div>
               )}
@@ -1040,7 +1517,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <SelectTrigger className="bg-white text-gray-900">
                           <SelectValue placeholder="Type (optional)" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           {SANDWICH_TYPES.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
@@ -1062,7 +1539,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             <SelectTrigger className="bg-white text-gray-900">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent position="popper" sideOffset={5}>
                               {SANDWICH_TYPES.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
                                   {type.label}
@@ -1130,7 +1607,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <Users className="w-5 h-5 shrink-0 mt-0.5" />
               {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
                 <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs text-gray-300 block mb-1">Adults</label>
                       <Input
@@ -1282,13 +1759,37 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     ) : (
                       <>
                         <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          <Car className="w-5 h-5" />
-                          {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                          {request.vanDriverNeeded ? (
+                            <>
+                              <Truck className="w-5 h-5 text-amber-600" />
+                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
+                            </>
+                          ) : (
+                            <>
+                              <Car className="w-5 h-5" />
+                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                            </>
+                          )}
                         </span>
-                        {canEdit && driverNeeded > 0 && (
-                          <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
-                            <UserPlus className="w-3 h-3" aria-hidden="true" />
-                          </Button>
+                        {canEdit && (
+                          <div className="flex items-center gap-2">
+                            {driverNeeded > 0 && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => openAssignmentDialog('driver')} 
+                                className={request.vanDriverNeeded 
+                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
+                                  : "h-7 bg-[#007E8C] text-white"} 
+                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
+                              >
+                                {request.vanDriverNeeded ? (
+                                  <Truck className="w-3 h-3" aria-hidden="true" />
+                                ) : (
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </>
                     )}
@@ -1319,6 +1820,23 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               size="sm"
                               variant="ghost"
                               onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {request.isDhlVan && (
+                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
+                            DHL Van 🚚
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleDhlVan(false)}
                               className="h-5 w-5 p-0 text-red-600 shrink-0"
                             >
                               <X className="w-3 h-3" />
@@ -1747,6 +2265,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   )}
+
+                  {/* Next-Day Pickup Time */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
+                        {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingThisCard && editingField === 'overnightPickupTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="bg-white text-gray-900 h-8 text-sm w-32"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                              <Save className="w-3 h-3 mr-1" /> Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : <span className="text-gray-500 italic">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1782,10 +2341,59 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         </div>
 
+        {/* Scheduling Notes - Always Visible */}
+        {request.schedulingNotes && (
+          <div className="bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg p-4 mb-4 border-l-4 border-green-500 border-t border-r border-b border-green-200 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-green-600" />
+                <h3 className="text-sm uppercase font-bold tracking-wide text-green-700">
+                  Scheduling Notes
+                </h3>
+              </div>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
+                  className="h-6 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
+                  aria-label="Edit scheduling notes"
+                >
+                  <Edit2 className="w-3 h-3" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+            {isEditingThisCard && editingField === 'schedulingNotes' ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                  placeholder="Add scheduling notes..."
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={saveEdit}>
+                    <Save className="w-3 h-3 mr-1" />
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    <X className="w-3 h-3 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-2 border-green-400 whitespace-pre-wrap">
+                {request.schedulingNotes}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Notes & Requirements Section */}
         {(request.message ||
           request.planningNotes ||
-          request.schedulingNotes ||
           request.additionalRequirements ||
           request.volunteerNotes ||
           request.driverNotes ||
@@ -1867,49 +2475,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   ) : (
                     <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/30 to-[#47B3CB]/15 p-3 rounded border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 whitespace-pre-wrap">
                       {request.planningNotes}
-                    </p>
-                  )}
-                </div>
-              )}
-              {request.schedulingNotes && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-gray-900">Scheduling Notes:</p>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
-                        className="h-6 px-2"
-                        aria-label="Edit scheduling notes"
-                      >
-                        <Edit2 className="w-3 h-3" aria-hidden="true" />
-                      </Button>
-                    )}
-                  </div>
-                  {isEditingThisCard && editingField === 'schedulingNotes' ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
-                        placeholder="Add scheduling notes..."
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-green-400 whitespace-pre-wrap">
-                      {request.schedulingNotes}
                     </p>
                   )}
                 </div>
@@ -2011,6 +2576,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -2106,6 +2672,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               Assign TSP Contact
             </Button>
           )}
+
+          {/* Export to Google Sheet button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExportToGoogleSheet}
+            disabled={isExportingToSheet || request.addedToOfficialSheet}
+            className={`border-green-500/30 text-green-600 hover:bg-green-50 ${
+              request.addedToOfficialSheet ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={request.addedToOfficialSheet ? 'Already added to sheet' : 'Add event to TSP Google Sheet'}
+          >
+            {isExportingToSheet ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Sheet className="w-4 h-4 mr-1" />
+                {request.addedToOfficialSheet ? 'On Sheet' : 'Add to Sheet'}
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Activity History Toggle */}

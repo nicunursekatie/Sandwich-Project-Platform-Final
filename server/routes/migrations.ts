@@ -13,12 +13,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Run sandwich range fields migration
-router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: any, res: any) => {
+router.post('/sandwich-range-fields', requirePermission('ADMIN_ACCESS'), async (req: any, res: any) => {
   try {
-    const DATABASE_URL = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const DATABASE_URL = isProduction
+      ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
+      : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
     if (!DATABASE_URL) {
-      return res.status(500).json({ error: 'DATABASE_URL not configured' });
+      return res.status(500).json({ error: 'Database URL not configured' });
     }
 
     logger.log('🔄 Running sandwich range fields migration...');

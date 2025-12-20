@@ -45,6 +45,7 @@ import {
   organizations,
   eventVolunteers,
   eventCollaborationComments,
+  eventCollaborationCommentLikes,
   eventFieldLocks,
   eventEditRevisions,
   meetingNotes,
@@ -139,6 +140,8 @@ import {
   type InsertSearchAnalytics,
   type EventCollaborationComment,
   type InsertEventCollaborationComment,
+  type EventCollaborationCommentLike,
+  type InsertEventCollaborationCommentLike,
   type EventFieldLock,
   type InsertEventFieldLock,
   type EventEditRevision,
@@ -237,16 +240,48 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async setUserPassword(id: string, password: string): Promise<void> {
-    await db
+  async setUserPassword(id: string, password: string): Promise<boolean> {
+    const result = await db
       .update(users)
-      .set({ passwordHash: password, updatedAt: new Date() })
+      .set({ password: password, updatedAt: new Date() })
       .where(eq(users.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // User activity tracking
+  async updateUserLastActive(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ lastActiveAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getOnlineUsers(sinceMinutes: number = 5): Promise<Pick<User, 'id' | 'firstName' | 'lastName' | 'displayName' | 'email' | 'profileImageUrl' | 'lastActiveAt'>[]> {
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    const onlineUsers = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+        email: users.email,
+        profileImageUrl: users.profileImageUrl,
+        lastActiveAt: users.lastActiveAt,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.isActive, true),
+          gte(users.lastActiveAt, cutoff)
+        )
+      )
+      .orderBy(desc(users.lastActiveAt));
+    return onlineUsers;
   }
 
   // Legacy user methods (for backwards compatibility)
@@ -692,6 +727,76 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Subtask methods
+  async getSubtasks(parentTaskId: number): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.parentTaskId, parentTaskId))
+      .orderBy(projectTasks.createdAt);
+  }
+
+  async createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask> {
+    const [subtask] = await db
+      .insert(projectTasks)
+      .values({
+        projectId: data.projectId,
+        parentTaskId: data.parentTaskId,
+        title: data.title,
+        description: data.description || null,
+        status: 'pending',
+        priority: data.priority || 'medium',
+        dueDate: data.dueDate || null,
+        assigneeIds: data.assigneeIds || null,
+        assigneeNames: data.assigneeNames || null,
+        originType: 'manual',
+        promotedToTodo: false,
+      })
+      .returning();
+    return subtask;
+  }
+
+  async promoteTaskToTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async demoteTaskFromTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async getTasksPromotedToTodo(): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.promotedToTodo, true))
+      .orderBy(desc(projectTasks.updatedAt));
   }
 
   // Project Comments
@@ -4036,10 +4141,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
+    // Filter out undefined values to prevent Drizzle from writing NULL
+    // This preserves existing database values when a field is not explicitly updated
+    const filteredData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+    
     const [result] = await db
       .update(eventRequests)
       .set({
-        ...updateData,
+        ...filteredData,
         updatedAt: new Date(),
       })
       .where(eq(eventRequests.id, id))
@@ -4130,6 +4241,28 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(eventCollaborationComments.createdAt));
   }
 
+  async getBulkEventCollaborationComments(eventRequestIds: number[]): Promise<Map<number, EventCollaborationComment[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const comments = await db
+      .select()
+      .from(eventCollaborationComments)
+      .where(inArray(eventCollaborationComments.eventRequestId, eventRequestIds))
+      .orderBy(asc(eventCollaborationComments.createdAt));
+
+    const result = new Map<number, EventCollaborationComment[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    comments.forEach(comment => {
+      const list = result.get(comment.eventRequestId) || [];
+      list.push(comment);
+      result.set(comment.eventRequestId, list);
+    });
+
+    return result;
+  }
+
   async createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment> {
     try {
       const [comment] = await db
@@ -4174,6 +4307,54 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Event Collaboration Comment Likes
+  async getCommentLikes(commentId: number): Promise<EventCollaborationCommentLike[]> {
+    return await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(eq(eventCollaborationCommentLikes.commentId, commentId))
+      .orderBy(asc(eventCollaborationCommentLikes.createdAt));
+  }
+
+  async toggleCommentLike(commentId: number, userId: string): Promise<{ liked: boolean; likeCount: number }> {
+    // Check if already liked
+    const existing = await db
+      .select()
+      .from(eventCollaborationCommentLikes)
+      .where(
+        and(
+          eq(eventCollaborationCommentLikes.commentId, commentId),
+          eq(eventCollaborationCommentLikes.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Unlike: delete the like
+      await db
+        .delete(eventCollaborationCommentLikes)
+        .where(
+          and(
+            eq(eventCollaborationCommentLikes.commentId, commentId),
+            eq(eventCollaborationCommentLikes.userId, userId)
+          )
+        );
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: false, likeCount: likes.length };
+    } else {
+      // Like: insert new like
+      await db
+        .insert(eventCollaborationCommentLikes)
+        .values({ commentId, userId });
+
+      // Get updated count
+      const likes = await this.getCommentLikes(commentId);
+      return { liked: true, likeCount: likes.length };
+    }
+  }
+
   // Event Field Locks
   async getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]> {
     const now = new Date();
@@ -4187,6 +4368,34 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(eventFieldLocks.lockedAt));
+  }
+
+  async getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const now = new Date();
+    const locks = await db
+      .select()
+      .from(eventFieldLocks)
+      .where(
+        and(
+          inArray(eventFieldLocks.eventRequestId, eventRequestIds),
+          gt(eventFieldLocks.expiresAt, now)
+        )
+      )
+      .orderBy(desc(eventFieldLocks.lockedAt));
+
+    const result = new Map<number, EventFieldLock[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    locks.forEach(lock => {
+      const list = result.get(lock.eventRequestId) || [];
+      list.push(lock);
+      result.set(lock.eventRequestId, list);
+    });
+
+    return result;
   }
 
   async createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock> {

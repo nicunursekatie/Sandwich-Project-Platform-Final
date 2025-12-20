@@ -32,34 +32,73 @@ router.get(
     try {
       const config = validateSMSConfig();
 
-      // Test Twilio connection if configured
+      // Test SMS provider connection if configured
       let twilioStatus = 'not_configured';
       let twilioError = null;
 
-      if (config.isConfigured) {
+      if (config.isConfigured && config.provider) {
         try {
-          const Twilio = await import('twilio');
-          const client = Twilio.default(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-          );
+          // Use the provider factory to get the configured provider
+          const { SMSProviderFactory } = await import('../sms-providers/provider-factory');
+          const factory = SMSProviderFactory.getInstance();
+          const provider = await factory.getProviderAsync();
 
-          // Try to fetch account info to verify credentials
-          const account = await client.api
-            .accounts(process.env.TWILIO_ACCOUNT_SID)
-            .fetch();
-          twilioStatus = 'connected';
-          logger.log('✅ Twilio connection successful:', account.friendlyName);
+          if (provider && provider.isConfigured()) {
+            // For Twilio provider, test the connection
+            if (provider.name === 'twilio') {
+              // Check if using Replit integration or manual credentials
+              const { isReplitEnvironmentAvailable } = await import('../sms-providers/replit-twilio-connector');
+              const usingReplit = isReplitEnvironmentAvailable();
+
+              if (usingReplit) {
+                // Test via Replit integration
+                const { getTwilioClient } = await import('../sms-providers/replit-twilio-connector');
+                const client = await getTwilioClient();
+                if (client) {
+                  twilioStatus = 'connected';
+                  logger.log('✅ Twilio connection successful (Replit integration)');
+                } else {
+                  twilioStatus = 'error';
+                  twilioError = 'Failed to initialize Twilio client via Replit';
+                }
+              } else if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+                // Test via manual credentials
+                const Twilio = await import('twilio');
+                const client = Twilio.default(
+                  process.env.TWILIO_ACCOUNT_SID,
+                  process.env.TWILIO_AUTH_TOKEN
+                );
+
+                // Try to fetch account info to verify credentials
+                const account = await client.api
+                  .accounts(process.env.TWILIO_ACCOUNT_SID)
+                  .fetch();
+                twilioStatus = 'connected';
+                logger.log('✅ Twilio connection successful:', account.friendlyName);
+              } else {
+                twilioStatus = 'error';
+                twilioError = 'No Twilio credentials available';
+              }
+            } else {
+              // For other providers (like phone_gateway), just mark as connected if configured
+              twilioStatus = 'connected';
+              logger.log(`✅ ${provider.name} provider configured`);
+            }
+          } else {
+            twilioStatus = 'not_configured';
+            twilioError = 'SMS provider not properly configured';
+          }
         } catch (err: any) {
           twilioStatus = 'error';
           twilioError = err.message;
-          logger.error('❌ Twilio connection error:', err);
+          logger.error('❌ SMS provider connection error:', err);
         }
       }
 
       res.json({
         isConfigured: config.isConfigured,
         missingItems: config.missingItems,
+        provider: config.provider || 'none',
         twilioInitialized:
           !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN,
         twilioStatus,
@@ -73,6 +112,7 @@ router.get(
           hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
           hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
           hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER,
+          hasReplitIntegration: (await import('../sms-providers/replit-twilio-connector')).isReplitEnvironmentAvailable(),
         },
       });
     } catch (error: any) {

@@ -18,6 +18,7 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
+  CalendarCheck,
   CheckCircle,
   MessageSquare,
   Building,
@@ -40,6 +41,7 @@ import {
   formatEventDate,
   formatToolkitDate,
 } from '@/components/event-requests/utils';
+import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import {
   statusColors,
@@ -58,6 +60,12 @@ import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -107,6 +115,7 @@ interface CardHeaderProps {
   setEditingValue?: (value: string) => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
+  datePopulationInfo?: DatePopulationInfo;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -124,6 +133,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   setEditingValue,
   presentUsers = [],
   currentUserId = '',
+  datePopulationInfo,
 }) => {
   const isMobile = useIsMobile();
   const StatusIcon =
@@ -288,6 +298,23 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               )}
             </>
           )}
+
+          {/* Partner Organizations */}
+          {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-gray-600 text-sm">&bull;</span>
+              <span className="text-sm text-gray-600">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
             onClick={() => {
@@ -311,6 +338,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             >
               <AlertTriangle className="w-3 h-3 mr-1" />
               Needs follow-up
+            </Badge>
+          )}
+          {/* Past Date Warning Badge */}
+          {isPast && (
+            <Badge
+              className="bg-[#A31C41] text-white px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap"
+            >
+              <Clock className="w-3 h-3 mr-1" />
+              Date Passed
             </Badge>
           )}
 
@@ -369,7 +405,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 group">
+          <div className="flex items-center gap-2 group flex-wrap">
             <span className="text-base font-bold break-words" data-testid="text-date-value">
               {displayDate && dateInfo ? dateInfo.text : 'No date set'}
             </span>
@@ -377,6 +413,37 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <span className="text-sm opacity-80">
                 ({getRelativeTime(displayDate.toString())})
               </span>
+            )}
+            {/* Date Population Badges */}
+            {datePopulationInfo && datePopulationInfo.isOpen && (
+              <Badge
+                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                style={{ backgroundColor: '#47B3CB' }}
+                title="No other events scheduled or in process on this date"
+              >
+                <CalendarCheck className="w-3 h-3" />
+                Open date
+              </Badge>
+            )}
+            {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
+              <Badge
+                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                style={{ backgroundColor: '#FBAD3F' }}
+                title={`${datePopulationInfo.scheduledCount} scheduled event${datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                {datePopulationInfo.scheduledCount} scheduled
+              </Badge>
+            )}
+            {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
+              <Badge
+                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                style={{ backgroundColor: '#007E8C' }}
+                title={`${datePopulationInfo.inProcessCount} in-process event${datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date`}
+              >
+                <Calendar className="w-3 h-3" />
+                {datePopulationInfo.inProcessCount} in process
+              </Badge>
             )}
             {canEdit && startEditing && (
               <Button
@@ -430,10 +497,16 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onCall,
   onContact,
 }) => {
+  const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
+
   return (
-    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+      {/* Primary Contact */}
       <div className="flex items-center justify-between gap-2">
         <div className="space-y-1 min-w-0 flex-1">
+          {hasBackupContact && (
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Primary Contact</div>
+          )}
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <span className="font-medium text-base break-words min-w-0">
@@ -489,6 +562,48 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
       </div>
+
+      {/* Backup Contact */}
+      {hasBackupContact && (
+        <div className="border-t border-gray-200 pt-3">
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Backup Contact</div>
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <span className="font-medium text-base break-words min-w-0">
+                  {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                  {(request as any).backupContactRole && (
+                    <span className="text-gray-500 font-normal ml-2">({(request as any).backupContactRole})</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {(request as any).backupContactEmail && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`mailto:${(request as any).backupContactEmail}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
+                >
+                  {(request as any).backupContactEmail}
+                </a>
+              </div>
+            )}
+            {(request as any).backupContactPhone && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={`tel:${(request as any).backupContactPhone}`}
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                >
+                  {(request as any).backupContactPhone}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -533,6 +648,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const datePopulationInfo = getDatePopulation(
+    request.scheduledEventDate || request.desiredEventDate,
+    request.id
+  );
+
   // Check if user has permission to edit organization details
   const canEditOrgDetails =
     (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
@@ -554,6 +676,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     setEditingValue,
     presentUsers: collaboration.presentUsers,
     currentUserId: user?.id,
+    datePopulationInfo,
   });
 
   return (
@@ -603,6 +726,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           );
         })()}
 
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}
@@ -636,7 +772,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       className="h-7 text-xs flex items-center gap-1 text-amber-800 hover:bg-amber-100"
                     >
                       {showContactAttempts ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      {showContactAttempts ? 'Hide' : 'Show'} Details
+                      {showContactAttempts ? 'Hide Full' : 'Show Full'} Details
                     </Button>
                   )}
                   <Button
@@ -651,109 +787,101 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               </div>
 
-              {/* Contact Attempts Details */}
-              {showContactAttempts && Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
-                  {request.contactAttemptsLog
-                    .slice()
-                    .sort((a, b) => {
-                      // Sort by attemptNumber descending (most recent first)
-                      return (b.attemptNumber || 0) - (a.attemptNumber || 0);
-                    })
-                    .map((attempt: any) => {
-                      if (!attempt || typeof attempt !== 'object') return null;
+              {/* Contact Attempts Details - Condensed by default */}
+              {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                <div className="mt-3 border-t border-amber-300 pt-3">
+                  <div className="space-y-1.5">
+                    {request.contactAttemptsLog
+                      .slice()
+                      .sort((a, b) => {
+                        // Sort by attemptNumber descending (most recent first)
+                        return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                      })
+                      .map((attempt: any) => {
+                        if (!attempt || typeof attempt !== 'object') return null;
 
-                      const methodIcons = {
-                        phone: <Phone className="w-3 h-3" />,
-                        email: <Mail className="w-3 h-3" />,
-                        text: <MessageCircle className="w-3 h-3" />,
-                        both: <MessageSquare className="w-3 h-3" />,
-                      };
+                        const methodIcons = {
+                          phone: <Phone className="w-3 h-3" />,
+                          email: <Mail className="w-3 h-3" />,
+                          text: <MessageCircle className="w-3 h-3" />,
+                          both: <MessageSquare className="w-3 h-3" />,
+                        };
 
-                      const methodLabels = {
-                        phone: 'Phone',
-                        email: 'Email',
-                        text: 'Text',
-                        both: 'Phone & Email',
-                      };
+                        const methodLabels = {
+                          phone: 'Phone',
+                          email: 'Email',
+                          text: 'Text',
+                          both: 'Both',
+                        };
 
-                      const outcomeLabels: { [key: string]: string } = {
-                        successful: 'Successfully contacted - Got response',
-                        no_answer: 'No answer - No response',
-                        left_message: 'Left voicemail/message',
-                        wrong_number: 'Wrong/disconnected number',
-                        email_bounced: 'Email bounced/failed',
-                        requested_callback: 'Requested callback/follow-up',
-                        other: 'Other',
-                      };
+                        const outcomeLabels: { [key: string]: string } = {
+                          successful: 'Success',
+                          no_answer: 'No answer',
+                          left_message: 'Left message',
+                          wrong_number: 'Wrong number',
+                          email_bounced: 'Bounced',
+                          requested_callback: 'Callback requested',
+                          other: 'Other',
+                        };
 
-                      let parsedDate: Date | undefined;
-                      if (attempt.timestamp) {
-                        try {
-                          parsedDate = new Date(attempt.timestamp);
-                          if (isNaN(parsedDate.getTime())) {
+                        let parsedDate: Date | undefined;
+                        if (attempt.timestamp) {
+                          try {
+                            parsedDate = new Date(attempt.timestamp);
+                            if (isNaN(parsedDate.getTime())) {
+                              parsedDate = undefined;
+                            }
+                          } catch (e) {
                             parsedDate = undefined;
                           }
-                        } catch (e) {
-                          parsedDate = undefined;
                         }
-                      }
 
-                      const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
-                      const loggedByName = attempt.loggedByName;
-                      const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
+                        const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                        const hasNotes = attempt.notes && attempt.notes.trim().length > 0;
 
-                      return (
-                        <div
-                          key={attempt.attemptNumber || attempt.timestamp}
-                          className="bg-white rounded p-2 border border-amber-200 text-sm"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-amber-900">
-                                  Attempt #{attempt.attemptNumber || '?'}
-                                </span>
-                                {attempt.method && (
-                                  <div className="flex items-center gap-1 text-amber-700">
-                                    {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
-                                    <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
-                                  </div>
-                                )}
-                              </div>
+                        // Condensed view - single line with key info
+                        return (
+                          <div
+                            key={attempt.attemptNumber || attempt.timestamp}
+                            className="group bg-white rounded px-2.5 py-1.5 border border-amber-200 text-xs flex items-center justify-between gap-2 hover:bg-amber-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="font-semibold text-amber-900 flex-shrink-0">
+                                #{attempt.attemptNumber || '?'}
+                              </span>
+                              {attempt.method && (
+                                <div className="flex items-center gap-1 text-amber-700 flex-shrink-0">
+                                  {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                  <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                </div>
+                              )}
                               {attempt.outcome && (
-                                <div className="text-xs text-gray-700 mb-1">
-                                  <span className="font-medium">Outcome:</span>{' '}
-                                  {outcomeLabels[attempt.outcome] || attempt.outcome}
-                                </div>
+                                <span className="text-gray-700 flex-shrink-0">
+                                  • {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                </span>
                               )}
-                              {attempt.notes && (
-                                <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
-                                  {attempt.notes}
-                                </div>
+                              {parsedDate && (
+                                <span className="text-gray-500 flex-shrink-0">
+                                  • {parsedDate.toLocaleDateString()} {parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                               )}
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                {parsedDate && (
-                                  <span>{parsedDate.toLocaleString()}</span>
-                                )}
-                                {userName && userName !== 'unknown' && userName !== 'system' && (
-                                  <span>• by {userName}</span>
-                                )}
-                                {showLoggedBy && (
-                                  <span className="text-gray-400 italic">
-                                    (logged by {loggedByName})
-                                  </span>
-                                )}
-                              </div>
+                              {hasNotes && (
+                                <span className="text-gray-400 italic truncate max-w-[150px]" title={attempt.notes}>
+                                  • {attempt.notes.substring(0, 30)}{attempt.notes.length > 30 ? '...' : ''}
+                                </span>
+                              )}
                             </div>
-                            {/* Edit/Delete buttons for contact attempts */}
-                            <div className="flex gap-1 flex-shrink-0">
+                            {/* Edit/Delete buttons - show on hover */}
+                            <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               {onEditContactAttempt && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
-                                  onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                  className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEditContactAttempt(attempt.attemptNumber);
+                                  }}
                                   title="Edit contact attempt"
                                 >
                                   <Edit2 className="w-3 h-3" />
@@ -763,8 +891,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                  className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteContactAttempt(attempt.attemptNumber);
+                                  }}
                                   title="Delete contact attempt"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -772,9 +903,135 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                               )}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
+                  
+                  {/* Expanded view toggle - show full details if needed */}
+                  {showContactAttempts && (
+                    <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
+                      {request.contactAttemptsLog
+                        .slice()
+                        .sort((a, b) => {
+                          return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                        })
+                        .map((attempt: any) => {
+                          if (!attempt || typeof attempt !== 'object') return null;
+
+                          const methodIcons = {
+                            phone: <Phone className="w-3 h-3" />,
+                            email: <Mail className="w-3 h-3" />,
+                            text: <MessageCircle className="w-3 h-3" />,
+                            both: <MessageSquare className="w-3 h-3" />,
+                          };
+
+                          const methodLabels = {
+                            phone: 'Phone',
+                            email: 'Email',
+                            text: 'Text',
+                            both: 'Phone & Email',
+                          };
+
+                          const outcomeLabels: { [key: string]: string } = {
+                            successful: 'Successfully contacted - Got response',
+                            no_answer: 'No answer - No response',
+                            left_message: 'Left voicemail/message',
+                            wrong_number: 'Wrong/disconnected number',
+                            email_bounced: 'Email bounced/failed',
+                            requested_callback: 'Requested callback/follow-up',
+                            other: 'Other',
+                          };
+
+                          let parsedDate: Date | undefined;
+                          if (attempt.timestamp) {
+                            try {
+                              parsedDate = new Date(attempt.timestamp);
+                              if (isNaN(parsedDate.getTime())) {
+                                parsedDate = undefined;
+                              }
+                            } catch (e) {
+                              parsedDate = undefined;
+                            }
+                          }
+
+                          const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                          const loggedByName = attempt.loggedByName;
+                          const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
+
+                          return (
+                            <div
+                              key={`expanded-${attempt.attemptNumber || attempt.timestamp}`}
+                              className="bg-white rounded p-2 border border-amber-200 text-sm"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-amber-900">
+                                      Attempt #{attempt.attemptNumber || '?'}
+                                    </span>
+                                    {attempt.method && (
+                                      <div className="flex items-center gap-1 text-amber-700">
+                                        {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                        <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {attempt.outcome && (
+                                    <div className="text-xs text-gray-700 mb-1">
+                                      <span className="font-medium">Outcome:</span>{' '}
+                                      {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                    </div>
+                                  )}
+                                  {attempt.notes && (
+                                    <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
+                                      {attempt.notes}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    {parsedDate && (
+                                      <span>{parsedDate.toLocaleString()}</span>
+                                    )}
+                                    {userName && userName !== 'unknown' && userName !== 'system' && (
+                                      <span>• by {userName}</span>
+                                    )}
+                                    {showLoggedBy && (
+                                      <span className="text-gray-400 italic">
+                                        (logged by {loggedByName})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* Edit/Delete buttons for contact attempts */}
+                                <div className="flex gap-1 flex-shrink-0">
+                                  {onEditContactAttempt && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                      onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                      title="Edit contact attempt"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                  {onDeleteContactAttempt && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                      title="Delete contact attempt"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -792,33 +1049,79 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
             )}
 
-            {/* Preferred Time */}
-            {(request.eventStartTime || request.eventEndTime) && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
-                  Preferred Time
+            {/* Event Times - Start, End, and Pickup */}
+            {(request.eventStartTime || request.eventEndTime || request.pickupTime || request.pickupDateTime) && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
+                  Event Times
                 </p>
-                <p className="font-medium">
-                  {request.eventStartTime &&
-                    formatTime12Hour(request.eventStartTime)}
-                  {request.eventEndTime &&
-                    ` - ${formatTime12Hour(request.eventEndTime)}`}
-                </p>
+                {request.eventStartTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">Start:</span>
+                    <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
+                  </div>
+                )}
+                {request.eventEndTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">End:</span>
+                    <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
+                  </div>
+                )}
+                {(request.pickupTime || request.pickupDateTime) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">Pickup:</span>
+                    <span className="text-gray-900">
+                      {request.pickupDateTime 
+                        ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                        : request.pickupTime 
+                        ? formatTime12Hour(request.pickupTime)
+                        : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Sandwich Info */}
-            {(request.estimatedSandwichCount || request.sandwichTypes) && (
+            {/* Sandwich Info - Show actual if available, otherwise estimated */}
+            {((request.actualSandwichCount || request.actualSandwichTypes) || (request.estimatedSandwichCount || request.sandwichTypes)) && (
               <div className="bg-amber-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 mb-2">
                   <Package className="w-4 h-4 text-amber-600" />
-                  <span className="font-medium">Sandwiches:</span>
-                  <span>
-                    {formatSandwichTypesDisplay(
-                      request.sandwichTypes,
-                      request.estimatedSandwichCount ?? undefined
-                    )}
+                  <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
+                    {request.actualSandwichCount || request.actualSandwichTypes ? 'Actual Sandwiches' : 'Estimated Sandwiches'}
                   </span>
+                </div>
+                <div className="text-sm">
+                  {request.actualSandwichCount || request.actualSandwichTypes ? (
+                    <div>
+                      {request.actualSandwichTypes && Array.isArray(request.actualSandwichTypes) && request.actualSandwichTypes.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="font-medium text-amber-900">
+                            {formatSandwichTypesDisplay(request.actualSandwichTypes, request.actualSandwichCount ?? undefined)}
+                          </div>
+                          {request.actualSandwichCount && (
+                            <div className="text-xs text-amber-700">
+                              Total: {request.actualSandwichCount} sandwiches
+                            </div>
+                          )}
+                        </div>
+                      ) : request.actualSandwichCount ? (
+                        <div className="font-medium text-amber-900">
+                          {request.actualSandwichCount} sandwiches
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="font-medium text-amber-900">
+                      {formatSandwichTypesDisplay(
+                        request.sandwichTypes,
+                        request.estimatedSandwichCount ?? undefined
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -941,6 +1244,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
                   currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}
                   onDeleteComment={collaboration.deleteComment}
@@ -964,110 +1268,180 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onSchedule}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
-          >
-            <Calendar className="w-4 h-4 mr-1" />
-            Mark Scheduled
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onScheduleCall}
-            className="h-8"
-          >
-            <Phone className="w-4 h-4 mr-1" />
-            {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-            className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-          {onResendToolkit && (
-            <Button size="sm" variant="outline" onClick={onResendToolkit} className="h-8">
-              <Package className="w-4 h-4 mr-1" />
-              Resend Toolkit
-            </Button>
-          )}
-
-          {/* TSP Contact Assignment - only show if not already assigned */}
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
-
-          {/* AI Date Suggestion - show if there are dates to analyze */}
-          {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiSuggest}
-              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
-              data-testid="button-ai-suggest-date"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Date Suggest
-            </Button>
-          )}
-
-          {/* AI Intake Assistant - always available */}
-          {onAiIntakeAssist && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiIntakeAssist}
-              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
-              data-testid="button-ai-intake-assist"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Intake Check
-            </Button>
-          )}
-
-          <div className="flex-1" />
-
-          {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
-              <Edit className="w-4 h-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <ConfirmationDialog
-              trigger={
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="text-red-600 hover:text-red-700 h-8"
-                  data-testid="button-delete-request"
+                  variant="default"
+                  onClick={onSchedule}
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Mark Scheduled
                 </Button>
-              }
-              title="Delete In-Process Event"
-              description={`Are you sure you want to delete the in-process event from ${request.organizationName}? This will remove all progress and cannot be undone.`}
-              confirmText="Delete Request"
-              cancelText="Cancel"
-              onConfirm={onDelete}
-              variant="destructive"
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Mark this event as scheduled</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onScheduleCall}
+                  className="h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{request.scheduledCallDate ? 'Reschedule the call with organizer' : 'Schedule a call with organizer'}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {onResendToolkit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onResendToolkit} className="h-8">
+                    <Package className="w-4 h-4 mr-1" />
+                    Resend Toolkit
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Resend toolkit email to organizer</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* TSP Contact Assignment - only show if not already assigned */}
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* AI Date Suggestion - show if there are dates to analyze */}
+            {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiSuggest}
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
+                    data-testid="button-ai-suggest-date"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Date Suggest
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get AI suggestions for the best event date</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* AI Intake Assistant - always available */}
+            {onAiIntakeAssist && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAiIntakeAssist}
+                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
+                    data-testid="button-ai-intake-assist"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI Intake Check
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Use AI to check intake information</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            <div className="flex-1" />
+
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 h-8"
+                          data-testid="button-delete-request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                      title="Delete In-Process Event"
+                      description={`Are you sure you want to delete the in-process event from ${request.organizationName}? This will remove all progress and cannot be undone.`}
+                      confirmText="Delete Request"
+                      cancelText="Cancel"
+                      onConfirm={onDelete}
+                      variant="destructive"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this event request</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Audit Log Section */}
         <div className="mt-4 border-t border-gray-200 pt-4">

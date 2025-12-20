@@ -36,12 +36,48 @@ export function getSocketInstance(): SocketServer | null {
   return socketInstance;
 }
 
+/**
+ * Emit a messaging event to a specific user
+ * Use this to send real-time message updates (new, edited, deleted)
+ */
+export function emitMessagingEvent(userId: string, eventType: 'new_message' | 'message_edited' | 'message_deleted', data: any): void {
+  if (!socketInstance) {
+    logger.warn('Socket.IO not initialized, cannot emit messaging event');
+    return;
+  }
+
+  const messagingChannel = `messaging:${userId}`;
+  socketInstance.to(messagingChannel).emit(eventType, data);
+  logger.log(`Emitted ${eventType} to ${messagingChannel}`);
+}
+
+/**
+ * Emit an event request update to all connected clients
+ * Use this to broadcast new/updated event requests for real-time UI updates
+ */
+export function emitEventRequestUpdate(eventType: 'event_request_created' | 'event_request_updated' | 'event_request_deleted', data: any): void {
+  if (!socketInstance) {
+    logger.warn('Socket.IO not initialized, cannot emit event request update');
+    return;
+  }
+
+  // Broadcast to all connected clients
+  socketInstance.emit(eventType, data);
+  logger.log(`Emitted ${eventType} to all clients`);
+}
+
 export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: getSocketCorsConfig(),
     path: '/socket.io/',
-    transports: ['websocket', 'polling'],
+    // Start with polling for reliability through proxies, then upgrade to websocket
+    transports: ['polling', 'websocket'],
     allowEIO3: true,
+    // Increase timeouts for production stability
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    // Allow upgrade after initial polling connection
+    allowUpgrades: true,
   });
 
   // Store instance for access from routes
@@ -152,6 +188,28 @@ export function setupSocketChat(httpServer: HttpServer) {
         } catch (error) {
           logger.error('Error joining notification channel:', error);
           socket.emit('error', { message: 'Failed to join notification channel' });
+        }
+      }
+    );
+
+    // Handle joining messaging channel (for real-time direct message updates)
+    socket.on(
+      'join-messaging-channel',
+      async (data: { userId: string }) => {
+        try {
+          const { userId } = data;
+
+          // Join user-specific messaging channel
+          const messagingChannel = `messaging:${userId}`;
+          socket.join(messagingChannel);
+
+          logger.log(`User ${userId} joined messaging channel: ${messagingChannel}`);
+
+          // Send confirmation
+          socket.emit('joined-messaging-channel', { userId });
+        } catch (error) {
+          logger.error('Error joining messaging channel:', error);
+          socket.emit('error', { message: 'Failed to join messaging channel' });
         }
       }
     );

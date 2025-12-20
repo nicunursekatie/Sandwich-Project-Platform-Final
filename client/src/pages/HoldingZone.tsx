@@ -36,6 +36,13 @@ import {
   ListTodo,
   StickyNote,
   Lightbulb,
+  Clock,
+  RefreshCw,
+  Link,
+  Unlink,
+  ChevronRight,
+  Copy,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -64,8 +71,8 @@ interface HoldingZoneCategory {
 interface HoldingZoneItem {
   id: number;
   content: string;
-  type: 'task' | 'note' | 'idea';
-  status: 'open' | 'done';
+  type: 'task' | 'note' | 'idea' | 'canvas';
+  status: 'open' | 'todo' | 'done';
   createdBy: string;
   createdByName: string;
   assignedTo: string[] | null;
@@ -73,15 +80,36 @@ interface HoldingZoneItem {
   completedAt: Date | null;
   createdAt: Date;
   commentCount: number;
-  category: HoldingZoneCategory | null;
-  categoryId: number | null;
+  category: HoldingZoneCategory | null; // Legacy single category
+  categoryId: number | null; // Legacy single category ID
+  categories: Array<{ id: number; name: string; color: string }>; // Multiple categories
   isUrgent: boolean;
   isPrivate: boolean;
   details: string | null;
   dueDate: Date | string | null;
   likeCount?: number;
   userHasLiked?: boolean;
+  parentItemId?: number | null; // Parent item for nesting
+  childCount?: number; // Number of items nested under this item
+  isCanvas?: boolean;
+  canvasSections?: CanvasSection[] | null;
+  canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived' | null;
+  canvasPublishedSnapshot?: CanvasSection[] | null;
+  canvasPublishedAt?: Date | string | null;
+  canvasPublishedBy?: string | null;
 }
+
+type CanvasCard = {
+  id: string;
+  type: 'text';
+  content: string;
+};
+
+type CanvasSection = {
+  id: string;
+  title: string;
+  cards: CanvasCard[];
+};
 
 interface Comment {
   id: number;
@@ -123,18 +151,33 @@ const formatDate = (date: Date | string) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Category badge component
-function CategoryBadge({ category }: { category: HoldingZoneCategory | null }) {
-  if (!category) return null;
-  
+// Check if an item is overdue (has a due date in the past and is not completed)
+const isItemOverdue = (item: { dueDate: Date | string | null; status: string }) => {
+  if (!item.dueDate || item.status === 'done') return false;
+  const dueDate = typeof item.dueDate === 'string' ? new Date(item.dueDate) : item.dueDate;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  dueDate.setHours(0, 0, 0, 0);
+  return dueDate < today;
+};
+
+// Category badges component - supports multiple categories
+function CategoryBadges({ categories }: { categories: Array<{ id: number; name: string; color: string }> }) {
+  if (!categories || categories.length === 0) return null;
+
   return (
-    <Badge 
-      className="font-medium text-white border-0" 
-      style={{ backgroundColor: category.color }}
-      data-testid={`badge-category-${category.id}`}
-    >
-      {category.name}
-    </Badge>
+    <>
+      {categories.map(category => (
+        <Badge
+          key={category.id}
+          className="font-medium text-white border-0"
+          style={{ backgroundColor: category.color }}
+          data-testid={`badge-category-${category.id}`}
+        >
+          {category.name}
+        </Badge>
+      ))}
+    </>
   );
 }
 
@@ -500,11 +543,15 @@ export default function HoldingZone() {
   const [selectedStatus, setSelectedStatus] = useState<string>('active');
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
-  const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [newItemCategoryId, setNewItemCategoryId] = useState<string>('none');
+  const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea' | 'canvas'>('task');
+  const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
   const [newItemDetails, setNewItemDetails] = useState('');
+  const [newCanvasSections, setNewCanvasSections] = useState<CanvasSection[]>([
+    { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: '' }] },
+    { id: 'working-notes', title: 'Working Notes', cards: [] },
+  ]);
   const [newItemDueDate, setNewItemDueDate] = useState('');
   const [newItemAssignedTo, setNewItemAssignedTo] = useState<string[]>([]);
   const [newItemAssignedToNames, setNewItemAssignedToNames] = useState<string[]>([]);
@@ -514,25 +561,41 @@ export default function HoldingZone() {
   const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
   const [itemToPromote, setItemToPromote] = useState<HoldingZoneItem | null>(null);
   const [promotePriority, setPromotePriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [promoteAssignedTo, setPromoteAssignedTo] = useState<string[]>([]);
+  const [promoteAssignedToNames, setPromoteAssignedToNames] = useState<string[]>([]);
+  const [promoteDueDate, setPromoteDueDate] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<HoldingZoneItem | null>(null);
   const [editItemContent, setEditItemContent] = useState('');
-  const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea'>('task');
-  const [editItemCategoryId, setEditItemCategoryId] = useState<string>('none');
+  const [editItemType, setEditItemType] = useState<'task' | 'note' | 'idea' | 'canvas'>('task');
+  const [editItemCategoryIds, setEditItemCategoryIds] = useState<number[]>([]);
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
   const [editItemDetails, setEditItemDetails] = useState('');
+  const [editCanvasSections, setEditCanvasSections] = useState<CanvasSection[]>([]);
   const [editItemDueDate, setEditItemDueDate] = useState('');
+  const [isEditCreatingNewCategory, setIsEditCreatingNewCategory] = useState(false);
+  const [editNewCategoryName, setEditNewCategoryName] = useState('');
+  const [editNewCategoryColor, setEditNewCategoryColor] = useState('#236383');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [itemToAssign, setItemToAssign] = useState<HoldingZoneItem | null>(null);
   const [editingDetailsItemId, setEditingDetailsItemId] = useState<number | null>(null);
   const [editingDetailsContent, setEditingDetailsContent] = useState('');
-  const [activeTab, setActiveTab] = useState<'tasks' | 'notes'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'todo' | 'notes' | 'canvas'>('tasks');
   const [upgradeToProjectDialogOpen, setUpgradeToProjectDialogOpen] = useState(false);
   const [itemToUpgrade, setItemToUpgrade] = useState<HoldingZoneItem | null>(null);
   const [upgradeProjectTitle, setUpgradeProjectTitle] = useState('');
   const [upgradeProjectPriority, setUpgradeProjectPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [upgradeProjectCategory, setUpgradeProjectCategory] = useState('technology');
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [itemToLink, setItemToLink] = useState<HoldingZoneItem | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+
+  // Overdue item action dialog state
+  const [overdueActionDialogOpen, setOverdueActionDialogOpen] = useState(false);
+  const [overdueItem, setOverdueItem] = useState<HoldingZoneItem | null>(null);
+  const [postponeDate, setPostponeDate] = useState('');
+  const [transformContent, setTransformContent] = useState('');
 
   // Permission checks
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
@@ -582,8 +645,80 @@ export default function HoldingZone() {
     enabled: canView,
   });
 
-  // Filter items - split by type
-  const { filteredTasks, filteredNotes } = useMemo(() => {
+  // Fetch promoted subtasks (from project tasks)
+  interface PromotedSubtask {
+    id: number;
+    parentTaskId: number | null;
+    projectId: number | null;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: string;
+    promotedToTodo: boolean;
+    dueDate: string | null;
+    assigneeIds: string[] | null;
+    assigneeNames: string[] | null;
+    createdAt: string;
+  }
+
+  const { data: promotedSubtasks = [] } = useQuery<PromotedSubtask[]>({
+    queryKey: ['/api/tasks/promoted-to-todo'],
+    enabled: canView,
+  });
+
+  // Helper function to sort items so children appear right after their parents
+  const sortItemsWithChildren = (items: HoldingZoneItem[]): HoldingZoneItem[] => {
+    const itemMap = new Map<number, HoldingZoneItem>();
+    const rootItems: HoldingZoneItem[] = [];
+    const childrenByParent = new Map<number, HoldingZoneItem[]>();
+
+    // Build maps
+    items.forEach(item => {
+      itemMap.set(item.id, item);
+      if (item.parentItemId) {
+        if (!childrenByParent.has(item.parentItemId)) {
+          childrenByParent.set(item.parentItemId, []);
+        }
+        childrenByParent.get(item.parentItemId)!.push(item);
+      } else {
+        rootItems.push(item);
+      }
+    });
+
+    // Sort root items (by createdAt descending)
+    rootItems.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
+    // Recursively build sorted list: parent, then its children, then next parent
+    const result: HoldingZoneItem[] = [];
+    const processed = new Set<number>();
+
+    const addItemAndChildren = (item: HoldingZoneItem) => {
+      if (processed.has(item.id)) return;
+      processed.add(item.id);
+      
+      result.push(item);
+      
+      // Add children right after parent
+      const children = childrenByParent.get(item.id) || [];
+      children.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      children.forEach(child => addItemAndChildren(child));
+    };
+
+    rootItems.forEach(item => addItemAndChildren(item));
+
+    return result;
+  };
+
+  // Filter items - split by type and status
+  const { filteredTasks, filteredTodo, filteredNotes, filteredCanvases } = useMemo(() => {
     let filtered = items;
 
     // Filter by active/archived status
@@ -603,15 +738,29 @@ export default function HoldingZone() {
       filtered = filtered.filter(item => item.isUrgent);
     }
 
-    // Split into tasks and notes/ideas
-    const tasks = filtered.filter(item => item.type === 'task');
-    const notes = filtered.filter(item => item.type === 'note' || item.type === 'idea');
+    // Split into tasks, todo list, and notes/ideas
+    const tasks = filtered.filter(item => item.type === 'task' && item.status !== 'todo');
+    const todo = filtered.filter(item => item.status === 'todo'); // To-Do List items (any type)
+    const notes = filtered.filter(item => (item.type === 'note' || item.type === 'idea') && item.status !== 'todo');
+    const canvases = filtered.filter(item => (item.isCanvas || item.type === 'canvas') && item.status !== 'todo');
 
-    return { filteredTasks: tasks, filteredNotes: notes };
+    // Sort each array so children appear right after their parents
+    return { 
+      filteredTasks: sortItemsWithChildren(tasks), 
+      filteredTodo: sortItemsWithChildren(todo), 
+      filteredNotes: sortItemsWithChildren(notes),
+      filteredCanvases: sortItemsWithChildren(canvases),
+    };
   }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
 
   // Get current items based on active tab
-  const currentItems = activeTab === 'tasks' ? filteredTasks : filteredNotes;
+  const currentItems = activeTab === 'tasks'
+    ? filteredTasks
+    : activeTab === 'todo'
+      ? filteredTodo
+      : activeTab === 'canvas'
+        ? filteredCanvases
+        : filteredNotes;
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -620,7 +769,7 @@ export default function HoldingZone() {
     },
     onSuccess: (newCategory: HoldingZoneCategory) => {
       queryClient.invalidateQueries({ queryKey: ['/api/holding-zone/categories'] });
-      setNewItemCategoryId(String(newCategory.id));
+      setNewItemCategoryIds(prev => [...prev, newCategory.id]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -642,14 +791,17 @@ export default function HoldingZone() {
   const createItemMutation = useMutation({
     mutationFn: async (data: {
       content: string;
-      type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      type: 'task' | 'note' | 'idea' | 'canvas';
+      categoryIds: number[] | null;
       isUrgent: boolean;
       isPrivate: boolean;
       details: string | null;
       dueDate: string | null;
       assignedTo: string[] | null;
       assignedToNames: string[] | null;
+      isCanvas?: boolean;
+      canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived';
+      canvasSections?: CanvasSection[] | null;
     }) => {
       return await apiRequest('POST', '/api/team-board', data);
     },
@@ -658,13 +810,17 @@ export default function HoldingZone() {
       setIsSubmitDialogOpen(false);
       setNewItemContent('');
       setNewItemType('task');
-      setNewItemCategoryId('none');
+      setNewItemCategoryIds([]);
       setNewItemIsUrgent(false);
       setNewItemIsPrivate(false);
       setNewItemDetails('');
       setNewItemDueDate('');
       setNewItemAssignedTo([]);
       setNewItemAssignedToNames([]);
+      setNewCanvasSections([
+        { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: '' }] },
+        { id: 'working-notes', title: 'Working Notes', cards: [] },
+      ]);
       setIsCreatingNewCategory(false);
       setNewCategoryName('');
       setNewCategoryColor('#236383');
@@ -705,17 +861,20 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryId, isUrgent, isPrivate, details, dueDate }: {
+    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas }: {
       id: number;
       content: string;
-      type: 'task' | 'note' | 'idea';
-      categoryId: number | null;
+      type: 'task' | 'note' | 'idea' | 'canvas';
+      categoryIds: number[];
       isUrgent: boolean;
       isPrivate: boolean;
       details?: string | null;
       dueDate?: string | null;
+      canvasSections?: CanvasSection[] | null;
+      canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived';
+      isCanvas?: boolean;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryId, isUrgent, isPrivate, details, dueDate });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -723,11 +882,12 @@ export default function HoldingZone() {
       setItemToEdit(null);
       setEditItemContent('');
       setEditItemType('task');
-      setEditItemCategoryId('none');
+      setEditItemCategoryIds([]);
       setEditItemIsUrgent(false);
       setEditItemIsPrivate(false);
       setEditItemDetails('');
       setEditItemDueDate('');
+      setEditCanvasSections([]);
       toast({
         title: 'Item updated',
         description: 'Your item has been updated successfully',
@@ -788,30 +948,74 @@ export default function HoldingZone() {
     },
   });
 
-  // Promote to task mutation
+  // Promote to To-Do List mutation
   const promoteToTaskMutation = useMutation({
-    mutationFn: async ({ id, priority }: { id: number; priority: 'low' | 'medium' | 'high' }) => {
+    mutationFn: async ({ 
+      id, 
+      assignedTo, 
+      assignedToNames, 
+      dueDate 
+    }: { 
+      id: number; 
+      assignedTo?: string[]; 
+      assignedToNames?: string[]; 
+      dueDate?: string | null;
+    }) => {
       return await apiRequest('POST', `/api/team-board/${id}/promote`, {
-        projectId: null, // Standalone task
-        priority,
-        dueDate: null,
+        assignedTo: assignedTo || null,
+        assignedToNames: assignedToNames || null,
+        dueDate: dueDate || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/projects/standalone-tasks'] });
       setPromoteDialogOpen(false);
       setItemToPromote(null);
       setPromotePriority('medium');
+      setPromoteAssignedTo([]);
+      setPromoteAssignedToNames([]);
+      setPromoteDueDate('');
       toast({
-        title: 'Task-Draft promoted',
-        description: 'The task-draft has been promoted to a Task-Planned',
+        title: 'Moved to To-Do List',
+        description: 'The item has been moved to the To-Do List',
       });
     },
     onError: () => {
       toast({
         title: 'Error',
-        description: 'Failed to promote task-draft',
+        description: 'Failed to move item to To-Do List',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Link/unlink item mutation
+  const linkItemMutation = useMutation({
+    mutationFn: async ({ 
+      id, 
+      parentItemId 
+    }: { 
+      id: number; 
+      parentItemId: number | null;
+    }) => {
+      return await apiRequest('PATCH', `/api/team-board/${id}/link`, {
+        parentItemId: parentItemId,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setLinkDialogOpen(false);
+      setItemToLink(null);
+      setSelectedParentId(null);
+      toast({
+        title: variables.parentItemId ? 'Item linked' : 'Item unlinked',
+        description: variables.parentItemId ? 'Item has been linked to parent' : 'Item has been unlinked',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to link/unlink item',
         variant: 'destructive',
       });
     },
@@ -941,6 +1145,45 @@ export default function HoldingZone() {
     });
   };
 
+  const addCanvasSection = (setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>) => {
+    setter(prev => [
+      ...prev,
+      {
+        id: `section-${Date.now()}`,
+        title: `Section ${prev.length + 1}`,
+        cards: [],
+      },
+    ]);
+  };
+
+  const updateCanvasSectionTitle = (
+    setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>,
+    sectionId: string,
+    title: string
+  ) => {
+    setter(prev =>
+      prev.map(section => (section.id === sectionId ? { ...section, title } : section))
+    );
+  };
+
+  const updateCanvasSectionContent = (
+    setter: React.Dispatch<React.SetStateAction<CanvasSection[]>>,
+    sectionId: string,
+    content: string
+  ) => {
+    setter(prev =>
+      prev.map(section => {
+        if (section.id !== sectionId) return section;
+        const cards = section.cards && section.cards.length > 0
+          ? section.cards.map((card, idx) =>
+              idx === 0 ? { ...card, type: 'text', content } : card
+            )
+          : [{ id: `${sectionId}-card-1`, type: 'text' as const, content }];
+        return { ...section, cards };
+      })
+    );
+  };
+
   const handleSubmitItem = () => {
     if (!newItemContent.trim()) {
       toast({
@@ -951,16 +1194,21 @@ export default function HoldingZone() {
       return;
     }
 
+    const isCanvas = newItemType === 'canvas';
+
     createItemMutation.mutate({
       content: newItemContent.trim(),
       type: newItemType,
-      categoryId: newItemCategoryId && newItemCategoryId !== 'none' ? parseInt(newItemCategoryId) : null,
+      categoryIds: newItemCategoryIds.length > 0 ? newItemCategoryIds : null,
       isUrgent: newItemIsUrgent,
       isPrivate: newItemIsPrivate,
       details: newItemDetails.trim() || null,
       dueDate: newItemDueDate ? new Date(newItemDueDate).toISOString() : null,
       assignedTo: newItemAssignedTo.length > 0 ? newItemAssignedTo : null,
       assignedToNames: newItemAssignedToNames.length > 0 ? newItemAssignedToNames : null,
+      isCanvas,
+      canvasStatus: isCanvas ? 'draft' : undefined,
+      canvasSections: isCanvas ? newCanvasSections : null,
     });
   };
 
@@ -1162,15 +1410,24 @@ export default function HoldingZone() {
         </Card>
       </div>
 
-      {/* Tabs for Tasks vs Notes */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'notes')} className="mb-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+      {/* Tabs for Tasks, To-Do List, Notes, and Canvases */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'todo' | 'notes' | 'canvas')} className="mb-6">
+        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
           <TabsTrigger value="tasks" className="flex items-center gap-2" data-testid="tab-tasks">
             <ListTodo className="h-4 w-4" />
             Task-Drafts
             {filteredTasks.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {filteredTasks.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="todo" className="flex items-center gap-2" data-testid="tab-todo">
+            <CheckCircle2 className="h-4 w-4" />
+            To-Do List
+            {(filteredTodo.length + promotedSubtasks.length) > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredTodo.length + promotedSubtasks.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -1183,6 +1440,15 @@ export default function HoldingZone() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="canvas" className="flex items-center gap-2" data-testid="tab-canvas">
+            <LayoutTemplate className="h-4 w-4" />
+            Canvases
+            {filteredCanvases.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {filteredCanvases.length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -1191,7 +1457,7 @@ export default function HoldingZone() {
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#236383]" />
         </div>
-      ) : currentItems.length === 0 ? (
+      ) : currentItems.length === 0 && !(activeTab === 'todo' && promotedSubtasks.length > 0) ? (
         <Card>
           <CardContent className="p-12 text-center">
             {activeTab === 'tasks' ? (
@@ -1199,6 +1465,20 @@ export default function HoldingZone() {
                 <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 dark:text-gray-400 text-lg">
                   No task-drafts found. {canSubmit && "Click 'Submit Item' to add one!"}
+                </p>
+              </>
+            ) : activeTab === 'todo' ? (
+              <>
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No items in To-Do List. Promote task-drafts or subtasks to add them here!
+                </p>
+              </>
+            ) : activeTab === 'canvas' ? (
+              <>
+                <LayoutTemplate className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  No canvases yet. {canSubmit && "Click 'Submit Item' and choose Canvas to start one."}
                 </p>
               </>
             ) : (
@@ -1213,23 +1493,33 @@ export default function HoldingZone() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {currentItems.map((item) => (
+          {currentItems.map((item) => {
+            const isChildItem = !!item.parentItemId;
+            const parentItem = items.find(i => i.id === item.parentItemId);
+            return (
             <Card
               key={item.id}
-              className={`transition-all hover:shadow-md ${
-                item.isUrgent ? 'border-l-4 border-l-red-500' : ''
-              }`}
+              className={`transition-all hover:shadow-md border-l-4 ${
+                item.isUrgent ? 'border-l-red-500' : ''
+              } ${isChildItem ? 'ml-8 border-l-2 opacity-95' : ''}`}
+              style={!item.isUrgent && item.categories?.length > 0 ? { borderLeftColor: item.categories[0].color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
               <CardContent className="p-4">
                 {/* Header: Title, Badges, Actions */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
+                    {isChildItem && parentItem && (
+                      <div className="mb-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate max-w-[400px]">{parentItem.content}</span>
+                      </div>
+                    )}
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                       {item.content}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <CategoryBadge category={item.category} />
+                      <CategoryBadges categories={item.categories || []} />
                       {item.isUrgent && (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
@@ -1239,10 +1529,31 @@ export default function HoldingZone() {
                       <Badge variant="outline" className="capitalize">
                         {item.type}
                       </Badge>
+                      {item.status === 'todo' && (
+                        <Badge variant="default" className="gap-1 bg-blue-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          To-Do
+                        </Badge>
+                      )}
                       {item.status === 'done' && (
                         <Badge variant="default" className="gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Done
+                        </Badge>
+                      )}
+                      {isItemOverdue(item) && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-orange-500 text-orange-600 bg-orange-50 cursor-pointer hover:bg-orange-100"
+                          onClick={() => {
+                            setOverdueItem(item);
+                            setTransformContent(item.content);
+                            setPostponeDate('');
+                            setOverdueActionDialogOpen(true);
+                          }}
+                        >
+                          <Clock className="h-3 w-3" />
+                          Overdue
                         </Badge>
                       )}
                     </div>
@@ -1257,10 +1568,11 @@ export default function HoldingZone() {
                           setItemToEdit(item);
                           setEditItemContent(item.content);
                           setEditItemType(item.type);
-                          setEditItemCategoryId(item.categoryId ? String(item.categoryId) : 'none');
+                          setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
                           setEditItemIsUrgent(item.isUrgent);
                           setEditItemIsPrivate(item.isPrivate);
                           setEditItemDetails(item.details || '');
+                          setEditCanvasSections((item.canvasSections as CanvasSection[] | null) || []);
                           setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
                           setEditDialogOpen(true);
                         }}
@@ -1286,6 +1598,31 @@ export default function HoldingZone() {
                     </div>
                   )}
                 </div>
+
+                {(item.isCanvas || item.type === 'canvas') && (
+                  <div className="mb-3 space-y-2">
+                    <p className="text-sm font-semibold text-[#236383]">Canvas</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {((item.canvasSections as CanvasSection[] | null) || []).length === 0 ? (
+                        <p className="text-sm text-gray-500">No sections yet</p>
+                      ) : (
+                        ((item.canvasSections as CanvasSection[] | null) || []).map((section) => (
+                          <div key={section.id} className="rounded-lg border border-gray-200 p-3 bg-[#F9FBFC]">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-bold text-gray-800 truncate">{section.title}</span>
+                              <Badge variant="outline" className="text-[10px] capitalize">
+                                {item.canvasStatus || 'draft'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                              {section.cards?.[0]?.content || 'No content yet'}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Details Section with Inline Editing */}
                 <div className="mb-3">
@@ -1439,13 +1776,16 @@ export default function HoldingZone() {
                 {/* Action Buttons for Manage */}
                 {canManage && item.status !== 'done' && !item.completedAt && (
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    {item.type === 'task' && (
+                    {item.type === 'task' && item.status !== 'todo' && (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
                             setItemToPromote(item);
+                            setPromoteAssignedTo(item.assignedTo || []);
+                            setPromoteAssignedToNames(item.assignedToNames || []);
+                            setPromoteDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate.split('T')[0] : new Date(item.dueDate).toISOString().split('T')[0]) : '');
                             setPromoteDialogOpen(true);
                           }}
                           disabled={promoteToTaskMutation.isPending}
@@ -1453,7 +1793,7 @@ export default function HoldingZone() {
                           data-testid={`button-promote-${item.id}`}
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
-                          Promote to Task-Planned
+                          Move to To-Do List
                         </Button>
                         <Button
                           size="sm"
@@ -1475,6 +1815,34 @@ export default function HoldingZone() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => {
+                        setItemToLink(item);
+                        setSelectedParentId(item.parentItemId || null);
+                        setLinkDialogOpen(true);
+                      }}
+                      className="text-xs"
+                      data-testid={`button-link-${item.id}`}
+                    >
+                      {item.parentItemId ? (
+                        <>
+                          <Unlink className="h-3 w-3 mr-1" />
+                          Unlink
+                        </>
+                      ) : (
+                        <>
+                          <Link className="h-3 w-3 mr-1" />
+                          Link to Item
+                        </>
+                      )}
+                    </Button>
+                    {item.childCount != null && item.childCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {item.childCount} linked {item.childCount === 1 ? 'item' : 'items'}
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => updateItemMutation.mutate({ id: item.id, status: 'done' })}
                       disabled={updateItemMutation.isPending}
                       className="text-xs"
@@ -1487,7 +1855,108 @@ export default function HoldingZone() {
                 )}
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
+
+          {/* Promoted Subtasks Section - only show in todo tab */}
+          {activeTab === 'todo' && promotedSubtasks.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <FolderKanban className="h-5 w-5 text-teal-600" />
+                Project Subtasks
+              </h3>
+              <div className="space-y-3">
+                {promotedSubtasks.map((subtask) => (
+                  <Card
+                    key={`subtask-${subtask.id}`}
+                    className="transition-all hover:shadow-md border-l-4 border-l-teal-500"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {subtask.title}
+                          </h3>
+                          {subtask.description && (
+                            <p className="text-sm text-gray-600 mb-2">{subtask.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="capitalize bg-teal-50 text-teal-700 border-teal-200">
+                              Subtask
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                subtask.priority === 'high'
+                                  ? 'bg-red-100 text-red-800 border-red-200'
+                                  : subtask.priority === 'medium'
+                                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                  : 'bg-green-100 text-green-800 border-green-200'
+                              }
+                            >
+                              {subtask.priority}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                subtask.status === 'completed'
+                                  ? 'bg-green-100 text-green-800 border-green-200'
+                                  : subtask.status === 'in_progress'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                  : 'bg-gray-100 text-gray-800 border-gray-200'
+                              }
+                            >
+                              {subtask.status.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={async () => {
+                              try {
+                                await apiRequest('DELETE', `/api/tasks/${subtask.id}/promote-to-todo`);
+                                queryClient.invalidateQueries({ queryKey: ['/api/tasks/promoted-to-todo'] });
+                                toast({
+                                  title: 'Removed from To-Do List',
+                                  description: 'The subtask has been removed from your to-do list.',
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to remove from to-do list.',
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                            title="Remove from To-Do List"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        {subtask.assigneeNames && subtask.assigneeNames.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span>{subtask.assigneeNames.join(', ')}</span>
+                          </div>
+                        )}
+                        {subtask.dueDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(subtask.dueDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1512,39 +1981,53 @@ export default function HoldingZone() {
                   <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
+                  <SelectItem value="canvas">Canvas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="item-category">Category (Optional)</Label>
+              <Label>Categories (Optional)</Label>
               {!isCreatingNewCategory ? (
-                <Select
-                  value={newItemCategoryId}
-                  onValueChange={(value) => {
-                    if (value === 'create-new') {
-                      setIsCreatingNewCategory(true);
-                      setNewItemCategoryId('none');
-                    } else {
-                      setNewItemCategoryId(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="item-category" data-testid="select-new-item-category">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="create-new" className="text-[#236383] font-medium">
-                      + Create New Category...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`new-item-cat-${cat.id}`}
+                            checked={newItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setNewItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setNewItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`new-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3 p-4 border border-[#236383] rounded-lg bg-[#E6F4F6]">
                   <div className="flex items-center justify-between mb-2">
@@ -1656,6 +2139,45 @@ export default function HoldingZone() {
                 data-testid="textarea-new-item-details"
               />
             </div>
+
+            {newItemType === 'canvas' && (
+              <div className="space-y-3 rounded-lg border p-3 bg-[#F9FBFC]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Canvas Sections</Label>
+                    <p className="text-xs text-gray-500">Keep it light: Context + Working Notes by default.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addCanvasSection(setNewCanvasSections)}
+                  >
+                    + Add Section
+                  </Button>
+                </div>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {newCanvasSections.map((section, idx) => (
+                    <div key={section.id} className="rounded border border-gray-200 p-3 space-y-2 bg-white">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-600">Section {idx + 1}</Label>
+                        <Input
+                          value={section.title}
+                          onChange={(e) => updateCanvasSectionTitle(setNewCanvasSections, section.id, e.target.value)}
+                          placeholder="Section title"
+                          className="text-sm"
+                        />
+                      </div>
+                      <Textarea
+                        value={section.cards?.[0]?.content || ''}
+                        onChange={(e) => updateCanvasSectionContent(setNewCanvasSections, section.id, e.target.value)}
+                        placeholder="Add notes, ideas, or context..."
+                        className="min-h-[80px] text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="item-due-date">Due Date (Optional)</Label>
@@ -1824,6 +2346,7 @@ export default function HoldingZone() {
                   <SelectItem value="task">Task-Draft</SelectItem>
                   <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
+                  <SelectItem value="canvas">Canvas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1871,6 +2394,45 @@ export default function HoldingZone() {
               />
             </div>
 
+            {editItemType === 'canvas' && (
+              <div className="space-y-3 rounded-lg border p-3 bg-[#F9FBFC]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Canvas Sections</Label>
+                    <p className="text-xs text-gray-500">Light structure the team can collaborate on.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addCanvasSection(setEditCanvasSections)}
+                  >
+                    + Add Section
+                  </Button>
+                </div>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {editCanvasSections.map((section, idx) => (
+                    <div key={section.id} className="rounded border border-gray-200 p-3 space-y-2 bg-white">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-600">Section {idx + 1}</Label>
+                        <Input
+                          value={section.title}
+                          onChange={(e) => updateCanvasSectionTitle(setEditCanvasSections, section.id, e.target.value)}
+                          placeholder="Section title"
+                          className="text-sm"
+                        />
+                      </div>
+                      <Textarea
+                        value={section.cards?.[0]?.content || ''}
+                        onChange={(e) => updateCanvasSectionContent(setEditCanvasSections, section.id, e.target.value)}
+                        placeholder="Add notes, ideas, or context..."
+                        className="min-h-[80px] text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="edit-item-due-date">Due Date (Optional)</Label>
               <Input
@@ -1882,20 +2444,123 @@ export default function HoldingZone() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-item-category">Category (Optional)</Label>
-              <Select value={editItemCategoryId} onValueChange={setEditItemCategoryId}>
-                <SelectTrigger id="edit-item-category">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Categories (Optional)</Label>
+              {isEditCreatingNewCategory ? (
+                <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-new-category-name">New Category Name</Label>
+                    <Input
+                      id="edit-new-category-name"
+                      value={editNewCategoryName}
+                      onChange={(e) => setEditNewCategoryName(e.target.value)}
+                      placeholder="Enter category name..."
+                      data-testid="input-edit-new-category-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-new-category-color">Category Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="edit-new-category-color"
+                        type="color"
+                        value={editNewCategoryColor}
+                        onChange={(e) => setEditNewCategoryColor(e.target.value)}
+                        className="w-16 h-10 p-1 cursor-pointer"
+                        data-testid="input-edit-new-category-color"
+                      />
+                      <Input
+                        value={editNewCategoryColor}
+                        onChange={(e) => setEditNewCategoryColor(e.target.value)}
+                        placeholder="#236383"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditCreatingNewCategory(false);
+                        setEditNewCategoryName('');
+                        setEditNewCategoryColor('#236383');
+                      }}
+                      data-testid="button-edit-cancel-new-category"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        if (editNewCategoryName.trim()) {
+                          createCategoryMutation.mutate(
+                            { name: editNewCategoryName.trim(), color: editNewCategoryColor },
+                            {
+                              onSuccess: (newCategory: HoldingZoneCategory) => {
+                                setEditItemCategoryIds(prev => [...prev, newCategory.id]);
+                                setIsEditCreatingNewCategory(false);
+                                setEditNewCategoryName('');
+                                setEditNewCategoryColor('#236383');
+                              }
+                            }
+                          );
+                        }
+                      }}
+                      disabled={!editNewCategoryName.trim() || createCategoryMutation.isPending}
+                      className="bg-[#236383] hover:bg-[#007E8C]"
+                      data-testid="button-edit-create-category"
+                    >
+                      {createCategoryMutation.isPending ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Creating...</>
+                      ) : (
+                        'Create Category'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories yet</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-item-cat-${cat.id}`}
+                            checked={editItemCategoryIds.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setEditItemCategoryIds(prev => [...prev, cat.id]);
+                              } else {
+                                setEditItemCategoryIds(prev => prev.filter(id => id !== cat.id));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`edit-item-cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditCreatingNewCategory(true)}
+                    className="w-full text-[#236383] border-[#236383]"
+                    type="button"
+                  >
+                    + Create New Category
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1907,11 +2572,15 @@ export default function HoldingZone() {
                 setItemToEdit(null);
                 setEditItemContent('');
                 setEditItemType('task');
-                setEditItemCategoryId('none');
+                setEditItemCategoryIds([]);
                 setEditItemIsUrgent(false);
                 setEditItemIsPrivate(false);
                 setEditItemDetails('');
                 setEditItemDueDate('');
+                setEditCanvasSections([]);
+                setIsEditCreatingNewCategory(false);
+                setEditNewCategoryName('');
+                setEditNewCategoryColor('#236383');
               }}
             >
               Cancel
@@ -1923,11 +2592,16 @@ export default function HoldingZone() {
                     id: itemToEdit.id,
                     content: editItemContent.trim(),
                     type: editItemType,
-                    categoryId: editItemCategoryId && editItemCategoryId !== 'none' ? parseInt(editItemCategoryId) : null,
+                    categoryIds: editItemCategoryIds,
                     isUrgent: editItemIsUrgent,
                     isPrivate: editItemIsPrivate,
                     details: editItemDetails.trim() || null,
                     dueDate: editItemDueDate ? new Date(editItemDueDate).toISOString() : null,
+                    isCanvas: editItemType === 'canvas',
+                    canvasSections: editItemType === 'canvas' ? editCanvasSections : null,
+                    canvasStatus: editItemType === 'canvas'
+                      ? (itemToEdit.canvasStatus as 'draft' | 'in_review' | 'published' | 'archived' | undefined) || 'draft'
+                      : undefined,
                   });
                 }
               }}
@@ -1954,7 +2628,7 @@ export default function HoldingZone() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {teamMembers.map(member => (
                 <Button
                   key={member.id}
@@ -1982,13 +2656,13 @@ export default function HoldingZone() {
         </DialogContent>
       </Dialog>
 
-      {/* Promote to Task-Planned Dialog */}
+      {/* Move to To-Do List Dialog */}
       <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Promote to Task-Planned</DialogTitle>
+            <DialogTitle>Move to To-Do List</DialogTitle>
             <DialogDescription>
-              Convert this task-draft into a standalone planned task ready for action
+              Move this item to the To-Do List where you can assign it to team members and set a due date
             </DialogDescription>
           </DialogHeader>
 
@@ -2005,23 +2679,89 @@ export default function HoldingZone() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="promote-priority">Priority</Label>
-              <Select value={promotePriority} onValueChange={(v) => setPromotePriority(v as any)}>
-                <SelectTrigger id="promote-priority" data-testid="select-promote-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="promote-assignees">Assign to Team Members (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    id="promote-assignees"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    {promoteAssignedToNames.length > 0
+                      ? `${promoteAssignedToNames.length} member${promoteAssignedToNames.length > 1 ? 's' : ''} selected`
+                      : 'Select team members...'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search team members..." />
+                    <CommandList>
+                      <CommandEmpty>No team members found.</CommandEmpty>
+                      <CommandGroup>
+                        {teamMembers.map((member) => {
+                          const isSelected = promoteAssignedTo.includes(member.id);
+                          return (
+                            <CommandItem
+                              key={member.id}
+                              onSelect={() => {
+                                if (isSelected) {
+                                  setPromoteAssignedTo(promoteAssignedTo.filter(id => id !== member.id));
+                                  setPromoteAssignedToNames(promoteAssignedToNames.filter(name => name !== member.name));
+                                } else {
+                                  setPromoteAssignedTo([...promoteAssignedTo, member.id]);
+                                  setPromoteAssignedToNames([...promoteAssignedToNames, member.name]);
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-2 w-full">
+                                <Checkbox checked={isSelected} />
+                                <User className="h-4 w-4 mr-2" />
+                                <span>{member.name}</span>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {promoteAssignedToNames.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {promoteAssignedToNames.map((name, idx) => (
+                    <Badge key={idx} variant="secondary" className="gap-1">
+                      {name}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          const member = teamMembers.find(m => m.name === name);
+                          if (member) {
+                            setPromoteAssignedTo(promoteAssignedTo.filter(id => id !== member.id));
+                            setPromoteAssignedToNames(promoteAssignedToNames.filter(n => n !== name));
+                          }
+                        }}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promote-due-date">Due Date (Optional)</Label>
+              <Input
+                id="promote-due-date"
+                type="date"
+                value={promoteDueDate}
+                onChange={(e) => setPromoteDueDate(e.target.value)}
+                className="w-full"
+              />
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> This will create a standalone Task-Planned (not attached to any project).
-                The task-draft will be marked as done, and you can find the new task in the Projects section.
+                <strong>Note:</strong> This will move the item to the To-Do List section where it can be assigned to team members and tracked with due dates.
               </p>
             </div>
           </div>
@@ -2033,6 +2773,9 @@ export default function HoldingZone() {
                 setPromoteDialogOpen(false);
                 setItemToPromote(null);
                 setPromotePriority('medium');
+                setPromoteAssignedTo([]);
+                setPromoteAssignedToNames([]);
+                setPromoteDueDate('');
               }}
               data-testid="button-cancel-promote"
             >
@@ -2043,7 +2786,9 @@ export default function HoldingZone() {
                 if (itemToPromote) {
                   promoteToTaskMutation.mutate({
                     id: itemToPromote.id,
-                    priority: promotePriority,
+                    assignedTo: promoteAssignedTo.length > 0 ? promoteAssignedTo : undefined,
+                    assignedToNames: promoteAssignedToNames.length > 0 ? promoteAssignedToNames : undefined,
+                    dueDate: promoteDueDate || null,
                   });
                 }
               }}
@@ -2052,9 +2797,9 @@ export default function HoldingZone() {
               data-testid="button-confirm-promote"
             >
               {promoteToTaskMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Promoting...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Moving...</>
               ) : (
-                <>Promote to Task-Planned</>
+                <>Move to To-Do List</>
               )}
             </Button>
           </DialogFooter>
@@ -2189,20 +2934,377 @@ export default function HoldingZone() {
         </DialogContent>
       </Dialog>
 
+      {/* Link to Parent Item Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5 text-[#236383]" />
+              {itemToLink?.parentItemId ? 'Change or Remove Link' : 'Link to Parent Item'}
+            </DialogTitle>
+            <DialogDescription>
+              {itemToLink?.parentItemId
+                ? 'Change the parent item or remove the link entirely.'
+                : 'Select a parent item to nest this item under. This helps organize related items together.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {itemToLink && (
+            <div className="space-y-4 py-4">
+              {/* Current Item Preview */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">This item:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 line-clamp-2">
+                  {itemToLink.content}
+                </p>
+              </div>
+
+              {/* Parent Selection */}
+              <div className="space-y-2">
+                <Label>Select Parent Item</Label>
+                <div className="max-h-[250px] overflow-y-auto space-y-2 border rounded-lg p-2">
+                  {/* Option to remove link */}
+                  {itemToLink.parentItemId && (
+                    <Button
+                      variant={selectedParentId === null ? 'default' : 'outline'}
+                      className={`w-full justify-start text-left h-auto py-2 px-3 ${
+                        selectedParentId === null ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' : ''
+                      }`}
+                      onClick={() => setSelectedParentId(null)}
+                    >
+                      <Unlink className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">Remove link (make standalone)</span>
+                    </Button>
+                  )}
+
+                  {/* Available parent items - exclude current item and its children */}
+                  {items
+                    .filter(item =>
+                      item.id !== itemToLink.id && // Can't link to self
+                      item.parentItemId !== itemToLink.id && // Can't link to own children
+                      item.status !== 'done' // Don't show completed items
+                    )
+                    .map(item => (
+                      <Button
+                        key={item.id}
+                        variant={selectedParentId === item.id ? 'default' : 'outline'}
+                        className={`w-full justify-start text-left h-auto py-2 px-3 ${
+                          selectedParentId === item.id ? 'bg-[#236383] text-white' : ''
+                        }`}
+                        onClick={() => setSelectedParentId(item.id)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.type === 'task' && <ListTodo className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'note' && <StickyNote className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'idea' && <Lightbulb className="h-4 w-4 flex-shrink-0" />}
+                          {item.type === 'canvas' && <LayoutTemplate className="h-4 w-4 flex-shrink-0" />}
+                          <span className="truncate">{item.content}</span>
+                          {item.childCount != null && item.childCount > 0 && (
+                            <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
+                              {item.childCount} linked
+                            </Badge>
+                          )}
+                        </div>
+                      </Button>
+                    ))}
+
+                  {items.filter(item =>
+                    item.id !== itemToLink.id &&
+                    item.parentItemId !== itemToLink.id &&
+                    item.status !== 'done'
+                  ).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No available items to link to
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Selection indicator */}
+              {selectedParentId !== null && selectedParentId !== itemToLink.parentItemId && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Will link to:</strong>{' '}
+                    {items.find(i => i.id === selectedParentId)?.content || 'Unknown'}
+                  </p>
+                </div>
+              )}
+
+              {selectedParentId === null && itemToLink.parentItemId && (
+                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Will remove link</strong> - Item will become standalone
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLinkDialogOpen(false);
+                setItemToLink(null);
+                setSelectedParentId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (itemToLink) {
+                  linkItemMutation.mutate({
+                    id: itemToLink.id,
+                    parentItemId: selectedParentId,
+                  });
+                }
+              }}
+              disabled={
+                linkItemMutation.isPending ||
+                (selectedParentId === itemToLink?.parentItemId) // No change
+              }
+              className="bg-[#236383] hover:bg-[#007E8C]"
+            >
+              {linkItemMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : itemToLink?.parentItemId && selectedParentId === null ? (
+                <>
+                  <Unlink className="h-4 w-4 mr-2" />
+                  Remove Link
+                </>
+              ) : (
+                <>
+                  <Link className="h-4 w-4 mr-2" />
+                  Link Item
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Overdue Item Action Dialog */}
+      <Dialog open={overdueActionDialogOpen} onOpenChange={setOverdueActionDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Overdue Item
+            </DialogTitle>
+            <DialogDescription>
+              This item's due date has passed. What would you like to do with it?
+            </DialogDescription>
+          </DialogHeader>
+
+          {overdueItem && (
+            <div className="space-y-4 py-4">
+              {/* Item Preview */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Item Content:
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mb-3">
+                  {overdueItem.content}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
+                  <Calendar className="h-3 w-3" />
+                  <span>
+                    Due: {overdueItem.dueDate ? formatDate(overdueItem.dueDate) : 'No date'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {/* Mark Complete */}
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-auto py-3 px-4"
+                  onClick={() => {
+                    if (overdueItem) {
+                      updateItemMutation.mutate(
+                        { id: overdueItem.id, status: 'done', completedAt: new Date().toISOString() },
+                        {
+                          onSuccess: () => {
+                            setOverdueActionDialogOpen(false);
+                            setOverdueItem(null);
+                            toast({
+                              title: 'Item completed',
+                              description: 'The item has been marked as done',
+                            });
+                          },
+                        }
+                      );
+                    }
+                  }}
+                  disabled={updateItemMutation.isPending}
+                >
+                  <div className="bg-green-100 dark:bg-green-900 rounded-full p-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium">Mark as Complete</p>
+                    <p className="text-xs text-gray-500">The task was finished, just past due</p>
+                  </div>
+                </Button>
+
+                {/* Postpone */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-2">
+                      <RefreshCw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Postpone</p>
+                      <p className="text-xs text-gray-500">Set a new due date</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="date"
+                      value={postponeDate}
+                      onChange={(e) => setPostponeDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="default"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        if (overdueItem && postponeDate) {
+                          editItemMutation.mutate(
+                            {
+                              id: overdueItem.id,
+                              content: overdueItem.content,
+                              type: overdueItem.type,
+                              categoryIds: overdueItem.categories?.map(c => c.id) || [],
+                              isUrgent: overdueItem.isUrgent,
+                              isPrivate: overdueItem.isPrivate,
+                              details: overdueItem.details,
+                              dueDate: new Date(postponeDate).toISOString(),
+                            },
+                            {
+                              onSuccess: () => {
+                                setOverdueActionDialogOpen(false);
+                                setOverdueItem(null);
+                                setPostponeDate('');
+                                toast({
+                                  title: 'Due date updated',
+                                  description: `New due date: ${formatDate(postponeDate)}`,
+                                });
+                              },
+                            }
+                          );
+                        }
+                      }}
+                      disabled={!postponeDate || editItemMutation.isPending}
+                    >
+                      {editItemMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Update'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Transform into New Task */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-100 dark:bg-purple-900 rounded-full p-2">
+                      <Copy className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Transform into New Task</p>
+                      <p className="text-xs text-gray-500">Create a new task if requirements changed, then archive this one</p>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={transformContent}
+                    onChange={(e) => setTransformContent(e.target.value)}
+                    placeholder="Updated task description..."
+                    className="min-h-[80px]"
+                  />
+                  <Button
+                    variant="default"
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      if (overdueItem && transformContent.trim()) {
+                        // Create new task
+                        createItemMutation.mutate(
+                          {
+                            content: transformContent.trim(),
+                            type: overdueItem.type,
+                            categoryIds: overdueItem.categories?.map(c => c.id) || null,
+                            isUrgent: overdueItem.isUrgent,
+                            isPrivate: overdueItem.isPrivate,
+                            details: overdueItem.details,
+                            dueDate: null, // New task starts without a due date
+                            assignedTo: overdueItem.assignedTo,
+                            assignedToNames: overdueItem.assignedToNames,
+                          },
+                          {
+                            onSuccess: () => {
+                              // Mark old item as done
+                              updateItemMutation.mutate(
+                                { id: overdueItem.id, status: 'done', completedAt: new Date().toISOString() },
+                                {
+                                  onSuccess: () => {
+                                    setOverdueActionDialogOpen(false);
+                                    setOverdueItem(null);
+                                    setTransformContent('');
+                                    toast({
+                                      title: 'Task transformed',
+                                      description: 'New task created and old task archived',
+                                    });
+                                  },
+                                }
+                              );
+                            },
+                          }
+                        );
+                      }
+                    }}
+                    disabled={!transformContent.trim() || createItemMutation.isPending || updateItemMutation.isPending}
+                  >
+                    {createItemMutation.isPending || updateItemMutation.isPending ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Create New Task & Archive Old
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setOverdueActionDialogOpen(false);
+                setOverdueItem(null);
+                setPostponeDate('');
+                setTransformContent('');
+              }}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* AI Assistant */}
       <FloatingAIChat
         contextType="holding-zone"
         title="Holding Zone Assistant"
         subtitle="Ask about your ideas and tasks"
         contextData={{
-          activeTab,
-          selectedItem: editItem ? {
-            content: editItem.content,
-            type: editItem.type,
-            status: editItem.status,
-            isUrgent: editItem.isUrgent,
-            categoryId: editItem.categoryId,
-          } : undefined,
+          currentView: activeTab,
           summaryStats: {
             totalItems: items.length,
             openItems: items.filter(i => i.status === 'open').length,
@@ -2214,12 +3316,34 @@ export default function HoldingZone() {
             ideas: items.filter(i => i.type === 'idea').length,
           },
         }}
+        getFullContext={() => ({
+          rawData: items.map(item => ({
+            id: item.id,
+            content: item.content,
+            type: item.type,
+            status: item.status,
+            isUrgent: item.isUrgent,
+            categoryId: item.categoryId,
+            category: item.category?.name || null,
+            createdByName: item.createdByName,
+            assignedToNames: item.assignedToNames,
+            dueDate: item.dueDate,
+            commentCount: item.commentCount,
+          })),
+          selectedItem: itemToEdit ? {
+            content: itemToEdit.content,
+            type: itemToEdit.type,
+            status: itemToEdit.status,
+            isUrgent: itemToEdit.isUrgent,
+            categoryId: itemToEdit.categoryId,
+          } : undefined,
+        })}
         suggestedQuestions={[
           "What items need attention?",
-          "How do I upgrade an idea to a project?",
+          "How many urgent items are there?",
           "Show me items by category",
-          "What's the difference between ideas and tasks?",
-          "How do I prioritize items?",
+          "What tasks are open?",
+          "What ideas have been submitted?",
           "What items are due soon?",
         ]}
       />

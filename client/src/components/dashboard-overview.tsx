@@ -41,6 +41,7 @@ import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
+import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -491,6 +492,9 @@ export default function DashboardOverview({
             </div>
           </div>
         </div>
+
+        {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
+        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
 
         {/* Planning Tools Section */}
         <div className="mx-4 mb-8 max-w-full">

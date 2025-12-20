@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import { useMessaging } from '@/hooks/useMessaging';
+import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
@@ -31,6 +32,7 @@ export default function SimpleNav({
     const { user } = useAuth();
     const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
+    const { totalUnread: streamChatUnread } = useStreamChatUnread();
 
     // State for collapsible sections
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -146,13 +148,12 @@ export default function SimpleNav({
 
     const getGroupLabel = (group: string) => {
       const labels = {
+        'quick-links': 'QUICK LINKS',
+        workspace: 'MY WORKSPACE',
+        logistics: 'LOGISTICS',
+        network: 'NETWORK',
         operations: 'OPERATIONS',
-        'event-planning': 'EVENT PLANNING',
-        'strategic-planning': 'STRATEGIC PLANNING',
-        analytics: 'ANALYTICS & REPORTS',
-        communication: 'COMMUNICATION',
-        documentation: 'DOCUMENTATION',
-        admin: 'ADMIN',
+        admin: 'ADMIN & RESOURCES',
       };
       return labels[group as keyof typeof labels] || group.toUpperCase();
     };
@@ -162,7 +163,8 @@ export default function SimpleNav({
         case 'gmail-inbox':
           return gmailUnreadCount;
         case 'chat':
-          return totalUnread;
+          // Use Stream Chat unread count for team chat
+          return streamChatUnread || 0;
         case 'suggestions':
           return unreadCounts.suggestions || 0;
         case 'event-reminders':
@@ -253,12 +255,17 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, toggle expansion first
+                // If item has children, toggle expansion
                 if (hasChildren) {
                   toggleParent(item.id);
+
+                  // If item has navigateAndExpand flag, also navigate (don't return early)
+                  if (!item.navigateAndExpand) {
+                    return; // Stop here - don't navigate for regular parent items
+                  }
                 }
 
-                // Then handle navigation
+                // Handle navigation for items WITHOUT children, or items with navigateAndExpand
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

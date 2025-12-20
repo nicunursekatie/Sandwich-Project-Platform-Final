@@ -9,14 +9,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { formatEventDate, formatTime12Hour } from '@/components/event-requests/utils';
 
-export default function SandwichForecastWidget() {
+interface SandwichForecastWidgetProps {
+  hideHeader?: boolean;
+}
+
+export default function SandwichForecastWidget({ hideHeader = false }: SandwichForecastWidgetProps) {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests?all=true'],
   });
 
-  // Add state for weekend preference (after vs before)
-  const [useWeekendAfter, setUseWeekendAfter] = useState(true);
+  // Add state for extended week view (include until next collection Wednesday)
+  const [includeUntilNextCollection, setIncludeUntilNextCollection] = useState(false);
 
   // Weekly sandwich prediction calculator
   const weeklySandwichForecast = useMemo(() => {
@@ -36,41 +41,72 @@ export default function SandwichForecastWidget() {
       }
     > = {};
 
-    // Helper function to get the Thursday of a distribution week
-    // For planning purposes, we group events by the Thursday they distribute on
-    const getDistributionThursday = (date: Date) => {
+    // Helper function to get the Monday of a calendar week
+    const getWeekMonday = (date: Date) => {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
-
-      const day = d.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-
-      // Handle Wed/Thu based on user preference
-      if (day === 3 || day === 4) {
-        if (useWeekendAfter) {
-          // Weekend AFTER: find NEXT week's Thursday
-          const daysToNextThursday = 7 + (4 - day);
-          d.setDate(d.getDate() + daysToNextThursday);
-        } else {
-          // Weekend BEFORE: find this week's Thursday
-          const daysToThursday = 4 - day;
-          d.setDate(d.getDate() + daysToThursday);
-        }
-      } else if (day === 2) {
-        // It's Tuesday - find this week's Thursday
-        d.setDate(d.getDate() + 2);
-      } else {
-        // It's Fri/Sat/Sun/Mon - find next Thursday
-        const daysToNextThursday = (11 - day) % 7;
-        d.setDate(d.getDate() + daysToNextThursday);
-      }
-
+      const day = d.getDay(); // 0=Sun, 1=Mon, ...
+      // Adjust to get Monday (if Sunday, go back 6 days; otherwise go back (day-1) days)
+      const daysToMonday = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + daysToMonday);
       return d;
     };
 
-    // Helper function to check if a distribution week is complete
-    const isWeekComplete = (thursdayDate: Date) => {
+    // Helper function to get the Sunday of the same calendar week
+    const getWeekSunday = (monday: Date) => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + 6);
+      return d;
+    };
+
+    // Helper function to get the next Wednesday after Sunday (collection day)
+    const getNextWednesday = (sunday: Date) => {
+      const d = new Date(sunday);
+      d.setDate(d.getDate() + 3); // Sun + 3 = Wed
+      return d;
+    };
+
+    // Helper function to check if a week is complete
+    const isWeekComplete = (endDate: Date) => {
       const now = new Date();
-      return now > thursdayDate;
+      now.setHours(0, 0, 0, 0);
+      return now > endDate;
+    };
+
+    // Helper function to safely parse dates without timezone issues
+    const parseEventDate = (dateString: string | null | undefined): Date | null => {
+      if (!dateString) return null;
+      
+      try {
+        let date: Date;
+        const dateStr = dateString.toString().trim();
+        
+        // Handle different date formats
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // YYYY-MM-DD format - parse at noon to avoid timezone shift
+          date = new Date(dateStr + 'T12:00:00');
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+          // Database timestamp format: "2024-12-01 00:00:00" - extract date part
+          const dateOnly = dateStr.split(' ')[0];
+          date = new Date(dateOnly + 'T12:00:00');
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+          // ISO format with midnight time - extract date part
+          const dateOnly = dateStr.split('T')[0];
+          date = new Date(dateOnly + 'T12:00:00');
+        } else {
+          // Other formats - parse and normalize to local date at midnight
+          date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            // Normalize to local midnight to avoid timezone issues
+            date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          }
+        }
+        
+        if (isNaN(date.getTime())) return null;
+        return date;
+      } catch (error) {
+        return null;
+      }
     };
 
     // Get current date for filtering events
@@ -80,6 +116,15 @@ export default function SandwichForecastWidget() {
     // Calculate date range: 4 weeks ago to 12 weeks forward
     const fourWeeksAgo = new Date(today);
     fourWeeksAgo.setDate(today.getDate() - 28);
+    fourWeeksAgo.setHours(0, 0, 0, 0);
+
+    // Debug: Log current date information
+    logger.log('📅 Sandwich Planning - Date Info:', {
+      today: today.toISOString().split('T')[0],
+      todayFormatted: today.toLocaleDateString('en-US'),
+      fourWeeksAgo: fourWeeksAgo.toISOString().split('T')[0],
+      fourWeeksAgoFormatted: fourWeeksAgo.toLocaleDateString('en-US'),
+    });
 
     // Process events with dates and estimated sandwich counts (past and future)
     const relevantEvents = eventRequests.filter((request) => {
@@ -101,11 +146,31 @@ export default function SandwichForecastWidget() {
       }
 
       try {
-        const eventDate = new Date(request.desiredEventDate);
-        if (isNaN(eventDate.getTime())) return false;
+        const eventDate = parseEventDate(request.desiredEventDate);
+        if (!eventDate) return false;
+        
+        // Normalize event date to midnight for proper comparison
+        const eventDateNormalized = new Date(eventDate);
+        eventDateNormalized.setHours(0, 0, 0, 0);
 
         // Include events from 4 weeks ago onwards
-        return eventDate >= fourWeeksAgo;
+        const isIncluded = eventDateNormalized >= fourWeeksAgo;
+        
+        // Debug: Log events from today to help diagnose
+        const eventDateStr = eventDateNormalized.toISOString().split('T')[0];
+        const todayStr = today.toISOString().split('T')[0];
+        if (eventDateStr === todayStr) {
+          logger.log('📅 Event on today\'s date:', {
+            org: request.organizationName,
+            eventDate: eventDateStr,
+            eventDateRaw: request.desiredEventDate,
+            parsedDate: eventDateNormalized.toISOString(),
+            isIncluded,
+            fourWeeksAgo: fourWeeksAgo.toISOString().split('T')[0],
+          });
+        }
+        
+        return isIncluded;
       } catch (error) {
         return false;
       }
@@ -113,39 +178,100 @@ export default function SandwichForecastWidget() {
 
     relevantEvents.forEach((request) => {
       try {
-        const eventDate = new Date(request.desiredEventDate!);
-        const distributionThursday = getDistributionThursday(eventDate);
-        const weekKey = distributionThursday.toISOString().split('T')[0];
-        const weekComplete = isWeekComplete(distributionThursday);
+        const eventDate = parseEventDate(request.desiredEventDate!);
+        if (!eventDate) return;
+        const weekMonday = getWeekMonday(eventDate);
+        const weekSunday = getWeekSunday(weekMonday);
 
-        // Debug logging for event grouping
-        if (eventDate.getDay() === 5) { // Friday
-          logger.log('🔍 Friday Event Grouping:', {
-            org: request.organizationName,
-            eventDate: eventDate.toDateString(),
-            eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
-            assignedThursday: distributionThursday.toDateString(),
-            weekKey
-          });
+        // Determine the end date based on user preference
+        const weekEndDate = includeUntilNextCollection
+          ? getNextWednesday(weekSunday)
+          : weekSunday;
+
+        // Use Monday as the week key for consistent grouping
+        const weekKey = weekMonday.toISOString().split('T')[0];
+
+        // For extended mode, check if event falls within extended range
+        // (Mon-Sun of calendar week, or Mon-Wed of following week if extended)
+        if (includeUntilNextCollection) {
+          // Check if event is Mon-Tue-Wed of the NEXT week (should belong to previous week)
+          const eventDay = eventDate.getDay();
+          if (eventDay >= 1 && eventDay <= 3) { // Mon, Tue, Wed
+            // Get the previous week's Monday
+            const prevWeekMonday = new Date(weekMonday);
+            prevWeekMonday.setDate(prevWeekMonday.getDate() - 7);
+            const prevWeekKey = prevWeekMonday.toISOString().split('T')[0];
+
+            // Check if this event should belong to the previous week
+            const prevWeekSunday = getWeekSunday(prevWeekMonday);
+            const prevWeekWednesday = getNextWednesday(prevWeekSunday);
+
+            if (eventDate <= prevWeekWednesday && eventDate > prevWeekSunday) {
+              // This event belongs to the previous week's extended range
+              const useWeekKey = prevWeekKey;
+              const useWeekMonday = prevWeekMonday;
+              const useWeekEndDate = prevWeekWednesday;
+              const weekComplete = isWeekComplete(useWeekEndDate);
+
+              if (!weeklyData[useWeekKey]) {
+                weeklyData[useWeekKey] = {
+                  weekStartDate: useWeekMonday.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  }),
+                  weekEndDate: useWeekEndDate.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  }),
+                  distributionDate: useWeekEndDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  }),
+                  isComplete: weekComplete,
+                  events: [],
+                  totalEstimated: 0,
+                  confirmedCount: 0,
+                  pendingCount: 0,
+                };
+              }
+
+              weeklyData[useWeekKey].events.push(request);
+
+              const sandwichCount = request.status === 'completed' && request.actualSandwichCount
+                ? request.actualSandwichCount
+                : request.estimatedSandwichCount || 0;
+
+              weeklyData[useWeekKey].totalEstimated += sandwichCount;
+
+              if (request.status === 'completed' || request.status === 'scheduled') {
+                weeklyData[useWeekKey].confirmedCount += sandwichCount;
+              } else {
+                weeklyData[useWeekKey].pendingCount += sandwichCount;
+              }
+
+              return; // Skip normal processing
+            }
+          }
         }
 
-        // Calculate Tuesday (2 days before Thursday) as the start of the distribution window
-        const tuesdayStart = new Date(distributionThursday);
-        tuesdayStart.setDate(distributionThursday.getDate() - 2);
+        const weekComplete = isWeekComplete(weekEndDate);
 
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = {
-            weekStartDate: tuesdayStart.toLocaleDateString('en-US', {
+            weekStartDate: weekMonday.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
             }),
-            weekEndDate: distributionThursday.toLocaleDateString('en-US', {
+            weekEndDate: weekEndDate.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
             }),
-            distributionDate: distributionThursday.toLocaleDateString('en-US', {
+            distributionDate: weekEndDate.toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
@@ -159,12 +285,12 @@ export default function SandwichForecastWidget() {
         }
 
         weeklyData[weekKey].events.push(request);
-        
+
         // Use actual count for completed events, estimated for others
-        const sandwichCount = request.status === 'completed' && request.actualSandwichCount 
-          ? request.actualSandwichCount 
+        const sandwichCount = request.status === 'completed' && request.actualSandwichCount
+          ? request.actualSandwichCount
           : request.estimatedSandwichCount || 0;
-        
+
         weeklyData[weekKey].totalEstimated += sandwichCount;
 
         if (request.status === 'completed' || request.status === 'scheduled') {
@@ -184,7 +310,7 @@ export default function SandwichForecastWidget() {
         ...data,
       }))
       .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Show all weeks in range
-  }, [eventRequests, useWeekendAfter]);
+  }, [eventRequests, includeUntilNextCollection]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -206,31 +332,65 @@ export default function SandwichForecastWidget() {
     );
   }, [weeklySandwichForecast]);
 
-  // Find the current or next week index
-  const getCurrentWeekIndex = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Find the first week that hasn't passed yet (Thursday >= today)
-    const currentIndex = weeklySandwichForecast.findIndex(week => {
-      const weekDate = new Date(week.weekKey);
-      return weekDate >= today;
-    });
-    
-    // If all weeks are in the past, show the last week
-    // If all weeks are in the future, show the first week
-    return currentIndex === -1 ? Math.max(0, weeklySandwichForecast.length - 1) : currentIndex;
-  };
-
   // Add state for current week index, starting at current/next week
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
 
   // Update index when forecast data changes (using useEffect instead of useMemo)
   useEffect(() => {
-    if (weeklySandwichForecast.length > 0) {
-      setCurrentWeekIndex(getCurrentWeekIndex());
+    if (weeklySandwichForecast.length === 0) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Helper to get week Monday from weekKey
+    const getWeekMonday = (weekKey: string) => {
+      const d = new Date(weekKey);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+    
+    // Helper to get week Sunday from Monday
+    const getWeekSunday = (monday: Date) => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + 6);
+      return d;
+    };
+    
+    // Helper to get next Wednesday after Sunday
+    const getNextWednesday = (sunday: Date) => {
+      const d = new Date(sunday);
+      d.setDate(d.getDate() + 3);
+      return d;
+    };
+    
+    // Find the week that contains today
+    const currentIndex = weeklySandwichForecast.findIndex(week => {
+      const weekMonday = getWeekMonday(week.weekKey);
+      const weekSunday = getWeekSunday(weekMonday);
+      const weekEndDate = includeUntilNextCollection
+        ? getNextWednesday(weekSunday)
+        : weekSunday;
+      weekEndDate.setHours(23, 59, 59, 999);
+      
+      // Check if today falls within this week's range
+      return today >= weekMonday && today <= weekEndDate;
+    });
+    
+    // If today is not in any week, find the first future week
+    if (currentIndex === -1) {
+      const futureIndex = weeklySandwichForecast.findIndex(week => {
+        const weekMonday = getWeekMonday(week.weekKey);
+        return weekMonday > today;
+      });
+      
+      // If all weeks are in the past, show the last week
+      // If all weeks are in the future, show the first week
+      const finalIndex = futureIndex === -1 ? Math.max(0, weeklySandwichForecast.length - 1) : futureIndex;
+      setCurrentWeekIndex(finalIndex);
+    } else {
+      setCurrentWeekIndex(currentIndex);
     }
-  }, [weeklySandwichForecast]);
+  }, [weeklySandwichForecast, includeUntilNextCollection]);
 
   // Only show one week at a time
   const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
@@ -279,52 +439,25 @@ export default function SandwichForecastWidget() {
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
-  // New logic for distribution events (Wed/Thu) and other events
-  // Wed/Thu events use sandwiches made on the weekend AFTER
-  const isDistributionEvent = (dateStr: string) => {
-    const date = parseEventDate(dateStr);
-    const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
-    return day === 3 || day === 4; // Wed, Thu
-  };
-  const isOtherEvent = (dateStr: string) => {
-    const date = parseEventDate(dateStr);
-    const day = date.getDay();
-    return day !== 3 && day !== 4;
-  };
-
-  const distributionEvents = (currentWeek?.events || [])
-    .filter(e => {
-      if (!e.desiredEventDate) return false;
-      return isDistributionEvent(e.desiredEventDate);
-    })
+  // Sort all events by date
+  const allWeekEvents = (currentWeek?.events || [])
     .sort((a, b) => {
-      // Sort by date (earliest first)
-      const dateA = parseEventDate(a.desiredEventDate!).getTime();
-      const dateB = parseEventDate(b.desiredEventDate!).getTime();
-      return dateA - dateB;
-    });
-
-  const otherEvents = (currentWeek?.events || [])
-    .filter(e => {
-      if (!e.desiredEventDate) return false;
-      return isOtherEvent(e.desiredEventDate);
-    })
-    .sort((a, b) => {
-      // Sort by date (earliest first)
-      const dateA = parseEventDate(a.desiredEventDate!).getTime();
-      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      // Sort by date (earliest first) - use scheduledEventDate if available
+      const dateStrA = a.scheduledEventDate || a.desiredEventDate;
+      const dateStrB = b.scheduledEventDate || b.desiredEventDate;
+      const dateA = dateStrA ? parseEventDate(dateStrA.toString()).getTime() : 0;
+      const dateB = dateStrB ? parseEventDate(dateStrB.toString()).getTime() : 0;
       return dateA - dateB;
     });
 
   // Totals - use actual count for completed events, estimated for others
   const getSandwichCount = (event: EventRequest) => {
-    return event.status === 'completed' && event.actualSandwichCount 
-      ? event.actualSandwichCount 
+    return event.status === 'completed' && event.actualSandwichCount
+      ? event.actualSandwichCount
       : event.estimatedSandwichCount || 0;
   };
-  
-  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + getSandwichCount(e), 0);
-  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + getSandwichCount(e), 0);
+
+  const weekTotal = allWeekEvents.reduce((sum, e) => sum + getSandwichCount(e), 0);
 
   if (isLoading) {
     return (
@@ -345,47 +478,50 @@ export default function SandwichForecastWidget() {
   }
 
   return (
-    <Card className="border-2 border-brand-primary/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-brand-primary flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Weekly Sandwich Planning
-            </CardTitle>
-            <p className="text-sm text-[#646464] mt-1">
-              Events grouped by Thursday distribution date. {useWeekendAfter ? 'Wed/Thu events use weekend AFTER.' : 'Tue/Wed/Thu events use same week.'}
-            </p>
-            <p className="text-xs text-brand-primary mt-1 font-medium">
-              📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
-            </p>
-          </div>
-          <div className="flex flex-col gap-1 items-end ml-4">
-            <label className="text-xs font-medium text-[#646464]">Wed/Thu Sandwiches</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={useWeekendAfter ? 'outline' : 'default'}
-                onClick={() => setUseWeekendAfter(false)}
-                className="text-xs h-7"
-              >
-                Weekend Before
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={useWeekendAfter ? 'default' : 'outline'}
-                onClick={() => setUseWeekendAfter(true)}
-                className="text-xs h-7"
-              >
-                Weekend After
-              </Button>
+    <Card className={hideHeader ? "border-0 shadow-none" : "border-2 border-brand-primary/20"}>
+      {!hideHeader && (
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-brand-primary flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Weekly Sandwich Planning
+              </CardTitle>
+              <p className="text-sm text-[#646464] mt-1">
+                Events grouped by calendar week (Mon-Sun).
+                {includeUntilNextCollection && ' Extended to include events until next Wednesday collection.'}
+              </p>
+              <p className="text-xs text-brand-primary mt-1 font-medium">
+                📅 Week view: {includeUntilNextCollection ? 'Mon-Wed (next week)' : 'Mon-Sun'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 items-end ml-4">
+              <label className="text-xs font-medium text-[#646464]">Week Range</label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={includeUntilNextCollection ? 'outline' : 'default'}
+                  onClick={() => setIncludeUntilNextCollection(false)}
+                  className="text-xs h-7"
+                >
+                  Mon-Sun
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={includeUntilNextCollection ? 'default' : 'outline'}
+                  onClick={() => setIncludeUntilNextCollection(true)}
+                  className="text-xs h-7"
+                >
+                  Until Next Collection
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </CardHeader>
+      )}
+      <CardContent className={hideHeader ? "p-0 space-y-6" : "space-y-6"}>
         {/* Week Navigation */}
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -415,44 +551,24 @@ export default function SandwichForecastWidget() {
             Next Week
           </Button>
         </div>
-        {/* Totals Section - separated visually */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg border border-[#007E8C] bg-[#F0FBFC]">
-            <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
-              Thursday Distribution Total:
-            </span>
-            <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
-              {thursdayTotal.toLocaleString()} sandwiches
-            </span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-[#007E8C] cursor-pointer ml-1" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Sandwiches needed for Thursday group distribution ({useWeekendAfter ? 'includes events on Tuesday only; Wed/Thu use following weekend' : 'includes events on Tuesday, Wednesday, and Thursday'}).
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg border border-[#A31C41] bg-[#FDF6F8]">
-            <span style={{ color: '#A31C41', fontWeight: 700, fontSize: '1.1em' }}>
-              Week Total:
-            </span>
-            <span style={{ color: '#A31C41', fontWeight: 700, fontSize: '1.1em' }}>
-              {weekTotal.toLocaleString()} sandwiches
-            </span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-[#A31C41] cursor-pointer ml-1" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Total sandwiches for all events this week (includes early events not counted for Thursday distribution).
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+        {/* Totals Section */}
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-[#236383] bg-[#F0FBFC] mb-4">
+          <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
+            Week Total:
+          </span>
+          <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
+            {weekTotal.toLocaleString()} sandwiches
+          </span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-[#236383] cursor-pointer ml-1" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Total sandwiches for all events {includeUntilNextCollection ? 'from Monday through next Wednesday collection' : 'this week (Mon-Sun)'}.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         {/* Unfulfilled needs summary row - only show if there are unfulfilled positions */}
         {(unfulfilledDrivers > 0 || unfulfilledSpeakers > 0) && (
@@ -469,108 +585,35 @@ export default function SandwichForecastWidget() {
             )}
           </div>
         )}
-        {/* Distribution Events Section */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-semibold" style={{ color: '#236383' }}>
-              Distribution Events (Tue/Wed/Thu)
-            </h4>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-[#236383] cursor-pointer" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  These events are counted toward Thursday's group distribution total.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          {distributionEvents.length === 0 ? (
-            <div className="text-gray-500 text-sm">No distribution events this week.</div>
-          ) : (
-            <div className="grid gap-2">
-              {distributionEvents.map(event => {
-                // Parse date at noon to avoid timezone edge cases
-                const eventDate = new Date(event.desiredEventDate + 'T12:00:00');
-                return (
-                  <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{event.organizationName}</div>
-                      <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const driversUnfulfilled = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-                        const speakersUnfulfilled = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
-                        return (
-                          <>
-                            {driversUnfulfilled > 0 && (
-                              <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {driversUnfulfilled} Driver{driversUnfulfilled > 1 ? 's' : ''} Needed</Badge>
-                            )}
-                            {speakersUnfulfilled > 0 && (
-                              <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {speakersUnfulfilled} Speaker{speakersUnfulfilled > 1 ? 's' : ''} Needed</Badge>
-                            )}
-                          </>
-                        );
-                      })()}
-                      <div className="text-right">
-                        <div className="font-semibold text-brand-primary">
-                          {getSandwichCount(event).toLocaleString()}
-                        </div>
-                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
-                          <div className="text-xs text-gray-600">
-                            {event.sandwichTypes.map((st: any, idx: number) => (
-                              <span key={idx}>
-                                {st.quantity} {st.type}
-                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-500">
-                          {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        {/* Other Events Section */}
+        {/* Events Section */}
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-semibold" style={{ color: '#A31C41' }}>
-              Other Events This Week
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-semibold" style={{ color: '#236383' }}>
+              Events This Week
             </h4>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-[#A31C41] cursor-pointer" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  These events are not counted toward Thursday's group distribution total, but are included in the week total.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span className="text-sm text-gray-500">
+              ({currentWeek?.weekStartDate} - {currentWeek?.weekEndDate})
+            </span>
           </div>
-          {otherEvents.length === 0 ? (
-            <div className="text-gray-500 text-sm">No other events this week.</div>
+          {allWeekEvents.length === 0 ? (
+            <div className="text-gray-500 text-sm">No events this week.</div>
           ) : (
             <div className="grid gap-2">
-              {otherEvents.map(event => {
-                // Parse date at noon to avoid timezone edge cases
-                const eventDate = new Date(event.desiredEventDate + 'T12:00:00');
+              {allWeekEvents.map(event => {
+                // Use scheduledEventDate first, fall back to desiredEventDate
+                const dateStr = event.scheduledEventDate || event.desiredEventDate;
+                const dateInfo = dateStr ? formatEventDate(dateStr.toString()) : null;
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
+                        {dateInfo ? dateInfo.text : 'Date TBD'}
+                        {event.eventStartTime && (
+                          <span className="ml-2 text-gray-500">
+                            @ {formatTime12Hour(event.eventStartTime)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -592,16 +635,20 @@ export default function SandwichForecastWidget() {
                         <div className="font-semibold text-brand-primary">
                           {getSandwichCount(event).toLocaleString()}
                         </div>
-                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
-                          <div className="text-xs text-gray-600">
-                            {event.sandwichTypes.map((st: any, idx: number) => (
-                              <span key={idx}>
-                                {st.quantity} {st.type}
-                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {(() => {
+                          const types = event.sandwichTypes as any[] | undefined;
+                          if (!types || !Array.isArray(types) || types.length === 0) return null;
+                          return (
+                            <div className="text-xs text-gray-600">
+                              {types.map((st: any, idx: number) => (
+                                <span key={idx}>
+                                  {st.quantity} {st.type}
+                                  {idx < types.length - 1 ? ', ' : ''}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         <div className="text-xs text-gray-500">
                           {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
                         </div>

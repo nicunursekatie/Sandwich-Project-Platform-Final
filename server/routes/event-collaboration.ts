@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { logger } from '../utils/production-safe-logger';
 import type { RouterDependencies } from '../types';
+import { EmailNotificationService } from '../services/email-notification-service';
 
 /**
  * Event Collaboration API Routes
@@ -33,12 +34,64 @@ const acquireLockSchema = z.object({
   expiresInMinutes: z.number().min(1).max(30).optional().default(5),
 });
 
+const bulkCollaborationSchema = z.object({
+  eventRequestIds: z.array(z.number()).min(1).max(100),
+});
+
 export function createEventCollaborationRouter(deps: RouterDependencies) {
   const router = Router();
   const { storage, requirePermission } = deps;
 
   // Note: Authentication is applied at mount time in server/routes/index.ts
   // Permissions are applied per-endpoint: VIEW for reads, EDIT for mutations
+
+  // ============================================================================
+  // BULK COLLABORATION ENDPOINT
+  // ============================================================================
+
+  /**
+   * POST /api/event-requests/collaboration/bulk
+   * Fetch collaboration data (comments and locks) for multiple event requests at once.
+   * This reduces N+1 API calls when displaying lists of events.
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.post('/collaboration/bulk', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const validatedData = bulkCollaborationSchema.parse(req.body);
+      const { eventRequestIds } = validatedData;
+
+      // Fetch comments and locks in parallel for all requested events
+      const [commentsMap, locksMap] = await Promise.all([
+        storage.getBulkEventCollaborationComments(eventRequestIds),
+        storage.getBulkEventFieldLocks(eventRequestIds),
+      ]);
+
+      // Build response object with event ID as key
+      const result: Record<number, { comments: any[]; locks: any[] }> = {};
+      
+      for (const eventId of eventRequestIds) {
+        result[eventId] = {
+          comments: commentsMap.get(eventId) || [],
+          locks: locksMap.get(eventId) || [],
+        };
+      }
+
+      res.json({ data: result });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: error.errors,
+        });
+      }
+
+      logger.error('[Event Collaboration] Error fetching bulk collaboration data:', error);
+      res.status(500).json({
+        error: 'Failed to fetch collaboration data',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
 
   // ============================================================================
   // COMMENTS ENDPOINTS
@@ -101,6 +154,18 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
         userName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email || 'Unknown User',
         content: validatedData.content,
         parentCommentId: validatedData.parentCommentId,
+      });
+
+      // Send email notification to TSP contacts (async, don't block response)
+      const commenterFirstName = req.user.firstName || req.user.email?.split('@')[0] || 'Someone';
+      EmailNotificationService.sendEventCommentNotification(
+        eventId,
+        commenterFirstName,
+        req.user.id,
+        validatedData.content,
+        new Date()
+      ).catch(err => {
+        logger.error('[Event Collaboration] Error sending comment notification:', err);
       });
 
       res.status(201).json({ comment });
@@ -187,7 +252,7 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
     try {
       const eventId = parseInt(req.params.id, 10);
       const commentId = parseInt(req.params.commentId, 10);
-      
+
       if (isNaN(eventId) || isNaN(commentId)) {
         return res.status(400).json({ error: 'Invalid event or comment ID' });
       }
@@ -205,8 +270,66 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       res.json({ success: true });
     } catch (error) {
       logger.error('[Event Collaboration] Error deleting comment:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to delete comment',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ============================================================================
+  // COMMENT LIKES ENDPOINTS
+  // ============================================================================
+
+  /**
+   * GET /api/event-requests/:id/collaboration/comments/:commentId/likes
+   * Get all likes for a comment
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.get('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId, 10);
+
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+      }
+
+      const likes = await storage.getCommentLikes(commentId);
+
+      res.json({ likes });
+    } catch (error) {
+      logger.error('[Event Collaboration] Error fetching comment likes:', error);
+      res.status(500).json({
+        error: 'Failed to fetch comment likes',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  /**
+   * POST /api/event-requests/:id/collaboration/comments/:commentId/likes
+   * Like a comment (toggle: if already liked, unlike it)
+   * Permission: EVENT_REQUESTS_VIEW
+   */
+  router.post('/:id/collaboration/comments/:commentId/likes', requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId, 10);
+
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const result = await storage.toggleCommentLike(commentId, req.user.id);
+
+      res.json(result);
+    } catch (error) {
+      logger.error('[Event Collaboration] Error toggling comment like:', error);
+      res.status(500).json({
+        error: 'Failed to toggle comment like',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }

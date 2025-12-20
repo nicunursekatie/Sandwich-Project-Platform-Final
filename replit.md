@@ -15,40 +15,64 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 
 **UI/UX Decisions:**
 - Modern, compact design with white card backgrounds, colored left borders for status, warm paper tone page background, subtle shadows, and a strong tonal hierarchy.
-- Operational monitoring uses Wednesday-Tuesday week boundaries for calculations.
+- Operational monitoring uses Wednesday-Tuesday week boundaries.
 - Visualizations for collection trends include two-line charts (individual vs group sandwiches) and summary cards.
+- Purple markers for recipients on maps (distinct from blue events, green hosts).
+- "Nearby Recipients" section in right panel showing recipients within 15 miles of selected event.
 
 **Technical Implementations & Feature Specifications:**
--   **Authentication & Permissions**: Role-based access control, granular permissions for various modules (e.g., Holding Zone, Projects Standalone Tasks), session management, and password security. Permissions are validated with layered middleware.
--   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling. `sandwich_collections` table is the operational source of truth. Soft deletes are implemented using `deleted_at` and `deleted_by` columns.
--   **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications, including real-time kudos and @mention notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org` and SMS activities are monitored with email notifications to admin (phone numbers redacted).
--   **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
--   **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, performs comprehensive intake validation, and features interactive Leaflet maps with AI Intake and Scheduling Assistants.
--   **Real-Time Collaboration System**: Multi-user collaboration for event editing and other resources (holding zone items, planning workspaces, meetings) with Socket.IO synchronization, including presence tracking, field-level locking, threaded comments, and edit revision history, utilizing a generic `useCollaboration` hook.
--   **User Activity Logging System**: Comprehensive tracking of authenticated user actions with a dedicated API endpoint for retrieval and filtering.
--   **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
--   **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment.
--   **Automated Reminders**: 24-hour volunteer reminder system via cron job.
--   **TSP Holding Zone**: Simple inbox-style system for capturing long-term ideas and tasks with flexible categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system (VIEW/SUBMIT/MANAGE).
--   **Error Handling & Logging**: Robust error handling with `lazyWithRetry` for dynamic component imports and improved production-safe logging that properly serializes error objects.
--   **Timezone Management**: Ensures accurate storage of user-entered times.
--   **Date Handling Rules** (CRITICAL - see `client/src/lib/date-utils.ts`):
-    - **Never** use `T12:00:00.000Z` - only use `T12:00:00` (no timezone suffix)
-    - **Always** use `timeZone: 'America/New_York'` for display formatting
-    - **Always** use the provided utility functions: `parseDateOnly()`, `formatDateDisplay()`, `formatDateForInput()`, `normalizeDate()`, etc.
-    - These rules prevent timezone conversion issues that can shift dates by one day
--   **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
+- **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement.
+- **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
+- **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
+- **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
+- **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, performs comprehensive intake validation, and features interactive Leaflet maps with AI Intake and Scheduling Assistants, including van conflict detection.
+- **Real-Time Collaboration System**: Multi-user collaboration for event editing and other resources with Socket.IO synchronization, including presence tracking, field-level locking, threaded comments, and edit revision history. All real-time communication is consolidated onto a single Socket.IO instance to prevent connection issues.
+- **User Activity Logging System**: Comprehensive tracking of authenticated user actions.
+- **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
+- **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment. Recipients are geocoded and displayed on this map.
+- **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels.
+- **SMS Alert Configuration System**: Users can opt-in to SMS notifications via the SMS opt-in page. Event reminders currently support SMS delivery (configurable in Alert Preferences as email/sms/both). Other alert types (TSP contact assignments, chat mentions, task assignments, collection reminders) are shown as "Coming Soon" for SMS. All alert types support email delivery. Key files: `client/src/components/alert-preferences.tsx` (UI with `smsImplemented` flag per alert), `client/src/pages/sms-opt-in.tsx` (opt-in flow), `server/services/cron-jobs.ts` (SMS sending via Twilio).
+- **TSP Holding Zone**: Simple inbox-style system for capturing long-term ideas and tasks with flexible categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system.
+- **Guided Tours & Onboarding System**: Interactive step-by-step tours for new users covering all major features. Tours are defined in `client/src/lib/tourDefinitions.ts` with permission-based filtering. Available tours include: Resources Overview, Host Location Map, Event Planning Overview, Collections Log, Dashboard & Analytics, Team Chat, TSP Holding Zone, Projects, Hosts Management, Event Reminders, Availability, Volunteers, and Driver Planning.
+- **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
+- **Timezone Management**: Ensures accurate storage of user-entered times, strictly adhering to `timeZone: 'America/New_York'` for display and using provided utility functions to prevent timezone conversion issues.
+  
+  **CRITICAL DATE HANDLING RULE - NEVER USE `new Date(dateString)` DIRECTLY ON DATE-ONLY STRINGS:**
+  - The bug: `new Date("2024-12-15")` is parsed as UTC midnight, which shifts to the PREVIOUS DAY when displayed in Eastern time.
+  - The fix: ALWAYS use helpers from `client/src/lib/date-utils.ts`:
+    - `formatDateShort(date)` - For short display like "Wed, Dec 15"
+    - `formatDateForDisplay(date)` - For full display like "Wednesday, December 15, 2024"
+    - `formatDateForInput(date)` - For HTML date input values
+  - These helpers add `T12:00:00` (noon) to date-only strings before parsing, avoiding timezone boundary issues.
+  - NEVER use `format(new Date(date), ...)` from date-fns on date-only strings - this causes the day-early bug.
+- **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
+- **Event Impact Report Data Source**: ONLY counts sandwiches from actual `sandwichCollections` records; does NOT fall back to estimated/planned counts from `eventRequests`.
+- **User Registration & Approval System**: New users sign up with `isActive: false` and require admin approval before accessing the application, enforced at login and through middleware.
+- **Google Sheets Sync Monitoring & Alerts**: Background sync service includes comprehensive monitoring and email alerts for no sync, stale sync, failures, and service stoppage. Advisory locks replaced with in-memory locking due to Neon serverless limitations.
+- **React Query Cache Management**: Uses `queryClient.refetchQueries` in mutation success handlers to ensure immediate UI updates after data changes.
+- **Organization Merge System**: Admin tool to merge duplicate organizations (e.g., "Dutton Family" vs "Dutton family"). Includes duplicate detection with similarity scoring, merge preview, and batch updates across event_requests and sandwich_collections tables. **CRITICAL**: When using `db.execute()` with raw SQL, results return as `{ rows: [...], rowCount: n }` QueryResult object, NOT as an array directly. Always access `.rows` to get the data array.
 
 ### External Dependencies
--   **Database**: `@neondatabase/serverless`, `drizzle-orm`
--   **Web Framework**: `express`
--   **UI/Styling**: `@radix-ui`, `tailwindcss`, `lucide-react`, `class-variance-authority`, `shadcn/ui`
--   **Data Fetching/State**: `@tanstack/react-query`, `react-hook-form`, `zod`
--   **Email**: `@sendgrid/mail`
--   **Real-time Communication**: `socket.io`, `socket.io-client`
--   **PDF Generation**: `pdfkit`
--   **Authentication**: `connect-pg-simple`
--   **File Uploads**: `multer`
--   **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
--   **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
--   **SMS**: `twilio`
+- **Database**: `@neondatabase/serverless`, `drizzle-orm`
+- **Web Framework**: `express`
+- **UI/Styling**: `@radix-ui`, `tailwindcss`, `lucide-react`, `class-variance-authority`, `shadcn/ui`
+- **Data Fetching/State**: `@tanstack/react-query`, `react-hook-form`, `zod`
+- **Email**: `@sendgrid/mail`
+- **Real-time Communication**: `socket.io`, `socket.io-client`
+- **PDF Generation**: `pdfkit`
+- **Authentication**: `connect-pg-simple`
+- **File Uploads**: `multer`
+- **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
+- **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
+- **SMS**: `twilio` (using Replit Twilio integration with API Key authentication)
+
+### Technical Documentation
+For detailed architecture rules, environment constraints, and development guidelines, see **[README.md](./README.md)**. This includes:
+- Socket Architecture (namespaces, singleton patterns, polling-only constraints)
+- Environment Constraints (Replit-specific)
+- Authentication Rules
+- Folder Structure & Responsibilities
+- DO NOT TOUCH sections
+- Socket Modification Checklist
+- Database Rules and Query Patterns
+- UI/UX Conventions and Philosophy

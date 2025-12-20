@@ -65,13 +65,14 @@ export function createActivityLogRoutes(storage: IStorage) {
       }
 
       // Create activity log entry using existing storage method
+      // Store details as a plain string, not a JSON object
       await storage.logUserActivity({
         userId: user.id,
         action: validatedData.action,
         section: validatedData.section,
         feature: validatedData.feature,
         page: validatedData.page || req.headers.referer || 'unknown',
-        details: validatedData.details ? { message: validatedData.details } : {},
+        details: validatedData.details || '',
         duration: null,
         metadata: validatedData.metadata || {},
         sessionId: (req as any).sessionID || null,

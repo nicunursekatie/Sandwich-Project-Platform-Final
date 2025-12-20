@@ -332,28 +332,45 @@ export function generateVerificationCode(): string {
 }
 
 /**
- * Get provider-specific welcome message configuration
+ * SMS Campaign types
  */
-function getWelcomeMessages(provider: SMSProvider) {
+export type SMSCampaignType = 'hosts' | 'events';
+
+/**
+ * Get provider-specific welcome message configuration
+ * @param provider - The SMS provider
+ * @param campaignType - The campaign type: 'hosts' for weekly collection reminders, 'events' for event coordination
+ */
+function getWelcomeMessages(provider: SMSProvider, campaignType: SMSCampaignType = 'hosts') {
   const providerName = provider.name;
   const fromNumber = provider.getFromNumber();
+  
+  // Campaign-specific welcome messages (Twilio-compliant)
+  const campaignWelcomeMessages = {
+    hosts: `The Sandwich Project: You're now opted in to receive SMS reminders about weekly sandwich collection submissions. Reply STOP to unsubscribe, HELP for assistance. Msg&Data rates may apply.`,
+    events: `The Sandwich Project: You're now opted in to receive SMS notifications about volunteer event reminders, event updates, and assignment notifications for events you are organizing or supporting. Reply STOP to unsubscribe, HELP for assistance. Msg&Data rates may apply.`
+  };
+  
+  // Campaign-specific confirmation messages
+  const campaignConfirmationMessages = {
+    hosts: (verificationCode: string) => 
+      `The Sandwich Project: Your verification code is ${verificationCode}. Reply with this code to confirm your SMS signup for collection reminders. Reply STOP to cancel, HELP for assistance.`,
+    events: (verificationCode: string) => 
+      `The Sandwich Project: Your verification code is ${verificationCode}. Reply with this code to confirm your SMS signup for event notifications. Reply STOP to cancel, HELP for assistance.`
+  };
   
   if (providerName === 'phone_gateway') {
     return {
       confirmation: (verificationCode: string) => 
         `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code:\n\n${verificationCode}\n\nYou'll receive helpful reminders and updates as needed.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
       
-      welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
+      welcome: () => campaignWelcomeMessages[campaignType]
     };
   } else {
-    // Twilio or other providers
+    // Twilio or other providers - use campaign-specific TCPA-compliant messages
     return {
-      confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nYou'll receive helpful reminders and updates as needed.`,
-      
-      welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
+      confirmation: campaignConfirmationMessages[campaignType],
+      welcome: () => campaignWelcomeMessages[campaignType]
     };
   }
 }
@@ -484,7 +501,7 @@ export async function sendConfirmationSMS(
         to: formattedPhone,
         // Add status callback to track delivery
         statusCallback: process.env.REPLIT_DOMAIN
-          ? `https://${process.env.REPLIT_DOMAIN}/api/users/sms-webhook/status`
+          ? `https://${process.env.REPLIT_DOMAIN}/api/sms-webhook/status`
           : undefined,
       });
 
@@ -575,9 +592,12 @@ export async function sendConfirmationSMS(
 
 /**
  * Send provider-appropriate welcome SMS
+ * @param phoneNumber - The phone number to send to
+ * @param campaignType - The campaign type: 'hosts' for collection reminders, 'events' for event coordination
  */
 export async function sendWelcomeSMS(
-  phoneNumber: string
+  phoneNumber: string,
+  campaignType: SMSCampaignType = 'hosts'
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
   
@@ -586,7 +606,7 @@ export async function sendWelcomeSMS(
 
   // Only log stack traces in development
   if (process.env.NODE_ENV !== 'production') {
-    logger.log(`🔍 [DEBUG] sendWelcomeSMS called with phone: ${redactedPhone}`);
+    logger.log(`🔍 [DEBUG] sendWelcomeSMS called with phone: ${redactedPhone}, campaign: ${campaignType}`);
   }
 
   if (!provider) {
@@ -613,9 +633,9 @@ export async function sendWelcomeSMS(
       };
     }
 
-    logger.log(`📱 About to send welcome SMS to: ${redactedPhone}`);
+    logger.log(`📱 About to send welcome SMS to: ${redactedPhone} (campaign: ${campaignType})`);
 
-    const messages = getWelcomeMessages(provider);
+    const messages = getWelcomeMessages(provider, campaignType);
     const welcomeMessage = messages.welcome();
 
     const result = await provider.sendSMS({
@@ -733,8 +753,8 @@ export async function sendTspContactAssignmentSMS(
         : 'https://sandwich-project-platform-final-katielong2316.replit.app');
     const eventUrl = `${appUrl}/event-requests`;
 
-    // Craft message
-    const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}`;
+    // Craft message (Twilio-compliant with STOP/HELP)
+    const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}. Reply STOP to opt out, HELP for help.`;
 
     const result = await provider.sendSMS({
       to: phoneNumber,
@@ -1135,6 +1155,204 @@ export async function sendEventReminderSMS(
     return {
       success: false,
       message: `Failed to send event reminder: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification when a user is mentioned in a chat channel
+ */
+export async function sendChatMentionSMS(
+  phoneNumber: string,
+  recipientName: string,
+  senderName: string,
+  channelName: string,
+  messagePreview: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 💬 ${senderName} mentioned you in #${channelName}: "${messagePreview}". ${appUrl ? `View: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Chat mention SMS sent to ${phoneNumber} for mention by ${senderName}`);
+      return {
+        success: true,
+        message: 'Chat mention notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending chat mention SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send chat mention notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification when a user is assigned to a team board item
+ */
+export async function sendTeamBoardAssignmentSMS(
+  phoneNumber: string,
+  recipientName: string,
+  itemTitle: string,
+  assignedByName: string,
+  itemType: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 📋 You've been assigned to a ${itemType}: "${itemTitle}" by ${assignedByName}. ${appUrl ? `View: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Team board assignment SMS sent to ${phoneNumber} for ${itemType}: ${itemTitle}`);
+      return {
+        success: true,
+        message: 'Team board assignment notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending team board assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send team board assignment notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification when a user is assigned as TSP contact for an event
+ */
+export async function sendTSPContactAssignmentSMS(
+  phoneNumber: string,
+  recipientName: string,
+  organizationName: string,
+  eventDate: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 🥪 You've been assigned as TSP contact for ${organizationName} on ${eventDate}. ${appUrl ? `View details: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ TSP contact assignment SMS sent to ${phoneNumber} for ${organizationName}`);
+      return {
+        success: true,
+        message: 'TSP contact assignment notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending TSP contact assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send TSP contact assignment notification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS reminder for collection submission
+ */
+export async function sendCollectionReminderSMS(
+  phoneNumber: string,
+  recipientName: string,
+  hostLocation: string,
+  weekEnding: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+  
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const message = `Hi ${recipientName}! 🥪 Reminder: Weekly sandwich count for ${hostLocation} (week ending ${weekEnding}) hasn't been submitted yet. ${appUrl ? `Submit: ${appUrl}` : ''}`;
+
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Collection reminder SMS sent to ${phoneNumber} for ${hostLocation}`);
+      return {
+        success: true,
+        message: 'Collection reminder notification sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending collection reminder SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send collection reminder notification: ${(error as Error).message}`,
     };
   }
 }

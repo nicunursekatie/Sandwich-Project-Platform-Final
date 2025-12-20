@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -11,7 +11,6 @@ import {
   Upload,
   Search,
   Filter,
-  X,
   Download,
   ChevronDown,
   ChevronRight,
@@ -24,7 +23,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
@@ -51,27 +49,24 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import TSPContactManager from './tsp-contact-manager';
+import { RecipientForm, RecipientCard } from './recipients';
+import { useRecipientForm } from '@/hooks/useRecipientForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS } from '@shared/auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Recipient } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
 export default function RecipientsManagement() {
   const { toast } = useToast();
-  const { user } = useAuth();
   const { canEdit } = useResourcePermissions('RECIPIENTS');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
-    null
-  );
+  const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(null);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('active'); // Default to active only
+  const [statusFilter, setStatusFilter] = useState<string>('active');
   const [contractFilter, setContractFilter] = useState<string>('all');
   const [showInactive, setShowInactive] = useState(false);
   const [regionFilter, setRegionFilter] = useState<string>('all');
@@ -80,83 +75,31 @@ export default function RecipientsManagement() {
   const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [customFocusArea, setCustomFocusArea] = useState('');
   const [importResults, setImportResults] = useState<{
     imported: number;
     skipped: number;
   } | null>(null);
 
-  // Collapsible section states - consolidated into single state object
-  const [sections, setSections] = useState({
-    basicInfo: true,
-    contact: true,
-    secondContact: false,
-    operational: false,
-    socialMedia: false,
-    editBasicInfo: true,
-    editContact: true,
-    editSecondContact: false,
-    editOperational: false,
-    editSocialMedia: false,
-  });
+  // Form state hooks for add and edit modes
+  const addForm = useRecipientForm({ initialData: null, mode: 'add' });
+  const editForm = useRecipientForm({ initialData: editingRecipient, mode: 'edit' });
 
-  const updateSection = (section: keyof typeof sections, open: boolean) => {
-    setSections(prev => ({ ...prev, [section]: open }));
-  };
-  const [newRecipient, setNewRecipient] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    website: '',
-    instagramHandle: '',
-    address: '',
-    region: '',
-    preferences: '', // Legacy field - keeping for backward compatibility
-    status: 'active' as const,
-    contactPersonName: '',
-    contactPersonPhone: '',
-    contactPersonEmail: '',
-    contactPersonRole: '',
-    // Second contact person fields
-    secondContactPersonName: '',
-    secondContactPersonPhone: '',
-    secondContactPersonEmail: '',
-    secondContactPersonRole: '',
-    // New enhanced fields
-    reportingGroup: '',
-    estimatedSandwiches: '',
-    sandwichType: '',
-    focusAreas: [] as string[], // Multiple focus areas
-    tspContact: '',
-    tspContactUserId: '',
-    contractSigned: false,
-    contractSignedDate: '',
-    // Collection and feeding schedule fields
-    collectionDay: '',
-    collectionTime: '',
-    feedingDay: '',
-    feedingTime: '',
-    // Social media post tracking fields
-    hasSharedPost: false,
-    sharedPostDate: '',
-  });
+  // Sync edit form when editingRecipient changes
+  useEffect(() => {
+    if (editingRecipient) {
+      editForm.setRecipient(editingRecipient);
+    }
+  }, [editingRecipient, editForm.setRecipient]);
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
     queryKey: ['/api/recipients'],
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-  });
-
-  // Fetch users for TSP contact selection
-  const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
-    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   // Filtered and searched recipients
   const filteredRecipients = useMemo(() => {
     let filtered = recipients;
 
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -168,93 +111,57 @@ export default function RecipientsManagement() {
           recipient.region?.toLowerCase().includes(term) ||
           recipient.contactPersonName?.toLowerCase().includes(term) ||
           recipient.contactPersonEmail?.toLowerCase().includes(term) ||
-          (recipient as any).secondContactPersonName
-            ?.toLowerCase()
-            .includes(term) ||
-          (recipient as any).secondContactPersonEmail
-            ?.toLowerCase()
-            .includes(term) ||
+          (recipient as any).secondContactPersonName?.toLowerCase().includes(term) ||
+          (recipient as any).secondContactPersonEmail?.toLowerCase().includes(term) ||
           recipient.reportingGroup?.toLowerCase().includes(term) ||
           (() => {
-            // Handle both new focusAreas array and legacy focusArea string
             const areas = Array.isArray((recipient as any).focusAreas)
               ? (recipient as any).focusAreas
-              : (recipient as any).focusArea
-                ? [(recipient as any).focusArea]
-                : [];
+              : (recipient as any).focusArea ? [(recipient as any).focusArea] : [];
             return areas.some((area: string) => area.toLowerCase().includes(term));
           })() ||
           (recipient as any).instagramHandle?.toLowerCase().includes(term)
       );
     }
 
-    // Apply status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(
-        (recipient) => recipient.status === statusFilter
-      );
+      filtered = filtered.filter((recipient) => recipient.status === statusFilter);
     }
 
-    // Apply contract filter
     if (contractFilter === 'signed') {
-      filtered = filtered.filter(
-        (recipient) => recipient.contractSigned === true
-      );
+      filtered = filtered.filter((recipient) => recipient.contractSigned === true);
     } else if (contractFilter === 'unsigned') {
       filtered = filtered.filter((recipient) => !recipient.contractSigned);
     }
 
-    // Apply region filter
     if (regionFilter !== 'all') {
-      filtered = filtered.filter(
-        (recipient) => recipient.region === regionFilter
-      );
+      filtered = filtered.filter((recipient) => recipient.region === regionFilter);
     }
 
-    // Apply TSP contact filter
     if (tspContactFilter !== 'all') {
       filtered = filtered.filter(
         (recipient) =>
           recipient.tspContact &&
-          recipient.tspContact
-            .toLowerCase()
-            .includes(tspContactFilter.toLowerCase())
+          recipient.tspContact.toLowerCase().includes(tspContactFilter.toLowerCase())
       );
     }
 
-    // Apply sandwich type filter
     if (sandwichTypeFilter !== 'all') {
-      filtered = filtered.filter(
-        (recipient) => recipient.sandwichType === sandwichTypeFilter
-      );
+      filtered = filtered.filter((recipient) => recipient.sandwichType === sandwichTypeFilter);
     }
 
-    // Apply focus area filter
     if (focusAreaFilter !== 'all') {
       filtered = filtered.filter((recipient) => {
-        // Handle both new focusAreas array and legacy focusArea string
         const areas = Array.isArray((recipient as any).focusAreas)
           ? (recipient as any).focusAreas
-          : (recipient as any).focusArea
-            ? [(recipient as any).focusArea]
-            : [];
+          : (recipient as any).focusArea ? [(recipient as any).focusArea] : [];
         return areas.includes(focusAreaFilter);
       });
     }
 
     return filtered;
-  }, [
-    recipients,
-    searchTerm,
-    statusFilter,
-    contractFilter,
-    regionFilter,
-    tspContactFilter,
-    sandwichTypeFilter,
-    focusAreaFilter,
-  ]);
+  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter]);
 
-  // Separate list for inactive recipients (always filtered, no other filters applied)
   const inactiveRecipients = useMemo(() => {
     return recipients.filter((r) => r.status === 'inactive');
   }, [recipients]);
@@ -269,12 +176,8 @@ export default function RecipientsManagement() {
     const allContacts = recipients
       .map((r) => r.tspContact)
       .filter(Boolean)
-      .flatMap((contact) =>
-        // Split contacts by common separators (/, &, and, comma)
-        contact.split(/[/&,]|and/i).map((c) => c.trim())
-      )
+      .flatMap((contact) => contact.split(/[/&,]|and/i).map((c) => c.trim()))
       .filter((contact) => contact.length > 0);
-
     return [...new Set(allContacts)].sort();
   }, [recipients]);
 
@@ -285,7 +188,6 @@ export default function RecipientsManagement() {
 
   const uniqueFocusAreas = useMemo(() => {
     const allAreas = recipients.flatMap((r) => {
-      // Handle both new focusAreas array and legacy focusArea string
       if (Array.isArray((r as any).focusAreas) && (r as any).focusAreas.length > 0) {
         return (r as any).focusAreas;
       } else if ((r as any).focusArea) {
@@ -296,6 +198,7 @@ export default function RecipientsManagement() {
     return [...new Set(allAreas)].sort();
   }, [recipients]);
 
+  // Mutations
   const createRecipientMutation = useMutation({
     mutationFn: (recipient: any) => {
       logger.log('[CREATE RECIPIENT] Sending data:', recipient);
@@ -304,73 +207,23 @@ export default function RecipientsManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       setIsAddModalOpen(false);
-      setNewRecipient({
-        name: '',
-        phone: '',
-        email: '',
-        website: '',
-        instagramHandle: '',
-        address: '',
-        region: '',
-        preferences: '',
-        status: 'active',
-        contactPersonName: '',
-        contactPersonPhone: '',
-        contactPersonEmail: '',
-        contactPersonRole: '',
-        secondContactPersonName: '',
-        secondContactPersonPhone: '',
-        secondContactPersonEmail: '',
-        secondContactPersonRole: '',
-        // Reset new enhanced fields
-        reportingGroup: '',
-        estimatedSandwiches: '',
-        sandwichType: '',
-        focusAreas: [], // Reset focus areas field
-        tspContact: '',
-        tspContactUserId: '',
-        contractSigned: false,
-        contractSignedDate: '',
-        // Reset collection and feeding schedule fields
-        collectionDay: '',
-        collectionTime: '',
-        feedingDay: '',
-        feedingTime: '',
-        // Reset social media post tracking fields
-        hasSharedPost: false,
-        sharedPostDate: '',
-      });
-      toast({
-        title: 'Success',
-        description: 'Recipient added successfully',
-      });
+      addForm.resetForm();
+      toast({ title: 'Success', description: 'Recipient added successfully' });
     },
     onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to add recipient',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to add recipient', variant: 'destructive' });
     },
   });
 
   const updateRecipientMutation = useMutation({
-    mutationFn: ({ id, ...updates }: any) =>
-      apiRequest('PUT', `/api/recipients/${id}`, updates),
+    mutationFn: ({ id, ...updates }: any) => apiRequest('PUT', `/api/recipients/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       setEditingRecipient(null);
-      toast({
-        title: 'Success',
-        description: 'Recipient updated successfully',
-      });
+      toast({ title: 'Success', description: 'Recipient updated successfully' });
     },
     onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to update recipient',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to update recipient', variant: 'destructive' });
     },
   });
 
@@ -378,17 +231,10 @@ export default function RecipientsManagement() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/recipients/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
-      toast({
-        title: 'Success',
-        description: 'Recipient deleted successfully',
-      });
+      toast({ title: 'Success', description: 'Recipient deleted successfully' });
     },
     onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete recipient',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to delete recipient', variant: 'destructive' });
     },
   });
 
@@ -396,96 +242,39 @@ export default function RecipientsManagement() {
     mutationFn: (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      return fetch('/api/recipients/import', {
-        method: 'POST',
-        body: formData,
-      }).then((res) => res.json());
+      return fetch('/api/recipients/import', { method: 'POST', body: formData }).then((res) => res.json());
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       setImportResults(data);
       setImportFile(null);
-      toast({
-        title: 'Import Complete',
-        description: `Successfully imported ${data.imported} recipients`,
-      });
+      toast({ title: 'Import Complete', description: `Successfully imported ${data.imported} recipients` });
     },
     onError: () => {
-      toast({
-        title: 'Import Error',
-        description: 'Failed to import recipients',
-        variant: 'destructive',
-      });
+      toast({ title: 'Import Error', description: 'Failed to import recipients', variant: 'destructive' });
     },
   });
 
+  // Event handlers
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRecipient.name) {
-      toast({
-        title: 'Validation Error',
-        description: 'Name is required',
-        variant: 'destructive',
-      });
+    const { valid, errors } = addForm.validate();
+    if (!valid) {
+      toast({ title: 'Validation Error', description: errors[0], variant: 'destructive' });
       return;
     }
-
-    // Convert data types to match schema expectations
-    const submissionData = {
-      ...newRecipient,
-      // Convert estimatedSandwiches from string to number (or null if empty)
-      estimatedSandwiches: newRecipient.estimatedSandwiches
-        ? parseInt(newRecipient.estimatedSandwiches, 10)
-        : null,
-      // Convert contractSignedDate from string to Date (or null if empty)
-      contractSignedDate: newRecipient.contractSignedDate
-        ? new Date(newRecipient.contractSignedDate)
-        : null,
-      // Convert sharedPostDate from string to Date (or null if empty)
-      sharedPostDate: (newRecipient as any).sharedPostDate
-        ? new Date((newRecipient as any).sharedPostDate)
-        : null,
-    };
-
-    createRecipientMutation.mutate(submissionData);
+    createRecipientMutation.mutate(addForm.prepareSubmissionData());
   };
 
   const handleEdit = (recipient: Recipient) => {
-    // Normalize focusAreas to always be an array
-    // Handle both new focusAreas array and legacy focusArea string
-    let focusAreas: string[] = [];
-
-    if (Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0) {
-      focusAreas = (recipient as any).focusAreas;
-    } else if ((recipient as any).focusArea && typeof (recipient as any).focusArea === 'string') {
-      // Migrate old single focusArea to array
-      focusAreas = [(recipient as any).focusArea];
-    }
-
-    const normalizedRecipient = {
-      ...recipient,
-      focusAreas
-    };
-    setEditingRecipient(normalizedRecipient as Recipient);
+    setEditingRecipient(recipient);
+    editForm.setRecipient(recipient);
   };
 
   const handleUpdate = () => {
     if (!editingRecipient) return;
-
-    // Convert data types to match schema expectations for update
-    const updateData = {
-      ...editingRecipient,
-      // Convert estimatedSandwiches from string to number (or null if empty)
-      estimatedSandwiches: (editingRecipient as any).estimatedSandwiches
-        ? parseInt((editingRecipient as any).estimatedSandwiches, 10)
-        : null,
-      // Convert contractSignedDate from string to Date (or null if empty)
-      contractSignedDate: (editingRecipient as any).contractSignedDate
-        ? new Date((editingRecipient as any).contractSignedDate)
-        : null,
-    };
-
-    updateRecipientMutation.mutate(updateData);
+    const submissionData = editForm.prepareSubmissionData();
+    updateRecipientMutation.mutate({ id: editingRecipient.id, ...submissionData });
   };
 
   const handleDelete = (id: number) => {
@@ -496,11 +285,7 @@ export default function RecipientsManagement() {
 
   const handleToggleStatus = (recipient: Recipient) => {
     const newStatus = recipient.status === 'active' ? 'inactive' : 'active';
-    const updateData = {
-      ...recipient,
-      status: newStatus
-    };
-    updateRecipientMutation.mutate(updateData);
+    updateRecipientMutation.mutate({ ...recipient, status: newStatus });
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -519,11 +304,8 @@ export default function RecipientsManagement() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/recipients/export-csv', {
-        credentials: 'include',
-      });
+      const response = await fetch('/api/recipients/export-csv', { credentials: 'include' });
       if (!response.ok) throw new Error('Export failed');
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -533,16 +315,9 @@ export default function RecipientsManagement() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast({
-        title: 'Export completed successfully',
-        description: `Exported ${filteredRecipients.length} recipients to CSV`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export recipients data',
-        variant: 'destructive',
-      });
+      toast({ title: 'Export completed successfully', description: `Exported ${filteredRecipients.length} recipients to CSV` });
+    } catch {
+      toast({ title: 'Export failed', description: 'Failed to export recipients data', variant: 'destructive' });
     }
   };
 
@@ -571,2261 +346,290 @@ export default function RecipientsManagement() {
                 </TooltipContent>
               </Tooltip>
             </h1>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export CSV
-            </Button>
-            <Dialog
-              open={isImportModalOpen}
-              onOpenChange={setIsImportModalOpen}
-            >
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  Import CSV/XLSX
-                </Button>
-              </DialogTrigger>
-              <DialogContent aria-describedby="import-recipients-description">
-                <DialogHeader>
-                  <DialogTitle>Import Recipients from CSV/XLSX</DialogTitle>
-                </DialogHeader>
-                <p
-                  id="import-recipients-description"
-                  className="text-sm text-slate-600 mb-4"
-                >
-                  Upload a CSV or Excel file with recipient data. Required
-                  columns: name, phone. Optional: email, address, preferences,
-                  status.
-                </p>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="file-upload">Select File</Label>
-                    <Input
-                      id="file-upload"
-                      type="file"
-                      accept=".csv,.xlsx,.xls"
-                      onChange={handleFileSelect}
-                      className="mt-1"
-                    />
-                    {importFile && (
-                      <p className="text-sm text-green-600 mt-2">
-                        Selected: {importFile.name}
-                      </p>
-                    )}
-                  </div>
-
-                  {importResults && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-medium text-green-800">
-                        Import Results
-                      </h4>
-                      <p className="text-sm text-green-700 mt-1">
-                        Successfully imported {importResults.imported}{' '}
-                        recipients
-                        {importResults.skipped > 0 &&
-                          `, skipped ${importResults.skipped} duplicates`}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsImportModalOpen(false);
-                        setImportFile(null);
-                        setImportResults(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleImport}
-                      disabled={
-                        !importFile || importRecipientsMutation.isPending
-                      }
-                    >
-                      {importRecipientsMutation.isPending
-                        ? 'Importing...'
-                        : 'Import'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={!canEdit} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Recipient
-                </Button>
-              </DialogTrigger>
-              <DialogContent
-                aria-describedby="add-recipient-description"
-                className="max-h-[90vh] flex flex-col"
-              >
-                <DialogHeader className="flex-shrink-0">
-                  <DialogTitle>Add New Recipient</DialogTitle>
-                </DialogHeader>
-                <div className="flex-1 overflow-y-auto px-1">
-                  <p
-                    id="add-recipient-description"
-                    className="text-sm text-slate-600 mb-4"
-                  >
-                    Add a new recipient to the system for sandwich deliveries.
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Export CSV
+              </Button>
+              <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Import CSV/XLSX
+                  </Button>
+                </DialogTrigger>
+                <DialogContent aria-describedby="import-recipients-description">
+                  <DialogHeader>
+                    <DialogTitle>Import Recipients from CSV/XLSX</DialogTitle>
+                  </DialogHeader>
+                  <p id="import-recipients-description" className="text-sm text-slate-600 mb-4">
+                    Upload a CSV or Excel file with recipient data. Required columns: name, phone. Optional: email, address, preferences, status.
                   </p>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Basic Information Section */}
-                    <Collapsible
-                      open={sections.basicInfo}
-                      onOpenChange={(open) => updateSection('basicInfo', open)}
-                    >
-                      <div>
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-0 h-auto"
-                          >
-                            <h4 className="font-medium text-sm text-slate-700">
-                              Basic Information
-                            </h4>
-                            {sections.basicInfo ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-3">
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="name">Name *</Label>
-                              <Input
-                                id="name"
-                                value={newRecipient.name}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    name: e.target.value,
-                                  })
-                                }
-                                placeholder="Enter recipient name"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="phone">Phone Number *</Label>
-                              <Input
-                                id="phone"
-                                value={newRecipient.phone}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    phone: e.target.value,
-                                  })
-                                }
-                                placeholder="(555) 123-4567"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="email">Email</Label>
-                              <Input
-                                id="email"
-                                type="email"
-                                value={newRecipient.email}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    email: e.target.value,
-                                  })
-                                }
-                                placeholder="email@example.com"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="website">Website</Label>
-                              <Input
-                                id="website"
-                                type="text"
-                                value={newRecipient.website}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    website: e.target.value,
-                                  })
-                                }
-                                placeholder="www.organization.org or https://organization.org"
-                              />
-                            </div>
-
-                            <div>
-                              <Label htmlFor="instagramHandle">
-                                Instagram Handle
-                              </Label>
-                              <Input
-                                id="instagramHandle"
-                                type="text"
-                                value={newRecipient.instagramHandle}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    instagramHandle: e.target.value,
-                                  })
-                                }
-                                placeholder="@organizationhandle"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="address">Street Address</Label>
-                              <Input
-                                id="address"
-                                value={newRecipient.address}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    address: e.target.value,
-                                  })
-                                }
-                                placeholder="123 Main St, City, State 12345"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="region">Region/Area</Label>
-                              <Input
-                                id="region"
-                                value={newRecipient.region}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    region: e.target.value,
-                                  })
-                                }
-                                placeholder="Downtown, Sandy Springs, Buckhead, etc."
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="preferences">Preferences</Label>
-                              <Input
-                                id="preferences"
-                                value={newRecipient.preferences}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    preferences: e.target.value,
-                                  })
-                                }
-                                placeholder="Dietary restrictions or preferences"
-                              />
-                            </div>
-                          </div>
-                        </CollapsibleContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="file-upload">Select File</Label>
+                      <Input id="file-upload" type="file" accept=".csv,.xlsx,.xls" onChange={handleFileSelect} className="mt-1" />
+                      {importFile && <p className="text-sm text-green-600 mt-2">Selected: {importFile.name}</p>}
+                    </div>
+                    {importResults && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 className="font-medium text-green-800">Import Results</h4>
+                        <p className="text-sm text-green-700 mt-1">
+                          Successfully imported {importResults.imported} recipients
+                          {importResults.skipped > 0 && `, skipped ${importResults.skipped} duplicates`}
+                        </p>
                       </div>
-                    </Collapsible>
-
-                    {/* Contact Person Section */}
-                    <Collapsible
-                      open={sections.contact}
-                      onOpenChange={(open) => updateSection('contact', open)}
-                    >
-                      <div className="border-t pt-4 mt-4">
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-0 h-auto"
-                          >
-                            <h4 className="font-medium text-sm text-slate-700">
-                              Contact Person Information
-                            </h4>
-                            {sections.contact ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="contactPersonName">
-                                Contact Name
-                              </Label>
-                              <Input
-                                id="contactPersonName"
-                                value={newRecipient.contactPersonName}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    contactPersonName: e.target.value,
-                                  })
-                                }
-                                placeholder="John Smith"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="contactPersonRole">
-                                Role/Title
-                              </Label>
-                              <Input
-                                id="contactPersonRole"
-                                value={newRecipient.contactPersonRole}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    contactPersonRole: e.target.value,
-                                  })
-                                }
-                                placeholder="Program Director, Manager, etc."
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="contactPersonPhone">
-                                Contact Phone
-                              </Label>
-                              <Input
-                                id="contactPersonPhone"
-                                value={newRecipient.contactPersonPhone}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    contactPersonPhone: e.target.value,
-                                  })
-                                }
-                                placeholder="(555) 123-4567"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="contactPersonEmail">
-                                Contact Email
-                              </Label>
-                              <Input
-                                id="contactPersonEmail"
-                                type="email"
-                                value={newRecipient.contactPersonEmail}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    contactPersonEmail: e.target.value,
-                                  })
-                                }
-                                placeholder="john@organization.org"
-                              />
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-
-                    {/* Second Contact Person Section */}
-                    <Collapsible
-                      open={sections.secondContact}
-                      onOpenChange={(open) => updateSection('secondContact', open)}
-                    >
-                      <div className="border-t pt-4 mt-4">
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-0 h-auto"
-                          >
-                            <h4 className="font-medium text-sm text-slate-700">
-                              Second Contact Person (Optional)
-                            </h4>
-                            {sections.secondContact ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="secondContactPersonName">
-                                Contact Name
-                              </Label>
-                              <Input
-                                id="secondContactPersonName"
-                                value={newRecipient.secondContactPersonName}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    secondContactPersonName: e.target.value,
-                                  })
-                                }
-                                placeholder="Jane Doe"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="secondContactPersonRole">
-                                Role/Title
-                              </Label>
-                              <Input
-                                id="secondContactPersonRole"
-                                value={newRecipient.secondContactPersonRole}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    secondContactPersonRole: e.target.value,
-                                  })
-                                }
-                                placeholder="Assistant Manager, etc."
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="secondContactPersonPhone">
-                                Contact Phone
-                              </Label>
-                              <Input
-                                id="secondContactPersonPhone"
-                                value={newRecipient.secondContactPersonPhone}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    secondContactPersonPhone: e.target.value,
-                                  })
-                                }
-                                placeholder="(555) 987-6543"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="secondContactPersonEmail">
-                                Contact Email
-                              </Label>
-                              <Input
-                                id="secondContactPersonEmail"
-                                type="email"
-                                value={newRecipient.secondContactPersonEmail}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    secondContactPersonEmail: e.target.value,
-                                  })
-                                }
-                                placeholder="jane@organization.org"
-                              />
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-
-                    {/* Enhanced Operational Fields */}
-                    <Collapsible
-                      open={sections.operational}
-                      onOpenChange={(open) => updateSection('operational', open)}
-                    >
-                      <div className="border-t pt-4 mt-4">
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-0 h-auto"
-                          >
-                            <h4 className="font-medium text-sm text-slate-700">
-                              Operational Details
-                            </h4>
-                            {sections.operational ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="reportingGroup">
-                                Reporting Group
-                              </Label>
-                              <Input
-                                id="reportingGroup"
-                                value={newRecipient.reportingGroup}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    reportingGroup: e.target.value,
-                                  })
-                                }
-                                placeholder="Corresponds to host locations"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="estimatedSandwiches">
-                                Estimated Sandwiches
-                              </Label>
-                              <Input
-                                id="estimatedSandwiches"
-                                type="number"
-                                value={newRecipient.estimatedSandwiches}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    estimatedSandwiches: e.target.value,
-                                  })
-                                }
-                                placeholder="Number of sandwiches needed"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="sandwichType">
-                                Sandwich Type
-                              </Label>
-                              <Input
-                                id="sandwichType"
-                                value={newRecipient.sandwichType}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    sandwichType: e.target.value,
-                                  })
-                                }
-                                placeholder="Type preferred (e.g., PB&J, Deli, Mixed)"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="focusAreas">Focus Areas</Label>
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                  {/* Predefined options */}
-                                  {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
-                                    <Badge
-                                      key={area}
-                                      variant={newRecipient.focusAreas.includes(area) ? "default" : "outline"}
-                                      className="cursor-pointer"
-                                      onClick={() => {
-                                        const updated = newRecipient.focusAreas.includes(area)
-                                          ? newRecipient.focusAreas.filter(a => a !== area)
-                                          : [...newRecipient.focusAreas, area];
-                                        setNewRecipient({ ...newRecipient, focusAreas: updated });
-                                      }}
-                                    >
-                                      {area}
-                                    </Badge>
-                                  ))}
-
-                                  {/* Custom focus areas */}
-                                  {newRecipient.focusAreas
-                                    .filter((area) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
-                                    .map((area) => (
-                                      <Badge
-                                        key={area}
-                                        variant="default"
-                                        className="cursor-pointer"
-                                        onClick={() => {
-                                          const updated = newRecipient.focusAreas.filter(a => a !== area);
-                                          setNewRecipient({ ...newRecipient, focusAreas: updated });
-                                        }}
-                                      >
-                                        {area} ×
-                                      </Badge>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2">
-                                  <Input
-                                    placeholder="Add custom focus area..."
-                                    value={customFocusArea}
-                                    onChange={(e) => setCustomFocusArea(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && customFocusArea.trim()) {
-                                        e.preventDefault();
-                                        const trimmed = customFocusArea.trim();
-                                        if (!newRecipient.focusAreas.includes(trimmed)) {
-                                          setNewRecipient({
-                                            ...newRecipient,
-                                            focusAreas: [...newRecipient.focusAreas, trimmed]
-                                          });
-                                        }
-                                        setCustomFocusArea('');
-                                      }
-                                    }}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const trimmed = customFocusArea.trim();
-                                      if (trimmed && !newRecipient.focusAreas.includes(trimmed)) {
-                                        setNewRecipient({
-                                          ...newRecipient,
-                                          focusAreas: [...newRecipient.focusAreas, trimmed]
-                                        });
-                                        setCustomFocusArea('');
-                                      }
-                                    }}
-                                  >
-                                    Add
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor="tspContact">TSP Contact</Label>
-                              <Input
-                                id="tspContact"
-                                value={newRecipient.tspContact}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    tspContact: e.target.value,
-                                  })
-                                }
-                                placeholder="TSP team member name"
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id="contractSigned"
-                                  checked={newRecipient.contractSigned}
-                                  onChange={(e) =>
-                                    setNewRecipient({
-                                      ...newRecipient,
-                                      contractSigned: e.target.checked,
-                                    })
-                                  }
-                                  className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
-                                />
-                                <Label
-                                  htmlFor="contractSigned"
-                                  className="text-sm"
-                                >
-                                  Contract Signed
-                                </Label>
-                              </div>
-                            </div>
-                            {newRecipient.contractSigned && (
-                              <div>
-                                <Label htmlFor="contractSignedDate">
-                                  Contract Signed Date
-                                </Label>
-                                <Input
-                                  id="contractSignedDate"
-                                  type="date"
-                                  value={newRecipient.contractSignedDate}
-                                  onChange={(e) =>
-                                    setNewRecipient({
-                                      ...newRecipient,
-                                      contractSignedDate: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                            )}
-                            
-                            {/* Collection and Feeding Schedule Fields */}
-                            <div className="col-span-2 border-t pt-3 mt-3">
-                              <h5 className="font-medium text-sm text-slate-700 mb-3">
-                                Collection & Feeding Schedule
-                              </h5>
-                            </div>
-                            <div>
-                              <Label htmlFor="collectionDay">
-                                Collection Day
-                              </Label>
-                              <Input
-                                id="collectionDay"
-                                type="text"
-                                value={newRecipient.collectionDay}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    collectionDay: e.target.value,
-                                  })
-                                }
-                                placeholder="Monday"
-                                data-testid="input-collection-day"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="collectionTime">
-                                Collection Time
-                              </Label>
-                              <Input
-                                id="collectionTime"
-                                type="text"
-                                value={newRecipient.collectionTime}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    collectionTime: e.target.value,
-                                  })
-                                }
-                                placeholder="9:00 AM"
-                                data-testid="input-collection-time"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="feedingDay">
-                                Feeding Day
-                              </Label>
-                              <Input
-                                id="feedingDay"
-                                type="text"
-                                value={newRecipient.feedingDay}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    feedingDay: e.target.value,
-                                  })
-                                }
-                                placeholder="Wednesday"
-                                data-testid="input-feeding-day"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="feedingTime">
-                                Feeding Time
-                              </Label>
-                              <Input
-                                id="feedingTime"
-                                type="text"
-                                value={newRecipient.feedingTime}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    feedingTime: e.target.value,
-                                  })
-                                }
-                                placeholder="12:00 PM"
-                                data-testid="input-feeding-time"
-                              />
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-
-                    {/* Social Media Tracking */}
-                    <Collapsible
-                      open={sections.socialMedia}
-                      onOpenChange={(open) => updateSection('socialMedia', open)}
-                    >
-                      <div className="border-t pt-4 mt-4">
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-0 h-auto"
-                          >
-                            <h4 className="font-medium text-sm text-slate-700">
-                              Social Media Tracking
-                            </h4>
-                            {sections.socialMedia ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-1 gap-3">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="hasSharedPost"
-                                checked={newRecipient.hasSharedPost}
-                                onCheckedChange={(checked) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    hasSharedPost: !!checked,
-                                  })
-                                }
-                                data-testid="checkbox-shared-post"
-                              />
-                              <Label
-                                htmlFor="hasSharedPost"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                Has shared a post about us on social media
-                              </Label>
-                            </div>
-                            {newRecipient.hasSharedPost && (
-                              <div>
-                                <Label htmlFor="sharedPostDate">
-                                  Date post was shared
-                                </Label>
-                                <Input
-                                  id="sharedPostDate"
-                                  type="date"
-                                  value={newRecipient.sharedPostDate}
-                                  onChange={(e) =>
-                                    setNewRecipient({
-                                      ...newRecipient,
-                                      sharedPostDate: e.target.value,
-                                    })
-                                  }
-                                  data-testid="input-shared-post-date"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-
-                    <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsAddModalOpen(false)}
-                      >
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => { setIsImportModalOpen(false); setImportFile(null); setImportResults(null); }}>
                         Cancel
                       </Button>
-                      <Button
-                        type="submit"
-                        disabled={createRecipientMutation.isPending}
-                      >
-                        {createRecipientMutation.isPending
-                          ? 'Adding...'
-                          : 'Add Recipient'}
+                      <Button onClick={handleImport} disabled={!importFile || importRecipientsMutation.isPending}>
+                        {importRecipientsMutation.isPending ? 'Importing...' : 'Import'}
                       </Button>
                     </div>
-                  </form>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={!canEdit} className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Recipient
+                  </Button>
+                </DialogTrigger>
+                <DialogContent aria-describedby="add-recipient-description" className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="flex-shrink-0">
+                    <DialogTitle>Add New Recipient</DialogTitle>
+                  </DialogHeader>
+                  <div className="overflow-y-auto flex-grow pr-1">
+                    <p id="add-recipient-description" className="text-sm text-slate-600 mb-4">
+                      Add a new recipient to the system for sandwich deliveries.
+                    </p>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <RecipientForm
+                        formData={addForm.formData}
+                        sections={addForm.sections}
+                        onFieldChange={addForm.updateField}
+                        onSectionChange={addForm.updateSection}
+                        mode="add"
+                      />
+                      <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
+                        <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={createRecipientMutation.isPending}>
+                          {createRecipientMutation.isPending ? 'Adding...' : 'Add Recipient'}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filter Controls */}
+        <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Input
+                placeholder="Search recipients by name, email, phone, address, region..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filters
+              {(statusFilter !== 'all' || contractFilter !== 'all' || regionFilter !== 'all' || tspContactFilter !== 'all' || sandwichTypeFilter !== 'all') && (
+                <Badge variant="secondary" className="ml-1">
+                  {[statusFilter !== 'all', contractFilter !== 'all', regionFilter !== 'all', tspContactFilter !== 'all', sandwichTypeFilter !== 'all'].filter(Boolean).length}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {showFilters && (
+            <div className="space-y-3 pt-3 border-t border-slate-200">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-status" className="text-xs font-medium text-slate-600">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="filter-status" className="w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
-        <div className="flex flex-col md:flex-row gap-3">
-          {/* Search Bar */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Input
-              placeholder="Search recipients by name, email, phone, address, region..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Filter Toggle Button */}
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-            {(statusFilter !== 'all' ||
-              contractFilter !== 'all' ||
-              regionFilter !== 'all' ||
-              tspContactFilter !== 'all' ||
-              sandwichTypeFilter !== 'all') && (
-              <Badge variant="secondary" className="ml-1">
-                {
-                  [
-                    statusFilter !== 'all' && 'Status',
-                    contractFilter !== 'all' && 'Contract',
-                    regionFilter !== 'all' && 'Region',
-                    tspContactFilter !== 'all' && 'TSP Contact',
-                    sandwichTypeFilter !== 'all' && 'Sandwich Type',
-                  ].filter(Boolean).length
-                }
-              </Badge>
-            )}
-          </Button>
-        </div>
-
-        {/* Expanded Filters */}
-        {showFilters && (
-          <div className="space-y-3 pt-3 border-t border-slate-200">
-            {/* First row of filters */}
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  Status
-                </Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active Only</SelectItem>
-                    <SelectItem value="inactive">Inactive Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  Contract
-                </Label>
-                <Select
-                  value={contractFilter}
-                  onValueChange={setContractFilter}
-                >
-                  <SelectTrigger className="w-full sm:w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Contracts</SelectItem>
-                    <SelectItem value="signed">Contract Signed</SelectItem>
-                    <SelectItem value="unsigned">Contract Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  Region
-                </Label>
-                <Select value={regionFilter} onValueChange={setRegionFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Regions</SelectItem>
-                    {uniqueRegions.map((region) => (
-                      <SelectItem key={region} value={region}>
-                        {region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-contract" className="text-xs font-medium text-slate-600">Contract</Label>
+                  <Select value={contractFilter} onValueChange={setContractFilter}>
+                    <SelectTrigger id="filter-contract" className="w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="signed">Signed</SelectItem>
+                      <SelectItem value="unsigned">Unsigned</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-region" className="text-xs font-medium text-slate-600">Region</Label>
+                  <Select value={regionFilter} onValueChange={setRegionFilter}>
+                    <SelectTrigger id="filter-region" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Regions</SelectItem>
+                      {uniqueRegions.map((region) => (
+                        <SelectItem key={region} value={region as string}>{region}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-tsp-contact" className="text-xs font-medium text-slate-600">TSP Contact</Label>
+                  <Select value={tspContactFilter} onValueChange={setTspContactFilter}>
+                    <SelectTrigger id="filter-tsp-contact" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Contacts</SelectItem>
+                      {uniqueTspContacts.map((contact) => (
+                        <SelectItem key={contact} value={contact as string}>{contact}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-sandwich-type" className="text-xs font-medium text-slate-600">Sandwich Type</Label>
+                  <Select value={sandwichTypeFilter} onValueChange={setSandwichTypeFilter}>
+                    <SelectTrigger id="filter-sandwich-type" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {uniqueSandwichTypes.map((type) => (
+                        <SelectItem key={type} value={type as string}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-focus-area" className="text-xs font-medium text-slate-600">Focus Area</Label>
+                  <Select value={focusAreaFilter} onValueChange={setFocusAreaFilter}>
+                    <SelectTrigger id="filter-focus-area" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Areas</SelectItem>
+                      {uniqueFocusAreas.map((area) => (
+                        <SelectItem key={area} value={area as string}>{area}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Second row of filters */}
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  TSP Contact
-                </Label>
-                <Select
-                  value={tspContactFilter}
-                  onValueChange={setTspContactFilter}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All TSP Contacts</SelectItem>
-                    {uniqueTspContacts.map((contact) => (
-                      <SelectItem key={contact} value={contact}>
-                        {contact}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  Sandwich Type
-                </Label>
-                <Select
-                  value={sandwichTypeFilter}
-                  onValueChange={setSandwichTypeFilter}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sandwich Types</SelectItem>
-                    {uniqueSandwichTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
-                  Focus Area
-                </Label>
-                <Select
-                  value={focusAreaFilter}
-                  onValueChange={setFocusAreaFilter}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Focus Areas</SelectItem>
-                    {uniqueFocusAreas.map((area) => (
-                      <SelectItem key={area} value={area}>
-                        {area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setContractFilter('all');
-                    setRegionFilter('all');
-                    setTspContactFilter('all');
-                    setSandwichTypeFilter('all');
-                    setFocusAreaFilter('all');
-                  }}
-                  className="text-slate-500 hover:text-slate-700"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Results Summary */}
+        {/* Results Count */}
         <div className="text-sm text-slate-600">
           Showing {filteredRecipients.length} of {recipients.length} recipients
-          {searchTerm && <span> • Search: "{searchTerm}"</span>}
-          {statusFilter !== 'all' && <span> • {statusFilter}</span>}
-          {contractFilter !== 'all' && <span> • {contractFilter}</span>}
-          {regionFilter !== 'all' && <span> • Region: {regionFilter}</span>}
-          {tspContactFilter !== 'all' && (
-            <span> • TSP Contact: {tspContactFilter}</span>
+        </div>
+
+        {/* Recipients Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredRecipients.map((recipient) => (
+            <RecipientCard
+              key={recipient.id}
+              recipient={recipient}
+              canEdit={canEdit}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
+            />
+          ))}
+
+          {filteredRecipients.length === 0 && recipients.length > 0 && (
+            <div className="col-span-full text-center py-12 text-slate-500">
+              No recipients match your current filters. Try adjusting your search or filter criteria.
+            </div>
           )}
-          {sandwichTypeFilter !== 'all' && (
-            <span> • Type: {sandwichTypeFilter}</span>
+
+          {recipients.length === 0 && (
+            <div className="col-span-full text-center py-12 text-slate-500">
+              No recipients found. Add a new recipient to get started.
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Recipients List */}
-      <div className="grid gap-4">
-        {filteredRecipients.map((recipient) => {
-          // Debug: Log each recipient being rendered
-          if (
-            recipient.name.includes('Boys') ||
-            recipient.id === 19 ||
-            recipient.id === 36
-          ) {
-            logger.log('Recipients Debug - Rendering:', {
-              id: recipient.id,
-              name: recipient.name,
-              isBoysAndGirls: recipient.name.includes('Boys'),
-              isZaban: recipient.name.includes('Zaban'),
-            });
-          }
-          return (
-            <Card key={recipient.id} className="border border-slate-200">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-lg">
-                        {recipient.name}
-                      </CardTitle>
-                      {(() => {
-                        // Handle both new focusAreas array and legacy focusArea string
-                        const areas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
-                          ? (recipient as any).focusAreas
-                          : (recipient as any).focusArea
-                            ? [(recipient as any).focusArea]
-                            : [];
-
-                        return areas.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {areas.map((area: string) => (
-                              <Badge
-                                key={area}
-                                variant="outline"
-                                className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
-                              >
-                                {area}
-                              </Badge>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          recipient.status === 'active'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {recipient.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={!canEdit}
-                            onClick={() => handleToggleStatus(recipient)}
-                            className={recipient.status === 'active' ? 'text-green-600 hover:text-green-700' : 'text-gray-500 hover:text-gray-600'}
-                          >
-                            {recipient.status === 'active' ? (
-                              <ToggleRight className="w-4 h-4" />
-                            ) : (
-                              <ToggleLeft className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {recipient.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!canEdit}
-                      onClick={() => handleEdit(recipient)}
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!canEdit}
-                      onClick={() => handleDelete(recipient.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Phone className="w-4 h-4" />
-                  <span>{recipient.phone}</span>
-                </div>
-                {recipient.email && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Mail className="w-4 h-4" />
-                    <span>{recipient.email}</span>
-                  </div>
-                )}
-                {(recipient as any).website && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"
-                      />
-                    </svg>
-                    <a
-                      href={(recipient as any).website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-brand-primary underline"
-                    >
-                      {(recipient as any).website}
-                    </a>
-                  </div>
-                )}
-                {(recipient as any).instagramHandle && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                    </svg>
-                    <a
-                      href={`https://instagram.com/${(recipient as any).instagramHandle.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-brand-primary underline"
-                    >
-                      {(recipient as any).instagramHandle}
-                    </a>
-                  </div>
-                )}
-                {recipient.address && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{recipient.address}</span>
-                  </div>
-                )}
-                {recipient.region && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="w-4 h-4" />
-                    <span className="font-medium">Region:</span>{' '}
-                    <span>{recipient.region}</span>
-                  </div>
-                )}
-                {recipient.preferences && (
-                  <div className="text-sm text-slate-600">
-                    <strong>Preferences:</strong> {recipient.preferences}
-                  </div>
-                )}
-
-                {/* Enhanced Operational Information */}
-                {(recipient.reportingGroup ||
-                  (recipient as any).estimatedSandwiches ||
-                  (recipient as any).weeklyEstimate ||
-                  (recipient as any).estimated_sandwiches ||
-                  (recipient as any).weekly_estimate ||
-                  recipient.sandwichType ||
-                  recipient.tspContact ||
-                  recipient.contractSigned ||
-                  (recipient as any).collectionDay ||
-                  (recipient as any).feedingDay) && (
-                  <div className="border-t pt-3 mt-3">
-                    <div className="text-sm font-medium text-slate-700 mb-2">
-                      Operational Details
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {recipient.reportingGroup && (
-                        <div className="text-sm text-slate-600">
-                          <span className="font-medium">Reporting Group:</span>{' '}
-                          {recipient.reportingGroup}
-                        </div>
-                      )}
-                      {((recipient as any).estimatedSandwiches ||
-                        (recipient as any).weeklyEstimate ||
-                        (recipient as any).estimated_sandwiches ||
-                        (recipient as any).weekly_estimate) && (
-                        <div className="text-sm text-slate-600">
-                          <span className="font-medium">Estimated Sandwiches:</span>{' '}
-                          {(recipient as any).estimatedSandwiches ||
-                            (recipient as any).weeklyEstimate ||
-                            (recipient as any).estimated_sandwiches ||
-                            (recipient as any).weekly_estimate}{' '}
-                          sandwiches
-                        </div>
-                      )}
-                      {recipient.sandwichType && (
-                        <div className="text-sm text-slate-600">
-                          <span className="font-medium">Sandwich Type:</span>{' '}
-                          {recipient.sandwichType}
-                        </div>
-                      )}
-
-                      {/* Collection Schedule */}
-                      {((recipient as any).collectionDay || (recipient as any).collectionTime) && (
-                        <div className="text-sm text-slate-600">
-                          <span className="font-medium">Collection:</span>{' '}
-                          {(recipient as any).collectionDay && (
-                            <span>{(recipient as any).collectionDay}</span>
-                          )}
-                          {(recipient as any).collectionTime && (
-                            <span> at {(recipient as any).collectionTime}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Feeding Schedule */}
-                      {((recipient as any).feedingDay || (recipient as any).feedingTime) && (
-                        <div className="text-sm text-slate-600">
-                          <span className="font-medium">Feeding:</span>{' '}
-                          {(recipient as any).feedingDay && (
-                            <span>{(recipient as any).feedingDay}</span>
-                          )}
-                          {(recipient as any).feedingTime && (
-                            <span> at {(recipient as any).feedingTime}</span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="col-span-2 flex items-center gap-2">
-                        {recipient.contractSigned ? (
-                          <Badge
-                            variant="default"
-                            className="text-xs bg-green-100 text-green-800"
-                          >
-                            Contract Signed
-                            {recipient.contractSignedDate && (
-                              <span className="ml-1">
-                                (
-                                {new Date(
-                                  recipient.contractSignedDate
-                                ).toLocaleDateString()}
-                                )
-                              </span>
-                            )}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            Contract Pending
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Social Media Tracking */}
-                {((recipient as any).hasSharedPost || (recipient as any).sharedPostDate) && (
-                  <div className="border-t pt-3 mt-3">
-                    <div className="text-sm font-medium text-slate-700 mb-2">
-                      Social Media Engagement
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(recipient as any).hasSharedPost && (
-                        <Badge
-                          variant="default"
-                          className="text-xs bg-purple-100 text-purple-800"
-                        >
-                          Shared Post
-                          {(recipient as any).sharedPostDate && (
-                            <span className="ml-1">
-                              (
-                              {new Date(
-                                (recipient as any).sharedPostDate
-                              ).toLocaleDateString()}
-                              )
-                            </span>
-                          )}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact Person Information */}
-                {(recipient.contactPersonName ||
-                  recipient.contactPersonPhone ||
-                  recipient.contactPersonEmail) && (
-                  <div className="border-t pt-3 mt-3">
-                    <div className="text-sm font-medium text-slate-700 mb-2">
-                      Contact Person
-                    </div>
-                    {recipient.contactPersonName && (
-                      <div className="text-sm text-slate-600 flex items-center gap-2">
-                        <span className="font-medium">Name:</span>
-                        <span>{recipient.contactPersonName}</span>
-                        {recipient.contactPersonRole && (
-                          <Badge variant="outline" className="text-xs">
-                            {recipient.contactPersonRole}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                    {recipient.contactPersonPhone && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                        <Phone className="w-4 h-4" />
-                        <span>{recipient.contactPersonPhone}</span>
-                      </div>
-                    )}
-                    {recipient.contactPersonEmail && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                        <Mail className="w-4 h-4" />
-                        <span>{recipient.contactPersonEmail}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Second Contact Person Information */}
-                {((recipient as any).secondContactPersonName ||
-                  (recipient as any).secondContactPersonPhone ||
-                  (recipient as any).secondContactPersonEmail) && (
-                  <div className="border-t pt-3 mt-3">
-                    <div className="text-sm font-medium text-slate-700 mb-2">
-                      Second Contact Person
-                    </div>
-                    {(recipient as any).secondContactPersonName && (
-                      <div className="text-sm text-slate-600 flex items-center gap-2">
-                        <span className="font-medium">Name:</span>
-                        <span>
-                          {(recipient as any).secondContactPersonName}
-                        </span>
-                        {(recipient as any).secondContactPersonRole && (
-                          <Badge variant="outline" className="text-xs">
-                            {(recipient as any).secondContactPersonRole}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                    {(recipient as any).secondContactPersonPhone && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                        <Phone className="w-4 h-4" />
-                        <span>
-                          {(recipient as any).secondContactPersonPhone}
-                        </span>
-                      </div>
-                    )}
-                    {(recipient as any).secondContactPersonEmail && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                        <Mail className="w-4 h-4" />
-                        <span>
-                          {(recipient as any).secondContactPersonEmail}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* TSP Contacts - Integrated */}
-                <TSPContactManager
-                  recipientId={recipient.id}
-                  recipientName={recipient.name}
-                  compact={true}
-                />
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {filteredRecipients.length === 0 && recipients.length > 0 && (
-          <div className="text-center py-12 text-slate-500">
-            No recipients match your current filters. Try adjusting your search
-            or filter criteria.
-          </div>
-        )}
-
-        {recipients.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
-            No recipients found. Add a new recipient to get started.
-          </div>
-        )}
-      </div>
-
-      {/* Inactive Recipients Section */}
-      {inactiveRecipients.length > 0 && (
-        <div className="mt-8">
-          <Collapsible open={showInactive} onOpenChange={setShowInactive}>
-            <div className="flex items-center justify-between mb-4">
+        {/* Inactive Recipients Section */}
+        {inactiveRecipients.length > 0 && (
+          <div className="mt-8">
+            <Collapsible open={showInactive} onOpenChange={setShowInactive}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-slate-600">
-                  {showInactive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  <span className="text-sm font-medium">
+                <Button variant="ghost" className="w-full justify-between p-3 bg-slate-100 hover:bg-slate-200 rounded-lg">
+                  <span className="font-medium text-slate-600">
                     Inactive Recipients ({inactiveRecipients.length})
                   </span>
+                  {showInactive ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
-            </div>
-
-            <CollapsibleContent>
-              <div className="grid gap-2 opacity-60">
-                {inactiveRecipients.map((recipient) => (
-                  <Card key={recipient.id} className="border border-slate-200 bg-slate-50">
-                    <CardHeader className="py-2 px-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <CardTitle className="text-sm font-normal text-slate-600">
-                            {recipient.name}
-                          </CardTitle>
-                          <Badge variant="secondary" className="text-xs">
-                            inactive
-                          </Badge>
-                        </div>
-                        <div className="flex gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  disabled={!canEdit}
-                                  onClick={() => handleToggleStatus(recipient)}
-                                  className="text-gray-500 hover:text-green-600 h-7 w-7 p-0"
-                                >
-                                  <ToggleLeft className="w-3 h-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Reactivate</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={!canEdit}
-                            onClick={() => handleEdit(recipient)}
-                            className="h-7 w-7 p-0"
-                          >
+              <CollapsibleContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+                  {inactiveRecipients.map((recipient) => (
+                    <Card key={recipient.id} className="border border-slate-200 bg-slate-50">
+                      <CardHeader className="py-2 px-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-sm font-normal text-slate-600">{recipient.name}</CardTitle>
+                            <Badge variant="secondary" className="mt-1 text-xs">Inactive</Badge>
+                          </div>
+                          <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => handleEdit(recipient)}>
                             <Edit className="w-3 h-3" />
                           </Button>
                         </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {editingRecipient && (
+          <Dialog open={!!editingRecipient} onOpenChange={() => setEditingRecipient(null)}>
+            <DialogContent aria-describedby="edit-recipient-description" className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Recipient</DialogTitle>
+              </DialogHeader>
+              <p id="edit-recipient-description" className="text-sm text-slate-600 mb-4">
+                Update recipient information.
+              </p>
+              <div className="space-y-4">
+                <RecipientForm
+                  formData={editForm.formData}
+                  sections={editForm.sections}
+                  onFieldChange={editForm.updateField}
+                  onSectionChange={editForm.updateSection}
+                  mode="edit"
+                  idPrefix="edit"
+                />
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setEditingRecipient(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdate} disabled={updateRecipientMutation.isPending}>
+                    {updateRecipientMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {editingRecipient && (
-        <Dialog
-          open={!!editingRecipient}
-          onOpenChange={() => setEditingRecipient(null)}
-        >
-          <DialogContent
-            aria-describedby="edit-recipient-description"
-            className="max-w-2xl max-h-[90vh] overflow-y-auto"
-          >
-            <DialogHeader>
-              <DialogTitle>Edit Recipient</DialogTitle>
-            </DialogHeader>
-            <p
-              id="edit-recipient-description"
-              className="text-sm text-slate-600 mb-4"
-            >
-              Update recipient information.
-            </p>
-            <div className="space-y-4">
-              {/* Basic Information Section */}
-              <Collapsible
-                open={sections.editBasicInfo}
-                onOpenChange={(open) => updateSection('editBasicInfo', open)}
-              >
-                <div>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <h4 className="font-medium text-sm text-slate-700">
-                        Basic Information
-                      </h4>
-                      {sections.editBasicInfo ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="edit-name">Name</Label>
-                        <Input
-                          id="edit-name"
-                          value={editingRecipient.name}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              name: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-phone">Phone</Label>
-                        <Input
-                          id="edit-phone"
-                          value={editingRecipient.phone}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              phone: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-email">Email</Label>
-                        <Input
-                          id="edit-email"
-                          type="email"
-                          value={editingRecipient.email || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              email: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-website">Website</Label>
-                        <Input
-                          id="edit-website"
-                          type="text"
-                          value={(editingRecipient as any).website || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              website: e.target.value,
-                            })
-                          }
-                          placeholder="www.organization.org or https://organization.org"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-instagramHandle">
-                          Instagram Handle
-                        </Label>
-                        <Input
-                          id="edit-instagramHandle"
-                          type="text"
-                          value={
-                            (editingRecipient as any).instagramHandle || ''
-                          }
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              instagramHandle: e.target.value,
-                            })
-                          }
-                          placeholder="@organizationhandle"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-address">Street Address</Label>
-                        <Input
-                          id="edit-address"
-                          value={editingRecipient.address || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              address: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-region">Region/Area</Label>
-                        <Input
-                          id="edit-region"
-                          value={editingRecipient.region || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              region: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-preferences">Preferences</Label>
-                        <Input
-                          id="edit-preferences"
-                          value={editingRecipient.preferences || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              preferences: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              {/* Contact Person Section */}
-              <Collapsible
-                open={sections.editContact}
-                onOpenChange={(open) => updateSection('editContact', open)}
-              >
-                <div className="border-t pt-4 mt-4">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <h4 className="font-medium text-sm text-slate-700">
-                        Contact Person Information
-                      </h4>
-                      {sections.editContact ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="edit-contactPersonName">
-                          Contact Name
-                        </Label>
-                        <Input
-                          id="edit-contactPersonName"
-                          value={editingRecipient.contactPersonName || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              contactPersonName: e.target.value,
-                            })
-                          }
-                          placeholder="John Smith"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-contactPersonRole">
-                          Role/Title
-                        </Label>
-                        <Input
-                          id="edit-contactPersonRole"
-                          value={editingRecipient.contactPersonRole || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              contactPersonRole: e.target.value,
-                            })
-                          }
-                          placeholder="Program Director, Manager, etc."
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-contactPersonPhone">
-                          Contact Phone
-                        </Label>
-                        <Input
-                          id="edit-contactPersonPhone"
-                          value={editingRecipient.contactPersonPhone || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              contactPersonPhone: e.target.value,
-                            })
-                          }
-                          placeholder="(555) 123-4567"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-contactPersonEmail">
-                          Contact Email
-                        </Label>
-                        <Input
-                          id="edit-contactPersonEmail"
-                          type="email"
-                          value={editingRecipient.contactPersonEmail || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              contactPersonEmail: e.target.value,
-                            })
-                          }
-                          placeholder="john@organization.org"
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              {/* Second Contact Person Section */}
-              <Collapsible
-                open={sections.editSecondContact}
-                onOpenChange={(open) => updateSection('editSecondContact', open)}
-              >
-                <div className="border-t pt-4 mt-4">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <h4 className="font-medium text-sm text-slate-700">
-                        Second Contact Person (Optional)
-                      </h4>
-                      {sections.editSecondContact ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="edit-secondContactPersonName">
-                          Contact Name
-                        </Label>
-                        <Input
-                          id="edit-secondContactPersonName"
-                          value={
-                            (editingRecipient as any).secondContactPersonName ||
-                            ''
-                          }
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              secondContactPersonName: e.target.value,
-                            })
-                          }
-                          placeholder="Jane Doe"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-secondContactPersonRole">
-                          Role/Title
-                        </Label>
-                        <Input
-                          id="edit-secondContactPersonRole"
-                          value={
-                            (editingRecipient as any).secondContactPersonRole ||
-                            ''
-                          }
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              secondContactPersonRole: e.target.value,
-                            })
-                          }
-                          placeholder="Assistant Manager, etc."
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-secondContactPersonPhone">
-                          Contact Phone
-                        </Label>
-                        <Input
-                          id="edit-secondContactPersonPhone"
-                          value={
-                            (editingRecipient as any)
-                              .secondContactPersonPhone || ''
-                          }
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              secondContactPersonPhone: e.target.value,
-                            })
-                          }
-                          placeholder="(555) 987-6543"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-secondContactPersonEmail">
-                          Contact Email
-                        </Label>
-                        <Input
-                          id="edit-secondContactPersonEmail"
-                          type="email"
-                          value={
-                            (editingRecipient as any)
-                              .secondContactPersonEmail || ''
-                          }
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              secondContactPersonEmail: e.target.value,
-                            })
-                          }
-                          placeholder="jane@organization.org"
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              {/* Enhanced Operational Fields */}
-              <Collapsible
-                open={sections.editOperational}
-                onOpenChange={(open) => updateSection('editOperational', open)}
-              >
-                <div className="border-t pt-4 mt-4">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <h4 className="font-medium text-sm text-slate-700">
-                        Operational Details
-                      </h4>
-                      {sections.editOperational ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="edit-reportingGroup">
-                          Reporting Group
-                        </Label>
-                        <Input
-                          id="edit-reportingGroup"
-                          value={editingRecipient.reportingGroup || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              reportingGroup: e.target.value,
-                            })
-                          }
-                          placeholder="Corresponds to host locations"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-estimatedSandwiches">
-                          Estimated Sandwiches
-                        </Label>
-                        <Input
-                          id="edit-estimatedSandwiches"
-                          type="number"
-                          value={editingRecipient.estimatedSandwiches || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              estimatedSandwiches:
-                                parseInt(e.target.value) || null,
-                            })
-                          }
-                          placeholder="Number of sandwiches needed"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-sandwichType">Sandwich Type</Label>
-                        <Input
-                          id="edit-sandwichType"
-                          value={editingRecipient.sandwichType || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              sandwichType: e.target.value,
-                            })
-                          }
-                          placeholder="Type preferred (e.g., PB&J, Deli, Mixed)"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-focusAreas">Focus Areas</Label>
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {/* Predefined options */}
-                            {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
-                              <Badge
-                                key={area}
-                                variant={((editingRecipient as any).focusAreas || []).includes(area) ? "default" : "outline"}
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  const currentAreas = (editingRecipient as any).focusAreas || [];
-                                  const updated = currentAreas.includes(area)
-                                    ? currentAreas.filter((a: string) => a !== area)
-                                    : [...currentAreas, area];
-                                  setEditingRecipient({ ...editingRecipient, focusAreas: updated });
-                                }}
-                              >
-                                {area}
-                              </Badge>
-                            ))}
-
-                            {/* Custom focus areas */}
-                            {((editingRecipient as any).focusAreas || [])
-                              .filter((area: string) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
-                              .map((area: string) => (
-                                <Badge
-                                  key={area}
-                                  variant="default"
-                                  className="cursor-pointer"
-                                  onClick={() => {
-                                    const currentAreas = (editingRecipient as any).focusAreas || [];
-                                    const updated = currentAreas.filter((a: string) => a !== area);
-                                    setEditingRecipient({ ...editingRecipient, focusAreas: updated });
-                                  }}
-                                >
-                                  {area} ×
-                                </Badge>
-                              ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Add custom focus area..."
-                              value={customFocusArea}
-                              onChange={(e) => setCustomFocusArea(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && customFocusArea.trim()) {
-                                  e.preventDefault();
-                                  const trimmed = customFocusArea.trim();
-                                  const currentAreas = (editingRecipient as any).focusAreas || [];
-                                  if (!currentAreas.includes(trimmed)) {
-                                    setEditingRecipient({
-                                      ...editingRecipient,
-                                      focusAreas: [...currentAreas, trimmed]
-                                    });
-                                  }
-                                  setCustomFocusArea('');
-                                }
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const trimmed = customFocusArea.trim();
-                                const currentAreas = (editingRecipient as any).focusAreas || [];
-                                if (trimmed && !currentAreas.includes(trimmed)) {
-                                  setEditingRecipient({
-                                    ...editingRecipient,
-                                    focusAreas: [...currentAreas, trimmed]
-                                  });
-                                  setCustomFocusArea('');
-                                }
-                              }}
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-tspContact">TSP Contact</Label>
-                        <Input
-                          id="edit-tspContact"
-                          value={editingRecipient.tspContact || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              tspContact: e.target.value,
-                            })
-                          }
-                          placeholder="TSP team member name"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="edit-contractSigned"
-                            checked={editingRecipient.contractSigned || false}
-                            onChange={(e) =>
-                              setEditingRecipient({
-                                ...editingRecipient,
-                                contractSigned: e.target.checked,
-                              })
-                            }
-                            className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
-                          />
-                          <Label
-                            htmlFor="edit-contractSigned"
-                            className="text-sm"
-                          >
-                            Contract Signed
-                          </Label>
-                        </div>
-                      </div>
-                      {editingRecipient.contractSigned && (
-                        <div>
-                          <Label htmlFor="edit-contractSignedDate">
-                            Contract Signed Date
-                          </Label>
-                          <Input
-                            id="edit-contractSignedDate"
-                            type="date"
-                            value={
-                              editingRecipient.contractSignedDate
-                                ? typeof editingRecipient.contractSignedDate ===
-                                  'string'
-                                  ? editingRecipient.contractSignedDate
-                                      .includes &&
-                                    editingRecipient.contractSignedDate.includes(
-                                      'T'
-                                    )
-                                    ? editingRecipient.contractSignedDate.split(
-                                        'T'
-                                      )[0]
-                                    : editingRecipient.contractSignedDate
-                                  : new Date(
-                                      editingRecipient.contractSignedDate
-                                    )
-                                      .toISOString()
-                                      .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) =>
-                              setEditingRecipient({
-                                ...editingRecipient,
-                                contractSignedDate: e.target.value as any,
-                              })
-                            }
-                          />
-                        </div>
-                      )}
-                      
-                      {/* Collection and Feeding Schedule Fields */}
-                      <div className="col-span-2 border-t pt-3 mt-3">
-                        <h5 className="font-medium text-sm text-slate-700 mb-3">
-                          Collection & Feeding Schedule
-                        </h5>
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-collectionDay">
-                          Collection Day
-                        </Label>
-                        <Input
-                          id="edit-collectionDay"
-                          type="text"
-                          value={(editingRecipient as any).collectionDay || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              collectionDay: e.target.value,
-                            })
-                          }
-                          placeholder="Monday"
-                          data-testid="input-edit-collection-day"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-collectionTime">
-                          Collection Time
-                        </Label>
-                        <Input
-                          id="edit-collectionTime"
-                          type="text"
-                          value={(editingRecipient as any).collectionTime || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              collectionTime: e.target.value,
-                            })
-                          }
-                          placeholder="9:00 AM"
-                          data-testid="input-edit-collection-time"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-feedingDay">
-                          Feeding Day
-                        </Label>
-                        <Input
-                          id="edit-feedingDay"
-                          type="text"
-                          value={(editingRecipient as any).feedingDay || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              feedingDay: e.target.value,
-                            })
-                          }
-                          placeholder="Wednesday"
-                          data-testid="input-edit-feeding-day"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-feedingTime">
-                          Feeding Time
-                        </Label>
-                        <Input
-                          id="edit-feedingTime"
-                          type="text"
-                          value={(editingRecipient as any).feedingTime || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              feedingTime: e.target.value,
-                            })
-                          }
-                          placeholder="12:00 PM"
-                          data-testid="input-edit-feeding-time"
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              {/* Social Media Tracking */}
-              <Collapsible
-                open={sections.editSocialMedia}
-                onOpenChange={(open) => updateSection('editSocialMedia', open)}
-              >
-                <div className="border-t pt-4 mt-4">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <h4 className="font-medium text-sm text-slate-700">
-                        Social Media Tracking
-                      </h4>
-                      {sections.editSocialMedia ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="edit-hasSharedPost"
-                          checked={(editingRecipient as any).hasSharedPost || false}
-                          onCheckedChange={(checked) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              hasSharedPost: !!checked,
-                            })
-                          }
-                          data-testid="checkbox-shared-post"
-                        />
-                        <Label
-                          htmlFor="edit-hasSharedPost"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Has shared a post about us on social media
-                        </Label>
-                      </div>
-                      {(editingRecipient as any).hasSharedPost && (
-                        <div>
-                          <Label htmlFor="edit-sharedPostDate">
-                            Date post was shared
-                          </Label>
-                          <Input
-                            id="edit-sharedPostDate"
-                            type="date"
-                            value={(editingRecipient as any).sharedPostDate || ''}
-                            onChange={(e) =>
-                              setEditingRecipient({
-                                ...editingRecipient,
-                                sharedPostDate: e.target.value,
-                              })
-                            }
-                            data-testid="input-shared-post-date"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingRecipient(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUpdate}
-                  disabled={updateRecipientMutation.isPending}
-                >
-                  {updateRecipientMutation.isPending
-                    ? 'Updating...'
-                    : 'Update Recipient'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </TooltipProvider>
   );
 }
+

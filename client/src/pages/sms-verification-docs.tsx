@@ -20,6 +20,78 @@ export default function SMSVerificationDocs() {
           </p>
         </div>
 
+        {/* PUBLIC OPT-IN PAGES - For Twilio reviewers */}
+        <div className="border-4 border-green-500 rounded-lg overflow-hidden bg-green-50">
+          <div className="bg-green-600 px-6 py-4">
+            <h2 className="flex items-center gap-2 text-white text-xl font-semibold">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Live Opt-In Pages (Public URLs)
+            </h2>
+          </div>
+          <div className="p-6 space-y-6">
+            <p className="text-green-800 font-medium">
+              We have two separate SMS campaigns with dedicated opt-in pages:
+            </p>
+            
+            {/* Campaign 1: Host Collection Reminders */}
+            <div className="bg-white p-4 rounded-lg border-2 border-green-300">
+              <h3 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">Campaign 1</span>
+                Host Weekly Collection Reminders
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                SMS reminders for hosts about weekly sandwich collection submissions.
+              </p>
+              <a 
+                href="/sms-signup" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors text-sm"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                View Host Reminders Page →
+              </a>
+              <p className="text-xs text-green-700 mt-2">
+                <strong>URL:</strong> <code className="bg-green-100 px-2 py-0.5 rounded">/sms-signup</code>
+              </p>
+            </div>
+            
+            {/* Campaign 2: Event Coordination */}
+            <div className="bg-white p-4 rounded-lg border-2 border-blue-300">
+              <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">Campaign 2</span>
+                Event Coordination (Volunteers + TSP Contacts)
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Event reminders, updates, and assignment notifications for organizers and volunteers.
+              </p>
+              <a 
+                href="/sms-events" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                View Event Coordination Page →
+              </a>
+              <p className="text-xs text-blue-700 mt-2">
+                <strong>URL:</strong> <code className="bg-blue-100 px-2 py-0.5 rounded">/sms-events</code>
+              </p>
+            </div>
+            
+            <p className="text-sm text-green-700">
+              Both pages display complete opt-in forms with checkbox consent visible to all visitors.
+              Users must authenticate only when submitting the form.
+            </p>
+          </div>
+        </div>
+
         {/* Consent Process Overview */}
         <div className="border-2 border-teal-600 rounded-lg overflow-hidden bg-white">
           <div className="bg-teal-50 px-6 py-4">
@@ -62,30 +134,70 @@ export default function SMSVerificationDocs() {
               Exact Consent Language
             </h2>
           </div>
-          <div className="p-6 space-y-4">
-            <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
-              <div className="flex items-start gap-3">
-                <div className="mt-1">
-                  <input type="checkbox" defaultChecked disabled className="w-4 h-4" />
+          <div className="p-6 space-y-6">
+            {/* Campaign 1 Consent */}
+            <div>
+              <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">Campaign 1</span>
+                Host Weekly Collection Reminders
+              </h3>
+              <div className="bg-gray-100 p-6 rounded-lg border-2 border-green-300">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <input type="checkbox" defaultChecked disabled className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-medium text-gray-900">
+                      I consent to receive SMS text message reminders from The Sandwich Project 
+                      about weekly collection submissions. I understand:
+                    </p>
+                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                      <li>• Messages will only be sent for sandwich collection reminders</li>
+                      <li>• I can unsubscribe at any time by replying <strong>STOP</strong></li>
+                      <li>• Reply <strong>HELP</strong> for assistance</li>
+                      <li>• Message frequency varies (up to 4 msgs/month)</li>
+                      <li>• Message and data rates may apply</li>
+                      <li>• My phone number will not be shared with third parties</li>
+                      <li>• Carriers are not liable for delayed or undelivered messages</li>
+                    </ul>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-gray-900">
-                    I consent to receive SMS text message reminders from The Sandwich Project 
-                    about weekly collection submissions. I understand:
-                  </p>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• Messages will only be sent for sandwich collection reminders</li>
-                    <li>• I can unsubscribe at any time</li>
-                    <li>• Standard message and data rates may apply</li>
-                    <li>• My phone number will not be shared with third parties</li>
-                  </ul>
+              </div>
+            </div>
+            
+            {/* Campaign 2 Consent */}
+            <div>
+              <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">Campaign 2</span>
+                Event Coordination (Volunteers + TSP Contacts)
+              </h3>
+              <div className="bg-gray-100 p-6 rounded-lg border-2 border-blue-300">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <input type="checkbox" defaultChecked disabled className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-medium text-gray-900">
+                      I agree to receive SMS notifications from The Sandwich Project about event reminders, 
+                      event updates, and assignment notifications related to events I am organizing or supporting. I understand:
+                    </p>
+                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                      <li>• Messages will be sent for event coordination purposes only</li>
+                      <li>• I can unsubscribe at any time by replying <strong>STOP</strong></li>
+                      <li>• Reply <strong>HELP</strong> for assistance</li>
+                      <li>• Message frequency varies based on event activity</li>
+                      <li>• Message and data rates may apply</li>
+                      <li>• My phone number will not be shared with third parties</li>
+                      <li>• Carriers are not liable for delayed or undelivered messages</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
             
             <div className="text-sm text-gray-600">
               <span className="inline-block px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium mb-2">Required Checkbox</span>
-              <p>Users must actively check this box to proceed with SMS enrollment.</p>
+              <p>Users must actively check the consent box to proceed with SMS enrollment for each campaign.</p>
             </div>
           </div>
         </div>

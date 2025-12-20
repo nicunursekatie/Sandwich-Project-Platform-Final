@@ -1,9 +1,11 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users, eventRequests } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
+import { getUserMetadata } from '@shared/types';
+import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS } from '../sms-service';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -178,6 +180,33 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       logger.log(
         `Chat mention notification sent to ${notification.mentionedUserEmail}`
       );
+
+      // Send SMS notification if user has opted in
+      try {
+        const mentionedUser = await db.select().from(users).where(eq(users.id, notification.mentionedUserId)).limit(1);
+        if (mentionedUser && mentionedUser.length > 0) {
+          const metadata = getUserMetadata(mentionedUser[0]);
+          const smsConsent = metadata.smsConsent;
+          if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const messagePreview = notification.messageContent.length > 50 
+              ? notification.messageContent.substring(0, 50) + '...' 
+              : notification.messageContent;
+            const chatUrl = this.getChatUrl(notification.channel);
+            await sendChatMentionSMS(
+              smsConsent.phoneNumber,
+              notification.mentionedUserName,
+              notification.senderName,
+              notification.channel,
+              messagePreview,
+              chatUrl
+            );
+            logger.log(`Chat mention SMS sent to ${smsConsent.phoneNumber}`);
+          }
+        }
+      } catch (smsError) {
+        logger.error('Error sending chat mention SMS (email still succeeded):', smsError);
+      }
+
       return true;
     } catch (error) {
       logger.error('Error sending chat mention notification:', error);
@@ -289,6 +318,26 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
       await sgMail.send(msg);
       logger.log(`TSP contact assignment notification sent to ${userEmail} for event ${eventId}`);
+
+      // Send SMS notification if user has opted in
+      try {
+        const metadata = getUserMetadata(user[0]);
+        const smsConsent = metadata.smsConsent;
+        if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+          const eventUrl = this.getEventUrl(eventId);
+          await sendTSPContactAssignmentSMS(
+            smsConsent.phoneNumber,
+            userName,
+            organizationName,
+            formattedEventDate,
+            eventUrl
+          );
+          logger.log(`TSP contact assignment SMS sent to ${smsConsent.phoneNumber} for event ${eventId}`);
+        }
+      } catch (smsError) {
+        logger.error('Error sending TSP contact assignment SMS (email still succeeded):', smsError);
+      }
+
       return true;
     } catch (error) {
       logger.error('Error sending TSP contact assignment notification:', error);
@@ -605,6 +654,32 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         logger.log(`Team board assignment notification sent to ${userEmail} for item ${itemId}`);
       }
 
+      // Send SMS notifications to users who have opted in
+      const teamBoardUrl = this.getTeamBoardUrl();
+      for (const user of assignedUsers) {
+        try {
+          const metadata = getUserMetadata(user);
+          const smsConsent = metadata.smsConsent;
+          if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const userName = user.displayName || user.firstName || user.email?.split('@')[0] || 'User';
+            const displayContent = itemContent.length > 50 
+              ? itemContent.substring(0, 50) + '...' 
+              : itemContent;
+            await sendTeamBoardAssignmentSMS(
+              smsConsent.phoneNumber,
+              userName,
+              displayContent,
+              assignedBy,
+              itemType,
+              teamBoardUrl
+            );
+            logger.log(`Team board assignment SMS sent to ${smsConsent.phoneNumber} for item ${itemId}`);
+          }
+        } catch (smsError) {
+          logger.error(`Error sending team board assignment SMS to user ${user.id} (emails still succeeded):`, smsError);
+        }
+      }
+
       return true;
     } catch (error) {
       logger.error('Error sending team board assignment notification:', error);
@@ -787,6 +862,186 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
+   * Send email notification when a comment is left on an event request
+   * Notifies the TSP contact(s) assigned to that event
+   */
+  static async sendEventCommentNotification(
+    eventId: number,
+    commenterFirstName: string,
+    commenterId: string,
+    commentContent: string,
+    commentCreatedAt: Date
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping event comment notification');
+      return false;
+    }
+
+    try {
+      // Fetch the event request to get TSP contact info and event details
+      const [event] = await db
+        .select()
+        .from(eventRequests)
+        .where(eq(eventRequests.id, eventId))
+        .limit(1);
+
+      if (!event) {
+        logger.warn(`Event ${eventId} not found - cannot send comment notification`);
+        return false;
+      }
+
+      // Collect all TSP contact user IDs (primary + additional contacts)
+      const tspContactIds: string[] = [];
+      if (event.tspContact) tspContactIds.push(event.tspContact);
+      if (event.tspContactAssigned && event.tspContactAssigned !== event.tspContact) {
+        tspContactIds.push(event.tspContactAssigned);
+      }
+      if (event.additionalContact1) tspContactIds.push(event.additionalContact1);
+      if (event.additionalContact2) tspContactIds.push(event.additionalContact2);
+
+      // Remove duplicates and filter out the commenter (don't notify yourself)
+      const uniqueContactIds = [...new Set(tspContactIds)].filter(id => id !== commenterId);
+
+      if (uniqueContactIds.length === 0) {
+        logger.log(`No TSP contacts to notify for event ${eventId} (or commenter is the only contact)`);
+        return false;
+      }
+
+      // Fetch user details for all TSP contacts
+      const tspUsers = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, uniqueContactIds));
+
+      if (tspUsers.length === 0) {
+        logger.warn(`No valid TSP contact users found for event ${eventId}`);
+        return false;
+      }
+
+      // Format event date
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const formattedEventDate = eventDate
+        ? new Date(eventDate + 'T12:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : 'Date to be determined';
+
+      // Format comment timestamp
+      const formattedCommentTime = commentCreatedAt.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+      // Generate event URL
+      const eventUrl = this.getEventUrl(eventId);
+      const organizationName = event.organizationName || 'Unknown Organization';
+
+      // Send email to each TSP contact
+      for (const user of tspUsers) {
+        if (!user.email) {
+          logger.warn(`User ${user.id} has no email - cannot send comment notification`);
+          continue;
+        }
+
+        const userEmail = user.preferredEmail || user.email;
+        const userName = user.displayName || user.firstName || userEmail.split('@')[0];
+
+        // Truncate comment if too long
+        const displayComment = commentContent.length > 500
+          ? commentContent.substring(0, 500) + '...'
+          : commentContent;
+
+        const msg = {
+          to: userEmail,
+          from: 'katie@thesandwichproject.org',
+          subject: `New comment on ${organizationName} event - The Sandwich Project`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+                .event-details { background: #e6f7f9; padding: 12px; border-left: 4px solid #47B3CB; margin: 15px 0; font-size: 14px; }
+                .comment-box { background: white; padding: 15px; border-left: 4px solid #236383; margin: 15px 0; }
+                .comment-meta { color: #666; font-size: 13px; margin-bottom: 8px; }
+                .btn { display: inline-block; background: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+                .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>💬 New Comment on Event</h1>
+                </div>
+                <div class="content">
+                  <p>Hello ${userName}!</p>
+                  <p>A new comment has been added to an event you're assigned to:</p>
+
+                  <div class="event-details">
+                    <strong>Organization:</strong> ${organizationName}<br>
+                    <strong>Event Date:</strong> ${formattedEventDate}
+                  </div>
+
+                  <div class="comment-box">
+                    <div class="comment-meta">
+                      <strong>${commenterFirstName}</strong> commented on ${formattedCommentTime}:
+                    </div>
+                    "${displayComment}"
+                  </div>
+
+                  <p>Click the button below to view the event and respond:</p>
+                  <a href="${eventUrl}" class="btn">View Event Details</a>
+
+                  ${EMAIL_FOOTER_HTML}
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+          text: `
+Hello ${userName}!
+
+A new comment has been added to an event you're assigned to:
+
+Organization: ${organizationName}
+Event Date: ${formattedEventDate}
+
+${commenterFirstName} commented on ${formattedCommentTime}:
+"${displayComment}"
+
+View event details and respond: ${eventUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+          `.trim(),
+        };
+
+        await sgMail.send(msg);
+        logger.log(`Event comment notification sent to ${userEmail} for event ${eventId}`);
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Error sending event comment notification:', error);
+      return false;
+    }
+  }
+
+  /**
    * Process a team board item (task/note/idea) for mentions and send notifications
    */
   static async processTeamBoardItemMentions(
@@ -881,6 +1136,131 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     } catch (error) {
       logger.error('Failed to send team board item mention notification:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Send notification to TSP contact when an in-process event's date has passed
+   */
+  static async sendPastDateNotification(
+    tspContactEmail: string,
+    tspContactName: string,
+    eventId: number,
+    organizationName: string,
+    eventDate: Date | string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping past date notification');
+      return false;
+    }
+
+    try {
+      // Format event date
+      const eventDateTime = new Date(eventDate);
+      const formattedDate = eventDateTime.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Calculate how many days ago
+      const now = new Date();
+      const diffTime = now.getTime() - eventDateTime.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const daysAgoText = diffDays === 1 ? 'yesterday' : `${diffDays} days ago`;
+
+      // Generate event URL
+      const eventUrl = this.getEventUrl(eventId);
+
+      const msg = {
+        to: tspContactEmail,
+        from: 'katie@thesandwichproject.org',
+        subject: `Action Required: Event date passed for ${organizationName} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #A31C41; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .alert-box { background-color: #FEE2E2; border: 1px solid #EF4444; padding: 15px; border-radius: 6px; margin: 15px 0; }
+              .event-details { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #A31C41; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+              .actions { background-color: #F0FDF4; padding: 15px; border-radius: 6px; margin: 15px 0; }
+              .actions ul { margin: 10px 0; padding-left: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Event Date Has Passed</h1>
+              </div>
+              <div class="content">
+                <p>Hello ${tspContactName},</p>
+
+                <div class="alert-box">
+                  <strong>This event's requested date has passed and requires your attention.</strong>
+                </div>
+
+                <div class="event-details">
+                  <strong>Organization:</strong> ${organizationName}<br>
+                  <strong>Requested Date:</strong> ${formattedDate} (${daysAgoText})<br>
+                  <strong>Status:</strong> Still In Process
+                </div>
+
+                <div class="actions">
+                  <strong>📋 Please take one of the following actions:</strong>
+                  <ul>
+                    <li><strong>Reschedule:</strong> Contact the organization to set a new event date</li>
+                    <li><strong>Postpone:</strong> Mark as postponed if they need more time</li>
+                    <li><strong>Decline:</strong> Mark as declined if the event is no longer happening</li>
+                  </ul>
+                </div>
+
+                <p>Click the button below to review the event and update its status:</p>
+                <a href="${eventUrl}" class="btn">Review Event</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+Hello ${tspContactName},
+
+⚠️ EVENT DATE HAS PASSED - ACTION REQUIRED
+
+This event's requested date has passed and requires your attention:
+
+Organization: ${organizationName}
+Requested Date: ${formattedDate} (${daysAgoText})
+Status: Still In Process
+
+Please take one of the following actions:
+• Reschedule: Contact the organization to set a new event date
+• Postpone: Mark as postponed if they need more time
+• Decline: Mark as declined if the event is no longer happening
+
+Review event: ${eventUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+        `.trim(),
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Past date notification sent to ${tspContactEmail} for event ${eventId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending past date notification:', error);
+      return false;
     }
   }
 }

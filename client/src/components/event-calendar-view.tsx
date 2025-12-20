@@ -15,6 +15,8 @@ import {
   UserCheck,
   Sandwich,
   Filter,
+  AlertTriangle,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
@@ -26,6 +28,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 
 interface EventCalendarViewProps {
@@ -68,9 +76,49 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Helper function to calculate unfilled needs for an event
+const getUnfilledNeeds = (event: EventRequest) => {
+  // Speakers: count needed vs assigned (using speakerDetails object)
+  const speakersNeededCount = event.speakersNeeded ?? 0;
+  const speakersAssignedCount = Object.keys(event.speakerDetails || {}).length;
+  const needsSpeaker = speakersNeededCount > speakersAssignedCount;
+  const speakersUnfilled = Math.max(0, speakersNeededCount - speakersAssignedCount);
+
+  // Volunteers: count needed vs assigned (using assignedVolunteerIds array)
+  const volunteersNeededCount = event.volunteersNeeded ?? 0;
+  const volunteersAssignedCount = event.assignedVolunteerIds?.length || 0;
+  const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
+  const volunteersUnfilled = Math.max(0, volunteersNeededCount - volunteersAssignedCount);
+
+  // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
+  const driversNeededCount = event.driversNeeded ?? 0;
+  const driversAssignedCount =
+    (event.assignedDriverIds?.length || 0) +
+    (event.assignedVanDriverId ? 1 : 0) +
+    (event.isDhlVan ? 1 : 0);
+  const needsDriver = driversNeededCount > driversAssignedCount;
+  const driversUnfilled = Math.max(0, driversNeededCount - driversAssignedCount);
+
+  return { 
+    needsSpeaker, needsVolunteer, needsDriver,
+    speakersUnfilled, volunteersUnfilled, driversUnfilled
+  };
+};
+
 // Helper function to get staffing indicators for an event
 const getStaffingIndicators = (event: EventRequest) => {
   const indicators = [];
+
+  // Self-transport indicator - group is handling their own transportation
+  if (event.selfTransport) {
+    indicators.push({
+      icon: null,
+      emoji: '📦',
+      count: null,
+      color: 'text-amber-600',
+      tooltip: 'Self-transport - group will pick up sandwiches',
+    });
+  }
 
   if (event.driversNeeded && event.driversNeeded > 0) {
     indicators.push({
@@ -89,6 +137,15 @@ const getStaffingIndicators = (event: EventRequest) => {
       count: null,
       color: 'text-blue-700',
       tooltip: 'Van driver assigned',
+    });
+  }
+
+  if (event.isDhlVan) {
+    indicators.push({
+      icon: Truck,
+      count: null,
+      color: 'text-amber-700',
+      tooltip: 'DHL van assigned',
     });
   }
 
@@ -123,6 +180,10 @@ const getAssignedStaffNames = (event: EventRequest, resolveUserName: (id: string
     if (name && name !== 'Not assigned') {
       assigned.push({ type: 'van', name, icon: '🚐' });
     }
+  }
+
+  if (event.isDhlVan) {
+    assigned.push({ type: 'van', name: 'DHL Van', icon: '🚚' });
   }
 
   // Drivers
@@ -224,6 +285,119 @@ const getSandwichInfo = (event: EventRequest) => {
   }
 
   return sandwichInfo;
+};
+
+// Helper function to parse time string to minutes since midnight
+const parseTimeToMinutes = (timeStr: string | null | undefined): number | null => {
+  if (!timeStr) return null;
+
+  // Try parsing "HH:MM AM/PM" format
+  const amPmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (amPmMatch) {
+    let hours = parseInt(amPmMatch[1], 10);
+    const minutes = parseInt(amPmMatch[2], 10);
+    const period = amPmMatch[3]?.toUpperCase();
+
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
+  }
+
+  return null;
+};
+
+// Helper function to check if two time ranges overlap
+const timesOverlap = (
+  start1: number | null,
+  end1: number | null,
+  start2: number | null,
+  end2: number | null
+): boolean => {
+  if (start1 === null || end1 === null || start2 === null || end2 === null) {
+    return true; // Conservative: assume overlap if we can't determine
+  }
+  return start1 < end2 && start2 < end1;
+};
+
+// Helper function to detect conflicts within a day's events
+interface DayConflicts {
+  hasConflicts: boolean;
+  vanConflicts: number;
+  driverConflicts: number;
+  highVolume: boolean;
+  tooltip: string;
+}
+
+const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
+  // Include new, followed_up, in_process, and scheduled events for conflict detection
+  // Note: Valid statuses are: 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
+  const relevantEvents = dayEvents.filter(
+    e => e.status === 'new' || e.status === 'followed_up' || e.status === 'in_process' || e.status === 'scheduled'
+  );
+  // For van/driver conflicts, only check scheduled events (locked in dates)
+  const scheduledEvents = dayEvents.filter(
+    e => e.status === 'scheduled'
+  );
+
+  let vanConflicts = 0;
+  let driverConflicts = 0;
+  const tooltipParts: string[] = [];
+
+  // Check for high volume day (count all relevant events including new and in-process)
+  const highVolume = relevantEvents.length >= 3;
+  if (highVolume) {
+    const scheduledCount = scheduledEvents.length;
+    const pendingCount = relevantEvents.length - scheduledCount;
+    if (pendingCount > 0) {
+      tooltipParts.push(`${scheduledCount} scheduled + ${pendingCount} pending = ${relevantEvents.length} events`);
+    } else {
+      tooltipParts.push(`${relevantEvents.length} events scheduled`);
+    }
+  }
+
+  // Check each pair for conflicts
+  for (let i = 0; i < scheduledEvents.length; i++) {
+    const event1 = scheduledEvents[i];
+    const start1 = parseTimeToMinutes(event1.eventStartTime);
+    const end1 = parseTimeToMinutes(event1.eventEndTime);
+
+    for (let j = i + 1; j < scheduledEvents.length; j++) {
+      const event2 = scheduledEvents[j];
+      const start2 = parseTimeToMinutes(event2.eventStartTime);
+      const end2 = parseTimeToMinutes(event2.eventEndTime);
+
+      const hasTimeOverlap = timesOverlap(start1, end1, start2, end2);
+
+      // Check van conflict
+      const event1NeedsVan = !event1.isDhlVan && (event1.assignedVanDriverId || (event1.vanBooked && event1.vanBooked.toLowerCase() !== 'no'));
+      const event2NeedsVan = !event2.isDhlVan && (event2.assignedVanDriverId || (event2.vanBooked && event2.vanBooked.toLowerCase() !== 'no'));
+
+      if (event1NeedsVan && event2NeedsVan && hasTimeOverlap) {
+        vanConflicts++;
+        if (vanConflicts === 1) {
+          tooltipParts.push('Van conflict detected');
+        }
+      }
+
+      // Check driver conflict
+      if (event1.assignedVanDriverId && event2.assignedVanDriverId &&
+          event1.assignedVanDriverId === event2.assignedVanDriverId && hasTimeOverlap) {
+        driverConflicts++;
+        if (driverConflicts === 1) {
+          tooltipParts.push('Same driver assigned to multiple events');
+        }
+      }
+    }
+  }
+
+  return {
+    hasConflicts: vanConflicts > 0 || driverConflicts > 0 || highVolume,
+    vanConflicts,
+    driverConflicts,
+    highVolume,
+    tooltip: tooltipParts.join(' • ') || 'No conflicts',
+  };
 };
 
 export function EventCalendarView({ onEventClick, events: providedEvents, filterByNeeds = false }: EventCalendarViewProps) {
@@ -377,6 +551,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   };
 
   return (
+    <TooltipProvider>
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -480,22 +655,28 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             </Badge>
           </div>
 
-          {/* Staffing Indicators Legend */}
+          {/* Unfilled Needs Legend */}
           <div className="flex flex-wrap gap-4 items-center">
             <span className="text-sm font-semibold text-gray-800">
-              Staffing Needed:
+              Unfilled Needs:
             </span>
             <div className="flex items-center gap-1.5">
-              <Car className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-700">Drivers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
+                <Mic className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Speaker</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Mic className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-700">Speakers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
+                <UserCheck className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Volunteer</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-700">Volunteers</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
+                <Car className="w-3 h-3" />
+              </span>
+              <span className="text-xs text-gray-700">Needs Driver</span>
             </div>
           </div>
 
@@ -507,6 +688,25 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             <div className="flex items-center gap-1.5">
               <Sandwich className="w-4 h-4 text-[#fbad3f]" />
               <span className="text-xs text-gray-700">Count & Types</span>
+            </div>
+          </div>
+
+          {/* Conflict Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
+              Scheduling Alerts:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-red-600" />
+              <span className="text-xs text-gray-700">Van Conflict</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-red-600" />
+              <span className="text-xs text-gray-700">Driver Conflict</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              <span className="text-xs text-gray-700">Busy Day (3+ events)</span>
             </div>
           </div>
         </div>
@@ -530,6 +730,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDay = isToday(date);
             const isExpanded = expandedDates.has(dateKey);
+            const dayConflicts = detectDayConflicts(dayEvents);
 
             return (
               <div
@@ -539,19 +740,72 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
-                  isTodayDay && 'ring-2 ring-blue-500'
+                  isTodayDay && 'ring-2 ring-blue-500',
+                  dayConflicts.vanConflicts > 0 && 'border-red-300 bg-red-50/50',
+                  dayConflicts.highVolume && !dayConflicts.vanConflicts && 'border-yellow-300 bg-yellow-50/30'
                 )}
               >
-                {/* Date number */}
-                <div
-                  className={cn(
-                    'text-sm font-semibold mb-1',
-                    isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
-                    isTodayDay &&
-                      'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                {/* Date number and conflict indicator */}
+                <div className="flex items-center justify-between mb-1">
+                  <div
+                    className={cn(
+                      'text-sm font-semibold',
+                      isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
+                      isTodayDay &&
+                        'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                    )}
+                  >
+                    {date.getDate()}
+                  </div>
+                  {/* Conflict indicator with tooltip */}
+                  {dayConflicts.hasConflicts && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={cn(
+                            'flex items-center gap-0.5 cursor-help',
+                            dayConflicts.vanConflicts > 0 ? 'text-red-600' : 'text-yellow-600'
+                          )}
+                        >
+                          {dayConflicts.vanConflicts > 0 && (
+                            <Truck className="w-3.5 h-3.5" />
+                          )}
+                          {dayConflicts.driverConflicts > 0 && (
+                            <Users className="w-3.5 h-3.5" />
+                          )}
+                          {dayConflicts.highVolume && (
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px]">
+                        <div className="space-y-1 text-xs">
+                          <div className="font-semibold text-sm">Scheduling Alerts</div>
+                          {dayConflicts.vanConflicts > 0 && (
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <Truck className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>Van conflict - multiple events need the van</span>
+                            </div>
+                          )}
+                          {dayConflicts.driverConflicts > 0 && (
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>Driver conflict - same driver assigned to overlapping events</span>
+                            </div>
+                          )}
+                          {dayConflicts.highVolume && (
+                            <div className="flex items-center gap-1.5 text-yellow-600">
+                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{dayConflicts.tooltip}</span>
+                            </div>
+                          )}
+                          <div className="text-muted-foreground pt-1 border-t mt-1">
+                            Consider suggesting alternate dates for new requests
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
-                >
-                  {date.getDate()}
                 </div>
 
                 {/* Events for this day */}
@@ -560,23 +814,48 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
                     const assignedStaff = getAssignedStaffNames(event, resolveUserName);
+                    const unfilledNeeds = getUnfilledNeeds(event);
 
                     return (
                       <button
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
                         className={cn(
-                          'w-full text-left text-xs p-1.5 rounded border truncate hover:shadow-md transition-shadow',
+                          'w-full text-left text-xs p-1.5 rounded border hover:shadow-md transition-shadow',
                           getStatusColor(event.status)
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold truncate mb-1 text-[14px]">
+                        <div className="font-semibold mb-1 text-[14px] break-words leading-tight">
                           {event.organizationName}
                         </div>
 
-                        {/* Staffing indicators row */}
-                        {staffingIndicators.length > 0 && (
+                        {/* Unfilled needs badges - prominent display */}
+                        {(unfilledNeeds.needsSpeaker || unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
+                          <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                            {unfilledNeeds.needsSpeaker && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
+                                <Mic className="w-3 h-3" />
+                                {unfilledNeeds.speakersUnfilled > 1 ? `${unfilledNeeds.speakersUnfilled}` : ''}
+                              </span>
+                            )}
+                            {unfilledNeeds.needsVolunteer && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
+                                <UserCheck className="w-3 h-3" />
+                                {unfilledNeeds.volunteersUnfilled > 1 ? `${unfilledNeeds.volunteersUnfilled}` : ''}
+                              </span>
+                            )}
+                            {unfilledNeeds.needsDriver && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
+                                <Car className="w-3 h-3" />
+                                {unfilledNeeds.driversUnfilled > 1 ? `${unfilledNeeds.driversUnfilled}` : ''}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Staffing indicators row - only show if no unfilled needs (assigned staff) */}
+                        {staffingIndicators.length > 0 && !unfilledNeeds.needsSpeaker && !unfilledNeeds.needsVolunteer && !unfilledNeeds.needsDriver && (
                           <div className="flex items-center gap-1.5 mt-1">
                             {staffingIndicators.map((indicator, idx) => {
                               const IconComponent = indicator.icon;
@@ -631,23 +910,21 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                                   {sandwichInfo.map((info, idx) => (
                                     info.showTypes && info.types ? (
                                       info.types.slice(0, 2).map((type, typeIdx) => {
-                                        // Process sandwich type name
-                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
+                                        // Process sandwich type name - keep it short
+                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').replace('sandwich', '').trim();
 
-                                        // Handle deli_turkey, deli_ham formats - convert to "turkey sandwiches"
+                                        // Handle deli_turkey, deli_ham formats
                                         if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
-                                          displayType = 'turkey sandwiches';
+                                          displayType = 'turkey';
                                         } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
-                                          displayType = 'ham sandwiches';
+                                          displayType = 'ham';
                                         } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
-                                          displayType = 'deli sandwiches';
+                                          displayType = 'deli';
                                         } else if (displayType === 'pbj' || displayType === 'pb&j') {
-                                          displayType = 'PB&J sandwiches';
+                                          displayType = 'PB&J';
                                         } else {
-                                          // Add "sandwiches" suffix if not already present
-                                          if (!displayType.includes('sandwich')) {
-                                            displayType = `${displayType} sandwiches`;
-                                          }
+                                          // Capitalize first letter
+                                          displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1);
                                         }
 
                                         return (
@@ -703,5 +980,6 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }

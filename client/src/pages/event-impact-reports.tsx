@@ -1253,6 +1253,17 @@ export default function EventImpactReports() {
     });
   };
 
+  const formatEventDateSimple = (date: string | null | undefined) => {
+    if (!date) return 'N/A';
+    const parsedDate = parseLocalDate(date);
+    if (!parsedDate) return 'N/A';
+    return parsedDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light min-h-screen p-6 flex items-center justify-center">
@@ -2148,7 +2159,7 @@ export default function EventImpactReports() {
                                           {event.organizationName || 'Unknown'}
                                           {event.department && <span className="text-gray-500 font-normal"> • {event.department}</span>}
                                         </TableCell>
-                                        <TableCell>{event.scheduledEventDate ? new Date(event.scheduledEventDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell>{formatEventDateSimple(event.scheduledEventDate)}</TableCell>
                                         <TableCell className="text-right font-medium">{event.actualSandwichCount?.toLocaleString()}</TableCell>
                                         <TableCell>
                                           <Input
@@ -2296,7 +2307,7 @@ export default function EventImpactReports() {
                                     <div>
                                       <p className="font-medium">{suggestion.organizationName}</p>
                                       <p className="text-sm text-gray-500">
-                                        {suggestion.scheduledEventDate ? new Date(suggestion.scheduledEventDate).toLocaleDateString() : 'N/A'} • {suggestion.actualSandwichCount} sandwiches
+                                        {formatEventDateSimple(suggestion.scheduledEventDate)} • {suggestion.actualSandwichCount} sandwiches
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -2798,11 +2809,7 @@ export default function EventImpactReports() {
                                       {event.department && <span className="text-gray-500 font-normal"> • {event.department}</span>}
                                     </TableCell>
                                     <TableCell>
-                                      {event.scheduledEventDate
-                                        ? new Date(event.scheduledEventDate).toLocaleDateString()
-                                        : event.desiredEventDate
-                                          ? new Date(event.desiredEventDate).toLocaleDateString()
-                                          : 'N/A'}
+                                      {formatEventDateSimple(event.scheduledEventDate || event.desiredEventDate)}
                                     </TableCell>
                                     <TableCell>{event.actualSandwichCount || event.estimatedSandwichCount || '-'}</TableCell>
                                     <TableCell>

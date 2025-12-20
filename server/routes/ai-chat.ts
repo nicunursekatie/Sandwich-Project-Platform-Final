@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
+import { userActivityLogs } from '@shared/schema';
+import { sql, desc, and, gte } from 'drizzle-orm';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -32,6 +34,13 @@ function toDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Helper to format event date for display
+function formatEventDate(dateInput: Date | string | null | undefined): string {
+  if (!dateInput) return 'TBD';
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // Helper to calculate sandwich count from collection
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
@@ -50,6 +59,167 @@ function getCollectionSandwichCount(collection: any): number {
     total += collection.group2Count || 0;
   }
   return total;
+}
+
+// Format raw data from component into AI-readable context
+// This is the preferred path - components pass their actual displayed data
+function formatRawDataForAI(contextType: string, contextData: Record<string, any>): string {
+  const { rawData, summaryStats, filters, selectedItem, currentView } = contextData;
+
+  let context = `## ${getContextTitle(contextType)} Data\n\n`;
+
+  // Add current view/filter context
+  if (currentView) {
+    context += `**Current View:** ${currentView}\n`;
+  }
+  if (filters && Object.keys(filters).length > 0) {
+    context += `**Active Filters:** ${JSON.stringify(filters)}\n`;
+  }
+  if (selectedItem) {
+    context += `**Currently Selected:** ${JSON.stringify(selectedItem)}\n`;
+  }
+  context += '\n';
+
+  // Add summary stats if provided
+  if (summaryStats) {
+    context += `### Summary Statistics\n`;
+    for (const [key, value] of Object.entries(summaryStats)) {
+      const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      if (typeof value === 'object' && value !== null) {
+        context += `- ${formattedKey}:\n`;
+        for (const [subKey, subValue] of Object.entries(value)) {
+          context += `  - ${subKey}: ${subValue}\n`;
+        }
+      } else {
+        context += `- ${formattedKey}: ${value}\n`;
+      }
+    }
+    context += '\n';
+  }
+
+  // Format raw data based on context type
+  if (rawData) {
+    if (Array.isArray(rawData)) {
+      context += `### Data (${rawData.length} items)\n`;
+
+      // Limit to prevent token overflow - take sample for large datasets
+      const sampleSize = 100;
+      const items = rawData.length > sampleSize
+        ? rawData.slice(0, sampleSize)
+        : rawData;
+
+      if (rawData.length > sampleSize) {
+        context += `(Showing first ${sampleSize} of ${rawData.length} items)\n\n`;
+      }
+
+      // Format each item
+      items.forEach((item: any, index: number) => {
+        context += formatDataItem(item, contextType, index);
+      });
+    } else if (typeof rawData === 'object') {
+      context += `### Data\n`;
+      context += JSON.stringify(rawData, null, 2);
+    }
+  }
+
+  return context;
+}
+
+// Get display title for context type
+function getContextTitle(contextType: string): string {
+  const titles: Record<string, string> = {
+    'collections': 'Sandwich Collections',
+    'events': 'Event Requests',
+    'organizations': 'Groups Catalog',
+    'holding-zone': 'Holding Zone',
+    'network': 'TSP Network',
+    'projects': 'Projects',
+    'meetings': 'Meetings',
+    'resources': 'Resources',
+    'links': 'Important Links',
+    'dashboard': 'Dashboard',
+    'volunteer-calendar': 'Volunteer Calendar',
+    'impact-reports': 'Impact Reports',
+    'users': 'User Management',
+    'general': 'Platform',
+  };
+  return titles[contextType] || 'Data';
+}
+
+// Format individual data item for AI context
+function formatDataItem(item: any, contextType: string, index: number): string {
+  // Skip null/undefined items
+  if (!item) return '';
+
+  // For groups/organizations catalog
+  if (contextType === 'organizations') {
+    const name = item.organizationName || item.name || item.groupName || 'Unknown';
+    const status = item.status || '';
+    const events = item.eventCount || item.totalRequests || 0;
+    const sandwiches = item.actualSandwichTotal || item.sandwichCount || 0;
+    const category = item.category || '';
+    const hasHosted = item.hasHostedEvent ? 'Yes' : 'No';
+
+    return `${index + 1}. **${name}**${category ? ` [${category}]` : ''} - Status: ${status}, Events: ${events}, Sandwiches: ${sandwiches.toLocaleString()}, Has Hosted: ${hasHosted}\n`;
+  }
+
+  // For event requests
+  if (contextType === 'events') {
+    const org = item.organizationName || 'Unknown';
+    const status = item.status || '';
+    const dateInput = item.scheduledEventDate || item.desiredEventDate;
+    const date = formatEventDate(dateInput);
+    const sandwiches = item.estimatedSandwichCount || item.actualSandwichCount || 0;
+
+    return `${index + 1}. **${org}** - Date: ${date}, Status: ${status}, Sandwiches: ${sandwiches}\n`;
+  }
+
+  // For collections
+  if (contextType === 'collections') {
+    const host = item.hostName || 'Unknown';
+    const date = item.collectionDate || '';
+    const count = getCollectionSandwichCount(item);
+
+    return `${index + 1}. **${host}** - Date: ${date}, Sandwiches: ${count}\n`;
+  }
+
+  // For projects
+  if (contextType === 'projects') {
+    const title = item.title || 'Untitled';
+    const status = item.status || '';
+    const priority = item.priority || '';
+
+    return `${index + 1}. **${title}** - Status: ${status}, Priority: ${priority}\n`;
+  }
+
+  // For holding zone items
+  if (contextType === 'holding-zone') {
+    const content = item.content || item.title || 'No content';
+    const type = item.type || '';
+    const status = item.status || '';
+
+    return `${index + 1}. [${type}] **${content.substring(0, 100)}**${content.length > 100 ? '...' : ''} - Status: ${status}\n`;
+  }
+
+  // For users
+  if (contextType === 'users') {
+    const name = `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.email || 'Unknown';
+    const role = item.role || 'unknown';
+    const status = item.isActive ? 'Active' : 'Inactive';
+    const email = item.email || 'No email';
+    const lastLogin = item.lastLogin ? new Date(item.lastLogin).toLocaleDateString() : 'Never';
+
+    return `${index + 1}. **${name}** (${email}) - Role: ${role}, Status: ${status}, Last Login: ${lastLogin}\n`;
+  }
+
+  // Default: show key fields
+  const keyFields = ['name', 'title', 'status', 'type', 'date', 'count'];
+  const relevantFields = Object.entries(item)
+    .filter(([key]) => keyFields.some(kf => key.toLowerCase().includes(kf)))
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(', ');
+
+  return `${index + 1}. ${relevantFields || JSON.stringify(item).substring(0, 200)}\n`;
 }
 
 // Build context for collections
@@ -277,13 +447,6 @@ function getEventMissingInfo(event: any): string[] {
   }
 
   return missing;
-}
-
-// Helper to format event date
-function formatEventDate(dateInput: Date | string | null | undefined): string {
-  if (!dateInput) return 'TBD';
-  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 // Build context for events
@@ -1062,118 +1225,185 @@ Resources is a library of documents and materials for The Sandwich Project:
 `;
 }
 
-// Build context for Organizations
+// Build context for Organizations (Groups Catalog)
+// Data comes from event requests and sandwich collections, NOT the organizations table
 async function buildOrganizationsContext(contextData?: Record<string, any>): Promise<string> {
   try {
-    const organizations = await db.query.organizations.findMany();
     const events = await db.query.eventRequests.findMany();
+    const collections = await db.query.sandwichCollections.findMany();
 
-    // Category stats
-    const categoryStats: Record<string, number> = {};
-    // School classification stats
-    const schoolClassificationStats: Record<string, number> = {};
-    // Religious vs non-religious
-    let religiousCount = 0;
-    let nonReligiousCount = 0;
+    // Build unique organizations from event requests
+    const orgDataMap = new Map<string, {
+      name: string;
+      eventCount: number;
+      sandwichCount: number;
+      hasHostedEvent: boolean;
+      latestEventDate: Date | null;
+      statuses: Set<string>;
+    }>();
 
-    organizations.forEach(org => {
-      const category = org.category || 'other';
-      categoryStats[category] = (categoryStats[category] || 0) + 1;
-
-      if (org.schoolClassification) {
-        schoolClassificationStats[org.schoolClassification] = (schoolClassificationStats[org.schoolClassification] || 0) + 1;
-      }
-
-      if (org.isReligious) {
-        religiousCount++;
-      } else {
-        nonReligiousCount++;
-      }
-    });
-
-    // Count events per organization
-    const eventsByOrg: Record<string, number> = {};
-    const sandwichesByOrg: Record<string, number> = {};
+    // Process event requests
     events.forEach(e => {
-      const orgName = e.organizationName;
-      if (orgName) {
-        eventsByOrg[orgName] = (eventsByOrg[orgName] || 0) + 1;
-        sandwichesByOrg[orgName] = (sandwichesByOrg[orgName] || 0) + (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      const orgName = e.organizationName?.trim();
+      if (!orgName) return;
+
+      if (!orgDataMap.has(orgName)) {
+        orgDataMap.set(orgName, {
+          name: orgName,
+          eventCount: 0,
+          sandwichCount: 0,
+          hasHostedEvent: false,
+          latestEventDate: null,
+          statuses: new Set(),
+        });
+      }
+
+      const org = orgDataMap.get(orgName)!;
+      org.eventCount += 1;
+      org.sandwichCount += (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+
+      if (e.status) {
+        org.statuses.add(e.status);
+      }
+
+      if (e.status === 'completed' || e.status === 'contact_completed') {
+        org.hasHostedEvent = true;
+      }
+
+      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      if (eventDate) {
+        const date = new Date(eventDate);
+        if (!org.latestEventDate || date > org.latestEventDate) {
+          org.latestEventDate = date;
+        }
       }
     });
 
-    const orgsWithEvents = Object.keys(eventsByOrg).length;
+    // Process sandwich collections to find additional organizations
+    collections.forEach(c => {
+      const processOrgFromCollection = (orgName: string, count: number) => {
+        if (!orgName || orgName === 'Group' || orgName === 'Groups' || !orgName.trim()) return;
+
+        const cleanName = orgName.trim();
+        if (!orgDataMap.has(cleanName)) {
+          orgDataMap.set(cleanName, {
+            name: cleanName,
+            eventCount: 0,
+            sandwichCount: 0,
+            hasHostedEvent: true, // If in collections, they hosted
+            latestEventDate: c.collectionDate ? new Date(c.collectionDate) : null,
+            statuses: new Set(['completed']),
+          });
+        }
+
+        const org = orgDataMap.get(cleanName)!;
+        org.sandwichCount += (count || 0);
+        org.hasHostedEvent = true;
+      };
+
+      // Check legacy group fields
+      if (c.group1Name && c.group1Count) {
+        processOrgFromCollection(c.group1Name, c.group1Count);
+      }
+      if (c.group2Name && c.group2Count) {
+        processOrgFromCollection(c.group2Name, c.group2Count);
+      }
+
+      // Check JSON group collections
+      if (c.groupCollections && Array.isArray(c.groupCollections)) {
+        c.groupCollections.forEach((group: any) => {
+          if (group.name && group.count) {
+            processOrgFromCollection(group.name, group.count);
+          }
+        });
+      }
+    });
+
+    // Convert to array and calculate stats
+    const allOrgs = Array.from(orgDataMap.values());
+    const totalOrganizations = allOrgs.length;
+    const orgsWithEvents = allOrgs.filter(o => o.hasHostedEvent).length;
+    const orgsWithoutEvents = totalOrganizations - orgsWithEvents;
+
+    // Count by status
+    const statusCounts: Record<string, number> = {};
+    allOrgs.forEach(org => {
+      org.statuses.forEach(status => {
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+    });
 
     // Top organizations by event count
-    const topOrgsByEvents = Object.entries(eventsByOrg)
-      .sort((a, b) => b[1] - a[1])
+    const topOrgsByEvents = allOrgs
+      .filter(o => o.eventCount > 0)
+      .sort((a, b) => b.eventCount - a.eventCount)
       .slice(0, 10)
-      .map(([name, count]) => `- ${name}: ${count} events, ${sandwichesByOrg[name]?.toLocaleString() || 0} sandwiches`);
+      .map(o => `- ${o.name}: ${o.eventCount} events, ${o.sandwichCount.toLocaleString()} sandwiches`);
 
-    // Recent organizations (by createdAt if available)
-    const recentOrgs = organizations
-      .filter(org => org.createdAt)
-      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+    // Top organizations by sandwich count
+    const topOrgsBySandwiches = allOrgs
+      .filter(o => o.sandwichCount > 0)
+      .sort((a, b) => b.sandwichCount - a.sandwichCount)
       .slice(0, 10)
-      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+      .map(o => `- ${o.name}: ${o.sandwichCount.toLocaleString()} sandwiches`);
 
-    // Organizations without events
-    const orgsWithoutEvents = organizations
-      .filter(org => !eventsByOrg[org.name])
+    // Recent organizations (by latest event date)
+    const recentOrgs = allOrgs
+      .filter(o => o.latestEventDate)
+      .sort((a, b) => (b.latestEventDate?.getTime() || 0) - (a.latestEventDate?.getTime() || 0))
       .slice(0, 10)
-      .map(org => `- ${org.name}${org.category ? ` (${org.category})` : ''}`);
+      .map(o => `- ${o.name} (${o.latestEventDate?.toLocaleDateString() || 'unknown date'})`);
 
     // Full organization list for reference (limited to avoid token limits)
-    const orgList = organizations
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    const orgList = allOrgs
+      .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 50)
-      .map(org => {
-        const evCount = eventsByOrg[org.name] || 0;
-        return `- ${org.name}${org.category ? ` [${org.category}]` : ''}${evCount > 0 ? ` - ${evCount} events` : ''}`;
-      });
+      .map(o => `- ${o.name}${o.eventCount > 0 ? ` - ${o.eventCount} events` : ''}${o.sandwichCount > 0 ? `, ${o.sandwichCount.toLocaleString()} sandwiches` : ''}`);
+
+    // Use contextData from the component if available
+    const componentStats = contextData?.summaryStats;
 
     return `
-## Organizations Data Summary
+## Groups Catalog Data Summary
 
 ### Overview
-- Total Organizations in Catalog: ${organizations.length}
-- Organizations with Events: ${orgsWithEvents}
-- Organizations without Events: ${organizations.length - orgsWithEvents}
-- Religious Organizations: ${religiousCount}
-- Non-Religious Organizations: ${nonReligiousCount}
+- Total Groups/Organizations in Catalog: ${componentStats?.totalOrganizations || totalOrganizations}
+- Total Contact Entries: ${componentStats?.totalContacts || totalOrganizations}
+- Groups that have Hosted Events: ${componentStats?.organizationsWithEvents || orgsWithEvents}
+- Groups without Events Yet: ${componentStats?.organizationsWithoutEvents || orgsWithoutEvents}
 
-### Organizations by Category
-${Object.entries(categoryStats)
+### Groups by Status
+${Object.entries(statusCounts)
   .sort((a, b) => b[1] - a[1])
-  .map(([category, count]) => `- ${category}: ${count}`)
-  .join('\n') || '- No categories defined'}
+  .map(([status, count]) => `- ${status}: ${count}`)
+  .join('\n') || '- No status data available'}
 
-### School Classifications
-${Object.entries(schoolClassificationStats)
-  .sort((a, b) => b[1] - a[1])
-  .map(([classification, count]) => `- ${classification}: ${count}`)
-  .join('\n') || '- No school classifications'}
+${componentStats?.categoryCounts ? `### Groups by Category
+${Object.entries(componentStats.categoryCounts)
+  .sort((a, b) => (b[1] as number) - (a[1] as number))
+  .map(([category, count]) => `- ${category || 'uncategorized'}: ${count}`)
+  .join('\n')}` : ''}
 
-### Top Organizations by Event Count
+### Top Groups by Event Count
 ${topOrgsByEvents.join('\n') || '- No events recorded'}
 
-### Recently Added Organizations
-${recentOrgs.join('\n') || '- No recent organizations'}
+### Top Groups by Sandwich Count
+${topOrgsBySandwiches.join('\n') || '- No sandwich data'}
 
-### Organizations Without Events (sample)
-${orgsWithoutEvents.join('\n') || '- All organizations have events'}
+### Recently Active Groups
+${recentOrgs.join('\n') || '- No recent activity'}
 
-### Organization Directory (first 50 alphabetically)
+### Groups Directory (first 50 alphabetically)
 ${orgList.join('\n')}
 
 ### About This Data
-The Organizations catalog (also called Groups Catalog) tracks all groups that partner with The Sandwich Project for sandwich-making events, including schools, churches, businesses, and community organizations.
+The Groups Catalog tracks all partner organizations that work with The Sandwich Project for sandwich-making events, including schools, churches, businesses, nonprofits, and community organizations. Data is derived from event requests and sandwich collection logs.
 `;
   } catch (error) {
     logger.error('Error building organizations context', { error });
     return `
-## Organizations Data Summary
-Error loading organizations data. Please try again.
+## Groups Catalog Data Summary
+Error loading groups data. Please try again.
 `;
   }
 }
@@ -1350,22 +1580,200 @@ The Dashboard provides an overview of The Sandwich Project's activities:
 `;
 }
 
+// Build context for User Management - analyzes user activity patterns
+async function buildUsersContext(contextData?: Record<string, any>): Promise<string> {
+  try {
+    const days = 30; // Look at last 30 days of activity
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    // Get all users
+    const users = await db.query.users.findMany();
+    const activeUsers = users.filter(u => u.isActive !== false).length;
+
+    // Get top sections users visit (what they do when they come into the app)
+    const topSections = await db
+      .select({
+        section: userActivityLogs.section,
+        actionCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(userActivityLogs.section)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get top actions (what actions users take most frequently)
+    const topActions = await db
+      .select({
+        action: userActivityLogs.action,
+        actionCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(userActivityLogs.action)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get top features (specific features users interact with)
+    const topFeatures = await db
+      .select({
+        feature: userActivityLogs.feature,
+        usageCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(and(
+        gte(userActivityLogs.createdAt, dateThreshold),
+        sql`${userActivityLogs.feature} IS NOT NULL`
+      ))
+      .groupBy(userActivityLogs.feature)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get most visited pages
+    const topPages = await db
+      .select({
+        page: userActivityLogs.page,
+        visitCount: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct ${userActivityLogs.userId})::int`
+      })
+      .from(userActivityLogs)
+      .where(and(
+        gte(userActivityLogs.createdAt, dateThreshold),
+        sql`${userActivityLogs.page} IS NOT NULL`
+      ))
+      .groupBy(userActivityLogs.page)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get activity by time of day (when users are most active)
+    const activityByHour = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${userActivityLogs.createdAt})::int`,
+        actionCount: sql<number>`count(*)::int`
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold))
+      .groupBy(sql`EXTRACT(HOUR FROM ${userActivityLogs.createdAt})`)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+
+    // Get total activity stats
+    const totalActivityResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold));
+    
+    const totalActions = totalActivityResult[0]?.count || 0;
+
+    const uniqueActiveUsersResult = await db
+      .select({ count: sql<number>`count(distinct ${userActivityLogs.userId})::int` })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, dateThreshold));
+    
+    const uniqueActiveUsers = uniqueActiveUsersResult[0]?.count || 0;
+
+    // Format sections list
+    const sectionsList = topSections.length > 0
+      ? topSections.map(s => `- **${s.section}**: ${s.actionCount.toLocaleString()} actions by ${s.uniqueUsers} users`)
+      : ['- No section data available'];
+
+    // Format actions list
+    const actionsList = topActions.length > 0
+      ? topActions.map(a => `- **${a.action}**: ${a.actionCount.toLocaleString()} times by ${a.uniqueUsers} users`)
+      : ['- No action data available'];
+
+    // Format features list
+    const featuresList = topFeatures.length > 0
+      ? topFeatures.map(f => `- **${f.feature}**: ${f.usageCount.toLocaleString()} uses by ${f.uniqueUsers} users`)
+      : ['- No feature data available'];
+
+    // Format pages list
+    const pagesList = topPages.length > 0
+      ? topPages.map(p => `- **${p.page}**: ${p.visitCount.toLocaleString()} visits by ${p.uniqueUsers} users`)
+      : ['- No page data available'];
+
+    // Format peak hours
+    const peakHoursList = activityByHour.length > 0
+      ? activityByHour.map(h => {
+          const hour12 = h.hour === 0 ? 12 : h.hour > 12 ? h.hour - 12 : h.hour;
+          const ampm = h.hour < 12 ? 'AM' : 'PM';
+          return `- **${hour12}:00 ${ampm}**: ${h.actionCount.toLocaleString()} actions`;
+        })
+      : ['- No time data available'];
+
+    return `
+## User Management & Activity Data Summary
+
+### User Overview
+- Total Users: ${users.length}
+- Active Users: ${activeUsers}
+- Users Active in Last ${days} Days: ${uniqueActiveUsers}
+- Total Actions in Last ${days} Days: ${totalActions.toLocaleString()}
+- Average Actions per Active User: ${uniqueActiveUsers > 0 ? Math.round(totalActions / uniqueActiveUsers) : 0}
+
+### What Users Do When They Come Into the App (Top Sections)
+These are the main areas of the platform users visit most frequently:
+${sectionsList.join('\n')}
+
+### Most Common User Actions
+These are the actions users take most often:
+${actionsList.join('\n')}
+
+### Most Used Features
+These are the specific features users interact with most:
+${featuresList.join('\n')}
+
+### Most Visited Pages
+These are the specific pages users visit most:
+${pagesList.join('\n')}
+
+### Peak Activity Times
+When users are most active during the day:
+${peakHoursList.join('\n')}
+
+### About User Activity
+This data shows what users typically do when they use The Sandwich Project platform:
+- Sections show the main areas users navigate to (Dashboard, Event Requests, Collections, etc.)
+- Actions show what users do (PAGE_VIEW, FORM_SUBMIT, SEARCH, etc.)
+- Features show specific functionality users interact with
+- Pages show the exact routes users visit
+- Activity times help understand when users are most engaged
+`;
+  } catch (error) {
+    logger.error('Error building users context', { error });
+    return `
+## User Management & Activity Data Summary
+Error loading user activity data. Please try again.
+`;
+  }
+}
+
 // Get system prompt for context type
 function getSystemPrompt(contextType: string, dataSummary: string): string {
   const baseRules = `
 TODAY'S DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
-CRITICAL RULES - YOU MUST FOLLOW THESE:
-1. ONLY use the data provided below. Do NOT invent, assume, or hallucinate any data points, categories, or metrics.
-2. The Sandwich Project does NOT track sandwich types (no "vegetarian", "turkey", "ham", etc.). They only track TOTAL sandwich counts.
-3. If asked about something truly not present in the data, say "That information is not tracked in the current data." BUT first check carefully - date ranges, time periods, and monthly breakdowns ARE included in the data summary.
-4. Never make up statistics or trends that aren't directly derivable from the provided data.
-5. NEVER compare or rank hosts/locations against each other - The Sandwich Project values all contributors equally and does not pit hosts against one another.
-6. Wednesday is the standard weekly collection day for individual sandwich collections, with most submissions logged on Wednesday or Thursday. Day-of-week analysis is not meaningful for individual collections.
-7. When referring to dates, use today's date (shown above) as your reference point. Do NOT assume it is any date other than today.
-8. When you show a chart and the user asks follow-up questions about that data (like "what time period does this cover?"), answer using the data summary - the time period, date ranges, and breakdown by month are all included in the data. Do NOT say the information isn't tracked when it clearly is.
+COMMUNICATION STYLE:
+- Be warm, helpful, and conversational - you're a friendly colleague, not a formal system
+- If you make a mistake or misunderstand something, acknowledge it openly: "Oh, I see what you mean - let me look at that again" or "You're right, I misread that"
+- If you're uncertain about something, say so honestly: "I'm not entirely sure about this, but..." or "Let me double-check that..."
+- When corrected, respond graciously: "Thanks for catching that!" or "Good point, I missed that"
+- Avoid defensive language - don't over-explain or justify errors, just correct them and move on
 
-When the user asks for a chart or visualization, respond with a JSON block using ONLY data from the summary below:
+DATA GUIDELINES:
+- Work with the data provided below. If something isn't in the data, just let the user know naturally: "I don't see that in the current data" rather than formal disclaimers
+- The Sandwich Project tracks total sandwich counts (not types like vegetarian, turkey, etc.)
+- Avoid comparing or ranking hosts against each other - TSP values all contributors equally
+- Wednesday is the standard weekly collection day, with most logged Wednesday or Thursday
+- Use today's date (shown above) as your reference point
+- Date ranges and monthly breakdowns are included in the data summary - check there for time period questions
+
+CHARTS:
+When the user asks for a chart or visualization, respond with a JSON block:
 \`\`\`chart
 {
   "type": "bar" | "line" | "pie",
@@ -1377,62 +1785,60 @@ When the user asks for a chart or visualization, respond with a JSON block using
 }
 \`\`\`
 
-Keep responses concise but insightful. Focus on actionable information derived from the actual data.
+Keep responses concise and helpful. Focus on what's useful to the user.
 `;
 
   const contextDescriptions: Record<string, string> = {
-    collections: `You are a data analyst assistant for The Sandwich Project's collection log.
-You help analyze sandwich collection data - when sandwiches were collected and how many.
-Collections are submitted by hosts (individuals or groups) who organize sandwich-making.
-IMPORTANT: Never rank or compare hosts against each other. Focus on overall totals and trends.`,
+    collections: `You're helping with The Sandwich Project's collection log - tracking when sandwiches were collected and how many.
+Collections come from hosts (individuals or groups) who organize sandwich-making sessions.
+Focus on overall totals and trends rather than comparing individual hosts.`,
 
-    events: `You are a data analyst assistant for The Sandwich Project's event management system.
-You help analyze event request data - organizations requesting sandwich-making events, event categories, and scheduling.
-IMPORTANT: Never rank or compare organizations against each other. Focus on overall trends and categories.`,
+    events: `You're helping with The Sandwich Project's event management - tracking organizations requesting sandwich-making events, scheduling, and categories.
+Focus on overall trends rather than comparing organizations.
 
-    'impact-reports': `You are a data analyst assistant for The Sandwich Project's impact reporting.
-You help analyze the overall impact of the organization including events, collections, and sandwich distribution.
-IMPORTANT: Never rank or compare hosts or organizations against each other. Focus on overall impact and growth.`,
+IMPORTANT for sandwich counting and weekly totals:
+- Include BOTH "scheduled" AND "in_process" status events - they're all upcoming events that need sandwiches
+- When someone asks "how many sandwiches this week" or "scheduled events this week", include ALL events with dates in that range regardless of status (scheduled, in_process)
+- The sandwich planning widget counts scheduled + in_process + completed events for the week
+- Be flexible with date formats: "12/1" = "Dec 1" = "December 1" all mean the same date
+- If your count doesn't match what the user is seeing, double-check you're including in_process events too`,
 
-    'general': `You are a helpful assistant for The Sandwich Project platform.
-You help users navigate and understand the platform's features for managing sandwich collections, events, volunteers, and organizational data.
-If the user asks about specific data, let them know which section of the platform would have that information.`,
+    'impact-reports': `You're helping with The Sandwich Project's impact reporting - looking at the overall impact including events, collections, and sandwich distribution.
+Focus on overall impact and growth rather than comparing hosts or organizations.`,
 
-    'holding-zone': `You are a helpful assistant for The Sandwich Project's Holding Zone.
-The Holding Zone is a collaborative task board where team members capture tasks, notes, and ideas before they become formal projects.
-You help users manage their items, understand the status of tasks, and organize their workflow.`,
+    'general': `You're here to help with The Sandwich Project platform - managing sandwich collections, events, volunteers, and organizational data.
+If someone asks about specific data, point them to the right section of the platform.`,
 
-    'network': `You are a helpful assistant for The Sandwich Project's TSP Network.
-The TSP Network manages all the people and organizations involved: hosts (where sandwiches are made), drivers (who deliver), volunteers (who help), and recipients (who receive sandwiches).
-You help users understand the network structure and find information about participants.`,
+    'holding-zone': `You're helping with the Holding Zone - a collaborative space where team members capture tasks, notes, and ideas before they become formal projects.
+Help users manage items, check on task status, and organize their workflow.`,
 
-    'projects': `You are a helpful assistant for The Sandwich Project's project management.
-Projects track ongoing initiatives with priorities, statuses, categories, and team assignments.
-You help users understand project status, priorities, and organizational structure.`,
+    'network': `You're helping with the TSP Network - the people and organizations involved with The Sandwich Project: hosts (where sandwiches are made), drivers (who deliver), volunteers (who help), and recipients (who receive sandwiches).
+Help users find information about participants and understand the network.`,
 
-    'meetings': `You are a helpful assistant for The Sandwich Project's meeting management.
-The meeting dashboard helps schedule and manage committee meetings, agendas, and action items.
-You help users find meeting information and understand upcoming schedules.`,
+    'projects': `You're helping with project management - tracking ongoing initiatives with priorities, statuses, categories, and team assignments.
+Help users understand project status and what's being worked on.`,
 
-    'resources': `You are a helpful assistant for The Sandwich Project's resource library.
-Resources include training materials, guides, forms, templates, and procedures.
-You help users find and understand available resources.`,
+    'meetings': `You're helping with meeting management - scheduling committee meetings, managing agendas, and tracking action items.
+Help users find meeting info and understand upcoming schedules.`,
 
-    'organizations': `You are a helpful assistant for The Sandwich Project's organization catalog.
-Organizations are groups that partner with TSP for sandwich-making events.
-You help users understand the organization database and event relationships.`,
+    'resources': `You're helping with the resource library - training materials, guides, forms, templates, and procedures.
+Help users find what they're looking for.`,
 
-    'links': `You are a helpful assistant for The Sandwich Project's important links.
-Important Links provides quick access to frequently used documents and external resources.
-You help users find and navigate to key resources.`,
+    'organizations': `You're helping with the organization catalog - groups that partner with TSP for sandwich-making events.
+Help users understand the organization database and event relationships.`,
 
-    'volunteer-calendar': `You are a helpful assistant for The Sandwich Project's Volunteer Availability Calendar.
-The calendar shows team availability from Google Calendar, including vacations, PTO, and unavailability.
-You help users understand who is available when and coordinate scheduling around team availability.`,
+    'links': `You're helping with important links - quick access to frequently used documents and external resources.
+Help users find and navigate to what they need.`,
 
-    'dashboard': `You are a helpful assistant for The Sandwich Project's dashboard.
-The dashboard provides an overview of all platform activities and key metrics.
-You help users understand the overall status and navigate to different sections.`,
+    'volunteer-calendar': `You're helping with the Volunteer Availability Calendar - showing team availability from Google Calendar, including vacations, PTO, and unavailability.
+Help users figure out who's available when and coordinate scheduling.`,
+
+    'dashboard': `You're helping with the dashboard - an overview of all platform activities and key metrics.
+Help users understand the overall status and find what they're looking for.`,
+
+    'users': `You're helping with user management and understanding user behavior patterns in The Sandwich Project platform.
+You have access to user activity logs that show what users do when they come into the app - which sections they visit, what actions they take, which features they use, and when they're most active.
+Help answer questions about user behavior, activity patterns, and what users typically do in the platform.`,
   };
 
   const contextDesc = contextDescriptions[contextType] || contextDescriptions['general'];
@@ -1460,9 +1866,18 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     logger.info('AI chat request', { userId: req.user.id, contextType, messageLength: message.length });
 
-    // Build context based on type - always pass contextData for component-specific context
+    // PRIORITY: If component passes raw data, format it directly instead of querying DB
+    // This ensures AI sees the same data the component displays
     let dataSummary: string;
-    switch (contextType) {
+
+    if (contextData?.rawData) {
+      // Component provided its actual data - use it directly
+      dataSummary = formatRawDataForAI(contextType, contextData);
+      logger.info('Using component-provided raw data for AI context', { contextType });
+    } else {
+      // Fallback: Build context from database (legacy behavior)
+      logger.info('No raw data provided, falling back to database query', { contextType });
+      switch (contextType) {
       case 'collections':
         dataSummary = await buildCollectionsContext(contextData);
         break;
@@ -1502,11 +1917,15 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
       case 'dashboard':
         dataSummary = await buildDashboardContext(contextData);
         break;
+      case 'users':
+        dataSummary = await buildUsersContext(contextData);
+        break;
       case 'general':
         dataSummary = await buildGeneralContext();
         break;
       default:
         dataSummary = await buildGeneralContext();
+      }
     }
 
     const systemPrompt = getSystemPrompt(contextType, dataSummary);

@@ -18,9 +18,6 @@ interface ServiceHoursData {
 }
 
 export class ServiceHoursPDFGenerator {
-  private static readonly MAX_DESCRIPTION_LENGTH = 28;
-  private static readonly TRUNCATE_AT = 25;
-
   static async generatePDF(data: ServiceHoursData): Promise<Buffer> {
     // Load the existing PDF template
     const templatePath = path.join(
@@ -39,30 +36,44 @@ export class ServiceHoursPDFGenerator {
     // Get the first page
     const pages = pdfDoc.getPages();
     const firstPage = pages[0];
-    const { height } = firstPage.getSize();
+    const { width, height } = firstPage.getSize();
+
+    console.log(`PDF Page dimensions: width=${width}, height=${height}`);
 
     // Embed fonts
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    // Volunteer name
+    // VOLUNTEER NAME field - positioned after "VOLUNTEER NAME:" text
     firstPage.drawText(data.volunteerName, {
-      x: 135,
-      y: height - 158,
-      size: 11,
+      x: 258,
+      y: height - 245,
+      size: 10,
       font: font,
       color: rgb(0, 0, 0),
     });
 
-    // Service entries - Table starts around y=495 from top (305 from bottom)
-    // Left column entries (DATE | HOURS | DESCRIPTION)
-    const leftColX = { date: 42, hours: 72, description: 95 };
-    // Right column entries
-    const rightColX = { date: 150, hours: 180, description: 203 };
+    // Service entries table coordinates
+    // The table has 6 rows and 2 main columns (left and right)
+    // Each main column has: DATE | HOURS | DESCRIPTION
 
-    // Starting Y position for first row (from bottom of page)
-    let currentY = height - 218;
-    const rowHeight = 12.5;
+    // Left column X positions
+    const leftColX = {
+      date: 125,        // DATE column start (moved left from 132)
+      hours: 165,       // HOURS column start
+      description: 205  // DESCRIPTION column start (moved left from 215)
+    };
+
+    // Right column X positions
+    const rightColX = {
+      date: 340,        // DATE column start (moved left from 347)
+      hours: 380,       // HOURS column start
+      description: 420  // DESCRIPTION column start (moved left from 430)
+    };
+
+    // Starting Y position for first table row
+    let currentY = height - 350;  // Moved down from 345
+    const rowHeight = 18.5;
 
     // Format date helper
     const formatDate = (dateStr: string) => {
@@ -90,39 +101,64 @@ export class ServiceHoursPDFGenerator {
       firstPage.drawText(formatDate(entry.date), {
         x: colX.date,
         y: currentY,
-        size: 9,
+        size: 8,
         font: font,
         color: rgb(0, 0, 0),
       });
 
       // Draw hours
-      firstPage.drawText(entry.hours, {
+      firstPage.drawText(entry.hours.toString(), {
         x: colX.hours,
         y: currentY,
-        size: 9,
+        size: 8,
         font: font,
         color: rgb(0, 0, 0),
       });
 
-      // Draw description (truncate if too long)
-      let description = entry.description;
-      if (description.length > this.MAX_DESCRIPTION_LENGTH) {
-        description = description.substring(0, this.TRUNCATE_AT) + '...';
+      // Draw description with wrapping
+      const description = entry.description;
+      const maxWidth = 100; // Maximum width in points for description
+      const words = description.split(' ');
+      let line = '';
+      let lineY = currentY;
+
+      for (let j = 0; j < words.length; j++) {
+        const testLine = line + (line ? ' ' : '') + words[j];
+        const testWidth = font.widthOfTextAtSize(testLine, 8);
+
+        if (testWidth > maxWidth && line) {
+          // Draw current line and move to next
+          firstPage.drawText(line, {
+            x: colX.description,
+            y: lineY,
+            size: 8,
+            font: font,
+            color: rgb(0, 0, 0),
+          });
+          line = words[j];
+          lineY -= 9; // Move down for next line (slightly less than rowHeight)
+        } else {
+          line = testLine;
+        }
       }
-      firstPage.drawText(description, {
-        x: colX.description,
-        y: currentY,
-        size: 9,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
+
+      // Draw remaining text
+      if (line) {
+        firstPage.drawText(line, {
+          x: colX.description,
+          y: lineY,
+          size: 8,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+      }
     }
 
-    // Total hours
+    // TOTAL COMMUNITY SERVICE HOURS COMPLETED field
     firstPage.drawText(data.totalHours.toString(), {
-      x: 265,
-      y: height - 310,
-      size: 11,
+      x: 478,
+      y: height - 445,
+      size: 10,
       font: fontBold,
       color: rgb(0, 0, 0),
     });
@@ -130,39 +166,41 @@ export class ServiceHoursPDFGenerator {
     // Current date for TSP approval
     const currentDate = new Date().toLocaleDateString('en-US');
 
-    // TSP Approval - Signature (on the signature line)
+    // TSP Approval Section
+
+    // Signature line (after "Signature:")
     if (data.approverSignature) {
       firstPage.drawText(data.approverSignature, {
-        x: 90,
-        y: height - 373,
-        size: 12,
+        x: 185,
+        y: height - 585,  // Moved down from 580 (was too high)
+        size: 11,
         font: font,
         color: rgb(0, 0, 0),
       });
     }
 
-    // TSP Approval - Print Name
+    // Print Name (after "Print Name:")
     firstPage.drawText(data.approverName, {
-      x: 90,
-      y: height - 387,
+      x: 185,
+      y: height - 610,  // Moved down from 605 (was too high)
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
     });
 
-    // TSP Approval - Date
+    // Date (to the right of Print Name)
     firstPage.drawText(currentDate, {
-      x: 305,
-      y: height - 387,
+      x: 480,
+      y: height - 610,  // Match print name Y position
       size: 10,
       font: font,
       color: rgb(0, 0, 0),
     });
 
-    // TSP Approval - Contact
+    // Contact # (after "Contact #:")
     firstPage.drawText(data.approverContact, {
-      x: 90,
-      y: height - 403,
+      x: 210,           // Moved left from 220
+      y: height - 630,  // Perfect height, just adjusted X
       size: 10,
       font: font,
       color: rgb(0, 0, 0),

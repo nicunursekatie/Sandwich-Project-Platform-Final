@@ -38,6 +38,8 @@ import {
   Filter,
   X,
   Clock,
+  MapPin,
+  Loader2,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,6 +52,7 @@ export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { canEdit } = useResourcePermissions('DRIVERS');
+  const isAdmin = hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS);
   const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
   const queryClient = useQueryClient();
 
@@ -63,17 +66,20 @@ export default function DriversManagement() {
   const [vanFilter, setVanFilter] = useState<string>('all');
   const [weeklyDriverFilter, setWeeklyDriverFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const [newDriver, setNewDriver] = useState({
     name: '',
     phone: '',
     email: '',
+    address: '',
     licenseNumber: '',
     hostLocation: '',
     availability: '',
     emailAgreementSent: false,
     vanApproved: false,
     isWeeklyDriver: false,
+    willingToSpeak: false,
     isActive: true,
   });
 
@@ -193,11 +199,13 @@ export default function DriversManagement() {
       name: '',
       phone: '',
       email: '',
+      address: '',
       licenseNumber: '',
       hostLocation: '',
       availability: '',
       emailAgreementSent: false,
       vanApproved: false,
+      isWeeklyDriver: false,
       isActive: true,
     });
   };
@@ -254,6 +262,34 @@ export default function DriversManagement() {
     }
   };
 
+  const handleBatchGeocode = async () => {
+    setIsGeocoding(true);
+    try {
+      const response = await fetch('/api/drivers/batch-geocode', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Geocoding failed');
+
+      const data = await response.json();
+      toast({
+        title: 'Geocoding complete',
+        description: `${data.success} updated, ${data.failed} failed`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+    } catch (error) {
+      logger.error('Batch geocode failed', error);
+      toast({
+        title: 'Geocoding failed',
+        description: 'Check your connection or try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading drivers...</div>;
   }
@@ -273,6 +309,26 @@ export default function DriversManagement() {
               <span className="sm:hidden">Drivers</span>
             </h1>
             <div className="flex flex-col sm:flex-row gap-2">
+              {isAdmin && (
+                <Button
+                  variant="secondary"
+                  onClick={handleBatchGeocode}
+                  disabled={isGeocoding}
+                  className="text-xs sm:text-sm"
+                >
+                  {isGeocoding ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <MapPin className="w-4 h-4 mr-2" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isGeocoding ? 'Geocoding...' : 'Geocode Missing Drivers'}
+                  </span>
+                  <span className="sm:hidden">
+                    {isGeocoding ? 'Geocoding' : 'Geocode'}
+                  </span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleExport}
@@ -328,6 +384,18 @@ export default function DriversManagement() {
                           setNewDriver({ ...newDriver, email: e.target.value })
                         }
                         placeholder="Enter email address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address">Home Address</Label>
+                      <Input
+                        id="address"
+                        value={newDriver.address}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, address: e.target.value })
+                        }
+                        placeholder="Street address, city, state, zip"
+                        data-testid="input-driver-address"
                       />
                     </div>
                     <div>
@@ -412,6 +480,23 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="isWeeklyDriver">
                         Weekly Driver
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="willingToSpeak"
+                        checked={newDriver.willingToSpeak}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            willingToSpeak: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="willingToSpeak">
+                        Willing to Speak at Events
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -660,6 +745,21 @@ export default function DriversManagement() {
                 />
               </div>
               <div>
+                <Label htmlFor="edit-address">Home Address</Label>
+                <Input
+                  id="edit-address"
+                  value={editingDriver.address || ''}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      address: e.target.value,
+                    })
+                  }
+                  placeholder="Street address, city, state, zip"
+                  data-testid="input-edit-driver-address"
+                />
+              </div>
+              <div>
                 <Label htmlFor="edit-licenseNumber">
                   Driver's License Number
                 </Label>
@@ -740,6 +840,21 @@ export default function DriversManagement() {
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="edit-isWeeklyDriver">Weekly Driver</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-willingToSpeak"
+                  checked={editingDriver.willingToSpeak || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      willingToSpeak: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-willingToSpeak">Willing to Speak at Events</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input

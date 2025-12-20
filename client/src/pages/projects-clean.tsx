@@ -429,13 +429,11 @@ export default function ProjectsClean() {
                     {getCategoryIcon(project.category)} {project.category}
                   </Badge>
                 )}
-              </div>
-            </div>
-          </div>
+        </div>
 
-          {canEditProject(user, project) && (
-            <div className="flex gap-1">
-              <DropdownMenu>
+        {canEditProject(user, project) && (
+          <div className="flex gap-1">
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -475,10 +473,9 @@ export default function ProjectsClean() {
                     variant="destructive"
                   />
                 </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
+            </DropdownMenu>
+          </div>
+        )}
 
         {project.description && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2 font-roboto">
@@ -1334,9 +1331,33 @@ export default function ProjectsClean() {
         title="Projects Assistant"
         subtitle="Ask about projects and tasks"
         contextData={{
-          activeTab,
-          projectTypeFilter,
-          selectedProject: editingProject ? {
+          currentView: activeTab,
+          filters: {
+            activeTab,
+            projectTypeFilter,
+          },
+          summaryStats: {
+            totalProjects: allProjects.length,
+            activeProjects: allProjects.filter(p => p.status !== 'completed' && p.status !== 'archived').length,
+            inProgress: allProjects.filter(p => p.status === 'in-progress').length,
+            waiting: allProjects.filter(p => p.status === 'waiting').length,
+            completed: allProjects.filter(p => p.status === 'completed').length,
+            highPriority: allProjects.filter(p => p.priority === 'high' || p.priority === 'critical').length,
+          },
+        }}
+        getFullContext={() => ({
+          rawData: allProjects.map(p => ({
+            id: p.id,
+            title: p.title,
+            status: p.status,
+            priority: p.priority,
+            category: p.category,
+            description: p.description,
+            dueDate: p.dueDate,
+            assigneeId: p.assigneeId,
+            projectType: p.projectType,
+          })),
+          selectedItem: editingProject ? {
             title: editingProject.title,
             status: editingProject.status,
             priority: editingProject.priority,
@@ -1344,21 +1365,14 @@ export default function ProjectsClean() {
             description: editingProject.description,
             dueDate: editingProject.dueDate,
           } : undefined,
-          summaryStats: {
-            totalProjects: allProjects.length,
-            activeProjects: allProjects.filter(p => p.status !== 'completed' && p.status !== 'archived').length,
-            inProgress: allProjects.filter(p => p.status === 'in-progress').length,
-            waiting: allProjects.filter(p => p.status === 'waiting').length,
-            completed: allProjects.filter(p => p.status === 'completed').length,
-          },
-        }}
+        })}
         suggestedQuestions={[
           "What projects are in progress?",
-          "How do I create a new project?",
+          "How many projects are high priority?",
           "Show me overdue projects",
-          "Who is assigned to what?",
+          "What projects are waiting?",
           "What projects need attention?",
-          "How do I update project status?",
+          "Show projects by status",
         ]}
       />
     </div>

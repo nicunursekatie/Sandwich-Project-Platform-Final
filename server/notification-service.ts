@@ -80,6 +80,73 @@ export class NotificationService {
   }
 
   /**
+   * Send email notification for new chat messages (Stream Chat)
+   */
+  static async sendChatNotification(
+    recipientEmail: string,
+    recipientName: string,
+    senderName: string,
+    channelName: string,
+    messageContent: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log(
+        'Chat email notification skipped - no SendGrid API key configured'
+      );
+      return false;
+    }
+
+    try {
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN
+          ? `https://${process.env.REPLIT_DOMAIN}`
+          : 'https://your-platform-url.com');
+
+      const subject = `New message from ${senderName} in ${channelName}`;
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #236383;">New Message in ${channelName}</h2>
+          <p style="font-size: 16px; line-height: 1.5;">
+            Hi ${recipientName},
+          </p>
+          <p style="font-size: 16px; line-height: 1.5;">
+            <strong>${senderName}</strong> sent a message in <strong>${channelName}</strong>:
+          </p>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #47B3CB;">
+            <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #374151;">${messageContent}</p>
+          </div>
+          <p>
+            <a href="${appUrl}/dashboard?section=chat"
+               style="display: inline-block; background: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+              View in Team Chat
+            </a>
+          </p>
+          <p style="color: #64748b; font-size: 14px; margin-top: 20px;">
+            This is an automated message from The Sandwich Project. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+
+      const emailData = {
+        to: recipientEmail,
+        from: this.FROM_EMAIL,
+        subject,
+        html: htmlContent,
+        text: `New message from ${senderName} in ${channelName}:\n\n"${messageContent}"\n\nView the conversation at: ${appUrl}/dashboard?section=chat`,
+      };
+
+      await mailService.send(emailData);
+      logger.log(
+        `Chat notification email sent to ${recipientEmail}`
+      );
+      return true;
+    } catch (error) {
+      logger.error('Failed to send chat notification email:', error);
+      return false;
+    }
+  }
+
+  /**
    * Send email notification for project assignments
    */
   static async sendProjectAssignmentNotification(

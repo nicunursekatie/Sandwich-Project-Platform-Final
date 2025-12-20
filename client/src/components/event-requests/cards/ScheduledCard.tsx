@@ -20,14 +20,22 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Clock,
   Package,
+  Truck,
   MapPin,
   Edit2,
   Save,
   X,
   Trash2,
   Calendar,
+  CalendarCheck,
   Users,
   MessageSquare,
   Building,
@@ -49,6 +57,7 @@ import {
   formatTimeForInput,
   formatEventDate,
 } from '@/components/event-requests/utils';
+import { useDatePopulation } from '@/components/event-requests/hooks/useDatePopulation';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import {
   SANDWICH_TYPES,
@@ -73,6 +82,11 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
+import {
+  RecipientAllocationEditor,
+  RecipientAllocationDisplay,
+  type RecipientAllocation,
+} from '../RecipientAllocationEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
@@ -318,12 +332,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [isInitialMessageExpanded, setIsInitialMessageExpanded] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
+  const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
+
+  // Date population hook - to show warnings for busy dates
+  const { getDatePopulation } = useDatePopulation();
+  const datePopulationInfo = getDatePopulation(
+    request.scheduledEventDate || request.desiredEventDate,
+    request.id
+  );
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -472,7 +494,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   // Calculate staffing status
   const driverAssigned =
     parsePostgresArray(request.assignedDriverIds).length +
-    (request.assignedVanDriverId ? 1 : 0);
+    (request.assignedVanDriverId ? 1 : 0) +
+    (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(
     request.assignedVolunteerIds
@@ -549,11 +572,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="flex items-center gap-2">
             {icon && <span className="text-gray-500">{icon}</span>}
             <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">{label}:</span>
-            <Select value={editingValue} onValueChange={setEditingValue}>
+            <Select value={editingValue || undefined} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {options.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -780,7 +803,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Type (optional)" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="none">No specific type</SelectItem>
                 {SANDWICH_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
@@ -803,7 +826,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                     {SANDWICH_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -980,7 +1003,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </>
                 )}
 
-                {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
                   <Badge variant="outline" className={`${isWithin7Days ? 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30' : 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'} font-medium`}>
                     <Car className="w-3 h-3 mr-1" />
                     Van Driver Needed
@@ -1048,6 +1071,49 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {request.email && renderEditableField('email', request.email, 'Email', <Mail className="w-4 h-4" />)}
             {request.phone && renderEditableField('phone', request.phone, 'Phone', <Phone className="w-4 h-4" />)}
 
+            {/* Backup Contact */}
+            {((request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone) && (
+              <div className="pt-2 border-t border-gray-200 space-y-2">
+                <div className="text-xs font-semibold text-gray-500 uppercase">Backup Contact</div>
+                {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Name:</span>
+                    <span className="text-base text-gray-900 break-words min-w-0">
+                      {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
+                      {(request as any).backupContactRole && (
+                        <span className="text-gray-500 font-normal ml-2">({(request as any).backupContactRole})</span>
+                      )}
+                    </span>
+                  </div>
+                )}
+                {(request as any).backupContactEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Email:</span>
+                    <a
+                      href={`mailto:${(request as any).backupContactEmail}`}
+                      className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-all min-w-0"
+                    >
+                      {(request as any).backupContactEmail}
+                    </a>
+                  </div>
+                )}
+                {(request as any).backupContactPhone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-500" />
+                    <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Phone:</span>
+                    <a
+                      href={`tel:${(request as any).backupContactPhone}`}
+                      className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                    >
+                      {(request as any).backupContactPhone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
                 <UserPlus className="w-4 h-4 text-[#236383]" />
@@ -1112,12 +1178,43 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 group">
+            <div className="flex items-center gap-2 group flex-wrap">
               <Calendar className="w-4 h-4 text-[#47B3CB]" />
               <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
               </span>
+              {/* Date Population Badges */}
+              {datePopulationInfo && datePopulationInfo.isOpen && (
+                <Badge
+                  className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                  style={{ backgroundColor: '#47B3CB' }}
+                  title="No other events scheduled or in process on this date"
+                >
+                  <CalendarCheck className="w-3 h-3" />
+                  Open date
+                </Badge>
+              )}
+              {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
+                <Badge
+                  className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                  style={{ backgroundColor: '#FBAD3F' }}
+                  title={`${datePopulationInfo.scheduledCount} scheduled event${datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date`}
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  {datePopulationInfo.scheduledCount} scheduled
+                </Badge>
+              )}
+              {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
+                <Badge
+                  className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
+                  style={{ backgroundColor: '#007E8C' }}
+                  title={`${datePopulationInfo.inProcessCount} in-process event${datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  {datePopulationInfo.inProcessCount} in process
+                </Badge>
+              )}
               {canEdit && (
                 <Button
                   size="sm"
@@ -1366,11 +1463,24 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Delivery & Logistics
           </h3>
 
-          {/* Recipients */}
+          {/* Recipients with Allocations */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-[#236383]" />
-              <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-[#236383]" />
+                <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
+              </div>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowRecipientAllocationDialog(true)}
+                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              )}
             </div>
             {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
@@ -1387,22 +1497,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   onChange={(ids) => setEditingValue(JSON.stringify(ids))}
                   placeholder="Select recipient organizations..."
                   data-testid="assigned-recipients-editor"
+            <div className="ml-8">
+              {/* Show allocations if available, otherwise fall back to legacy display */}
+              {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
+                <RecipientAllocationDisplay
+                  allocations={(request as any).recipientAllocations as RecipientAllocation[]}
                 />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={saveEdit}>
-                    <Save className="w-3 h-3 mr-1" />
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                    <X className="w-3 h-3 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="ml-8 flex flex-wrap gap-2 group">
-                {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                  request.assignedRecipientIds.map((recipientId, index) => {
+              ) : request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {request.assignedRecipientIds.map((recipientId, index) => {
                     const { name, type } = resolveRecipientName(recipientId);
                     return (
                       <Badge
@@ -1417,30 +1520,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {name}
                       </Badge>
                     );
-                  })
-                ) : (
-                  <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] font-medium">
-                    <Building className="w-3 h-3 mr-1" />
-                    No recipients assigned
-                  </Badge>
-                )}
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      startEditing(
-                        'assignedRecipientIds',
-                        JSON.stringify(request.assignedRecipientIds || [])
-                      )
-                    }
-                    className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            )}
+                  })}
+                </div>
+              ) : (
+                <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] font-medium">
+                  <Building className="w-3 h-3 mr-1" />
+                  No recipients assigned
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Overnight Holding */}
@@ -1462,17 +1550,38 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-base font-semibold text-[#236383]">
-                    <Car className="w-4 h-4 inline mr-2 text-[#007E8C]" />
-                    Drivers ({driverAssigned}/{driverNeeded})
+                    {request.vanDriverNeeded ? (
+                      <span className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 inline text-amber-600" />
+                        Van Driver Needed ({driverAssigned}/{driverNeeded})
+                      </span>
+                    ) : (
+                      <>
+                        <Car className="w-4 h-4 inline mr-2 text-[#007E8C]" />
+                        Drivers ({driverAssigned}/{driverNeeded})
+                      </>
+                    )}
                   </span>
                   {canEdit && (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant={request.vanDriverNeeded ? "default" : "outline"}
+                      className={request.vanDriverNeeded 
+                        ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600" 
+                        : ""}
                       onClick={() => openAssignmentDialog('driver')}
                     >
-                      <UserPlus className="w-3 h-3 mr-1" />
-                      Assign Driver
+                      {request.vanDriverNeeded ? (
+                        <>
+                          <Truck className="w-3 h-3 mr-1" />
+                          Assign Van Driver
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          Assign Driver
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -1492,6 +1601,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <X className="w-3 h-3" />
                         </Button>
                       )}
+                    </Badge>
+                  )}
+                  {request.isDhlVan && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300 text-sm px-3 py-1.5 font-medium">
+                      DHL Van
                     </Badge>
                   )}
                   {parsePostgresArray(request.assignedDriverIds).map((driverId) => {
@@ -1935,66 +2049,122 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-gray-200`}>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onContact}
-            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
-          >
-            Contact Organizer
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-          {canSendSMS && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSendSmsDialog(true)}
-                className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-                data-testid="button-send-sms-card"
-              >
-                <Phone className="w-4 h-4 mr-1" />
-                Send SMS Details
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSendCorrectionDialog(true)}
-                className="border-orange-600 text-orange-600 hover:bg-orange-100"
-                data-testid="button-send-correction-card"
-              >
-                <AlertTriangle className="w-4 h-4 mr-1" />
-                Send Correction
-              </Button>
-            </>
-          )}
-          <Button size="sm" variant="outline" onClick={onReschedule}>
-            Reschedule
-          </Button>
-          <Button size="sm" onClick={onFollowUp}>
-            Follow Up
-          </Button>
+        <TooltipProvider>
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-gray-200`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onContact}
+                  className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
+                >
+                  Contact Organizer
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Contact the event organizer</p>
+              </TooltipContent>
+            </Tooltip>
 
-          {!(request.tspContact || request.customTspContact) && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLogContact}
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Log Contact
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log a contact attempt or conversation</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {canSendSMS && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendSmsDialog(true)}
+                      className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-send-sms-card"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Send SMS Details
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send event details via SMS to organizer</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendCorrectionDialog(true)}
+                      className="border-orange-600 text-orange-600 hover:bg-orange-100"
+                      data-testid="button-send-correction-card"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Send Correction
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send correction SMS to organizer</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onReschedule}>
+                  Reschedule
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reschedule this event</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" onClick={onFollowUp}>
+                  Follow Up
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Follow up with the organizer</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {!(request.tspContact || request.customTspContact) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onAssignTspContact}
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Assign TSP Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign a TSP contact to this event</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Activity History */}
         <div className="border-t border-gray-200 pt-4">
@@ -2066,6 +2236,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 comments={collaboration.comments || []}
                 currentUserId={user?.id || ''}
                 currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
                 onAddComment={collaboration.addComment}
                 onEditComment={collaboration.updateComment}
                 onDeleteComment={collaboration.deleteComment}
@@ -2104,6 +2275,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         isOpen={showSendCorrectionDialog}
         onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
+      />
+
+      {/* Recipient Allocation Editor Dialog */}
+      <RecipientAllocationEditor
+        open={showRecipientAllocationDialog}
+        onOpenChange={setShowRecipientAllocationDialog}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        estimatedSandwichCount={request.estimatedSandwichCount}
+        currentAllocations={(request as any).recipientAllocations as RecipientAllocation[] | null}
       />
     </Card>
   );

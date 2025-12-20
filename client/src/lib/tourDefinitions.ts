@@ -581,23 +581,23 @@ export const TOURS: Tour[] = [
     ]
   },
   {
-    id: 'team-board-guide',
+    id: 'holding-zone-guide',
     title: 'Using TSP Holding Zone',
     description: 'Post task drafts, notes, and ideas for the team',
     category: 'team-management',
-    icon: 'Trello',
+    icon: 'StickyNote',
     estimatedTime: '2 min',
     requiredPermission: 'VIEW_HOLDING_ZONE',
     steps: [
       {
-        id: 'board-intro',
+        id: 'holding-zone-intro',
         title: 'TSP Holding Zone Overview',
         description: 'The Holding Zone is where you can capture task drafts, notes, and ideas before they become formal projects. It\'s organized into two tabs: Task-Drafts and Notes & Ideas.',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },
       {
-        id: 'board-nav',
+        id: 'holding-zone-nav',
         title: 'Open TSP Holding Zone',
         description: 'Find "TSP Holding Zone" in the navigation menu.',
         targetSelector: '[data-nav-id="team-board"]',
@@ -613,7 +613,7 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'board-tabs',
+        id: 'holding-zone-tabs',
         title: 'Two Main Tabs',
         description: 'Task-Drafts are work items that can later be upgraded to Projects. Notes & Ideas are for capturing thoughts and discussions that don\'t need formal tracking.',
         targetSelector: '[data-testid="holding-zone-tabs"], [role="tablist"]',
@@ -621,7 +621,7 @@ export const TOURS: Tour[] = [
         highlightPadding: 8
       },
       {
-        id: 'board-create',
+        id: 'holding-zone-create',
         title: 'Create New Items',
         description: 'Click here to add a new item. Choose Task-Draft for actionable work, or Note/Idea for general thoughts.',
         targetSelector: '[data-testid="create-board-item"], [data-testid="new-item-button"], [data-testid="button-add-item"]',
@@ -629,7 +629,7 @@ export const TOURS: Tour[] = [
         highlightPadding: 8
       },
       {
-        id: 'board-upgrade',
+        id: 'holding-zone-upgrade',
         title: 'Upgrade to Project',
         description: 'Task-Drafts can be upgraded to full Projects when they\'re ready for formal tracking with milestones and task assignments.',
         targetSelector: '[data-testid="upgrade-to-project"], [data-testid^="button-upgrade-"]',
@@ -637,7 +637,7 @@ export const TOURS: Tour[] = [
         highlightPadding: 8
       },
       {
-        id: 'board-comments',
+        id: 'holding-zone-comments',
         title: 'Add Comments & Likes',
         description: 'Click on any item to view details, add comments, and like items you support. Keep discussions organized!',
         targetSelector: '[data-testid="board-item"]:first-child, [data-testid="holding-zone-item"]:first-child',
@@ -1025,6 +1025,325 @@ export const TOURS: Tour[] = [
         targetSelector: '[data-testid="volunteer-card"]',
         position: 'bottom',
         highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'driver-planning-guide',
+    title: 'Driver Planning Map',
+    description: 'Plan driver assignments using the interactive event map',
+    category: 'events-calendar',
+    icon: 'Truck',
+    estimatedTime: '3 min',
+    requiredPermission: 'NAV_DRIVER_PLANNING',
+    steps: [
+      {
+        id: 'driver-planning-intro',
+        title: 'Driver Planning Overview',
+        description: 'The Driver Planning Map helps you coordinate drivers with upcoming events. See events on a map, find nearby hosts and recipients, and identify available drivers.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'driver-planning-nav',
+        title: 'Open Driver Planning',
+        description: 'Find "Driver Planning" in the Event Planning section of the navigation menu.',
+        targetSelector: '[data-nav-id="driver-planning"]',
+        position: 'right',
+        navigationAction: {
+          section: 'driver-planning'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="driver-planning"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'driver-planning-events-list',
+        title: 'Upcoming Events',
+        description: 'The left panel shows all scheduled events in the selected time period. Click on any event to see it on the map and find nearby resources.',
+        targetSelector: '[data-testid="driver-planning-events-list"]',
+        position: 'right',
+        highlightPadding: 12,
+        waitForElement: true
+      },
+      {
+        id: 'driver-planning-map',
+        title: 'Interactive Event Map',
+        description: 'Events appear as blue markers on the map. Click any marker to select it. When selected, it turns red and shows nearby hosts (green) and recipients (purple).',
+        targetSelector: '[data-testid="driver-planning-map"]',
+        position: 'left',
+        highlightPadding: 16,
+        waitForElement: true
+      },
+      {
+        id: 'driver-planning-legend',
+        title: 'Map Legend',
+        description: 'Use the legend to understand marker colors: Blue = Event, Red = Selected Event, Green = Nearby Host, Purple = Nearby Recipient.',
+        targetSelector: '[data-testid="driver-planning-legend"]',
+        position: 'top',
+        highlightPadding: 8
+      },
+      {
+        id: 'driver-planning-nearby-hosts',
+        title: 'Nearby Hosts',
+        description: 'When you select an event, the right panel shows host contacts within 10 miles. Click any host to zoom to their location on the map.',
+        targetSelector: '[data-testid="driver-planning-nearby-hosts"]',
+        position: 'left',
+        highlightPadding: 12
+      },
+      {
+        id: 'driver-planning-nearby-recipients',
+        title: 'Nearby Recipients',
+        description: 'See recipients (delivery locations) within 15 miles of the selected event. Click any recipient to find them on the map.',
+        targetSelector: '[data-testid="driver-planning-nearby-recipients"]',
+        position: 'left',
+        highlightPadding: 12
+      },
+      {
+        id: 'driver-planning-drivers',
+        title: 'Suggested Drivers',
+        description: 'Based on the event location, the system suggests drivers who cover that area. You can copy an SMS request to send to any driver.',
+        targetSelector: '[data-testid="driver-planning-suggested-drivers"]',
+        position: 'left',
+        highlightPadding: 16
+      }
+    ]
+  },
+  {
+    id: 'resources-overview-guide',
+    title: 'Resources Overview',
+    description: 'Find documents, forms, safety guides, and toolkit materials',
+    category: 'files-resources',
+    icon: 'FileText',
+    estimatedTime: '2 min',
+    requiredPermission: 'NAV_RESOURCES',
+    steps: [
+      {
+        id: 'resources-intro',
+        title: 'Resources Hub',
+        description: 'The Resources section is your central location for all TSP documents, forms, safety guides, and operational materials. Let me show you around!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'resources-nav',
+        title: 'Navigate to Resources',
+        description: 'Click on "Resources" in the Documentation section of the navigation menu.',
+        targetSelector: '[data-nav-id="resources"]',
+        position: 'right',
+        navigationAction: {
+          section: 'resources'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="resources"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'resources-categories',
+        title: 'Resource Categories',
+        description: 'Resources are organized into categories: Legal & Governance, Brand & Marketing, Operations & Safety, Forms & Templates, Toolkit, and Master Documents. Click any category to filter.',
+        targetSelector: '[data-testid="resources-categories"], [data-testid="category-filter"]',
+        position: 'bottom',
+        highlightPadding: 12,
+        waitForElement: true
+      },
+      {
+        id: 'resources-search',
+        title: 'Search Resources',
+        description: 'Use the search bar to quickly find specific documents by name or description. You can also filter by tags.',
+        targetSelector: '[data-testid="resources-search"], input[placeholder*="Search"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'resources-favorites',
+        title: 'Favorite Resources',
+        description: 'Click the star icon on any resource to add it to your favorites for quick access. Your favorites appear at the top of the list.',
+        targetSelector: '[data-testid="resources-list"], [data-testid="resource-card"]:first-child',
+        position: 'top',
+        highlightPadding: 16
+      },
+      {
+        id: 'resources-pinned',
+        title: 'Pinned Resources',
+        description: 'Resources with a pin icon are important organization-wide documents that admins have highlighted for everyone.',
+        targetSelector: '[data-testid="pinned-resources"], [data-testid="resource-card"]',
+        position: 'top',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'host-map-guide',
+    title: 'Host Location Map',
+    description: 'View and search host contacts on an interactive map',
+    category: 'events-calendar',
+    icon: 'MapPin',
+    estimatedTime: '2 min',
+    requiredPermission: 'NAV_ROUTE_MAP',
+    steps: [
+      {
+        id: 'host-map-intro',
+        title: 'Host Location Map',
+        description: 'The Host Map shows all host contact locations on an interactive map. Great for finding hosts in specific areas!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'host-map-nav',
+        title: 'Navigate to Host Map',
+        description: 'Navigating to the Host Map...',
+        targetSelector: '[data-testid="host-list-panel"]',
+        position: 'right',
+        navigationAction: {
+          section: 'route-map'
+        },
+        waitForElement: true,
+        beforeShow: () => {
+          const hostMap = document.querySelector('[data-nav-id="host-map"]');
+          if (hostMap instanceof HTMLElement) {
+            hostMap.click();
+          }
+        }
+      },
+      {
+        id: 'host-map-search',
+        title: 'Search Hosts',
+        description: 'Use the search bar to find hosts by name, location, or address. Results update instantly as you type.',
+        targetSelector: '[data-testid="input-search-hosts"]',
+        position: 'bottom',
+        highlightPadding: 8,
+        waitForElement: true
+      },
+      {
+        id: 'host-map-list',
+        title: 'Host Contact List',
+        description: 'The left panel shows all host contacts with coordinates. Click any host to zoom to their location on the map.',
+        targetSelector: '[data-testid="host-list-panel"]',
+        position: 'right',
+        highlightPadding: 12,
+        waitForElement: true
+      },
+      {
+        id: 'host-map-markers',
+        title: 'Map Markers',
+        description: 'Each marker represents a host location. Click a marker to see the host name and details in a popup.',
+        targetSelector: '[data-testid="host-map-container"]',
+        position: 'left',
+        highlightPadding: 16,
+        waitForElement: true
+      },
+      {
+        id: 'host-map-complete',
+        title: 'Explore the Map!',
+        description: 'You now know how to use the Host Map. Try clicking on markers and searching for hosts!',
+        targetSelector: '[data-testid="host-map-container"]',
+        position: 'left',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'event-planning-overview',
+    title: 'Event Planning Overview',
+    description: 'Complete tour of the event planning workflow and tools',
+    category: 'events-calendar',
+    icon: 'Calendar',
+    estimatedTime: '3 min',
+    requiredPermission: 'NAV_EVENT_PLANNING',
+    steps: [
+      {
+        id: 'event-planning-intro',
+        title: 'Event Planning Hub',
+        description: 'The Event Planning section contains all the tools you need to manage sandwich collection events. Let me walk you through the key tools!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'event-planning-requests',
+        title: 'Event Requests',
+        description: 'This is your main dashboard for managing all event requests. View upcoming events, calendar, your assignments, and more.',
+        targetSelector: '[data-nav-id="event-requests"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-requests'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-requests"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'event-planning-event-map',
+        title: 'Event Map',
+        description: 'Visualize all events on an interactive map. Great for understanding geographic coverage and planning routes.',
+        targetSelector: '[data-nav-id="event-map"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-map'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-map"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'event-planning-driver-planning',
+        title: 'Driver Planning',
+        description: 'The Driver Planning tool helps coordinate drivers with events. See events, nearby hosts and recipients, and suggested drivers all on one map.',
+        targetSelector: '[data-nav-id="driver-planning"]',
+        position: 'right',
+        navigationAction: {
+          section: 'driver-planning'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="driver-planning"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'event-planning-reminders',
+        title: 'Event Reminders',
+        description: 'Schedule and manage volunteer reminders. Set up SMS or email reminders to be sent before events automatically.',
+        targetSelector: '[data-nav-id="event-reminders"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-reminders'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-reminders"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'event-planning-complete',
+        title: 'You\'re Ready!',
+        description: 'You now know all the key tools for event planning! Return to Event Requests anytime to manage your events.',
+        targetSelector: '[data-nav-id="event-requests"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-requests'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-requests"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
       }
     ]
   }

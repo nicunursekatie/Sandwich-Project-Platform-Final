@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+---
+
+# Always Consult README.md
+
+**CRITICAL RULE:** Before making ANY changes to the codebase, you MUST read and consult the README.md file. This includes:
+
+- Building new features
+- Modifying existing code
+- Adding dependencies
+- Changing architecture patterns
+- Working with sockets, authentication, or database schemas
+- Any code changes whatsoever
+
+## Why This Matters
+
+The README.md contains critical architecture rules, constraints, and patterns that prevent bugs and system failures. It includes:
+
+- Socket architecture rules (polling-only for collaboration, singleton patterns)
+- Replit environment constraints
+- Authentication and database patterns
+- "DO NOT TOUCH" sections that must be respected
+- Common pitfalls to avoid
+- External integration details
+
+## Required Workflow
+
+1. **Before starting any task:** Read the relevant sections of README.md
+2. **When working with sockets:** Consult the "Socket Architecture" section
+3. **When modifying auth/database:** Check the "Critical Architecture Rules" section
+4. **When adding features:** Review the "DO NOT TOUCH Without Approval" section
+5. **When encountering errors:** Check the "Common Pitfalls" section
+
+## Enforcement
+
+If you make changes that violate rules documented in README.md (e.g., creating socket connections directly instead of using singletons, or using WebSocket for collaboration namespace), you have made an error that must be corrected.
+
+The README.md is the single source of truth for architecture decisions and constraints. Always prioritize its guidance over assumptions or general best practices.

@@ -38,6 +38,7 @@ const ROLE_COLORS = {
   [USER_ROLES.DRIVER]: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   [USER_ROLES.VIEWER]: 'bg-gray-100 text-gray-800 border-gray-200',
   [USER_ROLES.WORK_LOGGER]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  [USER_ROLES.REVIEWER]: 'bg-amber-100 text-amber-800 border-amber-200',
 };
 
 const ROLE_ICONS = {
@@ -51,6 +52,7 @@ const ROLE_ICONS = {
   [USER_ROLES.DRIVER]: MapPin,
   [USER_ROLES.VIEWER]: Eye,
   [USER_ROLES.WORK_LOGGER]: Clock,
+  [USER_ROLES.REVIEWER]: Eye,
 };
 
 interface RoleBadgeProps {

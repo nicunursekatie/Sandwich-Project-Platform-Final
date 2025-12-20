@@ -1,7 +1,7 @@
 import { Router } from 'express';
 // Import organized feature routers from feature-first folders
 import usersRouter from './users';
-import createAuthRoutes from './users/auth';
+import createAuthRouter from './auth'; // New consolidated auth router
 import createProjectRoutes from './projects';
 import createAdminRoutes from './core/admin';
 import createGroupsCatalogRoutes from './collections/groups-catalog';
@@ -11,6 +11,7 @@ import recipientsRouter from './recipients';
 import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
+import instantMessagesRouter from './instant-messages';
 import eventRequestsRouter from './event-requests';
 import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
@@ -31,7 +32,7 @@ import meRouter from './me';
 import availabilityRouter from './availability';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
-import { smsUserRoutes } from './sms-users';
+import { smsUserRoutes, smsWebhookRoutes } from './sms-users';
 import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
 import quickSmsRouter from './quick-sms';
@@ -41,6 +42,7 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
+import yearlyCalendarRouter from './yearly-calendar';
 import holdingZoneCategoriesRouter from './holding-zone-categories';
 import { createHoldingZoneCollaborationRouter } from './holding-zone-collaboration';
 import { promotionGraphicsRouter } from './promotion-graphics';
@@ -75,6 +77,9 @@ import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
+import { createOrganizationsAdminRoutes } from './organizations-admin';
+import peopleSearchRouter from './people-search';
+import photoScannerRouter from './photo-scanner';
 
 // Import centralized middleware
 import {
@@ -82,6 +87,7 @@ import {
   createErrorHandler,
   createPublicMiddleware,
 } from '../middleware';
+import { logger } from '../utils/production-safe-logger';
 import { createErrorLogsRoutes } from './error-logs';
 import workLogsRouter from './work-logs';
 import shoutoutsRouter from './shoutouts';
@@ -96,6 +102,31 @@ export function createMainRoutes(deps: RouterDependencies) {
     console.error('Failed to load smart search index:', err);
   });
 
+  // ========================================================================
+  // CRITICAL: Twilio SMS webhooks - MUST be registered FIRST (before any auth)
+  // These endpoints use Twilio signature validation instead of user authentication
+  // ========================================================================
+  // Add debug logging for ALL requests to /api/sms/* to catch Twilio webhooks
+  // Use logger.info() so it appears in production Winston logs
+  router.use('/api/sms', (req, res, next) => {
+    logger.info(`🔍 DEBUG: Request to /api/sms${req.path} - Method: ${req.method}`);
+    logger.info(`🔍 DEBUG: Full URL: ${req.originalUrl}`);
+    logger.info(`🔍 DEBUG: Headers: ${JSON.stringify(req.headers)}`);
+    next();
+  });
+  
+  router.use(
+    '/api',
+    ...createPublicMiddleware(),
+    smsWebhookRoutes
+  );
+
+  // ========================================================================
+  // AUTHENTICATION - Single consolidated auth router
+  // ========================================================================
+  const authRouter = createAuthRouter();
+  router.use('/api/auth', authRouter);
+
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
     isAuthenticated: deps.isAuthenticated,
@@ -104,22 +135,16 @@ export function createMainRoutes(deps: RouterDependencies) {
   });
   router.use('/api', adminRoutes);
 
-  const authRoutes = createAuthRoutes({
-    isAuthenticated: deps.isAuthenticated,
-  });
-  router.use('/api/auth', authRoutes);
-
-  // Backwards compatibility: redirect /api/login to /api/auth/login
-  router.all('/api/login', (req, res, next) => {
-    req.url = '/api/auth/login';
-    next('route');
-  });
-  router.use('/api/login', authRoutes);
-
   const groupsCatalogRoutes = createGroupsCatalogRoutes({
     isAuthenticated: deps.isAuthenticated,
   });
   router.use('/api/groups-catalog', groupsCatalogRoutes);
+
+  const organizationsAdminRoutes = createOrganizationsAdminRoutes({
+    isAuthenticated: deps.isAuthenticated,
+    requirePermission: deps.requirePermission,
+  });
+  router.use('/api/organizations-admin', organizationsAdminRoutes);
 
   // New organized feature routes with consistent middleware
   // Core application routes (health checks, session management)
@@ -166,6 +191,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     collectionsRouter
   );
   router.use('/api/sandwich-collections', createErrorHandler('collections'));
+
+  // Photo scanner for sign-in sheets (uses vision AI to extract collection data)
+  router.use(
+    '/api/photo-scanner',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    photoScannerRouter
+  );
+  router.use('/api/photo-scanner', createErrorHandler('photo-scanner'));
 
   router.use(
     '/api/recipients',
@@ -280,6 +314,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/messaging', createErrorHandler('messaging'));
 
   router.use(
+    '/api/instant-messages',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    instantMessagesRouter
+  );
+  router.use('/api/instant-messages', createErrorHandler('instant-messages'));
+
+  router.use(
     '/api/notifications',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
@@ -302,6 +344,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     searchRouter
   );
   router.use('/api/search', createErrorHandler('search'));
+
+  // People search - unified search across all contact databases
+  router.use(
+    '/api/people',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    peopleSearchRouter
+  );
+  router.use('/api/people', createErrorHandler('people-search'));
 
   // Smart Search - AI-powered app navigation
   const smartSearchRouter = createSmartSearchRouter(smartSearchService);
@@ -408,7 +459,24 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/activities', createErrorHandler('activities'));
 
-  // Event Requests routes
+  // Google Sheets Import route - MUST be before authenticated routes
+  // This endpoint uses its own API key authentication (bypasses session auth)
+  // Mount at /api/event-requests so the router's /import-from-sheets path matches
+  router.use(
+    '/api/event-requests',
+    (req, res, next) => {
+      // Only allow unauthenticated access to the import-from-sheets endpoint
+      if (req.path === '/import-from-sheets' && req.method === 'POST') {
+        return next();
+      }
+      // All other paths need authentication - skip to next middleware
+      return next('route');
+    },
+    ...createStandardMiddleware(),
+    eventRequestsRouter
+  );
+
+  // Event Requests routes (authenticated)
   router.use(
     '/api/event-requests',
     deps.isAuthenticated,
@@ -495,9 +563,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/group-engagement', createErrorHandler('group-engagement'));
 
-  // Service hours PDF generation
+  // Service hours PDF generation - use specific path to avoid intercepting other /api routes
   router.use(
-    '/api',
+    '/api/generate-service-hours-pdf',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
     serviceHoursRouter
@@ -513,9 +581,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/me', createErrorHandler('me'));
 
-  // SMS notification routes - SMS users router already includes /users prefix
-  // Note: Individual routes in smsUserRoutes have their own auth middleware
-  // The /sms/webhook endpoint must remain public for Twilio callbacks
+  // SMS user routes - authenticated user-facing SMS settings
+  // Note: Twilio webhooks are registered separately at the TOP of this file (smsWebhookRoutes)
+  // Individual routes in smsUserRoutes have their own isAuthenticated middleware
   router.use(
     '/api',
     ...createStandardMiddleware(),
@@ -579,6 +647,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     teamBoardRouter
   );
   router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Yearly Calendar routes
+  router.use(
+    '/api/yearly-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    yearlyCalendarRouter
+  );
+  router.use('/api/yearly-calendar', createErrorHandler('yearly-calendar'));
 
   // Holding zone categories routes
   router.use(

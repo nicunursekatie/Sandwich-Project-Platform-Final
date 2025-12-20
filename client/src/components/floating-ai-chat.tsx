@@ -65,11 +65,15 @@ export type AIContextType =
   | 'organizations'
   | 'links'
   | 'dashboard'
-  | 'volunteer-calendar';
+  | 'volunteer-calendar'
+  | 'users';
 
 interface FloatingAIChatProps {
   contextType: AIContextType;
+  /** Lightweight context - just filters and summary stats (computed on every render) */
   contextData?: Record<string, any>;
+  /** Heavy context with rawData - only called when chat is opened and message is sent */
+  getFullContext?: () => Record<string, any>;
   suggestedQuestions?: string[];
   title?: string;
   subtitle?: string;
@@ -324,6 +328,7 @@ function renderMarkdown(text: string): React.ReactNode {
 export function FloatingAIChat({
   contextType,
   contextData,
+  getFullContext,
   suggestedQuestions,
   title = 'AI Assistant',
   subtitle = 'Ask questions about your data',
@@ -407,6 +412,49 @@ export function FloatingAIChat({
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
+      // Only compute full context (with rawData) at the moment of sending
+      // This prevents expensive computation on every render
+      const fullContext = getFullContext ? getFullContext() : {};
+
+      // Limit rawData to prevent 413 errors (request too large)
+      // AI doesn't need all records - a sample + summary stats is enough
+      const MAX_RAW_DATA_ITEMS = 150;
+      let limitedContext = { ...contextData, ...fullContext };
+
+      if (limitedContext.rawData && Array.isArray(limitedContext.rawData)) {
+        const totalCount = limitedContext.rawData.length;
+        if (totalCount > MAX_RAW_DATA_ITEMS) {
+          // For events, prioritize upcoming scheduled/in_process events
+          // Sort by date so we don't miss important upcoming events
+          const sortedData = [...limitedContext.rawData].sort((a, b) => {
+            // Prioritize scheduled and in_process events
+            const statusPriority = (status: string) => {
+              if (status === 'scheduled') return 0;
+              if (status === 'in_process') return 1;
+              if (status === 'new') return 2;
+              return 3;
+            };
+            const aPriority = statusPriority(a.status);
+            const bPriority = statusPriority(b.status);
+            if (aPriority !== bPriority) return aPriority - bPriority;
+
+            // Then sort by date (upcoming first)
+            const aDate = a.scheduledEventDate || a.desiredEventDate || a.collectionDate;
+            const bDate = b.scheduledEventDate || b.desiredEventDate || b.collectionDate;
+            if (!aDate && !bDate) return 0;
+            if (!aDate) return 1;
+            if (!bDate) return -1;
+            return new Date(aDate).getTime() - new Date(bDate).getTime();
+          });
+
+          limitedContext = {
+            ...limitedContext,
+            rawData: sortedData.slice(0, MAX_RAW_DATA_ITEMS),
+            _dataNote: `Showing ${MAX_RAW_DATA_ITEMS} of ${totalCount} total records (prioritized by status and date). Summary stats reflect full dataset.`,
+          };
+        }
+      }
+
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,7 +462,7 @@ export function FloatingAIChat({
         body: JSON.stringify({
           message,
           contextType,
-          contextData,
+          contextData: limitedContext,
           conversationHistory: messages.map(m => ({
             role: m.role,
             content: m.content,

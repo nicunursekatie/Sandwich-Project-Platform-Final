@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   EventRequestProvider,
   useEventRequestContext,
@@ -11,12 +12,13 @@ import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { PostponedTab } from './tabs/PostponedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
+import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -53,6 +55,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -62,6 +66,7 @@ import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
+import IntakeCallDialog from './IntakeCallDialog';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -69,6 +74,16 @@ import { Info } from 'lucide-react';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
+  const { track } = useOnboardingTracker();
+
+  // Enable real-time updates for event requests (e.g., from Google Sheets imports)
+  useEventRequestSocket();
+
+  // Track onboarding challenge on component mount
+  useEffect(() => {
+    track('view_event_requests');
+  }, []);
+
   const {
     eventRequests,
     isLoading,
@@ -125,6 +140,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowAiIntakeAssistantDialog,
     showPostponementDialog,
     setShowPostponementDialog,
+    showIntakeCallDialog,
+    setShowIntakeCallDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -161,6 +178,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setAiIntakeAssistantEventRequest,
     postponementEventRequest,
     setPostponementEventRequest,
+    intakeCallEventRequest,
+    setIntakeCallEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -180,6 +199,31 @@ const EventRequestsManagementContent: React.FC = () => {
     updateEventRequestMutation,
   } = useEventMutations();
 
+  const queryClient = useQueryClient();
+  
+  // Sync from Google Sheets mutation
+  const syncFromSheetsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/event-requests/sync/from-sheets', {});
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: 'Sync Complete',
+        description: result.message || `Synced: ${result.created || 0} created, ${result.updated || 0} skipped`,
+      });
+      // Refresh event requests
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Sync Failed',
+        description: error?.message || 'Failed to sync from Google Sheets',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const { users, drivers, hostsWithContacts } = useEventQueries();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -193,6 +237,10 @@ const EventRequestsManagementContent: React.FC = () => {
   const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
   const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
   const [showFloatingTip, setShowFloatingTip] = React.useState(false);
+
+  // Check if user has permission to manage event requests (required for sync)
+  const canManageEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_MANAGE) ||
+    user?.role === 'admin' || user?.role === 'super_admin';
 
   // Support both old and new permission strings for backward compatibility
   const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
@@ -271,9 +319,29 @@ const EventRequestsManagementContent: React.FC = () => {
   // State for volunteer opportunities dialog
   const [showVolunteerOpportunities, setShowVolunteerOpportunities] = useState(false);
 
+  // State for back to top button
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Track scroll position for back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when scrolled down more than 400px
+      setShowBackToTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Memoize tab children to prevent recreation on every render
   const tabChildren = useMemo(() => {
     const tabs: any = {
+      all: <AllEventsTab />,
       new: <NewRequestsTab />,
       in_process: <InProcessTab />,
       scheduled: <ScheduledTab />,
@@ -393,35 +461,54 @@ const EventRequestsManagementContent: React.FC = () => {
       <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4">
         {/* Header */}
         <div className="premium-card p-4 sm:p-6">
-          <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className={`premium-text-h1 ${isMobile ? '' : ''}`}>Event Requests Management</h1>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="text-teal-600 hover:text-teal-800 transition-colors">
-                      <HelpCircle className="w-5 h-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs premium-tooltip">
-                    <p className="font-semibold mb-1">Event Requests Help</p>
-                    <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
-                  </TooltipContent>
-                </Tooltip>
+          <div className="space-y-4">
+            {/* Title row */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="premium-text-h1">Event Requests Management</h1>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs premium-tooltip">
+                      <p className="font-semibold mb-1">Event Requests Help</p>
+                      <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="premium-text-body text-brand-primary">
+                  {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+                </p>
               </div>
-              <p className="premium-text-body text-brand-primary">
-                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-              </p>
-            </div>
-            <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-3 flex-wrap'}`}>
+              
+              {/* Primary action - always visible */}
               <button
                 onClick={() => setShowVolunteerOpportunities(true)}
-                className="premium-btn-primary"
+                className="premium-btn-primary flex-shrink-0"
                 style={{ backgroundColor: '#007E8C' }}
               >
                 <Users className="w-4 h-4" />
-                {isMobile ? 'Opportunities' : 'Volunteer Opportunities'}
+                {isMobile ? 'Volunteer' : 'Volunteer Opportunities'}
               </button>
+            </div>
+            
+            {/* Action buttons row */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+              {/* Admin actions */}
+              {canManageEvents && (
+                <button
+                  onClick={() => syncFromSheetsMutation.mutate()}
+                  disabled={syncFromSheetsMutation.isPending}
+                  className="premium-btn-outline text-sm"
+                  title="Sync new event requests from Google Sheets (safe - won't create duplicates)"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncFromSheetsMutation.isPending ? 'animate-spin' : ''}`} />
+                  {isMobile ? 'Sync' : 'Sync from Sheets'}
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
@@ -432,12 +519,17 @@ const EventRequestsManagementContent: React.FC = () => {
                   setIsEditing(true);
                   setShowEventDetails(true);
                 }}
-                className="premium-btn-outline"
+                className="premium-btn-outline text-sm"
                 data-testid="button-add-manual-event"
               >
                 <Plus className="w-4 h-4" />
-                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+                {isMobile ? 'Add' : 'Add Manual Event Request'}
               </button>
+              
+              {/* Separator */}
+              <div className="hidden sm:block w-px h-6 bg-gray-200 mx-1" />
+              
+              {/* Status alert buttons */}
               <MissingInfoSummaryDialog />
               <ToolkitSentPendingDialog />
             </div>
@@ -752,6 +844,27 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
             request={postponementEventRequest}
             onPostpone={handlePostpone}
+          />
+        )}
+
+        {/* Intake Call Dialog */}
+        {intakeCallEventRequest && (
+          <IntakeCallDialog
+            isOpen={showIntakeCallDialog}
+            onClose={() => {
+              setShowIntakeCallDialog(false);
+              setIntakeCallEventRequest(null);
+            }}
+            eventRequest={intakeCallEventRequest}
+            onCallComplete={() => {
+              // Optionally update status to in_process after call
+              if (intakeCallEventRequest) {
+                updateEventRequestMutation.mutate({
+                  id: intakeCallEventRequest.id,
+                  data: { status: 'in_process' },
+                });
+              }
+            }}
           />
         )}
 
@@ -1085,7 +1198,7 @@ const EventRequestsManagementContent: React.FC = () => {
           open={showVolunteerOpportunities}
           onOpenChange={setShowVolunteerOpportunities}
         >
-          <DialogContent className="w-[98vw] max-w-[2400px] h-[95vh] flex flex-col overflow-hidden p-0">
+          <DialogContent className="!w-[94vw] !max-w-[94vw] !h-[88vh] flex flex-col overflow-hidden p-0">
             <div className="px-8 pt-6 pb-4 flex-shrink-0">
               <DialogHeader>
                 <DialogTitle className="text-3xl font-bold flex items-center gap-4 mb-2" style={{ color: '#007E8C' }}>
@@ -1098,7 +1211,7 @@ const EventRequestsManagementContent: React.FC = () => {
               </DialogHeader>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-8 pb-8">
+            <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-8">
               <VolunteerOpportunitiesTab />
             </div>
           </DialogContent>
@@ -1161,21 +1274,35 @@ const EventRequestsManagementContent: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Floating Action Button for Spreadsheet View - Only show when NOT on scheduled tab */}
+        {/* Back to Top Floating Button - Desktop only to avoid mobile crowding */}
+        {showBackToTop && (
+          <div className="hidden sm:block fixed bottom-6 left-6 z-50">
+            <button
+              onClick={scrollToTop}
+              className="h-10 w-10 rounded-full shadow-lg bg-slate-600 hover:bg-slate-700 active:bg-slate-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              title="Back to Top"
+              aria-label="Scroll back to top"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Floating Action Button for Spreadsheet View - Desktop only, hidden on mobile to avoid crowding */}
         {activeTab !== 'scheduled' && (
-          <div className="fixed bottom-24 sm:bottom-6 right-20 sm:right-6 z-50">
+          <div className="hidden sm:block fixed bottom-6 right-6 z-50">
             <button
               onClick={handleSwitchToSpreadsheet}
-              className="h-16 w-16 rounded-full shadow-2xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
+              className="h-14 w-14 rounded-full shadow-xl bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center text-white hover:scale-105 active:scale-95"
               title="Switch to Spreadsheet View"
               aria-label="Switch to Spreadsheet View"
             >
-              <Sheet className="h-6 w-6" />
+              <Sheet className="h-5 w-5" />
             </button>
 
-            {/* Tooltip that appears on first few visits */}
+            {/* Tooltip that appears on first few visits - desktop only */}
             {showFloatingTip && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border-2 border-green-500 rounded-lg shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white border border-green-500 rounded-lg shadow-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <button
                   onClick={handleDismissFloatingTip}
                   className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1184,13 +1311,13 @@ const EventRequestsManagementContent: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-sm mb-1 text-gray-900">
-                      Quick access to Spreadsheet View!
+                    <p className="font-medium text-xs text-gray-900">
+                      Spreadsheet View
                     </p>
-                    <p className="text-xs text-gray-600">
-                      Click here anytime to jump to the familiar table layout (like your Google Sheet)
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Click for table layout
                     </p>
                   </div>
                 </div>
@@ -1205,11 +1332,73 @@ const EventRequestsManagementContent: React.FC = () => {
           title="Events Assistant"
           subtitle="Ask about event requests and scheduling"
           contextData={{
-            activeTab,
-            statusFilter,
-            confirmationFilter,
-            searchQuery,
-            selectedEvent: selectedEventRequest ? {
+            currentView: activeTab,
+            filters: {
+              statusFilter,
+              confirmationFilter,
+              searchQuery,
+            },
+            summaryStats: (() => {
+              // Calculate this week's events (Mon-Sun)
+              const now = new Date();
+              const dayOfWeek = now.getDay();
+              const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+              const monday = new Date(now);
+              monday.setDate(now.getDate() + mondayOffset);
+              monday.setHours(0, 0, 0, 0);
+              const sunday = new Date(monday);
+              sunday.setDate(monday.getDate() + 6);
+              sunday.setHours(23, 59, 59, 999);
+
+              const thisWeekEvents = eventRequests.filter(e => {
+                const eventDate = e.scheduledEventDate || e.desiredEventDate;
+                if (!eventDate) return false;
+                const date = new Date(eventDate);
+                return date >= monday && date <= sunday && ['scheduled', 'in_process'].includes(e.status);
+              });
+
+              const thisWeekSandwiches = thisWeekEvents.reduce((sum, e) =>
+                sum + (e.estimatedSandwichCount || e.actualSandwichCount || 0), 0
+              );
+
+              return {
+                totalEvents: eventRequests.length,
+                scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+                inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
+                newRequests: eventRequests.filter(e => e.status === 'new').length,
+                completedEvents: eventRequests.filter(e => e.status === 'completed').length,
+                confirmedEvents: eventRequests.filter(e => e.isConfirmed).length,
+                // Pre-calculated weekly stats so AI doesn't have to count from truncated data
+                thisWeekDateRange: `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+                thisWeekEventCount: thisWeekEvents.length,
+                thisWeekSandwichTotal: thisWeekSandwiches,
+                thisWeekEventsList: thisWeekEvents.map(e => ({
+                  name: e.organizationName,
+                  date: new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                  sandwiches: e.estimatedSandwichCount || e.actualSandwichCount || 0,
+                  status: e.status,
+                })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+              };
+            })(),
+          }}
+          getFullContext={() => ({
+            rawData: eventRequests.map(e => ({
+              id: e.id,
+              organizationName: e.organizationName,
+              status: e.status,
+              scheduledEventDate: e.scheduledEventDate,
+              desiredEventDate: e.desiredEventDate,
+              estimatedSandwichCount: e.estimatedSandwichCount,
+              actualSandwichCount: e.actualSandwichCount,
+              isConfirmed: e.isConfirmed,
+              category: e.category,
+              eventStartTime: e.eventStartTime,
+              eventEndTime: e.eventEndTime,
+              driversNeeded: e.driversNeeded,
+              speakersNeeded: e.speakersNeeded,
+              volunteersNeeded: e.volunteersNeeded,
+            })),
+            selectedItem: selectedEventRequest ? {
               organizationName: selectedEventRequest.organizationName,
               status: selectedEventRequest.status,
               scheduledEventDate: selectedEventRequest.scheduledEventDate,
@@ -1217,18 +1406,13 @@ const EventRequestsManagementContent: React.FC = () => {
               estimatedSandwichCount: selectedEventRequest.estimatedSandwichCount,
               isConfirmed: selectedEventRequest.isConfirmed,
             } : undefined,
-            summaryStats: {
-              totalEvents: eventRequests.length,
-              scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
-              inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
-              newRequests: eventRequests.filter(e => e.status === 'new').length,
-            },
-          }}
+          })}
           suggestedQuestions={[
             "How many events are scheduled this month?",
             "What events need follow-up?",
-            "Show events by category",
+            "Show events by status",
             "Which events are pending confirmation?",
+            "What's our total sandwich count for scheduled events?",
           ]}
         />
       </div>

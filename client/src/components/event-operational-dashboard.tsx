@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Calendar,
   Sandwich,
   Car,
@@ -142,8 +149,19 @@ const SummaryCard: React.FC<{
   </Card>
 );
 
+// Date range options for request volume
+const DATE_RANGE_OPTIONS = [
+  { value: '7', label: 'Last 7 Days' },
+  { value: '30', label: 'Last 30 Days' },
+  { value: '60', label: 'Last 60 Days' },
+  { value: '90', label: 'Last 90 Days' },
+  { value: '180', label: 'Last 6 Months' },
+  { value: '365', label: 'Last Year' },
+];
+
 export default function EventOperationalDashboard() {
   const [, setLocation] = useLocation();
+  const [volumeDateRange, setVolumeDateRange] = useState<string>('30');
 
   // Fetch all event requests
   const { data: events = [], isLoading } = useQuery<EventRequest[]>({
@@ -176,14 +194,17 @@ export default function EventOperationalDashboard() {
       0
     );
 
-    // Drivers needed: events where drivers are needed but not arranged
-    const driversNeeded = scheduledEvents.filter(
-      (e) =>
-        (e.driversNeeded && e.driversNeeded > 0) &&
-        !e.driversArranged &&
-        !e.selfTransport &&
-        (!e.assignedDriverIds || e.assignedDriverIds.length === 0)
-    ).length;
+    // Drivers needed: events where total assigned drivers < drivers needed
+    // Include van driver and DHL van in the total assigned count
+    const driversNeeded = scheduledEvents.filter((e) => {
+      if (!e.driversNeeded || e.driversNeeded <= 0) return false;
+      if (e.driversArranged || e.selfTransport) return false;
+
+      const totalAssigned = (e.assignedDriverIds?.length || 0) +
+                           (e.assignedVanDriverId ? 1 : 0) +
+                           (e.isDhlVan ? 1 : 0);
+      return totalAssigned < e.driversNeeded;
+    }).length;
 
     // Volunteers needed: events where volunteers needed > volunteers assigned
     const volunteersNeeded = scheduledEvents.filter((e) => {
@@ -235,7 +256,11 @@ export default function EventOperationalDashboard() {
         if (!e.eventAddress && !e.deliveryDestination) missing.push('Address');
         if (!e.estimatedSandwichCount) missing.push('Sandwich count');
         if ((e.driversNeeded && e.driversNeeded > 0) && !e.driversArranged && !e.selfTransport) {
-          if (!e.assignedDriverIds || e.assignedDriverIds.length === 0) {
+          // Include van driver and DHL van in total assigned count
+          const totalDriversAssigned = (e.assignedDriverIds?.length || 0) +
+                                       (e.assignedVanDriverId ? 1 : 0) +
+                                       (e.isDhlVan ? 1 : 0);
+          if (totalDriversAssigned < e.driversNeeded) {
             missing.push('Driver');
           }
         }
@@ -250,7 +275,11 @@ export default function EventOperationalDashboard() {
         if (!e.eventAddress && !e.deliveryDestination) missing.push('Address');
         if (!e.estimatedSandwichCount) missing.push('Sandwich count');
         if ((e.driversNeeded && e.driversNeeded > 0) && !e.driversArranged && !e.selfTransport) {
-          if (!e.assignedDriverIds || e.assignedDriverIds.length === 0) {
+          // Include van driver and DHL van in total assigned count
+          const totalDriversAssigned = (e.assignedDriverIds?.length || 0) +
+                                       (e.assignedVanDriverId ? 1 : 0) +
+                                       (e.isDhlVan ? 1 : 0);
+          if (totalDriversAssigned < e.driversNeeded) {
             missing.push('Driver');
           }
         }
@@ -306,49 +335,86 @@ export default function EventOperationalDashboard() {
     return { stalledIntakes, incompleteScheduled, postEventFollowUp };
   }, [events, users]);
 
-  // Calculate request volume for last 30 days
+  // Calculate request volume for selected date range
+  // Uses createdAt which reflects when the form was submitted to Google Sheets
   const requestVolumeData = useMemo(() => {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const days = parseInt(volumeDateRange, 10);
+    const periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const previousPeriodStart = new Date(now.getTime() - days * 2 * 24 * 60 * 60 * 1000);
 
-    // Group by week for cleaner visualization
-    const weeklyData: Record<string, number> = {};
+    // Determine grouping strategy based on range
+    // For shorter ranges (7 days), group by day
+    // For medium ranges (30-90 days), group by week
+    // For longer ranges (180-365 days), group by month
+    const groupByDay = days <= 14;
+    const groupByMonth = days > 90;
+
+    const groupedData: Record<string, number> = {};
     const previousPeriodCount = { count: 0 };
 
     events.forEach((e) => {
       const createdDate = e.createdAt ? new Date(e.createdAt) : null;
       if (!createdDate) return;
 
-      // Count for previous 30-day period (for comparison)
-      if (createdDate >= sixtyDaysAgo && createdDate < thirtyDaysAgo) {
+      // Count for previous period (for comparison)
+      if (createdDate >= previousPeriodStart && createdDate < periodStart) {
         previousPeriodCount.count++;
       }
 
-      // Current 30-day period - group by week
-      if (createdDate >= thirtyDaysAgo) {
-        const weekStart = new Date(createdDate);
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        const weekKey = weekStart.toISOString().split('T')[0];
-        weeklyData[weekKey] = (weeklyData[weekKey] || 0) + 1;
+      // Current period - group appropriately
+      if (createdDate >= periodStart) {
+        let groupKey: string;
+        
+        if (groupByDay) {
+          // Group by day
+          groupKey = createdDate.toISOString().split('T')[0];
+        } else if (groupByMonth) {
+          // Group by month
+          const monthStart = new Date(createdDate.getFullYear(), createdDate.getMonth(), 1);
+          groupKey = monthStart.toISOString().split('T')[0];
+        } else {
+          // Group by week
+          const weekStart = new Date(createdDate);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          groupKey = weekStart.toISOString().split('T')[0];
+        }
+        
+        groupedData[groupKey] = (groupedData[groupKey] || 0) + 1;
       }
     });
 
-    const currentCount = Object.values(weeklyData).reduce((sum, count) => sum + count, 0);
+    const currentCount = Object.values(groupedData).reduce((sum, count) => sum + count, 0);
     const percentChange =
       previousPeriodCount.count > 0
         ? Math.round(((currentCount - previousPeriodCount.count) / previousPeriodCount.count) * 100)
         : 0;
 
-    const chartData = Object.entries(weeklyData)
+    const chartData = Object.entries(groupedData)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, count]) => ({
-        week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        requests: count,
-      }));
+      .map(([dateKey, count]) => {
+        const date = new Date(dateKey);
+        let label: string;
+        
+        if (groupByDay) {
+          label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } else if (groupByMonth) {
+          label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        } else {
+          label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        return {
+          week: label,
+          requests: count,
+        };
+      });
 
-    return { chartData, currentCount, percentChange };
-  }, [events]);
+    // Get the label for the selected range
+    const rangeLabel = DATE_RANGE_OPTIONS.find(opt => opt.value === volumeDateRange)?.label || 'Selected Period';
+
+    return { chartData, currentCount, percentChange, rangeLabel };
+  }, [events, volumeDateRange]);
 
   // Navigation handler
   const navigateToEventRequests = (filter?: string) => {
@@ -566,10 +632,24 @@ export default function EventOperationalDashboard() {
 
       {/* Section 3: Request Volume */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-brand-primary" />
-          Request Volume (Last 30 Days)
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-brand-primary" />
+            Request Volume
+          </h2>
+          <Select value={volumeDateRange} onValueChange={setVolumeDateRange}>
+            <SelectTrigger className="w-[160px]" data-testid="select-date-range">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              {DATE_RANGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value} data-testid={`date-range-${option.value}`}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -589,7 +669,7 @@ export default function EventOperationalDashboard() {
                   }
                 >
                   {requestVolumeData.percentChange > 0 ? '+' : ''}
-                  {requestVolumeData.percentChange}% vs previous 30 days
+                  {requestVolumeData.percentChange}% vs previous period
                 </Badge>
               )}
             </div>
@@ -629,9 +709,12 @@ export default function EventOperationalDashboard() {
               </div>
             ) : (
               <p className="text-gray-500 text-center py-8">
-                No request data available for the last 30 days
+                No request data available for the {requestVolumeData.rangeLabel.toLowerCase()}
               </p>
             )}
+            <p className="text-xs text-gray-400 mt-4 text-center">
+              Based on form submission dates from Google Sheets
+            </p>
           </CardContent>
         </Card>
       </div>

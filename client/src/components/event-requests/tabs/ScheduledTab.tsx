@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -15,6 +15,7 @@ import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Table2, Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { BatchedCollaborationProvider } from '@/contexts/batched-collaboration-context';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -125,6 +126,12 @@ export const ScheduledTab: React.FC = () => {
   } = useEventRequestContext();
 
   const scheduledRequests = filterRequestsByStatus('scheduled');
+
+  // Memoize event IDs for batched collaboration data fetching
+  const scheduledEventIds = useMemo(
+    () => scheduledRequests.map(r => r.id),
+    [scheduledRequests]
+  );
 
   // Inline editing functions - SPECIFIC to scheduled tab
   const startEditing = (id: number, field: string, currentValue: string) => {
@@ -258,18 +265,85 @@ export const ScheduledTab: React.FC = () => {
             estimatedAttendance: total > 0 ? total : null,
           },
         });
+      } else if (editingField === 'partnerOrganizations' || editingField.startsWith('partnerOrg_')) {
+        // Special handling for partner organizations
+        let partnerOrgs: Array<{ name: string; department?: string; role?: string }>;
+        
+        if (editingField.startsWith('partnerOrg_')) {
+          // Editing a single partner organization (name + optional department)
+          const index = parseInt(editingField.split('_')[1]);
+          const currentEvent = eventRequests.find(r => r.id === editingScheduledId);
+          const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
+            ? (currentEvent.partnerOrganizations as any[]) 
+            : [];
+          partnerOrgs = [...currentPartners];
+
+          // Parse combined payload if provided as JSON (name/department)
+          let parsed = { name: editingValue?.trim?.() || '', department: '' };
+          try {
+            const maybe = JSON.parse(editingValue);
+            if (maybe && typeof maybe === 'object') {
+              parsed = {
+                name: (maybe as any).name?.toString().trim() || '',
+                department: (maybe as any).department?.toString() || '',
+              };
+            }
+          } catch {
+            // ignore parse errors, fallback to trimmed string as name
+          }
+
+          const target = partnerOrgs[index] || {};
+          const updated = {
+            ...target,
+            name: parsed.name || target.name || '',
+            department: parsed.department ?? target.department ?? '',
+            role: target.role || 'partner',
+          };
+
+          if (partnerOrgs[index]) {
+            partnerOrgs[index] = updated;
+          } else if (updated.name) {
+            partnerOrgs.push(updated);
+          }
+        } else {
+          // Editing the full array
+          try {
+            partnerOrgs = JSON.parse(editingValue);
+          } catch {
+            partnerOrgs = [];
+          }
+        }
+        
+        // Filter out empty partners (where name is empty or just whitespace)
+        partnerOrgs = partnerOrgs.filter(p => p && p.name && p.name.trim() !== '');
+        
+        // Ensure each partner has a role
+        partnerOrgs = partnerOrgs.map(p => ({
+          ...p,
+          role: p.role || 'partner'
+        }));
+        
+        // Send the update - use empty array instead of null to ensure it's saved
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { partnerOrganizations: partnerOrgs.length > 0 ? partnerOrgs : [] },
+        });
       } else {
         // Regular field update
+        const numericFields = ['driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+        const valueToSend = numericFields.includes(editingField)
+          ? (editingValue === '' ? null : Number(editingValue))
+          : editingValue;
         updateScheduledFieldMutation.mutate({
           id: editingScheduledId,
           field: editingField,
-          value: editingValue,
+          value: valueToSend as any,
         });
       }
       };
 
       // Check if this is a critical field that requires confirmation
-      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'volunteersNeeded'];
 
       if (criticalFields.includes(editingField)) {
         const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
@@ -455,10 +529,11 @@ export const ScheduledTab: React.FC = () => {
           No scheduled events
         </div>
       ) : (
-        <div className="space-y-4 max-w-7xl mx-auto px-4">
-          {scheduledRequests.map((request) => (
-            <div key={request.id} className="w-full" data-event-id={request.id}>
-              <ScheduledCardEnhanced
+        <BatchedCollaborationProvider eventIds={scheduledEventIds}>
+          <div className="space-y-4 max-w-7xl mx-auto px-4">
+            {scheduledRequests.map((request) => (
+              <div key={request.id} className="w-full" data-event-id={request.id}>
+                <ScheduledCardEnhanced
                 request={request}
                 editingField={editingField}
                 editingValue={editingValue}
@@ -524,9 +599,10 @@ export const ScheduledTab: React.FC = () => {
                 handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
                 canEdit={true}
               />
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        </BatchedCollaborationProvider>
       )}
 
       {/* Floating Action Button for Quick View Toggle */}

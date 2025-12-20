@@ -111,6 +111,7 @@ if (typeof document !== 'undefined') {
 }
 import { format } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { formatTime12Hour } from '@/components/event-requests/utils';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -444,7 +445,7 @@ const generateClusterTooltip = (cluster: any): string => {
     : '';
 
   return `
-    <div class="p-3 min-w-[200px] max-w-[280px]">
+    <div class="p-3 min-w-[200px] max-w-[calc(100vw-3rem)]">
       <div class="font-bold text-base mb-2">${events.length} Events</div>
       <div class="text-sm space-y-1 mb-2">
         ${statusBreakdown}
@@ -568,8 +569,8 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
   };
 
   return (
-    <div className="p-2 min-w-[280px] max-w-[320px]">
-      <h3 className="font-semibold text-lg mb-1 text-gray-900">
+    <div className="p-2 w-full sm:w-[280px] max-w-[calc(100vw-3rem)]">
+      <h3 className="font-semibold text-base sm:text-lg mb-1 text-gray-900 truncate">
         {event.organizationName || 'Unknown Organization'}
       </h3>
       {event.department && (
@@ -602,6 +603,17 @@ const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; naviga
           <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
           <span className="text-base text-gray-800 font-medium">{getEventDate(event)}</span>
         </div>
+
+        {(event.eventStartTime || event.eventEndTime) && (
+          <div className="flex items-center gap-2">
+            <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <span className="text-base text-gray-800 font-medium">
+              {event.eventStartTime && formatTime12Hour(event.eventStartTime)}
+              {event.eventStartTime && event.eventEndTime && ' - '}
+              {event.eventEndTime && formatTime12Hour(event.eventEndTime)}
+            </span>
+          </div>
+        )}
 
         {event.estimatedSandwichCount && (
           <div className="flex items-center gap-2">
@@ -886,6 +898,8 @@ export default function EventMapView() {
       if (!response.ok) throw new Error('Failed to fetch event map data');
       return response.json();
     },
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   // Update address mutation
@@ -1165,7 +1179,7 @@ export default function EventMapView() {
               className="pl-10"
             />
           </div>
-          <Select value={upcomingFilter} onValueChange={setUpcomingFilter}>
+          <Select value={upcomingFilter} onValueChange={(value) => setUpcomingFilter(value as UpcomingFilterOption)}>
             <SelectTrigger className="w-full md:w-48">
               <Clock className="w-4 h-4 mr-2" />
               <SelectValue />

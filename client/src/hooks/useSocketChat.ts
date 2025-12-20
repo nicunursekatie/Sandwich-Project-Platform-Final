@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { logger } from '@/lib/logger';
-// Remove getUserPermissions import as it doesn't exist
+import { useToast } from '@/hooks/use-toast';
 
 export interface ChatMessage {
   id: string;
@@ -26,6 +26,7 @@ export interface ChatUser {
 
 export function useSocketChat() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -34,6 +35,19 @@ export function useSocketChat() {
     {}
   );
   const [currentRoom, setCurrentRoom] = useState<string>('');
+
+  // Use refs for values needed in socket handlers
+  const currentRoomRef = useRef<string>('');
+  const roomsRef = useRef<ChatRoom[]>([]);
+
+  // Keep refs in sync
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
+
+  useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
 
   // Initialize socket connection
   useEffect(() => {
@@ -89,6 +103,26 @@ export function useSocketChat() {
       // Trigger notification refresh for new messages
       window.dispatchEvent(new CustomEvent('refreshNotifications'));
       logger.log('New message received, triggering notification refresh');
+
+      // Show toast notification if:
+      // 1. Message is from a different user
+      // 2. Message is in a different room than the current one OR user is not on the chat page
+      const isFromOtherUser = message.userId !== (user as any)?.id;
+      const isInDifferentRoom = message.room !== currentRoomRef.current;
+      const isOnChatPage = window.location.pathname.includes('/chat');
+
+      if (isFromOtherUser && (isInDifferentRoom || !isOnChatPage)) {
+        const roomName = roomsRef.current.find(r => r.id === message.room)?.name || message.room;
+        const truncatedContent = message.content.length > 50
+          ? message.content.substring(0, 50) + '...'
+          : message.content;
+
+        toast({
+          title: `${message.userName} in ${roomName}`,
+          description: truncatedContent,
+          duration: 5000,
+        });
+      }
     });
 
     newSocket.on(
@@ -137,7 +171,7 @@ export function useSocketChat() {
     return () => {
       newSocket.close();
     };
-  }, [user]);
+  }, [user, toast]);
 
   // Send message
   const sendMessage = useCallback(

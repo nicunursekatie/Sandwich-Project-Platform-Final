@@ -57,6 +57,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import { MultiUserTaskCompletion } from '@/components/multi-user-task-completion';
 import SendKudosButton from '@/components/send-kudos-button';
+import { SubtaskSection } from '@/components/subtask-section';
 import { useAuth } from '@/hooks/useAuth';
 import { canEditProject, canDeleteProject } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
@@ -1426,6 +1427,13 @@ export default function ProjectDetailClean({
                     </div>
                   </div>
                 </div>
+
+                {/* Subtasks Section */}
+                <SubtaskSection
+                  parentTaskId={task.id}
+                  projectId={project.id}
+                  canEdit={user ? canEditProject(user, project) : false}
+                />
               </div>
             ))
           )}

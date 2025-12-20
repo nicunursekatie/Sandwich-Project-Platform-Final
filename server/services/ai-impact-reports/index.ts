@@ -109,18 +109,14 @@ export async function generateImpactReport(
 }
 
 /**
- * Calculate total sandwich count from a collection record
- * This properly sums individualSandwiches + groupCollections (or legacy group columns as fallback)
- * Matches client logic: use groupCollections if available, otherwise fall back to legacy columns
+ * Calculate GROUP sandwich count from a collection record
+ * This only counts group sandwiches (from organizations/schools/churches), NOT individual sandwiches
+ * The Event Impact Report measures the impact of group participation specifically
  */
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
 
-  // Individual sandwiches
-  total += collection.individualSandwiches || 0;
-
-  // Group collections: use JSONB column if available, otherwise fall back to legacy columns
-  // This matches the client's if/else pattern to avoid double-counting
+  // Group collections ONLY: use JSONB column if available, otherwise fall back to legacy columns
   const hasGroupCollections = collection.groupCollections &&
     Array.isArray(collection.groupCollections) &&
     collection.groupCollections.length > 0;
@@ -215,21 +211,24 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     }
   });
 
-  // Calculate totals - merge event data with collection data (same as component)
+  // Calculate totals - ONLY count sandwiches from actual collection records
+  // This ensures consistency with Group Collections Viewer and measures actual impact,
+  // not estimated/planned impact from event requests
   let totalSandwiches = 0;
+  let eventsWithCollections = 0;
 
-  // Count from events (using collection's sandwich count when linked)
+  // Count from events ONLY when they have linked collection data
+  // Events without actual collection records are not counted - we measure actual, not estimated impact
   events.forEach(e => {
     const linkedCollection = collectionsByEventId.get(e.id);
-    // If there's a linked collection, calculate its total properly
-    // Otherwise fall back to the event's sandwich counts
-    const sandwichCount = linkedCollection
-      ? getCollectionSandwichCount(linkedCollection)
-      : (e.actualSandwichCount || e.estimatedSandwichCount || 0);
-    totalSandwiches += sandwichCount;
+    if (linkedCollection) {
+      totalSandwiches += getCollectionSandwichCount(linkedCollection);
+      eventsWithCollections++;
+    }
+    // Do NOT fall back to event estimates - only actual collections count toward sandwiches
   });
 
-  // Add unlinked collections (those with no eventRequestId)
+  // Add unlinked collections (those with no eventRequestId but still have data)
   unlinkedCollections.forEach(c => {
     totalSandwiches += getCollectionSandwichCount(c);
   });
@@ -243,8 +242,8 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     }
   });
 
-  // Total events = event requests + unlinked collections + orphaned collections
-  const totalEvents = events.length + unlinkedCollections.length + orphanedCollectionCount;
+  // Total events with actual collection data = events with collections + unlinked + orphaned
+  const totalEvents = eventsWithCollections + unlinkedCollections.length + orphanedCollectionCount;
 
   const totalExpenses = expensesList.reduce((sum, e) => {
     if (typeof e.amount === 'number' && !isNaN(e.amount)) {

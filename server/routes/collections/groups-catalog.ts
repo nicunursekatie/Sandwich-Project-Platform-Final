@@ -2,43 +2,22 @@ import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
 import { logger } from '../../utils/production-safe-logger';
-
-// Canonicalize organization names for robust matching
-function canonicalizeOrgName(orgName: string): string {
-  if (!orgName || typeof orgName !== 'string') return '';
-
-  return orgName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ') // Collapse multiple whitespace to single space
-    .replace(/[&\.,;:!?"'\-_]/g, '') // Remove common punctuation
-    .replace(/\s/g, ''); // Remove all remaining spaces
-}
-
-// Enhanced matching: checks if names are exact match OR if one is a substring of the other
-// This handles cases like "Allied World" vs "Allied World Assurance"
-function organizationNamesMatch(canonical1: string, canonical2: string): boolean {
-  if (!canonical1 || !canonical2) return false;
-  
-  // Exact match
-  if (canonical1 === canonical2) return true;
-  
-  // Substring match: one name contains the other (with minimum length to avoid false positives)
-  const minLength = 8; // Avoid matching very short abbreviations
-  if (canonical1.length >= minLength && canonical2.length >= minLength) {
-    return canonical1.includes(canonical2) || canonical2.includes(canonical1);
-  }
-  
-  return false;
-}
+import { canonicalizeOrgName, organizationNamesMatch } from '../../utils/organization-canonicalization';
 
 export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   const router = Router();
 
   // Groups Catalog: Complete directory of all organizations (current requests + historical hosts)
+  // Query params:
+  //   viewMode: 'aggregated' (default) - groups events by org+dept+contact
+  //             'individual' - each event request is its own card
   router.get('/', deps.isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
+      const viewMode = (req.query.viewMode as string) || 'aggregated';
+      if (viewMode !== 'aggregated' && viewMode !== 'individual') {
+        return res.status(400).json({ message: 'Invalid viewMode. Must be "aggregated" or "individual"' });
+      }
 
       // Get all event requests and aggregate by organization + department
       const allEventRequests = await storage.getAllEventRequests();
@@ -124,9 +103,21 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Use the canonical name from our mapping (this groups "Allstate" and "Allstate/Pebble Tossers" together)
         const canonicalOrgName = canonicalOrgNameMap.get(orgName) || canonicalizeOrgName(orgName);
-        
+
         // Group by organization + department + contact (one card per unique contact)
-        const departmentKey = `${canonicalOrgName}|${department}|${contactEmail}`;
+        // In 'individual' mode, add event ID to key so each event gets its own card
+        const departmentKey = viewMode === 'individual'
+          ? `${canonicalOrgName}|${department}|${contactEmail}|${request.id}`
+          : `${canonicalOrgName}|${department}|${contactEmail}`;
+
+        // Check if this event has co-hosts (partner organizations where primary org is also listed)
+        const partnerOrgs = request.partnerOrganizations || [];
+        const coHostNames = Array.isArray(partnerOrgs)
+          ? partnerOrgs
+              .filter((p: any) => p && p.name && p.name.trim() && p.name.trim() !== orgName)
+              .map((p: any) => p.name.trim())
+          : [];
+        const isCoHostedEvent = coHostNames.length > 0;
 
         // Track contact-level aggregation (one entry per unique contact)
         if (!departmentsMap.has(departmentKey)) {
@@ -153,7 +144,29 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             assignedTo: null,
             assignedToName: null,
             completedEventsFromRequests: 0, // Track completed events from event_requests
+            // Co-host tracking
+            isCoHostedEvent: isCoHostedEvent,
+            coHostNames: isCoHostedEvent ? coHostNames : [],
+            // Track the event ID - will be used for single-event edits
+            linkedEventId: request.id,
+            // Track all event IDs for this aggregated card
+            eventIds: [request.id],
           });
+        } else {
+          // Entry already exists - add this event ID to the list
+          const existingDept = departmentsMap.get(departmentKey);
+          if (existingDept.eventIds && !existingDept.eventIds.includes(request.id)) {
+            existingDept.eventIds.push(request.id);
+          }
+          // If multiple events, clear linkedEventId (it only works for single-event cards)
+          if (existingDept.eventIds && existingDept.eventIds.length > 1) {
+            existingDept.linkedEventId = null;
+          }
+          // Update co-host info if this request has co-hosts
+          if (isCoHostedEvent) {
+            existingDept.isCoHostedEvent = true;
+            existingDept.coHostNames = [...new Set([...(existingDept.coHostNames || []), ...coHostNames])];
+          }
         }
 
         const dept = departmentsMap.get(departmentKey);
@@ -255,6 +268,122 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
       });
 
+      // STEP 2b: Process partner organizations - show events under both primary and partner orgs
+      // This creates additional entries for partner organizations while tracking that they're linked
+      allEventRequests.forEach((request) => {
+        if (!request.partnerOrganizations || !Array.isArray(request.partnerOrganizations)) return;
+        if (!request.organizationName) return;
+
+        const primaryOrgName = request.organizationName;
+        const primaryCanonicalName = canonicalOrgNameMap.get(primaryOrgName) || canonicalizeOrgName(primaryOrgName);
+        const eventDate = request.desiredEventDate;
+        const eventId = request.id;
+
+        request.partnerOrganizations.forEach((partner: any) => {
+          if (!partner.name || !partner.name.trim()) return;
+
+          const partnerOrgName = partner.name.trim();
+
+          // Skip if this partner matches the primary org name
+          // (avoids creating duplicate entries when the same org is listed as both primary and partner)
+          if (organizationNamesMatch(canonicalizeOrgName(partnerOrgName), primaryCanonicalName)) {
+            return;
+          }
+
+          const partnerRole = partner.role || 'partner';
+
+          // Get or create canonical name for partner org
+          let partnerCanonicalName = canonicalOrgNameMap.get(partnerOrgName);
+          if (!partnerCanonicalName) {
+            const candidateCanonical = canonicalizeOrgName(partnerOrgName);
+            // Check if it matches an existing canonical name
+            for (const existingCanonical of canonicalOrgNameMap.values()) {
+              if (organizationNamesMatch(candidateCanonical, existingCanonical)) {
+                partnerCanonicalName = existingCanonical;
+                break;
+              }
+            }
+            if (!partnerCanonicalName) {
+              partnerCanonicalName = candidateCanonical;
+            }
+            canonicalOrgNameMap.set(partnerOrgName, partnerCanonicalName);
+          }
+
+          // Create department key for partner org (using primary org contact info)
+          const department = partner.department || request.department || '';
+          const contactName =
+            request.firstName && request.lastName
+              ? `${request.firstName} ${request.lastName}`.trim()
+              : request.firstName || request.lastName || request.email || 'Unknown Contact';
+          const contactEmail = request.email || '';
+
+          // In 'individual' mode, add event ID to key so each event gets its own card
+          const partnerDeptKey = viewMode === 'individual'
+            ? `${partnerCanonicalName}|${department}|${contactEmail}|${eventId}`
+            : `${partnerCanonicalName}|${department}|${contactEmail}`;
+
+          if (!departmentsMap.has(partnerDeptKey)) {
+            departmentsMap.set(partnerDeptKey, {
+              organizationName: partnerOrgName,
+              canonicalName: partnerCanonicalName,
+              department: department,
+              contactName: contactName,
+              contactEmail: contactEmail,
+              contactPhone: request.phone,
+              contacts: [{
+                name: contactName,
+                email: contactEmail,
+                phone: request.phone,
+              }],
+              totalRequests: 0,
+              latestStatus: 'new',
+              latestRequestDate: request.createdAt || new Date(),
+              hasHostedEvent: false,
+              totalSandwiches: 0,
+              eventDate: null,
+              tspContact: null,
+              tspContactAssigned: null,
+              assignedTo: null,
+              assignedToName: null,
+              completedEventsFromRequests: 0,
+              // Track this is a partner entry to avoid double-counting
+              isPartnerEntry: true,
+              primaryOrganization: primaryOrgName,
+              partnerRole: partnerRole,
+              linkedEventId: eventId,
+            });
+          }
+
+          const partnerDept = departmentsMap.get(partnerDeptKey);
+          partnerDept.totalRequests += 1;
+
+          // Copy status and event details from primary org's request
+          if (request.status === 'completed' || request.status === 'contact_completed') {
+            partnerDept.completedEventsFromRequests = (partnerDept.completedEventsFromRequests || 0) + 1;
+            partnerDept.hasHostedEvent = true;
+          }
+
+          // Update event date
+          if (eventDate) {
+            try {
+              const dateObj = new Date(eventDate);
+              if (!isNaN(dateObj.getTime())) {
+                partnerDept.eventDate = dateObj.toISOString().split('T')[0];
+              }
+            } catch (e) {
+              // Ignore date parsing errors
+            }
+          }
+
+          // Update status
+          const requestDate = new Date(request.createdAt || new Date());
+          if (requestDate >= partnerDept.latestRequestDate) {
+            partnerDept.latestRequestDate = requestDate;
+            partnerDept.latestStatus = request.status || 'new';
+          }
+        });
+      });
+
       // Build a lookup of event requests by canonical org name and date for deduplication
       // This prevents double-counting events that exist in both event_requests AND sandwich_collections
       // NOTE: Only event requests WITH dates can be used for date-based deduplication
@@ -275,15 +404,18 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       });
 
       // Calculate actual sandwich totals and event counts from collections
+      // Now tracks by organization+department to properly reflect department assignments
       const organizationSandwichData = new Map();
 
       allCollections.forEach((collection) => {
         const collectionDate = collection.collectionDate;
 
         // Helper function to process organization data from collections
+        // Now accepts department parameter to properly track department-level data
         const processOrganization = (
           orgName: string,
-          sandwichCount: number
+          sandwichCount: number,
+          department: string = ''
         ) => {
           if (
             !orgName ||
@@ -296,6 +428,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
 
           const cleanOrgName = orgName.trim();
+          const cleanDepartment = (department || '').trim();
           
           // Use canonical name mapping if available, otherwise create new canonical name
           // This ensures collections use same canonical names as event requests
@@ -353,18 +486,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             }
           }
 
-          // Track sandwich totals using canonical name (already normalized above)
-          if (!organizationSandwichData.has(canonicalOrgName)) {
-            organizationSandwichData.set(canonicalOrgName, {
+          // Track sandwich totals using canonical name + department for proper grouping
+          // This ensures department-specific collections are tracked separately
+          const orgDeptKey = `${canonicalOrgName}|${cleanDepartment}`;
+          
+          if (!organizationSandwichData.has(orgDeptKey)) {
+            organizationSandwichData.set(orgDeptKey, {
+              canonicalName: canonicalOrgName,
               originalName: cleanOrgName, // Preserve original display name
+              department: cleanDepartment,
               totalSandwiches: 0,
               eventCount: 0,
               eventDates: new Set(),
-              pastEvents: [], // NEW: Track individual past events
+              pastEvents: [], // Track individual past events
             });
           }
 
-          const orgData = organizationSandwichData.get(canonicalOrgName);
+          const orgData = organizationSandwichData.get(orgDeptKey);
           orgData.totalSandwiches += sandwichCount || 0;
 
           // Track unique event dates to calculate frequency
@@ -372,10 +510,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             orgData.eventDates.add(collectionDate);
             orgData.eventCount = orgData.eventDates.size;
             
-            // NEW: Add individual past event details
+            // Add individual past event details
             orgData.pastEvents.push({
               date: collectionDate,
               sandwichCount: sandwichCount || 0,
+              department: cleanDepartment,
             });
           }
         };
@@ -387,20 +526,21 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           collection.groupCollections.length > 0
         ) {
           // Use new JSON group collections data (preferred)
+          // Now passes department from groupCollections JSON
           collection.groupCollections.forEach((group: any) => {
             // Include groups even if count is 0 (check for undefined/null instead of truthy)
             if (group.name && group.count != null) {
-              processOrganization(group.name, group.count);
+              processOrganization(group.name, group.count, group.department || '');
             }
           });
         } else {
           // Fall back to legacy group data only if JSON is empty
-          // Include groups even if count is 0
+          // Legacy fields don't have department info
           if (collection.group1Name && collection.group1Count != null) {
-            processOrganization(collection.group1Name, collection.group1Count);
+            processOrganization(collection.group1Name, collection.group1Count, '');
           }
           if (collection.group2Name && collection.group2Count != null) {
-            processOrganization(collection.group2Name, collection.group2Count);
+            processOrganization(collection.group2Name, collection.group2Count, '');
           }
         }
       });
@@ -451,9 +591,14 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       };
 
       // Update departments with actual collection data
-      organizationSandwichData.forEach((orgData, canonicalOrgName) => {
+      // Now matches by organization+department for proper alignment
+      organizationSandwichData.forEach((orgData, orgDeptKey) => {
+        // orgDeptKey format: "canonicalOrgName|department"
+        const canonicalOrgName = orgData.canonicalName;
+        const collectionDepartment = orgData.department || '';
+        
         // Find existing department entries for this organization using canonical matching
-        // ENHANCED: Now uses fuzzy matching to catch name variations
+        // ENHANCED: Now matches by both organization name AND department
         let foundExisting = false;
 
         // Sort past events by date (most recent first)
@@ -462,13 +607,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         );
 
         departmentsMap.forEach((dept, key) => {
-          if (organizationNamesMatch(dept.canonicalName, canonicalOrgName)) {
+          // Match by organization name AND department (if collection has department)
+          const orgMatches = organizationNamesMatch(dept.canonicalName, canonicalOrgName);
+          // Safely normalize department strings before comparison to avoid null dereference
+          const normalizedDeptDepartment = (dept.department || '').toLowerCase().trim();
+          const normalizedCollectionDepartment = (collectionDepartment || '').toLowerCase().trim();
+          const deptMatches = !collectionDepartment || 
+            normalizedDeptDepartment === normalizedCollectionDepartment;
+          
+          if (orgMatches && deptMatches) {
             foundExisting = true;
-            dept.actualSandwichTotal = orgData.totalSandwiches;
-            dept.actualEventCount = orgData.eventCount;
+            dept.actualSandwichTotal = (dept.actualSandwichTotal || 0) + orgData.totalSandwiches;
+            dept.actualEventCount = (dept.actualEventCount || 0) + orgData.eventCount;
             dept.eventFrequency = calculateEventFrequency(orgData.eventDates);
             dept.hasHostedEvent = true;
-            dept.pastEvents = sortedPastEvents; // NEW: Add past events list
+            dept.pastEvents = [...(dept.pastEvents || []), ...sortedPastEvents].sort((a: any, b: any) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
 
             // Update latest collection date and calculate latest activity date
             const latestCollectionDate = Math.max(
@@ -489,9 +644,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         });
 
-        // Add as historical organization if not found in event requests
+        // Add as historical organization+department if not found in event requests
+        // This creates a new card for organizations/departments only known from collections
         if (!foundExisting) {
-          const departmentKey = `${canonicalOrgName}||`; // Empty department and contact for historical entries
+          const departmentKey = `${canonicalOrgName}|${collectionDepartment}|`; // Include department for proper grouping
           const latestCollectionDate = Math.max(
             ...(Array.from(orgData.eventDates) as string[]).map((d: string) => new Date(d).getTime())
           );
@@ -499,7 +655,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           departmentsMap.set(departmentKey, {
             organizationName: orgData.originalName,
             canonicalName: canonicalOrgName,
-            department: '',
+            department: collectionDepartment, // Include department from collection
             contactName: '',
             contactEmail: '',
             contactPhone: '',
@@ -513,11 +669,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             actualSandwichTotal: orgData.totalSandwiches,
             actualEventCount: orgData.eventCount,
             eventFrequency: calculateEventFrequency(orgData.eventDates),
-            eventDate: null,
+            // Use the most recent collection date as the eventDate for display
+            eventDate: new Date(latestCollectionDate).toISOString().split('T')[0],
             latestCollectionDate: new Date(latestCollectionDate)
               .toISOString()
               .split('T')[0],
-            pastEvents: sortedPastEvents, // NEW: Add past events list
+            pastEvents: sortedPastEvents,
+            isFromCollectionOnly: true, // Flag to indicate this is from collection log only
           });
         }
       });
@@ -592,6 +750,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           assignedTo: dept.assignedTo || null,
           assignedToName: dept.assignedToName || null,
           pastEvents: dept.pastEvents || [], // Include all past events in array
+          // Partner/co-host tracking fields
+          isPartnerEntry: dept.isPartnerEntry || false,
+          primaryOrganization: dept.primaryOrganization || null,
+          partnerRole: dept.partnerRole || null,
+          linkedEventId: dept.linkedEventId || null,
+          eventIds: dept.eventIds || [], // All event IDs aggregated in this card
+          isFromCollectionOnly: dept.isFromCollectionOnly || false,
+          isCoHostedEvent: dept.isCoHostedEvent || false,
+          coHostNames: dept.coHostNames || [],
         });
       });
 
@@ -894,6 +1061,256 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
     }
   );
 
+  // POST /api/groups-catalog/rename - Rename organization/department across all source records
+  // If eventId is provided, only update that specific event (for single-card edits)
+  router.post('/rename', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { oldName, newName, oldDepartment, newDepartment, partnerOrganizations, eventId, eventIds } = req.body;
+
+      // Validation
+      if (!oldName || typeof oldName !== 'string') {
+        return res.status(400).json({ message: 'Current organization name is required' });
+      }
+
+      const trimmedOldName = oldName.trim();
+      // Allow newName to be null/empty for co-hosted events
+      const trimmedNewName = (newName && typeof newName === 'string') ? newName.trim() : '';
+      // Preserve empty string as a valid value (means "no department") - only use null if undefined
+      const trimmedOldDept = typeof oldDepartment === 'string' ? oldDepartment.trim() : null;
+      const trimmedNewDept = typeof newDepartment === 'string' ? newDepartment.trim() : null;
+      const specificEventId = eventId && typeof eventId === 'number' ? eventId : null;
+      // Support multiple event IDs for aggregated cards
+      const specificEventIds = Array.isArray(eventIds) && eventIds.length > 0
+        ? eventIds.filter((id: any) => typeof id === 'number')
+        : null;
+
+      // Process partner organizations - filter and validate
+      const validPartnerOrgs = Array.isArray(partnerOrganizations)
+        ? partnerOrganizations
+            .filter((p: any) => p && typeof p.name === 'string' && p.name.trim())
+            .map((p: any) => ({
+              name: p.name.trim(),
+              role: ['co-host', 'partner', 'sponsor'].includes(p.role) ? p.role : 'partner',
+            }))
+        : null;
+
+      // Either need a new org name OR co-hosts (for truly co-hosted events)
+      const hasCoHosts = validPartnerOrgs && validPartnerOrgs.length > 0;
+      if (!trimmedNewName && !hasCoHosts) {
+        return res.status(400).json({ message: 'Please provide an organization name or add co-hosting organizations' });
+      }
+
+      logger.info('Renaming organization', {
+        oldName: trimmedOldName,
+        newName: trimmedNewName,
+        oldDepartment: trimmedOldDept,
+        newDepartment: trimmedNewDept,
+        partnerOrganizations: validPartnerOrgs,
+        eventId: specificEventId,
+        eventIds: specificEventIds,
+        userId: req.user?.id,
+      });
+
+      let updatedEventRequests = 0;
+      let updatedCollections = 0;
+
+      // For co-hosted events with no primary org, use the first co-host as the organizationName
+      // This ensures the record isn't orphaned while still having all orgs as co-hosts
+      const effectiveNewName = trimmedNewName || (hasCoHosts ? validPartnerOrgs![0].name : '');
+
+      // 1. Update event_requests
+      // If specificEventId is provided, only update that one event (single-card edit mode)
+      // If specificEventIds array is provided, only update those events (aggregated card mode)
+      // Otherwise, update all matching events (bulk rename mode)
+      if (specificEventId) {
+        // Single event update mode - much faster, only fetch and update one record
+        const request = await storage.getEventRequest(specificEventId);
+        if (request && request.organizationName === trimmedOldName) {
+          const updates: any = {};
+
+          // Update organization name
+          updates.organizationName = effectiveNewName;
+
+          // Add partner organizations if provided
+          if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+            updates.partnerOrganizations = validPartnerOrgs;
+          }
+
+          // Update department if provided (allow clearing with empty string)
+          if (trimmedNewDept !== null || newDepartment === '') {
+            updates.department = trimmedNewDept || null;
+          }
+
+          await storage.updateEventRequest(specificEventId, updates);
+          updatedEventRequests = 1;
+        }
+      } else if (specificEventIds && specificEventIds.length > 0) {
+        // Aggregated card update mode - update specific events by ID
+        for (const eventIdToUpdate of specificEventIds) {
+          const request = await storage.getEventRequest(eventIdToUpdate);
+          if (request && request.organizationName === trimmedOldName) {
+            const updates: any = {};
+
+            // Update organization name
+            updates.organizationName = effectiveNewName;
+
+            // Add partner organizations if provided
+            if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+              updates.partnerOrganizations = validPartnerOrgs;
+            }
+
+            // Update department if provided (allow clearing with empty string)
+            if (trimmedNewDept !== null || newDepartment === '') {
+              updates.department = trimmedNewDept || null;
+            }
+
+            await storage.updateEventRequest(eventIdToUpdate, updates);
+            updatedEventRequests++;
+          }
+        }
+      } else {
+        // Bulk update mode - iterate through events matching org + dept
+        // When oldDepartment is provided, only update events that match BOTH org AND department
+        // This prevents accidentally updating unrelated events with different departments
+        const allEventRequests = await storage.getAllEventRequests();
+        for (const request of allEventRequests) {
+          let shouldUpdate = false;
+          const updates: any = {};
+
+          // Check if organization name matches
+          const orgMatches = request.organizationName === trimmedOldName;
+          if (!orgMatches) continue; // Skip if org doesn't match
+
+          // Check if department matches (when oldDepartment is specified)
+          const currentDept = request.department || null;
+          const deptMatches = trimmedOldDept === null
+            ? true // No dept filter specified, match all
+            : (currentDept === trimmedOldDept || (trimmedOldDept === '' && !currentDept));
+
+          if (!deptMatches) continue; // Skip if dept doesn't match
+
+          // At this point, org matches and dept matches (or no dept filter)
+          updates.organizationName = effectiveNewName;
+          shouldUpdate = true;
+
+          // Add partner organizations if provided
+          if (validPartnerOrgs && validPartnerOrgs.length > 0) {
+            updates.partnerOrganizations = validPartnerOrgs;
+          }
+
+          // Update department if specified
+          // Allow clearing: if oldDept was explicitly provided and newDept is null/empty
+          const isClearing = trimmedOldDept !== null && trimmedNewDept === null;
+          const isChanging = trimmedNewDept !== null && trimmedNewDept !== currentDept;
+
+          if (isClearing || isChanging) {
+            updates.department = trimmedNewDept; // null will clear it
+          }
+
+          if (shouldUpdate) {
+            try {
+              await storage.updateEventRequest(request.id, updates);
+              updatedEventRequests++;
+            } catch (updateError) {
+              logger.error('Failed to update event request', {
+                requestId: request.id,
+                updates,
+                error: updateError instanceof Error ? updateError.message : updateError,
+              });
+              throw updateError;
+            }
+          }
+        }
+      }
+
+      // 2. Update sandwich_collections (group1Name, group2Name, and groupCollections JSON)
+      // Skip collection updates if:
+      // - we're in single-event or aggregated-card mode (editing specific events)
+      // - we're editing a department-level card (collections don't have departments)
+      const isDepartmentEdit = trimmedOldDept !== null || trimmedNewDept !== null;
+      if (!specificEventId && !specificEventIds && !isDepartmentEdit) {
+        const allCollections = await storage.getAllSandwichCollections();
+        for (const collection of allCollections) {
+          let shouldUpdate = false;
+          const updates: any = {};
+
+          // Check group1Name
+          if (collection.group1Name === trimmedOldName) {
+            updates.group1Name = effectiveNewName;
+            shouldUpdate = true;
+          }
+
+          // Check group2Name
+          if (collection.group2Name === trimmedOldName) {
+            updates.group2Name = effectiveNewName;
+            shouldUpdate = true;
+          }
+
+          // Check groupCollections JSON array
+          if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+            const updatedGroupCollections = collection.groupCollections.map((group: any) => {
+              if (group && typeof group === 'object') {
+                let updatedGroup = { ...group };
+
+                // Update name field
+                if (group.name === trimmedOldName) {
+                  updatedGroup.name = effectiveNewName;
+                  shouldUpdate = true;
+                }
+
+                // Update department field if applicable (only if new department was explicitly provided)
+                if (trimmedOldDept !== null && group.department === trimmedOldDept && trimmedNewDept !== null) {
+                  updatedGroup.department = trimmedNewDept;
+                  shouldUpdate = true;
+                }
+
+                return updatedGroup;
+              }
+              return group;
+            });
+
+            if (shouldUpdate) {
+              updates.groupCollections = updatedGroupCollections;
+            }
+          }
+
+          if (shouldUpdate) {
+            await storage.updateSandwichCollection(collection.id, updates);
+            updatedCollections++;
+          }
+        }
+
+        // 3. Update the organizations table if it exists (only for bulk rename mode)
+        const allOrganizations = await storage.getAllOrganizations();
+        for (const org of allOrganizations) {
+          if (org.name === trimmedOldName) {
+            await storage.updateOrganization(org.id, { name: effectiveNewName });
+          }
+        }
+      }
+
+      logger.info('Organization rename completed', {
+        oldName: trimmedOldName,
+        newName: effectiveNewName,
+        isCoHostedEvent: !trimmedNewName && hasCoHosts,
+        updatedEventRequests,
+        updatedCollections,
+      });
+
+      res.json({
+        success: true,
+        oldName: trimmedOldName,
+        newName: effectiveNewName,
+        isCoHostedEvent: !trimmedNewName && hasCoHosts,
+        updatedEventRequests,
+        updatedCollections,
+      });
+    } catch (error) {
+      logger.error('Error renaming organization:', error);
+      res.status(500).json({ message: 'Failed to rename organization' });
+    }
+  });
+
   // POST /api/organizations/upsert - Create or update organization category
   router.post('/upsert', deps.isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -908,14 +1325,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         return res.status(400).json({ message: 'Category is required' });
       }
 
-      const validCategories = [
-        'corp', 'small_medium_corp', 'large_corp', 'church_faith', 'religious',
-        'nonprofit', 'government', 'hospital', 'political', 'school',
-        'neighborhood', 'club', 'greek_life', 'cultural', 'other'
-      ];
-
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ message: 'Invalid category' });
+      // Validate category format (alphanumeric with underscores, reasonable length)
+      const trimmedCategory = category.trim().toLowerCase();
+      if (trimmedCategory.length < 2 || trimmedCategory.length > 50) {
+        return res.status(400).json({ message: 'Category must be between 2 and 50 characters' });
+      }
+      if (!/^[a-z0-9_]+$/.test(trimmedCategory)) {
+        return res.status(400).json({ message: 'Category can only contain letters, numbers, and underscores' });
       }
 
       // Get all organizations to find matching one
@@ -939,23 +1355,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       if (existingOrg) {
         // Update existing organization
         result = await storage.updateOrganization(existingOrg.id, {
-          category,
-          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          category: trimmedCategory,
+          schoolClassification: trimmedCategory === 'school' ? (schoolClassification || null) : null,
           isReligious: isReligious || false,
         });
 
-        logger.log(`Updated organization category: ${name} (ID: ${existingOrg.id}) -> ${category}`);
+        logger.log(`Updated organization category: ${name} (ID: ${existingOrg.id}) -> ${trimmedCategory}`);
       } else {
         // Create new organization
         result = await storage.createOrganization({
           name,
-          category,
-          schoolClassification: category === 'school' ? (schoolClassification || null) : null,
+          category: trimmedCategory,
+          schoolClassification: trimmedCategory === 'school' ? (schoolClassification || null) : null,
           isReligious: isReligious || false,
           totalEvents: 0,
         });
 
-        logger.log(`Created new organization: ${name} with category ${category}`);
+        logger.log(`Created new organization: ${name} with category ${trimmedCategory}`);
       }
 
       res.json(result);

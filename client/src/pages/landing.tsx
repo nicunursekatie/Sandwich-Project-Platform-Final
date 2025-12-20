@@ -27,8 +27,8 @@ export default function Landing() {
   const [showToolkit, setShowToolkit] = useState(false);
 
   const handleLogin = () => {
-    // Redirect to Replit Auth login
-    window.location.href = '/api/login';
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   // Fetch real statistics for public display

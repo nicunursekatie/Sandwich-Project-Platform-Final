@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Smartphone, Bell, MessageSquare } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
+import { isMobileDevice } from '@/lib/device-detection';
 
 const ANNOUNCEMENT_ID = 'sms_alerts_launch_2024';
 
@@ -44,6 +45,11 @@ export function SMSAnnouncementModal() {
 
   // Show modal if user hasn't dismissed it
   useEffect(() => {
+    // Don't show on mobile devices - let the mobile layout prompt take priority
+    if (isMobileDevice()) {
+      return;
+    }
+
     if (!isLoading && dismissStatus && !dismissStatus.dismissed) {
       setIsOpen(true);
     }

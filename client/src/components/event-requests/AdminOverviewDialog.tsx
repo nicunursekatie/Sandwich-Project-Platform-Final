@@ -133,7 +133,7 @@ export function AdminOverviewDialog({
         </DialogHeader>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 mb-6">
           <div className="premium-card-flat p-4">
             <div className="text-sm text-slate-600">Total Events</div>
             <div className="text-2xl font-bold text-brand-primary">{eventRequests.length}</div>

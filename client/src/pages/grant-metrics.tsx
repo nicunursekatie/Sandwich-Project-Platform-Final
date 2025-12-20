@@ -2022,22 +2022,39 @@ export default function GrantMetrics() {
         title="Grant Metrics Assistant"
         subtitle="Ask about impact metrics and data"
         contextData={{
-          yearType,
-          selectedYear: selectedFiscalYear,
-          selectedQuarter,
           currentView: 'grant-metrics',
+          filters: {
+            yearType,
+            selectedYear: selectedFiscalYear,
+            selectedQuarter,
+          },
           summaryStats: {
             totalCollections: collections.length,
             totalSandwiches: stats?.totalSandwiches || 0,
             activeHosts: stats?.totalHosts || 0,
+            uniqueGroups: stats?.uniqueGroups || 0,
           },
         }}
+        getFullContext={() => ({
+          rawData: collections.map((c: any) => ({
+            id: c.id,
+            hostName: c.hostName,
+            collectionDate: c.collectionDate,
+            individualSandwiches: c.individualSandwiches,
+            group1Name: c.group1Name,
+            group1Count: c.group1Count,
+            group2Name: c.group2Name,
+            group2Count: c.group2Count,
+            groupCollections: c.groupCollections,
+            totalSandwiches: calculateTotalSandwiches(c),
+          })),
+        })}
         suggestedQuestions={[
           "What are our key impact metrics?",
           "Show me year-over-year growth",
           "How many sandwiches this fiscal year?",
-          "What's our volunteer engagement?",
-          "Show me distribution by location",
+          "What's our total sandwich count?",
+          "How many active hosts do we have?",
           "What metrics can I use for grants?",
         ]}
       />

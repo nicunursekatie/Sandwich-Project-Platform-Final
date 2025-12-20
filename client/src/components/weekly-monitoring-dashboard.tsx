@@ -1094,35 +1094,33 @@ export default function WeeklyMonitoringDashboard() {
                   {submissionStatus.map((status: WeeklySubmissionStatus) => (
                     <div
                       key={status.location}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow gap-3"
+                      className="flex flex-col p-3 sm:p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow gap-2"
                     >
-                      <div className="flex items-center gap-3">
+                      {/* Top row: Status icon + Location name */}
+                      <div className="flex items-start gap-2 min-w-0">
                         <div
-                          className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0 ${
                             status.hasSubmitted ? 'bg-green-100' : 'bg-red-100'
                           }`}
                         >
                           {getStatusIcon(status.hasSubmitted)}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <h4 className="font-medium text-gray-900">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <h4 className="font-medium text-gray-900 text-sm sm:text-base break-words">
                               {status.location}
                             </h4>
                             {getDunwoodyBadge(status)}
                           </div>
                           {status.lastSubmissionDate && (
-                            <p className="text-sm text-gray-600">
-                              Last submission:{' '}
-                              {(() => {
-                                // Handle date without timezone conversion issues
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              Last: {(() => {
                                 const dateStr = status.lastSubmissionDate;
                                 if (dateStr.includes('-')) {
-                                  // Parse YYYY-MM-DD format directly to avoid timezone issues
                                   const [year, month, day] = dateStr
                                     .split('-')
                                     .map(Number);
-                                  const date = new Date(year, month - 1, day); // month is 0-indexed
+                                  const date = new Date(year, month - 1, day);
                                   return date.toLocaleDateString();
                                 }
                                 return new Date(dateStr).toLocaleDateString();
@@ -1131,26 +1129,26 @@ export default function WeeklyMonitoringDashboard() {
                           )}
                           {status.submittedBy &&
                             status.submittedBy.length > 0 && (
-                              <p className="text-sm text-gray-500">
-                                Submitted by: {status.submittedBy.join(', ')}
+                              <p className="text-xs text-gray-500 break-words">
+                                By: {status.submittedBy.join(', ')}
                               </p>
                             )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 sm:flex-shrink-0">
+                      {/* Bottom row: Badge + Action buttons */}
+                      <div className="flex flex-wrap items-center gap-2 pl-8 sm:pl-10">
                         <Badge
                           className={`${getStatusColor(
                             status.hasSubmitted
-                          )} flex items-center gap-1`}
+                          )} flex items-center gap-1 text-xs`}
                         >
                           {getStatusIcon(status.hasSubmitted)}
                           {status.hasSubmitted ? 'Submitted' : 'Missing'}
                         </Badge>
 
                         {!status.hasSubmitted && (
-                          <div className="flex items-center gap-1">
-                            {/* Email Reminder Button */}
+                          <>
                             <Button
                               size="sm"
                               variant="outline"
@@ -1167,11 +1165,10 @@ export default function WeeklyMonitoringDashboard() {
                             >
                               <Mail className="h-3 w-3" />
                               {emailingSingleLocation === status.location
-                                ? 'Sending...'
+                                ? '...'
                                 : 'Email'}
                             </Button>
 
-                            {/* SMS Button (only if configured) */}
                             {smsConfig?.isConfigured && (
                               <Button
                                 size="sm"
@@ -1187,11 +1184,11 @@ export default function WeeklyMonitoringDashboard() {
                               >
                                 <MessageSquare className="h-3 w-3" />
                                 {smsingLocation === status.location
-                                  ? 'Sending...'
+                                  ? '...'
                                   : 'SMS'}
                               </Button>
                             )}
-                          </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1608,6 +1605,30 @@ export default function WeeklyMonitoringDashboard() {
         contextType="collections"
         title="Monitoring Assistant"
         subtitle="Ask about weekly submissions"
+        contextData={{
+          currentView: 'weekly-monitoring',
+          filters: {
+            selectedWeek,
+          },
+          summaryStats: {
+            totalLocations: stats?.totalExpectedLocations || 0,
+            submittedLocations: stats?.submittedLocations || 0,
+            missingLocations: stats?.missingLocations || 0,
+            currentWeek: stats?.currentWeek || '',
+            submissionRate: stats?.totalExpectedLocations
+              ? Math.round((stats.submittedLocations / stats.totalExpectedLocations) * 100)
+              : 0,
+          },
+        }}
+        getFullContext={() => ({
+          rawData: Array.isArray(submissionStatus) ? submissionStatus.map((s: WeeklySubmissionStatus) => ({
+            location: s.location,
+            hasSubmitted: s.hasSubmitted,
+            lastSubmissionDate: s.lastSubmissionDate,
+            missingSince: s.missingSince,
+            submittedBy: s.submittedBy,
+          })) : [],
+        })}
         suggestedQuestions={[
           "Which locations haven't submitted yet?",
           "Show me this week's progress",

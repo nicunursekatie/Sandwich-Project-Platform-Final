@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { userService } from '../../services/users';
 import { requirePermission, createErrorHandler } from '../../middleware';
 import { applyPermissionDependencies } from '@shared/auth-utils';
+import { storage } from '../../storage';
 
 const usersRouter = Router();
 
@@ -47,13 +48,14 @@ usersRouter.post(
   requirePermission('USERS_EDIT'),
   async (req, res, next) => {
     try {
-      const { email, firstName, lastName, role } = req.body;
+      const { email, firstName, lastName, role, password } = req.body;
 
       const newUser = await userService.createUser({
         email,
         firstName,
         lastName,
         role,
+        password,
       });
 
       res.status(201).json(newUser);
@@ -171,6 +173,18 @@ usersRouter.patch(
     }
   }
 );
+
+// Get online users (active in last 5 minutes by default)
+// No special permission required - just need to be logged in
+usersRouter.get('/online', async (req, res, next) => {
+  try {
+    const sinceMinutes = parseInt(req.query.minutes as string) || 5;
+    const onlineUsers = await storage.getOnlineUsers(sinceMinutes);
+    res.json(onlineUsers);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Apply error handler
 usersRouter.use(errorHandler);

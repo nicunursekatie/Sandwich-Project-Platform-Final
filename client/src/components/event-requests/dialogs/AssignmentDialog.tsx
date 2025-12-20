@@ -15,6 +15,7 @@ import {
   Search,
   User,
   Car,
+  Truck,
   Building,
   Check,
   X,
@@ -36,6 +37,7 @@ interface ComprehensivePersonSelectorProps {
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
   availabilitySlots: AvailabilitySlot[];
   isLoadingAvailability: boolean;
+  vanDriverNeeded?: boolean;
 }
 
 function ComprehensivePersonSelector({
@@ -43,7 +45,8 @@ function ComprehensivePersonSelector({
   onSelectionChange,
   assignmentType,
   availabilitySlots,
-  isLoadingAvailability
+  isLoadingAvailability,
+  vanDriverNeeded = false
 }: ComprehensivePersonSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEntryText, setCustomEntryText] = useState('');
@@ -95,6 +98,12 @@ function ComprehensivePersonSelector({
     }))
   );
 
+  // Create lookup map for ALL drivers (for name resolution of already-assigned drivers)
+  const driverNameLookup = new Map<string, string>();
+  drivers.forEach((driver: any) => {
+    driverNameLookup.set(driver.id.toString(), driver.name || 'Unknown Driver');
+  });
+
   // Filter all people based on search term
   const allPeople = [
     ...users.map((user: any) => ({
@@ -105,13 +114,25 @@ function ComprehensivePersonSelector({
       section: 'Team Members'
     })),
     ...drivers
+      // Filter for active drivers who are not busy/off-duty - van-approved when van driver is needed
+      .filter((driver: any) => {
+        if (!driver.isActive) return false;
+        // Exclude busy or off-duty drivers
+        if (driver.availability === 'busy' || driver.availability === 'off-duty') return false;
+        // Filter for van-approved drivers when van driver is needed
+        if (assignmentType === 'driver' && vanDriverNeeded) {
+          return driver.vanApproved === true;
+        }
+        return true;
+      })
       .map((driver: any) => ({
         id: driver.id.toString(),
         displayName: driver.name,
         email: driver.email,
         phone: driver.phone,
         type: 'driver',
-        section: 'Drivers'
+        section: 'Drivers',
+        vanApproved: driver.vanApproved
       })),
     ...volunteers.map((volunteer: any) => ({
       id: `volunteer-${volunteer.id}`,
@@ -173,15 +194,21 @@ function ComprehensivePersonSelector({
     }
   };
 
-  // Helper to get display name for custom entries
+  // Helper to get display name for any person ID (including already-assigned unavailable drivers)
   const getPersonDisplayName = (personId: string) => {
     if (personId.startsWith('custom-')) {
       // Extract the custom name from the ID
       const parts = personId.split('-');
-      return parts.slice(2).join(' ').replace(/-/g, ' ');
+      return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
     }
+    // First check allPeople (for available/selectable people)
     const person = allPeople.find(p => p.id === personId);
-    return person?.displayName || personId;
+    if (person?.displayName) return person.displayName;
+    // Fall back to driver lookup (for already-assigned unavailable drivers)
+    const driverName = driverNameLookup.get(personId);
+    if (driverName) return driverName;
+    // Final fallback to personId
+    return personId;
   };
 
   return (
@@ -444,7 +471,14 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
             Assign {assignmentType ? assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1) + 's' : 'People'}
           </DialogTitle>
           <DialogDescription className="text-gray-600 mt-2">
-            Select people to assign as {assignmentType}s for this event. You can choose from team members, drivers, volunteers, and host contacts.
+            {assignmentType === 'driver' && currentEvent?.vanDriverNeeded ? (
+              <span className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-600" />
+                Van driver needed - only showing van-approved drivers. Select a van-approved driver to assign.
+              </span>
+            ) : (
+              `Select people to assign as ${assignmentType ? assignmentType + 's' : 'people'} for this event. You can choose from team members, drivers, volunteers, and host contacts.`
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -469,6 +503,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           assignmentType={assignmentType}
           availabilitySlots={availabilitySlots}
           isLoadingAvailability={isLoadingAvailability}
+          vanDriverNeeded={currentEvent?.vanDriverNeeded || false}
         />
 
         <div className="flex justify-end space-x-2 pt-4 border-t border-[#007E8C]/10">

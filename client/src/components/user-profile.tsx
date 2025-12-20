@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation } from 'wouter';
-import { User, Lock, Save, Bell } from 'lucide-react';
+import { User, Lock, Save, Bell, Smartphone, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,12 +25,14 @@ import {
 } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 import AlertPreferences from './alert-preferences';
+import { useMobilePreference } from '@/mobile/components/mobile-layout-prompt';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -69,7 +71,8 @@ type SMSFormData = z.infer<typeof smsSchema>;
 export default function UserProfile() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { preference: mobilePreference, setPreference: setMobilePreference } = useMobilePreference();
   
   // Parse URL query parameters to get the tab
   const getTabFromURL = () => {
@@ -531,6 +534,57 @@ export default function UserProfile() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Display Preferences</h4>
+                  
+                  <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        {mobilePreference === 'mobile' ? (
+                          <Smartphone className="w-5 h-5 text-primary" />
+                        ) : (
+                          <Monitor className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="mobile-view-toggle" className="text-base font-medium cursor-pointer">
+                          Use Mobile View
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {mobilePreference === 'mobile' 
+                            ? 'Currently using mobile-optimized layout' 
+                            : 'Switch to mobile-optimized layout for touch devices'}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="mobile-view-toggle"
+                      checked={mobilePreference === 'mobile'}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setMobilePreference('mobile');
+                          toast({
+                            title: 'Mobile view enabled',
+                            description: 'Redirecting to mobile layout...',
+                          });
+                          // Redirect to mobile view after a brief delay
+                          setTimeout(() => {
+                            setLocation('/m');
+                          }, 500);
+                        } else {
+                          setMobilePreference('desktop');
+                          toast({
+                            title: 'Desktop view enabled',
+                            description: 'You will stay on the desktop layout',
+                          });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <Button

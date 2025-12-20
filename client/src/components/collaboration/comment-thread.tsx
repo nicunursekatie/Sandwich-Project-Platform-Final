@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Edit2, Trash2, Reply, Loader2 } from "lucide-react";
+import { MessageSquare, Edit2, Trash2, Reply, Loader2, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { EventCollaborationComment } from "@shared/schema";
@@ -12,6 +13,7 @@ interface CommentThreadProps {
   comments: EventCollaborationComment[];
   currentUserId: string;
   currentUserName: string;
+  eventId: number;
   onAddComment: (content: string, parentId?: number) => Promise<void>;
   onEditComment: (commentId: number, content: string) => Promise<void>;
   onDeleteComment: (commentId: number) => Promise<void>;
@@ -24,6 +26,7 @@ interface CommentItemProps {
   comment: EventCollaborationComment;
   currentUserId: string;
   currentUserName: string;
+  eventId: number;
   onEdit: (commentId: number, content: string) => Promise<void>;
   onDelete: (commentId: number) => Promise<void>;
   onReply: (parentId: number) => void;
@@ -55,11 +58,12 @@ function getAvatarColor(userId: string): string {
   return colors[hash % colors.length];
 }
 
-function CommentItem({ 
-  comment, 
-  currentUserId, 
+function CommentItem({
+  comment,
+  currentUserId,
   currentUserName,
-  onEdit, 
+  eventId,
+  onEdit,
   onDelete,
   onReply,
   getReplies,
@@ -68,10 +72,38 @@ function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const isOwner = comment.userId === currentUserId;
   const maxDepth = 3;
   const replies = getReplies(comment.id);
+
+  // Fetch likes for this comment
+  const { data: likesData } = useQuery({
+    queryKey: [`/api/event-requests/${eventId}/collaboration/comments/${comment.id}/likes`],
+  });
+
+  const likes = likesData?.likes || [];
+  const likeCount = likes.length;
+  const isLikedByMe = likes.some((like: any) => like.userId === currentUserId);
+
+  // Like/unlike mutation
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/event-requests/${eventId}/collaboration/comments/${comment.id}/likes`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to toggle like');
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refetch likes for this comment
+      queryClient.invalidateQueries({
+        queryKey: [`/api/event-requests/${eventId}/collaboration/comments/${comment.id}/likes`],
+      });
+    },
+  });
 
   const handleSaveEdit = async () => {
     if (!editContent.trim() || isSubmitting) return;
@@ -168,44 +200,63 @@ function CommentItem({
                 {comment.content}
               </p>
 
-              <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {depth < maxDepth && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => onReply(comment.id)}
-                    data-testid={`reply-button-${comment.id}`}
-                  >
-                    <Reply className="h-3 w-3 mr-1" />
-                    Reply
-                  </Button>
-                )}
-                {isOwner && (
-                  <>
+              <div className="flex items-center gap-2 mt-2">
+                {/* Like button - always visible */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn(
+                    "h-7 text-xs",
+                    isLikedByMe && "text-red-500 hover:text-red-600"
+                  )}
+                  onClick={() => likeMutation.mutate()}
+                  disabled={likeMutation.isPending}
+                  data-testid={`like-button-${comment.id}`}
+                >
+                  <Heart className={cn("h-3 w-3 mr-1", isLikedByMe && "fill-current")} />
+                  {likeCount > 0 && <span>{likeCount}</span>}
+                </Button>
+
+                {/* Other actions - shown on hover */}
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {depth < maxDepth && (
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-7 text-xs"
-                      onClick={() => setIsEditing(true)}
-                      data-testid={`edit-button-${comment.id}`}
+                      onClick={() => onReply(comment.id)}
+                      data-testid={`reply-button-${comment.id}`}
                     >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      Edit
+                      <Reply className="h-3 w-3 mr-1" />
+                      Reply
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs text-destructive hover:text-destructive"
-                      onClick={handleDelete}
-                      disabled={isSubmitting}
-                      data-testid={`delete-button-${comment.id}`}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                  </>
-                )}
+                  )}
+                  {isOwner && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => setIsEditing(true)}
+                        data-testid={`edit-button-${comment.id}`}
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={handleDelete}
+                        disabled={isSubmitting}
+                        data-testid={`delete-button-${comment.id}`}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -220,6 +271,7 @@ function CommentItem({
               comment={reply}
               currentUserId={currentUserId}
               currentUserName={currentUserName}
+              eventId={eventId}
               onEdit={onEdit}
               onDelete={onDelete}
               onReply={onReply}
@@ -237,6 +289,7 @@ export function CommentThread({
   comments,
   currentUserId,
   currentUserName,
+  eventId,
   onAddComment,
   onEditComment,
   onDeleteComment,
@@ -306,6 +359,7 @@ export function CommentThread({
                 comment={comment}
                 currentUserId={currentUserId}
                 currentUserName={currentUserName}
+                eventId={eventId}
                 onEdit={onEditComment}
                 onDelete={onDeleteComment}
                 onReply={handleReply}

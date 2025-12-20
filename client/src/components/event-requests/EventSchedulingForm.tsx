@@ -49,6 +49,7 @@ import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { PresenceAvatars, FieldLockIndicator, CommentThread } from '@/components/collaboration';
+import { EventConflictWarnings } from './EventConflictWarnings';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -81,6 +82,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     pickupDateTime: '',
+    pickupDate: '',
+    pickupTimeSeparate: '',
     eventAddress: '',
     deliveryDestination: '',
     holdingOvernight: false,
@@ -92,12 +95,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     selfTransport: false,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
+    isDhlVan: false,
     speakersNeeded: 0,
     volunteersNeeded: 0,
     tspContact: '',
     message: '',
     schedulingNotes: '',
     planningNotes: '',
+    nextAction: '',
     totalSandwichCount: 0,
     estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0,
@@ -135,12 +140,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     department: '',
     organizationCategory: '',
     schoolClassification: '',
+    // Backup contact fields
+    backupContactFirstName: '',
+    backupContactLastName: '',
+    backupContactEmail: '',
+    backupContactPhone: '',
+    backupContactRole: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showBackupContactInfo, setShowBackupContactInfo] = useState(false);
   const [showCompletedDetails, setShowCompletedDetails] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
@@ -149,6 +161,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [mlkDayAsked, setMlkDayAsked] = useState(false);
   const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
   const [showCollaboration, setShowCollaboration] = useState(false);
+  const [showVanConflictDialog, setShowVanConflictDialog] = useState(false);
+  const [vanConflictDetails, setVanConflictDetails] = useState<{
+    conflictingEvents: Array<{ id: number; name: string; time?: string }>;
+    acknowledged: boolean;
+  } | null>(null);
+  const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
+  const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -291,6 +310,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+        pickupDate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[0] : '';
+        })(),
+        pickupTimeSeparate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+        })(),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
@@ -307,6 +334,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         message: (eventRequest as any)?.message || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
+        nextAction: (eventRequest as any)?.nextAction || '',
         totalSandwichCount: totalCount,
         estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
         estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
@@ -324,8 +352,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         department: eventRequest?.department || '',
         organizationCategory: (eventRequest as any)?.organizationCategory || '',
         schoolClassification: (eventRequest as any)?.schoolClassification || '',
+        // Backup contact fields
+        backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+        backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+        backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+        backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+        backupContactRole: (eventRequest as any)?.backupContactRole || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+        isDhlVan: (eventRequest as any)?.isDhlVan || false,
         // Status
         status: eventRequest?.status || 'new',
         // Toolkit status
@@ -379,15 +414,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      logger.error('Update event request error:', error);
+      
+      // Check if it's a 404 (event not found) error
+      const isNotFound = error?.message?.includes('DATA_LOADING_ERROR') || 
+                        error?.message?.includes('EVENT_NOT_FOUND') ||
+                        error?.message?.includes('not found');
+      
       const isEditMode = mode === 'edit';
       toast({
-        title: 'Error',
-        description: isEditMode ? 'Failed to update event.' : 'Failed to schedule event.',
+        title: isNotFound ? 'Event Not Found' : 'Error',
+        description: isNotFound
+          ? 'The event request was not found. It may have been deleted. Please refresh the page and try again.'
+          : (isEditMode ? 'Failed to update event.' : 'Failed to schedule event.'),
         variant: 'destructive',
       });
     },
@@ -409,6 +454,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'The new event request has been created.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
@@ -431,6 +477,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'The event request has been deleted.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       onSuccessCallback();
       onClose();
     },
@@ -452,17 +499,67 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Check if event is in MLK Day week and we haven't asked yet
-    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
-      setShowMlkDayDialog(true);
-      setMlkDayAsked(true);
-      return; // Stop submission until user responds
+  // Helper to check if event likely needs van based on user's criteria
+  const eventLikelyNeedsVan = (): boolean => {
+    // Check if van driver is explicitly needed
+    if ((formData.vanDriverNeeded || formData.isDhlVan) && !formData.selfTransport) return true;
+    
+    // Check if sandwich count > 500 (implies van needed)
+    const sandwichCount = sandwichMode === 'total' 
+      ? formData.totalSandwichCount 
+      : sandwichMode === 'range' 
+        ? (formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0)
+        : formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    if (sandwichCount > 500) return true;
+    
+    // Check if "van" is mentioned in notes
+    const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
+    if (notes.includes('van') && !notes.includes('van-approved') && !notes.includes('van approved')) {
+      return true;
     }
+    
+    return false;
+  };
 
-    // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
+  // Check for van conflicts before submission
+  const checkVanConflicts = async (): Promise<boolean> => {
+    if (!formData.eventDate || !eventLikelyNeedsVan()) return true; // No check needed
+    
+    try {
+      const response = await fetch(`/api/event-requests/conflicts-for-date?date=${formData.eventDate}`);
+      if (!response.ok) return true; // Allow submission if check fails
+      
+      const data = await response.json();
+      
+      if (data.vanConflicts && data.vanConflicts.length > 0) {
+        // There are van conflicts - show warning dialog
+        const conflictingEvents = data.vanConflicts.flatMap((c: any) => [
+          { id: c.event1?.id, name: c.event1?.organizationName, time: c.event1?.eventStartTime },
+          { id: c.event2?.id, name: c.event2?.organizationName, time: c.event2?.eventStartTime },
+        ]).filter((e: any) => e.id !== eventRequest?.id);
+        
+        // Remove duplicates
+        const uniqueEvents = Array.from(new Map(conflictingEvents.map((e: any) => [e.id, e])).values());
+        
+        if (uniqueEvents.length > 0) {
+          setVanConflictDetails({
+            conflictingEvents: uniqueEvents as Array<{ id: number; name: string; time?: string }>,
+            acknowledged: false,
+          });
+          setShowVanConflictDialog(true);
+          return false; // Block submission until acknowledged
+        }
+      }
+      
+      return true; // No conflicts, proceed
+    } catch (error) {
+      console.error('Error checking van conflicts:', error);
+      return true; // Allow submission if check fails
+    }
+  };
+
+  const performSubmit = async (skipSpeakerWarning = false) => {
+    // Warning: Events with >500 sandwiches usually need a speaker
     let totalRelevantSandwiches = 0;
     
     // Check sandwich types mode
@@ -482,24 +579,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .reduce((sum: number, item: { type: string; quantity: number }) => sum + item.quantity, 0);
     } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
       // If using total mode and >500, we can't determine types, so check if speakers are needed
-      // This is a conservative check - we'll require speakers if total >500
+      // This is a conservative check - we'll warn if total >500
       totalRelevantSandwiches = formData.totalSandwichCount;
     } else if (sandwichMode === 'range') {
       // For range mode, check the max value
       const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
       if (maxCount > 500) {
-        // Can't determine types in range mode, so conservatively require speakers if max >500
+        // Can't determine types in range mode, so conservatively warn if max >500
         totalRelevantSandwiches = maxCount;
       }
     }
     
-    if (totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
-      toast({
-        title: 'Speaker Required',
-        description: 'Events with more than 500 deli, turkey, or unknown type sandwiches must have at least 1 speaker. Please set "How many speakers needed?" to at least 1.',
-        variant: 'destructive',
-      });
-      return; // Stop submission
+    // Show warning dialog if event has >500 sandwiches and no speakers, but allow proceeding
+    if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      setShowSpeakerWarningDialog(true);
+      return; // Stop submission until user responds
     }
 
     // All fields are optional - no validation required
@@ -520,7 +614,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventStartTime: formData.eventStartTime || null,
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
-      pickupDateTime: formData.pickupDateTime || null,
+      pickupDateTime: (() => {
+        // Combine pickupDate and pickupTimeSeparate into pickupDateTime if both are set
+        if (formData.pickupDate && formData.pickupTimeSeparate) {
+          return `${formData.pickupDate}T${formData.pickupTimeSeparate}`;
+        }
+        // Otherwise use the existing pickupDateTime value
+        return formData.pickupDateTime || null;
+      })(),
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
@@ -529,7 +630,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
       selfTransport: formData.selfTransport || false,
-      vanDriverNeeded: formData.selfTransport ? false : (formData.vanDriverNeeded || false),
+      vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
@@ -537,6 +638,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
       planningNotes: formData.planningNotes || null,
+      nextAction: formData.nextAction || null,
       // Contact information fields
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -546,8 +648,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       department: formData.department || null,
       organizationCategory: formData.organizationCategory || null,
       schoolClassification: formData.schoolClassification || null,
+      // Backup contact fields
+      backupContactFirstName: formData.backupContactFirstName || null,
+      backupContactLastName: formData.backupContactLastName || null,
+      backupContactEmail: formData.backupContactEmail || null,
+      backupContactPhone: formData.backupContactPhone || null,
+      backupContactRole: formData.backupContactRole || null,
       // Van driver assignment
-      assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
+      assignedVanDriverId: formData.isDhlVan
+        ? null
+        : (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none')
+          ? formData.assignedVanDriverId
+          : null,
+      isDhlVan: formData.selfTransport ? false : !!formData.isDhlVan,
       // Toolkit information
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
@@ -606,11 +719,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     logger.log('📋 FORM SUBMIT DEBUG:');
     logger.log('  - eventRequest exists?', !!eventRequest);
+    logger.log('  - eventRequest.id:', eventRequest?.id);
     logger.log('  - mode:', mode);
     logger.log('  - isCreateMode:', isCreateMode);
     logger.log('  - eventData being sent:', eventData);
 
     if (eventRequest) {
+      if (!eventRequest.id) {
+        logger.error('❌ Event request object exists but has no ID');
+        toast({
+          title: 'Error',
+          description: 'Event request ID is missing. Please refresh the page and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       // Update existing event request
       updateEventRequestMutation.mutate({
@@ -622,6 +746,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Create new event request
       createEventRequestMutation.mutate(eventData);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Check if event is in MLK Day week and we haven't asked yet
+    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      setShowMlkDayDialog(true);
+      setMlkDayAsked(true);
+      return; // Stop submission until user responds
+    }
+
+    // Check for van conflicts if event needs van and hasn't been checked yet
+    if (eventLikelyNeedsVan() && !vanConflictChecked) {
+      const canProceed = await checkVanConflicts();
+      if (!canProceed) return; // Wait for user to acknowledge
+    }
+
+    // All checks passed, proceed with submission
+    await performSubmit(false);
   };
 
   const addSandwichType = () => {
@@ -774,7 +918,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [isCollaborationEnabled, collaboration]);
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose}>
+    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -802,7 +946,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
               <span className="font-semibold">
-                Contact Information (Editable)
+                Primary Contact Information (Editable)
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
@@ -875,7 +1019,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="previouslyHosted">
                         <SelectValue placeholder="Select hosting history" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="yes">Yes - Hosted Before</SelectItem>
                         <SelectItem value="no">No - First Time</SelectItem>
                         <SelectItem value="i_dont_know">I Don't Know</SelectItem>
@@ -896,7 +1040,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="organizationCategory">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="school">School</SelectItem>
                         <SelectItem value="church_faith">Church/Faith Group</SelectItem>
                         <SelectItem value="religious">Religious Organization</SelectItem>
@@ -925,7 +1069,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         <SelectTrigger id="schoolClassification">
                           <SelectValue placeholder="Select school type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           <SelectItem value="public">Public</SelectItem>
                           <SelectItem value="private">Private</SelectItem>
                           <SelectItem value="charter">Charter</SelectItem>
@@ -938,6 +1082,72 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             )}
           </div>
 
+          {/* Backup Contact Information Section - Collapsible */}
+          <div className="border rounded-lg">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full flex justify-between items-center p-4"
+              onClick={() => setShowBackupContactInfo(!showBackupContactInfo)}
+            >
+              <span className="font-semibold text-sm text-gray-700">
+                Backup/Secondary Contact (Optional)
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showBackupContactInfo ? 'rotate-180' : ''}`} />
+            </Button>
+
+            {showBackupContactInfo && (
+              <div className="p-4 border-t bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="backupFirstName" className="text-sm">First Name</Label>
+                  <Input
+                    id="backupFirstName"
+                    value={formData.backupContactFirstName || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactFirstName: e.target.value }))}
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupLastName" className="text-sm">Last Name</Label>
+                  <Input
+                    id="backupLastName"
+                    value={formData.backupContactLastName || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactLastName: e.target.value }))}
+                    placeholder="Enter last name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupEmail" className="text-sm">Email</Label>
+                  <Input
+                    id="backupEmail"
+                    type="email"
+                    value={formData.backupContactEmail || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactEmail: e.target.value }))}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="backupPhone" className="text-sm">Phone</Label>
+                  <Input
+                    id="backupPhone"
+                    value={formData.backupContactPhone || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactPhone: e.target.value }))}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="backupRole" className="text-sm">Role/Title</Label>
+                  <Input
+                    id="backupRole"
+                    value={formData.backupContactRole || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backupContactRole: e.target.value }))}
+                    placeholder="e.g., Assistant Principal, Events Coordinator"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
@@ -945,13 +1155,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="new">New Request</SelectItem>
                 <SelectItem value="in_process">In Process</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
                 <SelectItem value="postponed">Postponed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -966,7 +1177,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   <SelectTrigger data-testid="select-toolkit-status">
                     <SelectValue placeholder="Select toolkit status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                     <SelectItem value="not_sent">Not Sent</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
                     <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
@@ -991,6 +1202,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Event Schedule */}
           <div className="space-y-4">
             <Label className="text-lg font-semibold">Event Schedule</Label>
+
+            {/* Conflict Warnings */}
+            <EventConflictWarnings
+              eventId={eventRequest?.id}
+              scheduledEventDate={formData.eventDate || null}
+              eventStartTime={formData.eventStartTime || null}
+              eventEndTime={formData.eventEndTime || null}
+              pickupTime={formData.pickupTime || null}
+              vanDriverNeeded={formData.vanDriverNeeded}
+              selfTransport={formData.selfTransport}
+              assignedVanDriverId={formData.assignedVanDriverId || null}
+              assignedSpeakerIds={(eventRequest as any)?.assignedSpeakerIds || null}
+              assignedRecipientIds={formData.assignedRecipientIds || null}
+              organizationName={formData.organizationName || eventRequest?.organizationName || null}
+              enabled={!!formData.eventDate}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="eventDate">Event Date</Label>
@@ -1001,6 +1229,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   onChange={(e) => {
                     // Always update the display value immediately (no confirmation on keystroke)
                     setFormData(prev => ({ ...prev, eventDate: e.target.value }));
+                    // Reset van conflict check when date changes
+                    setVanConflictChecked(false);
                   }}
                   onBlur={(e) => {
                     const newDate = e.target.value;
@@ -1100,17 +1330,82 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="pickupDateTime">Pickup Date & Time</Label>
-                <DateTimePicker
-                  value={formData.pickupDateTime}
-                  onChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    pickupDateTime: value,
-                    // Clear legacy pickupTime when datetime is set
-                    pickupTime: ''
-                  }))}
-                  data-testid="pickup-datetime-picker"
+                <Label htmlFor="pickupDate">Pickup Date</Label>
+                <Input
+                  id="pickupDate"
+                  type="date"
+                  value={formData.pickupDate}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      pickupDate: newDate,
+                      // Combine date and time into pickupDateTime
+                      pickupDateTime: newDate && prev.pickupTimeSeparate ? `${newDate}T${prev.pickupTimeSeparate}` : '',
+                      pickupTime: ''
+                    }));
+                  }}
+                  min={formData.eventDate || undefined}
+                  data-testid="pickup-date-input"
                 />
+              </div>
+              <div>
+                <Label htmlFor="pickupTimeSeparate">Pickup Time</Label>
+                <Input
+                  id="pickupTimeSeparate"
+                  type="time"
+                  value={formData.pickupTimeSeparate}
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    setFormData(prev => {
+                      // Validate: if pickup date is same as event date, time must be after event end time
+                      let validatedTime = newTime;
+                      if (prev.pickupDate === formData.eventDate && formData.eventEndTime && newTime) {
+                        if (newTime <= formData.eventEndTime) {
+                          // Time is before or equal to end time - keep the change but could show warning
+                          validatedTime = newTime;
+                        }
+                      }
+                      return { 
+                        ...prev, 
+                        pickupTimeSeparate: validatedTime,
+                        // Combine date and time into pickupDateTime
+                        pickupDateTime: prev.pickupDate && validatedTime ? `${prev.pickupDate}T${validatedTime}` : '',
+                        pickupTime: ''
+                      };
+                    });
+                  }}
+                  min={formData.pickupDate === formData.eventDate && formData.eventEndTime ? formData.eventEndTime : undefined}
+                  data-testid="pickup-time-input"
+                />
+                {formData.pickupDate === formData.eventDate && 
+                 formData.eventEndTime && 
+                 formData.pickupTimeSeparate && 
+                 formData.pickupTimeSeparate <= formData.eventEndTime && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Pickup time should be after event end time ({formData.eventEndTime})
+                  </p>
+                )}
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2 pb-0 mb-0">
+                  <input
+                    type="checkbox"
+                    id="canHoldOvernight"
+                    checked={!!formData.overnightHoldingLocation}
+                    onChange={(e) => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        overnightHoldingLocation: e.target.checked ? 'Yes' : ''
+                      }));
+                    }}
+                    className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
+                    data-testid="checkbox-can-hold-overnight"
+                  />
+                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer mb-0">
+                    Can hold sandwiches overnight
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
@@ -1321,7 +1616,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <SelectTrigger id="rangeSandwichType" className="w-48">
                       <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                       <SelectItem value="none">No specific type</SelectItem>
                       {SANDWICH_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
@@ -1363,7 +1658,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                           <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                             {SANDWICH_TYPES.map((type) => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
@@ -1503,7 +1798,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Select refrigeration status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="true">Yes</SelectItem>
                 <SelectItem value="false">No</SelectItem>
                 <SelectItem value="unknown">Unknown</SelectItem>
@@ -1529,6 +1824,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       // Clear driver fields when self-transport is enabled
                       driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
                       vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
+                      isDhlVan: e.target.checked ? false : prev.isDhlVan,
                     }))}
                   />
                   <Label htmlFor="selfTransport" className="text-amber-800 font-medium">
@@ -1560,7 +1856,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         type="checkbox"
                         id="vanDriverNeeded"
                         checked={formData.vanDriverNeeded}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked, isDhlVan: e.target.checked ? prev.isDhlVan : false }))}
                       />
                       <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                     </div>
@@ -1570,15 +1866,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 {/* Van Driver Selection - Only show when van driver is needed and NOT self-transport */}
                 {formData.vanDriverNeeded && !formData.selfTransport && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="checkbox"
+                        id="isDhlVan"
+                        checked={formData.isDhlVan}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          isDhlVan: e.target.checked,
+                          assignedVanDriverId: e.target.checked ? '' : prev.assignedVanDriverId,
+                          vanDriverNeeded: e.target.checked ? true : prev.vanDriverNeeded,
+                        }))}
+                      />
+                      <Label htmlFor="isDhlVan">Use DHL van (external driver)</Label>
+                    </div>
+                    {formData.isDhlVan && (
+                      <p className="text-xs text-amber-700 mb-2">
+                        We will not assign an internal van driver. This still counts as the van being covered.
+                      </p>
+                    )}
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
                     <Select
                       value={formData.assignedVanDriverId || ''}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
+                      disabled={formData.isDhlVan}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a van-approved driver..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="none">No driver assigned yet</SelectItem>
                         {vanDrivers.map((driver) => (
                           <SelectItem key={driver.id} value={driver.id.toString()}>
@@ -1675,7 +1991,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               >
                 <SelectValue placeholder="Select TSP contact" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.firstName && user.lastName
@@ -1804,13 +2120,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 )}
               </div>
 
+              {/* Next Action - Prominent field for intake tracking */}
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="nextAction" className="text-amber-800 font-semibold">Next Action</Label>
+                  {isCollaborationEnabled && isFieldLockedByOther('nextAction') && (
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('nextAction')?.lockedByName || 'Another user'}
+                      expiresAt={getFieldLock('nextAction')?.expiresAt}
+                      data-testid="field-lock-next-action"
+                    />
+                  )}
+                </div>
+                <p className="text-sm text-amber-700 mb-2">What needs to happen next for this event? (e.g., "Waiting for callback", "Need to confirm date", "Follow up on van availability")</p>
+                <Input
+                  id="nextAction"
+                  value={formData.nextAction}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nextAction: e.target.value }))}
+                  onFocus={() => handleFieldFocus('nextAction')}
+                  onBlur={() => handleFieldBlur('nextAction')}
+                  placeholder="Enter the next action needed..."
+                  className="bg-white border-amber-300 focus:border-amber-500"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('nextAction')}
+                  data-testid="input-next-action"
+                />
+              </div>
+
               {/* Scheduling Notes */}
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
                   {isCollaborationEnabled && isFieldLockedByOther('schedulingNotes') && (
-                    <FieldLockIndicator 
-                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'} 
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'}
                       expiresAt={getFieldLock('schedulingNotes')?.expiresAt}
                       data-testid="field-lock-scheduling-notes"
                     />
@@ -2098,7 +2440,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                                   <SelectTrigger className="w-40">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                                     {SANDWICH_TYPES.map((type) => (
                                       <SelectItem key={type.value} value={type.value}>
                                         {type.label}
@@ -2309,6 +2651,88 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         onSkip={handleMlkDaySkip}
         eventDate={formData.eventDate}
       />
+
+      {/* Van Conflict Warning Dialog */}
+      <AlertDialog open={showVanConflictDialog} onOpenChange={setShowVanConflictDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Van Already Booked
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                The van appears to already be booked for another event on this date:
+              </p>
+              {vanConflictDetails && (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {vanConflictDetails.conflictingEvents.map((event, i) => (
+                    <li key={event.id || i}>
+                      <strong>{event.name}</strong>
+                      {event.time && <span className="text-muted-foreground"> at {event.time}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="font-medium text-amber-700">
+                Please confirm you have verified the van is available for the time you need it.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowVanConflictDialog(false);
+              setVanConflictChecked(false);
+            }}>
+              Go Back & Check
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowVanConflictDialog(false);
+                setVanConflictChecked(true);
+                // Directly call performSubmit now that conflict is acknowledged
+                await performSubmit(false);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              I've Verified Van Availability
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Speaker Warning Dialog */}
+      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={setShowSpeakerWarningDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              ⚠️ Speaker Recommendation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                We usually send a speaker to events making more than 500 sandwiches. Are you sure this event doesn't need one?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSpeakerWarningDialog(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowSpeakerWarningDialog(false);
+                // Proceed with submission even without a speaker
+                await performSubmit(true);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Continue Without Speaker
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

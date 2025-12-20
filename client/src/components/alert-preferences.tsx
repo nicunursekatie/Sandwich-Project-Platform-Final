@@ -88,6 +88,7 @@ interface AlertItem {
   configurable: boolean;
   enabled?: boolean;
   requiresSmsOptIn?: boolean;
+  smsImplemented?: boolean; // false = SMS support coming soon
 }
 
 // Form schemas
@@ -118,6 +119,7 @@ const notificationPreferencesSchema = z.object({
 type NotificationPreferencesFormData = z.infer<typeof notificationPreferencesSchema>;
 
 // Define all existing alerts in the system
+// smsImplemented: true = SMS delivery fully working, false = coming soon
 const ALERT_CATEGORIES: AlertCategory[] = [
   {
     id: 'event-alerts',
@@ -132,14 +134,16 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         channels: ['email', 'sms'],
         configurable: true,
         requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
       {
         id: 'tsp-contact-assignment',
         name: 'TSP Contact Assignment',
         description: 'Notification when you\'re assigned as the TSP contact for an event',
         channels: ['email', 'sms'],
-        configurable: false,
+        configurable: true,
         requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -153,15 +157,19 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         id: 'chat-mentions',
         name: 'Chat Room Mentions',
         description: 'Get notified when someone @mentions you in a chat room',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: true,
+        requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
       {
         id: 'team-board-mentions',
         name: 'Team Board Mentions',
         description: 'Get notified when someone mentions you in a team board item or comment',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: true,
+        requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -175,8 +183,10 @@ const ALERT_CATEGORIES: AlertCategory[] = [
         id: 'team-board-assignment',
         name: 'Team Board Assignments',
         description: 'Get notified when you\'re assigned to a task, note, idea, or reminder',
-        channels: ['email'],
-        configurable: false,
+        channels: ['email', 'sms'],
+        configurable: true,
+        requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -189,10 +199,11 @@ const ALERT_CATEGORIES: AlertCategory[] = [
       {
         id: 'weekly-collection-reminder',
         name: 'Weekly Collection Reminders',
-        description: 'SMS reminders when weekly sandwich counts are missing for your locations',
-        channels: ['sms'],
-        configurable: false,
+        description: 'Reminders when weekly sandwich counts are missing for your locations',
+        channels: ['email', 'sms'],
+        configurable: true,
         requiresSmsOptIn: true,
+        smsImplemented: true, // Backend SMS sending implemented
       },
     ],
   },
@@ -365,8 +376,8 @@ export default function AlertPreferences() {
   // Generate hour options
   const hourOptions = Array.from({ length: 72 }, (_, i) => i + 1);
 
-  const renderAlertChannelBadges = (channels: ('email' | 'sms')[], requiresSmsOptIn?: boolean) => (
-    <div className="flex gap-1">
+  const renderAlertChannelBadges = (channels: ('email' | 'sms')[], requiresSmsOptIn?: boolean, smsImplemented?: boolean) => (
+    <div className="flex gap-1 flex-wrap">
       {channels.includes('email') && (
         <Badge variant="secondary" className="text-xs">
           <Mail className="h-3 w-3 mr-1" />
@@ -377,20 +388,31 @@ export default function AlertPreferences() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge
-                variant={hasSMSOptIn || !requiresSmsOptIn ? "secondary" : "outline"}
-                className={`text-xs ${!hasSMSOptIn && requiresSmsOptIn ? 'opacity-50' : ''}`}
-              >
-                <Smartphone className="h-3 w-3 mr-1" />
-                SMS
-                {!hasSMSOptIn && requiresSmsOptIn && <AlertTriangle className="h-3 w-3 ml-1 text-amber-500" />}
-              </Badge>
+              {smsImplemented === false ? (
+                <Badge variant="outline" className="text-xs opacity-60">
+                  <Smartphone className="h-3 w-3 mr-1" />
+                  SMS Coming Soon
+                </Badge>
+              ) : (
+                <Badge
+                  variant={hasSMSOptIn || !requiresSmsOptIn ? "secondary" : "outline"}
+                  className={`text-xs ${!hasSMSOptIn && requiresSmsOptIn ? 'opacity-50' : ''}`}
+                >
+                  <Smartphone className="h-3 w-3 mr-1" />
+                  SMS
+                  {!hasSMSOptIn && requiresSmsOptIn && <AlertTriangle className="h-3 w-3 ml-1 text-amber-500" />}
+                </Badge>
+              )}
             </TooltipTrigger>
-            {!hasSMSOptIn && requiresSmsOptIn && (
+            {smsImplemented === false ? (
+              <TooltipContent>
+                <p>SMS delivery for this alert is coming soon</p>
+              </TooltipContent>
+            ) : !hasSMSOptIn && requiresSmsOptIn ? (
               <TooltipContent>
                 <p>Sign up for SMS notifications to enable this</p>
               </TooltipContent>
-            )}
+            ) : null}
           </Tooltip>
         </TooltipProvider>
       )}
@@ -502,7 +524,7 @@ export default function AlertPreferences() {
                               <p className="text-sm text-muted-foreground mb-2">
                                 {alert.description}
                               </p>
-                              {renderAlertChannelBadges(alert.channels, alert.requiresSmsOptIn)}
+                              {renderAlertChannelBadges(alert.channels, alert.requiresSmsOptIn, alert.smsImplemented)}
                             </div>
                             {alert.configurable && (
                               <Button
@@ -776,6 +798,191 @@ export default function AlertPreferences() {
                   </div>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+
+          {/* Other Alert Channel Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Bell className="h-5 w-5 text-brand-primary" />
+                Other Alert Delivery Preferences
+              </CardTitle>
+              <CardDescription>
+                Choose how you want to receive each type of alert (email, SMS, or both)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!userSMSStatus?.hasConfirmedOptIn && (
+                <Alert className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    To receive SMS notifications, please{' '}
+                    <button 
+                      onClick={() => setActiveTab('sms-setup')}
+                      className="text-brand-primary underline font-medium"
+                    >
+                      set up SMS alerts
+                    </button>{' '}
+                    first.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-6">
+                {/* TSP Contact Assignment */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      <h4 className="font-medium">TSP Contact Assignment</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Notification when you're assigned as the TSP contact for an event
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.hasConfirmedOptIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Chat Mentions */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      <h4 className="font-medium">Chat Room Mentions</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone @mentions you in a chat room
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.hasConfirmedOptIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Team Board Mentions */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      <h4 className="font-medium">Team Board Mentions</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone mentions you in a team board item or comment
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.hasConfirmedOptIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Team Board Assignment */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ClipboardList className="h-4 w-4 text-amber-500" />
+                      <h4 className="font-medium">Team Board Assignments</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when you're assigned to a task, note, idea, or reminder
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.hasConfirmedOptIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Weekly Collection Reminders */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="h-4 w-4 text-green-500" />
+                      <h4 className="font-medium">Weekly Collection Reminders</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Reminders when weekly sandwich counts are missing for your locations
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Mail className="w-3 h-3 mr-1" />
+                      Email
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={userSMSStatus?.hasConfirmedOptIn 
+                        ? "text-blue-600 border-blue-200 bg-blue-50" 
+                        : "text-gray-400 border-gray-200 bg-gray-50"
+                      }
+                    >
+                      <Smartphone className="w-3 h-3 mr-1" />
+                      SMS {!userSMSStatus?.hasConfirmedOptIn && "(Not opted in)"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> These alerts are automatically sent via email. If you've opted in to SMS, 
+                  you'll also receive text messages for each alert type. To customize which alerts you receive by SMS only, 
+                  email only, or both - this feature is coming in a future update.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

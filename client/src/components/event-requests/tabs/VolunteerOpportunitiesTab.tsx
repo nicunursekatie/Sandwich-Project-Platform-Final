@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
-import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import { VolunteerOpportunitiesMap } from './VolunteerOpportunitiesMap';
 
 export const VolunteerOpportunitiesTab: React.FC = () => {
   const { user } = useAuth();
-  const { filterRequestsByStatus } = useEventFilters();
+  const { eventRequests } = useEventRequestContext();
   const {
     handleSelfSignup,
     canSelfSignup,
@@ -39,29 +38,38 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
     // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
     const driversNeededCount = request.driversNeeded ?? 0;
-    const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0);
+    const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
     const needsDriver = driversNeededCount > driversAssignedCount;
 
     return { needsSpeaker, needsVolunteer, needsDriver };
   };
 
-  // Get ONLY scheduled events
-  const scheduledRequests = filterRequestsByStatus('scheduled');
-
-  // Filter events that need volunteers, speakers, or drivers
+  // Filter events that need volunteers, speakers, or drivers (all scheduled events, regardless of current tab/pagination/search)
   const opportunities = useMemo(() => {
-    return scheduledRequests.filter((request: EventRequest) => {
-      const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
+    const needs = eventRequests
+      .filter((request: EventRequest) => request.status === 'scheduled')
+      .filter((request: EventRequest) => {
+        const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
 
-      // Filter by role selection
-      if (roleFilter === 'speaker' && !needsSpeaker) return false;
-      if (roleFilter === 'volunteer' && !needsVolunteer) return false;
-      if (roleFilter === 'driver' && !needsDriver) return false;
+        // Filter by role selection
+        if (roleFilter === 'speaker' && !needsSpeaker) return false;
+        if (roleFilter === 'volunteer' && !needsVolunteer) return false;
+        if (roleFilter === 'driver' && !needsDriver) return false;
 
-      // Show if any role is needed and unfilled
-      return needsSpeaker || needsVolunteer || needsDriver;
-    });
-  }, [scheduledRequests, roleFilter]);
+        // Show if any role is needed and unfilled
+        return needsSpeaker || needsVolunteer || needsDriver;
+      })
+      // Sort by scheduled date (ascending), fallback to desired date
+      .sort((a: EventRequest, b: EventRequest) => {
+        const dateA = a.scheduledEventDate || a.desiredEventDate;
+        const dateB = b.scheduledEventDate || b.desiredEventDate;
+        const timeA = dateA ? new Date(dateA).getTime() : 0;
+        const timeB = dateB ? new Date(dateB).getTime() : 0;
+        return timeA - timeB;
+      });
+
+    return needs;
+  }, [eventRequests, roleFilter]);
 
   const formatEventDate = (request: EventRequest) => {
     const date = request.scheduledEventDate || request.desiredEventDate;
@@ -93,13 +101,13 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 overflow-x-hidden max-w-full">
+    <div className="space-y-6 max-w-full">
       {/* View Mode and Role Filter */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         {/* View Toggle */}
-        <div className="flex items-center gap-3">
-          <span className="text-base font-semibold text-gray-700">View:</span>
-          <div className="flex gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-base font-semibold text-gray-700 whitespace-nowrap">View:</span>
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               onClick={() => setViewMode('card')}
@@ -135,8 +143,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
         {/* Role Filter */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-base font-semibold text-gray-700">Filter by role:</span>
-          <div className="flex gap-2">
+          <span className="text-base font-semibold text-gray-700 whitespace-nowrap">Filter by role:</span>
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={roleFilter === 'all' ? 'default' : 'outline'}
               onClick={() => setRoleFilter('all')}
@@ -372,7 +380,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsSpeaker && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'speaker')}
-                          disabled={isSpeakerSignedUp || !canSelfSignup('speaker')}
+                          disabled={isSpeakerSignedUp || !canSelfSignup(request, 'speaker')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isSpeakerSignedUp
@@ -390,7 +398,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsVolunteer && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'volunteer')}
-                          disabled={isVolunteerSignedUp || !canSelfSignup('volunteer')}
+                          disabled={isVolunteerSignedUp || !canSelfSignup(request, 'volunteer')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isVolunteerSignedUp
@@ -408,7 +416,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {needsDriver && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'driver')}
-                          disabled={isDriverSignedUp || !canSelfSignup('driver')}
+                          disabled={isDriverSignedUp || !canSelfSignup(request, 'driver')}
                           className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px]"
                           style={
                             isDriverSignedUp
@@ -455,7 +463,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                             <span className="font-semibold text-lg">
                               {[
                                 ...(request.assignedDriverIds || []).map(id => resolveUserName(id)),
-                                ...(request.assignedVanDriverId ? [resolveUserName(request.assignedVanDriverId) + ' (Van)'] : [])
+                        ...(request.assignedVanDriverId ? [resolveUserName(request.assignedVanDriverId) + ' (Van)'] : []),
+                        ...(request.isDhlVan ? ['DHL Van'] : [])
                               ].join(', ')}
                             </span>
                           </div>
