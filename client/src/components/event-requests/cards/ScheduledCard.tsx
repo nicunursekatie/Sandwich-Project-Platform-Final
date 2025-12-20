@@ -1497,7 +1497,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   onChange={(ids) => setEditingValue(JSON.stringify(ids))}
                   placeholder="Select recipient organizations..."
                   data-testid="assigned-recipients-editor"
-            <div className="ml-8">
+                />
+              </div>
+            ) : (
+              <div className="ml-8">
               {/* Show allocations if available, otherwise fall back to legacy display */}
               {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
                 <RecipientAllocationDisplay
@@ -1529,7 +1532,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </Badge>
               )}
             </div>
-          </div>
+            )}
 
           {/* Overnight Holding */}
           {request.overnightHoldingLocation && (
