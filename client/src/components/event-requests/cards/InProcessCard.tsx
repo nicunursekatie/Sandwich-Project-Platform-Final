@@ -733,8 +733,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         })()}
 
         {/* Next Action - Prominent display for intake tracking */}
-        <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
-          {request.nextAction ? (
+        {request.nextAction ? (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 flex-1">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -768,22 +768,22 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 )}
               </div>
             </div>
-          ) : (
-            <div className="flex items-center justify-end">
-              {onAddNextAction && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onAddNextAction}
-                  className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
-                >
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  Add Action
-                </Button>
-              )}
+          </div>
+        ) : (
+          onAddNextAction && (
+            <div className="mb-4 flex items-center justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAddNextAction}
+                className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
+              >
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Add Action
+              </Button>
             </div>
-          )}
-        </div>
+          )
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
