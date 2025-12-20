@@ -173,7 +173,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const { user: currentUser } = useAuth();
 
   // Initialize collaboration hook only for existing events (not in create mode)
-  const collaboration = useEventCollaboration(eventRequest?.id || 0);
+  // Pass null for new events - the hook safely handles this by disabling collaboration features
+  const collaboration = useEventCollaboration(eventRequest?.id ?? null);
   const isCollaborationEnabled = eventRequest && eventRequest.id;
 
   // Fetch users for TSP contact selection

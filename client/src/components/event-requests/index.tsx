@@ -694,7 +694,10 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* 1-Day Follow-up Dialog */}
         <FollowUpDialog
           isOpen={showOneDayFollowUpDialog}
-          onClose={() => setShowOneDayFollowUpDialog(false)}
+          onClose={() => {
+            setShowOneDayFollowUpDialog(false);
+            setFollowUpNotes(''); // Clear notes when dialog closes
+          }}
           eventRequest={selectedEventRequest}
           onFollowUpCompleted={(notes) => {
             if (selectedEventRequest) {
@@ -714,7 +717,10 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* 1-Month Follow-up Dialog */}
         <FollowUpDialog
           isOpen={showOneMonthFollowUpDialog}
-          onClose={() => setShowOneMonthFollowUpDialog(false)}
+          onClose={() => {
+            setShowOneMonthFollowUpDialog(false);
+            setFollowUpNotes(''); // Clear notes when dialog closes
+          }}
           eventRequest={selectedEventRequest}
           onFollowUpCompleted={(notes) => {
             if (selectedEventRequest) {
@@ -900,8 +906,8 @@ const EventRequestsManagementContent: React.FC = () => {
             logger.log('Event ID:', assignmentEventId);
             logger.log('Assignment Type:', assignmentType);
             logger.log('Selected Assignees:', assignees);
-            logger.log('Available drivers:', (drivers as any[]).map((d: any) => ({ id: d.id, name: d.name })));
-            logger.log('Available users:', (users as any[]).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
+            logger.log('Available drivers:', (drivers ?? []).map((d: any) => ({ id: d.id, name: d.name })));
+            logger.log('Available users:', (users ?? []).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
 
             // Get the current event to preserve existing assignments
             const currentEvent = eventRequests.find(e => e.id === assignmentEventId);
@@ -938,7 +944,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
                 if (isNumericId) {
                   // It's a traditional driver ID - look it up in the drivers array
-                  const driver = (drivers as any[]).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
+                  const driver = (drivers ?? []).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
                   if (driver) {
                     driverName = driver.name;
                     logger.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
@@ -948,7 +954,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   }
                 } else {
                   // It's a user ID - look it up in the users array
-                  const foundUser = (users as any[]).find((u: any) => u.id === driverId);
+                  const foundUser = (users ?? []).find((u: any) => u.id === driverId);
                   if (foundUser) {
                     driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
                   }
@@ -1013,7 +1019,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   }
                   // Handle regular user IDs
                   else {
-                    const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
+                    const foundUser = (users ?? []).find((u: any) => u.id === speakerId);
                     if (foundUser) {
                       name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || speakerId;
                     }
@@ -1081,7 +1087,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   }
                   // Handle regular user IDs
                   else {
-                    const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
+                    const foundUser = (users ?? []).find((u: any) => u.id === volunteerId);
                     if (foundUser) {
                       name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || volunteerId;
                     }

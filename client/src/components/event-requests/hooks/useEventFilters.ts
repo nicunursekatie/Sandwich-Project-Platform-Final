@@ -38,7 +38,7 @@ export const useEventFilters = () => {
     if (request.tspContactAssigned === user.id || request.tspContact === user.id) {
       return true;
     }
-    
+
     // Also check additional TSP contacts
     if (request.additionalContact1 === user.id || request.additionalContact2 === user.id) {
       return true;
@@ -47,16 +47,36 @@ export const useEventFilters = () => {
     // Check driver assignment in driverDetails JSONB field
     if (request.driverDetails) {
       try {
-        const driverDetails = typeof request.driverDetails === 'string' 
-          ? JSON.parse(request.driverDetails) 
+        const driverDetails = typeof request.driverDetails === 'string'
+          ? JSON.parse(request.driverDetails)
           : request.driverDetails;
-        
-        // Check various possible structures in driverDetails
-        if (driverDetails?.userId === user.id || 
-            driverDetails?.driverId === user.id ||
-            driverDetails?.assignedUserId === user.id ||
-            (Array.isArray(driverDetails) && driverDetails.some(d => d.userId === user.id || d.driverId === user.id))) {
-          return true;
+
+        // Driver assignments are stored as keys in the driverDetails object
+        // Example: {"351": {"name": "Gary Munder", "assignedBy": "admin_..."}}
+        if (driverDetails && typeof driverDetails === 'object' && !Array.isArray(driverDetails)) {
+          const driverKeys = Object.keys(driverDetails);
+          if (driverKeys.some(key => key === user.id || key === user.id.toString())) {
+            return true;
+          }
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check speaker assignment in speakerDetails JSONB field
+    if (request.speakerDetails) {
+      try {
+        const speakerDetails = typeof request.speakerDetails === 'string'
+          ? JSON.parse(request.speakerDetails)
+          : request.speakerDetails;
+
+        // Speaker assignments are stored as keys in the speakerDetails object
+        if (speakerDetails && typeof speakerDetails === 'object' && !Array.isArray(speakerDetails)) {
+          const speakerKeys = Object.keys(speakerDetails);
+          if (speakerKeys.some(key => key === user.id || key === user.id.toString())) {
+            return true;
+          }
         }
       } catch (e) {
         // If parsing fails, continue with other checks
@@ -64,11 +84,11 @@ export const useEventFilters = () => {
     }
 
     // Check event volunteers assignment (driver, speaker, general)
-    const userVolunteerAssignment = eventVolunteers.find(volunteer => 
-      volunteer.eventRequestId === request.id && 
+    const userVolunteerAssignment = eventVolunteers.find(volunteer =>
+      volunteer.eventRequestId === request.id &&
       volunteer.volunteerUserId === user.id
     );
-    
+
     if (userVolunteerAssignment) {
       return true;
     }
@@ -417,7 +437,7 @@ export const useEventFilters = () => {
     });
 
     return filtered;
-  }, [eventRequests, debouncedSearchQuery, statusFilter, sortBy, eventVolunteers, users]);
+  }, [eventRequests, debouncedSearchQuery, statusFilter, confirmationFilter, sortBy, eventVolunteers, users]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedRequests.length / itemsPerPage);

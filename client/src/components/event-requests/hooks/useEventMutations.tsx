@@ -142,6 +142,7 @@ export const useEventMutations = () => {
         description: 'The new event request has been successfully created.',
       });
 
+      // Invalidate and refetch event requests - refetchType: 'all' handles the refetch
       await queryClient.invalidateQueries({
         queryKey: ['/api/event-requests'],
         refetchType: 'all'
@@ -153,13 +154,6 @@ export const useEventMutations = () => {
       await queryClient.invalidateQueries({
         queryKey: ['/api/event-map'],
         refetchType: 'all'
-      });
-
-      await queryClient.refetchQueries({
-        queryKey: ['/api/event-requests']
-      });
-      await queryClient.refetchQueries({
-        queryKey: ['/api/event-requests', 'v2']
       });
 
       setShowEventDetails(false);

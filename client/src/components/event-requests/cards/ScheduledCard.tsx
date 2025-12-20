@@ -1482,6 +1482,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </Button>
               )}
             </div>
+            {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+              <div className="ml-8 space-y-2">
+                <MultiRecipientSelector
+                  value={(() => {
+                    if (!editingValue) return [];
+                    try {
+                      const parsed = JSON.parse(editingValue);
+                      return Array.isArray(parsed) ? parsed : [];
+                    } catch {
+                      return [];
+                    }
+                  })()}
+                  onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                  placeholder="Select recipient organizations..."
+                  data-testid="assigned-recipients-editor"
             <div className="ml-8">
               {/* Show allocations if available, otherwise fall back to legacy display */}
               {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
