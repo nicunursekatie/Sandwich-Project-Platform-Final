@@ -52,7 +52,7 @@ async function getSMSProvider(): Promise<any> {
 }
 
 export interface DeliveryOptions {
-  forceChannel?: 'email' | 'sms' | 'in_app' | 'push';
+  forceChannel?: 'email' | 'sms' | 'in_app';
   skipMLScoring?: boolean;
   abTestId?: number;
   abTestVariant?: string;
