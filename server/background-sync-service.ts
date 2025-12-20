@@ -6,7 +6,7 @@ import { sql, and, or, eq, lt, isNull, isNotNull } from 'drizzle-orm';
 import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
-import { ADMIN_EMAIL, FROM_EMAIL } from './config/organization';
+import { ADMIN_EMAIL } from './config/organization';
 
 const syncLogger = createServiceLogger('background-sync');
 
