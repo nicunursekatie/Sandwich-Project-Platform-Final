@@ -60,7 +60,8 @@ interface NewRequestCardProps {
   request: EventRequest;
   onEdit: () => void;
   onDelete: () => void;
-  onCall: () => void;
+  onCall?: () => void;
+  onIntakeCall?: () => void;
   onContact: () => void;
   onToolkit: () => void;
   onScheduleCall: () => void;
@@ -442,16 +443,31 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
         <div className="flex flex-col gap-2 flex-shrink-0">
-          {request.phone && onCall && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onCall}
-              className="text-sm h-8"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Call
-            </Button>
+          {request.phone && (
+            <>
+              {onIntakeCall && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={onIntakeCall}
+                  className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Intake Call
+                </Button>
+              )}
+              {onCall && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCall}
+                  className="text-sm h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Call
+                </Button>
+              )}
+            </>
           )}
           {onContact && (
             <Button
@@ -517,6 +533,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onEdit,
   onDelete,
   onCall,
+  onIntakeCall,
   onContact,
   onToolkit,
   onScheduleCall,

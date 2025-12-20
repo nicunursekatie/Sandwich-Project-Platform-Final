@@ -197,8 +197,7 @@ Thank you for your interest in hosting a sandwich-making event with The Sandwich
 `;
 
       if (includeScheduling) {
-        plainTextContent += `To get started, please use this link to schedule a call with me:
-https://thesandwichproject.as.me/
+        plainTextContent += `To get started, please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days.
 
 `;
       } else if (requestPhone) {
@@ -365,9 +364,10 @@ ${userEmail}`;
                             <!-- Primary CTA -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
-                                    <td align="center" style="padding: 10px 0 30px 0;">
-                                        <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">📅 Schedule Your Planning Call</a>
-                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">We recommend scheduling your event date early to secure your preferred time.</p>
+                                    <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!</p>
+                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -443,8 +443,8 @@ ${userEmail}`;
                                 <tr>
                                     <td style="background-color: #236383; color: #ffffff; padding: 25px; text-align: center; border-radius: 6px;">
                                         <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">Ready to Make a Difference?</p>
-                                        <p style="margin: 0 0 20px 0; font-size: 16px;">Schedule your planning call now and we'll get you on the calendar!</p>
-                                        <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Book Your Call</a>
+                                        <p style="margin: 0 0 20px 0; font-size: 16px;">Please reply to this email with your phone number and best times to call you, and we'll get you on the calendar!</p>
+                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -521,7 +521,7 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
-                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📅 Next Step: Schedule Your Planning Call</p>
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
                                         <p style="margin: 0 0 15px 0; font-size: 16px;">Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!</p>
                                         <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We look forward to scheduling your planning call soon.</p>
                                     </td>
@@ -723,11 +723,13 @@ ${userEmail}`;
                                 </tr>
                             </table>
 
-                            <!-- Schedule Button -->
+                            <!-- Phone Number Request -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
-                                    <td align="center" style="padding: 20px 0;">
-                                        <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Schedule a Planning Call</a>
+                                    <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!</p>
+                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -1753,7 +1755,7 @@ ${userEmail}`;
                 <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
                   💡 <strong>Quick Links:</strong> Inventory Calculator:
                   https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-                  | Schedule Call: https://thesandwichproject.as.me/
+                  | Please reply with your phone number and best times to call
                 </div>
               )}
 

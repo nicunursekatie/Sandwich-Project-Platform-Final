@@ -66,6 +66,7 @@ import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
+import IntakeCallDialog from './IntakeCallDialog';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -139,6 +140,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowAiIntakeAssistantDialog,
     showPostponementDialog,
     setShowPostponementDialog,
+    showIntakeCallDialog,
+    setShowIntakeCallDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -175,6 +178,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setAiIntakeAssistantEventRequest,
     postponementEventRequest,
     setPostponementEventRequest,
+    intakeCallEventRequest,
+    setIntakeCallEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -833,6 +838,27 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
             request={postponementEventRequest}
             onPostpone={handlePostpone}
+          />
+        )}
+
+        {/* Intake Call Dialog */}
+        {intakeCallEventRequest && (
+          <IntakeCallDialog
+            isOpen={showIntakeCallDialog}
+            onClose={() => {
+              setShowIntakeCallDialog(false);
+              setIntakeCallEventRequest(null);
+            }}
+            eventRequest={intakeCallEventRequest}
+            onCallComplete={() => {
+              // Optionally update status to in_process after call
+              if (intakeCallEventRequest) {
+                updateEventRequestMutation.mutate({
+                  id: intakeCallEventRequest.id,
+                  data: { status: 'in_process' },
+                });
+              }
+            }}
           />
         )}
 

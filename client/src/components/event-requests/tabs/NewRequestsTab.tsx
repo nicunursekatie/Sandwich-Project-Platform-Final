@@ -44,6 +44,8 @@ export const NewRequestsTab: React.FC = () => {
     setAiSuggestionEventRequest,
     setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
+    setShowIntakeCallDialog,
+    setIntakeCallEventRequest,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -264,6 +266,10 @@ export const NewRequestsTab: React.FC = () => {
               }}
               onDelete={() => deleteEventRequestMutation.mutate(request.id)}
               onCall={() => handleCall(request)}
+              onIntakeCall={() => {
+                setIntakeCallEventRequest(request);
+                setShowIntakeCallDialog(true);
+              }}
               onContact={() => {
                 setContactEventRequest(request);
                 setShowContactOrganizerDialog(true);

@@ -75,6 +75,8 @@ interface EventRequestContextType {
   setShowAiIntakeAssistantDialog: (show: boolean) => void;
   showPostponementDialog: boolean;
   setShowPostponementDialog: (show: boolean) => void;
+  showIntakeCallDialog: boolean;
+  setShowIntakeCallDialog: (show: boolean) => void;
 
   // Event being acted upon
   schedulingEventRequest: EventRequest | null;
@@ -99,6 +101,8 @@ interface EventRequestContextType {
   setAiIntakeAssistantEventRequest: (event: EventRequest | null) => void;
   postponementEventRequest: EventRequest | null;
   setPostponementEventRequest: (event: EventRequest | null) => void;
+  intakeCallEventRequest: EventRequest | null;
+  setIntakeCallEventRequest: (event: EventRequest | null) => void;
 
   // Assignment state
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
@@ -304,6 +308,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
   const [showPostponementDialog, setShowPostponementDialog] = useState(false);
+  const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
 
   // Event being acted upon
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -317,6 +322,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
   const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
+  const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
 
   // Assignment state
   const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
@@ -621,6 +627,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowAiIntakeAssistantDialog,
     showPostponementDialog,
     setShowPostponementDialog,
+    showIntakeCallDialog,
+    setShowIntakeCallDialog,
 
     // Event references
     schedulingEventRequest,
@@ -645,6 +653,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setAiIntakeAssistantEventRequest,
     postponementEventRequest,
     setPostponementEventRequest,
+    intakeCallEventRequest,
+    setIntakeCallEventRequest,
 
     // Assignment
     assignmentType,

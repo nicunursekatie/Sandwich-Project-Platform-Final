@@ -491,11 +491,51 @@ export default function SandwichCollectionLog() {
                 group.groupName?.toLowerCase().includes(searchTerm)
               );
 
-              // Search in collection date
-              const formattedDate = formatDate(c.collectionDate);
-              const dateMatch = formattedDate
-                .toLowerCase()
-                .includes(searchTerm);
+              // Search in collection date - check multiple formats
+              let dateMatch = false;
+              if (c.collectionDate) {
+                try {
+                  // Parse the collection date
+                  const dateStr = c.collectionDate;
+                  let date: Date;
+                  if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    // YYYY-MM-DD format - add noon to prevent timezone shift
+                    date = new Date(dateStr + 'T12:00:00');
+                  } else {
+                    date = new Date(dateStr);
+                  }
+
+                  if (!isNaN(date.getTime())) {
+                    // Generate multiple date format strings to match against
+                    const formats = [
+                      // ISO format: YYYY-MM-DD
+                      `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
+                      // US format: MM/DD/YYYY
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`,
+                      // US format without leading zeros: M/D/YYYY
+                      `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`,
+                      // US format with dashes: MM-DD-YYYY
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear()}`,
+                      // Locale-specific formats
+                      date.toLocaleDateString('en-US'),
+                      date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                      // Just month/day for partial matches
+                      `${date.getMonth() + 1}/${date.getDate()}`,
+                      `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`,
+                      // Month name formats
+                      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                      date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+                    ];
+
+                    dateMatch = formats.some(format => format.toLowerCase().includes(searchTerm));
+                  }
+                } catch (error) {
+                  // If date parsing fails, fall back to string matching on the raw date string
+                  dateMatch = c.collectionDate?.toLowerCase().includes(searchTerm) || false;
+                }
+              }
 
               return hostNameMatch || groupNameMatch || dateMatch;
             }
