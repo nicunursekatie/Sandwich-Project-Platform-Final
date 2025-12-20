@@ -1551,11 +1551,17 @@ export const teamBoardItems = pgTable("team_board_items", {
 	isPrivate: boolean("is_private").default(false).notNull(),
 	details: text(),
 	dueDate: timestamp("due_date", { mode: 'string' }),
+	parentItemId: integer("parent_item_id"),
 }, (table) => [
 	foreignKey({
 			columns: [table.categoryId],
 			foreignColumns: [holdingZoneCategories.id],
 			name: "team_board_items_category_id_holding_zone_categories_id_fk"
+		}),
+	foreignKey({
+			columns: [table.parentItemId],
+			foreignColumns: [table.id],
+			name: "team_board_items_parent_item_id_team_board_items_id_fk"
 		}),
 ]);
 

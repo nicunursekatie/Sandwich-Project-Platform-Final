@@ -36,6 +36,15 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Guided Tours & Onboarding System**: Interactive step-by-step tours for new users covering all major features. Tours are defined in `client/src/lib/tourDefinitions.ts` with permission-based filtering. Available tours include: Resources Overview, Host Location Map, Event Planning Overview, Collections Log, Dashboard & Analytics, Team Chat, TSP Holding Zone, Projects, Hosts Management, Event Reminders, Availability, Volunteers, and Driver Planning.
 - **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
 - **Timezone Management**: Ensures accurate storage of user-entered times, strictly adhering to `timeZone: 'America/New_York'` for display and using provided utility functions to prevent timezone conversion issues.
+  
+  **CRITICAL DATE HANDLING RULE - NEVER USE `new Date(dateString)` DIRECTLY ON DATE-ONLY STRINGS:**
+  - The bug: `new Date("2024-12-15")` is parsed as UTC midnight, which shifts to the PREVIOUS DAY when displayed in Eastern time.
+  - The fix: ALWAYS use helpers from `client/src/lib/date-utils.ts`:
+    - `formatDateShort(date)` - For short display like "Wed, Dec 15"
+    - `formatDateForDisplay(date)` - For full display like "Wednesday, December 15, 2024"
+    - `formatDateForInput(date)` - For HTML date input values
+  - These helpers add `T12:00:00` (noon) to date-only strings before parsing, avoiding timezone boundary issues.
+  - NEVER use `format(new Date(date), ...)` from date-fns on date-only strings - this causes the day-early bug.
 - **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
 - **Event Impact Report Data Source**: ONLY counts sandwiches from actual `sandwichCollections` records; does NOT fall back to estimated/planned counts from `eventRequests`.
 - **User Registration & Approval System**: New users sign up with `isActive: false` and require admin approval before accessing the application, enforced at login and through middleware.
@@ -58,10 +67,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **SMS**: `twilio` (using Replit Twilio integration with API Key authentication)
 
 ### Technical Documentation
-For detailed architecture rules, environment constraints, and development guidelines, see **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)**. This includes:
+For detailed architecture rules, environment constraints, and development guidelines, see **[README.md](./README.md)**. This includes:
 - Socket Architecture (namespaces, singleton patterns, polling-only constraints)
 - Environment Constraints (Replit-specific)
 - Authentication Rules
 - Folder Structure & Responsibilities
 - DO NOT TOUCH sections
 - Socket Modification Checklist
+- Database Rules and Query Patterns
+- UI/UX Conventions and Philosophy

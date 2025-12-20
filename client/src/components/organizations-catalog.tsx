@@ -35,6 +35,7 @@ import {
   Edit,
   Plus,
   X,
+  ArrowUp,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
@@ -198,6 +199,7 @@ export default function GroupCatalog({
   const [editOrgName, setEditOrgName] = useState('');
   const [editDeptName, setEditDeptName] = useState('');
   const [partnerOrganizations, setPartnerOrganizations] = useState<Array<{ name: string; role: string }>>([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -314,18 +316,20 @@ export default function GroupCatalog({
 
     // For single-event cards (linkedEventId), we can edit the department
     // For aggregated cards (eventIds), we can still edit but it affects all events in the card
+    // For cards without event IDs, we can still edit but it will match by organization name
     const hasLinkedEvent = !!editNameOrganization.linkedEventId;
     const hasEventIds = editNameOrganization.eventIds && editNameOrganization.eventIds.length > 0;
+    const hasOrgName = !!editNameOrganization.organizationName;
 
-    // Department editing is allowed if we have either linkedEventId OR eventIds
-    // (meaning we can target specific events, not all matching by name)
-    const canEditDepartment = hasLinkedEvent || hasEventIds;
+    // Department editing is allowed if we have linkedEventId, eventIds, or organization name
+    // (organization name allows matching by name, which is less precise but still works)
+    const canEditDepartment = hasLinkedEvent || hasEventIds || hasOrgName;
 
     const mutationData = {
       oldName: editNameOrganization.organizationName,
       newName: editOrgName.trim() || null, // Allow empty/null for co-hosted events
-      // Include department data when we have specific events to update
-      // ALWAYS include oldDepartment to prevent matching all events with that org name
+      // Include department data when we can edit
+      // Include oldDepartment to help match the right events (especially when no event IDs)
       oldDepartment: canEditDepartment ? (editNameOrganization.department || '') : undefined,
       newDepartment: canEditDepartment ? (editDeptName.trim() || '') : undefined,
       partnerOrganizations: validPartners.length > 0 ? validPartners : undefined,
@@ -717,6 +721,25 @@ export default function GroupCatalog({
     setCurrentPage(1);
   }, [searchTerm, searchScope, filters, sortBy, sortOrder, viewMode]);
 
+  // Handle scroll to show/hide back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setShowBackToTop(scrollTop > 300); // Show button after scrolling 300px
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'new':
@@ -1104,16 +1127,28 @@ export default function GroupCatalog({
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 sm:h-6 sm:w-6 p-0 hover:bg-teal-100 flex-shrink-0 touch-manipulation"
-                            onClick={() => handleEditName({
-                              organizationName: group.groupName,
-                              contactName: group.departments[0]?.contactName || '',
-                              department: undefined, // Don't include department for org-level edits - affects all departments
-                              latestRequestDate: group.departments[0]?.latestRequestDate || '',
-                              latestActivityDate: group.departments[0]?.latestActivityDate || '',
-                              totalRequests: group.departments[0]?.totalRequests || 0,
-                              status: group.departments[0]?.status || 'new',
-                              hasHostedEvent: group.departments[0]?.hasHostedEvent || false,
-                            })}
+                            onClick={() => {
+                              // Collect all event IDs from all departments in this group
+                              const allEventIds = group.departments.flatMap(dept => dept.eventIds || []);
+                              const uniqueEventIds = [...new Set(allEventIds)].filter(id => id !== null && id !== undefined);
+                              
+                              // Get the first department's data as a base
+                              const firstDept = group.departments[0];
+                              
+                              handleEditName({
+                                organizationName: group.groupName,
+                                contactName: firstDept?.contactName || '',
+                                department: firstDept?.department || '',
+                                latestRequestDate: firstDept?.latestRequestDate || '',
+                                latestActivityDate: firstDept?.latestActivityDate || '',
+                                totalRequests: firstDept?.totalRequests || 0,
+                                status: firstDept?.status || 'new',
+                                hasHostedEvent: firstDept?.hasHostedEvent || false,
+                                // Include event IDs so department editing is enabled
+                                eventIds: uniqueEventIds.length > 0 ? uniqueEventIds : undefined,
+                                linkedEventId: uniqueEventIds.length === 1 ? uniqueEventIds[0] : undefined,
+                              });
+                            }}
                             title="Rename organization"
                             data-testid={`button-edit-name-${group.groupName}`}
                           >
@@ -1283,12 +1318,34 @@ export default function GroupCatalog({
                                         </Badge>
                                       </div>
                                     )}
+                                    {/* Partner Organizations Display - show below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="flex items-center mt-2 text-xs sm:text-sm text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
+                                      </div>
+                                    )}
                                     {/* Co-host Badge (for primary entries that have co-hosts) - hidden on mobile */}
                                     {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
                                       <div className="hidden sm:flex items-center mt-2">
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           Co-hosted with {org.coHostNames.join(', ')}
                                         </Badge>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Organization Name */}
+                                  <div className="mb-2 sm:mb-3">
+                                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-sm sm:text-base font-semibold text-gray-900">
+                                      <Building className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0" />
+                                      <span>{org.organizationName}</span>
+                                    </div>
+                                    {/* Partner Organizations Display - below organization name */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600 ml-6">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
                                       </div>
                                     )}
                                   </div>
@@ -1622,6 +1679,13 @@ export default function GroupCatalog({
                                         <Badge className="bg-purple-100 text-purple-700 text-xs">
                                           {org.partnerRole === 'co-host' ? 'Co-host' : org.partnerRole === 'sponsor' ? 'Sponsor' : 'Partner'}: {org.primaryOrganization}
                                         </Badge>
+                                      </div>
+                                    )}
+                                    {/* Partner Organizations Display - Compact */}
+                                    {org.isCoHostedEvent && org.coHostNames && org.coHostNames.length > 0 && !org.isPartnerEntry && (
+                                      <div className="mt-1 text-xs text-gray-600">
+                                        <span className="font-medium">Partner:</span>{' '}
+                                        <span>{org.coHostNames.join(', ')}</span>
                                       </div>
                                     )}
                                     {/* Co-host Badge - Compact (for primary entries that have co-hosts) */}
@@ -2533,8 +2597,10 @@ export default function GroupCatalog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-dept-name">Department (optional)</Label>
-              {/* Allow department edits when we have specific events to target */}
-              {(editNameOrganization?.linkedEventId || (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0)) ? (
+              {/* Allow department edits when we have specific events to target OR when we have an organization name to match */}
+              {(editNameOrganization?.linkedEventId || 
+                (editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 0) ||
+                editNameOrganization?.organizationName) ? (
                 <>
                   <Input
                     id="edit-dept-name"
@@ -2546,6 +2612,12 @@ export default function GroupCatalog({
                   {editNameOrganization?.eventIds && editNameOrganization.eventIds.length > 1 && (
                     <p className="text-xs text-amber-600">
                       This will update the department for all {editNameOrganization.eventIds.length} events in this card.
+                    </p>
+                  )}
+                  {!editNameOrganization?.linkedEventId && 
+                   (!editNameOrganization?.eventIds || editNameOrganization.eventIds.length === 0) && (
+                    <p className="text-xs text-amber-600">
+                      This will update the department for all events matching this organization name.
                     </p>
                   )}
                 </>
@@ -2701,6 +2773,18 @@ export default function GroupCatalog({
           "Which groups were recently active?",
         ]}
       />
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 rounded-full h-12 w-12 p-0 shadow-lg bg-[#236383] hover:bg-[#007E8C] text-white transition-all duration-300"
+          aria-label="Back to top"
+          title="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }

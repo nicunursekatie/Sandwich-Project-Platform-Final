@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
-import { isNotNull, and, or, ne, eq } from 'drizzle-orm';
+import { isNotNull, isNull, and, ne, eq, or } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
@@ -78,15 +78,24 @@ router.get('/', async (req, res) => {
         scheduledEventDate: eventRequests.scheduledEventDate,
         status: eventRequests.status,
         estimatedSandwichCount: eventRequests.estimatedSandwichCount,
+        tspContactAssigned: eventRequests.tspContactAssigned,
         tspContact: eventRequests.tspContact,
+        customTspContact: eventRequests.customTspContact,
         eventStartTime: eventRequests.eventStartTime,
         eventEndTime: eventRequests.eventEndTime,
         googleSheetRowId: eventRequests.googleSheetRowId,
         externalId: eventRequests.externalId,
         driversNeeded: eventRequests.driversNeeded,
         assignedDriverIds: eventRequests.assignedDriverIds,
+        tentativeDriverIds: eventRequests.tentativeDriverIds,
         pickupTime: eventRequests.pickupTime,
         pickupTimeWindow: eventRequests.pickupTimeWindow,
+        selfTransport: eventRequests.selfTransport,
+        vanDriverNeeded: eventRequests.vanDriverNeeded,
+        assignedVanDriverId: eventRequests.assignedVanDriverId,
+        isDhlVan: eventRequests.isDhlVan,
+        assignedRecipientIds: eventRequests.assignedRecipientIds,
+        recipientAllocations: eventRequests.recipientAllocations,
       })
       .from(eventRequests)
       .where(and(...conditions));
@@ -173,5 +182,113 @@ router.post('/geocode/:id', async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/event-map/geocode-all
+ * Batch geocode all events that have addresses but no coordinates
+ * RATE LIMITED: Processes with ~1 second delay between each to comply with Nominatim usage policy
+ */
+async function startBatchGeocoding(req: Request, res: Response) {
+  try {
+    const eventsToGeocode = await db
+      .select({
+        id: eventRequests.id,
+        eventAddress: eventRequests.eventAddress,
+        organizationName: eventRequests.organizationName,
+      })
+      .from(eventRequests)
+      .where(
+        and(
+          isNotNull(eventRequests.eventAddress),
+          ne(eventRequests.eventAddress, ''),
+          or(
+            // Treat empty-string coordinates as missing (common in imported rows)
+            isNull(eventRequests.latitude),
+            eq(eventRequests.latitude, ''),
+            eq(eventRequests.latitude, 'null'),
+            isNull(eventRequests.longitude),
+            eq(eventRequests.longitude, ''),
+            eq(eventRequests.longitude, 'null')
+          )
+        )
+      );
+
+    if (eventsToGeocode.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All events with addresses already have coordinates',
+        total: 0,
+        started: false,
+        geocoded: 0,
+        failed: 0,
+      });
+    }
+
+    // Start background geocoding process
+    res.json({
+      success: true,
+      message: `Started geocoding ${eventsToGeocode.length} events in background. This may take a few minutes.`,
+      total: eventsToGeocode.length,
+      started: true,
+    });
+
+    // Process geocoding in background (don't block response)
+    setTimeout(() => {
+      void (async () => {
+        let geocodedCount = 0;
+        let failedCount = 0;
+
+        for (const event of eventsToGeocode) {
+          try {
+            // Rate limit: Nominatim policy is 1 request/sec
+            await rateLimiter.checkAndWait('geocode', 1100);
+
+            const cleanedAddress = cleanAddressForGeocoding(event.eventAddress!);
+            const coordinates = await geocodeAddress(cleanedAddress);
+
+            if (coordinates) {
+              await db
+                .update(eventRequests)
+                .set({
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude,
+                  updatedAt: new Date(),
+                })
+                .where(eq(eventRequests.id, event.id));
+
+              geocodedCount++;
+              logger.info(
+                `✅ Batch geocoded event ${event.id}: ${event.organizationName || 'Unknown'} - ${cleanedAddress}`
+              );
+            } else {
+              failedCount++;
+              logger.warn(
+                `❌ Failed to geocode event ${event.id}: ${event.organizationName || 'Unknown'} - ${cleanedAddress}`
+              );
+            }
+          } catch (err) {
+            failedCount++;
+            logger.error(`Error geocoding event ${event.id}:`, err);
+          }
+        }
+
+        logger.info(
+          `Batch geocoding complete: ${geocodedCount} geocoded, ${failedCount} failed (total ${eventsToGeocode.length})`
+        );
+      })();
+    }, 0);
+  } catch (error) {
+    logger.error('Error starting batch geocoding:', error);
+    res.status(500).json({ 
+      error: 'Failed to start batch geocoding',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+// Preferred route name
+router.post('/geocode-all', startBatchGeocoding);
+// Backwards-compatible alias (in case older tooling/UI calls this)
+router.post('/batch-geocode', startBatchGeocoding);
 
 export default router;

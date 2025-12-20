@@ -47,6 +47,7 @@ export const users = pgTable('users', {
   permissionsModifiedBy: varchar('permissions_modified_by'),
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
+  needsPasswordSetup: boolean('needs_password_setup').default(false), // True for manually created accounts without password
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in
   lastActiveAt: timestamp('last_active_at'), // Track when user was last active (updated on API requests)
   createdAt: timestamp('created_at').defaultNow(),
@@ -166,6 +167,64 @@ export const chatMessageReads = pgTable(
     ),
   })
 );
+
+// Instant messages table for 1:1 direct messaging
+export const instantMessages = pgTable(
+  'instant_messages',
+  {
+    id: serial('id').primaryKey(),
+    senderId: varchar('sender_id').notNull(),
+    senderName: varchar('sender_name').notNull(),
+    recipientId: varchar('recipient_id').notNull(),
+    content: text('content').notNull(),
+    read: boolean('read').default(false),
+    readAt: timestamp('read_at'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    senderIdx: index('idx_instant_messages_sender').on(table.senderId),
+    recipientIdx: index('idx_instant_messages_recipient').on(table.recipientId),
+    conversationIdx: index('idx_instant_messages_conversation').on(
+      table.senderId,
+      table.recipientId
+    ),
+  })
+);
+
+export const insertInstantMessageSchema = createInsertSchema(instantMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InstantMessage = typeof instantMessages.$inferSelect;
+export type InsertInstantMessage = typeof instantMessages.$inferInsert;
+
+// Instant message likes table for reactions
+export const instantMessageLikes = pgTable(
+  'instant_message_likes',
+  {
+    id: serial('id').primaryKey(),
+    messageId: integer('message_id').notNull(),
+    userId: varchar('user_id').notNull(),
+    userName: varchar('user_name').notNull(),
+    emoji: varchar('emoji').notNull().default('❤️'), // Support different reactions
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    messageIdx: index('idx_instant_message_likes_message').on(table.messageId),
+    userIdx: index('idx_instant_message_likes_user').on(table.userId),
+    uniqueLike: unique().on(table.messageId, table.userId, table.emoji),
+  })
+);
+
+export const insertInstantMessageLikeSchema = createInsertSchema(instantMessageLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InstantMessageLike = typeof instantMessageLikes.$inferSelect;
+export type InsertInstantMessageLike = typeof instantMessageLikes.$inferInsert;
+
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
@@ -288,6 +347,10 @@ export const projectTasks = pgTable('project_tasks', {
   sourceMeetingId: integer('source_meeting_id'), // If created in a meeting context
   sourceTeamBoardId: integer('source_team_board_id'), // If promoted from team board
   selectedForAgenda: boolean('selected_for_agenda').notNull().default(false), // Whether to include in agenda
+  // Subtask support - allows tasks to have parent tasks
+  parentTaskId: integer('parent_task_id'), // References project_tasks.id for subtasks
+  // Promotion to to-do list
+  promotedToTodo: boolean('promoted_to_todo').notNull().default(false), // Whether subtask is promoted to to-do list
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -1751,7 +1814,7 @@ export type InsertHoldingZoneCategory = z.infer<typeof insertHoldingZoneCategory
 export const teamBoardItems = pgTable('team_board_items', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(), // The actual task/note/idea - can be anything
-  type: varchar('type').default('task'), // 'task', 'note', 'idea' (removed 'reminder')
+  type: varchar('type').default('task'), // 'task', 'note', 'idea', 'canvas' (removed 'reminder')
   createdBy: varchar('created_by').notNull(), // User ID who posted it
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
   assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
@@ -1767,8 +1830,17 @@ export const teamBoardItems = pgTable('team_board_items', {
   projectId: integer('project_id'), // Optional link to a project for context
   promotedToTaskId: integer('promoted_to_task_id'), // If promoted to project task
   promotedAt: timestamp('promoted_at'), // When promoted to project task
+  // PARENT-CHILD LINKING - Link items to other items (e.g., meeting items with sub-items)
+  parentItemId: integer('parent_item_id').references(() => teamBoardItems.id, { onDelete: 'set null' }), // Optional parent item for nesting
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
+  // Canvas-specific fields
+  isCanvas: boolean('is_canvas').notNull().default(false), // Whether this item uses the structured canvas
+  canvasSections: jsonb('canvas_sections'), // Structured content: [{id,title,cards:[{id,type,content}]}]
+  canvasStatus: varchar('canvas_status').default('draft'), // 'draft', 'in_review', 'published', 'archived'
+  canvasPublishedSnapshot: jsonb('canvas_published_snapshot'), // Snapshot of last published version
+  canvasPublishedAt: timestamp('canvas_published_at'),
+  canvasPublishedBy: varchar('canvas_published_by'),
 });
 
 export const insertTeamBoardItemSchema = createInsertSchema(
@@ -1780,6 +1852,60 @@ export const insertTeamBoardItemSchema = createInsertSchema(
 
 export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
 export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
+
+// Team Board Item Categories - junction table for many-to-many relationship
+export const teamBoardItemCategories = pgTable(
+  'team_board_item_categories',
+  {
+    id: serial('id').primaryKey(),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+    categoryId: integer('category_id')
+      .notNull()
+      .references(() => holdingZoneCategories.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueItemCategory: unique().on(table.itemId, table.categoryId),
+  })
+);
+
+export type TeamBoardItemCategory = typeof teamBoardItemCategories.$inferSelect;
+
+// TSP Yearly Calendar - Month-based planning items (not date-specific)
+export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
+  id: serial('id').primaryKey(),
+  month: integer('month').notNull(), // 1-12 (January = 1, December = 12)
+  year: integer('year').notNull(), // Year for this calendar item (allows multiple years)
+  title: text('title').notNull(), // Short title/description
+  description: text('description'), // Optional longer description
+  category: varchar('category').default('preparation'), // 'preparation', 'event-rush', 'staffing', 'board', 'seasonal', 'other'
+  priority: varchar('priority').default('medium'), // 'low', 'medium', 'high'
+  createdBy: varchar('created_by').notNull(), // User ID who created it
+  createdByName: varchar('created_by_name').notNull(), // Display name of creator
+  assignedTo: text('assigned_to').array(), // Array of user IDs
+  assignedToNames: text('assigned_to_names').array(), // Array of display names
+  isRecurring: boolean('is_recurring').notNull().default(true), // Whether this repeats every year
+  isCompleted: boolean('is_completed').notNull().default(false), // Mark as completed for the year
+  completedAt: timestamp('completed_at'), // When it was marked complete
+  completedBy: varchar('completed_by'), // User who marked it complete
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  monthYearIndex: index('idx_yearly_calendar_month_year').on(table.year, table.month),
+}));
+
+export const insertYearlyCalendarItemSchema = createInsertSchema(
+  yearlyCalendarItems
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type YearlyCalendarItem = typeof yearlyCalendarItems.$inferSelect;
+export type InsertYearlyCalendarItem = z.infer<typeof insertYearlyCalendarItemSchema>;
 
 // Team Board Comments - allow discussion on team board items
 export const teamBoardComments = pgTable('team_board_comments', {
@@ -1942,6 +2068,8 @@ export const eventRequests = pgTable(
     status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
+    nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
+    nextActionUpdatedAt: timestamp('next_action_updated_at'), // When nextAction was last updated
 
     // Postponement tracking (for 'postponed' status)
     postponementReason: text('postponement_reason'), // Reason why event was postponed
@@ -2009,6 +2137,7 @@ export const eventRequests = pgTable(
 
     // Driver, speaker, and volunteer assignments
     assignedDriverIds: text('assigned_driver_ids').array(), // Array of assigned driver IDs/names
+    tentativeDriverIds: text('tentative_driver_ids').array(), // Array of driver IDs that are tentatively assigned (shown with ? badge)
     driverPickupTime: varchar('driver_pickup_time'), // Pickup time for drivers
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed
@@ -2016,12 +2145,20 @@ export const eventRequests = pgTable(
     assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
+    recipientAllocations: jsonb('recipient_allocations').$type<Array<{
+      recipientId: string;
+      recipientName: string; // Cached name for display
+      sandwichCount: number;
+      sandwichType?: string; // Optional type like 'pbj', 'deli', 'cheese', etc.
+      notes?: string; // Optional notes for this allocation
+    }>>(), // Detailed tracking of sandwich distribution to each recipient
 
     // Van driver assignment
     vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required
     assignedVanDriverId: text('assigned_van_driver_id'), // Van driver ID from database
     customVanDriverName: text('custom_van_driver_name'), // Custom van driver name (text entry)
     vanDriverNotes: text('van_driver_notes'), // Special notes for van driver
+    isDhlVan: boolean('is_dhl_van').notNull().default(false), // Flag when DHL is providing the van/driver
 
     // Follow-up tracking for completed events
     followUpOneDayCompleted: boolean('follow_up_one_day_completed').default(
@@ -2644,6 +2781,57 @@ export type EventRequest = typeof eventRequests.$inferSelect & {
 export type InsertEventRequest = z.infer<typeof insertEventRequestSchema>;
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
+// Google Sheets Import Schema - for receiving event data from Google Sheets export
+export const importFromSheetsSchema = z.object({
+  // Event date (required)
+  date: z.string().min(1, 'Event date is required'),
+
+  // Organization info
+  'Day of Week': z.string().optional(),
+  'Group Name': z.string().min(1, 'Organization name is required'),
+
+  // Event timing
+  'Event Start time (MUST when volunteer needed)': z.string().optional(),
+  'Event end time (MUST when volunteer needed)': z.string().optional(),
+  'Pick up time': z.string().optional(),
+
+  // Event details
+  'ALL DETAILS': z.string().optional(),
+  'Social Post': z.string().optional(),
+  'Staffing': z.string().optional(),
+
+  // Sandwich info
+  'Estimate # sandwiches': z.union([z.string(), z.number()]).optional(),
+  'Deli or PBJ?': z.string().optional(),
+  'Final # sandwiches made': z.union([z.string(), z.number()]).optional(),
+
+  // Toolkit
+  'Sent toolkit': z.string().optional(),
+
+  // Contact info
+  'Contact Name': z.string().optional(),
+  'Email Address': z.string().optional(),
+  'Contact Cell Number': z.string().optional(),
+
+  // TSP and logistics
+  'TSP Contact': z.string().optional(),
+  'Address': z.string().optional(),
+  'Van Booked?': z.string().optional(),
+
+  // Notes
+  'Notes': z.string().optional(),
+  "Add'l Notes": z.string().optional(),
+  'Waiting On': z.string().optional(),
+
+  // Recipient/destination
+  'Planned Recipient/Host Home': z.string().optional(),
+
+  // Status
+  'Cancelled': z.string().optional(),
+});
+
+export type ImportFromSheetsData = z.infer<typeof importFromSheetsSchema>;
 
 // Google Sheets integration table
 export const googleSheets = pgTable('google_sheets', {

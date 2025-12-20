@@ -91,6 +91,7 @@ export function useUserManagement() {
       firstName: string;
       lastName: string;
       role: string;
+      password?: string;
     }) => {
       return apiRequest('POST', '/api/users', userData);
     },
@@ -193,25 +194,36 @@ export function useUserManagement() {
       }
 
       const existingMetadata = currentUser.metadata || {};
+      const existingSmsConsent = existingMetadata.smsConsent || {};
 
       let smsConsent;
       if (enabled && phoneNumber) {
+        const formattedPhone = phoneNumber.startsWith('+1')
+          ? phoneNumber
+          : `+1${phoneNumber.replace(/\D/g, '')}`;
+        
         smsConsent = {
           enabled: true,
-          phoneNumber: phoneNumber.startsWith('+1')
-            ? phoneNumber
-            : `+1${phoneNumber.replace(/\D/g, '')}`,
+          phoneNumber: formattedPhone,
           displayPhone: phoneNumber,
+          status: 'confirmed', // Set explicit status to match user-facing status
+          confirmedAt: new Date().toISOString(),
+          confirmationMethod: 'admin_override', // Mark as admin-managed
           optInDate: new Date().toISOString(),
           consent: true,
+          // Preserve campaignType if it exists, otherwise default to 'hosts'
+          campaignType: existingSmsConsent.campaignType || 'hosts',
         };
       } else {
         smsConsent = {
           enabled: false,
           phoneNumber: null,
           displayPhone: null,
+          status: 'not_opted_in', // Set explicit status to match user-facing status
           optOutDate: new Date().toISOString(),
           consent: false,
+          // Preserve campaignType when disabling
+          campaignType: existingSmsConsent.campaignType,
         };
       }
 

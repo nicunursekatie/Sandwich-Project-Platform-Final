@@ -71,21 +71,34 @@ export function SMSDialog({
               <div>
                 <p className="font-medium">Current Status</p>
                 <p className="text-sm text-gray-600">
-                  {user?.metadata?.smsConsent?.enabled ? (
-                    <span className="text-green-700">
-                      Opted in to SMS notifications
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">
-                      Not opted in to SMS notifications
-                    </span>
-                  )}
+                  {(() => {
+                    const smsConsent = user?.metadata?.smsConsent;
+                    const status = smsConsent?.status || (smsConsent?.enabled ? 'confirmed' : 'not_opted_in');
+                    
+                    if (status === 'confirmed' && smsConsent?.enabled) {
+                      return <span className="text-green-700">Confirmed - SMS enabled</span>;
+                    } else if (status === 'pending_confirmation') {
+                      return <span className="text-yellow-700">Pending confirmation</span>;
+                    } else {
+                      return <span className="text-gray-500">Not opted in to SMS notifications</span>;
+                    }
+                  })()}
                 </p>
                 {user?.metadata?.smsConsent?.phoneNumber && (
                   <p className="text-sm text-gray-500">
                     Phone:{' '}
                     {user.metadata.smsConsent.displayPhone ||
                       user.metadata.smsConsent.phoneNumber}
+                  </p>
+                )}
+                {user?.metadata?.smsConsent?.confirmedAt && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Confirmed: {new Date(user.metadata.smsConsent.confirmedAt).toLocaleDateString()}
+                  </p>
+                )}
+                {user?.metadata?.smsConsent?.confirmationMethod && (
+                  <p className="text-xs text-gray-400">
+                    Method: {user.metadata.smsConsent.confirmationMethod === 'admin_override' ? 'Admin override' : 'Verification code'}
                   </p>
                 )}
               </div>

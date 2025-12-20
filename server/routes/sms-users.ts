@@ -10,6 +10,7 @@ import { NotificationService } from '../notification-service';
 import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
 import { db } from '../db';
 import { teamBoardItems } from '@shared/schema';
+import { parseCollectionSMS, generateConfirmationMessage } from '../services/sms-collection-parser';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -32,6 +33,39 @@ const smsOptInSchema = z.object({
   consent: z.boolean(),
   category: z.enum(['hosts', 'events']).optional().default('hosts'),
 });
+
+// Helper to normalize phone numbers for comparison (removes non-digits, handles +1 prefix)
+function normalizePhone(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  // Handle US numbers with or without country code
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return '+1' + digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return '+1' + digits;
+  }
+  return '+' + digits;
+}
+
+// Find user by phone number - checks both smsConsent.phoneNumber AND users.phoneNumber
+function findUserByPhone(users: any[], incomingPhone: string): any | undefined {
+  const normalizedIncoming = normalizePhone(incomingPhone);
+  
+  return users.find((user) => {
+    // Check SMS consent phone first
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+    if (smsConsent.phoneNumber && normalizePhone(smsConsent.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    // Fall back to user's direct phoneNumber field
+    if (user.phoneNumber && normalizePhone(user.phoneNumber) === normalizedIncoming) {
+      return true;
+    }
+    return false;
+  });
+}
 
 const smsConfirmationSchema = z.object({
   verificationCode: z.string().min(1, 'Verification code is required'),
@@ -587,15 +621,189 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     
     logger.log('✅ SECURITY: Twilio webhook signature validated successfully');
     
-    const { Body, From } = req.body;
+    const { Body, From, NumMedia, MediaUrl0, MediaContentType0 } = req.body;
     
-    if (!Body || !From) {
+    if (!From) {
+      return res.status(400).send('Missing required parameters');
+    }
+
+    const phoneNumber = From;
+    const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+
+    // Check if this is an MMS with an image (sign-in sheet photo)
+    const numMedia = parseInt(NumMedia || '0', 10);
+    if (numMedia > 0 && MediaUrl0) {
+      logger.info(`📷 Received MMS image from ${redactedPhone} (${numMedia} media item(s))`);
+      
+      try {
+        // Download the image from Twilio's MediaUrl
+        const mediaResponse = await fetch(MediaUrl0, {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${await getTwilioAuthToken()}`).toString('base64')}`,
+          },
+        });
+
+        if (!mediaResponse.ok) {
+          throw new Error(`Failed to download image: ${mediaResponse.status} ${mediaResponse.statusText}`);
+        }
+
+        const imageBuffer = await mediaResponse.arrayBuffer();
+        const base64Image = Buffer.from(imageBuffer).toString('base64');
+        const mimeType = MediaContentType0 || 'image/jpeg';
+
+        logger.info(`✅ Downloaded image from Twilio (${imageBuffer.byteLength} bytes, type: ${mimeType})`);
+
+        // Parse location and date from text message if provided
+        let textLocation: string | null = null;
+        let textDate: string | null = null;
+        
+        if (Body && Body.trim()) {
+          // Import date parsing function from collection parser
+          const { parseDateFromText } = await import('../services/sms-collection-parser');
+          const dateParseResult = parseDateFromText(Body.trim());
+          textDate = dateParseResult.date;
+          
+          // Extract location from remaining text (everything that's not a date)
+          const locationText = dateParseResult.remainingText
+            .replace(/^(log|logged|made|collected|we made|we collected|just made|just collected)\s*/i, '')
+            .replace(/\s*(sandwiches?|sammies|sammiches)\s*/gi, ' ')
+            .replace(/\s*(today|this morning|this afternoon|tonight)\s*/gi, ' ')
+            .trim();
+          
+          if (locationText.length > 0 && !/^\d+$/.test(locationText)) {
+            // Only use as location if it's not just a number
+            textLocation = locationText;
+            logger.info(`📍 Extracted location from text: "${textLocation}", date: "${textDate}"`);
+          }
+        }
+
+        // Parse the sign-in sheet using the existing parser (use text as context hint)
+        const { parseSignInSheetBase64 } = await import('../services/signin-sheet-parser');
+        const contextHint = Body && Body.trim() ? Body.trim() : undefined;
+        const parseResult = await parseSignInSheetBase64(base64Image, mimeType, contextHint);
+
+        if (!parseResult.success || parseResult.entries.length === 0) {
+          logger.warn(`⚠️ Failed to parse sign-in sheet image from ${redactedPhone}`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, I couldn't read the sign-in sheet. Please make sure the photo is clear and shows the full sheet. Try again or log in to upload it.</Message></Response>`);
+        }
+
+        logger.info(`✅ Parsed sign-in sheet: ${parseResult.entries.length} entries, ${parseResult.totalSandwiches} total sandwiches`);
+
+        // Find user by phone number
+        const allUsers = await storage.getAllUsers();
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+        // Get all hosts for matching
+        const allHosts = await storage.getAllHosts();
+
+        // Create collections for each parsed entry
+        const createdCollections = [];
+        for (const entry of parseResult.entries) {
+          // Use text-provided location if available, otherwise use image-extracted location
+          const locationToUse = textLocation || entry.location;
+          
+          // Use text-provided date if available, otherwise use entry date, then suggested date
+          const dateToUse = textDate || entry.date || parseResult.suggestedDate || new Date().toISOString().split('T')[0];
+          
+          // Try to match host location
+          let matchedHostId: number | null = null;
+          let matchedHostName = locationToUse;
+
+          if (allHosts.length > 0) {
+            const inputLower = entry.location.toLowerCase().trim();
+            const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+            const inputSegments = getSegments(entry.location);
+            let bestMatch: { host: any; score: number } | null = null;
+
+            for (const host of allHosts) {
+              const hostLower = host.name.toLowerCase().trim();
+              const hostSegments = getSegments(host.name);
+
+              if (hostLower === inputLower) {
+                bestMatch = { host, score: 1.0 };
+                break;
+              }
+
+              if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+                const score = 0.95;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+                continue;
+              }
+
+              if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+                const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+
+              const commonSegments = inputSegments.filter(seg =>
+                hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+              );
+              if (commonSegments.length > 0) {
+                const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+            }
+
+            if (bestMatch && bestMatch.score >= 0.5) {
+              matchedHostId = bestMatch.host.id;
+              matchedHostName = bestMatch.host.name;
+            }
+          }
+
+          // Build collection data
+          const collectionData: any = {
+            collectionDate: dateToUse,
+            hostName: matchedHostName,
+            hostId: matchedHostId,
+            individualSandwiches: entry.sandwichCount,
+            createdBy: senderUser?.id || 'sms-system',
+            createdByName: senderUser
+              ? (senderUser.firstName && senderUser.lastName
+                  ? `${senderUser.firstName} ${senderUser.lastName} (via SMS photo)`
+                  : senderUser.firstName
+                    ? `${senderUser.firstName} (via SMS photo)`
+                    : senderUser.email
+                      ? `${senderUser.email} (via SMS photo)`
+                      : `SMS: ${redactedPhone}`)
+              : `SMS: ${redactedPhone}`,
+            submissionMethod: 'sms-photo',
+          };
+
+          const collection = await storage.createSandwichCollection(collectionData);
+          createdCollections.push(collection);
+          logger.info(`✅ Collection created from SMS photo: ID ${collection.id}, ${entry.sandwichCount} sandwiches at ${matchedHostName}`);
+        }
+
+        // Send confirmation message
+        const totalSandwiches = parseResult.totalSandwiches;
+        const entryCount = parseResult.entries.length;
+        const locationDisplay = textLocation || (entryCount === 1 ? parseResult.entries[0].location : 'multiple locations');
+        const confirmationMsg = entryCount === 1
+          ? `✅ Logged ${totalSandwiches} sandwiches at ${locationDisplay} from your photo!`
+          : `✅ Logged ${entryCount} entries (${totalSandwiches} total sandwiches) at ${locationDisplay} from your photo!`;
+
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+      } catch (imageError) {
+        logger.error('❌ Error processing MMS image:', imageError);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, I couldn't process the photo. Please make sure it's a clear image of a sign-in sheet, or try logging in to upload it.</Message></Response>`);
+      }
+    }
+
+    // Handle text-only messages (existing logic)
+    if (!Body) {
       return res.status(400).send('Missing required parameters');
     }
 
     const messageBody = Body.trim().toUpperCase();
-    const phoneNumber = From;
-    const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
 
     logger.log(`📱 Received SMS from ${redactedPhone}: "${Body}"`);
 
@@ -862,11 +1070,8 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       try {
         // Find user by phone number to attribute the idea
         const allUsers = await storage.getAllUsers();
-        const senderUser = allUsers.find((user) => {
-          const metadata = user.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          return smsConsent.phoneNumber === phoneNumber;
-        });
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
 
         // Ensure createdByName is never empty (required field)
         // Format: "Name (via SMS)" or "SMS: ***1234" if no user found
@@ -934,18 +1139,307 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your idea right now. Please try again later or submit through the app.</Message></Response>`);
       }
     }
+    // Handle LOG submissions for Collection Log
+    else if (messageBody.startsWith('LOG ') || messageBody.startsWith('LOG:')) {
+      logger.info(`📊 Collection log received from ${redactedPhone}`);
+
+      try {
+        // Parse the collection message using AI-powered parser
+        const parseResult = await parseCollectionSMS(Body.trim());
+
+        if (!parseResult.success || !parseResult.data) {
+          logger.info(`❌ Failed to parse collection from ${redactedPhone}: ${parseResult.error}`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${parseResult.error || 'Could not parse message. Try: LOG [count] [location name]'}</Message></Response>`);
+        }
+
+        const parsedData = parseResult.data;
+        logger.info(`✅ Parsed collection: ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
+
+        // Default collection date to the most recent Wednesday (including today if Wednesday) when message looks like a weekly count
+        const computeMostRecentWednesday = (date: Date) => {
+          const d = new Date(date);
+          const day = d.getDay(); // 0=Sun, 3=Wed
+          const diff = day >= 3 ? day - 3 : day + 4; // days to subtract
+          d.setDate(d.getDate() - diff);
+          return d.toISOString().split('T')[0];
+        };
+        const isWeeklyCount = /weekly\s+count/i.test(Body);
+        const fallbackWednesday = computeMostRecentWednesday(new Date());
+
+        // Find user by phone number to attribute the collection
+        const allUsers = await storage.getAllUsers();
+        // Find user by phone - checks both SMS consent phone AND user's stored phone number
+        const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+        // Try to match host to existing host in database (fuzzy matching)
+        const allHosts = await storage.getAllHosts();
+        let matchedHostId: number | null = null;
+        let matchedHostName = parsedData.hostName;
+        
+        // Helper to split text into segments (by whitespace, slashes, dashes)
+        const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+        
+        if (allHosts.length > 0) {
+          const inputLower = parsedData.hostName.toLowerCase().trim();
+          const inputSegments = getSegments(parsedData.hostName);
+          let bestMatch: { host: any; score: number } | null = null;
+          
+          for (const host of allHosts) {
+            const hostLower = host.name.toLowerCase().trim();
+            const hostSegments = getSegments(host.name);
+            
+            // Exact match
+            if (hostLower === inputLower) {
+              bestMatch = { host, score: 1.0 };
+              break;
+            }
+            
+            // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+            if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+              const score = 0.95;
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+              continue;
+            }
+            
+            // Contains match
+            if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+              const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+            }
+            
+            // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+            const commonSegments = inputSegments.filter(seg => 
+              hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+            );
+            if (commonSegments.length > 0) {
+              const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+              if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { host, score };
+              }
+            }
+          }
+          
+          // Use match if confidence is reasonable (> 0.5)
+          if (bestMatch && bestMatch.score >= 0.5) {
+            matchedHostId = bestMatch.host.id;
+            matchedHostName = bestMatch.host.name; // Use canonical host name
+            logger.info(`📍 Matched host "${parsedData.hostName}" to existing host: "${matchedHostName}" (ID: ${matchedHostId}, score: ${bestMatch.score.toFixed(2)})`);
+          } else {
+            logger.info(`📍 No close host match found for "${parsedData.hostName}" - will use as-is`);
+          }
+        }
+
+        // Build collection data
+        const collectionData: any = {
+          collectionDate: parsedData.collectionDate || (isWeeklyCount ? fallbackWednesday : new Date().toISOString().split('T')[0]),
+          hostName: matchedHostName,
+          hostId: matchedHostId,
+          individualSandwiches: parsedData.individualSandwiches,
+          createdBy: senderUser?.id || 'sms-system',
+          createdByName: senderUser
+            ? (senderUser.firstName && senderUser.lastName
+                ? `${senderUser.firstName} ${senderUser.lastName} (via SMS)`
+                : senderUser.firstName
+                  ? `${senderUser.firstName} (via SMS)`
+                  : senderUser.email
+                    ? `${senderUser.email} (via SMS)`
+                    : `SMS: ${redactedPhone}`)
+            : `SMS: ${redactedPhone}`,
+        };
+
+        // Add sandwich type breakdowns if provided
+        if (parsedData.individualDeli) collectionData.individualDeli = parsedData.individualDeli;
+        if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
+        if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
+        if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+        if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
+
+        // Add group collections if provided
+        if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
+          collectionData.groupCollections = parsedData.groupCollections;
+          // Set legacy fields for first two groups
+          if (parsedData.groupCollections[0]) {
+            collectionData.group1Name = parsedData.groupCollections[0].name;
+            collectionData.group1Count = parsedData.groupCollections[0].count;
+          }
+          if (parsedData.groupCollections[1]) {
+            collectionData.group2Name = parsedData.groupCollections[1].name;
+            collectionData.group2Count = parsedData.groupCollections[1].count;
+          }
+        }
+
+        // Create the collection
+        const collection = await storage.createSandwichCollection(collectionData);
+        logger.info(`✅ Collection created from SMS: ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${matchedHostName} for ${collectionData.collectionDate}`);
+
+        // Generate and send confirmation message (include matched host name if different)
+        const confirmationMsg = generateConfirmationMessage(parsedData, matchedHostId ? matchedHostName : undefined);
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+      } catch (createError) {
+        logger.error('❌ Failed to create collection from SMS');
+        logger.error('Error:', createError instanceof Error ? createError.message : String(createError));
+        res.type('text/xml');
+        return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your collection right now. Please try again or log in to the app.</Message></Response>`);
+      }
+    }
+    // Handle natural language collection messages (AI-powered parsing)
+    // Check if message looks like it might be a sandwich collection log:
+    // - Contains a number (count)
+    // - Has some text (location name)
+    // - Or contains keywords like "sandwiches", "made", location names
+    else if (
+      (/\d+/.test(Body.trim()) && Body.trim().length >= 5) || // Has a number and some content
+      /\b(dunwoody|intown|kirkwood|ptc|downtown|first baptist|made|sandwiches?|pbj|deli|ham|turkey)\b/i.test(Body.trim()) // Contains collection keywords
+    ) {
+      logger.info(`📊 Potential collection log (natural language) from ${redactedPhone}: "${Body}"`);
+
+      try {
+        // Parse the collection message using AI-powered parser
+        const parseResult = await parseCollectionSMS(Body.trim());
+
+        // Only process if high confidence parse
+        if (parseResult.success && parseResult.data && parseResult.data.confidence >= 0.7) {
+          const parsedData = parseResult.data;
+          logger.info(`✅ AI parsed collection (confidence: ${parsedData.confidence}): ${parsedData.individualSandwiches} sandwiches at ${parsedData.hostName} for ${parsedData.collectionDate}`);
+
+          // Find user by phone number - checks both SMS consent phone AND user's stored phone number
+          const allUsers = await storage.getAllUsers();
+          const senderUser = findUserByPhone(allUsers, phoneNumber);
+
+          // Try to match host to existing host in database (fuzzy matching)
+          const allHosts = await storage.getAllHosts();
+          let matchedHostId: number | null = null;
+          let matchedHostName = parsedData.hostName;
+          
+          // Helper to split text into segments (by whitespace, slashes, dashes)
+          const getSegments = (text: string) => text.toLowerCase().split(/[\s\/\-]+/).filter(w => w.length > 2);
+          
+          if (allHosts.length > 0) {
+            const inputLower = parsedData.hostName.toLowerCase().trim();
+            const inputSegments = getSegments(parsedData.hostName);
+            let bestMatch: { host: any; score: number } | null = null;
+            
+            for (const host of allHosts) {
+              const hostLower = host.name.toLowerCase().trim();
+              const hostSegments = getSegments(host.name);
+              
+              // Exact match
+              if (hostLower === inputLower) {
+                bestMatch = { host, score: 1.0 };
+                break;
+              }
+              
+              // Check if input matches any segment exactly (e.g., "dunwoody" matches "Dunwoody/PTC")
+              if (hostSegments.some(seg => seg === inputLower || inputLower.includes(seg))) {
+                const score = 0.95;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+                continue;
+              }
+              
+              // Contains match
+              if (hostLower.includes(inputLower) || inputLower.includes(hostLower)) {
+                const score = Math.min(inputLower.length, hostLower.length) / Math.max(inputLower.length, hostLower.length);
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+              
+              // Segment overlap match (handles "dunwoody/PTC", "Intown/Kirkwood", etc.)
+              const commonSegments = inputSegments.filter(seg => 
+                hostSegments.some(hs => hs.includes(seg) || seg.includes(hs))
+              );
+              if (commonSegments.length > 0) {
+                const score = commonSegments.length / Math.max(inputSegments.length, hostSegments.length) * 0.9;
+                if (!bestMatch || score > bestMatch.score) {
+                  bestMatch = { host, score };
+                }
+              }
+            }
+            
+            if (bestMatch && bestMatch.score >= 0.5) {
+              matchedHostId = bestMatch.host.id;
+              matchedHostName = bestMatch.host.name;
+              logger.info(`📍 Matched host "${parsedData.hostName}" to existing host: "${matchedHostName}" (ID: ${matchedHostId})`);
+            }
+          }
+
+          // Build collection data
+          const collectionData: any = {
+            collectionDate: parsedData.collectionDate,
+            hostName: matchedHostName,
+            hostId: matchedHostId,
+            individualSandwiches: parsedData.individualSandwiches,
+            createdBy: senderUser?.id || 'sms-system',
+            createdByName: senderUser
+              ? (senderUser.firstName && senderUser.lastName
+                  ? `${senderUser.firstName} ${senderUser.lastName} (via SMS)`
+                  : senderUser.firstName
+                    ? `${senderUser.firstName} (via SMS)`
+                    : senderUser.email
+                      ? `${senderUser.email} (via SMS)`
+                      : `SMS: ${redactedPhone}`)
+              : `SMS: ${redactedPhone}`,
+          };
+
+          // Add sandwich type breakdowns if provided
+          if (parsedData.individualDeli) collectionData.individualDeli = parsedData.individualDeli;
+          if (parsedData.individualTurkey) collectionData.individualTurkey = parsedData.individualTurkey;
+          if (parsedData.individualHam) collectionData.individualHam = parsedData.individualHam;
+          if (parsedData.individualPbj) collectionData.individualPbj = parsedData.individualPbj;
+          if (parsedData.individualGeneric) collectionData.individualGeneric = parsedData.individualGeneric;
+
+          // Add group collections if provided
+          if (parsedData.groupCollections && parsedData.groupCollections.length > 0) {
+            collectionData.groupCollections = parsedData.groupCollections;
+            if (parsedData.groupCollections[0]) {
+              collectionData.group1Name = parsedData.groupCollections[0].name;
+              collectionData.group1Count = parsedData.groupCollections[0].count;
+            }
+            if (parsedData.groupCollections[1]) {
+              collectionData.group2Name = parsedData.groupCollections[1].name;
+              collectionData.group2Count = parsedData.groupCollections[1].count;
+            }
+          }
+
+          // Create the collection
+          const collection = await storage.createSandwichCollection(collectionData);
+          logger.info(`✅ Collection created from SMS (AI): ID ${collection.id}, ${parsedData.individualSandwiches} sandwiches at ${matchedHostName}`);
+
+          // Generate and send confirmation message
+          const confirmationMsg = generateConfirmationMessage(parsedData, matchedHostId ? matchedHostName : undefined);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMsg}</Message></Response>`);
+        } else {
+          // Low confidence or failed parse - send helpful message
+          logger.info(`ℹ️ Low confidence or failed parse from ${redactedPhone}, showing help`);
+          res.type('text/xml');
+          return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Couldn't understand that. Just text:\n• 500 Dunwoody\n• 100 pbj 200 deli Intown\n\nOr add groups:\n• 500 Dunwoody, Acme 200\n\nText HELP for more.</Message></Response>`);
+        }
+      } catch (parseError) {
+        logger.error('❌ Error parsing potential collection:', parseError);
+        // Fall through to unrecognized message handler
+      }
+    }
     // Handle HELP requests
     else if (messageBody === 'HELP' || messageBody === '?') {
       logger.log(`❓ Help request from ${redactedPhone}`);
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP SMS Commands:\n• IDEA [your idea] - Submit to Holding Zone\n• STOP - Unsubscribe from messages\n• HELP - Show this message</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - How to Log Sandwiches:\n\nSimple: 500 Dunwoody\nWith types: 100 pbj 200 deli Intown\nWith date: 500 Dunwoody 12/10\nWith groups: 500 Dunwoody, Acme 200\n\nIDEA [text] - Submit idea\nSTOP - Unsubscribe</Message></Response>`);
     }
     else {
       logger.log(`ℹ️ Unrecognized SMS message from ${redactedPhone}: "${Body}"`);
 
       // Send helpful response for unrecognized messages
       res.type('text/xml');
-      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>To submit an idea to the TSP Holding Zone, text: IDEA followed by your suggestion. Text HELP for more commands.</Message></Response>`);
+      return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>TSP - Just text the count and location!\n\nExample: 500 Dunwoody\nOr: 100 pbj 200 deli Intown\n\nText HELP for more options.</Message></Response>`);
     }
 
     // Always respond with TwiML (empty response for unrecognized messages)

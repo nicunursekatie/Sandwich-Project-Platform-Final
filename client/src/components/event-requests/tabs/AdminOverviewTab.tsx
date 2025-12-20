@@ -173,7 +173,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
         <div className="premium-card-flat p-4">
           <div className="text-sm text-slate-600">New</div>
           <div className="text-2xl font-bold text-blue-600">{newCount}</div>

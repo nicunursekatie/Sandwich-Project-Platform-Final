@@ -115,15 +115,28 @@ resourcesRouter.get(
             ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
             '[]'
           )`,
+          document: sql<any>`
+            CASE
+              WHEN ${documents.id} IS NOT NULL THEN
+                jsonb_build_object(
+                  'id', ${documents.id},
+                  'mimeType', ${documents.mimeType},
+                  'originalName', ${documents.originalName},
+                  'fileSize', ${documents.fileSize}
+                )
+              ELSE NULL
+            END
+          `,
         })
         .from(resources)
+        .leftJoin(documents, eq(resources.documentId, documents.id))
         .leftJoin(
           resourceTagAssignments,
           eq(resources.id, resourceTagAssignments.resourceId)
         )
         .leftJoin(resourceTags, eq(resourceTagAssignments.tagId, resourceTags.id))
         .where(and(...conditions))
-        .groupBy(resources.id);
+        .groupBy(resources.id, documents.id, documents.mimeType, documents.originalName, documents.fileSize);
 
       // Apply sorting
       switch (sort) {
@@ -202,9 +215,22 @@ resourcesRouter.get(
             ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
             '[]'
           )`,
+          document: sql<any>`
+            CASE
+              WHEN ${documents.id} IS NOT NULL THEN
+                jsonb_build_object(
+                  'id', ${documents.id},
+                  'mimeType', ${documents.mimeType},
+                  'originalName', ${documents.originalName},
+                  'fileSize', ${documents.fileSize}
+                )
+              ELSE NULL
+            END
+          `,
         })
         .from(userResourceFavorites)
         .innerJoin(resources, eq(userResourceFavorites.resourceId, resources.id))
+        .leftJoin(documents, eq(resources.documentId, documents.id))
         .leftJoin(
           resourceTagAssignments,
           eq(resources.id, resourceTagAssignments.resourceId)
@@ -216,7 +242,7 @@ resourcesRouter.get(
             eq(resources.isActive, true)
           )
         )
-        .groupBy(resources.id, userResourceFavorites.createdAt)
+        .groupBy(resources.id, userResourceFavorites.createdAt, documents.id, documents.mimeType, documents.originalName, documents.fileSize)
         .orderBy(desc(userResourceFavorites.createdAt));
 
       res.json(favorites);
@@ -254,8 +280,21 @@ resourcesRouter.get(
             ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
             '[]'
           )`,
+          document: sql<any>`
+            CASE
+              WHEN ${documents.id} IS NOT NULL THEN
+                jsonb_build_object(
+                  'id', ${documents.id},
+                  'mimeType', ${documents.mimeType},
+                  'originalName', ${documents.originalName},
+                  'fileSize', ${documents.fileSize}
+                )
+              ELSE NULL
+            END
+          `,
         })
         .from(resources)
+        .leftJoin(documents, eq(resources.documentId, documents.id))
         .leftJoin(
           resourceTagAssignments,
           eq(resources.id, resourceTagAssignments.resourceId)
@@ -267,7 +306,7 @@ resourcesRouter.get(
             sql`${resources.lastAccessedAt} IS NOT NULL`
           )
         )
-        .groupBy(resources.id)
+        .groupBy(resources.id, documents.id, documents.mimeType, documents.originalName, documents.fileSize)
         .orderBy(desc(resources.lastAccessedAt))
         .limit(limit);
 

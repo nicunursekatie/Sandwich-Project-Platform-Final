@@ -42,9 +42,17 @@ export function MobileEventDetail() {
   const eventId = params?.id;
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Fetch event details
+  // Fetch event details - use hierarchical queryKey for cache invalidation
+  // with custom queryFn to fetch the correct single-event endpoint
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['/api/event-requests', eventId],
+    queryFn: async () => {
+      const res = await fetch(`/api/event-requests/${eventId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch event');
+      return res.json();
+    },
     enabled: !!eventId,
     staleTime: 60000,
   });

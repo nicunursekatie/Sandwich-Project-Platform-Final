@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -691,14 +692,19 @@ export default function CompactCollectionForm({
                 disabled={showGroupBreakdown}
               />
 
-              {/* OR Divider */}
-              <div className="relative text-center my-3">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <span className="relative bg-gray-50 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  or break down by type
-                </span>
+              {/* Toggle for breakdown */}
+              <div className="flex items-center gap-2 my-3">
+                <Checkbox
+                  id="group-breakdown-toggle"
+                  checked={showGroupBreakdown}
+                  onCheckedChange={(checked) => setShowGroupBreakdown(!!checked)}
+                />
+                <label
+                  htmlFor="group-breakdown-toggle"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Break down by sandwich type
+                </label>
               </div>
 
               {/* Breakdown inputs */}

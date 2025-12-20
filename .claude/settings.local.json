@@ -33,7 +33,17 @@
       "Bash(source .env)",
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(PRODUCTION_DATABASE_URL=\"$PRODUCTION_DATABASE_URL\" npx tsx:*)"
+      "Bash(PRODUCTION_DATABASE_URL=\"$PRODUCTION_DATABASE_URL\" npx tsx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run drizzle:generate:*)",
+      "Bash(npx vite build:*)",
+      "Bash(dir:*)",
+      "Bash(for f in migrations/meta/*.json)",
+      "Bash(do echo \"Checking $f\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(npx esbuild:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

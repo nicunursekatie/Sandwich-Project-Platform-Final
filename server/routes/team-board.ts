@@ -17,6 +17,7 @@ import {
   type InsertTeamBoardItemLike,
   holdingZoneCategories,
   type HoldingZoneCategory,
+  teamBoardItemCategories,
   users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
@@ -44,14 +45,35 @@ const createItemSchema = insertTeamBoardItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
     content: z.string().min(1, 'Content is required').max(2000, 'Content too long'),
-    type: z.enum(['task', 'note', 'idea']).optional(), // Match database schema - 'reminder' removed
-    categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+    type: z.enum(['task', 'note', 'idea', 'canvas']).optional(), // Match database schema - 'reminder' removed
+    categoryId: z.number().int().positive().optional().nullable(), // Holding zone category (legacy single)
+    categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
     isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
     details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
     dueDate: z.string().datetime().optional().nullable(), // Optional due date
     assignedTo: z.array(z.string()).nullable().optional(), // Allow assignment on creation
     assignedToNames: z.array(z.string()).nullable().optional(), // Allow assignment names on creation
+    isCanvas: z.boolean().optional(),
+    canvasStatus: z.enum(['draft', 'in_review', 'published', 'archived']).optional(),
+    canvasSections: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          cards: z
+            .array(
+              z.object({
+                id: z.string(),
+                type: z.string().default('text'),
+                content: z.any(),
+              })
+            )
+            .optional(),
+        })
+      )
+      .optional()
+      .nullable(),
   });
 
 const updateItemSchema = z.object({
@@ -59,13 +81,37 @@ const updateItemSchema = z.object({
   assignedTo: z.array(z.string()).nullable().optional(),
   assignedToNames: z.array(z.string()).nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
-  categoryId: z.number().int().positive().optional().nullable(), // Holding zone category
+  categoryId: z.number().int().positive().optional().nullable(), // Holding zone category (legacy single)
+  categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
   isUrgent: z.boolean().optional(), // Urgent flag for priority items
   isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
   content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
-  type: z.enum(['task', 'note', 'idea']).optional(),
+  type: z.enum(['task', 'note', 'idea', 'canvas']).optional(),
   details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
   dueDate: z.string().datetime().optional().nullable(), // Optional due date
+  isCanvas: z.boolean().optional(),
+  canvasStatus: z.enum(['draft', 'in_review', 'published', 'archived']).optional(),
+  canvasSections: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        cards: z
+          .array(
+            z.object({
+              id: z.string(),
+              type: z.string().default('text'),
+              content: z.any(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .optional()
+    .nullable(),
+  canvasPublishedSnapshot: z.any().optional(),
+  canvasPublishedAt: z.string().datetime().optional().nullable(),
+  canvasPublishedBy: z.string().optional().nullable(),
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
@@ -178,14 +224,44 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
     // Combine public and private items
     const allItems = [...items, ...privateItems];
 
-    // Flatten the results to include category info
+    // Flatten the results to include legacy single category info
     const flattenedItems = allItems.map(row => ({
       ...row.item,
-      category: row.category,
+      category: row.category, // Legacy single category from categoryId
     }));
 
     // Get comment counts for all items
     const itemIds = flattenedItems.map(item => item.id);
+
+    // Fetch all categories for items from the junction table
+    const itemCategoriesData = itemIds.length > 0
+      ? await db
+          .select({
+            itemId: teamBoardItemCategories.itemId,
+            categoryId: teamBoardItemCategories.categoryId,
+            categoryName: holdingZoneCategories.name,
+            categoryColor: holdingZoneCategories.color,
+          })
+          .from(teamBoardItemCategories)
+          .innerJoin(
+            holdingZoneCategories,
+            eq(teamBoardItemCategories.categoryId, holdingZoneCategories.id)
+          )
+          .where(inArray(teamBoardItemCategories.itemId, itemIds))
+      : [];
+
+    // Create a map of itemId -> categories array
+    const itemCategoriesMap = new Map<number, Array<{ id: number; name: string; color: string }>>();
+    for (const row of itemCategoriesData) {
+      if (!itemCategoriesMap.has(row.itemId)) {
+        itemCategoriesMap.set(row.itemId, []);
+      }
+      itemCategoriesMap.get(row.itemId)!.push({
+        id: row.categoryId,
+        name: row.categoryName,
+        color: row.categoryColor,
+      });
+    }
     const commentCounts = itemIds.length > 0 
       ? await db
           .select({
@@ -227,16 +303,31 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
           )
       : [];
 
+    // Get child item counts for all items (to show how many items are nested under each)
+    const childCounts = itemIds.length > 0
+      ? await db
+          .select({
+            parentItemId: teamBoardItems.parentItemId,
+            count: count(teamBoardItems.id),
+          })
+          .from(teamBoardItems)
+          .where(inArray(teamBoardItems.parentItemId, itemIds))
+          .groupBy(teamBoardItems.parentItemId)
+      : [];
+
     // Create maps for quick lookup
     const likeCountMap = new Map(likeCounts.map(c => [c.itemId, Number(c.count)]));
     const userLikedSet = new Set(userLikes.map(l => l.itemId));
+    const childCountMap = new Map(childCounts.map(c => [c.parentItemId, Number(c.count)]));
 
-    // Add comment counts and like data to items
+    // Add comment counts, like data, categories, and child counts to items
     const itemsWithCounts = flattenedItems.map(item => ({
       ...item,
       commentCount: countMap.get(item.id) || 0,
       likeCount: likeCountMap.get(item.id) || 0,
       userHasLiked: userLikedSet.has(item.id),
+      categories: itemCategoriesMap.get(item.id) || [], // Multiple categories from junction table
+      childCount: childCountMap.get(item.id) || 0, // Number of items nested under this item
     }));
 
     // Sort: open items first, then done items
@@ -311,21 +402,45 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
 
     const displayName = req.user.displayName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email;
 
-    // Prepare the item data for insertion
+    // Determine category IDs - prefer categoryIds array, fallback to single categoryId
+    const categoryIdsToAssign = itemData.categoryIds && itemData.categoryIds.length > 0
+      ? itemData.categoryIds
+      : itemData.categoryId
+        ? [itemData.categoryId]
+        : [];
+
+    const isCanvas = itemData.isCanvas === true || itemData.type === 'canvas';
+    const canvasSections = isCanvas
+      ? itemData.canvasSections && itemData.canvasSections.length > 0
+        ? itemData.canvasSections
+        : [
+            { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: itemData.details || '' }] },
+            { id: 'working-notes', title: 'Working Notes', cards: [] },
+          ]
+      : null;
+    const canvasStatus = isCanvas ? itemData.canvasStatus || 'draft' : null;
+
+    // Prepare the item data for insertion (keep legacy categoryId for backward compatibility)
     const newItem: InsertTeamBoardItem = {
       content: itemData.content,
-      type: itemData.type || 'note',
+      type: isCanvas ? 'canvas' : itemData.type || 'note',
       createdBy: req.user.id,
       createdByName: displayName,
       status: 'open',
       assignedTo: itemData.assignedTo ?? null,
       assignedToNames: itemData.assignedToNames ?? null,
       completedAt: null,
-      categoryId: itemData.categoryId ?? null,
+      categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null, // Keep first category for legacy
       isUrgent: itemData.isUrgent ?? false,
       isPrivate: itemData.isPrivate ?? false,
       details: itemData.details ?? null,
       dueDate: itemData.dueDate ? new Date(itemData.dueDate) : null,
+      isCanvas,
+      canvasSections,
+      canvasStatus: canvasStatus || 'draft',
+      canvasPublishedSnapshot: null,
+      canvasPublishedAt: null,
+      canvasPublishedBy: null,
     };
 
     // Insert the new item
@@ -334,9 +449,20 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       .values(newItem)
       .returning();
 
+    // Insert category associations into junction table
+    if (categoryIdsToAssign.length > 0) {
+      await db.insert(teamBoardItemCategories).values(
+        categoryIdsToAssign.map(catId => ({
+          itemId: createdItem.id,
+          categoryId: catId,
+        }))
+      );
+    }
+
     logger.info('Successfully created team board item', {
       itemId: createdItem.id,
-      userId: req.user.id
+      userId: req.user.id,
+      categoryCount: categoryIdsToAssign.length,
     });
 
     // Process mentions in the item content asynchronously
@@ -421,19 +547,83 @@ teamBoardRouter.patch('/:id',
       return res.status(404).json({ error: 'Item not found' });
     }
 
+    // Determine category IDs if updating categories
+    const categoryIdsToAssign = updateData.categoryIds !== undefined
+      ? (updateData.categoryIds || [])
+      : updateData.categoryId !== undefined
+        ? (updateData.categoryId ? [updateData.categoryId] : [])
+        : null; // null means don't update categories
+
+    // Prepare update data, setting legacy categoryId if categories are being updated
+    const willBeCanvas =
+      updateData.isCanvas === true ||
+      updateData.type === 'canvas' ||
+      existingItem.isCanvas === true;
+
+    const dbUpdateData = {
+      ...updateData,
+      isCanvas: willBeCanvas,
+      ...(willBeCanvas
+        ? {
+            canvasStatus: updateData.canvasStatus || existingItem.canvasStatus || 'draft',
+            canvasSections:
+              updateData.canvasSections !== undefined
+                ? updateData.canvasSections
+                : existingItem.canvasSections,
+            canvasPublishedSnapshot:
+              updateData.canvasPublishedSnapshot !== undefined
+                ? updateData.canvasPublishedSnapshot
+                : existingItem.canvasPublishedSnapshot,
+            canvasPublishedAt:
+              updateData.canvasPublishedAt !== undefined
+                ? updateData.canvasPublishedAt
+                : existingItem.canvasPublishedAt,
+            canvasPublishedBy:
+              updateData.canvasPublishedBy !== undefined
+                ? updateData.canvasPublishedBy
+                : existingItem.canvasPublishedBy,
+          }
+        : {
+            canvasSections: null,
+            canvasStatus: null,
+            canvasPublishedSnapshot: null,
+            canvasPublishedAt: null,
+            canvasPublishedBy: null,
+          }),
+      ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
+      ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
+      ...(categoryIdsToAssign !== null ? { categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null } : {}),
+    };
+    // Remove categoryIds from db update since it's not a column
+    delete (dbUpdateData as any).categoryIds;
+
     // Update the item
     const [updatedItem] = await db
       .update(teamBoardItems)
-      .set({
-        ...updateData,
-        ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
-        ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
-      })
+      .set(dbUpdateData)
       .where(eq(teamBoardItems.id, itemId))
       .returning();
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update categories in junction table if provided
+    if (categoryIdsToAssign !== null) {
+      // Delete existing category associations
+      await db
+        .delete(teamBoardItemCategories)
+        .where(eq(teamBoardItemCategories.itemId, itemId));
+
+      // Insert new category associations
+      if (categoryIdsToAssign.length > 0) {
+        await db.insert(teamBoardItemCategories).values(
+          categoryIdsToAssign.map(catId => ({
+            itemId,
+            categoryId: catId,
+          }))
+        );
+      }
     }
 
     // REFACTOR: Dual-write to team_board_assignments table
@@ -1180,6 +1370,110 @@ teamBoardRouter.post(
       res.status(500).json({
         error: 'Failed to move item',
         message: 'An error occurred while moving the item to the To-Do List',
+      });
+    }
+  }
+);
+
+// PATCH /api/team-board/:id/link - Link or unlink an item to/from a parent item
+teamBoardRouter.patch(
+  '/:id/link',
+  requirePermission(PERMISSIONS.MANAGE_HOLDING_ZONE),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const itemId = parseInt(req.params.id);
+      if (isNaN(itemId)) {
+        return res.status(400).json({ error: 'Invalid item ID' });
+      }
+
+      // Validation schema for link request
+      const linkSchema = z.object({
+        parentItemId: z.number().int().positive().nullable().optional(), // null to unlink, number to link
+      });
+
+      const validation = linkSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Invalid input data',
+          details: validation.error.issues,
+        });
+      }
+
+      const { parentItemId } = validation.data;
+
+      logger.info('Linking/unlinking holding zone item', {
+        itemId,
+        parentItemId: parentItemId || null,
+        userId: req.user.id,
+      });
+
+      // Get the item to link
+      const [item] = await db
+        .select()
+        .from(teamBoardItems)
+        .where(eq(teamBoardItems.id, itemId))
+        .limit(1);
+
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      // Prevent circular references - check if parentItemId would create a cycle
+      if (parentItemId) {
+        // Check if the parent item is a child of this item (directly or indirectly)
+        let currentParentId = parentItemId;
+        const visited = new Set<number>([itemId]); // Start with current item to prevent self-reference
+        
+        while (currentParentId) {
+          if (visited.has(currentParentId)) {
+            return res.status(400).json({
+              error: 'Circular reference detected',
+              message: 'Cannot link item to a parent that would create a circular reference',
+            });
+          }
+          
+          visited.add(currentParentId);
+          
+          const [parentItem] = await db
+            .select({ parentItemId: teamBoardItems.parentItemId })
+            .from(teamBoardItems)
+            .where(eq(teamBoardItems.id, currentParentId))
+            .limit(1);
+          
+          if (!parentItem) break;
+          currentParentId = parentItem.parentItemId || undefined;
+        }
+      }
+
+      // Update the item's parent
+      const [updatedItem] = await db
+        .update(teamBoardItems)
+        .set({
+          parentItemId: parentItemId || null,
+        })
+        .where(eq(teamBoardItems.id, itemId))
+        .returning();
+
+      logger.info('Successfully linked/unlinked holding zone item', {
+        itemId,
+        parentItemId: updatedItem.parentItemId,
+        userId: req.user.id,
+      });
+
+      res.status(200).json({
+        success: true,
+        item: updatedItem,
+        message: parentItemId ? 'Item linked to parent' : 'Item unlinked from parent',
+      });
+    } catch (error) {
+      logger.error('Failed to link/unlink holding zone item', error);
+      res.status(500).json({
+        error: 'Failed to link/unlink item',
+        message: 'An error occurred while linking/unlinking the item',
       });
     }
   }

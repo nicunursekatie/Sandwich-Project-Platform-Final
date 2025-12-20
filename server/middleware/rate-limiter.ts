@@ -15,12 +15,14 @@ import { logger } from '../utils/production-safe-logger';
 /**
  * Rate limiter for login attempts
  *
- * Limits: 5 attempts per 15 minutes per IP
+ * Limits: 20 attempts per 15 minutes per IP (increased for development/testing)
  * After limit: 429 Too Many Requests with retry-after header
+ * 
+ * Can be disabled by setting DISABLE_LOGIN_RATE_LIMIT=true
  */
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  max: 20, // 20 attempts per window (increased from 5 for easier testing)
   message: {
     success: false,
     code: 'RATE_LIMITED',
@@ -33,8 +35,9 @@ export const loginRateLimiter = rateLimit({
     res.status(429).json(options.message);
   },
   skip: (req) => {
-    // Skip rate limiting in development for easier testing
-    return process.env.NODE_ENV === 'development';
+    // Skip rate limiting in development or if explicitly disabled
+    return process.env.NODE_ENV === 'development' || 
+           process.env.DISABLE_LOGIN_RATE_LIMIT === 'true';
   },
 });
 

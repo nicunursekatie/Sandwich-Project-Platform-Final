@@ -11,6 +11,7 @@ import recipientsRouter from './recipients';
 import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
+import instantMessagesRouter from './instant-messages';
 import eventRequestsRouter from './event-requests';
 import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
@@ -41,6 +42,7 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
+import yearlyCalendarRouter from './yearly-calendar';
 import holdingZoneCategoriesRouter from './holding-zone-categories';
 import { createHoldingZoneCollaborationRouter } from './holding-zone-collaboration';
 import { promotionGraphicsRouter } from './promotion-graphics';
@@ -76,6 +78,8 @@ import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
+import peopleSearchRouter from './people-search';
+import photoScannerRouter from './photo-scanner';
 
 // Import centralized middleware
 import {
@@ -187,6 +191,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     collectionsRouter
   );
   router.use('/api/sandwich-collections', createErrorHandler('collections'));
+
+  // Photo scanner for sign-in sheets (uses vision AI to extract collection data)
+  router.use(
+    '/api/photo-scanner',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    photoScannerRouter
+  );
+  router.use('/api/photo-scanner', createErrorHandler('photo-scanner'));
 
   router.use(
     '/api/recipients',
@@ -301,6 +314,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/messaging', createErrorHandler('messaging'));
 
   router.use(
+    '/api/instant-messages',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    instantMessagesRouter
+  );
+  router.use('/api/instant-messages', createErrorHandler('instant-messages'));
+
+  router.use(
     '/api/notifications',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
@@ -323,6 +344,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     searchRouter
   );
   router.use('/api/search', createErrorHandler('search'));
+
+  // People search - unified search across all contact databases
+  router.use(
+    '/api/people',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    peopleSearchRouter
+  );
+  router.use('/api/people', createErrorHandler('people-search'));
 
   // Smart Search - AI-powered app navigation
   const smartSearchRouter = createSmartSearchRouter(smartSearchService);
@@ -429,7 +459,24 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/activities', createErrorHandler('activities'));
 
-  // Event Requests routes
+  // Google Sheets Import route - MUST be before authenticated routes
+  // This endpoint uses its own API key authentication (bypasses session auth)
+  // Mount at /api/event-requests so the router's /import-from-sheets path matches
+  router.use(
+    '/api/event-requests',
+    (req, res, next) => {
+      // Only allow unauthenticated access to the import-from-sheets endpoint
+      if (req.path === '/import-from-sheets' && req.method === 'POST') {
+        return next();
+      }
+      // All other paths need authentication - skip to next middleware
+      return next('route');
+    },
+    ...createStandardMiddleware(),
+    eventRequestsRouter
+  );
+
+  // Event Requests routes (authenticated)
   router.use(
     '/api/event-requests',
     deps.isAuthenticated,
@@ -600,6 +647,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     teamBoardRouter
   );
   router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Yearly Calendar routes
+  router.use(
+    '/api/yearly-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    yearlyCalendarRouter
+  );
+  router.use('/api/yearly-calendar', createErrorHandler('yearly-calendar'));
 
   // Holding zone categories routes
   router.use(

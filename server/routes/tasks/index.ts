@@ -393,6 +393,175 @@ tasksRouter.get(
   }
 );
 
+// ============================================================================
+// SUBTASK ROUTES
+// ============================================================================
+
+// GET /:taskId/subtasks - Get all subtasks for a parent task
+tasksRouter.get(
+  '/:taskId/subtasks',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const parentTaskId = parseInt(req.params.taskId);
+
+      if (isNaN(parentTaskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      const subtasks = await storage.getSubtasks(parentTaskId);
+
+      logger.log('Successfully fetched subtasks', {
+        parentTaskId,
+        count: subtasks.length
+      });
+
+      res.json(subtasks);
+    } catch (error) {
+      logger.error('Failed to fetch subtasks:', error);
+      res.status(500).json({ error: 'Failed to fetch subtasks' });
+    }
+  }
+);
+
+// POST /:taskId/subtasks - Create a subtask for a parent task
+tasksRouter.post(
+  '/:taskId/subtasks',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const parentTaskId = parseInt(req.params.taskId);
+      const user = getUser(req);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (isNaN(parentTaskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      // Get parent task to inherit project ID
+      const parentTask = await storage.getTaskById(parentTaskId);
+      if (!parentTask) {
+        return res.status(404).json({ error: 'Parent task not found' });
+      }
+
+      const { title, description, priority, dueDate, assigneeIds, assigneeNames } = req.body;
+
+      if (!title) {
+        return res.status(400).json({ error: 'Title is required' });
+      }
+
+      const subtask = await storage.createSubtask({
+        parentTaskId,
+        projectId: parentTask.projectId,
+        title,
+        description,
+        priority: priority || 'medium',
+        dueDate,
+        assigneeIds,
+        assigneeNames,
+      });
+
+      logger.log('Successfully created subtask', {
+        subtaskId: subtask.id,
+        parentTaskId,
+        title
+      });
+
+      res.status(201).json(subtask);
+    } catch (error) {
+      logger.error('Failed to create subtask:', error);
+      res.status(500).json({ error: 'Failed to create subtask' });
+    }
+  }
+);
+
+// POST /:taskId/promote-to-todo - Promote a subtask to the to-do list
+tasksRouter.post(
+  '/:taskId/promote-to-todo',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const user = getUser(req);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (isNaN(taskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      // Get the task
+      const task = await storage.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      // Update task to be promoted to to-do list
+      const updatedTask = await storage.promoteTaskToTodo(taskId);
+
+      logger.log('Successfully promoted task to to-do list', {
+        taskId,
+        title: task.title
+      });
+
+      res.json(updatedTask);
+    } catch (error) {
+      logger.error('Failed to promote task to to-do:', error);
+      res.status(500).json({ error: 'Failed to promote task to to-do list' });
+    }
+  }
+);
+
+// DELETE /:taskId/promote-to-todo - Remove task from to-do list (demote)
+tasksRouter.delete(
+  '/:taskId/promote-to-todo',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const user = getUser(req);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (isNaN(taskId)) {
+        return res.status(400).json({ error: 'Invalid task ID' });
+      }
+
+      // Update task to remove from to-do list
+      const updatedTask = await storage.demoteTaskFromTodo(taskId);
+
+      logger.log('Successfully removed task from to-do list', { taskId });
+
+      res.json(updatedTask);
+    } catch (error) {
+      logger.error('Failed to demote task from to-do:', error);
+      res.status(500).json({ error: 'Failed to remove task from to-do list' });
+    }
+  }
+);
+
+// GET /promoted-to-todo - Get all tasks promoted to to-do list
+tasksRouter.get(
+  '/promoted-to-todo',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const tasks = await storage.getTasksPromotedToTodo();
+
+      logger.log('Successfully fetched tasks promoted to to-do', {
+        count: tasks.length
+      });
+
+      res.json(tasks);
+    } catch (error) {
+      logger.error('Failed to fetch promoted tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch promoted tasks' });
+    }
+  }
+);
+
 // Apply error handling middleware
 tasksRouter.use(errorHandler);
 

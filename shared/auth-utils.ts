@@ -39,6 +39,7 @@ export const USER_ROLES = {
   VIEWER: 'viewer',
   WORK_LOGGER: 'work_logger',
   DEMO_USER: 'demo_user',
+  REVIEWER: 'reviewer', // Read-only role that can see all features but cannot make changes
 } as const;
 
 // Clean Resource-Action Permission System
@@ -230,6 +231,10 @@ export const PERMISSIONS = {
   VOLUNTEER_CALENDAR_SYNC: 'VOLUNTEER_CALENDAR_SYNC', // Sync with Google Calendar
   VOLUNTEER_CALENDAR_MANAGE: 'VOLUNTEER_CALENDAR_MANAGE', // Manage calendar settings
 
+  // YEARLY_CALENDAR - TSP Yearly Calendar planning
+  YEARLY_CALENDAR_VIEW: 'YEARLY_CALENDAR_VIEW', // View yearly calendar
+  YEARLY_CALENDAR_EDIT: 'YEARLY_CALENDAR_EDIT', // Add/edit/delete calendar items
+
   // MEETINGS - Meeting management
   MEETINGS_VIEW: 'MEETINGS_VIEW',
   MEETINGS_ADD: 'MEETINGS_ADD',
@@ -300,6 +305,7 @@ export const PERMISSIONS = {
   NAV_MY_AVAILABILITY: 'NAV_MY_AVAILABILITY', // Access to My Availability tab
   NAV_TEAM_AVAILABILITY: 'NAV_TEAM_AVAILABILITY', // Access to Team Availability tab
   NAV_VOLUNTEER_CALENDAR: 'NAV_VOLUNTEER_CALENDAR', // Access to Volunteer Calendar tab
+  NAV_YEARLY_CALENDAR: 'NAV_YEARLY_CALENDAR', // Access to TSP Yearly Calendar tab
   NAV_GRANT_METRICS: 'NAV_GRANT_METRICS', // Access to Grant Metrics tab
   NAV_SIGNUP_GENIUS: 'NAV_SIGNUP_GENIUS', // Access to Sign Up Genius tab
   NAV_WISHLIST: 'NAV_WISHLIST', // Access to Amazon Wishlist tab
@@ -348,6 +354,7 @@ export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
     PERMISSIONS.COOLERS_REPORT,
   ],
   [PERMISSIONS.NAV_VOLUNTEER_CALENDAR]: [PERMISSIONS.VOLUNTEER_CALENDAR_VIEW],
+  [PERMISSIONS.NAV_YEARLY_CALENDAR]: [PERMISSIONS.YEARLY_CALENDAR_VIEW],
   [PERMISSIONS.NAV_EXPENSES]: [PERMISSIONS.EXPENSES_VIEW],
   [PERMISSIONS.NAV_EVENT_REMINDERS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
   [PERMISSIONS.NAV_SIGNUP_GENIUS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
@@ -422,6 +429,11 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.AVAILABILITY_EDIT_OWN,
         PERMISSIONS.AVAILABILITY_DELETE_OWN,
 
+        // Yearly Calendar permissions
+        PERMISSIONS.NAV_YEARLY_CALENDAR,
+        PERMISSIONS.YEARLY_CALENDAR_VIEW,
+        PERMISSIONS.YEARLY_CALENDAR_EDIT,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -463,6 +475,11 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.AVAILABILITY_ADD,
         PERMISSIONS.AVAILABILITY_EDIT_OWN,
         PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
+        // Yearly Calendar permissions
+        PERMISSIONS.NAV_YEARLY_CALENDAR,
+        PERMISSIONS.YEARLY_CALENDAR_VIEW,
+        PERMISSIONS.YEARLY_CALENDAR_EDIT,
 
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
@@ -533,6 +550,11 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.AVAILABILITY_ADD,
         PERMISSIONS.AVAILABILITY_EDIT_OWN,
         PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
+        // Yearly Calendar permissions
+        PERMISSIONS.NAV_YEARLY_CALENDAR,
+        PERMISSIONS.YEARLY_CALENDAR_VIEW,
+        PERMISSIONS.YEARLY_CALENDAR_EDIT,
 
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
@@ -703,6 +725,118 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.AVAILABILITY_EDIT_OWN,
         PERMISSIONS.AVAILABILITY_DELETE_OWN,
         'log_work',
+      ];
+
+    case USER_ROLES.REVIEWER:
+      // Reviewer role: Full view access to everything, but NO edit/add/delete permissions
+      // This role is for external reviewers who need to see all functionality
+      // without being able to modify any data
+      return [
+        // All navigation permissions - reviewer can see every page
+        PERMISSIONS.NAV_MY_ACTIONS,
+        PERMISSIONS.NAV_DASHBOARD,
+        PERMISSIONS.NAV_COLLECTIONS_LOG,
+        PERMISSIONS.NAV_TEAM_CHAT,
+        PERMISSIONS.NAV_INBOX,
+        PERMISSIONS.NAV_SUGGESTIONS,
+        PERMISSIONS.NAV_HOSTS,
+        PERMISSIONS.NAV_DRIVERS,
+        PERMISSIONS.NAV_VOLUNTEERS,
+        PERMISSIONS.NAV_RECIPIENTS,
+        PERMISSIONS.NAV_GROUPS_CATALOG,
+        PERMISSIONS.NAV_DISTRIBUTION_TRACKING,
+        PERMISSIONS.NAV_INVENTORY_CALCULATOR,
+        PERMISSIONS.NAV_WORK_LOG,
+        PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
+        PERMISSIONS.NAV_PROJECTS,
+        PERMISSIONS.NAV_MEETINGS,
+        PERMISSIONS.NAV_EVENT_PLANNING,
+        PERMISSIONS.NAV_DRIVER_PLANNING,
+        PERMISSIONS.NAV_EVENT_REMINDERS,
+        PERMISSIONS.NAV_ANALYTICS,
+        PERMISSIONS.NAV_WEEKLY_MONITORING,
+        PERMISSIONS.NAV_IMPORTANT_DOCUMENTS,
+        PERMISSIONS.NAV_IMPORTANT_LINKS,
+        PERMISSIONS.NAV_TOOLKIT,
+        PERMISSIONS.NAV_DOCUMENT_MANAGEMENT,
+        PERMISSIONS.NAV_MY_AVAILABILITY,
+        PERMISSIONS.NAV_TEAM_AVAILABILITY,
+        PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
+        PERMISSIONS.NAV_YEARLY_CALENDAR,
+        PERMISSIONS.NAV_GRANT_METRICS,
+        PERMISSIONS.NAV_SIGNUP_GENIUS,
+        PERMISSIONS.NAV_WISHLIST,
+        PERMISSIONS.NAV_COOLER_TRACKING,
+        PERMISSIONS.NAV_ROUTE_MAP,
+        PERMISSIONS.NAV_HELP,
+        PERMISSIONS.NAV_USER_MANAGEMENT,
+        PERMISSIONS.NAV_TEAM_BOARD,
+        PERMISSIONS.NAV_PROMOTION,
+        PERMISSIONS.NAV_QUICK_SMS_LINKS,
+        PERMISSIONS.NAV_EXPENSES,
+        PERMISSIONS.NAV_RESOURCES,
+        PERMISSIONS.NAV_AUTO_FORM_FILLER,
+        PERMISSIONS.NAV_SERVICE_HOURS_FORM,
+
+        // All VIEW permissions - can see everything
+        PERMISSIONS.ADMIN_ACCESS,
+        PERMISSIONS.CONTACTS_VIEW,
+        PERMISSIONS.HOSTS_VIEW,
+        PERMISSIONS.RECIPIENTS_VIEW,
+        PERMISSIONS.DRIVERS_VIEW,
+        PERMISSIONS.VOLUNTEERS_VIEW,
+        PERMISSIONS.USERS_VIEW,
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.DISTRIBUTIONS_VIEW,
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.WORK_LOGS_VIEW,
+        PERMISSIONS.WORK_LOGS_VIEW_ALL,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.GRANT_METRICS_VIEW,
+        PERMISSIONS.COOLERS_VIEW,
+        PERMISSIONS.HOLDING_ZONE_VIEW,
+        PERMISSIONS.VIEW_HOLDING_ZONE,
+        PERMISSIONS.VOLUNTEER_CALENDAR_VIEW,
+        PERMISSIONS.YEARLY_CALENDAR_VIEW,
+        PERMISSIONS.MEETINGS_VIEW,
+        PERMISSIONS.DOCUMENTS_VIEW,
+        PERMISSIONS.RESOURCES_VIEW,
+        PERMISSIONS.TOOLKIT_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.EXPENSES_VIEW,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.KUDOS_VIEW,
+        PERMISSIONS.ANALYTICS_ADVANCED,
+
+        // Chat VIEW permissions - can see all chat rooms
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_COMMITTEE,
+        PERMISSIONS.CHAT_GRANTS_COMMITTEE,
+        PERMISSIONS.CHAT_EVENTS_COMMITTEE,
+        PERMISSIONS.CHAT_BOARD,
+        PERMISSIONS.CHAT_WEB_COMMITTEE,
+        PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT,
+        PERMISSIONS.CHAT_HOST,
+        PERMISSIONS.CHAT_DRIVER,
+        PERMISSIONS.CHAT_RECIPIENT,
+        PERMISSIONS.CHAT_CORE_TEAM,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
+
+        // Can export data for reporting purposes
+        PERMISSIONS.DATA_EXPORT,
+        PERMISSIONS.ANALYTICS_EXPORT,
+        PERMISSIONS.GRANT_METRICS_EXPORT,
+
+        // Admin panel access to see user management UI
+        PERMISSIONS.ADMIN_PANEL_ACCESS,
+
+        // NOTE: Reviewer does NOT have any _ADD, _EDIT, _DELETE, _MANAGE, _SEND, _SYNC permissions
+        // All write operations will be blocked by the client-side ReviewerContext
       ];
 
     default:
@@ -1202,7 +1336,14 @@ export function getRoleDisplayName(role: string): string {
       return 'Work Logger';
     case USER_ROLES.DEMO_USER:
       return 'Demo User';
+    case USER_ROLES.REVIEWER:
+      return 'Reviewer (Read-Only)';
     default:
       return role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
   }
+}
+
+// Check if user has the reviewer role (read-only access)
+export function isReviewerRole(user: UserForPermissions | null | undefined): boolean {
+  return user?.role === USER_ROLES.REVIEWER;
 }

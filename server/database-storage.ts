@@ -240,11 +240,12 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async setUserPassword(id: string, password: string): Promise<void> {
-    await db
+  async setUserPassword(id: string, password: string): Promise<boolean> {
+    const result = await db
       .update(users)
-      .set({ passwordHash: password, updatedAt: new Date() })
+      .set({ password: password, updatedAt: new Date() })
       .where(eq(users.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async deleteUser(id: string): Promise<boolean> {
@@ -726,6 +727,76 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Subtask methods
+  async getSubtasks(parentTaskId: number): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.parentTaskId, parentTaskId))
+      .orderBy(projectTasks.createdAt);
+  }
+
+  async createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask> {
+    const [subtask] = await db
+      .insert(projectTasks)
+      .values({
+        projectId: data.projectId,
+        parentTaskId: data.parentTaskId,
+        title: data.title,
+        description: data.description || null,
+        status: 'pending',
+        priority: data.priority || 'medium',
+        dueDate: data.dueDate || null,
+        assigneeIds: data.assigneeIds || null,
+        assigneeNames: data.assigneeNames || null,
+        originType: 'manual',
+        promotedToTodo: false,
+      })
+      .returning();
+    return subtask;
+  }
+
+  async promoteTaskToTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async demoteTaskFromTodo(taskId: number): Promise<ProjectTask> {
+    const [task] = await db
+      .update(projectTasks)
+      .set({
+        promotedToTodo: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectTasks.id, taskId))
+      .returning();
+    return task;
+  }
+
+  async getTasksPromotedToTodo(): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(eq(projectTasks.promotedToTodo, true))
+      .orderBy(desc(projectTasks.updatedAt));
   }
 
   // Project Comments
@@ -4170,6 +4241,28 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(eventCollaborationComments.createdAt));
   }
 
+  async getBulkEventCollaborationComments(eventRequestIds: number[]): Promise<Map<number, EventCollaborationComment[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const comments = await db
+      .select()
+      .from(eventCollaborationComments)
+      .where(inArray(eventCollaborationComments.eventRequestId, eventRequestIds))
+      .orderBy(asc(eventCollaborationComments.createdAt));
+
+    const result = new Map<number, EventCollaborationComment[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    comments.forEach(comment => {
+      const list = result.get(comment.eventRequestId) || [];
+      list.push(comment);
+      result.set(comment.eventRequestId, list);
+    });
+
+    return result;
+  }
+
   async createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment> {
     try {
       const [comment] = await db
@@ -4275,6 +4368,34 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(eventFieldLocks.lockedAt));
+  }
+
+  async getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>> {
+    if (eventRequestIds.length === 0) {
+      return new Map();
+    }
+
+    const now = new Date();
+    const locks = await db
+      .select()
+      .from(eventFieldLocks)
+      .where(
+        and(
+          inArray(eventFieldLocks.eventRequestId, eventRequestIds),
+          gt(eventFieldLocks.expiresAt, now)
+        )
+      )
+      .orderBy(desc(eventFieldLocks.lockedAt));
+
+    const result = new Map<number, EventFieldLock[]>();
+    eventRequestIds.forEach(id => result.set(id, []));
+    locks.forEach(lock => {
+      const list = result.get(lock.eventRequestId) || [];
+      list.push(lock);
+      result.set(lock.eventRequestId, list);
+    });
+
+    return result;
   }
 
   async createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock> {

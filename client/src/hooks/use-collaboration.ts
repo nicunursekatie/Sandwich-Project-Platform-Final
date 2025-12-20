@@ -79,6 +79,7 @@ import {
   type ResourceFieldLock,
   type ResourceState,
 } from '@/lib/collaboration-manager';
+import { useBatchedCollaborationContext } from '@/contexts/batched-collaboration-context';
 import type { EventCollaborationComment, EventEditRevision } from '@shared/schema';
 
 export type ResourceType = 'event' | 'holding-zone' | 'planning-workspace';
@@ -183,6 +184,14 @@ export function useCollaboration({
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if batched collaboration data is available from parent context
+  const batchedContext = useBatchedCollaborationContext();
+  const isInsideBatchedProvider = batchedContext !== null;
+  const batchedLoading = batchedContext?.isLoading ?? false;
+  const batchedData = resourceType === 'event' && typeof resourceId === 'number'
+    ? batchedContext?.getEventCollaboration(resourceId)
+    : undefined;
 
   // Presence tracking
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -352,6 +361,41 @@ export function useCollaboration({
   useEffect(() => {
     if (!resourceId || !user) return;
 
+    // If we're inside a batched provider, wait for it to finish loading
+    // before deciding whether to use batched data or make individual calls
+    if (isInsideBatchedProvider && batchedLoading) {
+      logger.log('[Collaboration] Waiting for batched data to load for resource:', resourceId);
+      setCommentsLoading(true);
+      return;
+    }
+
+    // If batched data is available from parent context, use it instead of making API calls
+    if (batchedData) {
+      logger.log('[Collaboration] Using batched data from context for resource:', resourceId);
+      setComments(batchedData.comments || []);
+      
+      const locksMap = new Map<string, ResourceFieldLock>();
+      (batchedData.locks || []).forEach((lock: ResourceFieldLock) => {
+        if (lock && lock.fieldName) {
+          locksMap.set(lock.fieldName, lock);
+        }
+      });
+      setLocks(locksMap);
+      setCommentsLoading(false);
+      return;
+    }
+
+    // If we're inside a batched provider but no data for this event,
+    // still use empty data (provider handles the batch fetch)
+    if (isInsideBatchedProvider && !batchedLoading) {
+      logger.log('[Collaboration] Inside batched provider, using empty data for resource:', resourceId);
+      setComments([]);
+      setLocks(new Map());
+      setCommentsLoading(false);
+      return;
+    }
+
+    // Only make individual API calls if NOT inside a batched provider
     const loadInitialData = async () => {
       setCommentsLoading(true);
       try {
@@ -392,7 +436,7 @@ export function useCollaboration({
     };
 
     loadInitialData();
-  }, [resourceId, resourceType, user]);
+  }, [resourceId, resourceType, user, batchedData, isInsideBatchedProvider, batchedLoading]);
 
   // ==================== Field Locking (HTTP-based with optional real-time sync) ====================
 

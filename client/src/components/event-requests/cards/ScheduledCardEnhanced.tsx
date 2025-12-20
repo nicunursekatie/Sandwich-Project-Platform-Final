@@ -30,6 +30,7 @@ import {
   Calendar,
   Users,
   Car,
+  Truck,
   Megaphone,
   UserPlus,
   Phone,
@@ -253,6 +254,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     },
   });
 
+  const toggleDhlVan = (value: boolean) => {
+    const payload: Record<string, unknown> = { isDhlVan: value };
+    if (value) {
+      payload.vanDriverNeeded = true;
+      payload.assignedVanDriverId = null;
+    }
+    updateFieldsMutation.mutate(payload);
+  };
+
   // Fetch data for recipient resolution
   const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
     id: number;
@@ -392,7 +402,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
@@ -486,8 +496,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const name = extractCustomName(id) || resolveUserName(id);
         staffingParts.push(name ? `D: ${name}` : 'D');
       });
-      // Add unfilled driver slots
-      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
+      // Add unfilled driver slots - include van driver and DHL van in fulfilled count
+      const totalDriversAssigned = assignedDriverIds.length +
+                                   (request.assignedVanDriverId ? 1 : 0) +
+                                   (request.isDhlVan ? 1 : 0);
+      const unfilledDrivers = Math.max(0, driversNeededCount - totalDriversAssigned);
       for (let i = 0; i < unfilledDrivers; i++) {
         staffingParts.push('D');
       }
@@ -574,7 +587,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
       // Determine van booked status with AM/PM based on event start time
       let vanBookedStatus = '';
-      if (request.assignedVanDriverId || request.customVanDriverName) {
+      if (request.isDhlVan) {
+        vanBookedStatus = 'DHL Van';
+      } else if (request.assignedVanDriverId || request.customVanDriverName) {
         // Van is booked - determine AM/PM/All Day from event start time
         if (request.eventStartTime) {
           // Parse time string (could be "14:00", "2:00 PM", etc.)
@@ -678,15 +693,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     >
       <CardContent className="p-3">
         {/* Header Row - Organization & Status */}
-        <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
+          {/* Top: Date + Organization Name */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            {/* Organization Name */}
+            <div className="min-w-0 flex-1">
               {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Input
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-xl font-bold w-64"
+                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
@@ -702,22 +719,301 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <h2
-                  className={`text-2xl font-bold text-[#236383] ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  className={`text-lg sm:text-xl md:text-2xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
                   onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
                 >
                   {request.organizationName}
-                  {canEdit && <Edit2 className="w-4 h-4 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
+                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
-              {isEditingThisCard && editingField === 'department' ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[#236383]/60">•</span>
+              {/* Partner Organizations - inline on same row */}
+              {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1 mt-1">
+                  <span className="text-[#236383]/60 text-xs sm:text-sm">Partner:</span>
+                  {request.partnerOrganizations.map((partner, index) => (
+                    <span
+                      key={index}
+                      className={`text-sm sm:text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C]' : ''}`}
+                      onClick={() =>
+                        canEdit &&
+                        startEditing(
+                          `partnerOrg_${index}`,
+                          JSON.stringify({ name: partner.name || '', department: partner.department || '' })
+                        )
+                      }
+                    >
+                      {partner.name}
+                      {partner.department && ` • ${partner.department}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Date Display */}
+            <div className="flex items-center shrink-0">
+              {isEditingThisCard && editingField === dateFieldToEdit ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <Input
+                    type="date"
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 text-lg w-48"
+                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
+                    <Save className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
+                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors"
+                      aria-label="Edit date"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status Badges */}
+          <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2">
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.isConfirmed
+                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+            </Badge>
+
+            <Badge
+              onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                request.addedToOfficialSheet
+                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+              }`}
+            >
+              {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
+            </Badge>
+
+            {request.isMlkDayEvent && <MlkDayBadge />}
+
+            {/* Sandwich count badge */}
+            <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+              <span>🥪</span>
+              <span>{sandwichInfo}</span>
+            </Badge>
+
+            {/* Self-transport badge */}
+            {request.selfTransport && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <Car className="w-3 h-3" />
+                <span className="hidden sm:inline">Driving Own</span>
+                <span className="sm:hidden">Self</span>
+              </Badge>
+            )}
+
+            {/* Overnight holding badge */}
+            {request.overnightHoldingLocation && (
+              <Badge className="bg-[#236383] text-white border border-[#236383] text-xs sm:text-sm font-medium flex items-center gap-1">
+                <span>🌙</span>
+                <span className="hidden sm:inline">Holding Overnight</span>
+                <span className="sm:hidden">O/N</span>
+              </Badge>
+            )}
+
+            {request.externalId && request.externalId.startsWith('manual-') && (
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium">
+                <FileText className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Manual Entry</span>
+                <span className="sm:hidden">Manual</span>
+              </Badge>
+            )}
+
+            {/* Only show staffing badges if NOT self-transport */}
+            {!request.selfTransport && (
+              <>
+                {staffingComplete ? (
+                  <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] text-xs sm:text-sm font-medium">
+                    Fully Staffed
+                  </Badge>
+                ) : (
+                  <>
+                    {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                      <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                        <Car className="w-3 h-3 mr-1" />
+                        Van
+                      </Badge>
+                    )}
+                    {speakerNeeded > speakerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {volunteerNeeded > volunteerAssigned && (
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        {volunteerNeeded - volunteerAssigned} vol{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </>
+                )}
+
+                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                  <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
+                    <Car className="w-3 h-3 mr-1" />
+                    Van
+                  </Badge>
+                )}
+
+                {request.assignedVanDriverId && (
+                  <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
+                    🚐 Van
+                  </Badge>
+                )}
+
+                {request.isDhlVan && (
+                  <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-medium">
+                    🚚 DHL Van
+                  </Badge>
+                )}
+              </>
+            )}
+
+            {missingInfo.length > 0 && (
+              <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] text-xs sm:text-sm font-medium animate-pulse">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                {missingInfo.length} Missing
+              </Badge>
+            )}
+          </div>
+
+          {/* Add department/partner buttons - hidden on mobile, shown on hover on desktop */}
+          {canEdit && (
+            <div className="hidden sm:flex items-center gap-2 mt-1">
+              {!request.department && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => startEditing('department', '')}
+                    >
+                      <Building2 className="w-3 h-3 inline mr-1" />
+                      Add dept
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add department</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {(!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 text-[#236383]/50 hover:text-[#007E8C] hover:bg-[#007E8C]/10 rounded transition-colors text-xs"
+                      onClick={() => {
+                        startEditing('partnerOrganizations', JSON.stringify([{ name: '', department: '', role: 'partner' }]));
+                      }}
+                    >
+                      <Users className="w-3 h-3 inline mr-1" />
+                      Add partner
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add partner organization</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Partner/Department editing modals */}
+        {isEditingThisCard && editingField === 'department' && (
+          <div className="flex items-center gap-2 mb-3">
+            <Input
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-8 text-base w-48"
+              autoFocus
+              placeholder="Department"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+              <Save className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              const index = parseInt(editingField.split('_')[1]);
+              const partner = request.partnerOrganizations?.[index];
+              let parsed = { name: partner?.name || '', department: partner?.department || '' };
+              try {
+                const maybeParsed = JSON.parse(editingValue || '{}');
+                if (maybeParsed && typeof maybeParsed === 'object') {
+                  parsed = {
+                    name: (maybeParsed as any).name ?? parsed.name,
+                    department: (maybeParsed as any).department ?? parsed.department,
+                  };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: e.target.value, department: parsed.department }))
+                    }
+                    className="h-8 text-base w-40 sm:w-48"
                     autoFocus
-                    placeholder="Department"
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department || ''}
+                    onChange={(e) =>
+                      setEditingValue(JSON.stringify({ name: parsed.name, department: e.target.value }))
+                    }
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveEdit();
                       if (e.key === 'Escape') cancelEdit();
@@ -729,171 +1025,57 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
                     <X className="h-3 w-3" />
                   </Button>
-                </div>
-              ) : request.department ? (
-                <>
-                  <span className="text-[#236383]/60">•</span>
-                  <span
-                    className={`text-xl text-[#236383]/70 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                    onClick={() => canEdit && startEditing('department', request.department || '')}
-                  >
-                    {request.department}
-                    {canEdit && <Edit2 className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                  </span>
                 </>
-              ) : canEdit ? (
-                <Edit2
-                  className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-[#007E8C] transition-colors"
-                  onClick={() => startEditing('department', '')}
-                  title="Add department"
-                />
-              ) : null}
-            </div>
-
-            {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2 w-full">
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
-              </Badge>
-
-              <Badge
-                onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.addedToOfficialSheet
-                    ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
-              </Badge>
-
-              {request.isMlkDayEvent && <MlkDayBadge />}
-
-              {/* Self-transport badge */}
-              {request.selfTransport && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                  <Car className="w-3 h-3" />
-                  <span>Driving Own Sandwiches</span>
-                </Badge>
-              )}
-
-              {/* Overnight holding badge */}
-              {request.overnightHoldingLocation && (
-                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
-                  <span>🌙</span>
-                  <span>Holding Overnight</span>
-                </Badge>
-              )}
-
-              {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
-                <span>🥪</span>
-                <span>{sandwichInfo} Sandwiches</span>
-              </Badge>
-
-              {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
-                  <FileText className="w-3 h-3 mr-1" />
-                  Manual Entry
-                </Badge>
-              )}
-
-              {/* Only show staffing badges if NOT self-transport */}
-              {!request.selfTransport && (
-                <>
-                  {staffingComplete ? (
-                    <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
-                      Fully Staffed
-                    </Badge>
-                  ) : (
-                    <>
-                      {driverNeeded > driverAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {speakerNeeded > speakerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                      {volunteerNeeded > volunteerAssigned && (
-                        <Badge className={`${staffingBadgeColors} font-medium`}>
-                          {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                        </Badge>
-                      )}
-                    </>
-                  )}
-
-                  {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                    <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} font-medium`}>
-                      <Car className="w-3 h-3 mr-1" />
-                      Van Driver Needed
-                    </Badge>
-                  )}
-
-                  {request.assignedVanDriverId && (
-                    <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
-                      🚐 Van Assigned
-                    </Badge>
-                  )}
-                </>
-              )}
-
-              {missingInfo.length > 0 && (
-                <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {missingInfo.length} Missing
-                </Badge>
-              )}
-            </div>
+              );
+            })()}
           </div>
-
-          {/* Date Display - Right Side */}
-          <div className="flex items-center shrink-0">
-            {isEditingThisCard && editingField === dateFieldToEdit ? (
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="date"
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                />
-                <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
-                  <Save className="w-3 h-3" aria-hidden="true" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                  <X className="w-3 h-3" aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 group">
-                <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="text-2xl font-bold text-[#47B3CB] whitespace-nowrap">
-                  {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
-                </span>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                    className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 transition-colors"
-                    aria-label="Edit date"
-                  >
-                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+        )}
+        {isEditingThisCard && editingField === 'partnerOrganizations' && (!request.partnerOrganizations || request.partnerOrganizations.length === 0) && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {(() => {
+              let parsed = { name: '', department: '' };
+              try {
+                const arr = JSON.parse(editingValue || '[]');
+                if (Array.isArray(arr) && arr.length > 0) {
+                  parsed = { name: arr[0]?.name || '', department: arr[0]?.department || '' };
+                }
+              } catch {
+                // ignore
+              }
+              return (
+                <>
+                  <Input
+                    value={parsed.name}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: e.target.value, department: parsed.department, role: 'partner' }]))}
+                    className="h-8 text-base w-40 sm:w-48"
+                    autoFocus
+                    placeholder="Partner name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Input
+                    value={parsed.department}
+                    onChange={(e) => setEditingValue(JSON.stringify([{ name: parsed.name, department: e.target.value, role: 'partner' }]))}
+                    className="h-8 text-base w-32 sm:w-40"
+                    placeholder="Dept (optional)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
+                    <Save className="h-3 w-3" />
                   </Button>
-                )}
-              </div>
-            )}
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </>
+              );
+            })()}
           </div>
-        </div>
+        )}
 
         {/* Action Buttons Section */}
         <TooltipProvider>
@@ -994,8 +1176,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         </TooltipProvider>
 
-        {/* Main Info Section - 3 Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Info Section - 3 Column Grid - responsive at all widths */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
@@ -1087,8 +1282,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 /* Grid layout when viewing */
-                <div className="flex items-start justify-between gap-4">
-                  <div className="grid grid-cols-3 gap-3 text-sm flex-1">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 text-sm flex-1 w-full sm:w-auto">
                     {/* Start Time */}
                     <div>
                       <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
@@ -1169,8 +1364,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                          {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                        <div>
+                          <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                            {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                          </div>
+                          {/* Show "Can hold overnight" if overnightHoldingLocation is set */}
+                          {request.overnightHoldingLocation && (
+                            <div className="text-xs text-[#236383] font-medium mt-1">
+                              Can hold overnight
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1314,7 +1517,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <SelectTrigger className="bg-white text-gray-900">
                           <SelectValue placeholder="Type (optional)" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           {SANDWICH_TYPES.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
@@ -1336,7 +1539,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             <SelectTrigger className="bg-white text-gray-900">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent position="popper" sideOffset={5}>
                               {SANDWICH_TYPES.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
                                   {type.label}
@@ -1404,7 +1607,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <Users className="w-5 h-5 shrink-0 mt-0.5" />
               {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
                 <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs text-gray-300 block mb-1">Adults</label>
                       <Input
@@ -1556,13 +1759,37 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     ) : (
                       <>
                         <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          <Car className="w-5 h-5" />
-                          {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                          {request.vanDriverNeeded ? (
+                            <>
+                              <Truck className="w-5 h-5 text-amber-600" />
+                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
+                            </>
+                          ) : (
+                            <>
+                              <Car className="w-5 h-5" />
+                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                            </>
+                          )}
                         </span>
-                        {canEdit && driverNeeded > 0 && (
-                          <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white" aria-label="Add driver">
-                            <UserPlus className="w-3 h-3" aria-hidden="true" />
-                          </Button>
+                        {canEdit && (
+                          <div className="flex items-center gap-2">
+                            {driverNeeded > 0 && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => openAssignmentDialog('driver')} 
+                                className={request.vanDriverNeeded 
+                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
+                                  : "h-7 bg-[#007E8C] text-white"} 
+                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
+                              >
+                                {request.vanDriverNeeded ? (
+                                  <Truck className="w-3 h-3" aria-hidden="true" />
+                                ) : (
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </>
                     )}
@@ -1593,6 +1820,23 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               size="sm"
                               variant="ghost"
                               onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {request.isDhlVan && (
+                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
+                            DHL Van 🚚
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleDhlVan(false)}
                               className="h-5 w-5 p-0 text-red-600 shrink-0"
                             >
                               <X className="w-3 h-3" />
@@ -2017,6 +2261,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       ) : (
                         <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
                           {request.overnightHoldingLocation}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Next-Day Pickup Time */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
+                        {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingThisCard && editingField === 'overnightPickupTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="bg-white text-gray-900 h-8 text-sm w-32"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                              <Save className="w-3 h-3 mr-1" /> Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : <span className="text-gray-500 italic">Not set</span>}
                         </div>
                       )}
                     </div>

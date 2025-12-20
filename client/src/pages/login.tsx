@@ -20,13 +20,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
 import { AlertCircle, Clock, LogIn } from 'lucide-react';
 import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string(), // Allow empty - server will redirect to set-password if needed
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -69,6 +70,23 @@ export default function LoginPage() {
 
       if (result.code === 'PENDING_APPROVAL') {
         setPendingApproval(true);
+      } else if (result.code === 'PASSWORD_SETUP_REQUIRED') {
+        // User was created without a password - request token and show message
+        // The user will receive an email with a secure token link
+        try {
+          await apiRequest('POST', '/api/auth/request-initial-password', {
+            email: result.email,
+          });
+          setErrorMessage('Your account requires password setup. Please check your email for a password setup link.');
+          toast({
+            title: 'Password Setup Required',
+            description: 'Please check your email for a password setup link.',
+            duration: 10000,
+          });
+        } catch (error) {
+          setErrorMessage('Your account requires password setup. Please contact support to request a password setup link.');
+        }
+        return;
       } else {
         setErrorMessage(result.message || 'Login failed. Please try again.');
         toast({
@@ -210,7 +228,7 @@ export default function LoginPage() {
 
               <div className="text-center space-y-2 pt-2">
                 <Link
-                  href="/reset-password"
+                  href="/forgot-password"
                   className="text-sm text-gray-600 hover:text-amber-600 hover:underline"
                 >
                   Forgot your password?

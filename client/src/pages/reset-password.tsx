@@ -69,6 +69,18 @@ export default function ResetPassword() {
   const verifyToken = async (resetToken: string) => {
     try {
       const response = await fetch(`/api/verify-reset-token/${resetToken}`);
+      
+      if (!response.ok) {
+        // Handle 401 or other errors
+        if (response.status === 401 || response.status === 400) {
+          const data = await response.json().catch(() => ({}));
+          setMessage(data.message || 'Invalid or expired reset token.');
+        } else {
+          setMessage('Unable to verify reset token. Please try again.');
+        }
+        return;
+      }
+
       const data = await response.json();
 
       if (data.valid) {

@@ -298,6 +298,23 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               )}
             </>
           )}
+
+          {/* Partner Organizations */}
+          {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-gray-600 text-sm">&bull;</span>
+              <span className="text-sm text-gray-600">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
           {/* Confirmation Status Badge - Click to toggle */}
           <Badge
             onClick={() => {
@@ -709,6 +726,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           );
         })()}
 
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}
@@ -742,7 +772,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       className="h-7 text-xs flex items-center gap-1 text-amber-800 hover:bg-amber-100"
                     >
                       {showContactAttempts ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      {showContactAttempts ? 'Hide' : 'Show'} Details
+                      {showContactAttempts ? 'Hide Full' : 'Show Full'} Details
                     </Button>
                   )}
                   <Button
@@ -757,109 +787,101 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               </div>
 
-              {/* Contact Attempts Details */}
-              {showContactAttempts && Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
-                  {request.contactAttemptsLog
-                    .slice()
-                    .sort((a, b) => {
-                      // Sort by attemptNumber descending (most recent first)
-                      return (b.attemptNumber || 0) - (a.attemptNumber || 0);
-                    })
-                    .map((attempt: any) => {
-                      if (!attempt || typeof attempt !== 'object') return null;
+              {/* Contact Attempts Details - Condensed by default */}
+              {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+                <div className="mt-3 border-t border-amber-300 pt-3">
+                  <div className="space-y-1.5">
+                    {request.contactAttemptsLog
+                      .slice()
+                      .sort((a, b) => {
+                        // Sort by attemptNumber descending (most recent first)
+                        return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                      })
+                      .map((attempt: any) => {
+                        if (!attempt || typeof attempt !== 'object') return null;
 
-                      const methodIcons = {
-                        phone: <Phone className="w-3 h-3" />,
-                        email: <Mail className="w-3 h-3" />,
-                        text: <MessageCircle className="w-3 h-3" />,
-                        both: <MessageSquare className="w-3 h-3" />,
-                      };
+                        const methodIcons = {
+                          phone: <Phone className="w-3 h-3" />,
+                          email: <Mail className="w-3 h-3" />,
+                          text: <MessageCircle className="w-3 h-3" />,
+                          both: <MessageSquare className="w-3 h-3" />,
+                        };
 
-                      const methodLabels = {
-                        phone: 'Phone',
-                        email: 'Email',
-                        text: 'Text',
-                        both: 'Phone & Email',
-                      };
+                        const methodLabels = {
+                          phone: 'Phone',
+                          email: 'Email',
+                          text: 'Text',
+                          both: 'Both',
+                        };
 
-                      const outcomeLabels: { [key: string]: string } = {
-                        successful: 'Successfully contacted - Got response',
-                        no_answer: 'No answer - No response',
-                        left_message: 'Left voicemail/message',
-                        wrong_number: 'Wrong/disconnected number',
-                        email_bounced: 'Email bounced/failed',
-                        requested_callback: 'Requested callback/follow-up',
-                        other: 'Other',
-                      };
+                        const outcomeLabels: { [key: string]: string } = {
+                          successful: 'Success',
+                          no_answer: 'No answer',
+                          left_message: 'Left message',
+                          wrong_number: 'Wrong number',
+                          email_bounced: 'Bounced',
+                          requested_callback: 'Callback requested',
+                          other: 'Other',
+                        };
 
-                      let parsedDate: Date | undefined;
-                      if (attempt.timestamp) {
-                        try {
-                          parsedDate = new Date(attempt.timestamp);
-                          if (isNaN(parsedDate.getTime())) {
+                        let parsedDate: Date | undefined;
+                        if (attempt.timestamp) {
+                          try {
+                            parsedDate = new Date(attempt.timestamp);
+                            if (isNaN(parsedDate.getTime())) {
+                              parsedDate = undefined;
+                            }
+                          } catch (e) {
                             parsedDate = undefined;
                           }
-                        } catch (e) {
-                          parsedDate = undefined;
                         }
-                      }
 
-                      const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
-                      const loggedByName = attempt.loggedByName;
-                      const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
+                        const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                        const hasNotes = attempt.notes && attempt.notes.trim().length > 0;
 
-                      return (
-                        <div
-                          key={attempt.attemptNumber || attempt.timestamp}
-                          className="bg-white rounded p-2 border border-amber-200 text-sm"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-amber-900">
-                                  Attempt #{attempt.attemptNumber || '?'}
-                                </span>
-                                {attempt.method && (
-                                  <div className="flex items-center gap-1 text-amber-700">
-                                    {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
-                                    <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
-                                  </div>
-                                )}
-                              </div>
+                        // Condensed view - single line with key info
+                        return (
+                          <div
+                            key={attempt.attemptNumber || attempt.timestamp}
+                            className="group bg-white rounded px-2.5 py-1.5 border border-amber-200 text-xs flex items-center justify-between gap-2 hover:bg-amber-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="font-semibold text-amber-900 flex-shrink-0">
+                                #{attempt.attemptNumber || '?'}
+                              </span>
+                              {attempt.method && (
+                                <div className="flex items-center gap-1 text-amber-700 flex-shrink-0">
+                                  {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                  <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                </div>
+                              )}
                               {attempt.outcome && (
-                                <div className="text-xs text-gray-700 mb-1">
-                                  <span className="font-medium">Outcome:</span>{' '}
-                                  {outcomeLabels[attempt.outcome] || attempt.outcome}
-                                </div>
+                                <span className="text-gray-700 flex-shrink-0">
+                                  • {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                </span>
                               )}
-                              {attempt.notes && (
-                                <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
-                                  {attempt.notes}
-                                </div>
+                              {parsedDate && (
+                                <span className="text-gray-500 flex-shrink-0">
+                                  • {parsedDate.toLocaleDateString()} {parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                               )}
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                {parsedDate && (
-                                  <span>{parsedDate.toLocaleString()}</span>
-                                )}
-                                {userName && userName !== 'unknown' && userName !== 'system' && (
-                                  <span>• by {userName}</span>
-                                )}
-                                {showLoggedBy && (
-                                  <span className="text-gray-400 italic">
-                                    (logged by {loggedByName})
-                                  </span>
-                                )}
-                              </div>
+                              {hasNotes && (
+                                <span className="text-gray-400 italic truncate max-w-[150px]" title={attempt.notes}>
+                                  • {attempt.notes.substring(0, 30)}{attempt.notes.length > 30 ? '...' : ''}
+                                </span>
+                              )}
                             </div>
-                            {/* Edit/Delete buttons for contact attempts */}
-                            <div className="flex gap-1 flex-shrink-0">
+                            {/* Edit/Delete buttons - show on hover */}
+                            <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               {onEditContactAttempt && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
-                                  onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                  className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEditContactAttempt(attempt.attemptNumber);
+                                  }}
                                   title="Edit contact attempt"
                                 >
                                   <Edit2 className="w-3 h-3" />
@@ -869,8 +891,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                  className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteContactAttempt(attempt.attemptNumber);
+                                  }}
                                   title="Delete contact attempt"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -878,9 +903,135 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                               )}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
+                  
+                  {/* Expanded view toggle - show full details if needed */}
+                  {showContactAttempts && (
+                    <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
+                      {request.contactAttemptsLog
+                        .slice()
+                        .sort((a, b) => {
+                          return (b.attemptNumber || 0) - (a.attemptNumber || 0);
+                        })
+                        .map((attempt: any) => {
+                          if (!attempt || typeof attempt !== 'object') return null;
+
+                          const methodIcons = {
+                            phone: <Phone className="w-3 h-3" />,
+                            email: <Mail className="w-3 h-3" />,
+                            text: <MessageCircle className="w-3 h-3" />,
+                            both: <MessageSquare className="w-3 h-3" />,
+                          };
+
+                          const methodLabels = {
+                            phone: 'Phone',
+                            email: 'Email',
+                            text: 'Text',
+                            both: 'Phone & Email',
+                          };
+
+                          const outcomeLabels: { [key: string]: string } = {
+                            successful: 'Successfully contacted - Got response',
+                            no_answer: 'No answer - No response',
+                            left_message: 'Left voicemail/message',
+                            wrong_number: 'Wrong/disconnected number',
+                            email_bounced: 'Email bounced/failed',
+                            requested_callback: 'Requested callback/follow-up',
+                            other: 'Other',
+                          };
+
+                          let parsedDate: Date | undefined;
+                          if (attempt.timestamp) {
+                            try {
+                              parsedDate = new Date(attempt.timestamp);
+                              if (isNaN(parsedDate.getTime())) {
+                                parsedDate = undefined;
+                              }
+                            } catch (e) {
+                              parsedDate = undefined;
+                            }
+                          }
+
+                          const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                          const loggedByName = attempt.loggedByName;
+                          const showLoggedBy = loggedByName && loggedByName !== userName && loggedByName !== 'Unknown';
+
+                          return (
+                            <div
+                              key={`expanded-${attempt.attemptNumber || attempt.timestamp}`}
+                              className="bg-white rounded p-2 border border-amber-200 text-sm"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-amber-900">
+                                      Attempt #{attempt.attemptNumber || '?'}
+                                    </span>
+                                    {attempt.method && (
+                                      <div className="flex items-center gap-1 text-amber-700">
+                                        {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                        <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {attempt.outcome && (
+                                    <div className="text-xs text-gray-700 mb-1">
+                                      <span className="font-medium">Outcome:</span>{' '}
+                                      {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                    </div>
+                                  )}
+                                  {attempt.notes && (
+                                    <div className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
+                                      {attempt.notes}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    {parsedDate && (
+                                      <span>{parsedDate.toLocaleString()}</span>
+                                    )}
+                                    {userName && userName !== 'unknown' && userName !== 'system' && (
+                                      <span>• by {userName}</span>
+                                    )}
+                                    {showLoggedBy && (
+                                      <span className="text-gray-400 italic">
+                                        (logged by {loggedByName})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* Edit/Delete buttons for contact attempts */}
+                                <div className="flex gap-1 flex-shrink-0">
+                                  {onEditContactAttempt && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                      onClick={() => onEditContactAttempt(attempt.attemptNumber)}
+                                      title="Edit contact attempt"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                  {onDeleteContactAttempt && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => onDeleteContactAttempt(attempt.attemptNumber)}
+                                      title="Delete contact attempt"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -898,33 +1049,79 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
             )}
 
-            {/* Preferred Time */}
-            {(request.eventStartTime || request.eventEndTime) && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
-                  Preferred Time
+            {/* Event Times - Start, End, and Pickup */}
+            {(request.eventStartTime || request.eventEndTime || request.pickupTime || request.pickupDateTime) && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
+                  Event Times
                 </p>
-                <p className="font-medium">
-                  {request.eventStartTime &&
-                    formatTime12Hour(request.eventStartTime)}
-                  {request.eventEndTime &&
-                    ` - ${formatTime12Hour(request.eventEndTime)}`}
-                </p>
+                {request.eventStartTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">Start:</span>
+                    <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
+                  </div>
+                )}
+                {request.eventEndTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">End:</span>
+                    <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
+                  </div>
+                )}
+                {(request.pickupTime || request.pickupDateTime) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="w-4 h-4 text-[#007E8C]" />
+                    <span className="font-medium text-gray-700">Pickup:</span>
+                    <span className="text-gray-900">
+                      {request.pickupDateTime 
+                        ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                        : request.pickupTime 
+                        ? formatTime12Hour(request.pickupTime)
+                        : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Sandwich Info */}
-            {(request.estimatedSandwichCount || request.sandwichTypes) && (
+            {/* Sandwich Info - Show actual if available, otherwise estimated */}
+            {((request.actualSandwichCount || request.actualSandwichTypes) || (request.estimatedSandwichCount || request.sandwichTypes)) && (
               <div className="bg-amber-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 mb-2">
                   <Package className="w-4 h-4 text-amber-600" />
-                  <span className="font-medium">Sandwiches:</span>
-                  <span>
-                    {formatSandwichTypesDisplay(
-                      request.sandwichTypes,
-                      request.estimatedSandwichCount ?? undefined
-                    )}
+                  <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
+                    {request.actualSandwichCount || request.actualSandwichTypes ? 'Actual Sandwiches' : 'Estimated Sandwiches'}
                   </span>
+                </div>
+                <div className="text-sm">
+                  {request.actualSandwichCount || request.actualSandwichTypes ? (
+                    <div>
+                      {request.actualSandwichTypes && Array.isArray(request.actualSandwichTypes) && request.actualSandwichTypes.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="font-medium text-amber-900">
+                            {formatSandwichTypesDisplay(request.actualSandwichTypes, request.actualSandwichCount ?? undefined)}
+                          </div>
+                          {request.actualSandwichCount && (
+                            <div className="text-xs text-amber-700">
+                              Total: {request.actualSandwichCount} sandwiches
+                            </div>
+                          )}
+                        </div>
+                      ) : request.actualSandwichCount ? (
+                        <div className="font-medium text-amber-900">
+                          {request.actualSandwichCount} sandwiches
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="font-medium text-amber-900">
+                      {formatSandwichTypesDisplay(
+                        request.sandwichTypes,
+                        request.estimatedSandwichCount ?? undefined
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

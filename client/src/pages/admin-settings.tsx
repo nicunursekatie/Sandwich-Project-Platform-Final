@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 
 export default function AdminSettings() {

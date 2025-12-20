@@ -82,6 +82,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     pickupDateTime: '',
+    pickupDate: '',
+    pickupTimeSeparate: '',
     eventAddress: '',
     deliveryDestination: '',
     holdingOvernight: false,
@@ -93,12 +95,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     selfTransport: false,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
+    isDhlVan: false,
     speakersNeeded: 0,
     volunteersNeeded: 0,
     tspContact: '',
     message: '',
     schedulingNotes: '',
     planningNotes: '',
+    nextAction: '',
     totalSandwichCount: 0,
     estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0,
@@ -162,6 +166,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
     acknowledged: boolean;
   } | null>(null);
+  const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -304,6 +309,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+        pickupDate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[0] : '';
+        })(),
+        pickupTimeSeparate: (() => {
+          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+          return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+        })(),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
@@ -320,6 +333,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         message: (eventRequest as any)?.message || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
+        nextAction: (eventRequest as any)?.nextAction || '',
         totalSandwichCount: totalCount,
         estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
         estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
@@ -345,6 +359,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         backupContactRole: (eventRequest as any)?.backupContactRole || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+        isDhlVan: (eventRequest as any)?.isDhlVan || false,
         // Status
         status: eventRequest?.status || 'new',
         // Toolkit status
@@ -486,7 +501,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Helper to check if event likely needs van based on user's criteria
   const eventLikelyNeedsVan = (): boolean => {
     // Check if van driver is explicitly needed
-    if (formData.vanDriverNeeded && !formData.selfTransport) return true;
+    if ((formData.vanDriverNeeded || formData.isDhlVan) && !formData.selfTransport) return true;
     
     // Check if sandwich count > 500 (implies van needed)
     const sandwichCount = sandwichMode === 'total' 
@@ -542,8 +557,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const performSubmit = async () => {
-    // Validation: Events with >500 deli/turkey/unknown sandwiches must have at least 1 speaker
+  const performSubmit = async (skipSpeakerWarning = false) => {
+    // Warning: Events with >500 sandwiches usually need a speaker
     let totalRelevantSandwiches = 0;
     
     // Check sandwich types mode
@@ -563,24 +578,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .reduce((sum: number, item: { type: string; quantity: number }) => sum + item.quantity, 0);
     } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
       // If using total mode and >500, we can't determine types, so check if speakers are needed
-      // This is a conservative check - we'll require speakers if total >500
+      // This is a conservative check - we'll warn if total >500
       totalRelevantSandwiches = formData.totalSandwichCount;
     } else if (sandwichMode === 'range') {
       // For range mode, check the max value
       const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
       if (maxCount > 500) {
-        // Can't determine types in range mode, so conservatively require speakers if max >500
+        // Can't determine types in range mode, so conservatively warn if max >500
         totalRelevantSandwiches = maxCount;
       }
     }
     
-    if (totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
-      toast({
-        title: 'Speaker Required',
-        description: 'Events with more than 500 deli, turkey, or unknown type sandwiches must have at least 1 speaker. Please set "How many speakers needed?" to at least 1.',
-        variant: 'destructive',
-      });
-      return; // Stop submission
+    // Show warning dialog if event has >500 sandwiches and no speakers, but allow proceeding
+    if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      setShowSpeakerWarningDialog(true);
+      return; // Stop submission until user responds
     }
 
     // All fields are optional - no validation required
@@ -601,7 +613,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventStartTime: formData.eventStartTime || null,
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
-      pickupDateTime: formData.pickupDateTime || null,
+      pickupDateTime: (() => {
+        // Combine pickupDate and pickupTimeSeparate into pickupDateTime if both are set
+        if (formData.pickupDate && formData.pickupTimeSeparate) {
+          return `${formData.pickupDate}T${formData.pickupTimeSeparate}`;
+        }
+        // Otherwise use the existing pickupDateTime value
+        return formData.pickupDateTime || null;
+      })(),
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
@@ -610,7 +629,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
       selfTransport: formData.selfTransport || false,
-      vanDriverNeeded: formData.selfTransport ? false : (formData.vanDriverNeeded || false),
+      vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
@@ -618,6 +637,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
       planningNotes: formData.planningNotes || null,
+      nextAction: formData.nextAction || null,
       // Contact information fields
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -634,7 +654,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       backupContactPhone: formData.backupContactPhone || null,
       backupContactRole: formData.backupContactRole || null,
       // Van driver assignment
-      assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
+      assignedVanDriverId: formData.isDhlVan
+        ? null
+        : (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none')
+          ? formData.assignedVanDriverId
+          : null,
+      isDhlVan: formData.selfTransport ? false : !!formData.isDhlVan,
       // Toolkit information
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
@@ -739,7 +764,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
 
     // All checks passed, proceed with submission
-    await performSubmit();
+    await performSubmit(false);
   };
 
   const addSandwichType = () => {
@@ -892,7 +917,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [isCollaborationEnabled, collaboration]);
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose}>
+    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -993,7 +1018,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="previouslyHosted">
                         <SelectValue placeholder="Select hosting history" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="yes">Yes - Hosted Before</SelectItem>
                         <SelectItem value="no">No - First Time</SelectItem>
                         <SelectItem value="i_dont_know">I Don't Know</SelectItem>
@@ -1014,7 +1039,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <SelectTrigger id="organizationCategory">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="school">School</SelectItem>
                         <SelectItem value="church_faith">Church/Faith Group</SelectItem>
                         <SelectItem value="religious">Religious Organization</SelectItem>
@@ -1043,7 +1068,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         <SelectTrigger id="schoolClassification">
                           <SelectValue placeholder="Select school type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           <SelectItem value="public">Public</SelectItem>
                           <SelectItem value="private">Private</SelectItem>
                           <SelectItem value="charter">Charter</SelectItem>
@@ -1129,13 +1154,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="new">New Request</SelectItem>
                 <SelectItem value="in_process">In Process</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
                 <SelectItem value="postponed">Postponed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1150,7 +1176,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   <SelectTrigger data-testid="select-toolkit-status">
                     <SelectValue placeholder="Select toolkit status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                     <SelectItem value="not_sent">Not Sent</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
                     <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
@@ -1303,17 +1329,82 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="pickupDateTime">Pickup Date & Time</Label>
-                <DateTimePicker
-                  value={formData.pickupDateTime}
-                  onChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    pickupDateTime: value,
-                    // Clear legacy pickupTime when datetime is set
-                    pickupTime: ''
-                  }))}
-                  data-testid="pickup-datetime-picker"
+                <Label htmlFor="pickupDate">Pickup Date</Label>
+                <Input
+                  id="pickupDate"
+                  type="date"
+                  value={formData.pickupDate}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      pickupDate: newDate,
+                      // Combine date and time into pickupDateTime
+                      pickupDateTime: newDate && prev.pickupTimeSeparate ? `${newDate}T${prev.pickupTimeSeparate}` : '',
+                      pickupTime: ''
+                    }));
+                  }}
+                  min={formData.eventDate || undefined}
+                  data-testid="pickup-date-input"
                 />
+              </div>
+              <div>
+                <Label htmlFor="pickupTimeSeparate">Pickup Time</Label>
+                <Input
+                  id="pickupTimeSeparate"
+                  type="time"
+                  value={formData.pickupTimeSeparate}
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    setFormData(prev => {
+                      // Validate: if pickup date is same as event date, time must be after event end time
+                      let validatedTime = newTime;
+                      if (prev.pickupDate === formData.eventDate && formData.eventEndTime && newTime) {
+                        if (newTime <= formData.eventEndTime) {
+                          // Time is before or equal to end time - keep the change but could show warning
+                          validatedTime = newTime;
+                        }
+                      }
+                      return { 
+                        ...prev, 
+                        pickupTimeSeparate: validatedTime,
+                        // Combine date and time into pickupDateTime
+                        pickupDateTime: prev.pickupDate && validatedTime ? `${prev.pickupDate}T${validatedTime}` : '',
+                        pickupTime: ''
+                      };
+                    });
+                  }}
+                  min={formData.pickupDate === formData.eventDate && formData.eventEndTime ? formData.eventEndTime : undefined}
+                  data-testid="pickup-time-input"
+                />
+                {formData.pickupDate === formData.eventDate && 
+                 formData.eventEndTime && 
+                 formData.pickupTimeSeparate && 
+                 formData.pickupTimeSeparate <= formData.eventEndTime && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Pickup time should be after event end time ({formData.eventEndTime})
+                  </p>
+                )}
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2 pb-0 mb-0">
+                  <input
+                    type="checkbox"
+                    id="canHoldOvernight"
+                    checked={!!formData.overnightHoldingLocation}
+                    onChange={(e) => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        overnightHoldingLocation: e.target.checked ? 'Yes' : ''
+                      }));
+                    }}
+                    className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
+                    data-testid="checkbox-can-hold-overnight"
+                  />
+                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer mb-0">
+                    Can hold sandwiches overnight
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
@@ -1524,7 +1615,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <SelectTrigger id="rangeSandwichType" className="w-48">
                       <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                       <SelectItem value="none">No specific type</SelectItem>
                       {SANDWICH_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
@@ -1566,7 +1657,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                           <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                             {SANDWICH_TYPES.map((type) => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
@@ -1706,7 +1797,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Select refrigeration status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 <SelectItem value="true">Yes</SelectItem>
                 <SelectItem value="false">No</SelectItem>
                 <SelectItem value="unknown">Unknown</SelectItem>
@@ -1732,6 +1823,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       // Clear driver fields when self-transport is enabled
                       driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
                       vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
+                      isDhlVan: e.target.checked ? false : prev.isDhlVan,
                     }))}
                   />
                   <Label htmlFor="selfTransport" className="text-amber-800 font-medium">
@@ -1763,7 +1855,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         type="checkbox"
                         id="vanDriverNeeded"
                         checked={formData.vanDriverNeeded}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked, isDhlVan: e.target.checked ? prev.isDhlVan : false }))}
                       />
                       <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                     </div>
@@ -1773,15 +1865,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 {/* Van Driver Selection - Only show when van driver is needed and NOT self-transport */}
                 {formData.vanDriverNeeded && !formData.selfTransport && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="checkbox"
+                        id="isDhlVan"
+                        checked={formData.isDhlVan}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          isDhlVan: e.target.checked,
+                          assignedVanDriverId: e.target.checked ? '' : prev.assignedVanDriverId,
+                          vanDriverNeeded: e.target.checked ? true : prev.vanDriverNeeded,
+                        }))}
+                      />
+                      <Label htmlFor="isDhlVan">Use DHL van (external driver)</Label>
+                    </div>
+                    {formData.isDhlVan && (
+                      <p className="text-xs text-amber-700 mb-2">
+                        We will not assign an internal van driver. This still counts as the van being covered.
+                      </p>
+                    )}
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
                     <Select
                       value={formData.assignedVanDriverId || ''}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
+                      disabled={formData.isDhlVan}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a van-approved driver..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                         <SelectItem value="none">No driver assigned yet</SelectItem>
                         {vanDrivers.map((driver) => (
                           <SelectItem key={driver.id} value={driver.id.toString()}>
@@ -1878,7 +1990,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               >
                 <SelectValue placeholder="Select TSP contact" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.firstName && user.lastName
@@ -2007,13 +2119,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 )}
               </div>
 
+              {/* Next Action - Prominent field for intake tracking */}
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="nextAction" className="text-amber-800 font-semibold">Next Action</Label>
+                  {isCollaborationEnabled && isFieldLockedByOther('nextAction') && (
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('nextAction')?.lockedByName || 'Another user'}
+                      expiresAt={getFieldLock('nextAction')?.expiresAt}
+                      data-testid="field-lock-next-action"
+                    />
+                  )}
+                </div>
+                <p className="text-sm text-amber-700 mb-2">What needs to happen next for this event? (e.g., "Waiting for callback", "Need to confirm date", "Follow up on van availability")</p>
+                <Input
+                  id="nextAction"
+                  value={formData.nextAction}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nextAction: e.target.value }))}
+                  onFocus={() => handleFieldFocus('nextAction')}
+                  onBlur={() => handleFieldBlur('nextAction')}
+                  placeholder="Enter the next action needed..."
+                  className="bg-white border-amber-300 focus:border-amber-500"
+                  disabled={isCollaborationEnabled && isFieldLockedByOther('nextAction')}
+                  data-testid="input-next-action"
+                />
+              </div>
+
               {/* Scheduling Notes */}
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
                   {isCollaborationEnabled && isFieldLockedByOther('schedulingNotes') && (
-                    <FieldLockIndicator 
-                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'} 
+                    <FieldLockIndicator
+                      lockedBy={getFieldLock('schedulingNotes')?.lockedByName || 'Another user'}
                       expiresAt={getFieldLock('schedulingNotes')?.expiresAt}
                       data-testid="field-lock-scheduling-notes"
                     />
@@ -2301,7 +2439,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                                   <SelectTrigger className="w-40">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                                     {SANDWICH_TYPES.map((type) => (
                                       <SelectItem key={type.value} value={type.value}>
                                         {type.label}
@@ -2552,11 +2690,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 setShowVanConflictDialog(false);
                 setVanConflictChecked(true);
                 // Directly call performSubmit now that conflict is acknowledged
-                await performSubmit();
+                await performSubmit(false);
               }}
               className="bg-amber-600 hover:bg-amber-700"
             >
               I've Verified Van Availability
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Speaker Warning Dialog */}
+      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={setShowSpeakerWarningDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              ⚠️ Speaker Recommendation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                We usually send a speaker to events making more than 500 sandwiches. Are you sure this event doesn't need one?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSpeakerWarningDialog(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowSpeakerWarningDialog(false);
+                // Proceed with submission even without a speaker
+                await performSubmit(true);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Continue Without Speaker
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -58,6 +58,8 @@ export const MyAssignmentsTab: React.FC = () => {
     setCollectionLogEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowIntakeCallDialog,
+    setIntakeCallEventRequest,
     myAssignmentsStatusFilter,
     setMyAssignmentsStatusFilter,
 
@@ -136,6 +138,10 @@ export const MyAssignmentsTab: React.FC = () => {
         return (
           <NewRequestCard
             {...commonProps}
+            onIntakeCall={() => {
+              setIntakeCallEventRequest(request);
+              setShowIntakeCallDialog(true);
+            }}
             onToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
@@ -351,6 +357,10 @@ export const MyAssignmentsTab: React.FC = () => {
         return (
           <NewRequestCard
             {...commonProps}
+            onIntakeCall={() => {
+              setIntakeCallEventRequest(request);
+              setShowIntakeCallDialog(true);
+            }}
             onToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);

@@ -38,7 +38,7 @@ import { formatTime12Hour, formatEventDate } from '@/components/event-requests/u
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
+import { statusIcons, statusOptions, statusBorderColors, statusBgColors, SANDWICH_TYPES } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -68,6 +68,11 @@ import {
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import {
+  RecipientAllocationEditor,
+  RecipientAllocationDisplay,
+  type RecipientAllocation,
+} from '../RecipientAllocationEditor';
 import SendKudosButton from '@/components/send-kudos-button';
 import {
   Tooltip,
@@ -317,12 +322,29 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         data-testid="button-edit-department"
                       >
                         <Edit2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Partner Organizations */}
+          {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-gray-600 text-sm">&bull;</span>
+              <span className="text-sm text-gray-600">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
 
             <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
@@ -394,7 +416,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         <SelectTrigger className="h-8 w-48">
                           <SelectValue placeholder="Select user..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.name}
@@ -1404,6 +1426,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [instagramLink, setInstagramLink] = useState('');
   const [showComments, setShowComments] = useState(false);
+  const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
@@ -1420,13 +1443,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [isEditingSandwichCount, setIsEditingSandwichCount] = useState(false);
   const [editingSandwichCount, setEditingSandwichCount] = useState('');
   const [editingMode, setEditingMode] = useState<'simple' | 'detailed'>('simple');
-  const [editingTypes, setEditingTypes] = useState<{
-    turkey?: number;
-    ham?: number;
-    deli?: number;
-    pbj?: number;
-    unknown?: number;
-  }>({});
+  const [editingTypes, setEditingTypes] = useState<Record<string, number>>({});
 
   // Inline editing state for TSP contact
   const [isEditingTspContact, setIsEditingTspContact] = useState(false);
@@ -1589,22 +1606,25 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Handlers for sandwich count editing
   const startEditingSandwichCount = () => {
-    const currentCount = request.actualSandwichCount || request.estimatedSandwichCount || 0;
-    const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
+    // IMPORTANT: Only use ACTUAL values, not estimated/planned values
+    // For completed events, we're recording what was actually delivered, not what was planned
+    const currentCount = request.actualSandwichCount || 0;
+    const currentTypes = request.actualSandwichTypes;
 
-    // Check if we have type data
+    // Check if we have ACTUAL type data (not planned types)
     if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
-      // Parse existing types into editing state
+      // Parse existing actual types into editing state using the actual type values
       const typeMap: Record<string, number> = {};
       currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
-          const typeLower = item.type.toLowerCase();
-          typeMap[typeLower] = item.quantity;
+          // Use the actual type value as stored (e.g., 'deli_turkey', 'deli_ham', 'pbj', etc.)
+          typeMap[item.type] = item.quantity;
         }
       });
       setEditingTypes(typeMap);
       setEditingMode('detailed');
     } else {
+      // No actual types recorded yet - start in simple mode with current actual count (or 0)
       setEditingSandwichCount(currentCount.toString());
       setEditingMode('simple');
     }
@@ -1624,12 +1644,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         });
         return;
       }
-      
-      // Preserve existing types - only update the count
-      const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
+
+      // IMPORTANT: Only preserve ACTUAL types, not planned types
+      // We don't want to accidentally copy planned types to actual types
+      const existingActualTypes = request.actualSandwichTypes;
       updateSandwichCountMutation.mutate({
         actualSandwichCount: count,
-        actualSandwichTypes: currentTypes || null
+        actualSandwichTypes: existingActualTypes || null
       });
     } else {
       // Detailed mode - save types and calculate total
@@ -1639,7 +1660,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       Object.entries(editingTypes).forEach(([type, count]) => {
         if (count && count > 0) {
           types.push({
-            type: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize
+            type: type, // Keep the original type value as stored
             quantity: count
           });
           total += count;
@@ -1682,6 +1703,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       const total = Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0);
       setEditingSandwichCount(total.toString());
       setEditingMode('simple');
+      setEditingTypes({}); // Clear types when switching to simple
     }
   };
 
@@ -1809,6 +1831,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         vanDriverName = extractNameFromCustomId(vanDriverName);
       }
       driversList.push({ id: vanDriverIdStr, name: vanDriverName });
+    }
+
+    if (request.isDhlVan) {
+      driversList.push({ id: 'dhl-van', name: 'DHL Van' });
     }
 
     return driversList;
@@ -2085,7 +2111,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
             {/* Event Time Section */}
             <div className="text-center">
               <Clock className="w-5 h-5 text-[#236383] mx-auto mb-2" />
@@ -2094,10 +2120,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               <p className="text-sm text-[#236383]">{eventTimeDisplay}</p>
             </div>
 
-            {/* Sandwiches Delivered Section */}
+            {/* Sandwiches Section - Planned vs Delivered */}
             <div className="text-center group relative">
               <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
+              <p className="text-sm text-gray-600 font-medium">Sandwiches</p>
               {isEditingSandwichCount ? (
                 <div className="flex flex-col items-center gap-2 mt-1 min-w-0 sm:min-w-[200px]">
                   {editingMode === 'simple' ? (
@@ -2125,64 +2151,25 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       </Button>
                     </>
                   ) : (
-                    // Detailed mode - inputs for each type
+                    // Detailed mode - inputs for each type using SANDWICH_TYPES
                     <div className="space-y-2 w-full">
                       <div className="grid grid-cols-2 gap-2 text-left">
-                        <div>
-                          <label className="text-xs text-gray-600">Turkey</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.turkey || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, turkey: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">Ham</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.ham || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, ham: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">Deli</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.deli || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, deli: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600">PB&J</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.pbj || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, pbj: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-xs text-gray-600">Unknown</label>
-                          <Input
-                            type="number"
-                            value={editingTypes.unknown || ''}
-                            onChange={(e) => setEditingTypes({ ...editingTypes, unknown: parseInt(e.target.value) || 0 })}
-                            className="h-8 text-sm"
-                            placeholder="0"
-                            min="0"
-                          />
-                        </div>
+                        {SANDWICH_TYPES.map((typeConfig) => {
+                          const typeValue = typeConfig.value;
+                          return (
+                            <div key={typeValue} className={typeValue === 'unknown' ? 'col-span-2' : ''}>
+                              <label className="text-xs text-gray-600">{typeConfig.label}</label>
+                              <Input
+                                type="number"
+                                value={editingTypes[typeValue] || ''}
+                                onChange={(e) => setEditingTypes({ ...editingTypes, [typeValue]: parseInt(e.target.value) || 0 })}
+                                className="h-8 text-sm"
+                                placeholder="0"
+                                min="0"
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="text-xs text-gray-600 text-center bg-gray-50 rounded p-1">
                         Total: <span className="font-semibold">{Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0)}</span>
@@ -2209,36 +2196,56 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="relative">
-                  <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl mt-1 break-words">
-                    {(() => {
-                      const count = request.actualSandwichCount || request.estimatedSandwichCount;
-                      const types = request.actualSandwichTypes || request.sandwichTypes;
+                <div className="relative space-y-2">
+                  {/* Planned count */}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Planned</p>
+                    <p className="font-medium text-gray-600 text-lg">
+                      {request.estimatedSandwichCount || <span className="text-gray-400 italic text-sm">Not set</span>}
+                    </p>
+                  </div>
+                  {/* Actual delivered count */}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Delivered</p>
+                    <div className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
+                      {(() => {
+                        const count = request.actualSandwichCount;
+                        const types = request.actualSandwichTypes;
 
-                      if (!count) {
-                        return <span className="text-gray-400 italic text-base">Not recorded</span>;
-                      }
+                        if (!count && (!types || !Array.isArray(types) || types.length === 0)) {
+                          return <span className="text-gray-400 italic text-base">Not recorded</span>;
+                        }
 
-                      // If we have types, show count with type
-                      if (types && Array.isArray(types) && types.length > 0) {
-                        const typeDisplay = formatSandwichTypesDisplay(types);
-                        return typeDisplay;
-                      }
+                        // If we have types, show breakdown with total
+                        if (types && Array.isArray(types) && types.length > 0) {
+                          const typeDisplay = formatSandwichTypesDisplay(types, count || undefined);
+                          return (
+                            <div className="space-y-1">
+                              <div>{typeDisplay}</div>
+                              {count && (
+                                <div className="text-xs text-[#FBAD3F]/80 font-normal">
+                                  Total: {count} sandwich{count !== 1 ? 'es' : ''}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
 
-                      // Otherwise just show count
-                      return count;
-                    })()}
-                  </p>
+                        // Otherwise just show count
+                        return <span>{count}</span>;
+                      })()}
+                    </div>
+                  </div>
                   <div className="flex justify-center mt-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={startEditingSandwichCount}
                       className="h-7 px-3 text-xs opacity-60 group-hover:opacity-100 transition-opacity bg-white/80 hover:bg-white border-[#FBAD3F]/30 hover:border-[#FBAD3F]"
-                      title="Edit sandwich count"
+                      title="Edit delivered count"
                     >
                       <Edit2 className="w-3 h-3 mr-1" />
-                      Edit Count
+                      Edit Delivered
                     </Button>
                   </div>
                 </div>
@@ -2344,64 +2351,43 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             {/* Combined Recipients & Team Section */}
             <div className="bg-[#e6f2f5] rounded-lg p-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                {/* Recipients & Hosts */}
+                {/* Recipients with Allocations */}
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-[#236383]" />
                   <span className="font-medium text-[#236383]">Recipients:</span>
-                  {isEditingField && editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2">
-                      <MultiRecipientSelector
-                        value={editingValue ? JSON.parse(editingValue) : []}
-                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                        placeholder="Select recipient organizations..."
-                        data-testid="assigned-recipients-editor"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
+                  {/* Show allocations if available */}
+                  {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
+                    <RecipientAllocationDisplay
+                      allocations={(request as any).recipientAllocations as RecipientAllocation[]}
+                      className="text-xs"
+                    />
+                  ) : assignedRecipientInfo.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {assignedRecipientInfo.map((item, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
+                          data-testid={`badge-${item.type}-${index}`}
+                        >
+                          {item.icon}
+                          {item.name}
+                        </Badge>
+                      ))}
                     </div>
                   ) : (
-                    <>
-                      {assignedRecipientInfo.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {assignedRecipientInfo.map((item, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
-                              data-testid={`badge-${item.type}-${index}`}
-                            >
-                              {item.icon}
-                              {item.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 italic text-xs">(none)</span>
-                      )}
-                      {canEditOrgDetails && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingField('assignedRecipientIds');
-                            setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
-                            setIsEditingField(true);
-                          }}
-                          className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
-                          title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </>
+                    <span className="text-gray-500 italic text-xs">(none)</span>
+                  )}
+                  {canEditOrgDetails && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowRecipientAllocationDialog(true)}
+                      className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                      title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
                   )}
                 </div>
 
@@ -2967,6 +2953,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Recipient Allocation Editor Dialog */}
+      <RecipientAllocationEditor
+        open={showRecipientAllocationDialog}
+        onOpenChange={setShowRecipientAllocationDialog}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        estimatedSandwichCount={request.estimatedSandwichCount}
+        currentAllocations={(request as any).recipientAllocations as RecipientAllocation[] | null}
+      />
     </Card>
   );
 };

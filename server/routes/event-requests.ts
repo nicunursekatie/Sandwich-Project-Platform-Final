@@ -5,7 +5,10 @@ import {
   insertEventRequestSchema,
   insertOrganizationSchema,
   insertEventVolunteerSchema,
+  importFromSheetsSchema,
   auditLogs,
+  eventRequests,
+  users,
   type EventRequest,
   type User,
 } from '@shared/schema';
@@ -20,7 +23,10 @@ import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
+import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
+import { geocodeAddress } from '../utils/geocoding';
+import { rateLimiter } from '../utils/rate-limiter';
 
 const router = Router();
 
@@ -148,6 +154,411 @@ const processPickupTimeFields = (updates: Partial<EventRequest>, existingData?: 
   return result;
 };
 
+// ============================================================================
+// Google Sheets Import Helper Functions
+// ============================================================================
+
+// Parse staffing column from Google Sheets
+// Format: "D, S, V" (needs) or "D: Katie, S: Kim, V: Christine, VD: Luz" (assigned)
+interface StaffingResult {
+  driversNeeded: number;
+  speakersNeeded: number;
+  volunteersNeeded: number;
+  vanDriverNeeded: boolean;
+  assignedDriverNames: string[];
+  assignedSpeakerNames: string[];
+  assignedVolunteerNames: string[];
+  customVanDriverName: string | null;
+}
+
+const parseStaffingColumn = (staffing: string | undefined): StaffingResult => {
+  const result: StaffingResult = {
+    driversNeeded: 0,
+    speakersNeeded: 0,
+    volunteersNeeded: 0,
+    vanDriverNeeded: false,
+    assignedDriverNames: [],
+    assignedSpeakerNames: [],
+    assignedVolunteerNames: [],
+    customVanDriverName: null,
+  };
+
+  if (!staffing || staffing.trim() === '') return result;
+
+  // Split by comma and process each part
+  const parts = staffing.split(',').map(p => p.trim());
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    // Check if it has an assignment (contains ':')
+    if (part.includes(':')) {
+      const [role, name] = part.split(':').map(s => s.trim());
+      const roleUpper = role.toUpperCase();
+
+      if (roleUpper === 'VD') {
+        result.vanDriverNeeded = true;
+        result.customVanDriverName = name;
+      } else if (roleUpper === 'D') {
+        result.assignedDriverNames.push(name);
+      } else if (roleUpper === 'S') {
+        result.assignedSpeakerNames.push(name);
+      } else if (roleUpper === 'V') {
+        result.assignedVolunteerNames.push(name);
+      }
+    } else {
+      // Just a role letter means it's needed but not filled
+      const roleUpper = part.toUpperCase();
+      if (roleUpper === 'VD') {
+        result.vanDriverNeeded = true;
+      } else if (roleUpper === 'D') {
+        result.driversNeeded = 1;
+      } else if (roleUpper === 'S') {
+        result.speakersNeeded = 1;
+      } else if (roleUpper === 'V') {
+        result.volunteersNeeded = 1;
+      }
+    }
+  }
+
+  return result;
+};
+
+// Parse sandwich types from Google Sheets
+// Input: "Deli", "PBJ", "Deli & PBJ", "Turkey, Ham", etc.
+const parseSandwichTypes = (
+  typesStr: string | undefined,
+  estimatedCount?: number
+): Array<{ type: string; quantity: number }> | null => {
+  if (!typesStr || typesStr.trim() === '') return null;
+
+  const normalizedStr = typesStr.toLowerCase().trim();
+  const types: string[] = [];
+
+  // Handle common formats
+  if (normalizedStr.includes('&')) {
+    // "Deli & PBJ" format
+    types.push(...normalizedStr.split('&').map(t => t.trim()));
+  } else if (normalizedStr.includes(',')) {
+    // "Turkey, Ham" format
+    types.push(...normalizedStr.split(',').map(t => t.trim()));
+  } else if (normalizedStr.includes('/')) {
+    // "Deli/PBJ" format
+    types.push(...normalizedStr.split('/').map(t => t.trim()));
+  } else {
+    // Single type
+    types.push(normalizedStr);
+  }
+
+  // Calculate quantities - split evenly if we have an estimate
+  const count = estimatedCount || 0;
+  const perType = types.length > 0 ? Math.floor(count / types.length) : 0;
+
+  return types.map((type, index) => ({
+    type: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize first letter
+    // Last type gets any remainder
+    quantity: index === types.length - 1 ? count - (perType * (types.length - 1)) : perType,
+  }));
+};
+
+// Parse contact name into first/last name
+const parseContactName = (name: string | undefined): { firstName: string | null; lastName: string | null } => {
+  if (!name || name.trim() === '') {
+    return { firstName: null, lastName: null };
+  }
+
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: null };
+  }
+
+  // First word is first name, rest is last name
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+  };
+};
+
+// Find user ID by name (for TSP contact matching)
+const findUserByName = async (name: string | undefined): Promise<string | null> => {
+  if (!name || name.trim() === '') return null;
+
+  const searchName = name.trim().toLowerCase();
+
+  try {
+    // Get all active users
+    const allUsers = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+      })
+      .from(users)
+      .where(eq(users.isActive, true));
+
+    // Try to find a match
+    for (const user of allUsers) {
+      // Check displayName first
+      if (user.displayName && user.displayName.toLowerCase() === searchName) {
+        return user.id;
+      }
+
+      // Check firstName + lastName combination
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
+      if (fullName === searchName) {
+        return user.id;
+      }
+
+      // Check just firstName (for single name matches like "Katie")
+      if (user.firstName && user.firstName.toLowerCase() === searchName) {
+        return user.id;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    logger.error('Error finding user by name:', error);
+    return null;
+  }
+};
+
+// Match staff names to user IDs
+const matchStaffNamesToUserIds = async (names: string[]): Promise<string[]> => {
+  const userIds: string[] = [];
+
+  for (const name of names) {
+    const userId = await findUserByName(name);
+    if (userId) {
+      userIds.push(userId);
+    } else {
+      // If no match, store the name as-is (the field accepts text)
+      userIds.push(name);
+    }
+  }
+
+  return userIds;
+};
+
+// Combine notes fields into planning notes
+const combineNotesFields = (
+  allDetails?: string,
+  notes?: string,
+  addlNotes?: string,
+  waitingOn?: string
+): string | null => {
+  const parts: string[] = [];
+
+  if (allDetails && allDetails.trim()) {
+    parts.push(allDetails.trim());
+  }
+  if (notes && notes.trim()) {
+    parts.push(`Notes: ${notes.trim()}`);
+  }
+  if (addlNotes && addlNotes.trim()) {
+    parts.push(`Additional Notes: ${addlNotes.trim()}`);
+  }
+  if (waitingOn && waitingOn.trim()) {
+    parts.push(`Waiting On: ${waitingOn.trim()}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n\n') : null;
+};
+
+// API key validation middleware for Google Sheets import
+const validateSheetsApiKey = (req: any, res: any, next: any) => {
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GOOGLE_SHEETS_API_KEY;
+
+  if (!expectedKey) {
+    logger.error('GOOGLE_SHEETS_API_KEY environment variable not set');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  if (!apiKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Invalid or missing API key' });
+  }
+
+  next();
+};
+
+// ============================================================================
+// Google Sheets Import Endpoint
+// ============================================================================
+
+router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
+  try {
+    // Validate incoming data
+    const validationResult = importFromSheetsSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: validationResult.error.errors,
+      });
+    }
+
+    const data = validationResult.data;
+
+    // Parse the date
+    const eventDate = new Date(data.date);
+    if (isNaN(eventDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format. Please use YYYY-MM-DD format.',
+      });
+    }
+
+    // Check for duplicates (same org + same date)
+    const existingEvents = await db
+      .select({ id: eventRequests.id, organizationName: eventRequests.organizationName })
+      .from(eventRequests)
+      .where(
+        and(
+          sql`LOWER(${eventRequests.organizationName}) = LOWER(${data['Group Name']})`,
+          sql`DATE(${eventRequests.scheduledEventDate}) = DATE(${eventDate.toISOString()})`
+        )
+      );
+
+    if (existingEvents.length > 0) {
+      const existing = existingEvents[0];
+      return res.status(409).json({
+        success: false,
+        error: `Event already exists for "${data['Group Name']}" on ${data.date}`,
+        existingEventId: existing.id,
+        link: `/event-requests/${existing.id}`,
+      });
+    }
+
+    // Parse staffing column
+    const staffing = parseStaffingColumn(data['Staffing']);
+
+    // Parse sandwich count
+    const sandwichCountRaw = data['Estimate # sandwiches'];
+    const estimatedSandwichCount = sandwichCountRaw
+      ? typeof sandwichCountRaw === 'number'
+        ? sandwichCountRaw
+        : parseInt(String(sandwichCountRaw).replace(/[^\d]/g, ''), 10) || null
+      : null;
+
+    // Parse sandwich types
+    const sandwichTypes = parseSandwichTypes(data['Deli or PBJ?'], estimatedSandwichCount || undefined);
+
+    // Parse contact name
+    const contactNameParts = parseContactName(data['Contact Name']);
+
+    // Find TSP contact user ID
+    const tspContactUserId = await findUserByName(data['TSP Contact']);
+
+    // Match assigned staff to user IDs
+    const assignedDriverIds = await matchStaffNamesToUserIds(staffing.assignedDriverNames);
+    const assignedSpeakerIds = await matchStaffNamesToUserIds(staffing.assignedSpeakerNames);
+    const assignedVolunteerIds = await matchStaffNamesToUserIds(staffing.assignedVolunteerNames);
+
+    // Combine notes
+    const planningNotes = combineNotesFields(
+      data['ALL DETAILS'],
+      data['Notes'],
+      data["Add'l Notes"],
+      data['Waiting On']
+    );
+
+    // Determine status
+    const isCancelled = data['Cancelled']?.toLowerCase() === 'yes' ||
+                        data['Cancelled']?.toLowerCase() === 'cancelled' ||
+                        data['Cancelled']?.toLowerCase() === 'true';
+    const status = isCancelled ? 'cancelled' : 'scheduled';
+
+    // Parse toolkit sent
+    const toolkitSent = data['Sent toolkit']?.toLowerCase() === 'yes' ||
+                        data['Sent toolkit']?.toLowerCase() === 'true';
+
+    // Generate external ID for duplicate prevention
+    const externalId = `sheets-import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Build the event request data
+    const eventRequestData = {
+      // Required fields
+      organizationName: data['Group Name'],
+      scheduledEventDate: eventDate,
+      status,
+      externalId,
+
+      // Contact info
+      firstName: contactNameParts.firstName,
+      lastName: contactNameParts.lastName,
+      email: data['Email Address'] || null,
+      phone: data['Contact Cell Number'] || null,
+
+      // Event timing
+      eventStartTime: data['Event Start time (MUST when volunteer needed)'] || null,
+      eventEndTime: data['Event end time (MUST when volunteer needed)'] || null,
+      pickupTime: data['Pick up time'] || null,
+
+      // Location
+      eventAddress: data['Address'] || null,
+      deliveryDestination: data['Planned Recipient/Host Home'] || null,
+
+      // Sandwich info
+      estimatedSandwichCount,
+      sandwichTypes: sandwichTypes ? JSON.stringify(sandwichTypes) : null,
+
+      // Staffing needs
+      driversNeeded: staffing.driversNeeded,
+      speakersNeeded: staffing.speakersNeeded,
+      volunteersNeeded: staffing.volunteersNeeded,
+      vanDriverNeeded: staffing.vanDriverNeeded,
+
+      // Staffing assignments
+      assignedDriverIds: assignedDriverIds.length > 0 ? assignedDriverIds : null,
+      assignedSpeakerIds: assignedSpeakerIds.length > 0 ? assignedSpeakerIds : null,
+      assignedVolunteerIds: assignedVolunteerIds.length > 0 ? assignedVolunteerIds : null,
+      customVanDriverName: staffing.customVanDriverName,
+
+      // TSP Contact
+      tspContact: tspContactUserId || data['TSP Contact'] || null,
+
+      // Toolkit
+      toolkitSent,
+      toolkitStatus: toolkitSent ? 'sent' : 'not_sent',
+
+      // Notes
+      planningNotes,
+
+      // Event is confirmed and on calendar since it's coming from the official sheet
+      isConfirmed: true,
+      addedToOfficialSheet: true,
+
+      // Audit
+      createdBy: 'google-sheets-import',
+    };
+
+    // Create the event request
+    const createdEvent = await storage.createEventRequest(eventRequestData as any);
+
+    // Log the import
+    logger.info(`Google Sheets import: Created event request ${createdEvent.id} for "${data['Group Name']}" on ${data.date}`);
+
+    // Emit real-time update to all connected clients
+    emitEventRequestUpdate('event_request_created', createdEvent);
+
+    return res.status(201).json({
+      success: true,
+      eventId: createdEvent.id,
+      message: `Event created successfully for "${data['Group Name']}"`,
+      link: `/event-requests/${createdEvent.id}`,
+    });
+  } catch (error) {
+    logger.error('Google Sheets import error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to import event',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 // Get available drivers for event assignments
 router.get('/drivers/available', isAuthenticated, async (req, res) => {
   try {
@@ -157,9 +568,9 @@ router.get('/drivers/available', isAuthenticated, async (req, res) => {
 
     const drivers = await storage.getAllDrivers();
 
-    // Only return active drivers with essential info
+    // Only return active drivers who are not busy or off-duty
     const availableDrivers = drivers
-      .filter((driver) => driver.isActive)
+      .filter((driver) => driver.isActive && driver.availability !== 'busy' && driver.availability !== 'off-duty')
       .map((driver) => ({
         id: driver.id,
         name: driver.name,
@@ -638,6 +1049,54 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
   }
 });
 
+// Diagnostic endpoint to check if event exists in database
+// This bypasses the storage wrapper to directly query the database
+router.get(
+  '/:id(\\d+)/diagnose',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      logger.info(`[DIAGNOSE] Checking event ${id}`);
+
+      // Method 1: Storage wrapper (normal method)
+      const storageResult = await storage.getEventRequest(id);
+
+      // Method 2: Direct database query
+      const { db } = await import('../db');
+      const { eventRequests } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const [directResult] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+
+      const diagnosis = {
+        requestedId: id,
+        storageFound: !!storageResult,
+        directDbFound: !!directResult,
+        storageSummary: storageResult ? {
+          id: storageResult.id,
+          organizationName: storageResult.organizationName,
+          status: storageResult.status,
+          deletedAt: storageResult.deletedAt,
+        } : null,
+        directDbSummary: directResult ? {
+          id: directResult.id,
+          organizationName: directResult.organizationName,
+          status: directResult.status,
+          deletedAt: directResult.deletedAt,
+        } : null,
+        mismatch: !!storageResult !== !!directResult,
+      };
+
+      logger.info(`[DIAGNOSE] Results:`, JSON.stringify(diagnosis, null, 2));
+      res.json(diagnosis);
+    } catch (error) {
+      logger.error('[DIAGNOSE] Error:', error);
+      res.status(500).json({ error: String(error) });
+    }
+  }
+);
+
 // Get single event request
 router.get(
   '/:id(\\d+)',
@@ -714,6 +1173,23 @@ router.post(
         duplicateCheckDate: new Date(),
         createdBy: user?.id || 1,
       });
+
+      // Geocode address asynchronously (don't block response)
+      if (validatedData.eventAddress) {
+        geocodeAddress(validatedData.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(newEventRequest.id!, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
+          });
+      }
 
       // Enhanced audit logging for create operation
       await AuditLogger.logEventRequestChange(
@@ -841,6 +1317,23 @@ router.patch(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (validatedData.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(validatedData.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
       }
 
       // Enhanced audit logging for contact completion
@@ -1166,6 +1659,23 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(processedUpdates.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
+      }
+
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
       // Enhanced audit logging for event details update
@@ -1281,14 +1791,33 @@ router.patch(
       }
 
       // Get original data for audit logging
+      logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);
       const originalEvent = await storage.getEventRequestById(id);
+      logger.info(`[PATCH /:id] Storage returned:`, originalEvent ? `Event found (${originalEvent.organizationName})` : 'null/undefined');
+
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);
         logger.error(`[PATCH /:id] Attempted update fields:`, Object.keys(updates).join(', '));
         logger.error(`[PATCH /:id] User: ${req.user?.id} (${req.user?.email})`);
         logger.error(`[PATCH /:id] Request body preview:`, JSON.stringify(updates).substring(0, 200));
-        
-        return res.status(404).json({ 
+
+        // Try direct database check to see if event exists but is soft-deleted
+        try {
+          const { db } = await import('../db');
+          const { eventRequests } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          const [directCheck] = await db.select().from(eventRequests).where(eq(eventRequests.id, id));
+          if (directCheck) {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} EXISTS in DB but storage returned null!`);
+            logger.error(`[PATCH /:id] DIAGNOSTIC: deletedAt = ${directCheck.deletedAt}, status = ${directCheck.status}`);
+          } else {
+            logger.error(`[PATCH /:id] DIAGNOSTIC: Event ${id} truly does NOT exist in database`);
+          }
+        } catch (diagError) {
+          logger.error(`[PATCH /:id] DIAGNOSTIC check failed:`, diagError);
+        }
+
+        return res.status(404).json({
           message: 'Event request not found',
           eventId: id,
           error: 'EVENT_NOT_FOUND',
@@ -1392,7 +1921,11 @@ router.patch(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const hasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const usesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const hasAssignedVanDriver = usesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const totalAssignedDrivers = assignedRegularDrivers + (hasAssignedVanDriver ? 1 : 0);
@@ -1709,6 +2242,7 @@ router.put(
         'hasRefrigeration',
         'volunteersNeeded',
         'vanDriverNeeded',
+        'isDhlVan',
         'isConfirmed',
         'addedToOfficialSheet',
       ];
@@ -1722,6 +2256,16 @@ router.put(
           logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
         }
       });
+
+      // Keep van-related flags in sync when transport changes
+      if (processedUpdates.selfTransport === true) {
+        processedUpdates.vanDriverNeeded = false;
+        processedUpdates.assignedVanDriverId = null;
+        processedUpdates.isDhlVan = false;
+      }
+      if (processedUpdates.vanDriverNeeded === false) {
+        processedUpdates.isDhlVan = false;
+      }
 
       // Process comprehensive scheduling data if status is scheduled
       if (processedUpdates.status === 'scheduled') {
@@ -1781,7 +2325,11 @@ router.put(
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
       
-      const putHasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+      const putUsesDhlVan = processedUpdates.isDhlVan !== undefined
+        ? processedUpdates.isDhlVan === true
+        : (originalEvent as any).isDhlVan === true;
+      const putHasAssignedVanDriver = putUsesDhlVan
+        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
         || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
       
       const putTotalAssignedDrivers = putAssignedRegularDrivers + (putHasAssignedVanDriver ? 1 : 0);
@@ -1794,7 +2342,7 @@ router.put(
       }
       
       // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
-      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
+      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined || processedUpdates.isDhlVan !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
         
         if (putTotalAssignedDrivers > currentDriversNeeded) {
@@ -1832,6 +2380,23 @@ router.put(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Geocode address asynchronously if it was updated and doesn't have coordinates
+      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
+        geocodeAddress(processedUpdates.eventAddress)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(id, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${id}:`, error);
+          });
       }
 
       // Determine action type based on changes
@@ -2457,6 +3022,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     const eventId = parseInt(req.params.id);
     const {
       assignedDriverIds,
+      tentativeDriverIds,
       driverPickupTime,
       driverNotes,
       driversArranged,
@@ -2465,6 +3031,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       assignedVanDriverId,
       customVanDriverName,
       vanDriverNotes,
+      isDhlVan,
     } = req.body;
 
     // Validate that the event exists first
@@ -2476,6 +3043,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     // Update the event with driver assignments
     const updateData: Partial<EventRequest> = {
       assignedDriverIds: assignedDriverIds || [],
+      tentativeDriverIds: tentativeDriverIds !== undefined ? (tentativeDriverIds || []) : undefined,
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
       driversArranged:
@@ -2483,6 +3051,11 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
           ? driversArranged
           : assignedDriverIds && assignedDriverIds.length > 0,
     };
+
+    // Only include tentativeDriverIds if it was actually provided in the request
+    if (tentativeDriverIds === undefined) {
+      delete updateData.tentativeDriverIds;
+    }
 
     // Add van driver fields if provided
     if (vanDriverNeeded !== undefined)
@@ -2493,12 +3066,23 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.customVanDriverName = customVanDriverName;
     if (vanDriverNotes !== undefined)
       updateData.vanDriverNotes = vanDriverNotes;
+    if (isDhlVan !== undefined)
+      updateData.isDhlVan = !!isDhlVan;
+    if (vanDriverNeeded === false) {
+      updateData.isDhlVan = false;
+      if (assignedVanDriverId === undefined) {
+        updateData.assignedVanDriverId = null;
+      }
+    }
 
     // Validate and auto-adjust driversNeeded based on assignments
     const regularDriverCount = Array.isArray(assignedDriverIds) ? assignedDriverIds.length : 0;
     
     // Check if van driver is assigned (either being set now or already exists)
-    const hasVanDriver = (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
+    const dhlVan =
+      isDhlVan !== undefined ? !!isDhlVan : (existingEvent as any).isDhlVan === true;
+    const hasVanDriver = dhlVan ||
+      (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
       || (assignedVanDriverId === undefined && existingEvent.assignedVanDriverId !== null && existingEvent.assignedVanDriverId !== '');
     
     const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);
@@ -3731,7 +4315,7 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
 router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
-    const { assignedRecipientIds } = req.body;
+    const { assignedRecipientIds, recipientAllocations } = req.body;
 
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: 'Valid event ID required' });
@@ -3749,11 +4333,23 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
-    // Update the event with recipient assignment
-    const updatedEventRequest = await storage.updateEventRequest(eventId, {
-      assignedRecipientIds: assignedRecipientIds || [],
+    // Build update data
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
-    });
+    };
+
+    // Update assignedRecipientIds if provided
+    if (assignedRecipientIds !== undefined) {
+      updateData.assignedRecipientIds = assignedRecipientIds || [];
+    }
+
+    // Update recipientAllocations if provided
+    if (recipientAllocations !== undefined) {
+      updateData.recipientAllocations = recipientAllocations || [];
+    }
+
+    // Update the event with recipient assignment
+    const updatedEventRequest = await storage.updateEventRequest(eventId, updateData);
 
     if (!updatedEventRequest) {
       return res.status(404).json({ error: 'Failed to update event request' });
@@ -3764,7 +4360,7 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
       res,
       'EVENT_REQUESTS_EDIT',
       `Updated recipient assignments for event request: ${eventId}`,
-      { recipientIds: assignedRecipientIds }
+      { recipientIds: assignedRecipientIds, recipientAllocations }
     );
 
     res.json(updatedEventRequest);

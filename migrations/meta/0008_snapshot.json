@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
   "id": "30ecefa2-ad5b-4835-a5d5-6fd798dcae82",
-=======
-  "id": "7f1a59ed-4a1b-46d2-9dd1-a2abea4b1831",
->>>>>>> f8c7dcf5a22e06570f9edbb9a8984c9f66942776
   "prevId": "2f543eed-2710-423b-9c7e-cc683ec8e725",
   "version": "7",
   "dialect": "postgresql",
@@ -3049,32 +3045,15 @@
           "notNull": true,
           "default": false
         },
-<<<<<<< HEAD
         "latitude": {
           "name": "latitude",
           "type": "text",
-=======
-        "willing_to_speak": {
-          "name": "willing_to_speak",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "latitude": {
-          "name": "latitude",
-          "type": "numeric",
->>>>>>> f8c7dcf5a22e06570f9edbb9a8984c9f66942776
           "primaryKey": false,
           "notNull": false
         },
         "longitude": {
           "name": "longitude",
-<<<<<<< HEAD
           "type": "text",
-=======
-          "type": "numeric",
->>>>>>> f8c7dcf5a22e06570f9edbb9a8984c9f66942776
           "primaryKey": false,
           "notNull": false
         },

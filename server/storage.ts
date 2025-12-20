@@ -134,7 +134,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
-  setUserPassword(id: string, password: string): Promise<void>;
+  setUserPassword(id: string, password: string): Promise<boolean>;
   findUserByPhoneNumber(phoneNumber: string): Promise<User | undefined>;
   getUsersByNameOrEmail(searchTerms: string[]): Promise<User[]>;
 
@@ -172,6 +172,22 @@ export interface IStorage {
   updateTaskStatus(id: number, status: string): Promise<boolean>;
   deleteProjectTask(id: number): Promise<boolean>;
   getProjectCongratulations(projectId: number): Promise<any[]>;
+
+  // Subtasks
+  getSubtasks(parentTaskId: number): Promise<ProjectTask[]>;
+  createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask>;
+  promoteTaskToTodo(taskId: number): Promise<ProjectTask>;
+  demoteTaskFromTodo(taskId: number): Promise<ProjectTask>;
+  getTasksPromotedToTodo(): Promise<ProjectTask[]>;
 
   // Task Completions
   createTaskCompletion(
@@ -633,12 +649,14 @@ export interface IStorage {
 
   // Event Collaboration Comments
   getEventCollaborationComments(eventRequestId: number): Promise<EventCollaborationComment[]>;
+  getBulkEventCollaborationComments(eventRequestIds: number[]): Promise<Map<number, EventCollaborationComment[]>>;
   createEventCollaborationComment(data: InsertEventCollaborationComment): Promise<EventCollaborationComment>;
   updateEventCollaborationComment(id: number, content: string, userId: string): Promise<EventCollaborationComment | undefined>;
   deleteEventCollaborationComment(id: number, userId: string): Promise<boolean>;
 
   // Event Field Locks
   getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]>;
+  getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>>;
   createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock>;
   releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string): Promise<boolean>;
   deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean>;
@@ -1042,7 +1060,7 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  async setUserPassword(id: string, password: string): Promise<void> {
+  async setUserPassword(id: string, password: string): Promise<boolean> {
     const user = await this.getUser(id);
     if (user) {
       const updated: User = {
@@ -1051,7 +1069,9 @@ export class MemStorage implements IStorage {
         updatedAt: new Date(),
       };
       this.users.set(id, updated);
+      return true;
     }
+    return false;
   }
 
   async deleteUser(id: string): Promise<boolean> {
@@ -1258,6 +1278,86 @@ export class MemStorage implements IStorage {
   async removeTaskCompletion(taskId: number, userId: string): Promise<boolean> {
     // For fallback storage, always return true
     return true;
+  }
+
+  // Subtask methods (for fallback storage)
+  async getSubtasks(parentTaskId: number): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter((task) => task.parentTaskId === parentTaskId)
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+  }
+
+  async createSubtask(data: {
+    parentTaskId: number;
+    projectId: number | null;
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeIds?: string[];
+    assigneeNames?: string[];
+  }): Promise<ProjectTask> {
+    const id = this.currentIds.projectTask++;
+    const subtask: ProjectTask = {
+      id,
+      projectId: data.projectId,
+      parentTaskId: data.parentTaskId,
+      title: data.title,
+      description: data.description || null,
+      status: 'pending',
+      priority: data.priority || 'medium',
+      assigneeId: null,
+      assigneeName: null,
+      assigneeIds: data.assigneeIds || null,
+      assigneeNames: data.assigneeNames || null,
+      dueDate: data.dueDate || null,
+      completedAt: null,
+      attachments: null,
+      order: 0,
+      orderNum: 0,
+      completedBy: null,
+      completedByName: null,
+      originType: 'manual',
+      sourceNoteId: null,
+      sourceMeetingId: null,
+      sourceTeamBoardId: null,
+      selectedForAgenda: false,
+      promotedToTodo: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(id, subtask);
+    return subtask;
+  }
+
+  async promoteTaskToTodo(taskId: number): Promise<ProjectTask> {
+    const task = this.projectTasks.get(taskId);
+    if (!task) throw new Error('Task not found');
+    task.promotedToTodo = true;
+    task.updatedAt = new Date();
+    this.projectTasks.set(taskId, task);
+    return task;
+  }
+
+  async demoteTaskFromTodo(taskId: number): Promise<ProjectTask> {
+    const task = this.projectTasks.get(taskId);
+    if (!task) throw new Error('Task not found');
+    task.promotedToTodo = false;
+    task.updatedAt = new Date();
+    this.projectTasks.set(taskId, task);
+    return task;
+  }
+
+  async getTasksPromotedToTodo(): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter((task) => task.promotedToTodo === true)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
   }
 
   // Project Comment methods
@@ -3402,6 +3502,74 @@ export class MemStorage implements IStorage {
     }
 
     return deletedCount;
+  }
+
+  // Availability Slots (stub implementations for MemStorage fallback)
+  private availabilitySlots = new Map<number, AvailabilitySlot>();
+  private currentAvailabilitySlotId = 1;
+
+  async getAllAvailabilitySlots(): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values());
+  }
+
+  async getAvailabilitySlotById(id: number): Promise<AvailabilitySlot | undefined> {
+    return this.availabilitySlots.get(id);
+  }
+
+  async getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values()).filter(
+      (slot) => slot.userId === userId
+    );
+  }
+
+  async getAvailabilitySlotsByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<AvailabilitySlot[]> {
+    return Array.from(this.availabilitySlots.values()).filter(
+      (slot) =>
+        new Date(slot.startAt) <= endDate && new Date(slot.endAt) >= startDate
+    );
+  }
+
+  async createAvailabilitySlot(
+    slot: InsertAvailabilitySlot
+  ): Promise<AvailabilitySlot> {
+    const id = this.currentAvailabilitySlotId++;
+    const now = new Date();
+    const newSlot: AvailabilitySlot = {
+      id,
+      userId: slot.userId,
+      type: slot.type,
+      startAt: slot.startAt,
+      endAt: slot.endAt,
+      notes: slot.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.availabilitySlots.set(id, newSlot);
+    return newSlot;
+  }
+
+  async updateAvailabilitySlot(
+    id: number,
+    updates: Partial<InsertAvailabilitySlot>
+  ): Promise<AvailabilitySlot> {
+    const existing = this.availabilitySlots.get(id);
+    if (!existing) {
+      throw new Error(`Availability slot ${id} not found`);
+    }
+    const updated: AvailabilitySlot = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.availabilitySlots.set(id, updated);
+    return updated;
+  }
+
+  async deleteAvailabilitySlot(id: number): Promise<void> {
+    this.availabilitySlots.delete(id);
   }
 }
 

@@ -60,7 +60,8 @@ interface NewRequestCardProps {
   request: EventRequest;
   onEdit: () => void;
   onDelete: () => void;
-  onCall: () => void;
+  onCall?: () => void;
+  onIntakeCall?: () => void;
   onContact: () => void;
   onToolkit: () => void;
   onScheduleCall: () => void;
@@ -260,6 +261,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            {/* Partner Organizations */}
+            {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
+              <div className="text-sm text-gray-600 mt-1">
+                <span className="font-medium">Partner:</span>{' '}
+                {request.partnerOrganizations.map((partner, index) => (
+                  <span key={index}>
+                    {partner.name}
+                    {partner.department && ` • ${partner.department}`}
+                    {index < request.partnerOrganizations.length - 1 && ', '}
+                  </span>
+                ))}
+              </div>
+            )}
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
               onClick={handleConfirmToggleClick}
@@ -429,16 +443,31 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
         <div className="flex flex-col gap-2 flex-shrink-0">
-          {request.phone && onCall && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onCall}
-              className="text-sm h-8"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Call
-            </Button>
+          {request.phone && (
+            <>
+              {onIntakeCall && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={onIntakeCall}
+                  className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Intake Call
+                </Button>
+              )}
+              {onCall && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCall}
+                  className="text-sm h-8"
+                >
+                  <Phone className="w-4 h-4 mr-1" />
+                  Call
+                </Button>
+              )}
+            </>
           )}
           {onContact && (
             <Button
@@ -504,6 +533,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onEdit,
   onDelete,
   onCall,
+  onIntakeCall,
   onContact,
   onToolkit,
   onScheduleCall,
@@ -609,6 +639,19 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           currentUserId={user?.id}
           datePopulationInfo={datePopulationInfo}
         />
+
+        {/* Next Action - Prominent display for intake tracking */}
+        {request.nextAction && (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">

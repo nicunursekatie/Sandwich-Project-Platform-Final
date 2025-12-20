@@ -15,12 +15,18 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ScrollToTop } from '@/components/ScrollToTop';
 import { ChatWindowsProvider } from '@/context/chat-windows-context';
 import { FloatingChatWindowsContainer } from '@/components/chat/floating-chat-windows-container';
+import { InstantMessagingProvider } from '@/contexts/instant-messaging-context';
+import { InstantMessageContainer } from '@/components/instant-message-container';
+import { ReviewerProvider } from '@/contexts/reviewer-context';
+import { ReviewerBlockedModal } from '@/components/reviewer-blocked-modal';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
 import LoginPage from '@/pages/login';
+import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
+import SetPassword from '@/pages/set-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
@@ -124,13 +130,16 @@ function Router() {
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
+  const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
     return (
       <Switch>
         <Route path="/signup" component={SignupPage} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/set-password" component={SetPassword} />
         <Route path="/sms-opt-in">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <SMSOptIn />
@@ -274,6 +283,11 @@ function Router() {
                 <MobileCollectionEntry />
               </Suspense>
             </Route>
+            <Route path="/photo-scanner">
+              <Suspense fallback={<MobileLoader />}>
+                <PhotoScanner />
+              </Suspense>
+            </Route>
             <Route path="/collections/:id">
               <Suspense fallback={<MobileLoader />}>
                 <MobileCollectionDetail />
@@ -376,6 +390,11 @@ function Router() {
         <Route path="/collections">
           {() => <Dashboard initialSection="collections" />}
         </Route>
+        <Route path="/photo-scanner">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <PhotoScanner />
+          </Suspense>
+        </Route>
         <Route path="/google-sheets">
           {() => <Dashboard initialSection="google-sheets" />}
         </Route>
@@ -400,6 +419,9 @@ function Router() {
         <Route path="/quick-sms-links">
           {() => <Dashboard initialSection="quick-sms-links" />}
         </Route>
+        <Route path="/directory">
+          {() => <Dashboard initialSection="directory" />}
+        </Route>
         <Route path="/cooler-tracking">
           {() => <Dashboard initialSection="cooler-tracking" />}
         </Route>
@@ -411,6 +433,9 @@ function Router() {
         </Route>
         <Route path="/event-map">
           {() => <Dashboard initialSection="event-map" />}
+        </Route>
+        <Route path="/recipient-map">
+          {() => <Dashboard initialSection="recipient-map" />}
         </Route>
         <Route path="/driver-planning">
           {() => <Dashboard initialSection="driver-planning" />}
@@ -460,6 +485,13 @@ function Router() {
             <SMSEvents />
           </Suspense>
         </Route>
+        <Route path="/login">
+          {() => {
+            // Authenticated users at /login should go to home
+            window.location.href = '/';
+            return <LoadingState text="Redirecting..." size="lg" className="min-h-screen" />;
+          }}
+        </Route>
         <Route path="/profile">
           {() => <Dashboard initialSection="profile" />}
         </Route>
@@ -493,13 +525,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ChatWindowsProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <FloatingChatWindowsContainer />
-          </TooltipProvider>
-        </ChatWindowsProvider>
+        <ReviewerProvider>
+          <ChatWindowsProvider>
+            <InstantMessagingProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <FloatingChatWindowsContainer />
+                <InstantMessageContainer />
+                <ReviewerBlockedModal />
+              </TooltipProvider>
+            </InstantMessagingProvider>
+          </ChatWindowsProvider>
+        </ReviewerProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

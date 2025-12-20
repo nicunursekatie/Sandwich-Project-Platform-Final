@@ -249,7 +249,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               const driversAssigned = request.assignedDriverIds?.length || 0;
               const speakersAssigned = request.assignedSpeakerIds?.length || 0;
               const volunteersAssigned = request.assignedVolunteerIds?.length || 0;
-              const vanDriversAssigned = request.assignedVanDriverId ? 1 : 0;
+              const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
 
               week.totalDriversNeeded += driversNeeded;
               week.totalSpeakersNeeded += speakersNeeded;
@@ -320,7 +320,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
         const driversAssigned = request.assignedDriverIds?.length || 0;
         const speakersAssigned = request.assignedSpeakerIds?.length || 0;
         const volunteersAssigned = request.assignedVolunteerIds?.length || 0;
-        const vanDriversAssigned = request.assignedVanDriverId ? 1 : 0;
+        const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
 
         week.totalDriversNeeded += driversNeeded;
         week.totalSpeakersNeeded += speakersNeeded;
@@ -539,7 +539,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                     const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
                     const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
                     const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
-                    const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                    const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
                     const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
                     return totalUnfulfilled > 0;
                   });
@@ -567,7 +567,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                       const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
                       const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
                       const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
-                      const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                      const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
                       const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
 
                   // Get sandwich count

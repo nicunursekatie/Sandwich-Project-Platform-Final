@@ -14,6 +14,7 @@ export interface NavItem {
   isSubItem?: boolean; // Flag to indicate this is a sub-item
   highlighted?: boolean; // Flag to highlight important menu items with special color
   topNav?: boolean; // Flag to indicate this item should appear in top nav instead of sidebar
+  navigateAndExpand?: boolean; // Flag to indicate this parent item should navigate AND expand (not just expand)
 }
 
 export interface NavigationGroup {

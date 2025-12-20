@@ -148,13 +148,12 @@ export default function SimpleNav({
 
     const getGroupLabel = (group: string) => {
       const labels = {
+        'quick-links': 'QUICK LINKS',
+        workspace: 'MY WORKSPACE',
+        logistics: 'LOGISTICS',
+        network: 'NETWORK',
         operations: 'OPERATIONS',
-        'event-planning': 'EVENT PLANNING',
-        'strategic-planning': 'STRATEGIC PLANNING',
-        analytics: 'ANALYTICS & REPORTS',
-        communication: 'COMMUNICATION',
-        documentation: 'DOCUMENTATION',
-        admin: 'ADMIN',
+        admin: 'ADMIN & RESOURCES',
       };
       return labels[group as keyof typeof labels] || group.toUpperCase();
     };
@@ -256,12 +255,17 @@ export default function SimpleNav({
                 e.stopPropagation();
                 logger.log('Navigation click:', item.href);
 
-                // If item has children, toggle expansion first
+                // If item has children, toggle expansion
                 if (hasChildren) {
                   toggleParent(item.id);
+
+                  // If item has navigateAndExpand flag, also navigate (don't return early)
+                  if (!item.navigateAndExpand) {
+                    return; // Stop here - don't navigate for regular parent items
+                  }
                 }
 
-                // Then handle navigation
+                // Handle navigation for items WITHOUT children, or items with navigateAndExpand
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

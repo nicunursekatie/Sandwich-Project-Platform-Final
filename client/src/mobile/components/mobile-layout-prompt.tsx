@@ -53,10 +53,24 @@ function dismissPrompt(): void {
 }
 
 /**
- * Mobile layout prompt - shows on desktop routes for mobile users
- * Asks if they want to switch to mobile layout
+ * Mobile layout prompt - DISABLED
+ * The mobile-specific layout has been deprecated in favor of the responsive desktop dashboard.
+ * This component now returns null to prevent redirection to /m routes.
  */
 export function MobileLayoutPrompt() {
+  // Clear any existing mobile preference to ensure users stay on desktop layout
+  useEffect(() => {
+    const preference = getMobilePreference();
+    if (preference === 'mobile') {
+      // Clear the preference so they don't get redirected
+      localStorage.removeItem(MOBILE_PREFERENCE_KEY);
+    }
+  }, []);
+
+  // Always return null - mobile layout is disabled
+  return null;
+
+  /* ORIGINAL CODE DISABLED - kept for reference
   const [location, navigate] = useLocation();
   const [showPrompt, setShowPrompt] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -68,22 +82,22 @@ export function MobileLayoutPrompt() {
       return;
     }
 
-    // Check if on mobile device
-    if (!isMobileDevice()) {
-      setShowPrompt(false);
+    // Check preference first - if manually set to mobile, redirect regardless of detection
+    const preference = getMobilePreference();
+    if (preference === 'mobile') {
+      navigate('/m');
       return;
     }
 
-    // Check preference
-    const preference = getMobilePreference();
+    // If preference is desktop, don't show prompt
     if (preference === 'desktop') {
       setShowPrompt(false);
       return;
     }
 
-    // Auto-redirect if preference is mobile
-    if (preference === 'mobile') {
-      navigate('/m');
+    // Check if on mobile device (only show prompt if auto-detected as mobile)
+    if (!isMobileDevice()) {
+      setShowPrompt(false);
       return;
     }
 
@@ -101,6 +115,7 @@ export function MobileLayoutPrompt() {
 
     return () => clearTimeout(timer);
   }, [location, navigate]);
+  */
 
   const handleUseMobile = () => {
     setMobilePreference('mobile');

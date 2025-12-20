@@ -369,6 +369,51 @@ router.get(
   }
 );
 
+// POST /api/recipients/:id/geocode - Geocode a single recipient's address
+router.post(
+  '/:id/geocode',
+  requirePermission(PERMISSIONS.RECIPIENTS_EDIT),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid recipient ID' });
+      }
+
+      const recipient = await storage.getRecipient(id);
+      if (!recipient) {
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
+
+      if (!recipient.address) {
+        return res.status(400).json({ error: 'Recipient has no address to geocode' });
+      }
+
+      const coords = await geocodeAddress(recipient.address);
+      if (!coords) {
+        return res.status(400).json({ error: 'Failed to geocode address. The address may be incomplete or not recognized.' });
+      }
+
+      await storage.updateRecipient(id, {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        geocodedAt: new Date(),
+      });
+
+      logger.log(`✅ Geocoded recipient ${id}: ${recipient.address}`);
+
+      res.json({
+        success: true,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+    } catch (error) {
+      logger.error('Error geocoding recipient:', error);
+      res.status(500).json({ error: 'Failed to geocode recipient' });
+    }
+  }
+);
+
 // POST /api/recipients - Create new recipient
 router.post(
   '/',

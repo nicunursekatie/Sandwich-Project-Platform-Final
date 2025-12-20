@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -51,7 +51,14 @@ interface EventForPlanning {
   location?: string;
   address?: string;
   driversNeeded: number;
-  assignedDriverIds?: number[];
+  tspContactAssigned?: string | null;
+  tspContact?: string | null;
+  customTspContact?: string | null;
+  assignedRecipientIds?: string[] | null;
+  assignedVanDriverId?: string | null;
+  isDhlVan?: boolean | null;
+  selfTransport?: boolean | null;
+  assignedDriverIds?: Array<string | number>;
   estimatedSandwichCount?: number;
   status?: string;
   hostName?: string;
@@ -97,11 +104,63 @@ export function MobileDriverPlanning() {
     staleTime: 300000,
   });
 
+  // Fetch basic users to resolve assigned staff/driver user IDs to names
+  const { data: usersBasic = [] } = useQuery<Array<{ id: string; displayName?: string; firstName?: string; lastName?: string; email?: string }>>({
+    queryKey: ['/api/users/basic'],
+    staleTime: 300000,
+  });
+
+  const usersById = new Map(usersBasic.map((u) => [
+    u.id,
+    (u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.id || '').trim()
+  ]));
+
+  const extractCustomName = (id: string): string => {
+    if (!id || typeof id !== 'string') return '';
+    if (id.startsWith('custom-')) {
+      const parts = id.split('-');
+      if (parts.length >= 3) return parts.slice(2).join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
+      return 'Custom Volunteer';
+    }
+    if (id.startsWith('custom:')) return id.replace('custom:', '').trim();
+    return '';
+  };
+
+  const resolvePersonName = (id: string): string => {
+    const custom = extractCustomName(id);
+    if (custom) return custom;
+    return usersById.get(id) || id;
+  };
+
+  const getAssignedStaffLabel = (event: EventForPlanning): string | null => {
+    const parts = [event.tspContactAssigned, event.tspContact, event.customTspContact]
+      .map((v) => (v || '').trim())
+      .filter(Boolean);
+    if (parts.length === 0) return null;
+    return Array.from(new Set(parts.map(resolvePersonName))).join(' • ');
+  };
+
   // Helper to get event date
   const getEventDate = (event: EventForPlanning): Date | null => {
     const dateStr = event.scheduledEventDate || event.desiredEventDate;
     if (!dateStr) return null;
     return parseLocalDate(dateStr);
+  };
+
+  // Helper to calculate total drivers assigned (including van drivers)
+  // Van driver and DHL van both count toward the total driver requirement
+  const getTotalDriversAssigned = (event: EventForPlanning): number => {
+    return (event.assignedDriverIds?.length || 0) +
+           (event.assignedVanDriverId ? 1 : 0) +
+           (event.isDhlVan ? 1 : 0);
+  };
+
+  // Helper to check if event needs drivers
+  const eventNeedsDrivers = (event: EventForPlanning): boolean => {
+    if (event.selfTransport) return false;
+    const needed = event.driversNeeded || 0;
+    if (needed === 0) return false;
+    return getTotalDriversAssigned(event) < needed;
   };
 
   // Filter events
@@ -138,8 +197,9 @@ export function MobileDriverPlanning() {
       const bDate = getEventDate(b);
       const dateCompare = (aDate?.getTime() || 0) - (bDate?.getTime() || 0);
       if (dateCompare !== 0) return dateCompare;
-      const aNeedsDrivers = (a.driversNeeded || 0) > (a.assignedDriverIds?.length || 0);
-      const bNeedsDrivers = (b.driversNeeded || 0) > (b.assignedDriverIds?.length || 0);
+      // Use helper that properly counts van drivers
+      const aNeedsDrivers = eventNeedsDrivers(a);
+      const bNeedsDrivers = eventNeedsDrivers(b);
       if (aNeedsDrivers && !bNeedsDrivers) return -1;
       if (!aNeedsDrivers && bNeedsDrivers) return 1;
       return 0;
@@ -147,6 +207,26 @@ export function MobileDriverPlanning() {
 
   // Get driver info by ID
   const getDriver = (id: number) => drivers.find((d) => d.id === id);
+
+  const resolveAssignedDriverLabel = (rawId: string | number): string => {
+    const idStr = String(rawId).trim();
+    if (!idStr) return '';
+
+    const custom = extractCustomName(idStr);
+    if (custom) return custom;
+
+    const userName = usersById.get(idStr);
+    if (userName) return userName;
+
+    // Allow formats like "driver-12"
+    const numericTail = idStr.includes('-') ? idStr.split('-').pop() : idStr;
+    if (numericTail && /^\d+$/.test(numericTail)) {
+      const driver = getDriver(Number(numericTail));
+      if (driver?.name) return driver.name;
+    }
+
+    return idStr;
+  };
 
   // Copy SMS message to clipboard
   const copySMSMessage = (event: EventForPlanning, driver?: Driver) => {
@@ -177,9 +257,8 @@ export function MobileDriverPlanning() {
     window.location.href = smsUrl;
   };
 
-  const needsDriversCount = filteredEvents.filter(
-    (e) => (e.driversNeeded || 0) > (e.assignedDriverIds?.length || 0)
-  ).length;
+  // Use helper that properly counts van drivers toward driver requirement
+  const needsDriversCount = filteredEvents.filter(eventNeedsDrivers).length;
 
   return (
     <MobileShell title="Driver Planning" showBack showNav>
@@ -267,10 +346,12 @@ export function MobileDriverPlanning() {
               </div>
             ) : (
               filteredEvents.map((event) => {
-                const assignedCount = event.assignedDriverIds?.length || 0;
+                // Use helpers that properly count van drivers toward total
+                const totalAssigned = getTotalDriversAssigned(event);
                 const needed = event.driversNeeded || 0;
-                const needsDrivers = needed > assignedCount;
-                const isFull = assignedCount >= needed && needed > 0;
+                const needsDrivers = eventNeedsDrivers(event);
+                const isFull = totalAssigned >= needed && needed > 0;
+                const driversShort = Math.max(0, needed - totalAssigned);
 
                 return (
                   <div
@@ -278,7 +359,9 @@ export function MobileDriverPlanning() {
                     className={cn(
                       "bg-white dark:bg-slate-800 rounded-xl shadow-sm",
                       "border",
-                      needsDrivers
+                      event.selfTransport
+                        ? "border-slate-200 dark:border-slate-700"
+                        : needsDrivers
                         ? "border-amber-300 dark:border-amber-700"
                         : isFull
                         ? "border-green-300 dark:border-green-700"
@@ -296,9 +379,13 @@ export function MobileDriverPlanning() {
                           {getEventDate(event) ? format(getEventDate(event)!, 'EEE, MMM d') : 'No date'}
                           {event.eventStartTime && ` at ${event.eventStartTime}`}
                         </span>
-                        {needsDrivers ? (
+                        {event.selfTransport ? (
+                          <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">
+                            Self-transport
+                          </span>
+                        ) : needsDrivers ? (
                           <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                            Needs {needed - assignedCount} driver{needed - assignedCount > 1 ? 's' : ''}
+                            Needs {driversShort} driver{driversShort > 1 ? 's' : ''}
                           </span>
                         ) : isFull ? (
                           <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
@@ -330,7 +417,12 @@ export function MobileDriverPlanning() {
                         <span className={cn(
                           needsDrivers ? "text-amber-600 dark:text-amber-400 font-medium" : "text-slate-500 dark:text-slate-400"
                         )}>
-                          {assignedCount}/{needed} drivers
+                          {totalAssigned}/{needed} drivers
+                          {event.isDhlVan
+                            ? ' (incl. DHL)'
+                            : event.assignedVanDriverId
+                              ? ' (incl. van)'
+                              : ''}
                         </span>
                       </div>
                     </button>
@@ -338,6 +430,26 @@ export function MobileDriverPlanning() {
                     {/* Expanded details */}
                     {selectedEvent?.id === event.id && (
                       <div className="px-4 pb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        {/* Assigned staff */}
+                        {getAssignedStaffLabel(event) && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ASSIGNED STAFF</p>
+                            <p className="text-sm text-slate-900 dark:text-slate-100">
+                              {getAssignedStaffLabel(event)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Designated recipient */}
+                        {Array.isArray(event.assignedRecipientIds) && event.assignedRecipientIds.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RECIPIENT</p>
+                            <p className="text-sm text-slate-900 dark:text-slate-100">
+                              {event.assignedRecipientIds.filter(Boolean).join(', ')}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Pickup info */}
                         {event.hostName && (
                           <div className="mb-3">
@@ -359,19 +471,20 @@ export function MobileDriverPlanning() {
                         )}
 
                         {/* Assigned drivers */}
-                        {assignedCount > 0 && (
+                        {(event.assignedDriverIds?.length || 0) > 0 && (
                           <div className="mb-3">
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ASSIGNED</p>
                             <div className="space-y-1">
                               {event.assignedDriverIds?.map((driverId) => {
-                                const driver = getDriver(driverId);
-                                if (!driver) return null;
+                                const label = resolveAssignedDriverLabel(driverId);
+                                const numericTail = String(driverId).includes('-') ? String(driverId).split('-').pop() : String(driverId);
+                                const driver = numericTail && /^\d+$/.test(numericTail) ? getDriver(Number(numericTail)) : undefined;
                                 return (
-                                  <div key={driverId} className="flex items-center justify-between">
+                                  <div key={String(driverId)} className="flex items-center justify-between">
                                     <span className="text-sm text-slate-900 dark:text-slate-100">
-                                      {driver.name}
+                                      {label}
                                     </span>
-                                    {driver.phone && (
+                                    {driver?.phone && (
                                       <div className="flex items-center gap-2">
                                         <button
                                           onClick={() => callPhone(driver.phone!)}
