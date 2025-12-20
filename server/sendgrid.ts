@@ -2,6 +2,7 @@ import { MailService } from '@sendgrid/mail';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './utils/production-safe-logger';
+import { ADMIN_EMAIL } from './config/organization';
 
 const mailService = new MailService();
 
@@ -69,7 +70,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     }
     
     // MONITORING: Always BCC admin on all outgoing emails
-    const adminMonitoringEmail = 'katie@thesandwichproject.org';
+    const adminMonitoringEmail = ADMIN_EMAIL;
     const bccList: string[] = [];
     
     // Add admin monitoring email

@@ -9,6 +9,7 @@ import { db } from './database-storage';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
+import { FROM_EMAIL as ORG_FROM_EMAIL } from './config/organization';
 
 if (!process.env.SENDGRID_API_KEY) {
   logger.warn(
@@ -22,7 +23,7 @@ if (process.env.SENDGRID_API_KEY) {
 }
 
 export class NotificationService {
-  private static readonly FROM_EMAIL = 'katie@thesandwichproject.org';
+  private static readonly FROM_EMAIL = ORG_FROM_EMAIL;
 
   /**
    * Send email notification for direct messages
