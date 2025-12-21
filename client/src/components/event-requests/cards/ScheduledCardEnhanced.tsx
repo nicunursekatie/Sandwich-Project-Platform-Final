@@ -2402,12 +2402,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
 
                 {/* Team Comments - moved from bottom section */}
-                <div className="pt-3 border-t border-white/30">
+                <div className="pt-2 border-t border-white/30">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowComments(!showComments)}
-                    className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-2 h-auto mb-2"
+                    className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-1.5 h-auto mb-1"
                   >
                     <div className="flex items-center gap-2">
                       <MessageSquare className="w-4 h-4 text-[#236383]" />
@@ -2422,7 +2422,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </Button>
 
                   {showComments && (
-                    <div className="mt-3 max-h-[500px] mb-4">
+                    <div className="mt-1 max-h-[300px]">
                       <CommentThread
                         comments={collaboration.comments || []}
                         currentUserId={user?.id || ''}
@@ -2432,6 +2432,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         onEditComment={collaboration.updateComment}
                         onDeleteComment={collaboration.deleteComment}
                         isLoading={collaboration.commentsLoading || false}
+                        compact={true}
                       />
                     </div>
                   )}

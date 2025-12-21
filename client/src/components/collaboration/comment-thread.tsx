@@ -20,6 +20,7 @@ interface CommentThreadProps {
   typingUsers?: string[];
   isLoading?: boolean;
   className?: string;
+  compact?: boolean;
 }
 
 interface CommentItemProps {
@@ -296,6 +297,7 @@ export function CommentThread({
   typingUsers = [],
   isLoading = false,
   className,
+  compact = false,
 }: CommentThreadProps) {
   const [newComment, setNewComment] = useState("");
   const [replyToId, setReplyToId] = useState<number | null>(null);
@@ -330,29 +332,38 @@ export function CommentThread({
 
   return (
     <div className={cn("flex flex-col h-full", className)} data-testid="comment-thread">
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b">
-        <MessageSquare className="h-5 w-5 text-muted-foreground" />
-        <h3 className="text-lg font-semibold">
-          Comments
-        </h3>
-        <span className="text-sm text-muted-foreground">
-          ({comments.length})
-        </span>
-      </div>
+      {!compact && (
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+          <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">
+            Comments
+          </h3>
+          <span className="text-sm text-muted-foreground">
+            ({comments.length})
+          </span>
+        </div>
+      )}
 
-      <ScrollArea className="flex-1 pr-4">
+      <ScrollArea className={cn("flex-1", compact ? "pr-2" : "pr-4")}>
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className={cn("flex items-center justify-center", compact ? "py-4" : "py-8")}>
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : comments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No comments yet</p>
-            <p className="text-xs mt-1">Be the first to comment!</p>
+          <div className={cn("text-center text-muted-foreground", compact ? "py-2" : "py-8")}>
+            {!compact && (
+              <>
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No comments yet</p>
+                <p className="text-xs mt-1">Be the first to comment!</p>
+              </>
+            )}
+            {compact && (
+              <p className="text-xs opacity-60">No comments yet</p>
+            )}
           </div>
         ) : (
-          <div className="space-y-4 pb-4">
+          <div className={cn("pb-4", compact ? "space-y-2" : "space-y-4")}>
             {topLevelComments.map((comment) => (
               <CommentItem
                 key={comment.id}
@@ -377,7 +388,7 @@ export function CommentThread({
         )}
       </ScrollArea>
 
-      <div className="pt-4 border-t mt-4">
+      <div className={cn("border-t", compact ? "pt-2 mt-2" : "pt-4 mt-4")}>
         {replyToId && (
           <div className="flex items-center justify-between mb-2 px-3 py-2 bg-muted rounded-md">
             <span className="text-xs text-muted-foreground">
@@ -394,12 +405,12 @@ export function CommentThread({
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className={cn(compact ? "space-y-1" : "space-y-2")}>
           <Textarea
             placeholder="Add a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="min-h-[100px] resize-none"
+            className={cn("resize-none", compact ? "min-h-[60px] text-sm" : "min-h-[100px]")}
             disabled={isSubmitting}
             data-testid="new-comment-textarea"
             onKeyDown={(e) => {
@@ -409,13 +420,17 @@ export function CommentThread({
             }}
           />
           <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">
-              Tip: Press {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'} + Enter to submit
-            </span>
+            {!compact && (
+              <span className="text-xs text-muted-foreground">
+                Tip: Press {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'} + Enter to submit
+              </span>
+            )}
+            {compact && <span></span>}
             <Button
               onClick={handleSubmit}
               disabled={!newComment.trim() || isSubmitting}
               data-testid="submit-comment-button"
+              size={compact ? "sm" : "default"}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add Comment
