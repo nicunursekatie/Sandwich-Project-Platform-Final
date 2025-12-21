@@ -456,7 +456,16 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
         existingStatus: existing.status,
         existingScheduledDate: existing.scheduledEventDate,
         existingDesiredDate: existing.desiredEventDate,
+        existingDeletedAt: existing.deletedAt,
         link: `/event-requests/${existing.id}`,
+        debug: {
+          message: 'This event was found by duplicate check. If it should not block creation, check:',
+          checks: {
+            isDeleted: !!existing.deletedAt,
+            isInactiveStatus: ['cancelled', 'declined', 'postponed'].includes(existing.status),
+            shouldExclude: !!existing.deletedAt || ['cancelled', 'declined', 'postponed'].includes(existing.status)
+          }
+        }
       });
     }
 
