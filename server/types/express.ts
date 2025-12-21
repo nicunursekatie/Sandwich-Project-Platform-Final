@@ -29,18 +29,20 @@ export interface ReplitUser {
 }
 
 // Extended request interface with typed user and session
-// Extends Request directly to maintain Express compatibility
-export interface AuthenticatedRequest extends Request {
+// Uses Omit to avoid conflicts with global Request augmentation
+export interface AuthenticatedRequest extends Omit<Request, 'user'> {
+  // User is optional (undefined when not authenticated)
+  // but when present, all fields are required to ensure type safety
   user?: {
     id: string;
-    email?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
-    displayName?: string | null;
-    profileImageUrl?: string | null;
-    role?: string;
-    permissions?: string[];
-    isActive?: boolean;
+    email: string;
+    firstName: string;
+    lastName: string;
+    displayName?: string;
+    profileImageUrl: string | null;
+    role: string;
+    permissions: string[];
+    isActive: boolean;
     // Support for Replit auth structure
     claims?: {
       sub: string;
@@ -108,5 +110,32 @@ export function getUserId(req: AuthenticatedRequest): string | undefined {
 
 // Helper to get user from session or Replit auth
 export function getSessionUser(req: AuthenticatedRequest): SessionUser | undefined {
-  return req.session?.user || (req.user as unknown as SessionUser);
+  // First, try to get user from session - this is the most reliable source
+  if (req.session?.user) {
+    return req.session.user;
+  }
+
+  // If no session user, try to construct from req.user if it has all required fields
+  if (req.user && 
+      req.user.id && 
+      req.user.email && 
+      req.user.firstName && 
+      req.user.lastName && 
+      req.user.role && 
+      req.user.permissions && 
+      req.user.isActive !== undefined) {
+    return {
+      id: req.user.id,
+      email: req.user.email,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      displayName: req.user.displayName,
+      profileImageUrl: req.user.profileImageUrl,
+      role: req.user.role,
+      permissions: req.user.permissions,
+      isActive: req.user.isActive,
+    };
+  }
+
+  return undefined;
 }
