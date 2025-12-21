@@ -940,35 +940,36 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
-  // Past date in-process notification job - runs daily at 9:30 AM
-  // Notifies TSP contacts about in-process events whose date has passed
+  // Past date in-process notification job - DISABLED per user request
+  // Was: Notifies TSP contacts about in-process events whose date has passed
   // Cron format: minute hour day-of-month month day-of-week
   // '30 9 * * *' = At 9:30 AM every day
   const pastDateNotificationJob = cron.schedule('30 9 * * *', async () => {
-    cronLogger.info('Running past date notification check for in-process events...');
-    try {
-      const result = await notifyPastDateInProcessEvents();
-      cronLogger.info('Past date notification job completed', {
-        notificationsSent: result.notificationsSent,
-        eventsProcessed: result.eventsProcessed,
-        errors: result.errors,
-        timestamp: result.timestamp,
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running past date notification cron job',
-        undefined,
-        { jobType: 'past-date-notification' }
-      );
-    }
+    cronLogger.info('Past date notification job is DISABLED - skipping');
+    // DISABLED: User requested to stop sending these emails
+    // try {
+    //   const result = await notifyPastDateInProcessEvents();
+    //   cronLogger.info('Past date notification job completed', {
+    //     notificationsSent: result.notificationsSent,
+    //     eventsProcessed: result.eventsProcessed,
+    //     errors: result.errors,
+    //     timestamp: result.timestamp,
+    //   });
+    // } catch (error) {
+    //   logError(
+    //     error as Error,
+    //     'Error running past date notification cron job',
+    //     undefined,
+    //     { jobType: 'past-date-notification' }
+    //   );
+    // }
   }, {
-    scheduled: true,
+    scheduled: false, // DISABLED per user request
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Past date notification job scheduled successfully', {
-    schedule: 'Daily at 9:30 AM',
+  cronLogger.info('Past date notification job is DISABLED', {
+    schedule: 'DISABLED',
     timezone: 'America/New_York',
   });
 
