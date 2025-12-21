@@ -54,11 +54,54 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(null);
   const [completedTours, setCompletedTours] = useState<string[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
   const overlayRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Get user for permission checking
   const { user } = useAuth();
+
+  // Auto-hide on scroll down, show on scroll up or after scroll stops
+  useEffect(() => {
+    // Don't auto-hide when menu is open or tour is active
+    if (showMenu || activeTour) {
+      setIsVisible(true);
+      return;
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Hide when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+      
+      // Show buttons after scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsVisible(true);
+      }, 1500);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [showMenu, activeTour]);
   
   // Filter tours based on user permissions
   const availableTours = useMemo(() => {
@@ -286,15 +329,16 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
       <Button
         onClick={toggleMenu}
         className={cn(
-          "fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl z-50",
+          "fixed bottom-4 right-4 w-11 h-11 rounded-full shadow-2xl z-50",
           "bg-gradient-to-br from-[#236383] to-[#007e8c] hover:from-[#1a4d66] hover:to-[#006270]",
-          "text-white transition-all duration-300 hover:scale-110 active:scale-95",
-          "border-2 border-white/20"
+          "text-white transition-all duration-300 hover:scale-110 hover:h-14 hover:w-14 active:scale-95",
+          "border-2 border-white/20 hover:shadow-xl",
+          isVisible || showMenu || activeTour ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}
         aria-label="Open guided tour"
         data-testid="tour-help-button"
       >
-        <HelpCircle className="w-7 h-7" />
+        <HelpCircle className="w-5 h-5 transition-transform duration-300 hover:scale-110" />
       </Button>
 
       {/* Tour Menu */}
@@ -304,7 +348,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
           onClick={toggleMenu}
         >
           <Card
-            className="fixed bottom-24 right-6 w-[calc(100vw-3rem)] sm:w-96 md:w-[440px] max-w-[calc(100vw-3rem)] shadow-2xl z-50"
+            className="fixed bottom-20 right-4 w-[calc(100vw-3rem)] sm:w-96 md:w-[440px] max-w-[calc(100vw-3rem)] shadow-2xl z-50"
             onClick={(e) => e.stopPropagation()}
           >
             <CardHeader className="pb-4 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white rounded-t-lg">
