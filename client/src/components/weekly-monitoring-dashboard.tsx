@@ -441,13 +441,10 @@ export default function WeeklyMonitoringDashboard() {
                   ${
                     status.location === 'Dunwoody/PTC' && status.dunwoodyStatus
                       ? `<span class="dunwoody-badge">
-                      Missing: ${
-                        !status.dunwoodyStatus.lisaHiles &&
-                        !status.dunwoodyStatus.stephanieOrMarcy
-                          ? 'Both Required'
-                          : !status.dunwoodyStatus.lisaHiles
-                            ? 'Lisa Hiles'
-                            : 'Stephanie/Marcy'
+                      ${
+                        status.dunwoodyStatus.complete
+                          ? 'Both Required ✓'
+                          : 'Need 2+ collection logs with individual counts'
                       }
                     </span>`
                       : ''
@@ -580,7 +577,7 @@ export default function WeeklyMonitoringDashboard() {
     if (status.location !== 'Dunwoody/PTC' || !status.dunwoodyStatus)
       return null;
 
-    const { lisaHiles, stephanieOrMarcy, complete } = status.dunwoodyStatus;
+    const { complete } = status.dunwoodyStatus;
 
     if (complete) {
       return (
@@ -590,13 +587,10 @@ export default function WeeklyMonitoringDashboard() {
       );
     }
 
-    const missing = [];
-    if (!lisaHiles) missing.push('Lisa Hiles');
-    if (!stephanieOrMarcy) missing.push('Stephanie/Marcy');
-
+    // If not complete, show that we need 2+ collection logs with individual counts
     return (
       <Badge className="bg-orange-100 text-orange-800 text-xs ml-2">
-        Missing: {missing.join(', ')}
+        Need 2+ collection logs with individual counts
       </Badge>
     );
   };
@@ -1385,18 +1379,7 @@ export default function WeeklyMonitoringDashboard() {
                                           <div className="text-xs">
                                             {status.dunwoodyStatus.complete
                                               ? '✓✓'
-                                              : !status.dunwoodyStatus
-                                                    .lisaHiles &&
-                                                  !status.dunwoodyStatus
-                                                    .stephanieOrMarcy
-                                                ? '✗'
-                                                : !status.dunwoodyStatus
-                                                      .lisaHiles
-                                                  ? 'L'
-                                                  : !status.dunwoodyStatus
-                                                        .stephanieOrMarcy
-                                                    ? 'S/M'
-                                                    : '✗'}
+                                              : '✗'}
                                           </div>
                                         )}
                                     </div>
