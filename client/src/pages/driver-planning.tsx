@@ -183,8 +183,9 @@ interface RecipientMapData {
   phone: string | null;
 }
 
-// Custom marker icons
-const createColorIcon = (color: string) => {
+// Custom marker icons with different shapes
+// Events: Teardrop/pin shape (default)
+const createEventIcon = (color: string) => {
   return new L.Icon({
     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -195,13 +196,91 @@ const createColorIcon = (color: string) => {
   });
 };
 
-const eventIcon = createColorIcon('blue');
-const selectedEventIcon = createColorIcon('red');
-const hostIcon = createColorIcon('green');
-const hostFocusedIcon = createColorIcon('orange');
-const recipientIcon = createColorIcon('violet');
-const recipientFocusedIcon = createColorIcon('orange');
-const driverIcon = createColorIcon('yellow'); // Yellow for drivers
+// Hosts: Circle shape
+const createHostIcon = (color: string) => {
+  const size = 20;
+  const html = `
+    <div style="
+      width: ${size}px;
+      height: ${size}px;
+      background-color: ${color};
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
+// Recipients: Square shape
+const createRecipientIcon = (color: string) => {
+  const size = 20;
+  const html = `
+    <div style="
+      width: ${size}px;
+      height: ${size}px;
+      background-color: ${color};
+      border: 3px solid white;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      transform: rotate(45deg);
+    "></div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
+// Drivers: Triangle shape
+const createDriverIcon = (color: string) => {
+  const size = 20;
+  const html = `
+    <div style="
+      width: 0;
+      height: 0;
+      border-left: ${size / 2}px solid transparent;
+      border-right: ${size / 2}px solid transparent;
+      border-bottom: ${size}px solid ${color};
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    "></div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size]
+  });
+};
+
+// Color mappings
+const colors = {
+  event: '#3388ff',      // Blue
+  selectedEvent: '#ff0000', // Red
+  host: '#2ecc71',       // Green
+  hostFocused: '#ff9500', // Orange
+  recipient: '#9b59b6',  // Violet/Purple
+  recipientFocused: '#ff9500', // Orange
+  driver: '#f1c40f'      // Yellow
+};
+
+const eventIcon = createEventIcon(colors.event);
+const selectedEventIcon = createEventIcon(colors.selectedEvent);
+const hostIcon = createHostIcon(colors.host);
+const hostFocusedIcon = createHostIcon(colors.hostFocused);
+const recipientIcon = createRecipientIcon(colors.recipient);
+const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
+const driverIcon = createDriverIcon(colors.driver);
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
