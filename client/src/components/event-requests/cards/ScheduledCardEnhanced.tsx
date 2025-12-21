@@ -1366,13 +1366,64 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         </div>
                       ) : (
                         <div>
-                          <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                            {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>)}
+                          <div className="text-base font-bold group cursor-pointer text-gray-900 flex items-center gap-2 flex-wrap" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                            {(() => {
+                              // Check if overnight holding is set and use overnight pickup time if available
+                              // Overnight pickup is always next day
+                              if (request.overnightHoldingLocation && request.overnightPickupTime) {
+                                const timeStr = formatTime12Hour(request.overnightPickupTime);
+                                return (
+                                  <>
+                                    <span>{timeStr}</span>
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                      Next Day
+                                    </Badge>
+                                  </>
+                                );
+                              }
+                              
+                              // Use pickupDateTime if set
+                              if (request.pickupDateTime) {
+                                const pickupDate = new Date(request.pickupDateTime);
+                                const eventDate = displayDate ? (() => {
+                                  const dateStr = displayDate.toString().split('T')[0];
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  return new Date(year, month - 1, day);
+                                })() : null;
+                                
+                                // Check if pickup is the next day after event
+                                const isNextDay = eventDate ? (() => {
+                                  const pickupDateOnly = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+                                  const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+                                  const diffDays = Math.round((pickupDateOnly.getTime() - eventDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+                                  return diffDays === 1;
+                                })() : false;
+                                
+                                const timeStr = formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5));
+                                
+                                // If it's the next day, show indicator
+                                if (isNextDay) {
+                                  return (
+                                    <>
+                                      <span>{timeStr}</span>
+                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                        Next Day
+                                      </Badge>
+                                    </>
+                                  );
+                                }
+                                
+                                return <span>{timeStr}</span>;
+                              }
+                              
+                              // Fall back to pickupTime
+                              return request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>;
+                            })()}
                           </div>
-                          {/* Show "Can hold overnight" if overnightHoldingLocation is set */}
+                          {/* Show overnight holding location if set */}
                           {request.overnightHoldingLocation && (
-                            <div className="text-xs text-[#236383] font-medium mt-1">
-                              Can hold overnight
+                            <div className="text-xs text-amber-600 font-medium mt-1">
+                              Overnight at {request.overnightHoldingLocation}
                             </div>
                           )}
                         </div>

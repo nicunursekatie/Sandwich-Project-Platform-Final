@@ -20,7 +20,7 @@ import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
-import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, or, isNull, ne } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -412,22 +412,50 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
     }
 
     // Check for duplicates (same org + same date)
+    // Exclude soft-deleted events and cancelled/declined/postponed events
+    // Check both scheduledEventDate and desiredEventDate to catch events that might not be fully scheduled yet
+    const eventDateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     const existingEvents = await db
-      .select({ id: eventRequests.id, organizationName: eventRequests.organizationName })
+      .select({ 
+        id: eventRequests.id, 
+        organizationName: eventRequests.organizationName,
+        status: eventRequests.status,
+        deletedAt: eventRequests.deletedAt,
+        scheduledEventDate: eventRequests.scheduledEventDate,
+        desiredEventDate: eventRequests.desiredEventDate
+      })
       .from(eventRequests)
       .where(
         and(
           sql`LOWER(${eventRequests.organizationName}) = LOWER(${data['Group Name']})`,
-          sql`DATE(${eventRequests.scheduledEventDate}) = DATE(${eventDate.toISOString()})`
+          // Check if either scheduledEventDate or desiredEventDate matches the target date
+          or(
+            sql`DATE(${eventRequests.scheduledEventDate}) = DATE(${eventDate.toISOString()})`,
+            sql`DATE(${eventRequests.desiredEventDate}) = DATE(${eventDate.toISOString()})`
+          ),
+          isNull(eventRequests.deletedAt), // Exclude soft-deleted events
+          // Only check against active statuses - allow duplicates if the existing event is cancelled/declined/postponed
+          sql`${eventRequests.status} NOT IN ('cancelled', 'declined', 'postponed')`
         )
       );
 
     if (existingEvents.length > 0) {
       const existing = existingEvents[0];
+      logger.warn(`Duplicate event detected: "${data['Group Name']}" on ${data.date}`, {
+        existingEventId: existing.id,
+        existingStatus: existing.status,
+        existingScheduledDate: existing.scheduledEventDate,
+        existingDesiredDate: existing.desiredEventDate,
+        existingDeletedAt: existing.deletedAt,
+        targetDate: data.date
+      });
       return res.status(409).json({
         success: false,
         error: `Event already exists for "${data['Group Name']}" on ${data.date}`,
         existingEventId: existing.id,
+        existingStatus: existing.status,
+        existingScheduledDate: existing.scheduledEventDate,
+        existingDesiredDate: existing.desiredEventDate,
         link: `/event-requests/${existing.id}`,
       });
     }

@@ -1327,7 +1327,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
               )}
 
-              {(request.pickupDateTime || request.pickupTime) && (
+              {(request.pickupDateTime || request.pickupTime || (request.overnightHoldingLocation && request.overnightPickupTime)) && (
                 <div className="flex items-center gap-2 group">
                   <Clock className="w-4 h-4 text-[#FBAD3F]" />
                   <span className="text-sm font-semibold text-[#236383]">Pickup:</span>
@@ -1373,11 +1373,61 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )
                   ) : (
                     <>
-                      <span className="text-lg font-bold text-[#236383]">
-                        {request.pickupDateTime
-                          ? (() => {
-                              const date = new Date(request.pickupDateTime);
-                              const dateStr = date.toLocaleDateString(
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold text-[#236383]">
+                          {(() => {
+                            // Check if overnight holding is set and use overnight pickup time if available
+                            // Overnight pickup is always next day
+                            if (request.overnightHoldingLocation && request.overnightPickupTime) {
+                              const timeStr = formatTime12Hour(request.overnightPickupTime);
+                              return (
+                                <>
+                                  <span>{timeStr}</span>
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                    Next Day
+                                  </Badge>
+                                </>
+                              );
+                            }
+                            
+                            // Use pickupDateTime if set
+                            if (request.pickupDateTime) {
+                              const pickupDate = new Date(request.pickupDateTime);
+                              const eventDate = displayDate ? (() => {
+                                const dateStr = displayDate.toString().split('T')[0];
+                                const [year, month, day] = dateStr.split('-').map(Number);
+                                return new Date(year, month - 1, day);
+                              })() : null;
+                              
+                              // Check if pickup is the next day after event
+                              const isNextDay = eventDate ? (() => {
+                                const pickupDateOnly = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+                                const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+                                const diffDays = Math.round((pickupDateOnly.getTime() - eventDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+                                return diffDays === 1;
+                              })() : false;
+                              
+                              // Format time without timezone conversion issues
+                              const hours = pickupDate.getHours();
+                              const minutes = pickupDate.getMinutes();
+                              const timeStr = formatTime12Hour(
+                                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                              );
+                              
+                              // If it's the next day, show indicator with just time
+                              if (isNextDay) {
+                                return (
+                                  <>
+                                    <span>{timeStr}</span>
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                      Next Day
+                                    </Badge>
+                                  </>
+                                );
+                              }
+                              
+                              // Otherwise show full date and time
+                              const dateStr = pickupDate.toLocaleDateString(
                                 'en-US',
                                 {
                                   month: 'short',
@@ -1385,37 +1435,41 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                   year: 'numeric',
                                 }
                               );
-                              // Format time without timezone conversion issues
-                              const hours = date.getHours();
-                              const minutes = date.getMinutes();
-                              const timeStr = formatTime12Hour(
-                                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-                              );
                               return `${dateStr} at ${timeStr}`;
-                            })()
-                          : formatTime12Hour(request.pickupTime!)}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (request.pickupDateTime) {
-                              startEditing(
-                                'pickupDateTime',
-                                request.pickupDateTime.toString()
-                              );
-                            } else {
-                              startEditing(
-                                'pickupTime',
-                                formatTimeForInput(request.pickupTime || '')
-                              );
                             }
-                          }}
-                          className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
+                            
+                            // Fall back to pickupTime
+                            return formatTime12Hour(request.pickupTime!);
+                          })()}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (request.pickupDateTime) {
+                                startEditing(
+                                  'pickupDateTime',
+                                  request.pickupDateTime.toString()
+                                );
+                              } else {
+                                startEditing(
+                                  'pickupTime',
+                                  formatTimeForInput(request.pickupTime || '')
+                                );
+                              }
+                            }}
+                            className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {/* Show overnight holding indicator if set */}
+                      {request.overnightHoldingLocation && (
+                        <div className="text-xs text-amber-600 font-medium mt-1">
+                          Overnight at {request.overnightHoldingLocation}
+                        </div>
                       )}
                     </>
                   )}

@@ -25,9 +25,9 @@ export const ScheduledTab: React.FC = () => {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
 
-  // Default to card view on mobile (better touch UX), spreadsheet on desktop (familiar workflow)
+  // Default to card view for all devices
   const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>(() => {
-    return isMobile ? 'card' : 'spreadsheet';
+    return 'card';
   });
   const [viewStartTime, setViewStartTime] = useState<number>(Date.now());
 
@@ -37,7 +37,7 @@ export const ScheduledTab: React.FC = () => {
   // Track when user first lands on scheduled tab
   useEffect(() => {
     trackEvent('scheduled_tab_viewed', {
-      default_view: isMobile ? 'card' : 'spreadsheet',
+      default_view: 'card',
       is_default: true,
       is_mobile: isMobile,
       timestamp: new Date().toISOString(),
