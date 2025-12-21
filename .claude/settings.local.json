@@ -43,7 +43,10 @@
       "Bash(echo:*)",
       "Bash(done)",
       "Bash(npx esbuild:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(source /Users/kathrynelong/Sandwich-Project-Platform-Final/.env)",
+      "Bash(npm rebuild:*)",
+      "Bash(node --loader ts-node/esm -e:*)"
     ],
     "deny": [],
     "ask": []

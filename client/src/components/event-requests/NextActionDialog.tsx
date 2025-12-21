@@ -67,7 +67,7 @@ const NextActionDialog: React.FC<NextActionDialogProps> = ({
         updateData.nextAction = null; // Clear next action after completion
       }
       
-      return apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, updateData);
+      return apiRequest('PUT', `/api/event-requests/${eventRequest.id}`, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
