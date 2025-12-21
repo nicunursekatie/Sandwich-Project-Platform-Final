@@ -3187,7 +3187,7 @@ export const notificationHistory = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
 
     // Delivery tracking
-    deliveryChannel: varchar('delivery_channel').notNull(), // 'email', 'sms', 'in_app', 'push'
+    deliveryChannel: varchar('delivery_channel').notNull(), // 'email', 'sms', 'in_app'
     deliveryStatus: varchar('delivery_status').notNull().default('pending'), // 'pending', 'sent', 'delivered', 'failed', 'bounced'
     deliveryAttempts: integer('delivery_attempts').notNull().default(0),
     lastDeliveryAttempt: timestamp('last_delivery_attempt'),

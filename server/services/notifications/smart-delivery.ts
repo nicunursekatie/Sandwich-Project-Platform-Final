@@ -52,7 +52,7 @@ async function getSMSProvider(): Promise<any> {
 }
 
 export interface DeliveryOptions {
-  forceChannel?: 'email' | 'sms' | 'in_app' | 'push';
+  forceChannel?: 'email' | 'sms' | 'in_app';
   skipMLScoring?: boolean;
   abTestId?: number;
   abTestVariant?: string;
@@ -229,9 +229,6 @@ export class SmartDeliveryService {
           break;
         case 'sms':
           await this.deliverSMS(notification);
-          break;
-        case 'push':
-          await this.deliverPush(notification);
           break;
         default:
           deliveryLogger.warn('Unknown delivery channel, falling back to in-app', { 
@@ -490,88 +487,6 @@ export class SmartDeliveryService {
 
     } catch (error) {
       deliveryLogger.error('Error delivering SMS notification', {
-        error,
-        notificationId: notification.id
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Deliver notification via push notification
-   *
-   * To enable push notifications, you need to:
-   * 1. Install a push notification service (e.g., firebase-admin for FCM)
-   * 2. Add environment variables (FCM_SERVER_KEY, FCM_PROJECT_ID, etc.)
-   * 3. Store user device tokens in the database
-   * 4. Implement the push notification logic below
-   *
-   * Example for FCM:
-   * - npm install firebase-admin
-   * - Initialize Firebase Admin SDK with service account
-   * - Send to user's registered device tokens
-   */
-  private async deliverPush(notification: any): Promise<void> {
-    try {
-      // Check if push notification service is configured
-      const fcmConfigured = process.env.FCM_SERVER_KEY && process.env.FCM_PROJECT_ID;
-      const apnsConfigured = process.env.APNS_KEY_ID && process.env.APNS_TEAM_ID;
-
-      if (!fcmConfigured && !apnsConfigured) {
-        deliveryLogger.warn('Push notification service not configured', {
-          notificationId: notification.id,
-          userId: notification.userId,
-          message: 'No FCM or APNS credentials found. Add FCM_SERVER_KEY/FCM_PROJECT_ID or APNS_KEY_ID/APNS_TEAM_ID to enable push notifications.'
-        });
-        throw new Error('Push notification service not configured - add FCM or APNS credentials');
-      }
-
-      // TODO: Get user's device tokens from database
-      // const deviceTokens = await db
-      //   .select({ token: userDeviceTokens.token, platform: userDeviceTokens.platform })
-      //   .from(userDeviceTokens)
-      //   .where(eq(userDeviceTokens.userId, notification.userId));
-
-      // if (!deviceTokens || deviceTokens.length === 0) {
-      //   throw new Error('No device tokens found for user');
-      // }
-
-      // TODO: Send push notification using appropriate service
-      // Example FCM implementation:
-      // import admin from 'firebase-admin';
-      // const message = {
-      //   notification: {
-      //     title: notification.title,
-      //     body: notification.message,
-      //   },
-      //   data: {
-      //     notificationId: notification.id.toString(),
-      //     type: notification.type,
-      //     actionUrl: notification.actionUrl || '',
-      //   },
-      //   tokens: deviceTokens.map(dt => dt.token),
-      // };
-      // const response = await admin.messaging().sendMulticast(message);
-
-      deliveryLogger.info('Push notification delivery attempted but not fully implemented', {
-        notificationId: notification.id,
-        userId: notification.userId,
-        title: notification.title,
-        configured: { fcm: !!fcmConfigured, apns: !!apnsConfigured }
-      });
-
-      // For now, log what would be sent
-      deliveryLogger.debug('Push notification details', {
-        notificationId: notification.id,
-        userId: notification.userId,
-        title: notification.title,
-        body: notification.message,
-        priority: notification.priority,
-        actionUrl: notification.actionUrl
-      });
-
-    } catch (error) {
-      deliveryLogger.error('Error delivering push notification', {
         error,
         notificationId: notification.id
       });

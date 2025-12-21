@@ -98,7 +98,7 @@ export function trackEventRequestProcessing(status: string, durationSeconds: num
  * Track notification sent
  */
 export function trackNotificationSent(
-  type: 'email' | 'sms' | 'push' | 'websocket',
+  type: 'email' | 'sms' | 'websocket',
   channel: string,
   status: 'success' | 'failed'
 ): void {
@@ -109,7 +109,7 @@ export function trackNotificationSent(
  * Track notification delivery time
  */
 export function trackNotificationDelivery(
-  type: 'email' | 'sms' | 'push' | 'websocket',
+  type: 'email' | 'sms' | 'websocket',
   channel: string,
   durationSeconds: number
 ): void {

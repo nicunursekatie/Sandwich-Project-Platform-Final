@@ -31,7 +31,7 @@ export interface RelevanceScoreResult {
     channelPreference: number;
     frequencyBalance: number;
   };
-  recommendedChannel: 'email' | 'sms' | 'in_app' | 'push';
+  recommendedChannel: 'email' | 'sms' | 'in_app';
   recommendedDelay: number; // seconds to delay delivery for optimal timing
 }
 
@@ -522,7 +522,7 @@ export class MLNotificationEngine {
   /**
    * Select optimal delivery channel
    */
-  private selectOptimalChannel(userPattern: UserBehaviorPattern, userPrefs: any): 'email' | 'sms' | 'in_app' | 'push' {
+  private selectOptimalChannel(userPattern: UserBehaviorPattern, userPrefs: any): 'email' | 'sms' | 'in_app' {
     const channels = userPattern.preferredChannels;
     
     if (Object.keys(channels).length === 0) {
@@ -536,7 +536,7 @@ export class MLNotificationEngine {
     Object.entries(channels).forEach(([channel, rate]) => {
       if (rate > bestRate) {
         bestRate = rate;
-        bestChannel = channel as 'email' | 'sms' | 'in_app' | 'push';
+        bestChannel = channel as 'email' | 'sms' | 'in_app';
       }
     });
     
@@ -628,7 +628,7 @@ export class MLNotificationEngine {
   private getDefaultBehaviorPattern(): UserBehaviorPattern {
     return {
       activeHours: [9, 10, 11, 14, 15, 16, 17, 18], // Standard business hours
-      preferredChannels: { in_app: 0.7, email: 0.5, push: 0.6, sms: 0.3 },
+      preferredChannels: { in_app: 0.7, email: 0.5, sms: 0.3 },
       averageResponseTime: 3600, // 1 hour
       engagementRate: 0.5,
       optimalFrequency: 3,

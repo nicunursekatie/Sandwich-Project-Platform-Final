@@ -96,8 +96,8 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 3.5: Admin backward compatibility - for ADMIN_PANEL_ACCESS and NAV_ permissions
-  // Admins get automatic access to navigation items for backward compatibility
+  // Step 3.5: Admin backward compatibility - admins get automatic access to core functionality
+  // This matches the original hasPermission behavior from auth-utils.ts
   if (user.role === 'admin' || user.role === USER_ROLES.ADMIN) {
     if (permission === 'ADMIN_PANEL_ACCESS' || permission === PERMISSIONS.ADMIN_PANEL_ACCESS) {
       return {
@@ -107,13 +107,21 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
         userPermissions: userPermissions
       };
     }
-    // Admin backward compatibility: Admins get automatic access to navigation items
-    if (permission.startsWith('NAV_')) {
+    // Admin backward compatibility: Admins get automatic access to navigation and core permissions
+    if (
+      permission.startsWith('NAV_') ||
+      permission.startsWith('EVENT_REQUESTS_') ||
+      permission.startsWith('DOCUMENTS_') ||
+      permission.startsWith('VOLUNTEERS_') ||
+      permission.startsWith('DRIVERS_') ||
+      permission.startsWith('HOSTS_') ||
+      permission.startsWith('RECIPIENTS_')
+    ) {
       return {
         granted: true,
-        reason: 'Admin role grants access to navigation items',
+        reason: 'Admin role grants access to core functionality',
         userRole: user.role,
-        userPermissions: ['NAV_*']
+        userPermissions: userPermissions
       };
     }
   }

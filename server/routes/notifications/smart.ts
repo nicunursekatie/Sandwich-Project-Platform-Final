@@ -166,7 +166,7 @@ smartNotificationsRouter.post('/send', async (req, res) => {
       actionUrl: z.string().optional(),
       actionText: z.string().optional(),
       metadata: z.object({}).optional(),
-      forceChannel: z.enum(['email', 'sms', 'in_app', 'push']).optional(),
+      forceChannel: z.enum(['email', 'sms', 'in_app']).optional(),
       skipMLScoring: z.boolean().default(false)
     });
 
