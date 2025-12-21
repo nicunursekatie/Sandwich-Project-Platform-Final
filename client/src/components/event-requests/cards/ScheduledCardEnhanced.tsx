@@ -1524,12 +1524,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-            {/* Delivery Logistics - moved from Column 3 */}
+            {/* Recipient Logistics - moved from Column 3 */}
             {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation || (isEditingThisCard && editingField === 'assignedRecipientIds')) ? (
               <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md mt-3">
                 <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                   <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                  Delivery Logistics
+                  Recipient Logistics
                 </h3>
                 
                 <div className="space-y-4">
@@ -1709,7 +1709,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             ) : canEdit ? (
               <div className="mt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase text-gray-600 font-medium">Delivery Logistics</span>
+                  <span className="text-xs uppercase text-gray-600 font-medium">Recipient Logistics</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
@@ -2346,7 +2346,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* Column 3: Event Organizer & Delivery Logistics */}
+          {/* Column 3: Event Organizer & Recipient Logistics */}
           <div className="flex flex-col gap-4 h-full lg:order-3">
             {/* Event Organizer */}
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
@@ -2439,7 +2439,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
             </div>
-            {/* Delivery Logistics moved to Column 1, right after times row */}
+            {/* Recipient Logistics moved to Column 1, right after times row */}
           </div>
         </div>
 
