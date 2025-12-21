@@ -62,8 +62,8 @@ class Logger {
   // Helper to normalize extra parameter - accepts string or object
   private normalizeExtra(extra?: string | Partial<LogEntry>): Partial<LogEntry> | undefined {
     if (typeof extra === 'string') {
-      // Use 'extra' property instead of 'message' to avoid overwriting primary message
-      return { extra };
+      // Use 'details' property to store string extras, avoiding conflict with 'message'
+      return { details: extra };
     }
     return extra;
   }

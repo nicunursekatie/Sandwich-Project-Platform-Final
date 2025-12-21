@@ -31,6 +31,8 @@ export interface ReplitUser {
 // Extended request interface with typed user and session
 // Uses Omit to avoid conflicts with global Request augmentation
 export interface AuthenticatedRequest extends Omit<Request, 'user'> {
+  // User is optional (undefined when not authenticated)
+  // but when present, all fields are required to ensure type safety
   user?: {
     id: string;
     email: string;
