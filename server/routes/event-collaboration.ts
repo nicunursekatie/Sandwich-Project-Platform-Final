@@ -60,15 +60,32 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       const validatedData = bulkCollaborationSchema.parse(req.body);
       const { eventRequestIds } = validatedData;
 
-      // Fetch comments and locks in parallel for all requested events
-      const [commentsMap, locksMap] = await Promise.all([
-        storage.getBulkEventCollaborationComments(eventRequestIds),
-        storage.getBulkEventFieldLocks(eventRequestIds),
-      ]);
+      // Check if bulk methods are available on storage (DatabaseStorage has them, MemStorage may not)
+      const hasBulkMethods = typeof storage.getBulkEventCollaborationComments === 'function'
+        && typeof storage.getBulkEventFieldLocks === 'function';
+
+      let commentsMap: Map<number, any[]>;
+      let locksMap: Map<number, any[]>;
+
+      if (hasBulkMethods) {
+        // Fetch comments and locks in parallel for all requested events
+        [commentsMap, locksMap] = await Promise.all([
+          storage.getBulkEventCollaborationComments(eventRequestIds),
+          storage.getBulkEventFieldLocks(eventRequestIds),
+        ]);
+      } else {
+        // Fallback: return empty maps if bulk methods aren't available
+        commentsMap = new Map();
+        locksMap = new Map();
+        eventRequestIds.forEach(id => {
+          commentsMap.set(id, []);
+          locksMap.set(id, []);
+        });
+      }
 
       // Build response object with event ID as key
       const result: Record<number, { comments: any[]; locks: any[] }> = {};
-      
+
       for (const eventId of eventRequestIds) {
         result[eventId] = {
           comments: commentsMap.get(eventId) || [],
@@ -86,10 +103,15 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       }
 
       logger.error('[Event Collaboration] Error fetching bulk collaboration data:', error);
-      res.status(500).json({
-        error: 'Failed to fetch collaboration data',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      // Return empty result instead of 500 to prevent UI from breaking
+      const result: Record<number, { comments: any[]; locks: any[] }> = {};
+      try {
+        const ids = req.body?.eventRequestIds || [];
+        for (const eventId of ids) {
+          result[eventId] = { comments: [], locks: [] };
+        }
+      } catch {}
+      res.json({ data: result });
     }
   });
 
