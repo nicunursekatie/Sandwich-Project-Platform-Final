@@ -61,6 +61,11 @@ class Logger {
     this.addLog(this.createLogEntry('info', message, extra));
   }
 
+  // Alias for info() - maintains backward compatibility with code calling logger.log()
+  log(message: string, extra?: Partial<LogEntry>) {
+    this.info(message, extra);
+  }
+
   warn(message: string, extra?: Partial<LogEntry>) {
     this.addLog(this.createLogEntry('warn', message, extra));
   }

@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -9,28 +9,7 @@ import * as path from 'path';
 import { db } from '../db';
 import { volunteers, eventVolunteers, eventRequests } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Create auto-form-filler router
 const autoFormFillerRouter = Router();

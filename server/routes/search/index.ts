@@ -1,19 +1,8 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { searchService } from '../../services/search';
 import { logger } from '../../middleware/logger';
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
+import type { AuthenticatedRequest } from '../../types/express';
 
 // Validation schemas
 const globalSearchSchema = z

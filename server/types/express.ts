@@ -29,9 +29,27 @@ export interface ReplitUser {
 }
 
 // Extended request interface with typed user and session
-// Use Omit to remove the globally augmented user property, then add it back with our union type
-export interface AuthenticatedRequest extends Omit<Request, 'user'> {
-  user: SessionUser | ReplitUser;
+// Extends Request directly to maintain Express compatibility
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+    profileImageUrl?: string | null;
+    role?: string;
+    permissions?: string[];
+    isActive?: boolean;
+    // Support for Replit auth structure
+    claims?: {
+      sub: string;
+      email?: string;
+    };
+  };
+  session?: Request['session'] & {
+    user?: SessionUser;
+  };
   fileMetadata?: {
     fileName: string;
     filePath: string;
@@ -40,10 +58,8 @@ export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   };
 }
 
-// Optional auth request (may or may not have user)
-export interface MaybeAuthenticatedRequest extends Omit<Request, 'user'> {
-  user?: SessionUser | ReplitUser;
-}
+// Optional auth request (may or may not have user) - same as AuthenticatedRequest
+export type MaybeAuthenticatedRequest = AuthenticatedRequest;
 
 // Typed middleware signatures
 export type AuthMiddleware = (
@@ -74,16 +90,16 @@ export type MaybeAuthenticatedHandler = (
 export type StandardHandler = RequestHandler;
 
 // Helper to get user ID from request
-export function getUserId(req: AuthenticatedRequest | MaybeAuthenticatedRequest): string | undefined {
+export function getUserId(req: AuthenticatedRequest): string | undefined {
   if (!req.user) return undefined;
 
   // Check for Replit auth structure
-  if ('claims' in req.user && req.user.claims?.sub) {
+  if (req.user.claims?.sub) {
     return req.user.claims.sub;
   }
 
   // Check for session user
-  if ('id' in req.user && req.user.id) {
+  if (req.user.id) {
     return req.user.id;
   }
 
@@ -91,6 +107,6 @@ export function getUserId(req: AuthenticatedRequest | MaybeAuthenticatedRequest)
 }
 
 // Helper to get user from session or Replit auth
-export function getSessionUser(req: AuthenticatedRequest | MaybeAuthenticatedRequest): SessionUser | undefined {
-  return req.session?.user || (req.user as SessionUser);
+export function getSessionUser(req: AuthenticatedRequest): SessionUser | undefined {
+  return req.session?.user || (req.user as unknown as SessionUser);
 }

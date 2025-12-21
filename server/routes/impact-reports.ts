@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { db } from '../db';
 import { impactReports, eventRequests, sandwichCollections } from '../../shared/schema';
 import { eq, desc, and, gt, inArray } from 'drizzle-orm';
@@ -7,14 +7,7 @@ import { generateImpactReport, saveImpactReport } from '../services/ai-impact-re
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import OpenAI from 'openai';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role?: string;
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 export const impactReportsRouter = Router();
 

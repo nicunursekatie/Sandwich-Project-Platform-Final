@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
@@ -8,19 +8,7 @@ import {
   type InsertHoldingZoneCategory,
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    displayName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Input validation schemas - only validate fields from request body, not createdBy (comes from session)
 const createCategorySchema = z.object({

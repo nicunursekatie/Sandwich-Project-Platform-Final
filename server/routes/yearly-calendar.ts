@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { db } from '../db';
@@ -11,19 +11,7 @@ import {
 import { logger } from '../middleware/logger';
 import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '../../shared/auth-utils';
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    displayName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Input validation schemas
 const createItemSchema = insertYearlyCalendarItemSchema

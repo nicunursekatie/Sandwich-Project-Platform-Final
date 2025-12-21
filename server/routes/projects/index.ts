@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import {
   createProjectService,
   type ProjectService,
@@ -8,28 +8,7 @@ import { logger } from '../../middleware/logger';
 import type { IStorage } from '../../storage';
 // REFACTOR: Import assignment services for new endpoints
 import { projectAssignmentService, taskAssignmentService } from '../../services/assignments';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import type { AuthenticatedRequest } from '../../types/express';
 
 // Factory function to create project routes
 export default function createProjectRoutes(options: {
