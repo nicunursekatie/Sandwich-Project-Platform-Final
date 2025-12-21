@@ -199,6 +199,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
+  const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -401,6 +403,39 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   // Get display date
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
+
+  // Calculate follow-up reminder status
+  // Show indicator when event is 2 weeks prior if scheduled more than 3 weeks ahead, or 1 week prior ideally
+  const followUpStatus = (() => {
+    if (!displayDate || request.status !== 'scheduled') return null;
+    
+    try {
+      const eventDate = new Date(displayDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      const daysUntilEvent = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Check when event was scheduled (use statusChangedAt or createdAt as fallback)
+      const scheduledAt = request.statusChangedAt ? new Date(request.statusChangedAt) : (request.createdAt ? new Date(request.createdAt) : null);
+      const daysSinceScheduled = scheduledAt ? Math.round((today.getTime() - scheduledAt.getTime()) / (1000 * 60 * 60 * 24)) : null;
+      
+      // If scheduled more than 3 weeks (21 days) ahead and we're now 2 weeks (14 days) prior
+      if (daysSinceScheduled !== null && daysSinceScheduled >= 21 && daysUntilEvent === 14) {
+        return { type: '2weeks', daysUntil: daysUntilEvent };
+      }
+      
+      // If 1 week (7 days) prior
+      if (daysUntilEvent === 7) {
+        return { type: '1week', daysUntil: daysUntilEvent };
+      }
+      
+      return null;
+    } catch {
+      return null;
+    }
+  })();
 
   // Calculate staffing
   const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
@@ -754,12 +789,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {/* Address - moved from Event Details */}
               {request.eventAddress && (
                 <div className="flex items-start gap-2 mt-2">
-                  <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-[#007E8C]" />
+                  <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-[#007E8C]" />
                   <a
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-[#007E8C] hover:text-[#007E8C]/80 underline font-medium break-words"
+                    className="text-lg sm:text-xl font-bold text-[#007E8C] hover:text-[#007E8C]/80 underline break-words"
                   >
                     {request.eventAddress}
                   </a>
@@ -768,10 +803,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('eventAddress', request.eventAddress || '')}
-                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-5 px-1.5"
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
                       aria-label="Edit address"
                     >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      <Edit2 className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -1463,12 +1498,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               return request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>;
                             })()}
                           </div>
-                          {/* Show overnight holding indicator if set */}
-                          {request.overnightHoldingLocation && (
-                            <div className="text-xs text-amber-600 font-medium mt-1">
-                              Holding Overnight
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
@@ -1713,6 +1742,362 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 Team Assignments
               </h3>
               <div className="space-y-3">
+                {/* Drivers */}
+                {request.selfTransport ? (
+                  // Organization is transporting sandwiches themselves
+                  <div className="flex items-center justify-between py-1 pb-3 border-b border-gray-200">
+                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-semibold text-sm py-1.5 px-3">
+                      <Car className="w-4 h-4 mr-1.5" />
+                      Organization Self-Transport
+                    </Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          // Clear self-transport and set drivers needed
+                          startEditing('selfTransport', 'false');
+                          setTimeout(() => saveEdit(), 0);
+                        }}
+                        className="h-5 px-2 text-[#007E8C] text-xs"
+                      >
+                        <Edit2 className="w-3 h-3 mr-0.5" />
+                        Change
+                      </Button>
+                    )}
+                  </div>
+                ) : (driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
+                  <div className="pb-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'driversNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Car className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                          <Save className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                          <X className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                          {request.vanDriverNeeded ? (
+                            <>
+                              <Truck className="w-5 h-5 text-amber-600" />
+                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
+                            </>
+                          ) : (
+                            <>
+                              <Car className="w-5 h-5" />
+                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                            </>
+                          )}
+                        </span>
+                        {canEdit && (
+                          <div className="flex items-center gap-2">
+                            {driverNeeded > 0 && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => openAssignmentDialog('driver')} 
+                                className={request.vanDriverNeeded 
+                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
+                                  : "h-7 bg-[#007E8C] text-white"} 
+                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
+                              >
+                                {request.vanDriverNeeded ? (
+                                  <Truck className="w-3 h-3" aria-hidden="true" />
+                                ) : (
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    </div>
+                    <div className="space-y-1">
+                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('driver', id)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      {request.assignedVanDriverId && (
+                        <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                          <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
+                            {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {request.isDhlVan && (
+                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
+                            DHL Van 🚚
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleDhlVan(false)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                  </div>
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5 gap-1 pb-3 border-b border-gray-200">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('driversNeeded', '1')}
+                      className="h-5 px-2 text-[#007E8C] text-xs"
+                    >
+                      <Car className="w-3 h-3 mr-0.5" />
+                      Add Driver Need
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        startEditing('selfTransport', 'true');
+                        setTimeout(() => saveEdit(), 0);
+                      }}
+                      className="h-5 px-2 text-[#D68319] text-xs"
+                      title="Organization will transport sandwiches themselves"
+                    >
+                      <Car className="w-3 h-3 mr-0.5" />
+                      Self-Transport
+                    </Button>
+                  </div>
+                ) : null}
+
+                {/* Speakers */}
+                {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
+                  <div className="pb-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      {isEditingThisCard && editingField === 'speakersNeeded' ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Megaphone className="w-4 h-4 text-[#236383]" />
+                          <Input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-7 w-16 text-sm"
+                            min="0"
+                            placeholder="0"
+                          />
+                          <span className="text-sm text-[#236383]">needed</span>
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                            <Megaphone className="w-5 h-5" />
+                            Speakers ({speakerAssigned}/{speakerNeeded})
+                          </span>
+                          {canEdit && (
+                            <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white" aria-label="Add speaker">
+                              <UserPlus className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {Object.keys(request.speakerDetails || {}).map((id) => {
+                        const detailName = (request.speakerDetails as any)?.[id]?.name;
+                        const customName = extractCustomName(id);
+                        const userName = resolveUserName(id);
+                        // Try getRecipientName for host-contact IDs
+                        const recipientName = id.startsWith('host-contact-') && getRecipientName
+                          ? getRecipientName(id)
+                          : null;
+                        // Check if detailName is actually just the ID (common with host-contact and custom IDs)
+                        const isDetailNameJustId = detailName === id ||
+                          detailName?.startsWith('host-contact-') ||
+                          detailName?.startsWith('custom-');
+                        // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+                        const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
+                          ? detailName
+                          : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
+                        return (
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('speaker', id)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                  </div>
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('speakersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Megaphone className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add speaker need</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ) : null}
+
+                {/* Volunteers */}
+                {(volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
+                  <div className="pb-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      {isEditingThisCard && editingField === 'volunteersNeeded' ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Users className="w-4 h-4 text-[#236383]" />
+                          <Input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-7 w-16 text-sm"
+                            min="0"
+                            placeholder="0"
+                          />
+                          <span className="text-sm text-[#236383]">needed</span>
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <Users className="w-5 h-5" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Volunteers</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            Volunteers ({volunteerAssigned}/{volunteerNeeded})
+                          </span>
+                          {canEdit && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Assign volunteers</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                          {canEdit && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('volunteer', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove volunteer assignment</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      ))}
+                      {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
+                    </div>
+                  </div>
+                ) : canEdit ? (
+                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('volunteersNeeded', '1')}
+                          className="h-5 px-2 text-[#007E8C] text-xs"
+                        >
+                          <Users className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add volunteer need</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ) : null}
+
                 {/* Sandwiches - moved from Column 1 */}
                 <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
                   <Package className="w-5 h-5 shrink-0" />
@@ -1957,172 +2342,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </div>
                   )}
                 </div>
-
-                {/* Drivers */}
-                {request.selfTransport ? (
-                  // Organization is transporting sandwiches themselves
-                  <div className="flex items-center justify-between py-1">
-                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-semibold text-sm py-1.5 px-3">
-                      <Car className="w-4 h-4 mr-1.5" />
-                      Organization Self-Transport
-                    </Badge>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          // Clear self-transport and set drivers needed
-                          startEditing('selfTransport', 'false');
-                          setTimeout(() => saveEdit(), 0);
-                        }}
-                        className="h-5 px-2 text-[#007E8C] text-xs"
-                      >
-                        <Edit2 className="w-3 h-3 mr-0.5" />
-                        Change
-                      </Button>
-                    )}
-                  </div>
-                ) : (driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                    {isEditingThisCard && editingField === 'driversNeeded' ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Car className="w-4 h-4 text-[#236383]" />
-                        <Input
-                          type="number"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-7 w-16 text-sm"
-                          min="0"
-                          placeholder="0"
-                        />
-                        <span className="text-sm text-[#236383]">needed</span>
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          {request.vanDriverNeeded ? (
-                            <>
-                              <Truck className="w-5 h-5 text-amber-600" />
-                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
-                            </>
-                          ) : (
-                            <>
-                              <Car className="w-5 h-5" />
-                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
-                            </>
-                          )}
-                        </span>
-                        {canEdit && (
-                          <div className="flex items-center gap-2">
-                            {driverNeeded > 0 && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => openAssignmentDialog('driver')} 
-                                className={request.vanDriverNeeded 
-                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
-                                  : "h-7 bg-[#007E8C] text-white"} 
-                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
-                              >
-                                {request.vanDriverNeeded ? (
-                                  <Truck className="w-3 h-3" aria-hidden="true" />
-                                ) : (
-                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                    </div>
-                    <div className="space-y-1">
-                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', id)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {request.assignedVanDriverId && (
-                        <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
-                          <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
-                            {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {request.isDhlVan && (
-                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
-                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
-                            DHL Van 🚚
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => toggleDhlVan(false)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
-                    </div>
-                  </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('driversNeeded', '1')}
-                      className="h-5 px-2 text-[#007E8C] text-xs"
-                    >
-                      <Car className="w-3 h-3 mr-0.5" />
-                      Add Driver Need
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        startEditing('selfTransport', 'true');
-                        setTimeout(() => saveEdit(), 0);
-                      }}
-                      className="h-5 px-2 text-[#D68319] text-xs"
-                      title="Organization will transport sandwiches themselves"
-                    >
-                      <Car className="w-3 h-3 mr-0.5" />
-                      Self-Transport
-                    </Button>
-                  </div>
-                ) : null}
-
-                {/* Speakers */}
                 {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -2371,6 +2590,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     Assign TSP Contact
                   </Button>
                 )}
+
+                {/* Team Comments - moved from bottom section */}
+                <div className="pt-3 border-t border-white/30">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowComments(!showComments)}
+                    className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-2 h-auto mb-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-[#236383]" />
+                      <h3 className="text-sm uppercase font-bold tracking-wide">Team Comments</h3>
+                      {collaboration.comments && collaboration.comments.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {collaboration.comments.length}
+                        </Badge>
+                      )}
+                    </div>
+                    {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+
+                  {showComments && (
+                    <div className="mt-3 max-h-[500px] mb-4">
+                      <CommentThread
+                        comments={collaboration.comments || []}
+                        currentUserId={user?.id || ''}
+                        currentUserName={user?.fullName || user?.email || ''}
+                        eventId={request.id}
+                        onAddComment={collaboration.addComment}
+                        onEditComment={collaboration.updateComment}
+                        onDeleteComment={collaboration.deleteComment}
+                        isLoading={collaboration.commentsLoading || false}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {/* Delivery Logistics moved to Column 1, right after times row */}
@@ -2587,76 +2842,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
-            {/* Team Comments Section */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(!showComments)}
-              className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-2 h-auto mb-2"
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#236383]" />
-                <h3 className="text-sm uppercase font-bold tracking-wide">Team Comments</h3>
-                {collaboration.comments && collaboration.comments.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {collaboration.comments.length}
-                  </Badge>
-                )}
-              </div>
-              {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-
-            {showComments && (
-              <div className="mt-3 max-h-[500px] mb-4">
-                <CommentThread
-                  comments={collaboration.comments || []}
-                  currentUserId={user?.id || ''}
-                  currentUserName={user?.fullName || user?.email || ''}
-                  eventId={request.id}
-                  onAddComment={collaboration.addComment}
-                  onEditComment={collaboration.updateComment}
-                  onDeleteComment={collaboration.deleteComment}
-                  isLoading={collaboration.commentsLoading || false}
-                />
-              </div>
-            )}
-
-            {/* Contact Log & Messages Section */}
-            <div className="flex items-center justify-between mb-2 mt-4 pt-4 border-t border-[#236383]/20">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCommunicationNotes(!showCommunicationNotes)}
-                className="flex-1 justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-0 h-auto"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#236383]" />
-                  <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383]">
-                    Contact Log & Messages
-                  </h3>
-                </div>
-                {showCommunicationNotes ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onLogContact}
-                className="ml-2 h-7 text-xs flex items-center gap-1 border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
-              >
-                <Phone className="w-3 h-3" />
-                Log Contact
-              </Button>
-            </div>
-            {showCommunicationNotes && (
-              <div className="overflow-y-auto mt-3" style={{ maxHeight: '300px' }}>
-                <EventMessageThread
-                  eventId={request.id.toString()}
-                  eventRequest={request}
-                  eventTitle={`${request.organizationName} event`}
-                  maxHeight="300px"
-                />
-              </div>
-            )}
+            {/* Team Comments and Contact Log & Messages removed - Team Comments moved to Column 3, Contact Log removed */}
           </div>
         )}
 
