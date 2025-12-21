@@ -165,10 +165,9 @@ export function getPreviousWednesday(): Date {
 }
 
 /**
- * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
- * Also accepts entries from admin accounts (Katie, Christine, kenig.ka)
- * who submit collection data on behalf of Stephanie/Marcy
- * Checks both by user ID and by email address in the submittedBy field
+ * Check Dunwoody special requirements: need 2+ collection logs with individual sandwich counts
+ * As long as there are two collection logs with individual sandwich counts for Dunwoody
+ * during the week in question, then both Marcy and Lisa are accounted for.
  */
 function checkDunwoodyStatus(submissions: any[], location: string): any {
   const dunwoodySubmissions = submissions.filter((sub) =>
@@ -183,92 +182,28 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     };
   }
 
-  // Admin user IDs that can submit for any location (counts as Stephanie/Marcy for Dunwoody)
-  const adminUserIds = [
-    'committee_1756853842170', // Katie Long
-    'user_1756855040337_5ix2krxc7', // Christine
-    'driver_1756853842645_3rhyj78ot', // kenig.ka@gmail.com
-  ];
-
-  // Admin email addresses and names that can submit for Dunwoody (counts as Stephanie/Marcy)
-  const adminEmails = [
-    'katielong2316@gmail.com',
-    'katie@thesandwichproject.org',
-    'christine@thesandwichproject.org',
-    'kenig.ka@gmail.com',
-  ];
-
-  // Admin names to check (in case submittedBy has just the name, not email)
-  const adminNames = [
-    'katie',
-    'christine',
-    'katie long',
-    'christine',
-  ];
-
-  // Check for Lisa Hiles (check for "lisa" OR "hiles" since createdByName might not have full name)
-  const lisaSubmission = dunwoodySubmissions.some(
-    (sub) => {
-      const submitter = sub.submittedBy?.toLowerCase() || '';
-      // Match if contains "lisa" OR contains "hiles" (or both)
-      return submitter.includes('lisa') || submitter.includes('hiles');
-    }
+  // Count submissions with individual sandwich counts > 0
+  const submissionsWithIndividualCounts = dunwoodySubmissions.filter(
+    (sub) => sub.individualSandwiches != null && sub.individualSandwiches > 0
   );
 
-  // Check for Stephanie or Marcy OR admin accounts
-  const stephanieOrMarcySubmission = dunwoodySubmissions.some((sub) => {
-    const submitter = sub.submittedBy?.toLowerCase() || '';
-    const createdBy = sub.createdBy || '';
-
-    // Check for Stephanie or Marcy by name
-    const isStephanieOrMarcy =
-      submitter.includes('stephanie') || submitter.includes('marcy');
-
-    // Check if submitted by an admin account (by user ID)
-    const isAdminSubmission = adminUserIds.includes(createdBy);
-
-    // Check if submitted by an admin account (by email in submittedBy field)
-    const isAdminByEmail = adminEmails.some(email =>
-      submitter.includes(email.toLowerCase())
-    );
-
-    // Check if submitted by an admin account (by name in submittedBy field)
-    const isAdminByName = adminNames.some(name =>
-      submitter.includes(name.toLowerCase())
-    );
-
-    // Debug log for each submission check (wrapped in try-catch to prevent errors)
-    const matchResult = isStephanieOrMarcy || isAdminSubmission || isAdminByEmail || isAdminByName;
-    try {
-      logger.log(`Checking submission - submittedBy: "${sub?.submittedBy || 'N/A'}", createdBy: "${createdBy || 'N/A'}"`, {
-        isStephanieOrMarcy,
-        isAdminSubmission,
-        isAdminByEmail,
-        isAdminByName,
-        matchResult,
-      });
-    } catch (logError) {
-      // Silently ignore logging errors
-    }
-
-    return matchResult;
-  });
+  const hasTwoOrMore = submissionsWithIndividualCounts.length >= 2;
 
   const result = {
-    lisaHiles: lisaSubmission,
-    stephanieOrMarcy: stephanieOrMarcySubmission,
-    complete: lisaSubmission && stephanieOrMarcySubmission,
+    lisaHiles: hasTwoOrMore, // Simplified: if we have 2+ submissions, both are accounted for
+    stephanieOrMarcy: hasTwoOrMore, // Simplified: if we have 2+ submissions, both are accounted for
+    complete: hasTwoOrMore,
   };
 
   // Debug logging
   logger.log(`Dunwoody status check for ${location}:`, {
     totalSubmissions: dunwoodySubmissions?.length || 0,
-    lisaHiles: lisaSubmission,
-    stephanieOrMarcy: stephanieOrMarcySubmission,
+    submissionsWithIndividualCounts: submissionsWithIndividualCounts.length,
     complete: result.complete,
     submitters: (dunwoodySubmissions || []).map(sub => ({
       submittedBy: sub?.submittedBy || 'unknown',
       createdBy: sub?.createdBy || 'unknown',
+      individualSandwiches: sub?.individualSandwiches || 0,
     })),
   });
 
@@ -301,6 +236,7 @@ export async function checkWeeklySubmissions(
         collectionDate: sandwichCollections.collectionDate,
         submittedBy: sandwichCollections.createdByName,
         createdBy: sandwichCollections.createdBy,
+        individualSandwiches: sandwichCollections.individualSandwiches,
       })
       .from(sandwichCollections)
       .where(
@@ -557,14 +493,10 @@ export async function sendMissingSubmissionsEmail(
               let specialNote = '';
 
               if (status?.dunwoodyStatus && location === 'Dunwoody/PTC') {
-                const { lisaHiles, stephanieOrMarcy } = status.dunwoodyStatus;
-                if (!lisaHiles && !stephanieOrMarcy) {
+                const { complete } = status.dunwoodyStatus;
+                if (!complete) {
                   specialNote =
-                    ' (Missing both Lisa Hiles AND Stephanie/Marcy entries)';
-                } else if (!lisaHiles) {
-                  specialNote = ' (Missing Lisa Hiles entry)';
-                } else if (!stephanieOrMarcy) {
-                  specialNote = ' (Missing Stephanie/Marcy entry)';
+                    ' (Need 2+ collection logs with individual sandwich counts)';
                 }
               }
 
@@ -741,7 +673,7 @@ export async function sendEmailReminder(
   }
 
   try {
-    // Special handling for Dunwoody - check current status and target only missing submitters
+    // Special handling for Dunwoody - check if we have 2+ submissions with individual counts
     if (location === 'Dunwoody/PTC') {
       const currentStatus = await checkWeeklySubmissions(0);
       const dunwoodyStatus = currentStatus.find(
@@ -749,34 +681,20 @@ export async function sendEmailReminder(
       )?.dunwoodyStatus;
 
       if (dunwoodyStatus) {
-        // If Lisa has submitted but Stephanie/Marcy haven't, target only Stephanie/Marcy
-        if (dunwoodyStatus.lisaHiles && !dunwoodyStatus.stephanieOrMarcy) {
-          return await sendDunwoodyTargetedEmail(
-            ['stephanie', 'marcy'],
-            appUrl
-          );
+        // If we have 2+ submissions with individual counts, no reminder needed
+        if (dunwoodyStatus.complete) {
+          return {
+            success: true,
+            message:
+              'Dunwoody has 2+ collection logs with individual sandwich counts - no reminder needed',
+          };
         }
-        // If Stephanie/Marcy submitted but Lisa hasn't, target only Lisa
-        else if (!dunwoodyStatus.lisaHiles && dunwoodyStatus.stephanieOrMarcy) {
-          return await sendDunwoodyTargetedEmail(['lisa'], appUrl);
-        }
-        // If neither submitted, target all
-        else if (
-          !dunwoodyStatus.lisaHiles &&
-          !dunwoodyStatus.stephanieOrMarcy
-        ) {
+        // Otherwise, send reminder to all Dunwoody contacts
+        else {
           return await sendDunwoodyTargetedEmail(
             ['lisa', 'stephanie', 'marcy'],
             appUrl
           );
-        }
-        // If both submitted, no email needed
-        else {
-          return {
-            success: true,
-            message:
-              'Both Dunwoody submissions already received - no reminder needed',
-          };
         }
       }
     }
