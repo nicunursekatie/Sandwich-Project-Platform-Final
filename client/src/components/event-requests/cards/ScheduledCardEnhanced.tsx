@@ -2001,15 +2001,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : canEdit ? (
                   <div className="flex items-center justify-end py-0.5">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('speakersNeeded', '1')}
-                      className="h-5 w-5 p-0 text-[#007E8C]"
-                      title="Add speaker need"
-                    >
-                      <Megaphone className="w-3 h-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('speakersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Megaphone className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add speaker need</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 ) : null}
 
@@ -2039,13 +2045,29 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       ) : (
                         <>
                           <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                            <Users className="w-5 h-5" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <Users className="w-5 h-5" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Volunteers</p>
+                              </TooltipContent>
+                            </Tooltip>
                             Volunteers ({volunteerAssigned}/{volunteerNeeded})
                           </span>
                           {canEdit && (
-                            <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
-                              <UserPlus className="w-3 h-3" aria-hidden="true" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white" aria-label="Add volunteer">
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Assign volunteers</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </>
                       )}
@@ -2055,14 +2077,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                           <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
                           {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('volunteer', id)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('volunteer', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove volunteer assignment</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       ))}
@@ -2071,15 +2100,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : canEdit ? (
                   <div className="flex items-center justify-end py-0.5">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('volunteersNeeded', '1')}
-                      className="h-5 px-2 text-[#007E8C] text-xs"
-                    >
-                      <Users className="w-3 h-3 mr-0.5" />
-                      Add Volunteer Need
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('volunteersNeeded', '1')}
+                          className="h-5 px-2 text-[#007E8C] text-xs"
+                        >
+                          <Users className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add volunteer need</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 ) : null}
               </div>

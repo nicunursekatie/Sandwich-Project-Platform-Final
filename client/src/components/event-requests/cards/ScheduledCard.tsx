@@ -675,7 +675,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
       return (
         <div className="flex items-center gap-2 group">
-          <Package className="w-4 h-4 text-[#FBAD3F]" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Package className="w-4 h-4 text-[#FBAD3F]" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sandwich information</p>
+            </TooltipContent>
+          </Tooltip>
           <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Sandwiches:</span>
           {hasNoSandwiches ? (
             <>
@@ -695,14 +704,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <>
               <span className="text-base text-[#FBAD3F] font-bold">{sandwichInfo}</span>
               {canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => startEditing('sandwichTypes', '')}
-                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('sandwichTypes', '')}
+                      className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit sandwich types and quantities</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </>
           )}
@@ -1017,44 +1033,67 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           {/* Quick Actions */}
           <div className="flex gap-2">
             {/* Message - always visible */}
-            <Button
-              size="sm"
-              onClick={() => setShowMessageDialog(true)}
-              variant="ghost"
-              className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-              aria-label="Message about this event"
-            >
-              <MessageSquare className="w-4 h-4" aria-hidden="true" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => setShowMessageDialog(true)}
+                  variant="ghost"
+                  className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                  aria-label="Message about this event"
+                >
+                  <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message about this event</p>
+              </TooltipContent>
+            </Tooltip>
 
             {canEdit && (
               <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
-                      data-testid="button-delete-request"
+                      onClick={onEdit}
+                      className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Edit2 className="w-4 h-4" />
                     </Button>
-                  }
-                  title="Delete Scheduled Event"
-                  description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
-                  confirmText="Delete Event"
-                  cancelText="Cancel"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit event</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <ConfirmationDialog
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
+                            data-testid="button-delete-request"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        }
+                        title="Delete Scheduled Event"
+                        description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
+                        confirmText="Delete Event"
+                        cancelText="Cancel"
+                        onConfirm={onDelete}
+                        variant="destructive"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Delete event</p>
+                  </TooltipContent>
+                </Tooltip>
               </>
             )}
           </div>
@@ -1064,13 +1103,55 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
           <div className="bg-white rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] shadow-md">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <Users className="w-4 h-4 text-[#47B3CB]" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Users className="w-4 h-4 text-[#47B3CB]" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contact information</p>
+                </TooltipContent>
+              </Tooltip>
               Contact Information
             </h3>
 
-            {request.firstName && request.lastName && renderEditableField('firstName', `${request.firstName} ${request.lastName}`, 'Organizer', <Users className="w-4 h-4" />)}
-            {request.email && renderEditableField('email', request.email, 'Email', <Mail className="w-4 h-4" />)}
-            {request.phone && renderEditableField('phone', request.phone, 'Phone', <Phone className="w-4 h-4" />)}
+            {request.firstName && request.lastName && renderEditableField('firstName', `${request.firstName} ${request.lastName}`, 'Organizer', (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Users className="w-4 h-4" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Event organizer</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+            {request.email && renderEditableField('email', request.email, 'Email', (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Mail className="w-4 h-4" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Email address</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+            {request.phone && renderEditableField('phone', request.phone, 'Phone', (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Phone className="w-4 h-4" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Phone number</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
 
             {/* Backup Contact */}
             {((request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone) && (
@@ -1078,7 +1159,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <div className="text-xs font-semibold text-gray-500 uppercase">Backup Contact</div>
                 {((request as any).backupContactFirstName || (request as any).backupContactLastName) && (
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-500" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Users className="w-4 h-4 text-gray-500" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Backup contact name</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Name:</span>
                     <span className="text-base text-gray-900 break-words min-w-0">
                       {(request as any).backupContactFirstName} {(request as any).backupContactLastName}
@@ -1090,7 +1180,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {(request as any).backupContactEmail && (
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Mail className="w-4 h-4 text-gray-500" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Backup contact email</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Email:</span>
                     <a
                       href={`mailto:${(request as any).backupContactEmail}`}
@@ -1102,7 +1201,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {(request as any).backupContactPhone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-500" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Phone className="w-4 h-4 text-gray-500" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Backup contact phone</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="text-base font-medium text-gray-600 min-w-0 sm:min-w-[100px]">Phone:</span>
                     <a
                       href={`tel:${(request as any).backupContactPhone}`}
@@ -1117,20 +1225,36 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
-                <UserPlus className="w-4 h-4 text-[#236383]" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <UserPlus className="w-4 h-4 text-[#236383]" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>TSP contact assigned to this event</p>
+                  </TooltipContent>
+                </Tooltip>
                 <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">TSP Contact:</span>
                 <span className="text-base text-[#236383] font-semibold">
                   {request.customTspContact || resolveUserName(request.tspContact || '')}
                 </span>
                 {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onEditTspContact}
-                    className="h-6 px-2"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onEditTspContact}
+                        className="h-6 px-2"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit TSP contact assignment</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             )}
@@ -1140,7 +1264,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Event Details Section */}
         <div className="bg-white rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] shadow-md">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
-            <Calendar className="w-4 h-4 text-[#47B3CB]" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Calendar className="w-4 h-4 text-[#47B3CB]" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Event details</p>
+              </TooltipContent>
+            </Tooltip>
             Event Details
           </h3>
 
@@ -1180,7 +1313,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 group flex-wrap">
-              <Calendar className="w-4 h-4 text-[#47B3CB]" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Calendar className="w-4 h-4 text-[#47B3CB]" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Event date</p>
+                </TooltipContent>
+              </Tooltip>
               <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
@@ -1217,19 +1359,26 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </Badge>
               )}
               {canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    startEditing(
-                      dateFieldToEdit,
-                      formatDateForInput(displayDate?.toString() || '')
-                    )
-                  }
-                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        startEditing(
+                          dateFieldToEdit,
+                          formatDateForInput(displayDate?.toString() || '')
+                        )
+                      }
+                      className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit event date</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           )}
@@ -1239,7 +1388,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {request.eventStartTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-[#47B3CB]" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Clock className="w-4 h-4 text-[#47B3CB]" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Event start time</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-sm font-semibold text-[#236383]">Start:</span>
                   {isEditingThisCard && editingField === 'eventStartTime' ? (
                     <>
@@ -1263,19 +1421,26 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {formatTime12Hour(request.eventStartTime)}
                       </span>
                       {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'eventStartTime',
-                              formatTimeForInput(request.eventStartTime || '')
-                            )
-                          }
-                          className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                startEditing(
+                                  'eventStartTime',
+                                  formatTimeForInput(request.eventStartTime || '')
+                                )
+                              }
+                              className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit start time</p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </>
                   )}
@@ -1284,7 +1449,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {request.eventEndTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-[#47B3CB]" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Clock className="w-4 h-4 text-[#47B3CB]" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Event end time</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-sm font-semibold text-[#236383]">End:</span>
                   {isEditingThisCard && editingField === 'eventEndTime' ? (
                     <>
@@ -1329,7 +1503,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {(request.pickupDateTime || request.pickupTime || (request.overnightHoldingLocation && request.overnightPickupTime)) && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-[#FBAD3F]" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Clock className="w-4 h-4 text-[#FBAD3F]" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Sandwich pickup time</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-sm font-semibold text-[#236383]">Pickup:</span>
                   {isEditingThisCard && (editingField === 'pickupDateTime' || editingField === 'pickupTime') ? (
                     editingField === 'pickupDateTime' ? (
@@ -1442,28 +1625,35 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             return formatTime12Hour(request.pickupTime!);
                           })()}
                         </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (request.pickupDateTime) {
-                                startEditing(
-                                  'pickupDateTime',
-                                  request.pickupDateTime.toString()
-                                );
-                              } else {
-                                startEditing(
-                                  'pickupTime',
-                                  formatTimeForInput(request.pickupTime || '')
-                                );
-                              }
-                            }}
-                            className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                         {canEdit && (
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button
+                                 size="sm"
+                                 variant="ghost"
+                                 onClick={() => {
+                                   if (request.pickupDateTime) {
+                                     startEditing(
+                                       'pickupDateTime',
+                                       request.pickupDateTime.toString()
+                                     );
+                                   } else {
+                                     startEditing(
+                                       'pickupTime',
+                                       formatTimeForInput(request.pickupTime || '')
+                                     );
+                                   }
+                                 }}
+                                 className="h-5 px-1.5 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                               >
+                                 <Edit2 className="w-3 h-3" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>Edit pickup time</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         )}
                       </div>
                       {/* Show overnight holding indicator if set */}
                       {request.overnightHoldingLocation && (
