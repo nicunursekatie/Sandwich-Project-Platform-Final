@@ -1,14 +1,7 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { logger } from '../middleware/logger';
 import { predictMonthlySandwichNeeds, predictNextMonths } from '../services/ai-predictions';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role?: string;
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 export const predictionsRouter = Router();
 

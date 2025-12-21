@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { eq, and, desc, asc, sql, or, like, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import {
@@ -12,28 +12,7 @@ import {
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Create resources router
 const resourcesRouter = Router();

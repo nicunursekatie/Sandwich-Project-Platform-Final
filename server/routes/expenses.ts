@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { db } from '../db';
@@ -16,22 +16,10 @@ import { ObjectStorageService } from '../objectStorage';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { safeDeleteFile } from '../utils/file-cleanup';
+import type { AuthenticatedRequest } from '../types/express';
 
 // Initialize object storage service for receipt uploads
 const objectStorageService = new ObjectStorageService();
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    displayName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
 
 // Input validation schemas
 const createExpenseWithoutReceiptSchema = insertExpenseSchema.omit({

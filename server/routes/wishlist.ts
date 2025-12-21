@@ -1,26 +1,15 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { eq, desc, or } from 'drizzle-orm';
 import { db } from '../db';
-import { 
-  wishlistSuggestions, 
+import {
+  wishlistSuggestions,
   insertWishlistSuggestionSchema,
   type WishlistSuggestion,
-  type InsertWishlistSuggestion 
+  type InsertWishlistSuggestion
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Input validation schemas
 const createSuggestionSchema = insertWishlistSuggestionSchema

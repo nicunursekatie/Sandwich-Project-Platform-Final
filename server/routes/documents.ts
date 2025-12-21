@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { promises as fs, existsSync } from 'fs';
@@ -7,28 +7,7 @@ import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import { storage } from '../storage-wrapper';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Custom multer configuration for documents
 const documentsUpload = multer({

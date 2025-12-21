@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { db } from '../db';
@@ -16,19 +16,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { promotionGraphicsUpload } from '../middleware/uploads';
 import { ObjectStorageService } from '../objectStorage';
 import { batchSendEmails } from '../utils/batch-operations';
-
-// Type definitions for authenticated requests
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    displayName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 // Input validation schemas
 const createPromotionGraphicSchema = insertPromotionGraphicSchema
