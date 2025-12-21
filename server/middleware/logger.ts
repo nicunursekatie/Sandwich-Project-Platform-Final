@@ -13,6 +13,8 @@ export interface LogEntry {
   responseTime?: number;
   error?: any;
   errors?: any; // For validation errors
+  // Allow additional arbitrary properties for flexible logging
+  [key: string]: any;
 }
 
 class Logger {
@@ -57,21 +59,29 @@ class Logger {
     }
   }
 
-  info(message: string, extra?: Partial<LogEntry>) {
-    this.addLog(this.createLogEntry('info', message, extra));
+  // Helper to normalize extra parameter - accepts string or object
+  private normalizeExtra(extra?: string | Partial<LogEntry>): Partial<LogEntry> | undefined {
+    if (typeof extra === 'string') {
+      return { message: extra };
+    }
+    return extra;
+  }
+
+  info(message: string, extra?: string | Partial<LogEntry>) {
+    this.addLog(this.createLogEntry('info', message, this.normalizeExtra(extra)));
   }
 
   // Alias for info() - maintains backward compatibility with code calling logger.log()
-  log(message: string, extra?: Partial<LogEntry>) {
+  log(message: string, extra?: string | Partial<LogEntry>) {
     this.info(message, extra);
   }
 
-  warn(message: string, extra?: Partial<LogEntry>) {
-    this.addLog(this.createLogEntry('warn', message, extra));
+  warn(message: string, extra?: string | Partial<LogEntry>) {
+    this.addLog(this.createLogEntry('warn', message, this.normalizeExtra(extra)));
   }
 
-  error(message: string, error?: any, extra?: Partial<LogEntry>) {
-    this.addLog(this.createLogEntry('error', message, { ...extra, error }));
+  error(message: string, error?: any, extra?: string | Partial<LogEntry>) {
+    this.addLog(this.createLogEntry('error', message, { ...this.normalizeExtra(extra), error }));
   }
 
   getLogs(level?: LogEntry['level'], limit = 100): LogEntry[] {

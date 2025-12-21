@@ -1998,7 +1998,7 @@ router.patch(
 
       logger.info(`[PATCH /:id] Database update result:`, updatedEventRequest ? 'Success' : 'Not found');
       if (updatedEventRequest) {
-        logger.info(`[PATCH /:id] Updated desiredEventDate:`, updatedEventRequest.desiredEventDate);
+        logger.info(`[PATCH /:id] Updated desiredEventDate: ${updatedEventRequest.desiredEventDate}`);
       }
 
       if (!updatedEventRequest) {
