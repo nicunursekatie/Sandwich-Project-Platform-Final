@@ -1563,11 +1563,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             // Overnight pickup is always next day
                             if (request.overnightHoldingLocation && request.overnightPickupTime) {
                               const timeStr = formatTime12Hour(request.overnightPickupTime);
+                              // Calculate next day date from event date
+                              const nextDayDate = displayDate ? (() => {
+                                const dateStr = displayDate.toString().split('T')[0];
+                                const [year, month, day] = dateStr.split('-').map(Number);
+                                const eventDate = new Date(year, month - 1, day);
+                                const nextDay = new Date(eventDate);
+                                nextDay.setDate(nextDay.getDate() + 1);
+                                return nextDay.toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                });
+                              })() : null;
                               return (
                                 <>
                                   <span>{timeStr}</span>
                                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
-                                    Next Day
+                                    Next Day {nextDayDate ? `(${nextDayDate})` : ''}
                                   </Badge>
                                 </>
                               );
@@ -1599,11 +1611,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               
                               // If it's the next day, show indicator with just time
                               if (isNextDay) {
+                                // Format the pickup date
+                                const nextDayDateStr = pickupDate.toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                });
                                 return (
                                   <>
                                     <span>{timeStr}</span>
                                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
-                                      Next Day
+                                      Next Day ({nextDayDateStr})
                                     </Badge>
                                   </>
                                 );

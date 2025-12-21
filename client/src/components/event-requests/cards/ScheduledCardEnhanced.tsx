@@ -750,6 +750,32 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   ))}
                 </div>
               )}
+              
+              {/* Address - moved from Event Details */}
+              {request.eventAddress && (
+                <div className="flex items-start gap-2 mt-2">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-[#007E8C]" />
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#007E8C] hover:text-[#007E8C]/80 underline font-medium break-words"
+                  >
+                    {request.eventAddress}
+                  </a>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('eventAddress', request.eventAddress || '')}
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-5 px-1.5"
+                      aria-label="Edit address"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Date Display */}
@@ -1372,11 +1398,23 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               // Overnight pickup is always next day
                               if (request.overnightHoldingLocation && request.overnightPickupTime) {
                                 const timeStr = formatTime12Hour(request.overnightPickupTime);
+                                // Calculate next day date from event date
+                                const nextDayDate = displayDate ? (() => {
+                                  const dateStr = displayDate.toString().split('T')[0];
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  const eventDate = new Date(year, month - 1, day);
+                                  const nextDay = new Date(eventDate);
+                                  nextDay.setDate(nextDay.getDate() + 1);
+                                  return nextDay.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  });
+                                })() : null;
                                 return (
                                   <>
                                     <span>{timeStr}</span>
                                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
-                                      Next Day
+                                      Next Day {nextDayDate ? `(${nextDayDate})` : ''}
                                     </Badge>
                                   </>
                                 );
@@ -1403,11 +1441,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 
                                 // If it's the next day, show indicator
                                 if (isNextDay) {
+                                  // Format the pickup date
+                                  const nextDayDateStr = pickupDate.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  });
                                   return (
                                     <>
                                       <span>{timeStr}</span>
                                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
-                                        Next Day
+                                        Next Day ({nextDayDateStr})
                                       </Badge>
                                     </>
                                   );
@@ -1420,10 +1463,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               return request.pickupTime ? formatTime12Hour(request.pickupTime) : <span className="text-gray-600 font-medium">Not set</span>;
                             })()}
                           </div>
-                          {/* Show overnight holding location if set */}
+                          {/* Show overnight holding indicator if set */}
                           {request.overnightHoldingLocation && (
                             <div className="text-xs text-amber-600 font-medium mt-1">
-                              Overnight at {request.overnightHoldingLocation}
+                              Holding Overnight
                             </div>
                           )}
                         </div>
@@ -1452,303 +1495,212 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-            {/* Address */}
-            <div className="flex items-start gap-2">
-              <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-[#007E8C]" />
-              {isEditingThisCard && editingField === 'eventAddress' ? (
-                <div className="flex-1 flex flex-col gap-2">
-                  <Input
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="bg-white text-gray-900 border-[#007E8C]/20"
-                    placeholder="Event address"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white">
-                      <Save className="w-3 h-3 mr-1" /> Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 group">
-                  {request.eventAddress ? (
-                    <a
-                      href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-base text-[#007E8C] hover:text-[#007E8C]/80 underline font-semibold"
-                    >
-                      {request.eventAddress}
-                    </a>
-                  ) : (
-                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-sm">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      No address set
-                    </Badge>
-                  )}
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('eventAddress', request.eventAddress || '')}
-                      className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 ml-2"
-                      aria-label="Edit"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Sandwiches - Inline Editable */}
-            <div className="flex items-center gap-2">
-              <Package className="w-5 h-5 shrink-0" />
-              {isEditingThisCard && editingField === 'sandwichTypes' ? (
-                <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
-                      onClick={() => setInlineSandwichMode('total')}
-                      className="h-7"
-                    >
-                      Exact
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
-                      onClick={() => setInlineSandwichMode('range')}
-                      className="h-7"
-                    >
-                      Range
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
-                      onClick={() => setInlineSandwichMode('types')}
-                      className="h-7"
-                    >
-                      By Type
-                    </Button>
-                  </div>
-
-                  {inlineSandwichMode === 'total' && (
-                    <Input
-                      type="number"
-                      value={inlineTotalCount}
-                      onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
-                      placeholder="Total count"
-                      className="bg-white text-gray-900"
-                    />
-                  )}
-
-                  {inlineSandwichMode === 'range' && (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          value={inlineRangeMin}
-                          onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
-                          placeholder="Min"
-                          className="w-24 bg-white text-gray-900"
-                        />
-                        <span className="text-white self-center">to</span>
-                        <Input
-                          type="number"
-                          value={inlineRangeMax}
-                          onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
-                          placeholder="Max"
-                          className="w-24 bg-white text-gray-900"
-                        />
-                      </div>
-                      <Select value={inlineRangeType || undefined} onValueChange={setInlineRangeType}>
-                        <SelectTrigger className="bg-white text-gray-900">
-                          <SelectValue placeholder="Type (optional)" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                          {SANDWICH_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {inlineSandwichMode === 'types' && (
-                    <div className="space-y-2">
-                      {inlineSandwichTypes.map((item, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Select
-                            value={item.type}
-                            onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+            {/* Delivery Logistics - moved from Column 3 */}
+            {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation || (isEditingThisCard && editingField === 'assignedRecipientIds')) ? (
+              <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md mt-3">
+                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                  Delivery Logistics
+                </h3>
+                
+                <div className="space-y-4">
+                  {/* Recipients */}
+                  {(request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || (isEditingThisCard && editingField === 'assignedRecipientIds') ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
+                        {canEdit && !isEditingThisCard && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setTempOvernightHolding(request.overnightHoldingLocation || '');
+                              startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
+                            }}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
                           >
-                            <SelectTrigger className="bg-white text-gray-900">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent position="popper" sideOffset={5}>
-                              {SANDWICH_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
-                            className="w-20 bg-white text-gray-900"
-                          />
-                          <Button size="sm" variant="ghost" onClick={() => removeInlineSandwichType(index)} className="text-white" aria-label="Remove sandwich type">
-                            <X className="w-3 h-3" aria-hidden="true" />
+                            <Edit2 className="w-3 h-3" />
                           </Button>
-                        </div>
-                      ))}
-                      <Button size="sm" onClick={addInlineSandwichType} variant="outline" className="w-full">
-                        + Add Type
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-3 h-3 mr-1" /> Save
-                        </>
-                      )}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 group flex items-center gap-2">
-                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
-                    <span className="text-xl">🥪</span>
-                    <span>{sandwichInfo}</span>
-                  </Badge>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('sandwichTypes', '')}
-                      className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
-                      aria-label="Edit sandwich types"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Attendance */}
-            <div className="flex items-start gap-2">
-              <Users className="w-5 h-5 shrink-0 mt-0.5" />
-              {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
-                <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-300 block mb-1">Adults</label>
-                      <Input
-                        type="number"
-                        value={editingValue.split(',')[0] || ''}
-                        onChange={(e) => {
-                          const parts = editingValue.split(',');
-                          parts[0] = e.target.value;
-                          setEditingValue(parts.join(','));
-                        }}
-                        className="h-8 w-full bg-white text-gray-900"
-                        placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-300 block mb-1">Teens</label>
-                      <Input
-                        type="number"
-                        value={editingValue.split(',')[1] || ''}
-                        onChange={(e) => {
-                          const parts = editingValue.split(',');
-                          parts[1] = e.target.value;
-                          setEditingValue(parts.join(','));
-                        }}
-                        className="h-8 w-full bg-white text-gray-900"
-                        placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-300 block mb-1">Kids</label>
-                      <Input
-                        type="number"
-                        value={editingValue.split(',')[2] || ''}
-                        onChange={(e) => {
-                          const parts = editingValue.split(',');
-                          parts[2] = e.target.value;
-                          setEditingValue(parts.join(','));
-                        }}
-                        className="h-8 w-full bg-white text-gray-900"
-                        placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90" aria-label="Save">
-                      <Save className="w-3 h-3 mr-1" aria-hidden="true" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20" aria-label="Cancel">
-                      <X className="w-3 h-3 mr-1" aria-hidden="true" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`)}>
-                  <div className="text-base font-semibold">
-                    {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) ? (
-                      <div className="flex flex-wrap gap-2">
-                        {request.attendanceAdults ? <span>{request.attendanceAdults} adults</span> : null}
-                        {request.attendanceTeens ? <span>{request.attendanceTeens} teens</span> : null}
-                        {request.attendanceKids ? <span>{request.attendanceKids} kids</span> : null}
-                        <span className="text-gray-300">
-                          ({(request.attendanceAdults || 0) + (request.attendanceTeens || 0) + (request.attendanceKids || 0)} total)
-                        </span>
+                        )}
                       </div>
-                    ) : request.estimatedAttendance ? (
-                      `${request.estimatedAttendance} people expected`
-                    ) : (
-                      <span className="text-gray-600 font-medium">No attendance set</span>
-                    )}
-                  </div>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => { e.stopPropagation(); startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`); }}
-                      className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
-                      aria-label="Edit attendance"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
+                      {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                        <div className="space-y-2">
+                          <MultiRecipientSelector
+                            value={(() => {
+                              try {
+                                return JSON.parse(editingValue || '[]');
+                              } catch {
+                                return request.assignedRecipientIds || [];
+                              }
+                            })()}
+                            onChange={(value) => setEditingValue(JSON.stringify(value))}
+                            placeholder="Select recipient organizations..."
+                            data-testid="assigned-recipients-editor"
+                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={tempOvernightHolding}
+                              onChange={(e) => setTempOvernightHolding(e.target.value)}
+                              placeholder="Overnight holding location (optional)"
+                              className="flex-1 bg-white text-gray-900"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const updates: Record<string, any> = {};
+                                try {
+                                  const newRecipients = JSON.parse(editingValue || '[]');
+                                  if (JSON.stringify(newRecipients) !== JSON.stringify(request.assignedRecipientIds || [])) {
+                                    updates.assignedRecipientIds = newRecipients;
+                                  }
+                                } catch {
+                                  // ignore
+                                }
+                                if (tempOvernightHolding !== request.overnightHoldingLocation) {
+                                  updates.overnightHoldingLocation = tempOvernightHolding || null;
+                                }
+                                updateFieldsMutation.mutate(updates, {
+                                  onSuccess: () => {
+                                    cancelEdit();
+                                  },
+                                });
+                              }}
+                              className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white"
+                              disabled={updateFieldsMutation.isPending}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {parsePostgresArray(request.assignedRecipientIds).map((id) => (
+                            <div key={id} className="bg-white/60 rounded px-3 py-1.5 border border-[#FBAD3F]/30">
+                              <span className="text-base font-semibold text-gray-900">
+                                {getRecipientName ? getRecipientName(id) : id}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {/* Overnight Holding */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
+                        {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            placeholder="Overnight holding location"
+                            className="bg-white text-gray-900"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white">
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
+                          {request.overnightHoldingLocation}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Next-Day Pickup Time */}
+                  {request.overnightHoldingLocation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
+                        {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingThisCard && editingField === 'overnightPickupTime' ? (
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="bg-white text-gray-900"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white">
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-gray-900">
+                          {request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : <span className="text-gray-500 italic">Not set</span>}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : canEdit ? (
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase text-gray-600 font-medium">Delivery Logistics</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
+                    Not set
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setTempOvernightHolding(request.overnightHoldingLocation || '');
+                      startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
+                    }}
+                    className="h-5 px-2 text-[#007E8C] text-xs"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Set
+                  </Button>
+                </div>
+              </div>
+            ) : null}
               </div>
             </div>
           </div>
@@ -1761,6 +1713,250 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 Team Assignments
               </h3>
               <div className="space-y-3">
+                {/* Sandwiches - moved from Column 1 */}
+                <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                  <Package className="w-5 h-5 shrink-0" />
+                  {isEditingThisCard && editingField === 'sandwichTypes' ? (
+                    <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
+                          onClick={() => setInlineSandwichMode('total')}
+                          className="h-7"
+                        >
+                          Exact
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
+                          onClick={() => setInlineSandwichMode('range')}
+                          className="h-7"
+                        >
+                          Range
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
+                          onClick={() => setInlineSandwichMode('types')}
+                          className="h-7"
+                        >
+                          By Type
+                        </Button>
+                      </div>
+
+                      {inlineSandwichMode === 'total' && (
+                        <Input
+                          type="number"
+                          value={inlineTotalCount}
+                          onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+                          placeholder="Total count"
+                          className="bg-white text-gray-900"
+                        />
+                      )}
+
+                      {inlineSandwichMode === 'range' && (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={inlineRangeMin}
+                              onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
+                              placeholder="Min"
+                              className="w-24 bg-white text-gray-900"
+                            />
+                            <span className="text-white self-center">to</span>
+                            <Input
+                              type="number"
+                              value={inlineRangeMax}
+                              onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
+                              placeholder="Max"
+                              className="w-24 bg-white text-gray-900"
+                            />
+                          </div>
+                          <Select value={inlineRangeType || undefined} onValueChange={setInlineRangeType}>
+                            <SelectTrigger className="bg-white text-gray-900">
+                              <SelectValue placeholder="Type (optional)" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                              {SANDWICH_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {inlineSandwichMode === 'types' && (
+                        <div className="space-y-2">
+                          {inlineSandwichTypes.map((item, index) => (
+                            <div key={index} className="flex gap-2">
+                              <Select
+                                value={item.type}
+                                onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+                              >
+                                <SelectTrigger className="bg-white text-gray-900">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent position="popper" sideOffset={5}>
+                                  {SANDWICH_TYPES.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                                className="w-20 bg-white text-gray-900"
+                              />
+                              <Button size="sm" variant="ghost" onClick={() => removeInlineSandwichType(index)} className="text-white" aria-label="Remove sandwich type">
+                                <X className="w-3 h-3" aria-hidden="true" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button size="sm" onClick={addInlineSandwichType} variant="outline" className="w-full">
+                            + Add Type
+                          </Button>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-2">
+                        <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
+                          {isSaving ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3 h-3 mr-1" /> Save
+                            </>
+                          )}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 group flex items-center gap-2">
+                      <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                        <span className="text-xl">🥪</span>
+                        <span>{sandwichInfo}</span>
+                      </Badge>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('sandwichTypes', '')}
+                          className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
+                          aria-label="Edit sandwich types"
+                        >
+                          <Edit2 className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Attendance - moved from Column 1, under sandwiches */}
+                <div className="flex items-start gap-2 pb-3 border-b border-gray-200">
+                  <Users className="w-5 h-5 shrink-0 mt-0.5" />
+                  {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
+                    <div className="flex-1 space-y-2">
+                      <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-xs text-gray-300 block mb-1">Adults</label>
+                          <Input
+                            type="number"
+                            value={editingValue.split(',')[0] || ''}
+                            onChange={(e) => {
+                              const parts = editingValue.split(',');
+                              parts[0] = e.target.value;
+                              setEditingValue(parts.join(','));
+                            }}
+                            className="h-8 w-full bg-white text-gray-900"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-300 block mb-1">Teens</label>
+                          <Input
+                            type="number"
+                            value={editingValue.split(',')[1] || ''}
+                            onChange={(e) => {
+                              const parts = editingValue.split(',');
+                              parts[1] = e.target.value;
+                              setEditingValue(parts.join(','));
+                            }}
+                            className="h-8 w-full bg-white text-gray-900"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-300 block mb-1">Kids</label>
+                          <Input
+                            type="number"
+                            value={editingValue.split(',')[2] || ''}
+                            onChange={(e) => {
+                              const parts = editingValue.split(',');
+                              parts[2] = e.target.value;
+                              setEditingValue(parts.join(','));
+                            }}
+                            className="h-8 w-full bg-white text-gray-900"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white">
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`)}>
+                      <div className="text-base font-semibold">
+                        {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) ? (
+                          <div className="flex flex-wrap gap-2">
+                            {request.attendanceAdults ? <span>{request.attendanceAdults} adults</span> : null}
+                            {request.attendanceTeens ? <span>{request.attendanceTeens} teens</span> : null}
+                            {request.attendanceKids ? <span>{request.attendanceKids} kids</span> : null}
+                            <span className="text-gray-300">
+                              ({(request.attendanceAdults || 0) + (request.attendanceTeens || 0) + (request.attendanceKids || 0)} total)
+                            </span>
+                          </div>
+                        ) : request.estimatedAttendance ? (
+                          `${request.estimatedAttendance} people expected`
+                        ) : (
+                          <span className="text-gray-600 font-medium">No attendance set</span>
+                        )}
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); startEditing('attendanceBreakdown', `${request.attendanceAdults || ''},${request.attendanceTeens || ''},${request.attendanceKids || ''}`); }}
+                          className="text-white hover:bg-white/20 h-6 px-2 transition-colors"
+                          aria-label="Edit attendance"
+                        >
+                          <Edit2 className="w-3 h-3" aria-hidden="true" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Drivers */}
                 {request.selfTransport ? (
@@ -2177,254 +2373,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
               </div>
             </div>
-
-            {/* Delivery Logistics */}
-            {((request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || request.recipientsCount || request.overnightHoldingLocation || (isEditingThisCard && editingField === 'assignedRecipientIds')) ? (
-              <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
-                <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                  Delivery Logistics
-                </h3>
-                
-                <div className="space-y-4">
-                  {/* Recipients */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
-                      {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setTempOvernightHolding(request.overnightHoldingLocation || '');
-                            startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
-                          }}
-                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                    {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-                      <div className="space-y-4">
-                        <div>
-                          <MultiRecipientSelector
-                            value={editingValue ? JSON.parse(editingValue) : []}
-                            onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                            placeholder="Select recipients..."
-                          />
-                        </div>
-                        
-                        {/* Overnight Holding Location */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding Location</span>
-                          </div>
-                          <Input
-                            type="text"
-                            value={tempOvernightHolding}
-                            onChange={(e) => setTempOvernightHolding(e.target.value)}
-                            placeholder="Enter overnight holding location (optional)"
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => {
-                              // Save both recipients and overnight holding location
-                              const updates: Record<string, unknown> = {
-                                assignedRecipientIds: editingValue ? JSON.parse(editingValue) : []
-                              };
-                              if (tempOvernightHolding !== request.overnightHoldingLocation) {
-                                updates.overnightHoldingLocation = tempOvernightHolding || null;
-                              }
-                              updateFieldsMutation.mutate(updates, {
-                                onSuccess: () => {
-                                  cancelEdit();
-                                  setTempOvernightHolding('');
-                                }
-                              });
-                            }} 
-                            className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90"
-                          >
-                            <Save className="w-3 h-3 mr-1" /> Save
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => {
-                              cancelEdit();
-                              setTempOvernightHolding('');
-                            }} 
-                            className="text-gray-600 hover:bg-gray-100"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="min-w-0">
-                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                          <div className="flex flex-col gap-1.5 min-w-0">
-                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                              const recipientName = getRecipientName(id);
-                              // Skip if the name still contains the raw ID format
-                              if (recipientName.startsWith('recipient:') || recipientName.startsWith('host:') || recipientName.startsWith('Recipient ID') || recipientName.startsWith('Host ID')) {
-                                return null;
-                              }
-                              const cleanName = recipientName.includes('(')
-                                ? recipientName.substring(0, recipientName.indexOf('(')).trim()
-                                : recipientName;
-                              const displayName = cleanName.length > 25
-                                ? cleanName.substring(0, 22) + '...'
-                                : cleanName;
-                              return (
-                                <Badge
-                                  key={idx}
-                                  title={recipientName}
-                                  className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
-                                >
-                                  <span className="text-sm shrink-0">🏠</span>
-                                  <span className="truncate">{displayName}</span>
-                                </Badge>
-                              );
-                            }).filter(Boolean)}
-                            {request.assignedRecipientIds.length > 3 && (
-                              <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-xs font-medium px-2 py-1 shadow-sm w-fit">
-                                +{request.assignedRecipientIds.length - 3} more recipients
-                              </Badge>
-                            )}
-                          </div>
-                        ) : request.recipientsCount ? (
-                          <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
-                            <span className="text-sm">🏠</span>
-                            <span>Unknown Host ({request.recipientsCount})</span>
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
-                            <Building2 className="w-3 h-3 mr-1" />
-                            No recipients assigned
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Overnight Holding */}
-                  {request.overnightHoldingLocation && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
-                        {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                      {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
-                        <div className="flex flex-col gap-2">
-                          <Input
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="bg-white text-gray-900 h-8 text-sm"
-                            placeholder="Overnight holding location"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
-                              <Save className="w-3 h-3 mr-1" /> Save
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
-                          {request.overnightHoldingLocation}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Next-Day Pickup Time */}
-                  {request.overnightHoldingLocation && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
-                        {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
-                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                      {isEditingThisCard && editingField === 'overnightPickupTime' ? (
-                        <div className="flex flex-col gap-2">
-                          <Input
-                            type="time"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="bg-white text-gray-900 h-8 text-sm w-32"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
-                              <Save className="w-3 h-3 mr-1" /> Save
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium text-gray-900">
-                          {request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : <span className="text-gray-500 italic">Not set</span>}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-3 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                    <span className="text-xs uppercase text-gray-600 font-medium">Delivery Logistics</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#B8871F] border-[#FBAD3F] text-xs py-0.5 px-2">
-                      <Building2 className="w-3 h-3 mr-1" />
-                      No recipients
-                    </Badge>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setTempOvernightHolding(request.overnightHoldingLocation || '');
-                          startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
-                        }}
-                        className="h-5 px-2 text-[#007E8C] text-xs"
-                      >
-                        <Edit2 className="w-3 h-3 mr-0.5" />
-                        Set
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Delivery Logistics moved to Column 1, right after times row */}
           </div>
         </div>
 
