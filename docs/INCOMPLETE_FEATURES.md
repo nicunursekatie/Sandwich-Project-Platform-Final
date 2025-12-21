@@ -2,48 +2,13 @@
 
 This document catalogs all incomplete features and TODO items in the codebase, organized by priority and module.
 
----
-
-## 🔴 Critical / High Priority
-
-### 1. Push Notification Service (Not Implemented)
-**Location:** `server/services/push-notification-service.ts`
-
-The entire push notification service is stubbed out and returns `NOT_IMPLEMENTED`.
-
-| Line | Issue |
-|------|-------|
-| 96 | FCM push notification not implemented |
-| 184 | FCM multicast not implemented |
-| 267 | Device token retrieval not implemented |
-| 311-319 | Device token storage not implemented |
-| 360-367 | Device token removal not implemented |
-
-**Current State:** All push notification calls log a warning and return `{ success: false, error: 'NOT_IMPLEMENTED' }`
-
-**Required to Complete:**
-- Set up Firebase Cloud Messaging (FCM) credentials
-- Create `userDeviceTokens` database table
-- Implement token storage/retrieval endpoints
-- Integrate firebase-admin SDK
+**Notification Infrastructure:** This app uses **SendGrid** (email) and **Twilio** (SMS) for notifications. There is no Firebase/FCM integration.
 
 ---
 
-### 2. Smart Notification Delivery (Push Channel Incomplete)
-**Location:** `server/services/notifications/smart-delivery.ts`
+## 🟠 Medium Priority (Incomplete Features)
 
-| Line | Issue |
-|------|-------|
-| 529 | Get user's device tokens from database - not implemented |
-| 539 | Send push notification using appropriate service - not implemented |
-
-**Current State:** Push channel in smart delivery system throws errors instead of sending notifications.
-
----
-
-## 🟠 Medium Priority
-
-### 3. Database Environment Configuration
+### 1. Database Environment Configuration
 **Location:** `server/db.ts:10`
 
 ```
@@ -54,9 +19,11 @@ TODO: Switch back to DEV_DATABASE_URL once dev database has schema pushed
 
 **Impact:** Risk of accidental production data modification during development.
 
+**To Fix:** Push schema to dev database and update environment variable logic.
+
 ---
 
-### 4. Project Files Endpoint
+### 2. Project Files Endpoint
 **Location:** `server/routes/projects/index.ts:477`
 
 ```typescript
@@ -71,7 +38,7 @@ res.json([]);
 
 ---
 
-### 5. Intake Call Data Persistence
+### 3. Intake Call Data Persistence
 **Location:** `client/src/components/event-requests/IntakeCallDialog.tsx:147`
 
 ```typescript
@@ -84,7 +51,7 @@ res.json([]);
 
 ---
 
-### 6. Smart Search Actions
+### 4. Smart Search Actions
 **Location:** `client/src/components/SmartSearch.tsx:179`
 
 ```typescript
@@ -100,7 +67,7 @@ if (result.feature.action) {
 
 ---
 
-### 7. A/B Testing for Notifications
+### 5. A/B Testing for Notifications
 **Location:** `server/routes/notifications/smart.ts:239`
 
 ```typescript
@@ -111,7 +78,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ---
 
-### 8. Search Analytics Tracking
+### 6. Search Analytics Tracking
 **Location:** `server/services/search/index.ts:428`
 
 ```typescript
@@ -122,7 +89,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ---
 
-### 9. Meeting Route Data Joins
+### 7. Meeting Route Data Joins
 **Location:** `server/routes/meetings.ts:589`
 
 ```typescript
@@ -135,7 +102,7 @@ abTestVariant: null, // TODO: Implement A/B testing assignment
 
 ## 🟡 Low Priority (Memory Storage Stubs)
 
-### 10. In-Memory Storage Conversation Methods
+### 8. In-Memory Storage Conversation Methods
 **Location:** `server/storage.ts:2564-2595`
 
 These methods are stubs for the in-memory storage fallback (used when database is unavailable):
@@ -153,7 +120,7 @@ These methods are stubs for the in-memory storage fallback (used when database i
 
 ---
 
-### 11. Storage Interface Types
+### 9. Storage Interface Types
 **Location:** `server/index.ts:471`
 
 ```typescript
@@ -166,23 +133,21 @@ startBackgroundSync(storage as any); // TODO: Fix storage interface types
 
 ## Summary Statistics
 
-| Priority | Count |
-|----------|-------|
-| 🔴 Critical | 2 (Push notifications) |
-| 🟠 Medium | 7 |
-| 🟡 Low | 2 |
-| **Total** | **11 incomplete features** |
+| Priority | Count | Notes |
+|----------|-------|-------|
+| 🟠 Medium | 7 | Actual incomplete features |
+| 🟡 Low | 2 | Memory storage stubs, type issues |
+| **Total** | **9 items** | |
 
 ---
 
 ## Recommended Action Order
 
-1. **Push Notifications** - Significant feature gap, affects user engagement
-2. **Intake Call Persistence** - Data loss issue
-3. **Project Files Endpoint** - Feature non-functional
-4. **Database Environment** - Development safety
-5. **Smart Search Actions** - UX improvement
-6. Others as time permits
+1. **Intake Call Persistence** - Data loss issue
+2. **Project Files Endpoint** - Feature non-functional
+3. **Database Environment** - Development safety
+4. **Smart Search Actions** - UX improvement
+5. Others as time permits
 
 ---
 

@@ -33,7 +33,7 @@ testRouter.post('/send-smart', async (req, res) => {
       message: z.string().default('This is a test of the smart notification system with ML-powered delivery.'),
       type: z.string().default('test'),
       skipMLScoring: z.boolean().default(false),
-      forceChannel: z.enum(['email', 'sms', 'in_app', 'push']).optional()
+      forceChannel: z.enum(['email', 'sms', 'in_app']).optional()
     });
 
     const data = schema.parse(req.body);
@@ -158,7 +158,7 @@ testRouter.post('/broadcast', async (req, res) => {
       message: z.string().default('This is a test broadcast using smart delivery to multiple users.'),
       type: z.string().default('test_broadcast'),
       userIds: z.array(z.string()).min(1),
-      forceChannel: z.enum(['email', 'sms', 'in_app', 'push']).optional()
+      forceChannel: z.enum(['email', 'sms', 'in_app']).optional()
     });
 
     const data = schema.parse(req.body);
