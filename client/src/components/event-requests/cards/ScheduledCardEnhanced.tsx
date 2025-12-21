@@ -1732,6 +1732,156 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             ) : null}
               </div>
             </div>
+
+            {/* Sandwiches - moved back to Column 1 */}
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-200 mt-3">
+              <Package className="w-5 h-5 shrink-0" />
+              {isEditingThisCard && editingField === 'sandwichTypes' ? (
+                <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('total')}
+                      className="h-7"
+                    >
+                      Exact
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('range')}
+                      className="h-7"
+                    >
+                      Range
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
+                      onClick={() => setInlineSandwichMode('types')}
+                      className="h-7"
+                    >
+                      By Type
+                    </Button>
+                  </div>
+
+                  {inlineSandwichMode === 'total' && (
+                    <Input
+                      type="number"
+                      value={inlineTotalCount}
+                      onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+                      placeholder="Total count"
+                      className="bg-white text-gray-900"
+                    />
+                  )}
+
+                  {inlineSandwichMode === 'range' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={inlineRangeMin}
+                          onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
+                          placeholder="Min"
+                          className="w-24 bg-white text-gray-900"
+                        />
+                        <span className="text-white self-center">to</span>
+                        <Input
+                          type="number"
+                          value={inlineRangeMax}
+                          onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
+                          placeholder="Max"
+                          className="w-24 bg-white text-gray-900"
+                        />
+                      </div>
+                      <Select value={inlineRangeType || undefined} onValueChange={setInlineRangeType}>
+                        <SelectTrigger className="bg-white text-gray-900">
+                          <SelectValue placeholder="Type (optional)" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                          {SANDWICH_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {inlineSandwichMode === 'types' && (
+                    <div className="space-y-2">
+                      {inlineSandwichTypes.map((item, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Select
+                            value={item.type}
+                            onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+                          >
+                            <SelectTrigger className="bg-white text-gray-900">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent position="popper" sideOffset={5}>
+                              {SANDWICH_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                            className="w-20 bg-white text-gray-900"
+                          />
+                          <Button size="sm" variant="ghost" onClick={() => removeInlineSandwichType(index)} className="text-white" aria-label="Remove sandwich type">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button size="sm" onClick={addInlineSandwichType} variant="outline" className="w-full">
+                        + Add Type
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </>
+                      )}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 group flex items-center gap-2">
+                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                    <span className="text-xl">🥪</span>
+                    <span>{sandwichInfo}</span>
+                  </Badge>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('sandwichTypes', '')}
+                      className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
+                      aria-label="Edit sandwich types"
+                    >
+                      <Edit2 className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Column 2: Team Assignments */}
@@ -2098,157 +2248,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
-                {/* Sandwiches - moved from Column 1 */}
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
-                  <Package className="w-5 h-5 shrink-0" />
-                  {isEditingThisCard && editingField === 'sandwichTypes' ? (
-                    <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
-                          onClick={() => setInlineSandwichMode('total')}
-                          className="h-7"
-                        >
-                          Exact
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
-                          onClick={() => setInlineSandwichMode('range')}
-                          className="h-7"
-                        >
-                          Range
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
-                          onClick={() => setInlineSandwichMode('types')}
-                          className="h-7"
-                        >
-                          By Type
-                        </Button>
-                      </div>
-
-                      {inlineSandwichMode === 'total' && (
-                        <Input
-                          type="number"
-                          value={inlineTotalCount}
-                          onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
-                          placeholder="Total count"
-                          className="bg-white text-gray-900"
-                        />
-                      )}
-
-                      {inlineSandwichMode === 'range' && (
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              value={inlineRangeMin}
-                              onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
-                              placeholder="Min"
-                              className="w-24 bg-white text-gray-900"
-                            />
-                            <span className="text-white self-center">to</span>
-                            <Input
-                              type="number"
-                              value={inlineRangeMax}
-                              onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
-                              placeholder="Max"
-                              className="w-24 bg-white text-gray-900"
-                            />
-                          </div>
-                          <Select value={inlineRangeType || undefined} onValueChange={setInlineRangeType}>
-                            <SelectTrigger className="bg-white text-gray-900">
-                              <SelectValue placeholder="Type (optional)" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                              {SANDWICH_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {inlineSandwichMode === 'types' && (
-                        <div className="space-y-2">
-                          {inlineSandwichTypes.map((item, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Select
-                                value={item.type}
-                                onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
-                              >
-                                <SelectTrigger className="bg-white text-gray-900">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={5}>
-                                  {SANDWICH_TYPES.map((type) => (
-                                    <SelectItem key={type.value} value={type.value}>
-                                      {type.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
-                                className="w-20 bg-white text-gray-900"
-                              />
-                              <Button size="sm" variant="ghost" onClick={() => removeInlineSandwichType(index)} className="text-white" aria-label="Remove sandwich type">
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button size="sm" onClick={addInlineSandwichType} variant="outline" className="w-full">
-                            + Add Type
-                          </Button>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
-                          {isSaving ? (
-                            <>
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-3 h-3 mr-1" /> Save
-                            </>
-                          )}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 group flex items-center gap-2">
-                      <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
-                        <span className="text-xl">🥪</span>
-                        <span>{sandwichInfo}</span>
-                      </Badge>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('sandwichTypes', '')}
-                          className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
-                          aria-label="Edit sandwich types"
-                        >
-                          <Edit2 className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Attendance - moved from Column 1, under sandwiches */}
+                {/* Attendance */}
                 <div className="flex items-start gap-2 pb-3 border-b border-gray-200">
                   <Users className="w-5 h-5 shrink-0 mt-0.5" />
                   {isEditingThisCard && editingField === 'attendanceBreakdown' ? (
