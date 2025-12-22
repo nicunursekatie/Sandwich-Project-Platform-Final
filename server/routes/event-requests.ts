@@ -1041,7 +1041,7 @@ function getAssignmentType(
   return types;
 }
 
-// Get all event requests
+// Get all event requests (with optional filtering)
 router.get(
   '/',
   isAuthenticated,
@@ -1058,13 +1058,102 @@ router.get(
         req,
         res,
         'EVENT_REQUESTS_VIEW',
-        'Retrieved all event requests'
+        'Retrieved event requests'
       );
-      const eventRequests = await storage.getAllEventRequests();
+      
+      let eventRequests = await storage.getAllEventRequests();
+      
+      // Parse query parameters for filtering
+      const daysParam = req.query.days as string | undefined;
+      const statusParam = req.query.status as string | undefined;
+      const needsActionParam = req.query.needsAction as string | undefined;
+      
+      // Filter by days (next N days from today)
+      if (daysParam) {
+        const days = parseInt(daysParam, 10);
+        if (!isNaN(days) && days > 0) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const futureDate = new Date(today);
+          futureDate.setDate(futureDate.getDate() + days);
+          
+          eventRequests = eventRequests.filter(event => {
+            // Check both scheduledEventDate and desiredEventDate
+            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+            if (!eventDate) return false;
+            
+            const eventDateObj = new Date(eventDate);
+            eventDateObj.setHours(0, 0, 0, 0);
+            
+            return eventDateObj >= today && eventDateObj <= futureDate;
+          });
+        }
+      }
+      
+      // Filter by status (comma-separated list)
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
+        }
+      }
+      
+      // Filter by "needs action" - events that need attention
+      if (needsActionParam === 'true') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const twoWeeksFromNow = new Date(today);
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+        
+        eventRequests = eventRequests.filter(event => {
+          // Include events in the next 14 days that need action
+          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          if (!eventDate) return true; // Events without dates need action
+          
+          const eventDateObj = new Date(eventDate);
+          eventDateObj.setHours(0, 0, 0, 0);
+          
+          // Only include events in the next 14 days
+          if (eventDateObj > twoWeeksFromNow) return false;
+          
+          // Events needing drivers
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = event.assignedDriverIds 
+            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+            : 0;
+          const needsDriver = driversNeeded > assignedDrivers;
+          
+          // Events needing speakers
+          const speakersNeeded = event.speakersNeeded || 0;
+          const assignedSpeakers = event.speakerDetails 
+            ? (typeof event.speakerDetails === 'string' 
+                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length 
+                : Object.keys(event.speakerDetails || {}).length)
+            : 0;
+          const needsSpeaker = speakersNeeded > assignedSpeakers;
+          
+          // Events needing volunteers
+          const volunteersNeeded = event.volunteersNeeded || 0;
+          const assignedVolunteers = event.volunteerDetails
+            ? (typeof event.volunteerDetails === 'string'
+                ? Object.keys(JSON.parse(event.volunteerDetails || '{}')).length
+                : Object.keys(event.volunteerDetails || {}).length)
+            : 0;
+          const needsVolunteer = volunteersNeeded > assignedVolunteers;
+          
+          // Events needing van driver
+          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
+          
+          // Events without confirmed dates (new/in_process)
+          const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
+          
+          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+        });
+      }
       
       // DEBUG: Log details about what we're returning
       const completedCount = eventRequests.filter(e => e.status === 'completed').length;
-      logger.info(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
+      logger.info(`📊 API returning ${eventRequests.length} filtered events (${completedCount} completed)`);
       
       // Check for duplicate IDs
       const ids = eventRequests.map(e => e.id);
