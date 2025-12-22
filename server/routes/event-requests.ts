@@ -280,15 +280,18 @@ const parseContactName = (name: string | undefined): { firstName: string | null;
   };
 };
 
-// Find user ID by name (for TSP contact matching)
-const findUserByName = async (name: string | undefined): Promise<string | null> => {
-  if (!name || name.trim() === '') return null;
+// Cached user data for batch name matching (avoids N+1 queries)
+interface UserLookupData {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+}
 
-  const searchName = name.trim().toLowerCase();
-
+// Fetch all active users once for batch matching
+const fetchActiveUsersForMatching = async (): Promise<UserLookupData[]> => {
   try {
-    // Get all active users
-    const allUsers = await db
+    return await db
       .select({
         id: users.id,
         firstName: users.firstName,
@@ -297,48 +300,78 @@ const findUserByName = async (name: string | undefined): Promise<string | null> 
       })
       .from(users)
       .where(eq(users.isActive, true));
-
-    // Try to find a match
-    for (const user of allUsers) {
-      // Check displayName first
-      if (user.displayName && user.displayName.toLowerCase() === searchName) {
-        return user.id;
-      }
-
-      // Check firstName + lastName combination
-      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
-      if (fullName === searchName) {
-        return user.id;
-      }
-
-      // Check just firstName (for single name matches like "Katie")
-      if (user.firstName && user.firstName.toLowerCase() === searchName) {
-        return user.id;
-      }
-    }
-
-    return null;
   } catch (error) {
-    logger.error('Error finding user by name:', error);
-    return null;
+    logger.error('Error fetching users for matching:', error);
+    return [];
   }
 };
 
-// Match staff names to user IDs
-const matchStaffNamesToUserIds = async (names: string[]): Promise<string[]> => {
-  const userIds: string[] = [];
+// Match a single name against pre-fetched user list (O(n) single pass)
+const matchNameToUser = (
+  searchName: string,
+  allUsers: UserLookupData[]
+): string | null => {
+  if (!searchName || searchName.trim() === '') return null;
 
-  for (const name of names) {
-    const userId = await findUserByName(name);
-    if (userId) {
-      userIds.push(userId);
-    } else {
-      // If no match, store the name as-is (the field accepts text)
-      userIds.push(name);
+  const normalizedName = searchName.trim().toLowerCase();
+
+  for (const user of allUsers) {
+    // Check displayName first
+    if (user.displayName && user.displayName.toLowerCase() === normalizedName) {
+      return user.id;
+    }
+
+    // Check firstName + lastName combination
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
+    if (fullName === normalizedName) {
+      return user.id;
+    }
+
+    // Check just firstName (for single name matches like "Katie")
+    if (user.firstName && user.firstName.toLowerCase() === normalizedName) {
+      return user.id;
     }
   }
 
-  return userIds;
+  return null;
+};
+
+// Batch match multiple staff names to user IDs (single DB query)
+// This replaces the N+1 pattern of calling findUserByName in a loop
+const batchMatchStaffNames = async (
+  tspContactName: string | undefined,
+  driverNames: string[],
+  speakerNames: string[],
+  volunteerNames: string[]
+): Promise<{
+  tspContactUserId: string | null;
+  assignedDriverIds: string[];
+  assignedSpeakerIds: string[];
+  assignedVolunteerIds: string[];
+}> => {
+  // Single database query for all users
+  const allUsers = await fetchActiveUsersForMatching();
+
+  // Match TSP contact
+  const tspContactUserId = tspContactName
+    ? matchNameToUser(tspContactName, allUsers)
+    : null;
+
+  // Match all staff names against cached user list
+  const matchNames = (names: string[]): string[] => {
+    return names.map(name => {
+      const userId = matchNameToUser(name, allUsers);
+      // If no match, store the name as-is (the field accepts text)
+      return userId || name;
+    });
+  };
+
+  return {
+    tspContactUserId,
+    assignedDriverIds: matchNames(driverNames),
+    assignedSpeakerIds: matchNames(speakerNames),
+    assignedVolunteerIds: matchNames(volunteerNames),
+  };
 };
 
 // Combine notes fields into planning notes
@@ -486,13 +519,18 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
     // Parse contact name
     const contactNameParts = parseContactName(data['Contact Name']);
 
-    // Find TSP contact user ID
-    const tspContactUserId = await findUserByName(data['TSP Contact']);
-
-    // Match assigned staff to user IDs
-    const assignedDriverIds = await matchStaffNamesToUserIds(staffing.assignedDriverNames);
-    const assignedSpeakerIds = await matchStaffNamesToUserIds(staffing.assignedSpeakerNames);
-    const assignedVolunteerIds = await matchStaffNamesToUserIds(staffing.assignedVolunteerNames);
+    // Batch match all staff names to user IDs (single DB query instead of N+1)
+    const {
+      tspContactUserId,
+      assignedDriverIds,
+      assignedSpeakerIds,
+      assignedVolunteerIds,
+    } = await batchMatchStaffNames(
+      data['TSP Contact'],
+      staffing.assignedDriverNames,
+      staffing.assignedSpeakerNames,
+      staffing.assignedVolunteerNames
+    );
 
     // Combine notes
     const planningNotes = combineNotesFields(
@@ -777,9 +815,11 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'User ID required' });
     }
 
-    const allEventRequests = await storage.getAllEventRequests();
-    const users = await storage.getAllUsers();
-    const currentUser = users.find((u) => u.id === userId);
+    // Parallel fetch: get events and current user simultaneously
+    const [allEventRequests, currentUser] = await Promise.all([
+      storage.getAllEventRequests(),
+      storage.getUserById(userId),
+    ]);
 
     // Filter event requests assigned to this user via multiple assignment methods
     const assignedEvents = allEventRequests.filter((event) => {
