@@ -121,30 +121,43 @@ describe('Unified Permission System', () => {
       expect(result.reason).toContain('Numeric permission format not supported');
     });
 
-    it('should grant admin backward compatibility for NAV_ permissions', () => {
+    it('should NOT auto-grant NAV_ permissions for admin when explicit permissions are stored', () => {
       const user: UserForPermissions = {
         id: '1',
         email: 'admin@example.com',
         role: 'admin',
-        permissions: [],
+        permissions: [], // Explicitly stored (even empty) -> must be respected
+        isActive: true,
+      };
+      const result = checkPermission(user, PERMISSIONS.NAV_HOSTS);
+      expect(result.granted).toBe(false);
+      expect(result.reason).toContain('not found in user permissions');
+    });
+
+    it('should grant legacy admin compatibility for NAV_ permissions when permissions are missing', () => {
+      const user: UserForPermissions = {
+        id: '1',
+        email: 'admin@example.com',
+        role: 'admin',
+        permissions: null as any, // Legacy: no explicit permissions stored
         isActive: true,
       };
       const result = checkPermission(user, PERMISSIONS.NAV_HOSTS);
       expect(result.granted).toBe(true);
-      expect(result.reason).toBe('Admin role automatic access (backward compatibility)');
+      expect(result.reason).toBe('Legacy admin compatibility (no explicit permissions stored)');
     });
 
-    it('should grant admin backward compatibility for EVENT_REQUESTS_ permissions', () => {
+    it('should grant legacy admin compatibility for EVENT_REQUESTS_ permissions when permissions are missing', () => {
       const user: UserForPermissions = {
         id: '1',
         email: 'admin@example.com',
         role: 'admin',
-        permissions: [],
+        permissions: undefined as any, // Legacy: no explicit permissions stored
         isActive: true,
       };
       const result = checkPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW);
       expect(result.granted).toBe(true);
-      expect(result.reason).toBe('Admin role automatic access (backward compatibility)');
+      expect(result.reason).toBe('Legacy admin compatibility (no explicit permissions stored)');
     });
 
     it('should apply permission dependencies (NAV grants functional permissions)', () => {
@@ -217,7 +230,7 @@ describe('Unified Permission System', () => {
         'user-123'
       );
       expect(result.granted).toBe(true);
-      expect(result.reason).toBe('Own-resource permission granted');
+      expect(result.reason).toBe('Own-resource permission granted (verified with current permissions)');
     });
 
     it('should deny access with OWN permission when user does not own resource', () => {
@@ -228,7 +241,7 @@ describe('Unified Permission System', () => {
         'different-user-id'
       );
       expect(result.granted).toBe(false);
-      expect(result.reason).toBe('User does not own this resource');
+      expect(result.reason).toContain('Neither');
     });
 
     it('should handle array of owner IDs', () => {
@@ -239,7 +252,7 @@ describe('Unified Permission System', () => {
         ['user-123', 'other-user']
       );
       expect(result.granted).toBe(true);
-      expect(result.reason).toBe('Own-resource permission granted');
+      expect(result.reason).toBe('Own-resource permission granted (verified with current permissions)');
     });
 
     it('should require resource owner ID for ownership check', () => {

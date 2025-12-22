@@ -70,10 +70,11 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
 
   // Step 3: Extract user permissions (arrays only - numeric format not supported)
   let userPermissions: string[] = [];
+  const permissionsMissing = user.permissions === null || user.permissions === undefined;
 
   if (Array.isArray(user.permissions)) {
     userPermissions = user.permissions;
-  } else if (user.permissions === null || user.permissions === undefined) {
+  } else if (permissionsMissing) {
     userPermissions = [];
   } else if (typeof user.permissions === 'number') {
     // SECURITY: Numeric bitmask permissions are NOT supported in unified-auth-utils
@@ -107,22 +108,34 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
         userPermissions: userPermissions
       };
     }
-    // Admin backward compatibility: Admins get automatic access to navigation and core permissions
-    if (
-      permission.startsWith('NAV_') ||
-      permission.startsWith('EVENT_REQUESTS_') ||
-      permission.startsWith('DOCUMENTS_') ||
-      permission.startsWith('VOLUNTEERS_') ||
-      permission.startsWith('DRIVERS_') ||
-      permission.startsWith('HOSTS_') ||
-      permission.startsWith('RECIPIENTS_')
-    ) {
-      return {
-        granted: true,
-        reason: 'Admin role grants access to core functionality',
-        userRole: user.role,
-        userPermissions: userPermissions
-      };
+    /**
+     * IMPORTANT:
+     * This app uses per-user permission assignments (see README "User permission system").
+     *
+     * To keep legacy admin accounts working, we *only* apply the old "admin gets everything"
+     * behavior when the user has NO permissions field stored (null/undefined).
+     *
+     * If an admin has an explicit permissions array (even empty), we MUST respect it so
+     * admins can be restricted and NAV_* removals actually hide items in the UI.
+     */
+    if (permissionsMissing) {
+      // Legacy backward compatibility: Admins get automatic access to navigation and core permissions
+      if (
+        permission.startsWith('NAV_') ||
+        permission.startsWith('EVENT_REQUESTS_') ||
+        permission.startsWith('DOCUMENTS_') ||
+        permission.startsWith('VOLUNTEERS_') ||
+        permission.startsWith('DRIVERS_') ||
+        permission.startsWith('HOSTS_') ||
+        permission.startsWith('RECIPIENTS_')
+      ) {
+        return {
+          granted: true,
+          reason: 'Legacy admin compatibility (no explicit permissions stored)',
+          userRole: user.role,
+          userPermissions: userPermissions
+        };
+      }
     }
   }
 
