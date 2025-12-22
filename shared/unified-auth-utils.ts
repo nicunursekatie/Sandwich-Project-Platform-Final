@@ -58,11 +58,16 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 2: Super admin bypass
-  if (user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN) {
+  // Step 2: Super admin check
+  // Super admins only get automatic full access if they have NO explicit permissions stored
+  // If explicit permissions are set, those are respected (allows restricting super admins)
+  const isSuperAdmin = user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN;
+  const hasExplicitPermissions = Array.isArray(user.permissions);
+
+  if (isSuperAdmin && !hasExplicitPermissions) {
     return {
       granted: true,
-      reason: 'Super admin access',
+      reason: 'Super admin access (no explicit permissions set)',
       userRole: user.role,
       userPermissions: ['*ALL*']
     };
@@ -273,7 +278,12 @@ export function getUserPermissions(user: UserForPermissions | null | undefined):
     return [];
   }
 
-  if (user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN) {
+  // Super admins with no explicit permissions get all permissions
+  // Super admins with explicit permissions get only those permissions
+  const isSuperAdmin = user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN;
+  const hasExplicitPermissions = Array.isArray(user.permissions);
+
+  if (isSuperAdmin && !hasExplicitPermissions) {
     return Object.values(PERMISSIONS);
   }
 

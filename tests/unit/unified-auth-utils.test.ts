@@ -68,18 +68,45 @@ describe('Unified Permission System', () => {
       expect(result.reason).toBe('Universal permission (all users have access)');
     });
 
-    it('should grant all permissions to super_admin', () => {
+    it('should grant all permissions to super_admin with no explicit permissions', () => {
       const user: UserForPermissions = {
         id: '1',
         email: 'admin@example.com',
         role: USER_ROLES.SUPER_ADMIN,
-        permissions: [],
+        permissions: null as any, // No explicit permissions set
         isActive: true,
       };
       const result = checkPermission(user, PERMISSIONS.HOSTS_DELETE);
       expect(result.granted).toBe(true);
-      expect(result.reason).toBe('Super admin access');
+      expect(result.reason).toBe('Super admin access (no explicit permissions set)');
       expect(result.userPermissions).toEqual(['*ALL*']);
+    });
+
+    it('should NOT auto-grant permissions to super_admin with explicit permissions array', () => {
+      const user: UserForPermissions = {
+        id: '1',
+        email: 'admin@example.com',
+        role: USER_ROLES.SUPER_ADMIN,
+        permissions: [PERMISSIONS.NAV_HOSTS], // Explicit permissions set
+        isActive: true,
+      };
+      // Super admin should only have NAV_HOSTS (and its dependencies), not HOSTS_DELETE
+      const result = checkPermission(user, PERMISSIONS.HOSTS_DELETE);
+      expect(result.granted).toBe(false);
+      expect(result.reason).toContain('not found in user permissions');
+    });
+
+    it('should grant permissions to super_admin that are in their explicit array', () => {
+      const user: UserForPermissions = {
+        id: '1',
+        email: 'admin@example.com',
+        role: USER_ROLES.SUPER_ADMIN,
+        permissions: [PERMISSIONS.NAV_HOSTS, PERMISSIONS.HOSTS_DELETE],
+        isActive: true,
+      };
+      const result = checkPermission(user, PERMISSIONS.HOSTS_DELETE);
+      expect(result.granted).toBe(true);
+      expect(result.reason).toBe('Permission granted');
     });
 
     it('should grant permission when user has it in permissions array', () => {
@@ -266,7 +293,7 @@ describe('Unified Permission System', () => {
       expect(result.reason).toBe('Resource owner ID required for ownership check');
     });
 
-    it('should deny when user has neither permission', () => {
+    it('should deny when user has neither permission and does not own resource', () => {
       const restrictedUser: UserForPermissions = {
         ...user,
         permissions: [PERMISSIONS.HOSTS_VIEW], // Unrelated permission
@@ -275,10 +302,25 @@ describe('Unified Permission System', () => {
         restrictedUser,
         PERMISSIONS.COLLECTIONS_EDIT_OWN,
         PERMISSIONS.COLLECTIONS_EDIT_ALL,
-        'user-123'
+        'different-user-id' // User does NOT own this resource
       );
       expect(result.granted).toBe(false);
       expect(result.reason).toContain('Neither');
+    });
+
+    it('should deny when user owns resource but lacks the OWN permission', () => {
+      const restrictedUser: UserForPermissions = {
+        ...user,
+        permissions: [PERMISSIONS.HOSTS_VIEW], // Unrelated permission
+      };
+      const result = checkOwnershipPermission(
+        restrictedUser,
+        PERMISSIONS.COLLECTIONS_EDIT_OWN,
+        PERMISSIONS.COLLECTIONS_EDIT_ALL,
+        'user-123' // User owns this resource but doesn't have COLLECTIONS_EDIT_OWN
+      );
+      expect(result.granted).toBe(false);
+      expect(result.reason).toContain('lacks required permission');
     });
   });
 
@@ -304,12 +346,12 @@ describe('Unified Permission System', () => {
   });
 
   describe('getUserPermissions', () => {
-    it('should return all permissions for super_admin', () => {
+    it('should return all permissions for super_admin with no explicit permissions', () => {
       const user: UserForPermissions = {
         id: '1',
         email: 'admin@example.com',
         role: USER_ROLES.SUPER_ADMIN,
-        permissions: [],
+        permissions: null as any, // No explicit permissions
         isActive: true,
       };
       const perms = getUserPermissions(user);
