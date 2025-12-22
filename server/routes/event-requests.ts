@@ -335,14 +335,6 @@ const matchNameToUser = (
   return null;
 };
 
-// Find user ID by name (for TSP contact matching)
-// Note: For batch operations, use batchMatchStaffNames instead to avoid N+1 queries
-const findUserByName = async (name: string | undefined): Promise<string | null> => {
-  if (!name || name.trim() === '') return null;
-  const allUsers = await fetchActiveUsersForMatching();
-  return matchNameToUser(name, allUsers);
-};
-
 // Batch match multiple staff names to user IDs (single DB query)
 // This replaces the N+1 pattern of calling findUserByName in a loop
 const batchMatchStaffNames = async (
@@ -379,15 +371,6 @@ const batchMatchStaffNames = async (
     assignedSpeakerIds: matchNames(speakerNames),
     assignedVolunteerIds: matchNames(volunteerNames),
   };
-};
-
-// Legacy function for backwards compatibility - prefer batchMatchStaffNames
-const matchStaffNamesToUserIds = async (names: string[]): Promise<string[]> => {
-  const allUsers = await fetchActiveUsersForMatching();
-  return names.map(name => {
-    const userId = matchNameToUser(name, allUsers);
-    return userId || name;
-  });
 };
 
 // Combine notes fields into planning notes

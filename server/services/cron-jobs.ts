@@ -61,7 +61,7 @@ async function sendVolunteerReminders(): Promise<{
       .where(inArray(eventVolunteers.eventRequestId, eventIds));
 
     // Create a map for O(1) lookup: eventId -> volunteers[]
-    const volunteersByEventId = new Map<number, typeof allVolunteers>();
+    const volunteersByEventId = new Map<number, Array<(typeof allVolunteers)[number]>>();
     for (const volunteer of allVolunteers) {
       const eventId = volunteer.eventRequestId;
       if (!volunteersByEventId.has(eventId)) {
