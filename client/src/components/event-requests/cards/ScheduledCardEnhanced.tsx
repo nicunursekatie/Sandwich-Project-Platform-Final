@@ -480,6 +480,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     sandwichInfo = formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined);
   }
 
+  // Compact sandwich count for the header badge (prevents long type strings from overflowing the card)
+  const sandwichCountBadgeText = (() => {
+    if (hasRange) {
+      return `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}`;
+    }
+    if (typeof request.estimatedSandwichCount === 'number' && request.estimatedSandwichCount > 0) {
+      return `${request.estimatedSandwichCount}`;
+    }
+    const parsedTypes = parseSandwichTypes(request.sandwichTypes);
+    const totalFromTypes =
+      parsedTypes?.reduce((sum, t) => sum + (typeof t.quantity === 'number' ? t.quantity : 0), 0) ?? 0;
+    return totalFromTypes > 0 ? `${totalFromTypes}` : 'TBD';
+  })();
+
   const missingInfo = getMissingIntakeInfo(request);
 
   const formatDateForInput = (dateStr: string) => {
@@ -853,7 +867,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Status Badges */}
-          <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge
               onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
               className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
@@ -879,9 +893,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {request.isMlkDayEvent && <MlkDayBadge />}
 
             {/* Sandwich count badge */}
-            <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
-              <span>🥪</span>
-              <span>{sandwichInfo}</span>
+            <Badge
+              className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
+              title={sandwichInfo}
+            >
+              <span aria-hidden="true">🥪</span>
+              <span className="min-w-0 truncate">{sandwichCountBadgeText}</span>
+              <span className="hidden sm:inline opacity-90">&nbsp;sandwiches</span>
             </Badge>
 
             {/* Self-transport badge */}

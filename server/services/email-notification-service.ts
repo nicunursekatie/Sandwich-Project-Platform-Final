@@ -693,7 +693,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   private static getEventUrl(eventId: number): string {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-katielong2316.replit.app'
+        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
         : 'http://localhost:5000';
 
     return `${baseUrl}/event-requests-v2?eventId=${eventId}`;
@@ -705,7 +705,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   private static getTeamBoardUrl(): string {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-katielong2316.replit.app'
+        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
         : 'http://localhost:5000';
 
     return `${baseUrl}/dashboard?section=team-board`;
