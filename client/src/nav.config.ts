@@ -185,6 +185,14 @@ export const NAV_ITEMS: NavItem[] = [
     parentId: 'calendars',
     isSubItem: true,
   },
+  {
+    id: 'promotion',
+    label: 'Social Media Graphics',
+    icon: Image,
+    href: 'promotion',
+    permission: PERMISSIONS.NAV_PROMOTION,
+    group: 'workspace',
+  },
 
   // ========================================
   // LOGISTICS (Event & Future Planning)
@@ -468,19 +476,9 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'tools',
     label: 'Tools',
     icon: Zap,
-    href: 'promotion',
-    permission: PERMISSIONS.NAV_PROMOTION,
+    href: 'smart-search-admin', // Default to first tool item
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
-  },
-  {
-    id: 'promotion',
-    label: 'Social Media Graphics',
-    icon: Image,
-    href: 'promotion',
-    permission: PERMISSIONS.NAV_PROMOTION,
-    group: 'admin',
-    parentId: 'tools',
-    isSubItem: true,
   },
   {
     id: 'smart-search-admin',

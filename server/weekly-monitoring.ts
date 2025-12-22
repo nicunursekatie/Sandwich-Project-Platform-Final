@@ -1,7 +1,7 @@
 import { MailService } from '@sendgrid/mail';
 import { db } from './db';
 import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
-import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
+import { eq, sql, and, gte, lte, like, or, isNull } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
 import { batchSendEmails } from './utils/batch-operations';
 import { FROM_EMAIL } from './config/organization';
@@ -183,8 +183,12 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
   }
 
   // Count submissions with individual sandwich counts > 0
+  // individualSandwiches is an integer, so we check for > 0
   const submissionsWithIndividualCounts = dunwoodySubmissions.filter(
-    (sub) => sub.individualSandwiches != null && sub.individualSandwiches > 0
+    (sub) => {
+      const count = sub.individualSandwiches;
+      return count != null && typeof count === 'number' && count > 0;
+    }
   );
 
   const hasTwoOrMore = submissionsWithIndividualCounts.length >= 2;
@@ -195,15 +199,24 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     complete: hasTwoOrMore,
   };
 
-  // Debug logging
+  // Enhanced debug logging
   logger.log(`Dunwoody status check for ${location}:`, {
     totalSubmissions: dunwoodySubmissions?.length || 0,
     submissionsWithIndividualCounts: submissionsWithIndividualCounts.length,
+    hasTwoOrMore,
     complete: result.complete,
-    submitters: (dunwoodySubmissions || []).map(sub => ({
+    allSubmissions: (dunwoodySubmissions || []).map(sub => ({
+      hostName: sub?.hostName || 'unknown',
       submittedBy: sub?.submittedBy || 'unknown',
       createdBy: sub?.createdBy || 'unknown',
-      individualSandwiches: sub?.individualSandwiches || 0,
+      individualSandwiches: sub?.individualSandwiches ?? 'null/undefined',
+      individualSandwichesType: typeof sub?.individualSandwiches,
+      collectionDate: sub?.collectionDate || 'unknown',
+    })),
+    validSubmissions: submissionsWithIndividualCounts.map(sub => ({
+      submittedBy: sub?.submittedBy || 'unknown',
+      individualSandwiches: sub?.individualSandwiches,
+      collectionDate: sub?.collectionDate || 'unknown',
     })),
   });
 
@@ -229,7 +242,7 @@ export async function checkWeeklySubmissions(
   );
 
   try {
-    // Get all submissions for this week
+    // Get all submissions for this week (excluding soft-deleted records)
     const weeklySubmissions = await db
       .select({
         hostName: sandwichCollections.hostName,
@@ -248,7 +261,8 @@ export async function checkWeeklySubmissions(
           lte(
             sandwichCollections.collectionDate,
             endDate.toISOString().split('T')[0]
-          )
+          ),
+          isNull(sandwichCollections.deletedAt) // Exclude soft-deleted records
         )
       );
 

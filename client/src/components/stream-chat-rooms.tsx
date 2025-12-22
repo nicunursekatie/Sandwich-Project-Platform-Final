@@ -185,6 +185,25 @@ const customChatStyles = `
     position: relative;
   }
 
+  /* Link colors for better contrast */
+  .str-chat__message--me .str-chat__message-bubble a {
+    color: #A3E8FF !important;
+    text-decoration: underline !important;
+  }
+
+  .str-chat__message--me .str-chat__message-bubble a:hover {
+    color: #ffffff !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble a {
+    color: #236383 !important;
+    text-decoration: underline !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble a:hover {
+    color: #007E8C !important;
+  }
+
   .read-receipt-indicator {
     display: flex;
     align-items: center;

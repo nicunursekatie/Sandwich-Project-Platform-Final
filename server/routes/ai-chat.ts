@@ -1,17 +1,10 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
 import { userActivityLogs } from '@shared/schema';
 import { sql, desc, and, gte } from 'drizzle-orm';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role?: string;
-  };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 export const aiChatRouter = Router();
 

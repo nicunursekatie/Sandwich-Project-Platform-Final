@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { createErrorHandler } from '../../middleware';
 import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
@@ -6,28 +6,7 @@ import { taskService } from '../../services/tasks/index';
 import { logger } from '../../utils/production-safe-logger';
 // REFACTOR: Import new assignment service for dual-write
 import { taskAssignmentService } from '../../services/assignments';
-
-// Type definitions for authentication
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    permissions?: string[];
-  };
-  session?: {
-    user?: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-      permissions?: string[];
-    };
-  };
-}
+import type { AuthenticatedRequest } from '../../types/express';
 
 // Create task routes router
 const tasksRouter = Router();

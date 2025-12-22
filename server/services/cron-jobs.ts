@@ -9,7 +9,7 @@ import { scrapeHostAvailability } from './host-availability-scraper';
 import { createServiceLogger, logError } from '../utils/logger';
 import { db } from '../db';
 import { eventVolunteers, eventRequests, users } from '@shared/schema';
-import { and, eq, isNull, sql, or } from 'drizzle-orm';
+import { and, eq, isNull, sql, or, inArray } from 'drizzle-orm';
 import { EmailNotificationService } from './email-notification-service';
 import { sendEventReminderSMS } from '../sms-service';
 import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } from '@shared/types';
@@ -49,16 +49,76 @@ async function sendVolunteerReminders(): Promise<{
 
     cronLogger.info(`Found ${upcomingEvents.length} scheduled events in the next 48 hours`);
 
+    if (upcomingEvents.length === 0) {
+      return { remindersSent: 0, volunteersProcessed: 0, errors: 0, timestamp: now };
+    }
+
+    // PERFORMANCE: Batch fetch all volunteers for all events in ONE query (instead of N queries)
+    const eventIds = upcomingEvents.map(e => e.id);
+    const allVolunteers = await db
+      .select()
+      .from(eventVolunteers)
+      .where(inArray(eventVolunteers.eventRequestId, eventIds));
+
+    // Create a map for O(1) lookup: eventId -> volunteers[]
+    const volunteersByEventId = new Map<number, Array<(typeof allVolunteers)[number]>>();
+    for (const volunteer of allVolunteers) {
+      const eventId = volunteer.eventRequestId;
+      if (!volunteersByEventId.has(eventId)) {
+        volunteersByEventId.set(eventId, []);
+      }
+      volunteersByEventId.get(eventId)!.push(volunteer);
+    }
+
+    // PERFORMANCE: Collect all user IDs we need to fetch, then batch fetch them
+    const userIdsToFetch = new Set<string>();
+
+    // Add volunteer user IDs
+    for (const volunteer of allVolunteers) {
+      if (volunteer.volunteerUserId) {
+        userIdsToFetch.add(volunteer.volunteerUserId);
+      }
+    }
+
+    // Add legacy assignment IDs and TSP contact IDs from events
+    for (const event of upcomingEvents) {
+      if (event.assignedSpeakerIds && Array.isArray(event.assignedSpeakerIds)) {
+        for (const id of event.assignedSpeakerIds) {
+          if (id) userIdsToFetch.add(id);
+        }
+      }
+      if (event.assignedDriverIds && Array.isArray(event.assignedDriverIds)) {
+        for (const id of event.assignedDriverIds) {
+          if (id) userIdsToFetch.add(id);
+        }
+      }
+      if (event.assignedVolunteerIds && Array.isArray(event.assignedVolunteerIds)) {
+        for (const id of event.assignedVolunteerIds) {
+          if (id) userIdsToFetch.add(id);
+        }
+      }
+      if (event.tspContact) userIdsToFetch.add(event.tspContact);
+      if (event.tspContactAssigned) userIdsToFetch.add(event.tspContactAssigned);
+    }
+
+    // Batch fetch all users in ONE query (instead of N*M queries)
+    const userIdsArray = Array.from(userIdsToFetch);
+    const allUsers = userIdsArray.length > 0
+      ? await db.select().from(users).where(inArray(users.id, userIdsArray))
+      : [];
+
+    // Create a map for O(1) lookup: userId -> user
+    const usersById = new Map(allUsers.map(u => [u.id, u]));
+
+    cronLogger.info(`Batch fetched ${allVolunteers.length} volunteers and ${allUsers.length} users for ${upcomingEvents.length} events`);
+
     for (const event of upcomingEvents) {
       if (!event.scheduledEventDate) continue;
 
       const hoursUntilEvent = (event.scheduledEventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-      
-      // Get all volunteers for this event
-      const volunteers = await db
-        .select()
-        .from(eventVolunteers)
-        .where(eq(eventVolunteers.eventRequestId, event.id));
+
+      // Get volunteers for this event from pre-fetched data (O(1) lookup instead of DB query)
+      const volunteers = volunteersByEventId.get(event.id) || [];
 
       // Process volunteer reminders
       for (const volunteer of volunteers) {
@@ -71,13 +131,9 @@ async function sendVolunteerReminders(): Promise<{
           let volunteerPhone: string | null = volunteer.volunteerPhone;
           let preferences: EventNotificationPreferences | null = null;
 
-          // Get user info and preferences for registered users
+          // Get user info and preferences for registered users (O(1) lookup from pre-fetched map)
           if (volunteer.volunteerUserId) {
-            const [foundUser] = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, volunteer.volunteerUserId))
-              .limit(1);
+            const foundUser = usersById.get(volunteer.volunteerUserId);
 
             if (foundUser) {
               user = foundUser;
@@ -254,11 +310,8 @@ async function sendVolunteerReminders(): Promise<{
         volunteersProcessed++;
 
         try {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, assignment.userId))
-            .limit(1);
+          // Use pre-fetched user map (O(1) lookup instead of DB query)
+          const user = usersById.get(assignment.userId);
 
           if (!user) continue;
 
@@ -401,11 +454,8 @@ async function sendVolunteerReminders(): Promise<{
         const uniqueContactIds = [...new Set(tspContactIds)];
         for (const contactId of uniqueContactIds) {
           try {
-            const [contact] = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, contactId))
-              .limit(1);
+            // Use pre-fetched user map (O(1) lookup instead of DB query)
+            const contact = usersById.get(contactId);
 
             if (!contact) continue;
 
@@ -940,35 +990,36 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
-  // Past date in-process notification job - runs daily at 9:30 AM
-  // Notifies TSP contacts about in-process events whose date has passed
+  // Past date in-process notification job - DISABLED per user request
+  // Was: Notifies TSP contacts about in-process events whose date has passed
   // Cron format: minute hour day-of-month month day-of-week
   // '30 9 * * *' = At 9:30 AM every day
   const pastDateNotificationJob = cron.schedule('30 9 * * *', async () => {
-    cronLogger.info('Running past date notification check for in-process events...');
-    try {
-      const result = await notifyPastDateInProcessEvents();
-      cronLogger.info('Past date notification job completed', {
-        notificationsSent: result.notificationsSent,
-        eventsProcessed: result.eventsProcessed,
-        errors: result.errors,
-        timestamp: result.timestamp,
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running past date notification cron job',
-        undefined,
-        { jobType: 'past-date-notification' }
-      );
-    }
+    cronLogger.info('Past date notification job is DISABLED - skipping');
+    // DISABLED: User requested to stop sending these emails
+    // try {
+    //   const result = await notifyPastDateInProcessEvents();
+    //   cronLogger.info('Past date notification job completed', {
+    //     notificationsSent: result.notificationsSent,
+    //     eventsProcessed: result.eventsProcessed,
+    //     errors: result.errors,
+    //     timestamp: result.timestamp,
+    //   });
+    // } catch (error) {
+    //   logError(
+    //     error as Error,
+    //     'Error running past date notification cron job',
+    //     undefined,
+    //     { jobType: 'past-date-notification' }
+    //   );
+    // }
   }, {
-    scheduled: true,
+    scheduled: false, // DISABLED per user request
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Past date notification job scheduled successfully', {
-    schedule: 'Daily at 9:30 AM',
+  cronLogger.info('Past date notification job is DISABLED', {
+    schedule: 'DISABLED',
     timezone: 'America/New_York',
   });
 
