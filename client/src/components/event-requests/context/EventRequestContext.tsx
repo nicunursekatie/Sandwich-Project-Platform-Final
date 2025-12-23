@@ -226,6 +226,21 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Quick filter state for special date ranges (This Week, Today, etc.)
   const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | null>(null);
 
+  // View state - use role-based defaults if no initialTab provided
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
+  const getDefaultTab = () => {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+      return initialTab;
+    }
+    // Default to 'new' for event requests when no tab is specified
+    return 'new';
+  };
+  const [activeTab, setActiveTab] = useState(getDefaultTab());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
   // Determine filter parameters based on activeTab and quickFilter
   const getFilterParams = useCallback(() => {
     // Handle quick filters first
@@ -317,21 +332,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     gcTime: 10 * 60 * 1000,
   });
-
-  // View state - use role-based defaults if no initialTab provided
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
-  const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
-      return initialTab;
-    }
-    // Default to 'new' for event requests when no tab is specified
-    return 'new';
-  };
-  const [activeTab, setActiveTab] = useState(getDefaultTab());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
