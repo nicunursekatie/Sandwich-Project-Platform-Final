@@ -152,26 +152,43 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
         });
       });
     } else {
-      // No window open - automatically open the chat window
-      openChatRef.current({
+      // No window open - open chat window minimized with unread badge
+      const senderUser: ChatUser = {
         id: message.senderId,
         firstName: null,
         lastName: null,
         displayName: message.senderName,
         email: null,
         profileImageUrl: null,
+      };
+
+      // Create a new minimized window with the message and unread count
+      setOpenWindows(prev => {
+        // Double check it wasn't opened in the meantime
+        if (prev.some(w => w.user.id === senderUser.id)) {
+          return prev;
+        }
+
+        const newWindow: ChatWindow = {
+          id: `chat-${senderUser.id}-${Date.now()}`,
+          user: senderUser,
+          minimized: true, // Start minimized with badge
+          messages: [message],
+          unreadCount: 1,
+        };
+
+        // Limit number of open windows
+        if (prev.length >= MAX_OPEN_WINDOWS) {
+          return [...prev.slice(1), newWindow];
+        }
+
+        return [...prev, newWindow];
       });
 
-      // Also show a brief toast to draw attention
-      toast({
-        title: `New message from ${message.senderName}`,
-        description: message.content.length > 50
-          ? message.content.substring(0, 50) + '...'
-          : message.content,
-        duration: 3000,
-      });
+      // Load full message history in background
+      loadMessageHistoryForUser(senderUser.id);
     }
-  }, [user?.id, toast]);
+  }, [user?.id]);
 
   // Polling fallback: Check for new messages when socket is disconnected
   useEffect(() => {
@@ -298,7 +315,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     openChatRef.current = openChat;
   }, [openChat]);
 
-  const loadMessageHistory = async (otherUserId: string) => {
+  const loadMessageHistory = async (otherUserId: string, preserveUnreadCount = false) => {
     try {
       const response = await fetch(`/api/instant-messages/${otherUserId}`, {
         credentials: 'include',
@@ -306,17 +323,21 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
       if (response.ok) {
         const messages: InstantMessage[] = await response.json();
-        
+
         // Update last seen message ID to prevent showing old messages as new
         if (messages.length > 0) {
           const maxId = Math.max(...messages.map(m => m.id));
           lastMessageIdRef.current = Math.max(lastMessageIdRef.current, maxId);
         }
-        
+
         setOpenWindows(prev =>
           prev.map(w =>
             w.user.id === otherUserId
-              ? { ...w, messages, unreadCount: 0 }
+              ? {
+                  ...w,
+                  messages,
+                  unreadCount: preserveUnreadCount ? w.unreadCount : 0
+                }
               : w
           )
         );
@@ -324,6 +345,11 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     } catch (error) {
       console.error('Failed to load message history:', error);
     }
+  };
+
+  // Load message history for a user without resetting unread count
+  const loadMessageHistoryForUser = (otherUserId: string) => {
+    loadMessageHistory(otherUserId, true);
   };
 
   const closeChat = useCallback((windowId: string) => {
