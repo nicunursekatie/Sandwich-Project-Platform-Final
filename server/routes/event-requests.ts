@@ -1041,7 +1041,7 @@ function getAssignmentType(
   return types;
 }
 
-// Get all event requests
+// Get all event requests (with optional filtering)
 router.get(
   '/',
   isAuthenticated,
@@ -1058,13 +1058,102 @@ router.get(
         req,
         res,
         'EVENT_REQUESTS_VIEW',
-        'Retrieved all event requests'
+        'Retrieved event requests'
       );
-      const eventRequests = await storage.getAllEventRequests();
+      
+      let eventRequests = await storage.getAllEventRequests();
+      
+      // Parse query parameters for filtering
+      const daysParam = req.query.days as string | undefined;
+      const statusParam = req.query.status as string | undefined;
+      const needsActionParam = req.query.needsAction as string | undefined;
+      
+      // Filter by days (next N days from today)
+      if (daysParam) {
+        const days = parseInt(daysParam, 10);
+        if (!isNaN(days) && days > 0) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const futureDate = new Date(today);
+          futureDate.setDate(futureDate.getDate() + days);
+          
+          eventRequests = eventRequests.filter(event => {
+            // Check both scheduledEventDate and desiredEventDate
+            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+            if (!eventDate) return false;
+            
+            const eventDateObj = new Date(eventDate);
+            eventDateObj.setHours(0, 0, 0, 0);
+            
+            return eventDateObj >= today && eventDateObj <= futureDate;
+          });
+        }
+      }
+      
+      // Filter by status (comma-separated list)
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
+        }
+      }
+      
+      // Filter by "needs action" - events that need attention
+      if (needsActionParam === 'true') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const twoWeeksFromNow = new Date(today);
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+        
+        eventRequests = eventRequests.filter(event => {
+          // Include events in the next 14 days that need action
+          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          if (!eventDate) return true; // Events without dates need action
+          
+          const eventDateObj = new Date(eventDate);
+          eventDateObj.setHours(0, 0, 0, 0);
+          
+          // Only include events in the next 14 days
+          if (eventDateObj > twoWeeksFromNow) return false;
+          
+          // Events needing drivers
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = event.assignedDriverIds 
+            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+            : 0;
+          const needsDriver = driversNeeded > assignedDrivers;
+          
+          // Events needing speakers
+          const speakersNeeded = event.speakersNeeded || 0;
+          const assignedSpeakers = event.speakerDetails 
+            ? (typeof event.speakerDetails === 'string' 
+                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length 
+                : Object.keys(event.speakerDetails || {}).length)
+            : 0;
+          const needsSpeaker = speakersNeeded > assignedSpeakers;
+          
+          // Events needing volunteers
+          const volunteersNeeded = event.volunteersNeeded || 0;
+          const assignedVolunteers = event.volunteerDetails
+            ? (typeof event.volunteerDetails === 'string'
+                ? Object.keys(JSON.parse(event.volunteerDetails || '{}')).length
+                : Object.keys(event.volunteerDetails || {}).length)
+            : 0;
+          const needsVolunteer = volunteersNeeded > assignedVolunteers;
+          
+          // Events needing van driver
+          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
+          
+          // Events without confirmed dates (new/in_process)
+          const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
+          
+          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+        });
+      }
       
       // DEBUG: Log details about what we're returning
       const completedCount = eventRequests.filter(e => e.status === 'completed').length;
-      logger.info(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
+      logger.info(`📊 API returning ${eventRequests.length} filtered events (${completedCount} completed)`);
       
       // Check for duplicate IDs
       const ids = eventRequests.map(e => e.id);
@@ -1079,6 +1168,274 @@ router.get(
     } catch (error) {
       logger.error('Failed to fetch event requests', error);
       res.status(500).json({ message: 'Failed to fetch event requests' });
+    }
+  }
+);
+
+// Lightweight list endpoint - returns only fields needed for list/card view
+// This reduces payload by 60-80% compared to full event data
+router.get(
+  '/list',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      // Parse query parameters for filtering (same as main endpoint)
+      const daysParam = req.query.days as string | undefined;
+      const statusParam = req.query.status as string | undefined;
+      const needsActionParam = req.query.needsAction as string | undefined;
+
+      let eventRequests = await storage.getAllEventRequests();
+
+      // Apply same filters as main endpoint
+      if (daysParam) {
+        const days = parseInt(daysParam, 10);
+        if (!isNaN(days) && days > 0) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const futureDate = new Date(today);
+          futureDate.setDate(futureDate.getDate() + days);
+
+          eventRequests = eventRequests.filter(event => {
+            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+            if (!eventDate) return false;
+            const eventDateObj = new Date(eventDate);
+            eventDateObj.setHours(0, 0, 0, 0);
+            return eventDateObj >= today && eventDateObj <= futureDate;
+          });
+        }
+      }
+
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
+        }
+      }
+
+      if (needsActionParam === 'true') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const twoWeeksFromNow = new Date(today);
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+
+        eventRequests = eventRequests.filter(event => {
+          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          if (!eventDate) return true;
+          const eventDateObj = new Date(eventDate);
+          eventDateObj.setHours(0, 0, 0, 0);
+          if (eventDateObj > twoWeeksFromNow) return false;
+
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = event.assignedDriverIds
+            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+            : 0;
+          const needsDriver = driversNeeded > assignedDrivers;
+
+          const speakersNeeded = event.speakersNeeded || 0;
+          const assignedSpeakers = event.speakerDetails
+            ? (typeof event.speakerDetails === 'string'
+                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length
+                : Object.keys(event.speakerDetails || {}).length)
+            : 0;
+          const needsSpeaker = speakersNeeded > assignedSpeakers;
+
+          const volunteersNeeded = event.volunteersNeeded || 0;
+          const assignedVolunteers = event.volunteerDetails
+            ? (typeof event.volunteerDetails === 'string'
+                ? Object.keys(JSON.parse(event.volunteerDetails || '{}')).length
+                : Object.keys(event.volunteerDetails || {}).length)
+            : 0;
+          const needsVolunteer = volunteersNeeded > assignedVolunteers;
+
+          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
+          const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
+
+          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+        });
+      }
+
+      // Map to lightweight format - only fields needed for list/card display
+      const lightweightEvents = eventRequests.map(event => ({
+        // Identity
+        id: event.id,
+
+        // Organization basics
+        organizationName: event.organizationName,
+        organizationCategory: event.organizationCategory,
+        department: event.department,
+
+        // Contact (minimal)
+        firstName: event.firstName,
+        lastName: event.lastName,
+        email: event.email,
+        phone: event.phone,
+
+        // Dates
+        desiredEventDate: event.desiredEventDate,
+        scheduledEventDate: event.scheduledEventDate,
+        isConfirmed: event.isConfirmed,
+
+        // Status & workflow
+        status: event.status,
+        statusChangedAt: event.statusChangedAt,
+        assignedTo: event.assignedTo,
+        nextAction: event.nextAction,
+
+        // Location (for map/display)
+        eventAddress: event.eventAddress,
+        latitude: event.latitude,
+        longitude: event.longitude,
+
+        // Counts for badges
+        estimatedSandwichCount: event.estimatedSandwichCount,
+        actualSandwichCount: event.actualSandwichCount,
+        volunteerCount: event.volunteerCount,
+        actualAttendance: event.actualAttendance,
+
+        // Staffing status (for "needs" indicators)
+        driversNeeded: event.driversNeeded,
+        assignedDriverIds: event.assignedDriverIds,
+        selfTransport: event.selfTransport,
+        speakersNeeded: event.speakersNeeded,
+        assignedSpeakerIds: event.assignedSpeakerIds,
+        volunteersNeeded: event.volunteersNeeded,
+        assignedVolunteerIds: event.assignedVolunteerIds,
+        vanDriverNeeded: event.vanDriverNeeded,
+        assignedVanDriverId: event.assignedVanDriverId,
+        isDhlVan: event.isDhlVan,
+        tentativeDriverIds: event.tentativeDriverIds,
+
+        // TSP contact for display
+        tspContactAssigned: event.tspContactAssigned,
+
+        // Toolkit status
+        toolkitSent: event.toolkitSent,
+        toolkitStatus: event.toolkitStatus,
+
+        // Times for display
+        eventStartTime: event.eventStartTime,
+        eventEndTime: event.eventEndTime,
+        pickupTime: event.pickupTime,
+        pickupDateTime: event.pickupDateTime,
+
+        // Tracking flags
+        addedToOfficialSheet: event.addedToOfficialSheet,
+        isUnresponsive: event.isUnresponsive,
+        contactAttempts: event.contactAttempts,
+
+        // Timestamps
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      }));
+
+      logger.info(`📋 List endpoint returning ${lightweightEvents.length} lightweight events`);
+      res.json(lightweightEvents);
+    } catch (error) {
+      logger.error('Failed to fetch lightweight event list', error);
+      res.status(500).json({ message: 'Failed to fetch event requests' });
+    }
+  }
+);
+
+// Search endpoint - server-side search across multiple fields
+router.get(
+  '/search',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const searchQuery = (req.query.q as string || '').trim().toLowerCase();
+      const statusParam = req.query.status as string | undefined;
+
+      if (!searchQuery || searchQuery.length < 2) {
+        return res.json([]);
+      }
+
+      let eventRequests = await storage.getAllEventRequests();
+
+      // Filter by status first if provided
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
+        }
+      }
+
+      // Search across multiple fields
+      const searchResults = eventRequests.filter(event => {
+        const searchableFields = [
+          event.organizationName,
+          event.firstName,
+          event.lastName,
+          event.email,
+          event.phone,
+          event.eventAddress,
+          event.department,
+          event.message,
+          event.nextAction,
+          String(event.id),
+        ].filter(Boolean);
+
+        return searchableFields.some(field =>
+          field!.toLowerCase().includes(searchQuery)
+        );
+      });
+
+      // Return lightweight format for search results
+      const lightweightResults = searchResults.map(event => ({
+        id: event.id,
+        organizationName: event.organizationName,
+        organizationCategory: event.organizationCategory,
+        department: event.department,
+        firstName: event.firstName,
+        lastName: event.lastName,
+        email: event.email,
+        phone: event.phone,
+        desiredEventDate: event.desiredEventDate,
+        scheduledEventDate: event.scheduledEventDate,
+        isConfirmed: event.isConfirmed,
+        status: event.status,
+        statusChangedAt: event.statusChangedAt,
+        assignedTo: event.assignedTo,
+        nextAction: event.nextAction,
+        eventAddress: event.eventAddress,
+        latitude: event.latitude,
+        longitude: event.longitude,
+        estimatedSandwichCount: event.estimatedSandwichCount,
+        actualSandwichCount: event.actualSandwichCount,
+        volunteerCount: event.volunteerCount,
+        actualAttendance: event.actualAttendance,
+        driversNeeded: event.driversNeeded,
+        assignedDriverIds: event.assignedDriverIds,
+        selfTransport: event.selfTransport,
+        speakersNeeded: event.speakersNeeded,
+        assignedSpeakerIds: event.assignedSpeakerIds,
+        volunteersNeeded: event.volunteersNeeded,
+        assignedVolunteerIds: event.assignedVolunteerIds,
+        vanDriverNeeded: event.vanDriverNeeded,
+        assignedVanDriverId: event.assignedVanDriverId,
+        isDhlVan: event.isDhlVan,
+        tentativeDriverIds: event.tentativeDriverIds,
+        tspContactAssigned: event.tspContactAssigned,
+        toolkitSent: event.toolkitSent,
+        toolkitStatus: event.toolkitStatus,
+        eventStartTime: event.eventStartTime,
+        eventEndTime: event.eventEndTime,
+        pickupTime: event.pickupTime,
+        pickupDateTime: event.pickupDateTime,
+        addedToOfficialSheet: event.addedToOfficialSheet,
+        isUnresponsive: event.isUnresponsive,
+        contactAttempts: event.contactAttempts,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      }));
+
+      logger.info(`🔍 Search for "${searchQuery}" returned ${lightweightResults.length} results`);
+      res.json(lightweightResults);
+    } catch (error) {
+      logger.error('Failed to search event requests', error);
+      res.status(500).json({ message: 'Failed to search event requests' });
     }
   }
 );

@@ -1748,10 +1748,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
             ) : null}
-              </div>
-            </div>
 
-            {/* Sandwiches - moved back to Column 1 */}
+            {/* Sandwiches - inside Event Details container, after Recipient Logistics */}
             <div className="flex items-center gap-2 pb-3 border-b border-gray-200 mt-3">
               <Package className="w-5 h-5 shrink-0" />
               {isEditingThisCard && editingField === 'sandwichTypes' ? (
@@ -1899,6 +1897,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   )}
                 </div>
               )}
+            </div>
+              </div>
             </div>
           </div>
 

@@ -152,7 +152,8 @@ router.get('/unread/count', isAuthenticated, async (req: AuthenticatedRequest, r
           eq(instantMessages.recipientId, currentUser.id),
           eq(instantMessages.read, false)
         )
-      );
+      )
+      .orderBy(desc(instantMessages.createdAt));
 
     // Group by sender to get count per conversation
     const countBySender = unreadMessages.reduce((acc, msg) => {
@@ -163,6 +164,7 @@ router.get('/unread/count', isAuthenticated, async (req: AuthenticatedRequest, r
     res.json({
       total: unreadMessages.length,
       bySender: countBySender,
+      messages: unreadMessages, // Include messages for polling fallback
     });
   } catch (error) {
     logger.error('[Instant Messages] Error getting unread count:', error);

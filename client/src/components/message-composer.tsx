@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useMessaging } from '@/hooks/useMessaging';
-import { Send, X, User, Plus } from 'lucide-react';
+import { Send, X, User, Plus, Paperclip, FileText, Image, File, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { apiRequest } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface MessageComposerProps {
   contextType?: 'suggestion' | 'project' | 'task' | 'event' | 'graphic' | 'expense' | 'collection' | 'direct';
@@ -22,6 +29,20 @@ interface MessageComposerProps {
   compact?: boolean;
 }
 
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Helper to get icon for file type
+function getFileIcon(type: string) {
+  if (type.startsWith('image/')) return Image;
+  if (type === 'application/pdf') return FileText;
+  return File;
+}
+
 export function MessageComposer({
   contextType = 'direct',
   contextId,
@@ -31,9 +52,73 @@ export function MessageComposer({
 }: MessageComposerProps) {
   const [content, setContent] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { sendMessage, isSending } = useMessaging();
   const queryClient = useQueryClient();
+
+  // Handle file selection
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Check total attachments limit
+    if (attachments.length + files.length > 5) {
+      toast({
+        title: 'Too many attachments',
+        description: 'Maximum 5 attachments allowed per message',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      for (const file of Array.from(files)) {
+        formData.append('files', file);
+      }
+
+      const response = await fetch('/api/messaging/attachments/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload files');
+      }
+
+      const result = await response.json();
+      setAttachments(prev => [...prev, ...result.attachments]);
+
+      toast({
+        description: `${result.attachments.length} file(s) uploaded`,
+      });
+    } catch (error) {
+      logger.error('Failed to upload attachments:', error);
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [attachments.length, toast]);
+
+  // Remove an attachment
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   // Fetch all users for recipient selection
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
@@ -50,10 +135,10 @@ export function MessageComposer({
   });
 
   const handleSend = async () => {
-    if (!content.trim()) {
+    if (!content.trim() && attachments.length === 0) {
       toast({
-        title: 'Message content required',
-        description: 'Please enter a message',
+        title: 'Message required',
+        description: 'Please enter a message or attach a file',
         variant: 'destructive',
       });
       return;
@@ -74,19 +159,33 @@ export function MessageComposer({
       contextType,
       contextId,
       recipientCount: selectedRecipients.length,
+      attachmentCount: attachments.length,
     });
 
     try {
-      await sendMessage({
-        recipientIds: selectedRecipients,
-        content: content.trim(),
-        contextType,
-        contextId,
-        contextTitle,
+      // Use direct fetch to include attachments
+      const response = await fetch('/api/messaging/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          recipientIds: selectedRecipients,
+          content: content.trim(),
+          contextType,
+          contextId,
+          contextTitle,
+          attachments: attachments.length > 0 ? attachments : undefined,
+        }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send message');
+      }
 
       setContent('');
       setSelectedRecipients([]);
+      setAttachments([]);
       onSent?.();
 
       toast({
@@ -215,6 +314,81 @@ export function MessageComposer({
           />
         </div>
 
+        {/* Attachments section */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-sm font-medium">Attachments</label>
+            <Badge variant="outline" className="text-xs">
+              {attachments.length}/5
+            </Badge>
+          </div>
+
+          {/* Attached files list */}
+          {attachments.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {attachments.map((attachment, index) => {
+                const FileIcon = getFileIcon(attachment.type);
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border"
+                  >
+                    <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{attachment.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAttachment(index)}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add attachment button */}
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || attachments.length >= 5}
+              className="flex items-center gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Paperclip className="h-4 w-4" />
+                  Attach Files
+                </>
+              )}
+            </Button>
+            <span className="text-xs text-gray-500">
+              Max 10MB per file. Images, PDFs, documents allowed.
+            </span>
+          </div>
+        </div>
+
         <div className="flex justify-end space-x-2">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
@@ -224,8 +398,9 @@ export function MessageComposer({
           <Button
             onClick={handleSend}
             disabled={
-              !content.trim() ||
+              (!content.trim() && attachments.length === 0) ||
               isSending ||
+              isUploading ||
               selectedRecipients.length === 0
             }
             className="flex items-center gap-2"

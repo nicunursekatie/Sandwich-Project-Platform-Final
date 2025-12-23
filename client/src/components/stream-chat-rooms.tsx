@@ -734,6 +734,7 @@ export default function StreamChatRooms() {
                   const isActive = activeChannel?.id === room.id && activeChannel?.type === 'team';
                   const roomData = teamRoomChannels.get(room.id);
                   const memberCount = roomData?.memberCount || 0;
+                  const unreadCount = roomData?.channel?.countUnread() || 0;
                   return (
                     <div
                       key={room.id}
@@ -761,9 +762,16 @@ export default function StreamChatRooms() {
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate block">
-                            {room.name}
-                          </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium truncate block">
+                              {room.name}
+                            </span>
+                            {unreadCount > 0 && (
+                              <Badge variant="destructive" className="text-xs flex-shrink-0">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </Badge>
+                            )}
+                          </div>
                           <span className="text-xs text-gray-500">
                             {memberCount} member{memberCount !== 1 ? 's' : ''}
                           </span>

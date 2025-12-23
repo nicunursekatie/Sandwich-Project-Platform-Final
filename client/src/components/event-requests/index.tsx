@@ -18,7 +18,7 @@ import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -105,6 +105,8 @@ const EventRequestsManagementContent: React.FC = () => {
     itemsPerPage,
     setItemsPerPage,
     statusCounts,
+    quickFilter,
+    setQuickFilter,
 
     // Dialog states
     showEventDetails,
@@ -588,8 +590,63 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
           />
         ) : (
-          /* Filters and Tabs */
-          <RequestFilters
+          <>
+            {/* Quick Filter Buttons */}
+            <div className="mb-4 flex flex-wrap gap-2 px-4 sm:px-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveTab('scheduled');
+                  setSearchQuery('');
+                  setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver');
+                }}
+                className={`${
+                  quickFilter === 'needsDriver'
+                    ? 'bg-[#236383] text-white border-[#236383] hover:bg-[#236383]/90'
+                    : ''
+                }`}
+              >
+                <Car className="w-4 h-4 mr-1.5" />
+                Needs Driver
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveTab('scheduled');
+                  setSearchQuery('');
+                  setQuickFilter(quickFilter === 'week' ? null : 'week');
+                }}
+                className={`${
+                  quickFilter === 'week'
+                    ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
+                    : ''
+                }`}
+              >
+                <Calendar className="w-4 h-4 mr-1.5" />
+                This Week
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveTab('scheduled');
+                  setSearchQuery('');
+                  setQuickFilter(quickFilter === 'today' ? null : 'today');
+                }}
+                className={`${
+                  quickFilter === 'today'
+                    ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
+                    : ''
+                }`}
+              >
+                <Calendar className="w-4 h-4 mr-1.5" />
+                Today
+              </Button>
+            </div>
+            {/* Filters and Tabs */}
+            <RequestFilters
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             statusFilter={statusFilter}
@@ -613,6 +670,7 @@ const EventRequestsManagementContent: React.FC = () => {
             onDismissAdminOverviewTip={() => setShowAdminOverviewTip(false)}
             onDismissSpreadsheetTip={() => setShowSpreadsheetTip(false)}
           />
+          </>
         )}
 
         {/* Event Details Edit Modal */}

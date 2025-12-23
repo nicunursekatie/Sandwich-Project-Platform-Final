@@ -706,8 +706,8 @@ export const TOURS: Tour[] = [
   },
   {
     id: 'inbox-messages-guide',
-    title: 'Using Your Inbox',
-    description: 'Send messages and kudos to team members',
+    title: 'Using Threads (Project-Centered Messaging)',
+    description: 'Send messages and kudos organized by project, event, or task context',
     category: 'team-management',
     icon: 'Mail',
     estimatedTime: '2 min',
@@ -716,7 +716,7 @@ export const TOURS: Tour[] = [
       {
         id: 'inbox-intro',
         title: 'Your Personal Inbox',
-        description: 'The Inbox is for important messages and kudos. It\'s like email, but just for our team!',
+        description: 'Threads (Project-Centered Messaging) is for important messages and kudos organized by project, event, or task context.',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },

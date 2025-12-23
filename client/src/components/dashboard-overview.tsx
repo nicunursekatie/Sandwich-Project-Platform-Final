@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/useResourcePermissions';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useToast } from '@/hooks/use-toast';
+import { calculateActualWeeklyAverage } from '@/lib/analytics-utils';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -359,9 +360,12 @@ export default function DashboardOverview({
 
     // Annual goal - organizational target
     const annualGoal = 500000; // The Sandwich Project's annual target
-    
-    // Calculate weekly average for other metrics
-    const weeklyAverage = totalSandwiches / (operationalYears * 52);
+
+    // Calculate weekly average using proper method that excludes holiday weeks
+    // This accounts for Thanksgiving, Christmas, New Year's, July 4th, and Memorial Day weeks
+    const weeklyAverage = allCollectionsData?.collections
+      ? calculateActualWeeklyAverage(allCollectionsData.collections)
+      : totalSandwiches / (operationalYears * 52); // Fallback to simple calculation
 
     // Calculate baseline and surge capacity from data patterns
     const baselineMin = Math.round(weeklyAverage * 0.7);

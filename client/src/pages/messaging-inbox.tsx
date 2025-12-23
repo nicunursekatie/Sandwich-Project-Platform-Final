@@ -20,9 +20,22 @@ import {
   Search,
   RefreshCw,
   Star,
+  Paperclip,
+  FileText,
+  Image,
+  File,
+  Download,
+  ExternalLink,
 } from 'lucide-react';
 import { MessageContextBadge } from '@/components/message-context-badge';
 import { logger } from '@/lib/logger';
+
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface Message {
   id: number;
@@ -36,6 +49,31 @@ interface Message {
   createdAt: string;
   read?: boolean;
   readAt?: string;
+  attachments?: string; // JSON string of MessageAttachment[]
+}
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Helper to get icon for file type
+function getFileIcon(type: string) {
+  if (type.startsWith('image/')) return Image;
+  if (type === 'application/pdf') return FileText;
+  return File;
+}
+
+// Parse attachments from JSON string
+function parseAttachments(attachmentsStr?: string): MessageAttachment[] {
+  if (!attachmentsStr) return [];
+  try {
+    return JSON.parse(attachmentsStr);
+  } catch {
+    return [];
+  }
 }
 
 export default function MessagingInbox() {
@@ -205,10 +243,18 @@ export default function MessagingInbox() {
                           {message.content.length > 100 && '...'}
                         </div>
 
-                        <div className="text-xs text-gray-400 mt-1">
-                          {formatDistanceToNow(new Date(message.createdAt), {
-                            addSuffix: true,
-                          })}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-400">
+                            {formatDistanceToNow(new Date(message.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                          {parseAttachments(message.attachments).length > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-gray-400">
+                              <Paperclip className="w-3 h-3" />
+                              {parseAttachments(message.attachments).length}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -274,6 +320,65 @@ export default function MessagingInbox() {
                     <div className="whitespace-pre-wrap text-gray-800">
                       {selectedMessage.content}
                     </div>
+
+                    {/* Attachments */}
+                    {parseAttachments(selectedMessage.attachments).length > 0 && (
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Paperclip className="w-4 h-4" />
+                          Attachments ({parseAttachments(selectedMessage.attachments).length})
+                        </h4>
+                        <div className="space-y-2">
+                          {parseAttachments(selectedMessage.attachments).map((attachment, index) => {
+                            const FileIcon = getFileIcon(attachment.type);
+                            const isImage = attachment.type.startsWith('image/');
+
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
+                              >
+                                {isImage ? (
+                                  <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                                    <img
+                                      src={attachment.url}
+                                      alt={attachment.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                                    <FileIcon className="w-6 h-6 text-gray-500" />
+                                  </div>
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {attachment.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {formatFileSize(attachment.size)}
+                                  </p>
+                                </div>
+
+                                <a
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-md transition-colors"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                  Open
+                                </a>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </div>

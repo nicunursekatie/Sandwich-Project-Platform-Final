@@ -558,6 +558,8 @@ export const messages = pgTable('messages', {
   replyToMessageId: integer('reply_to_message_id'),
   replyToContent: text('reply_to_content'), // Store original message content for display
   replyToSender: text('reply_to_sender'), // Store sender name for display
+  // Attachments - stored as JSON array: [{ name, url, type, size }]
+  attachments: text('attachments'), // JSON string of attachment objects
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
