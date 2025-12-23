@@ -528,7 +528,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   private static getChatUrl(channel: string): string {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-katielong2316.replit.app'
+        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
         : 'http://localhost:5000';
 
     return `${baseUrl}/dashboard?section=chat&channel=${encodeURIComponent(
@@ -537,7 +537,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
-   * Send email notification when a user is assigned to a team board item
+   * Send email notification when a user is assigned to a Holding Zone item
    */
   static async sendTeamBoardAssignmentNotification(
     assignedUserIds: string[],
@@ -547,7 +547,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     assignedBy: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      logger.log('SendGrid not configured - skipping team board assignment notification');
+      logger.log('SendGrid not configured - skipping Holding Zone assignment notification');
       return false;
     }
 
@@ -559,14 +559,14 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         .where(inArray(users.id, assignedUserIds));
 
       if (!assignedUsers || assignedUsers.length === 0) {
-        logger.warn(`No valid users found for team board assignment - IDs: ${assignedUserIds.join(', ')}`);
+        logger.warn(`No valid users found for Holding Zone assignment - IDs: ${assignedUserIds.join(', ')}`);
         return false;
       }
 
       // Send email to each assigned user
       for (const user of assignedUsers) {
         if (!user.email) {
-          logger.warn(`User ${user.id} has no email - cannot send team board assignment notification`);
+          logger.warn(`User ${user.id} has no email - cannot send Holding Zone assignment notification`);
           continue;
         }
 
@@ -575,8 +575,8 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         const userName = user.displayName || user.firstName || userEmail.split('@')[0];
 
         // Truncate content if too long for email
-        const displayContent = itemContent.length > 200 
-          ? itemContent.substring(0, 200) + '...' 
+        const displayContent = itemContent.length > 200
+          ? itemContent.substring(0, 200) + '...'
           : itemContent;
 
         // Format item type for display
@@ -586,13 +586,13 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
                               : itemType === 'reminder' ? 'Reminder'
                               : 'Item';
 
-        // Generate team board URL
-        const teamBoardUrl = this.getTeamBoardUrl();
+        // Generate Holding Zone URL
+        const holdingZoneUrl = this.getTeamBoardUrl();
 
         const msg = {
           to: userEmail,
           from: 'katie@thesandwichproject.org',
-          subject: `You've been assigned to a team board ${itemTypeDisplay.toLowerCase()} - The Sandwich Project`,
+          subject: `You've been assigned to a Holding Zone ${itemTypeDisplay.toLowerCase()} - The Sandwich Project`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -610,22 +610,22 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>📋 You've been assigned to a team board ${itemTypeDisplay.toLowerCase()}!</h1>
+                  <h1>📋 You've been assigned to a Holding Zone ${itemTypeDisplay.toLowerCase()}!</h1>
                 </div>
                 <div class="content">
                   <p>Hello ${userName}!</p>
-                  <p>You have been assigned to the following team board ${itemTypeDisplay.toLowerCase()} by <strong>${assignedBy}</strong>:</p>
-                  
+                  <p>You have been assigned to the following Holding Zone ${itemTypeDisplay.toLowerCase()} by <strong>${assignedBy}</strong>:</p>
+
                   <div class="item-details">
                     <strong>${itemTypeDisplay}:</strong><br>
                     ${displayContent}
                   </div>
-                  
+
                   <p>Please review the ${itemTypeDisplay.toLowerCase()} details and take any necessary action.</p>
-                  
-                  <p>Click the button below to view the team board:</p>
-                  <a href="${teamBoardUrl}" class="btn">View Team Board</a>
-                  
+
+                  <p>Click the button below to view the Holding Zone:</p>
+                  <a href="${holdingZoneUrl}" class="btn">View Holding Zone</a>
+
                   ${EMAIL_FOOTER_HTML}
                 </div>
               </div>
@@ -635,13 +635,13 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           text: `
 Hello ${userName}!
 
-You have been assigned to the following team board ${itemTypeDisplay.toLowerCase()} by ${assignedBy}:
+You have been assigned to the following Holding Zone ${itemTypeDisplay.toLowerCase()} by ${assignedBy}:
 
 ${itemTypeDisplay}: ${displayContent}
 
 Please review the ${itemTypeDisplay.toLowerCase()} details and take any necessary action.
 
-View team board: ${teamBoardUrl}
+View Holding Zone: ${holdingZoneUrl}
 
 ---
 The Sandwich Project - Fighting food insecurity one sandwich at a time
@@ -651,19 +651,19 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         };
 
         await sgMail.send(msg);
-        logger.log(`Team board assignment notification sent to ${userEmail} for item ${itemId}`);
+        logger.log(`Holding Zone assignment notification sent to ${userEmail} for item ${itemId}`);
       }
 
       // Send SMS notifications to users who have opted in
-      const teamBoardUrl = this.getTeamBoardUrl();
+      const holdingZoneUrl = this.getTeamBoardUrl();
       for (const user of assignedUsers) {
         try {
           const metadata = getUserMetadata(user);
           const smsConsent = metadata.smsConsent;
           if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
             const userName = user.displayName || user.firstName || user.email?.split('@')[0] || 'User';
-            const displayContent = itemContent.length > 50 
-              ? itemContent.substring(0, 50) + '...' 
+            const displayContent = itemContent.length > 50
+              ? itemContent.substring(0, 50) + '...'
               : itemContent;
             await sendTeamBoardAssignmentSMS(
               smsConsent.phoneNumber,
@@ -671,18 +671,18 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
               displayContent,
               assignedBy,
               itemType,
-              teamBoardUrl
+              holdingZoneUrl
             );
-            logger.log(`Team board assignment SMS sent to ${smsConsent.phoneNumber} for item ${itemId}`);
+            logger.log(`Holding Zone assignment SMS sent to ${smsConsent.phoneNumber} for item ${itemId}`);
           }
         } catch (smsError) {
-          logger.error(`Error sending team board assignment SMS to user ${user.id} (emails still succeeded):`, smsError);
+          logger.error(`Error sending Holding Zone assignment SMS to user ${user.id} (emails still succeeded):`, smsError);
         }
       }
 
       return true;
     } catch (error) {
-      logger.error('Error sending team board assignment notification:', error);
+      logger.error('Error sending Holding Zone assignment notification:', error);
       return false;
     }
   }
@@ -712,7 +712,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
-   * Send email notification for team board comment mentions
+   * Send email notification for Holding Zone comment mentions
    */
   static async sendTeamBoardCommentMentionNotification(
     mentionedUserEmail: string,
@@ -722,7 +722,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     commentContent: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      logger.log('SendGrid not configured - skipping team board comment mention notification');
+      logger.log('SendGrid not configured - skipping Holding Zone comment mention notification');
       return false;
     }
 
@@ -736,13 +736,13 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         ? commentContent.substring(0, 200) + '...'
         : commentContent;
 
-      // Generate team board URL
-      const teamBoardUrl = this.getTeamBoardUrl();
+      // Generate Holding Zone URL
+      const holdingZoneUrl = this.getTeamBoardUrl();
 
       const msg = {
         to: mentionedUserEmail,
         from: 'katie@thesandwichproject.org',
-        subject: `You were mentioned in a team board comment - The Sandwich Project`,
+        subject: `You were mentioned in a Holding Zone comment - The Sandwich Project`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -761,14 +761,14 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           <body>
             <div class="container">
               <div class="header">
-                <h1>💬 You were mentioned in a team board comment!</h1>
+                <h1>💬 You were mentioned in a Holding Zone comment!</h1>
               </div>
               <div class="content">
                 <p>Hello ${mentionedUserName}!</p>
-                <p><strong>${commenterName}</strong> mentioned you in a comment on a team board item:</p>
+                <p><strong>${commenterName}</strong> mentioned you in a comment on a Holding Zone item:</p>
 
                 <div class="item-box">
-                  <strong>Team Board Item:</strong><br>
+                  <strong>Holding Zone Item:</strong><br>
                   ${displayItemContent}
                 </div>
 
@@ -778,7 +778,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
                 </div>
 
                 <p>Click the button below to view and respond:</p>
-                <a href="${teamBoardUrl}" class="btn">View Team Board</a>
+                <a href="${holdingZoneUrl}" class="btn">View Holding Zone</a>
 
                 ${EMAIL_FOOTER_HTML}
               </div>
@@ -789,15 +789,15 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         text: `
 Hello ${mentionedUserName}!
 
-${commenterName} mentioned you in a comment on a team board item:
+${commenterName} mentioned you in a comment on a Holding Zone item:
 
-Team Board Item:
+Holding Zone Item:
 ${displayItemContent}
 
 ${commenterName} commented:
 "${displayCommentContent}"
 
-View team board: ${teamBoardUrl}
+View Holding Zone: ${holdingZoneUrl}
 
 ---
 The Sandwich Project - Fighting food insecurity one sandwich at a time
@@ -807,10 +807,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       };
 
       await sgMail.send(msg);
-      logger.log(`Team board comment mention notification sent to ${mentionedUserEmail}`);
+      logger.log(`Holding Zone comment mention notification sent to ${mentionedUserEmail}`);
       return true;
     } catch (error) {
-      logger.error('Error sending team board comment mention notification:', error);
+      logger.error('Error sending Holding Zone comment mention notification:', error);
       return false;
     }
   }
@@ -1155,12 +1155,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         html: htmlBody,
       });
 
-      logger.info('Team board item mention notification sent', {
+      logger.info('Holding Zone item mention notification sent', {
         recipientEmail,
         itemId,
       });
     } catch (error) {
-      logger.error('Failed to send team board item mention notification:', error);
+      logger.error('Failed to send Holding Zone item mention notification:', error);
       throw error;
     }
   }

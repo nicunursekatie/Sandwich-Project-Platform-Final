@@ -1210,7 +1210,7 @@ export async function sendChatMentionSMS(
 }
 
 /**
- * Send SMS notification when a user is assigned to a team board item
+ * Send SMS notification when a user is assigned to a Holding Zone item
  */
 export async function sendTeamBoardAssignmentSMS(
   phoneNumber: string,
@@ -1221,7 +1221,7 @@ export async function sendTeamBoardAssignmentSMS(
   appUrl?: string
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
-  
+
   if (!provider || !provider.isConfigured()) {
     return {
       success: false,
@@ -1238,10 +1238,10 @@ export async function sendTeamBoardAssignmentSMS(
     });
 
     if (result.success) {
-      logger.log(`✅ Team board assignment SMS sent to ${phoneNumber} for ${itemType}: ${itemTitle}`);
+      logger.log(`✅ Holding Zone assignment SMS sent to ${phoneNumber} for ${itemType}: ${itemTitle}`);
       return {
         success: true,
-        message: 'Team board assignment notification sent successfully',
+        message: 'Holding Zone assignment notification sent successfully',
         sentTo: phoneNumber,
       };
     } else {
@@ -1251,10 +1251,10 @@ export async function sendTeamBoardAssignmentSMS(
       };
     }
   } catch (error) {
-    logger.error('Error sending team board assignment SMS:', error);
+    logger.error('Error sending Holding Zone assignment SMS:', error);
     return {
       success: false,
-      message: `Failed to send team board assignment notification: ${(error as Error).message}`,
+      message: `Failed to send Holding Zone assignment notification: ${(error as Error).message}`,
     };
   }
 }
