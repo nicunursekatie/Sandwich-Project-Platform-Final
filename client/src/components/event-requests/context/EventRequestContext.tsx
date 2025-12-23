@@ -264,13 +264,15 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
       };
     }
     
-    // For "needs action" view (default for most users), use optimized query
-    if (activeTab === 'new' || activeTab === 'in_process' || activeTab === 'scheduled' || !initialTab) {
-      return {
-        days: 14,
-        status: activeTab === 'scheduled' ? 'scheduled' : activeTab === 'in_process' ? 'in_process' : activeTab === 'new' ? 'new' : undefined,
-        needsAction: activeTab === 'new' || activeTab === 'in_process' || !initialTab ? 'true' : undefined,
-      };
+    // For status-based tabs, just filter by status (no date restrictions)
+    if (activeTab === 'new') {
+      return { status: 'new' };
+    }
+    if (activeTab === 'in_process') {
+      return { status: 'in_process' };
+    }
+    if (activeTab === 'scheduled') {
+      return { status: 'scheduled' };
     }
     // For other tabs, still filter by status if applicable, but don't limit by days
     if (['completed', 'declined', 'postponed'].includes(activeTab)) {
