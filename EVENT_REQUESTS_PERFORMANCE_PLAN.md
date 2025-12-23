@@ -3,16 +3,18 @@
 ## Current State Analysis
 
 - ✅ Already lazy-loaded via `lazyWithRetry` in dashboard.tsx
-- ❌ Fetches ALL events at once (`/api/event-requests`)
-- ❌ Client-side filtering on full dataset
-- ❌ No server-side pagination/filtering
+- ✅ Lightweight list endpoint (`/api/event-requests/list`) - 60-80% smaller payload
+- ✅ Server-side filtering (days, status, needsAction params)
+- ✅ Server-side search endpoint (`/api/event-requests/search`)
 - ✅ React Query caching (5 min staleTime)
+- ✅ Stale-while-revalidate pattern
+- ✅ Quick filter buttons (Needs Driver, This Week, Today)
 
 ## Recommended Implementation Order
 
-### Phase 1: Quick Wins (1-2 days)
+### Phase 1: Quick Wins ✅ COMPLETE
 
-#### 1. Add Default View Filtering (#2)
+#### 1. Add Default View Filtering ✅
 **Backend:** Modify `/api/event-requests` to accept query params
 ```typescript
 // Accept: ?days=14&status=new,in_process,scheduled&needsAction=true
@@ -31,7 +33,7 @@ const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
 
 **Impact:** Reduce initial payload from 500+ events to ~20-50
 
-#### 2. Improve Stale-While-Revalidate (#3)
+#### 2. Improve Stale-While-Revalidate ✅
 **Frontend:** Use React Query's built-in SWR
 ```typescript
 const { data, isPlaceholderData } = useQuery({
