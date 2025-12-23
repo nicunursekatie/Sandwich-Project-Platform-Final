@@ -1,10 +1,44 @@
 import { Router, Response } from 'express';
-import { messagingService } from '../services/messaging-service';
+import { messagingService, MessageAttachment } from '../services/messaging-service';
 import { isAuthenticated } from '../auth';
 import { AuthenticatedRequest } from '../types';
 import { logger } from '../utils/production-safe-logger';
+import { objectStorageService } from '../objectStorage';
+import multer from 'multer';
+import { randomUUID } from 'crypto';
+import path from 'path';
 
 const router = Router();
+
+// Configure multer for file uploads (store in memory temporarily)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    files: 5, // Max 5 files per upload
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow common file types
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+      'text/csv',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} is not allowed`));
+    }
+  },
+});
 
 // Get messages for an event context (stub route - events don't have messaging yet)
 router.get('/context/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
@@ -196,32 +230,121 @@ router.post('/send', isAuthenticated, async (req: AuthenticatedRequest, res: Res
       contextId,
       contextTitle,
       parentMessageId,
+      attachments,
     } = req.body;
 
     if (!recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
       return res.status(400).json({ message: 'recipientIds array is required' });
     }
 
-    if (!content) {
-      return res.status(400).json({ message: 'content is required' });
+    // Content is only required if there are no attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      return res.status(400).json({ message: 'content or attachments required' });
     }
 
-    logger.log(`[Messaging API] Sending message from ${user.email} to ${recipientIds.length} recipient(s)`);
+    logger.log(`[Messaging API] Sending message from ${user.email} to ${recipientIds.length} recipient(s) with ${attachments?.length || 0} attachments`);
 
     const result = await messagingService.sendMessage({
       senderId: user.id,
       recipientIds,
-      content,
+      content: content || '',
       contextType,
       contextId,
       contextTitle,
       parentMessageId,
+      attachments: attachments as MessageAttachment[],
     });
 
     res.json(result);
   } catch (error) {
     logger.error('[Messaging API] Error sending message:', error);
     res.status(500).json({ message: 'Failed to send message' });
+  }
+});
+
+// Upload attachment for message
+router.post('/attachments/upload', isAuthenticated, upload.array('files', 5), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    logger.log(`[Messaging API] Uploading ${files.length} attachment(s) from ${user.email}`);
+
+    const uploadedAttachments: MessageAttachment[] = [];
+
+    for (const file of files) {
+      try {
+        // Generate unique filename
+        const fileId = randomUUID();
+        const ext = path.extname(file.originalname);
+        const destKey = `message-attachments/${user.id}/${fileId}${ext}`;
+
+        // Write buffer to temp file, upload, then clean up
+        const fs = await import('fs');
+        const os = await import('os');
+        const tempPath = path.join(os.tmpdir(), `upload-${fileId}${ext}`);
+
+        fs.writeFileSync(tempPath, file.buffer);
+
+        try {
+          const url = await objectStorageService.uploadLocalFile(tempPath, destKey);
+
+          uploadedAttachments.push({
+            name: file.originalname,
+            url,
+            type: file.mimetype,
+            size: file.size,
+          });
+        } finally {
+          // Clean up temp file
+          if (fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+          }
+        }
+      } catch (uploadError) {
+        logger.error(`[Messaging API] Failed to upload file ${file.originalname}:`, uploadError);
+        // Continue with other files
+      }
+    }
+
+    if (uploadedAttachments.length === 0) {
+      return res.status(500).json({ message: 'Failed to upload any files' });
+    }
+
+    logger.log(`[Messaging API] Successfully uploaded ${uploadedAttachments.length} attachment(s)`);
+    res.json({ attachments: uploadedAttachments });
+  } catch (error) {
+    logger.error('[Messaging API] Error uploading attachments:', error);
+    res.status(500).json({ message: 'Failed to upload attachments' });
+  }
+});
+
+// Get signed URL for viewing an attachment
+router.get('/attachments/view', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { url } = req.query;
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ message: 'url parameter is required' });
+    }
+
+    // Generate a signed URL that's valid for 1 hour
+    const signedUrl = await objectStorageService.getSignedViewUrl(url, 3600);
+    res.json({ signedUrl });
+  } catch (error) {
+    logger.error('[Messaging API] Error getting signed URL:', error);
+    res.status(500).json({ message: 'Failed to get signed URL' });
   }
 });
 

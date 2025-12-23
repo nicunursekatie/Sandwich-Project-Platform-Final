@@ -29,6 +29,13 @@ export interface ConversationSummary {
   totalMessages: number;
 }
 
+export interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string; // MIME type
+  size: number; // bytes
+}
+
 export interface SendMessageParams {
   senderId: string;
   recipientIds: string[];
@@ -37,6 +44,7 @@ export interface SendMessageParams {
   contextId?: string;
   contextTitle?: string;
   parentMessageId?: number;
+  attachments?: MessageAttachment[];
 }
 
 export interface ThreadPage {
@@ -58,6 +66,7 @@ export class MessagingService {
       contextId,
       contextTitle,
       parentMessageId,
+      attachments,
     } = params;
 
     try {
@@ -86,6 +95,7 @@ export class MessagingService {
           contextType,
           contextId,
           contextTitle,
+          attachments: attachments ? JSON.stringify(attachments) : null,
         })
         .returning();
 
