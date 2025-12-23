@@ -108,6 +108,121 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     openWindowsRef.current = openWindows;
   }, [openWindows]);
 
+  // Track last message ID we've seen to detect new messages via polling
+  const lastMessageIdRef = useRef<number>(0);
+  const [socketConnected, setSocketConnected] = useState(false);
+
+  // Helper function to process a new message (used by both socket and polling)
+  const processNewMessage = useCallback((message: InstantMessage) => {
+    // Skip messages from yourself entirely - they're added by the sendMessage API response
+    // This prevents duplicate messages (the API adds it, then socket would add it again)
+    if (message.senderId === user?.id) {
+      logger.log('[InstantMessaging] Skipping own message');
+      return;
+    }
+
+    // Skip if we've already seen this message
+    if (message.id <= lastMessageIdRef.current) {
+      return;
+    }
+    lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+
+    const senderId = message.senderId;
+    const currentWindows = openWindowsRef.current;
+    const existingWindow = currentWindows.find(w => w.user.id === senderId);
+
+    // Play notification sound for new messages
+    playNotificationSound();
+
+    if (existingWindow) {
+      // Window is open - add message to it
+      setOpenWindows(prev => {
+        return prev.map(w => {
+          if (w.user.id === senderId) {
+            const messageExists = w.messages.some(m => m.id === message.id);
+            if (messageExists) return w;
+            return {
+              ...w,
+              messages: [...w.messages, message],
+              unreadCount: w.minimized ? w.unreadCount + 1 : 0,
+            };
+          }
+          return w;
+        });
+      });
+    } else {
+      // No window open - show toast notification
+      const truncatedContent = message.content.length > 50
+        ? message.content.substring(0, 50) + '...'
+        : message.content;
+
+      toast({
+        title: `New message from ${message.senderName}`,
+        description: truncatedContent,
+        duration: 5000,
+        action: (
+          <button
+            onClick={() => {
+              // Open chat with this user
+              openChatRef.current({
+                id: message.senderId,
+                firstName: null,
+                lastName: null,
+                displayName: message.senderName,
+                email: null,
+                profileImageUrl: null,
+              });
+            }}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+          >
+            Reply
+          </button>
+        ),
+      });
+    }
+  }, [user?.id, toast]);
+
+  // Polling fallback: Check for new messages when socket is disconnected
+  useEffect(() => {
+    if (!user?.id) return;
+    if (socketConnected) return; // Don't poll if socket is connected
+
+    const pollForNewMessages = async () => {
+      try {
+        // Fetch unread messages (includes all unread messages, not just last per conversation)
+        const response = await fetch('/api/instant-messages/unread/count', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Process all unread messages that are new
+          if (data.messages && Array.isArray(data.messages)) {
+            data.messages.forEach((message: InstantMessage) => {
+              if (message.id > lastMessageIdRef.current) {
+                processNewMessage(message);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('[InstantMessaging] Error polling for messages:', error);
+      }
+    };
+
+    // Poll every 5 seconds when socket is disconnected
+    const pollInterval = setInterval(pollForNewMessages, 5000);
+    
+    // Initial poll after a short delay to let socket try to connect first
+    const initialPollTimeout = setTimeout(pollForNewMessages, 2000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(initialPollTimeout);
+    };
+  }, [user?.id, socketConnected, processNewMessage]);
+
   // Join messaging channel for real-time updates
   useEffect(() => {
     if (!user?.id) return;
@@ -115,79 +230,21 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     const socket = getOrCreateSocket();
     if (!socket) return;
 
-    // Listen for new instant messages
     const handleNewMessage = (message: InstantMessage) => {
       logger.log('[InstantMessaging] Received instant_message event:', message);
-      // Skip messages from yourself entirely - they're added by the sendMessage API response
-      // This prevents duplicate messages (the API adds it, then socket would add it again)
-      if (message.senderId === user.id) {
-        logger.log('[InstantMessaging] Skipping own message');
-        return;
-      }
-
-      const senderId = message.senderId;
-      const currentWindows = openWindowsRef.current;
-      const existingWindow = currentWindows.find(w => w.user.id === senderId);
-
-      // Play notification sound for new messages
-      playNotificationSound();
-
-      if (existingWindow) {
-        // Window is open - add message to it
-        setOpenWindows(prev => {
-          return prev.map(w => {
-            if (w.user.id === senderId) {
-              const messageExists = w.messages.some(m => m.id === message.id);
-              if (messageExists) return w;
-              return {
-                ...w,
-                messages: [...w.messages, message],
-                unreadCount: w.minimized ? w.unreadCount + 1 : 0,
-              };
-            }
-            return w;
-          });
-        });
-      } else {
-        // No window open - show toast notification
-        const truncatedContent = message.content.length > 50
-          ? message.content.substring(0, 50) + '...'
-          : message.content;
-
-        toast({
-          title: `New message from ${message.senderName}`,
-          description: truncatedContent,
-          duration: 5000,
-          action: (
-            <button
-              onClick={() => {
-                // Open chat with this user
-                openChatRef.current({
-                  id: message.senderId,
-                  firstName: null,
-                  lastName: null,
-                  displayName: message.senderName,
-                  email: null,
-                  profileImageUrl: null,
-                });
-              }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
-            >
-              Reply
-            </button>
-          ),
-        });
-      }
+      processNewMessage(message);
     };
 
     const handleConnect = () => {
       // Join user's messaging channel only after socket is connected
       logger.log('[InstantMessaging] Socket connected, joining messaging channel for user:', user.id);
+      setSocketConnected(true);
       socket.emit('join-messaging-channel', { userId: user.id });
     };
 
     const handleDisconnect = () => {
-      // Rejoin on reconnect
+      logger.log('[InstantMessaging] Socket disconnected, will use polling fallback');
+      setSocketConnected(false);
     };
 
     // Set up event listeners
@@ -195,6 +252,9 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     socket.on('disconnect', handleDisconnect);
     socket.on('instant_message', handleNewMessage);
 
+    // Check initial connection status
+    setSocketConnected(socket.connected);
+    
     // If already connected, join immediately
     if (socket.connected) {
       handleConnect();
@@ -205,7 +265,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       socket.off('disconnect', handleDisconnect);
       socket.off('instant_message', handleNewMessage);
     };
-  }, [user?.id, toast]);
+  }, [user?.id, processNewMessage]);
 
   const openChat = useCallback((chatUser: ChatUser) => {
     if (!user?.id) return;
@@ -255,6 +315,13 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
       if (response.ok) {
         const messages: InstantMessage[] = await response.json();
+        
+        // Update last seen message ID to prevent showing old messages as new
+        if (messages.length > 0) {
+          const maxId = Math.max(...messages.map(m => m.id));
+          lastMessageIdRef.current = Math.max(lastMessageIdRef.current, maxId);
+        }
+        
         setOpenWindows(prev =>
           prev.map(w =>
             w.user.id === otherUserId

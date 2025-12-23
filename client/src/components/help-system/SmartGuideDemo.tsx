@@ -108,7 +108,7 @@ export function SmartGuideDemo() {
             {/* Team Communication */}
             <FeatureTooltip
               title="Team Chat & Messaging"
-              description="Connect with your team through real-time chat, email-style messaging, and announcements. Different channels are available for different roles and purposes."
+              description="Connect with your team through real-time chat, threads (project-centered messaging), and announcements. Different channels are available for different roles and purposes."
               trigger="hover"
               placement="bottom"
             >

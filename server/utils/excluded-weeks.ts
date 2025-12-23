@@ -5,9 +5,14 @@
  * Collection weeks run Wednesday to Tuesday.
  *
  * Excluded weeks include:
- * - Thanksgiving week (4th Thursday of November - ALWAYS excluded)
- * - Weeks where major holidays fall on Wednesday or Thursday
- * - Manually configured excluded weeks
+ * - Thanksgiving week (4th Thursday of November)
+ * - Christmas week (week containing Dec 25)
+ * - New Year's week (week containing Jan 1)
+ * - Independence Day week (week containing July 4)
+ * - Memorial Day week (last Monday of May)
+ *
+ * These weeks are ALWAYS excluded regardless of what day the holiday falls on,
+ * because we intentionally don't hold collections during these periods.
  */
 
 // Format a Date as YYYY-MM-DD (local time, no timezone tricks)
@@ -74,13 +79,26 @@ function calculateThanksgiving(year: number): Date {
 }
 
 /**
- * Major holidays that, if they fall on Wednesday or Thursday,
- * mean we don't collect that week
+ * Calculate Memorial Day (last Monday of May) for a given year
  */
-const CONDITIONAL_HOLIDAYS = [
-  { month: 1, day: 1, name: 'New Year\'s Day' },
-  { month: 7, day: 4, name: 'Independence Day' },
-  { month: 12, day: 25, name: 'Christmas Day' },
+function calculateMemorialDay(year: number): Date {
+  // Start with May 31st and work backwards to find the last Monday
+  const may31 = new Date(year, 4, 31);
+  const dayOfWeek = may31.getDay();
+  // Days to subtract to get to Monday (day 1)
+  const daysToSubtract = (dayOfWeek + 6) % 7;
+  const memorialDay = new Date(year, 4, 31 - daysToSubtract);
+  return memorialDay;
+}
+
+/**
+ * Major holidays - we ALWAYS skip the week containing these dates
+ * regardless of what day of the week they fall on.
+ */
+const ALWAYS_EXCLUDED_HOLIDAYS = [
+  { month: 1, day: 1, name: "New Year's week" },
+  { month: 7, day: 4, name: 'Independence Day week' },
+  { month: 12, day: 25, name: 'Christmas week' },
 ];
 
 /**
@@ -95,15 +113,6 @@ export function getThanksgivingWeekWednesday(year: number): string {
 }
 
 /**
- * Check if a holiday falls on Wednesday (3) or Thursday (4)
- */
-function holidayFallsOnWedOrThu(year: number, month: number, day: number): boolean {
-  const date = new Date(year, month - 1, day);
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 3 || dayOfWeek === 4; // Wed or Thu
-}
-
-/**
  * Get all excluded week Wednesdays for a given year.
  * Returns array of YYYY-MM-DD strings representing the Wednesday of each excluded week.
  */
@@ -113,23 +122,29 @@ export function getExcludedWeeksForYear(year: number): Array<{ wednesday: string
   // Thanksgiving week is ALWAYS excluded
   excludedWeeks.push({
     wednesday: getThanksgivingWeekWednesday(year),
-    reason: 'Thanksgiving week'
+    reason: 'Thanksgiving week',
   });
 
-  // Check conditional holidays
-  for (const holiday of CONDITIONAL_HOLIDAYS) {
-    if (holidayFallsOnWedOrThu(year, holiday.month, holiday.day)) {
-      const holidayDate = new Date(year, holiday.month - 1, holiday.day);
-      const wednesday = getWednesdayOfWeek(holidayDate);
-      const wednesdayStr = formatDate(wednesday);
+  // Memorial Day week is ALWAYS excluded
+  const memorialDay = calculateMemorialDay(year);
+  const memorialDayWednesday = getWednesdayOfWeek(memorialDay);
+  excludedWeeks.push({
+    wednesday: formatDate(memorialDayWednesday),
+    reason: 'Memorial Day week',
+  });
 
-      // Don't add duplicates
-      if (!excludedWeeks.some(w => w.wednesday === wednesdayStr)) {
-        excludedWeeks.push({
-          wednesday: wednesdayStr,
-          reason: `${holiday.name} falls on ${holidayDate.toLocaleDateString('en-US', { weekday: 'long' })}`
-        });
-      }
+  // Add all always-excluded holiday weeks
+  for (const holiday of ALWAYS_EXCLUDED_HOLIDAYS) {
+    const holidayDate = new Date(year, holiday.month - 1, holiday.day);
+    const wednesday = getWednesdayOfWeek(holidayDate);
+    const wednesdayStr = formatDate(wednesday);
+
+    // Don't add duplicates (e.g., if Christmas and New Year's fall in same week)
+    if (!excludedWeeks.some((w) => w.wednesday === wednesdayStr)) {
+      excludedWeeks.push({
+        wednesday: wednesdayStr,
+        reason: holiday.name,
+      });
     }
   }
 
@@ -226,6 +241,45 @@ export function getExcludedWeekRanges(startDate: string, endDate: string): Array
   }
 
   return ranges;
+}
+
+/**
+ * Get the number of excluded weeks in a given month/year.
+ * Useful for calculating adjusted monthly averages.
+ */
+export function getExcludedWeeksInMonth(year: number, month: number): Array<{ wednesday: string; reason: string }> {
+  const excludedWeeks = getExcludedWeeksForYear(year);
+
+  return excludedWeeks.filter(week => {
+    const wednesday = parseDate(week.wednesday);
+    // Check if the Wednesday falls in this month
+    return wednesday.getFullYear() === year && wednesday.getMonth() + 1 === month;
+  });
+}
+
+/**
+ * Get the number of collection weeks in a given month, excluding holiday weeks.
+ * A month typically has 4-5 Wednesdays, minus any excluded weeks.
+ */
+export function getActiveCollectionWeeksInMonth(year: number, month: number): number {
+  // Count Wednesdays in the month
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0); // Last day of the month
+
+  let wednesdayCount = 0;
+  const current = new Date(firstDay);
+
+  while (current <= lastDay) {
+    if (current.getDay() === 3) { // Wednesday
+      wednesdayCount++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Subtract excluded weeks
+  const excludedInMonth = getExcludedWeeksInMonth(year, month);
+
+  return Math.max(0, wednesdayCount - excludedInMonth.length);
 }
 
 // Export for debugging/admin purposes
