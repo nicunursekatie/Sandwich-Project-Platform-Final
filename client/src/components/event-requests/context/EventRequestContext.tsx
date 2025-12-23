@@ -327,6 +327,29 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     placeholderData: (previousData) => previousData, // Stale-while-revalidate: show old data while fetching
   });
 
+  // Fetch status counts separately (for tab badges)
+  const { data: serverStatusCounts } = useQuery<{
+    all: number;
+    new: number;
+    in_process: number;
+    scheduled: number;
+    completed: number;
+    declined: number;
+    postponed: number;
+    cancelled: number;
+  }>({
+    queryKey: ['/api/event-requests/status-counts'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests/status-counts', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch status counts');
+      return response.json();
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes - refresh counts more frequently
+    gcTime: 5 * 60 * 1000,
+  });
+
   // Fetch event volunteers data for assignment checking
   const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
     queryKey: ['/api/event-requests/my-volunteers'],
@@ -546,19 +569,19 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     return false;
   }, [user?.id, eventVolunteers]);
 
-  // Calculate status counts
+  // Use server-side status counts for accurate tab badges
   const statusCounts = {
-    all: eventRequests.length,
-    new: requestsByStatus.new?.length || 0,
-    in_process: requestsByStatus.in_process?.length || 0,
-    scheduled: requestsByStatus.scheduled?.length || 0,
-    completed: requestsByStatus.completed?.length || 0,
-    declined: requestsByStatus.declined?.length || 0,
-    postponed: requestsByStatus.postponed?.length || 0,
-    cancelled: requestsByStatus.cancelled?.length || 0,
-    my_assignments: eventRequests.filter(req => 
-      isUserAssignedToEvent(req) && 
-      req.status !== 'completed' && 
+    all: serverStatusCounts?.all ?? eventRequests.length,
+    new: serverStatusCounts?.new ?? (requestsByStatus.new?.length || 0),
+    in_process: serverStatusCounts?.in_process ?? (requestsByStatus.in_process?.length || 0),
+    scheduled: serverStatusCounts?.scheduled ?? (requestsByStatus.scheduled?.length || 0),
+    completed: serverStatusCounts?.completed ?? (requestsByStatus.completed?.length || 0),
+    declined: serverStatusCounts?.declined ?? (requestsByStatus.declined?.length || 0),
+    postponed: serverStatusCounts?.postponed ?? (requestsByStatus.postponed?.length || 0),
+    cancelled: serverStatusCounts?.cancelled ?? (requestsByStatus.cancelled?.length || 0),
+    my_assignments: eventRequests.filter(req =>
+      isUserAssignedToEvent(req) &&
+      req.status !== 'completed' &&
       req.status !== 'declined' &&
       req.status !== 'postponed' &&
       req.status !== 'cancelled'

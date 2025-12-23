@@ -1338,6 +1338,41 @@ router.get(
   }
 );
 
+// Status counts endpoint - lightweight endpoint for tab counts
+router.get(
+  '/status-counts',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const eventRequests = await storage.getAllEventRequests();
+
+      const counts = {
+        all: eventRequests.length,
+        new: 0,
+        in_process: 0,
+        scheduled: 0,
+        completed: 0,
+        declined: 0,
+        postponed: 0,
+        cancelled: 0,
+      };
+
+      for (const event of eventRequests) {
+        const status = event.status as keyof typeof counts;
+        if (status && status in counts && status !== 'all') {
+          counts[status]++;
+        }
+      }
+
+      res.json(counts);
+    } catch (error) {
+      logger.error('Failed to fetch status counts', error);
+      res.status(500).json({ message: 'Failed to fetch status counts' });
+    }
+  }
+);
+
 // Search endpoint - server-side search across multiple fields
 router.get(
   '/search',
