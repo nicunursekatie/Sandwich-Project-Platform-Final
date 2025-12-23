@@ -135,7 +135,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     playNotificationSound();
 
     if (existingWindow) {
-      // Window is open - add message to it
+      // Window is open - add message to it and maximize if minimized
       setOpenWindows(prev => {
         return prev.map(w => {
           if (w.user.id === senderId) {
@@ -144,40 +144,31 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
             return {
               ...w,
               messages: [...w.messages, message],
-              unreadCount: w.minimized ? w.unreadCount + 1 : 0,
+              minimized: false, // Auto-maximize on new message
+              unreadCount: 0, // Reset unread since we're showing it
             };
           }
           return w;
         });
       });
     } else {
-      // No window open - show toast notification
-      const truncatedContent = message.content.length > 50
-        ? message.content.substring(0, 50) + '...'
-        : message.content;
+      // No window open - automatically open the chat window
+      openChatRef.current({
+        id: message.senderId,
+        firstName: null,
+        lastName: null,
+        displayName: message.senderName,
+        email: null,
+        profileImageUrl: null,
+      });
 
+      // Also show a brief toast to draw attention
       toast({
         title: `New message from ${message.senderName}`,
-        description: truncatedContent,
-        duration: 5000,
-        action: (
-          <button
-            onClick={() => {
-              // Open chat with this user
-              openChatRef.current({
-                id: message.senderId,
-                firstName: null,
-                lastName: null,
-                displayName: message.senderName,
-                email: null,
-                profileImageUrl: null,
-              });
-            }}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
-          >
-            Reply
-          </button>
-        ),
+        description: message.content.length > 50
+          ? message.content.substring(0, 50) + '...'
+          : message.content,
+        duration: 3000,
       });
     }
   }, [user?.id, toast]);
