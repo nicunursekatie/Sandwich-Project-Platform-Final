@@ -2199,12 +2199,18 @@ export default function DriverPlanningDashboard() {
                 <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
                 <button
                   onClick={() => {
-                    setSelectedDriver(null);
-                    setSelectedDestination(null);
+                    // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                    const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                    const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                      designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                    // Keep pre-assigned items, clear the rest
+                    if (!driverIsAssigned) setSelectedDriver(null);
+                    if (!destIsAssigned) setSelectedDestination(null);
                     setFullTripRoute(null);
                   }}
                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                  title="Clear trip"
+                  title="Clear non-assigned selections"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2270,8 +2276,14 @@ export default function DriverPlanningDashboard() {
 
               <button
                 onClick={() => {
-                  setSelectedDriver(null);
-                  setSelectedDestination(null);
+                  // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                  const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                  const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                    designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                  // Keep pre-assigned items, clear the rest
+                  if (!driverIsAssigned) setSelectedDriver(null);
+                  if (!destIsAssigned) setSelectedDestination(null);
                   setFullTripRoute(null);
                 }}
                 className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -2288,13 +2300,19 @@ export default function DriverPlanningDashboard() {
                 <span className="text-sm font-semibold text-gray-800">Trip Planning</span>
                 <button
                   onClick={() => {
-                    setSelectedDriver(null);
-                    setSelectedDestination(null);
+                    // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                    const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                    const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                      designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                    // Keep pre-assigned items, clear the rest
+                    if (!driverIsAssigned) setSelectedDriver(null);
+                    if (!destIsAssigned) setSelectedDestination(null);
                     setDrivingRoute(null);
                     setFocusedItem(null);
                   }}
                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                  title="Clear selection"
+                  title="Clear non-assigned selections"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2311,7 +2329,7 @@ export default function DriverPlanningDashboard() {
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-amber-600" />
                       <span className="text-sm font-medium text-gray-800">{selectedDriver.name}</span>
-                      {assignedDrivers.some(d => d.id === selectedDriver.id) && (
+                      {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
                         <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
                           Assigned
                         </span>
@@ -2407,8 +2425,14 @@ export default function DriverPlanningDashboard() {
 
               <button
                 onClick={() => {
-                  setSelectedDriver(null);
-                  setSelectedDestination(null);
+                  // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                  const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                  const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                    designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                  // Keep pre-assigned items, clear the rest
+                  if (!driverIsAssigned) setSelectedDriver(null);
+                  if (!destIsAssigned) setSelectedDestination(null);
                   setDrivingRoute(null);
                   setFocusedItem(null);
                 }}

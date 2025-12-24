@@ -48,7 +48,9 @@
       "Bash(npm rebuild:*)",
       "Bash(node --loader ts-node/esm -e:*)",
       "Bash(npx jest:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(npm ls:*)",
+      "Bash(timeout 10 npm run dev)"
     ],
     "deny": [],
     "ask": []
