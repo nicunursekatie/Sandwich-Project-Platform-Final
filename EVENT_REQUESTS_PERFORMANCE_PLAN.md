@@ -14,6 +14,39 @@
 
 ### Phase 1: Quick Wins ✅ COMPLETE
 
+### Phase 2: Medium Impact ✅ COMPLETE
+
+#### 4. Create Lightweight List Endpoint ✅
+- `/api/event-requests/list` endpoint exists and is in use
+- Returns only fields needed for list/card display (60-80% smaller payload)
+- Frontend uses this endpoint by default via EventRequestContext
+
+#### 5. Server-Side Search ✅
+- `/api/event-requests/search` endpoint exists
+- Searches across org name, contact, email, phone, address, message
+- Frontend currently uses client-side filtering on lightweight data (acceptable for current dataset size)
+
+### Phase 3: Advanced ✅ COMPLETE
+
+#### 6. Background Preloading ✅
+- Added prefetch in dashboard.tsx that runs on mount
+- Prefetches `/api/event-requests/status-counts` for instant tab badges
+- Prefetches `/api/event-requests/list?status=new` for default tab
+
+#### 7. Better Skeleton Loading ✅
+- Added comprehensive skeleton loader in event-requests/index.tsx
+- Shows animated placeholders for header, tabs, filters, and event cards
+- Matches the actual layout for better perceived performance
+
+### Additional Fixes Applied
+- Fixed status counts showing 0 until tab was active
+- Added `my_assignments` count to server-side `/status-counts` endpoint
+- Frontend now relies entirely on server-side counts (no incorrect client-side fallback)
+
+---
+
+### Phase 1 (Original Documentation): Quick Wins ✅ COMPLETE
+
 #### 1. Add Default View Filtering ✅
 **Backend:** Modify `/api/event-requests` to accept query params
 ```typescript

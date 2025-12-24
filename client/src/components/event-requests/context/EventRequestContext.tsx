@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
+import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
 
 interface EventRequestContextType {
   // Event requests data
@@ -241,59 +242,11 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Determine filter parameters based on activeTab and quickFilter
-  const getFilterParams = useCallback(() => {
-    // Handle quick filters first
-    if (quickFilter === 'week') {
-      return {
-        days: 7,
-        status: activeTab === 'scheduled' ? 'scheduled' : activeTab === 'in_process' ? 'in_process' : activeTab === 'new' ? 'new' : undefined,
-      };
-    }
-    if (quickFilter === 'today') {
-      return {
-        days: 1,
-        status: activeTab === 'scheduled' ? 'scheduled' : activeTab === 'in_process' ? 'in_process' : activeTab === 'new' ? 'new' : undefined,
-      };
-    }
-    if (quickFilter === 'needsDriver') {
-      return {
-        days: 14,
-        status: 'scheduled',
-        needsAction: 'true', // This will include events needing drivers
-      };
-    }
-    
-    // For status-based tabs, just filter by status (no date restrictions)
-    if (activeTab === 'new') {
-      return { status: 'new' };
-    }
-    if (activeTab === 'in_process') {
-      return { status: 'in_process' };
-    }
-    if (activeTab === 'scheduled') {
-      return { status: 'scheduled' };
-    }
-    // For other tabs, still filter by status if applicable, but don't limit by days
-    if (['completed', 'declined', 'postponed'].includes(activeTab)) {
-      return {
-        status: activeTab,
-      };
-    }
-    // For "all" or other tabs, fetch everything (backward compatibility)
-    return {};
-  }, [activeTab, initialTab, quickFilter]);
-
-  const filterParams = getFilterParams();
-  const queryParams = new URLSearchParams();
-  if (filterParams.days) queryParams.set('days', filterParams.days.toString());
-  if (filterParams.status) queryParams.set('status', filterParams.status);
-  if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
-  const queryString = queryParams.toString();
-  // Use lightweight /list endpoint for better performance (60-80% smaller payload)
-  const listQueryUrl = queryString ? `/api/event-requests/list?${queryString}` : '/api/event-requests/list';
-  // Keep full endpoint for backwards compatibility when needed
-  const fullQueryUrl = queryString ? `/api/event-requests?${queryString}` : '/api/event-requests';
+  // Build list query key + URL in one place (also used by Dashboard prefetch)
+  const { queryKey: listQueryKey, listUrl: listQueryUrl, fullUrl: fullQueryUrl } = useMemo(
+    () => buildEventRequestsListQuery(activeTab, quickFilter),
+    [activeTab, quickFilter]
+  );
 
   // Reset quickFilter when activeTab changes to something incompatible
   useEffect(() => {
@@ -305,7 +258,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Fetch event requests with filtering and stale-while-revalidate
   // Uses lightweight /list endpoint for better performance
   const { data: eventRequests = [], isLoading, isPlaceholderData } = useQuery<EventRequest[]>({
-    queryKey: ['/api/event-requests/list', filterParams, quickFilter, 'v3'],
+    queryKey: listQueryKey,
     queryFn: async () => {
       const response = await fetch(listQueryUrl, {
         credentials: 'include',
@@ -337,6 +290,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     declined: number;
     postponed: number;
     cancelled: number;
+    my_assignments: number;
   }>({
     queryKey: ['/api/event-requests/status-counts'],
     queryFn: async () => {
@@ -516,6 +470,11 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
       return true;
     }
 
+    // Check additional TSP contacts (parity with server + useEventFilters)
+    if (request.additionalContact1 === user.id || request.additionalContact2 === user.id) {
+      return true;
+    }
+
     // Check driver assignment in driverDetails JSONB field
     if (request.driverDetails) {
       try {
@@ -570,22 +529,19 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   }, [user?.id, eventVolunteers]);
 
   // Use server-side status counts for accurate tab badges
+  // IMPORTANT: Always prefer serverStatusCounts over fallback since eventRequests is filtered by active tab
+  // The fallback values (0) are shown briefly while serverStatusCounts loads
   const statusCounts = {
-    all: serverStatusCounts?.all ?? eventRequests.length,
-    new: serverStatusCounts?.new ?? (requestsByStatus.new?.length || 0),
-    in_process: serverStatusCounts?.in_process ?? (requestsByStatus.in_process?.length || 0),
-    scheduled: serverStatusCounts?.scheduled ?? (requestsByStatus.scheduled?.length || 0),
-    completed: serverStatusCounts?.completed ?? (requestsByStatus.completed?.length || 0),
-    declined: serverStatusCounts?.declined ?? (requestsByStatus.declined?.length || 0),
-    postponed: serverStatusCounts?.postponed ?? (requestsByStatus.postponed?.length || 0),
-    cancelled: serverStatusCounts?.cancelled ?? (requestsByStatus.cancelled?.length || 0),
-    my_assignments: eventRequests.filter(req =>
-      isUserAssignedToEvent(req) &&
-      req.status !== 'completed' &&
-      req.status !== 'declined' &&
-      req.status !== 'postponed' &&
-      req.status !== 'cancelled'
-    ).length,
+    all: serverStatusCounts?.all ?? 0,
+    new: serverStatusCounts?.new ?? 0,
+    in_process: serverStatusCounts?.in_process ?? 0,
+    scheduled: serverStatusCounts?.scheduled ?? 0,
+    completed: serverStatusCounts?.completed ?? 0,
+    declined: serverStatusCounts?.declined ?? 0,
+    postponed: serverStatusCounts?.postponed ?? 0,
+    cancelled: serverStatusCounts?.cancelled ?? 0,
+    // my_assignments count is calculated server-side to include TSP contacts, drivers, speakers
+    my_assignments: serverStatusCounts?.my_assignments ?? 0,
   };
 
   // Sync state with role defaults when user loads (handles async user fetch)

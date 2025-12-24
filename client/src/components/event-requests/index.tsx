@@ -18,6 +18,7 @@ import { PlanningTab } from './tabs/PlanningTab';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
@@ -458,7 +459,62 @@ const EventRequestsManagementContent: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div>Loading event requests...</div>;
+    return (
+      <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4">
+        {/* Header skeleton */}
+        <div className="premium-card p-4 sm:p-6">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-10 w-32" />
+            </div>
+            {/* Tab skeleton */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-10 w-24 flex-shrink-0" />
+              ))}
+            </div>
+            {/* Filter bar skeleton */}
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </div>
+        </div>
+        {/* Event cards skeleton */}
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="premium-card p-4 sm:p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <Skeleton className="h-8 w-24" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4 pt-4 border-t">
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   // Calculate total for filters

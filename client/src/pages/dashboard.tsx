@@ -47,7 +47,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
+import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { queryClient } from '@/lib/queryClient';
+import { buildEventRequestsListQuery } from '@/components/event-requests/lib/eventRequestsListQuery';
 import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
@@ -238,6 +240,40 @@ export default function Dashboard({
   React.useEffect(() => {
     logger.log('Dashboard activeSection changed to:', activeSection);
   }, [activeSection]);
+
+  // Prefetch event requests data for faster navigation.
+  // IMPORTANT: Keep cache keys aligned with EventRequestContext so we actually reuse warmed cache.
+  React.useEffect(() => {
+    // Prefetch status counts (lightweight, always useful)
+    queryClient.prefetchQuery({
+      queryKey: ['/api/event-requests/status-counts'],
+      queryFn: async () => {
+        const response = await fetch('/api/event-requests/status-counts', {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch status counts');
+        return response.json();
+      },
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
+
+    // Prefetch the lightweight list for the user's role default tab.
+    // (Admins default to 'scheduled', drivers/volunteers default to 'my_assignments', etc.)
+    if (user?.role) {
+      const defaults = getEventRequestDefaults(user.role, user.id);
+      const { queryKey, listUrl } = buildEventRequestsListQuery(defaults.defaultTab, null);
+
+      queryClient.prefetchQuery({
+        queryKey,
+        queryFn: async () => {
+          const response = await fetch(listUrl, { credentials: 'include' });
+          if (!response.ok) throw new Error('Failed to fetch event requests');
+          return response.json();
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      });
+    }
+  }, [user?.role, user?.id]);
 
   // Enhanced setActiveSection with debugging and query param support
   const enhancedSetActiveSection = (section: string) => {

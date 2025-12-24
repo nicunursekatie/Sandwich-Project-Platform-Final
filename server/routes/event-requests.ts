@@ -1346,8 +1346,11 @@ router.get(
   async (req, res) => {
     try {
       const eventRequests = await storage.getAllEventRequests();
+      const userId = (req.user as any)?.id;
+      const userVolunteers = userId ? await storage.getEventVolunteersByUserId(userId) : [];
+      const userVolunteerEventIds = new Set<number>(userVolunteers.map(v => v.eventRequestId));
 
-      const counts = {
+      const counts: Record<string, number> = {
         all: eventRequests.length,
         new: 0,
         in_process: 0,
@@ -1356,12 +1359,78 @@ router.get(
         declined: 0,
         postponed: 0,
         cancelled: 0,
+        my_assignments: 0,
+      };
+
+      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled']);
+
+      // Helper to check if user is assigned to an event
+      const isUserAssigned = (event: any): boolean => {
+        if (!userId) return false;
+
+        // Check volunteer signup in eventVolunteers table
+        if (userVolunteerEventIds.has(event.id)) {
+          return true;
+        }
+
+        // Check TSP Contact assignment
+        if (event.tspContactAssigned === userId || event.tspContact === userId) {
+          return true;
+        }
+
+        // Check additional contacts
+        if (event.additionalContact1 === userId || event.additionalContact2 === userId) {
+          return true;
+        }
+
+        // Check driver assignment in driverDetails JSONB
+        if (event.driverDetails) {
+          try {
+            const driverDetails = typeof event.driverDetails === 'string'
+              ? JSON.parse(event.driverDetails)
+              : event.driverDetails;
+            if (driverDetails && typeof driverDetails === 'object' && !Array.isArray(driverDetails)) {
+              const driverKeys = Object.keys(driverDetails);
+              if (driverKeys.some(key => key === userId || key === userId.toString())) {
+                return true;
+              }
+            }
+          } catch (e) {
+            // Continue if parsing fails
+          }
+        }
+
+        // Check speaker assignment in speakerDetails JSONB
+        if (event.speakerDetails) {
+          try {
+            const speakerDetails = typeof event.speakerDetails === 'string'
+              ? JSON.parse(event.speakerDetails)
+              : event.speakerDetails;
+            if (speakerDetails && typeof speakerDetails === 'object' && !Array.isArray(speakerDetails)) {
+              const speakerKeys = Object.keys(speakerDetails);
+              if (speakerKeys.some(key => key === userId || key === userId.toString())) {
+                return true;
+              }
+            }
+          } catch (e) {
+            // Continue if parsing fails
+          }
+        }
+
+        return false;
       };
 
       for (const event of eventRequests) {
         const status = event.status as keyof typeof counts;
-        if (status && status in counts && status !== 'all') {
+        if (status && status in counts && status !== 'all' && status !== 'my_assignments') {
           counts[status]++;
+        }
+
+        // Count my_assignments for non-terminal events.
+        // Keep behavior aligned with the previous frontend implementation:
+        // include everything except completed/declined/postponed/cancelled (so followed_up is included).
+        if (event.status && !terminalStatuses.has(event.status) && isUserAssigned(event)) {
+          counts.my_assignments++;
         }
       }
 
