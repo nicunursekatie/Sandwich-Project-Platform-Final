@@ -1462,24 +1462,10 @@ export default function DriverPlanningDashboard() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Select value={weeksAhead} onValueChange={setWeeksAhead}>
-              <SelectTrigger className="w-40">
-                <Calendar className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">Next 2 weeks</SelectItem>
-                <SelectItem value="4">Next 4 weeks</SelectItem>
-                <SelectItem value="6">Next 6 weeks</SelectItem>
-                <SelectItem value="8">Next 8 weeks</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={() => refetchEvents()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => refetchEvents()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
 
@@ -1507,6 +1493,7 @@ export default function DriverPlanningDashboard() {
                 <SelectItem value="4">4 weeks</SelectItem>
                 <SelectItem value="6">6 weeks</SelectItem>
                 <SelectItem value="8">8 weeks</SelectItem>
+                <SelectItem value="12">12 weeks</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchEvents()}>
@@ -1521,10 +1508,25 @@ export default function DriverPlanningDashboard() {
         {/* Left Panel - Event List */}
         <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list">
           <div className="p-3 border-b bg-white space-y-2">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#007E8C]" />
-              Events ({events.length}{showOnlyUnmetStaffing ? ` of ${upcomingEvents.length}` : ''})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#007E8C]" />
+                Events ({events.length}{showOnlyUnmetStaffing ? ` of ${upcomingEvents.length}` : ''})
+              </h2>
+              {/* Date range filter - moved here for visibility */}
+              <Select value={weeksAhead} onValueChange={setWeeksAhead}>
+                <SelectTrigger className="w-[110px] h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">Next 2 weeks</SelectItem>
+                  <SelectItem value="4">Next 4 weeks</SelectItem>
+                  <SelectItem value="6">Next 6 weeks</SelectItem>
+                  <SelectItem value="8">Next 8 weeks</SelectItem>
+                  <SelectItem value="12">Next 12 weeks</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
