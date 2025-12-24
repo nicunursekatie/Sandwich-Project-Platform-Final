@@ -760,62 +760,6 @@ export default function DriverPlanningDashboard() {
     setFullTripRoute(null);
   }, [selectedEvent?.id]);
 
-  // Track whether we've auto-populated for the current event
-  const lastAutoPopulatedEventId = useRef<number | null>(null);
-
-  // Refs to access current memo values inside timeout without adding them to dependencies
-  const assignedDriversRef = useRef(assignedDrivers);
-  const designatedRecipientsRef = useRef(designatedRecipients);
-  assignedDriversRef.current = assignedDrivers;
-  designatedRecipientsRef.current = designatedRecipients;
-
-  // Auto-populate trip planning with pre-assigned driver/recipient when event is selected
-  // Only depends on selectedEvent.id to avoid timeout cancellation when memos recompute
-  useEffect(() => {
-    if (!selectedEvent) {
-      lastAutoPopulatedEventId.current = null;
-      return;
-    }
-
-    // Only auto-populate once per event selection
-    if (lastAutoPopulatedEventId.current === selectedEvent.id) {
-      return;
-    }
-    lastAutoPopulatedEventId.current = selectedEvent.id;
-
-    // Wait for memos to settle, then populate using refs for current values
-    const timeout = setTimeout(() => {
-      const currentAssignedDrivers = assignedDriversRef.current;
-      const currentDesignatedRecipients = designatedRecipientsRef.current;
-
-      // Auto-populate driver if there's exactly one assigned driver with coordinates
-      // (If multiple, let user pick which one to preview)
-      if (currentAssignedDrivers.length === 1) {
-        const driver = currentAssignedDrivers[0];
-        setSelectedDriver({
-          id: driver.id,
-          name: driver.name,
-          latitude: driver.latitude,
-          longitude: driver.longitude,
-        });
-      }
-
-      // Auto-populate destination if there's exactly one designated recipient with coordinates
-      if (currentDesignatedRecipients.length === 1) {
-        const recipient = currentDesignatedRecipients[0];
-        setSelectedDestination({
-          type: 'recipient',
-          id: recipient.id,
-          name: recipient.name || 'Recipient',
-          latitude: recipient.latitude!,
-          longitude: recipient.longitude!,
-        });
-      }
-    }, 50);
-
-    return () => clearTimeout(timeout);
-  }, [selectedEvent?.id]);
-
   // Fetch full trip route when both driver and destination are selected
   useEffect(() => {
     if (!selectedDriver || !selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
@@ -1450,6 +1394,62 @@ export default function DriverPlanningDashboard() {
 
     return matches;
   }, [selectedEvent, driverCandidates, activeDrivers]);
+
+  // Track whether we've auto-populated for the current event
+  const lastAutoPopulatedEventId = useRef<number | null>(null);
+
+  // Refs to access current memo values inside timeout without adding them to dependencies
+  const assignedDriversRef = useRef(assignedDrivers);
+  const designatedRecipientsRef = useRef(designatedRecipients);
+  assignedDriversRef.current = assignedDrivers;
+  designatedRecipientsRef.current = designatedRecipients;
+
+  // Auto-populate trip planning with pre-assigned driver/recipient when event is selected
+  // Only depends on selectedEvent.id to avoid timeout cancellation when memos recompute
+  useEffect(() => {
+    if (!selectedEvent) {
+      lastAutoPopulatedEventId.current = null;
+      return;
+    }
+
+    // Only auto-populate once per event selection
+    if (lastAutoPopulatedEventId.current === selectedEvent.id) {
+      return;
+    }
+    lastAutoPopulatedEventId.current = selectedEvent.id;
+
+    // Wait for memos to settle, then populate using refs for current values
+    const timeout = setTimeout(() => {
+      const currentAssignedDrivers = assignedDriversRef.current;
+      const currentDesignatedRecipients = designatedRecipientsRef.current;
+
+      // Auto-populate driver if there's exactly one assigned driver with coordinates
+      // (If multiple, let user pick which one to preview)
+      if (currentAssignedDrivers.length === 1) {
+        const driver = currentAssignedDrivers[0];
+        setSelectedDriver({
+          id: driver.id,
+          name: driver.name,
+          latitude: driver.latitude,
+          longitude: driver.longitude,
+        });
+      }
+
+      // Auto-populate destination if there's exactly one designated recipient with coordinates
+      if (currentDesignatedRecipients.length === 1) {
+        const recipient = currentDesignatedRecipients[0];
+        setSelectedDestination({
+          type: 'recipient',
+          id: recipient.id,
+          name: recipient.name || 'Recipient',
+          latitude: recipient.latitude!,
+          longitude: recipient.longitude!,
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timeout);
+  }, [selectedEvent?.id]);
 
   const getAssignedStaffLabel = (event: EventMapData): string | null => {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
