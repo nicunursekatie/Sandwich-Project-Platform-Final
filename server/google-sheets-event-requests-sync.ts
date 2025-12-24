@@ -5,7 +5,7 @@ import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
 import { db } from './db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
 import { geocodeAddress } from './utils/geocoding';
 
@@ -674,8 +674,8 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // Check if record exists BEFORE upsert
-          const existingRecord = await db
+          // Check if record exists by external_id
+          const existingByExternalId = await db
             .select({ 
               id: eventRequests.id, 
               status: eventRequests.status,
@@ -686,7 +686,35 @@ export class EventRequestsGoogleSheetsService {
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
 
-          const recordExisted = existingRecord && existingRecord.length > 0;
+          // ALSO check by org + email + date to catch records with old hash format
+          // This prevents duplicates when the hash algorithm changes
+          const normalizedOrgForCheck = (sanitizedData as any).organizationName?.trim().toLowerCase();
+          const normalizedEmailForCheck = (sanitizedData as any).email?.trim().toLowerCase();
+          const desiredDate = (sanitizedData as any).desiredEventDate;
+          
+          let existingByOrgEmailDate: any[] = [];
+          if (normalizedOrgForCheck && normalizedEmailForCheck && desiredDate) {
+            existingByOrgEmailDate = await db
+              .select({ id: eventRequests.id, externalId: eventRequests.externalId })
+              .from(eventRequests)
+              .where(
+                and(
+                  sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgForCheck}`,
+                  sql`LOWER(TRIM(${eventRequests.email})) = ${normalizedEmailForCheck}`,
+                  eq(eventRequests.desiredEventDate, desiredDate)
+                )
+              )
+              .limit(1);
+          }
+
+          const recordExisted = (existingByExternalId && existingByExternalId.length > 0) || 
+                                (existingByOrgEmailDate && existingByOrgEmailDate.length > 0);
+          
+          // Skip if already exists by either method
+          if (recordExisted) {
+            updatedCount++;
+            continue;
+          }
 
           // Use INSERT ON CONFLICT DO NOTHING - once imported, never touched again
           // This ensures manual edits in the database are NEVER overwritten by Google Sheets sync
@@ -739,12 +767,8 @@ export class EventRequestsGoogleSheetsService {
             }
             
             createdCount++;
-          } else {
-            // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
-            if (recordExisted) {
-              updatedCount++; // Track as "updated" (but really just skipped) for stats
-            }
           }
+          // Note: If result is empty, external_id conflict detected - already counted in early continue above
         } catch (error) {
           logger.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
           logger.error(`❌ Row details:`, {
