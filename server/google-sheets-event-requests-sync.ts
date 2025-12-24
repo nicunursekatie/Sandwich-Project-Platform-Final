@@ -1,10 +1,11 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { createHash } from 'crypto';
 import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
 import { db } from './db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
 import { geocodeAddress } from './utils/geocoding';
 
@@ -619,28 +620,29 @@ export class EventRequestsGoogleSheetsService {
       let rowsWithoutExternalId = 0;
 
       for (const row of sheetRows) {
-        // UPDATED: External ID is now optional - generate one if missing
+        // Normalize values for hash generation
+        const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
+        const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
+        const normalizedOrg = (row.organizationName || 'no-org').trim();
+        const normalizedName = (row.contactName || 'no-name').trim();
+        
+        const uniqueParts = [
+          normalizedEmail,
+          normalizedSubmittedOn,
+          normalizedOrg,
+          normalizedName
+        ].join('|');
+        
+        // Generate BOTH hash formats to check for existing records
+        // Old format: base64 substring (broken - only captured email, but existing records have this)
+        const oldStyleHash = `auto-${Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
+        // New format: SHA256 (correct - all fields contribute to uniqueness)
+        const newStyleHash = `auto-${createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16)}`;
+        
+        // Use new-style hash for new records, but check for both when detecting duplicates
         if (!row.externalId || !row.externalId.trim()) {
           rowsWithoutExternalId++;
-          // Generate a STABLE identifier based on email + submittedOn + organization
-          // NOTE: No timestamp - must be deterministic so the same row always gets the same ID
-          // Normalize values to ensure consistency (trim, lowercase email)
-          const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
-          const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
-          const normalizedOrg = (row.organizationName || 'no-org').trim();
-          const normalizedName = (row.contactName || 'no-name').trim();
-          
-          const uniqueParts = [
-            normalizedEmail,
-            normalizedSubmittedOn,
-            normalizedOrg,
-            normalizedName
-          ].join('|');
-          
-          // Create a stable hash-like identifier (no timestamp!)
-          const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
-          row.externalId = `auto-${hash}`;
-          
+          row.externalId = newStyleHash;
           logger.debug(`Generated externalId for row ${row.rowIndex}: ${row.externalId} (org: ${normalizedOrg})`);
         } else {
           rowsWithExternalId++;
@@ -672,8 +674,9 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // Check if record exists BEFORE upsert
-          const existingRecord = await db
+          // Check if record exists by EITHER hash format (old base64 or new SHA256)
+          // This ensures we detect existing records regardless of which hash format was used
+          const existingByHash = await db
             .select({ 
               id: eventRequests.id, 
               status: eventRequests.status,
@@ -681,10 +684,39 @@ export class EventRequestsGoogleSheetsService {
               organizationName: eventRequests.organizationName
             })
             .from(eventRequests)
-            .where(eq(eventRequests.externalId, externalIdTrimmed))
+            .where(
+              sql`${eventRequests.externalId} IN (${externalIdTrimmed}, ${oldStyleHash}, ${newStyleHash})`
+            )
             .limit(1);
 
-          const recordExisted = existingRecord && existingRecord.length > 0;
+          // ALSO check by org + date + contact name to catch duplicates when email changes in Google Sheet
+          const desiredDate = (sanitizedData as any).desiredEventDate;
+          const contactFirst = (sanitizedData as any).firstName?.trim().toLowerCase();
+          const contactLast = (sanitizedData as any).lastName?.trim().toLowerCase();
+          
+          let existingByOrgDateName: any[] = [];
+          if (normalizedOrg && desiredDate && (contactFirst || contactLast)) {
+            existingByOrgDateName = await db
+              .select({ id: eventRequests.id, externalId: eventRequests.externalId })
+              .from(eventRequests)
+              .where(
+                and(
+                  sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrg.toLowerCase()}`,
+                  eq(eventRequests.desiredEventDate, desiredDate),
+                  sql`(LOWER(TRIM(${eventRequests.firstName})) = ${contactFirst || ''} OR LOWER(TRIM(${eventRequests.lastName})) = ${contactLast || ''})`
+                )
+              )
+              .limit(1);
+          }
+
+          const recordExisted = (existingByHash && existingByHash.length > 0) ||
+                                (existingByOrgDateName && existingByOrgDateName.length > 0);
+          
+          // Skip if already exists
+          if (recordExisted) {
+            updatedCount++;
+            continue;
+          }
 
           // Use INSERT ON CONFLICT DO NOTHING - once imported, never touched again
           // This ensures manual edits in the database are NEVER overwritten by Google Sheets sync
@@ -737,12 +769,8 @@ export class EventRequestsGoogleSheetsService {
             }
             
             createdCount++;
-          } else {
-            // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
-            if (recordExisted) {
-              updatedCount++; // Track as "updated" (but really just skipped) for stats
-            }
           }
+          // Note: If result is empty, external_id conflict detected - already counted in early continue above
         } catch (error) {
           logger.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
           logger.error(`❌ Row details:`, {
