@@ -1175,7 +1175,7 @@ export default function DriverPlanningDashboard() {
 
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
   // Only exclude drivers who are explicitly busy or off-duty
-  const nearbyDrivers = useMemo(() => {
+  const nearbyDriversAll = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(selectedEvent.latitude);
@@ -1194,6 +1194,7 @@ export default function DriverPlanningDashboard() {
       })
       .sort((a, b) => a.distance - b.distance);
   }, [driverCandidates, selectedEvent]);
+
 
   // Get suggested drivers for selected event - exclude busy/off-duty drivers
   const suggestedDrivers = useMemo(() => {
@@ -1334,17 +1335,59 @@ export default function DriverPlanningDashboard() {
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
     const driverByNumericId = new Map(activeDrivers.map((d) => [String(d.id), d]));
+    const hostContactById = new Map(hostContacts.map((h) => [String(h.id), h]));
 
     const matches: DriverCandidate[] = [];
     for (const raw of assignedIds) {
       const id = String(raw).trim();
       if (!id) continue;
 
-      // Try to find the driver candidate
-      // 1) driver candidate IDs (driver-12 / host-3 / volunteer-9)
-      let candidate = candidateById.get(id);
+      let candidate: DriverCandidate | undefined;
 
-      // 2) numeric IDs (plain "12") -> try driver-{id}
+      // 1) host=contact-X format (host contact assigned as driver)
+      // Use normalized ID format `host-{id}` to match API driver-candidates endpoint
+      if (id.startsWith('host=contact-')) {
+        const contactId = id.replace('host=contact-', '');
+        const hostContact = hostContactById.get(contactId);
+        if (hostContact && hostContact.latitude && hostContact.longitude) {
+          candidate = {
+            id: `host-${contactId}`,
+            source: 'host',
+            name: hostContact.contactName,
+            email: hostContact.email,
+            phone: hostContact.phone,
+            latitude: hostContact.latitude,
+            longitude: hostContact.longitude,
+            hostLocation: hostContact.hostLocationName,
+          };
+        }
+      }
+
+      // 2) host-contact-X format (alternate host contact reference)
+      // Use normalized ID format `host-{id}` to match API driver-candidates endpoint
+      if (!candidate && id.startsWith('host-contact-')) {
+        const contactId = id.replace('host-contact-', '');
+        const hostContact = hostContactById.get(contactId);
+        if (hostContact && hostContact.latitude && hostContact.longitude) {
+          candidate = {
+            id: `host-${contactId}`,
+            source: 'host',
+            name: hostContact.contactName,
+            email: hostContact.email,
+            phone: hostContact.phone,
+            latitude: hostContact.latitude,
+            longitude: hostContact.longitude,
+            hostLocation: hostContact.hostLocationName,
+          };
+        }
+      }
+
+      // 3) driver candidate IDs (driver-12 / host-3 / volunteer-9)
+      if (!candidate) {
+        candidate = candidateById.get(id);
+      }
+
+      // 4) numeric IDs (plain "12") -> try driver-{id}
       if (!candidate && /^\d+$/.test(id)) {
         candidate = candidateById.get(`driver-${id}`);
         // Also try looking up in activeDrivers and constructing a candidate
@@ -1368,7 +1411,7 @@ export default function DriverPlanningDashboard() {
         }
       }
 
-      // 3) prefixed numeric IDs -> extract tail and lookup
+      // 5) prefixed numeric IDs -> extract tail and lookup
       if (!candidate && id.includes('-')) {
         const tail = id.split('-').pop();
         if (tail && /^\d+$/.test(tail)) {
@@ -1398,7 +1441,13 @@ export default function DriverPlanningDashboard() {
     }
 
     return matches;
-  }, [selectedEvent, driverCandidates, activeDrivers]);
+  }, [selectedEvent, driverCandidates, activeDrivers, hostContacts]);
+
+  // Filtered nearbyDrivers excluding already-assigned drivers (to avoid duplication in the UI)
+  const nearbyDrivers = useMemo(() => {
+    const assignedIds = new Set(assignedDrivers.map(d => d.id));
+    return nearbyDriversAll.filter(({ driver }) => !assignedIds.has(driver.id));
+  }, [nearbyDriversAll, assignedDrivers]);
 
   // Track whether we've auto-populated for the current event
   const lastAutoPopulatedEventId = useRef<number | null>(null);
@@ -1472,6 +1521,7 @@ export default function DriverPlanningDashboard() {
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
     const driverByNumericId = new Map(activeDrivers.map((d) => [String(d.id), d]));
+    const hostContactById = new Map(hostContacts.map((h) => [String(h.id), h]));
 
     const labels = ids.map((raw) => {
       const id = String(raw).trim();
@@ -1481,15 +1531,29 @@ export default function DriverPlanningDashboard() {
       const custom = extractCustomName(id);
       if (custom) return custom;
 
-      // 2) user IDs (common across event-request staffing)
+      // 2) host=contact-X format (host contact reference)
+      if (id.startsWith('host=contact-')) {
+        const contactId = id.replace('host=contact-', '');
+        const hostContact = hostContactById.get(contactId);
+        if (hostContact) return hostContact.contactName;
+      }
+
+      // 3) host-contact-X format (alternate host contact reference)
+      if (id.startsWith('host-contact-')) {
+        const contactId = id.replace('host-contact-', '');
+        const hostContact = hostContactById.get(contactId);
+        if (hostContact) return hostContact.contactName;
+      }
+
+      // 4) user IDs (common across event-request staffing)
       const userName = usersById.get(id);
       if (userName) return userName;
 
-      // 3) driver candidate IDs (driver-12 / host-3 / volunteer-9)
+      // 5) driver candidate IDs (driver-12 / host-3 / volunteer-9)
       const candidate = candidateById.get(id);
       if (candidate) return candidate.name;
 
-      // 4) numeric IDs (plain "12") -> drivers table
+      // 6) numeric IDs (plain "12") -> drivers table
       if (/^\d+$/.test(id)) {
         const driver = driverByNumericId.get(id);
         if (driver?.name) return driver.name;
@@ -1497,7 +1561,7 @@ export default function DriverPlanningDashboard() {
         if (asCandidate) return asCandidate.name;
       }
 
-      // 5) prefixed numeric IDs -> drivers table
+      // 7) prefixed numeric IDs -> drivers table
       const tail = id.includes('-') ? id.split('-').pop() : null;
       if (tail && /^\d+$/.test(tail)) {
         const driver = driverByNumericId.get(tail);
@@ -1913,28 +1977,42 @@ export default function DriverPlanningDashboard() {
             />
 
             {/* Event markers */}
-            {upcomingEventsWithCoords.map((event) => (
-              <Marker
-                key={event.id}
-                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
-                eventHandlers={{
-                  click: () => setSelectedEvent(event)
-                }}
-              >
-                <Popup>
-                  <div className="p-2 min-w-[200px]">
-                    <h3 className="font-semibold">{event.organizationName}</h3>
-                    <p className="text-sm text-gray-600">{event.eventAddress}</p>
-                    {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
-                      <p className="text-sm" style={event.estimatedSandwichCount > 400 ? { color: '#a31c41', fontWeight: 600 } : undefined}>
-                        ~{event.estimatedSandwichCount} sandwiches
-                      </p>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {upcomingEventsWithCoords.map((event) => {
+              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              return (
+                <Marker
+                  key={event.id}
+                  position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  eventHandlers={{
+                    click: () => setSelectedEvent(event)
+                  }}
+                >
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[0, -35]}
+                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                  >
+                    <span className="truncate max-w-[120px] block">
+                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                    </span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="p-2 min-w-[200px]">
+                      <h3 className="font-semibold">{event.organizationName}</h3>
+                      <p className="text-sm text-gray-600">{event.eventAddress}</p>
+                      {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
+                        <p className="text-sm" style={event.estimatedSandwichCount > 400 ? { color: '#a31c41', fontWeight: 600 } : undefined}>
+                          ~{event.estimatedSandwichCount} sandwiches
+                        </p>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
 
             {/* Nearby host markers when event selected */}
             {selectedEvent && nearbyHosts.map((host) => (
@@ -2804,11 +2882,99 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
-                {/* Suggested Drivers */}
+                {/* Assigned Drivers - Show first if any */}
+                {assignedDrivers.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-green-700 uppercase tracking-wide flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      Assigned Driver{assignedDrivers.length > 1 ? 's' : ''}
+                    </h3>
+                    {assignedDrivers.map((driver) => (
+                      <Card
+                        key={`assigned-${driver.id}`}
+                        className={`p-3 transition-colors border-green-200 bg-green-50 ${
+                          selectedDriver?.id === driver.id
+                            ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/10'
+                            : focusedItem?.type === 'driver' && focusedItem?.id === driver.id
+                              ? 'ring-2 ring-orange-400 bg-orange-50'
+                              : 'hover:bg-green-100 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDrivingRoute(null);
+                              setFocusedItem(null);
+                              if (selectedDriver?.id === driver.id) {
+                                setSelectedDriver(null);
+                              } else {
+                                setSelectedDriver({
+                                  id: driver.id,
+                                  name: driver.name,
+                                  latitude: driver.latitude,
+                                  longitude: driver.longitude,
+                                });
+                              }
+                            }}
+                            className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
+                              selectedDriver?.id === driver.id
+                                ? 'bg-[#007E8C] text-white'
+                                : 'bg-green-600 text-white hover:bg-[#007E8C]'
+                            }`}
+                            title={selectedDriver?.id === driver.id ? 'Unselect driver' : 'Select driver for trip'}
+                          >
+                            {selectedDriver?.id === driver.id ? (
+                              <>
+                                <X className="w-3 h-3" />
+                                Selected
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3 h-3" />
+                                Select Driver
+                              </>
+                            )}
+                          </button>
+                          <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                            Assigned
+                          </span>
+                        </div>
+                        <button
+                          className="w-full text-left"
+                          onClick={() => handleItemClick({
+                            type: 'driver',
+                            id: driver.id,
+                            latitude: driver.latitude,
+                            longitude: driver.longitude,
+                            name: driver.name
+                          })}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-medium text-sm">{driver.name}</h4>
+                              {driver.hostLocation && (
+                                <p className="text-xs text-gray-500">{driver.hostLocation}</p>
+                              )}
+                              {driver.phone && (
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                  <Phone className="w-3 h-3" />
+                                  {driver.phone}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Suggested Drivers - Other nearby options */}
                 {nearbyDrivers.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                      Closest drivers
+                      {assignedDrivers.length > 0 ? 'Other nearby drivers' : 'Closest drivers'}
                     </h3>
                     {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
                       <Card
@@ -3144,23 +3310,37 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
-            {upcomingEventsWithCoords.map((event) => (
-              <Marker
-                key={event.id}
-                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
-                eventHandlers={{
-                  click: () => setSelectedEvent(event)
-                }}
-              >
-                <Popup>
-                  <div className="p-2 min-w-[180px]">
-                    <h3 className="font-semibold text-sm">{event.organizationName}</h3>
-                    <p className="text-xs text-gray-600">{event.eventAddress}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {upcomingEventsWithCoords.map((event) => {
+              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              return (
+                <Marker
+                  key={event.id}
+                  position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  eventHandlers={{
+                    click: () => setSelectedEvent(event)
+                  }}
+                >
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[0, -35]}
+                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                  >
+                    <span className="truncate max-w-[120px] block">
+                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                    </span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="p-2 min-w-[180px]">
+                      <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                      <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
             {selectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
@@ -3384,26 +3564,40 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
-            {upcomingEventsWithCoords.map((event) => (
-              <Marker
-                key={event.id}
-                position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedEvent(event);
-                    setMobilePanel('details');
-                  }
-                }}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-semibold text-sm">{event.organizationName}</h3>
-                    <p className="text-xs text-gray-600">{event.eventAddress}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {upcomingEventsWithCoords.map((event) => {
+              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              return (
+                <Marker
+                  key={event.id}
+                  position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  eventHandlers={{
+                    click: () => {
+                      setSelectedEvent(event);
+                      setMobilePanel('details');
+                    }
+                  }}
+                >
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[0, -35]}
+                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                  >
+                    <span className="truncate max-w-[100px] block">
+                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                    </span>
+                  </Tooltip>
+                  <Popup>
+                    <div className="p-2">
+                      <h3 className="font-semibold text-sm">{event.organizationName}</h3>
+                      <p className="text-xs text-gray-600">{event.eventAddress}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
             {selectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
@@ -3965,11 +4159,65 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
+                {/* Assigned Drivers - Show first if any */}
+                {assignedDrivers.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      Assigned Driver{assignedDrivers.length > 1 ? 's' : ''}
+                    </h3>
+                    <div className="space-y-2">
+                      {assignedDrivers.map((driver) => (
+                        <Card
+                          key={`assigned-mobile-${driver.id}`}
+                          className="p-3 border-green-200 bg-green-50"
+                        >
+                          <button
+                            className="w-full text-left"
+                            onClick={() => {
+                              handleItemClick({
+                                type: 'driver',
+                                id: driver.id,
+                                latitude: driver.latitude,
+                                longitude: driver.longitude,
+                                name: driver.name
+                              });
+                              setMobilePanel(null);
+                            }}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm truncate flex items-center gap-2">
+                                    {driver.name}
+                                    <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                      Assigned
+                                    </span>
+                                  </h4>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    {driver.hostLocation || 'No location'}
+                                  </p>
+                                </div>
+                              </div>
+                              {driver.phone && (
+                                <div className="flex items-center gap-1 text-xs text-gray-600">
+                                  <Phone className="w-3 h-3" />
+                                  {driver.phone}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Nearby Drivers with Distance */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#007E8C]" />
-                    Closest Drivers ({nearbyDrivers.length})
+                    {assignedDrivers.length > 0 ? 'Other Nearby Drivers' : 'Closest Drivers'} ({nearbyDrivers.length})
                   </h3>
                   {nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
