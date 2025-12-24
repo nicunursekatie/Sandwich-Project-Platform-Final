@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { createHash } from 'crypto';
 import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
@@ -637,8 +638,9 @@ export class EventRequestsGoogleSheetsService {
             normalizedName
           ].join('|');
           
-          // Create a stable hash-like identifier (no timestamp!)
-          const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
+          // Create a stable hash using SHA256 - ensures ALL input contributes to uniqueness
+          // Previous bug: base64 substring only captured email, causing collisions for returning orgs
+          const hash = createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16);
           row.externalId = `auto-${hash}`;
           
           logger.debug(`Generated externalId for row ${row.rowIndex}: ${row.externalId} (org: ${normalizedOrg})`);
