@@ -1906,12 +1906,14 @@ export default function DriverPlanningDashboard() {
                         {canEditEvents && (
                           <div className="pt-1 mt-1 border-t border-gray-100">
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 p-0"
+                              className="h-auto min-h-0 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setLocation(`/dashboard?section=event-requests&eventId=${event.id}`);
+                                e.preventDefault();
+                                window.location.href = `/dashboard?section=event-requests&eventId=${event.id}`;
                               }}
                             >
                               <Edit2 className="w-3 h-3 mr-1" />
