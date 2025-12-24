@@ -106,6 +106,7 @@ const EventRequestsManagementContent: React.FC = () => {
     itemsPerPage,
     setItemsPerPage,
     statusCounts,
+    statusCountsLoading,
     quickFilter,
     setQuickFilter,
 
@@ -718,6 +719,7 @@ const EventRequestsManagementContent: React.FC = () => {
             itemsPerPage={itemsPerPage}
             onItemsPerPageChange={setItemsPerPage}
             statusCounts={statusCounts}
+            statusCountsLoading={statusCountsLoading}
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}

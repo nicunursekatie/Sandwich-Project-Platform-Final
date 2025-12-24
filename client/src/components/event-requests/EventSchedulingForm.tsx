@@ -171,6 +171,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   } | null>(null);
   const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -2621,21 +2622,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Form Actions */}
           <div className="flex justify-between pt-4 border-t">
             <div>
-              {/* Delete button - only show for existing events */}
-              {eventRequest && onDelete && (
+              {/* Delete button - only show for existing events in edit mode */}
+              {eventRequest && mode === 'edit' && (
                 <Button
                   type="button"
                   variant="outline"
                   className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-                  onClick={() => {
-                    if (eventRequest && confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
-                      if (onDelete) {
-                        onDelete(eventRequest.id);
-                      } else {
-                        deleteEventRequestMutation.mutate(eventRequest.id);
-                      }
-                    }
-                  }}
+                  onClick={() => setShowDeleteConfirmation(true)}
                   disabled={deleteEventRequestMutation.isPending}
                   data-testid="button-delete-event"
                 >
@@ -2775,6 +2768,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               className="bg-amber-600 hover:bg-amber-700"
             >
               Continue Without Speaker
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this event request for{' '}
+              <span className="font-semibold">{eventRequest?.organizationName}</span>?
+              {eventRequest?.scheduledEventDate && (
+                <> This event is scheduled for {new Date(eventRequest.scheduledEventDate).toLocaleDateString()}.</>
+              )}
+              <br /><br />
+              <span className="text-red-600 font-medium">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirmation(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (eventRequest) {
+                  if (onDelete) {
+                    onDelete(eventRequest.id);
+                  } else {
+                    deleteEventRequestMutation.mutate(eventRequest.id);
+                  }
+                  setShowDeleteConfirmation(false);
+                }
+              }}
+              className="bg-[#A31C41] hover:bg-[#8a1837]"
+            >
+              Delete Event
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

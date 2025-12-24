@@ -189,6 +189,7 @@ interface EventRequestContextType {
     cancelled: number;
     my_assignments: number;
   };
+  statusCountsLoading: boolean;
 }
 
 const EventRequestContext = createContext<EventRequestContextType | null>(null);
@@ -281,7 +282,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   });
 
   // Fetch status counts separately (for tab badges)
-  const { data: serverStatusCounts } = useQuery<{
+  const { data: serverStatusCounts, isLoading: statusCountsLoading } = useQuery<{
     all: number;
     new: number;
     in_process: number;
@@ -638,6 +639,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setQuickFilter,
     requestsByStatus,
     statusCounts,
+    statusCountsLoading,
 
     // View state
     viewMode,

@@ -67,6 +67,7 @@ interface RequestFiltersProps {
     cancelled: number;
     my_assignments: number;
   };
+  statusCountsLoading?: boolean;
 
   // Content for each tab
   children: {
@@ -109,6 +110,7 @@ export default function RequestFilters({
   itemsPerPage,
   onItemsPerPageChange,
   statusCounts,
+  statusCountsLoading,
   children,
   totalItems,
   totalPages,
@@ -118,6 +120,13 @@ export default function RequestFilters({
   onDismissSpreadsheetTip,
 }: RequestFiltersProps) {
   const { user } = useAuth();
+
+  // Helper to format count display - shows loading indicator when counts are loading
+  const formatCount = (count: number | undefined): string => {
+    if (statusCountsLoading) return '...';
+    return count !== undefined ? String(count) : '';
+  };
+
   // Support both old and new permission strings for backward compatibility
   const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
     user?.permissions?.includes('view_admin_overview') ||
@@ -292,11 +301,11 @@ export default function RequestFilters({
                 <>
                   <currentTab.icon className="w-4 h-4 text-[#007E8C]" />
                   <SelectValue>
-                    {currentTab.label}{currentTab.count !== undefined && ` (${currentTab.count})`}
+                    {currentTab.label}{currentTab.count !== undefined && ` (${formatCount(currentTab.count)})`}
                   </SelectValue>
                 </>
               )}
-              {currentTab?.hasNotification && (
+              {currentTab?.hasNotification && !statusCountsLoading && (
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               )}
             </div>
@@ -307,8 +316,8 @@ export default function RequestFilters({
                 <div className="flex items-center space-x-2">
                   <tab.icon className="w-4 h-4 text-[#007E8C]" />
                   <span>{tab.label}</span>
-                  {tab.count !== undefined && <span className="text-gray-500">({tab.count})</span>}
-                  {tab.hasNotification && (
+                  {tab.count !== undefined && <span className="text-gray-500">({formatCount(tab.count)})</span>}
+                  {tab.hasNotification && !statusCountsLoading && (
                     <div className="w-2 h-2 bg-red-500 rounded-full" />
                   )}
                 </div>
@@ -340,10 +349,10 @@ export default function RequestFilters({
                       <tab.icon className="w-3 h-3 flex-shrink-0" />
                       <span className="hidden lg:inline">{tab.label}</span>
                       <span className="lg:hidden">{tab.shortLabel}</span>
-                      {tab.count !== undefined && <span className="text-xs opacity-70">({tab.count})</span>}
+                      {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
                       {showTip && <Sparkles className="w-3 h-3 text-[#FBAD3F] animate-pulse" />}
                     </div>
-                    {tab.hasNotification && (
+                    {tab.hasNotification && !statusCountsLoading && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                     )}
                   </TabsTrigger>
