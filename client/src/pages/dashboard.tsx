@@ -241,6 +241,29 @@ export default function Dashboard({
     logger.log('Dashboard activeSection changed to:', activeSection);
   }, [activeSection]);
 
+  // Enhanced setActiveSection with debugging and query param support
+  const enhancedSetActiveSection = (section: string) => {
+    logger.log('📍 Dashboard setActiveSection called with:', section);
+
+    // Check if section includes query parameters
+    if (section.includes('?')) {
+      const [basePath, queryString] = section.split('?');
+      setActiveSection(basePath);
+      // Update URL with query parameters using window.history
+      const newUrl = `${window.location.pathname}?section=${basePath}&${queryString}`;
+      window.history.pushState({}, '', newUrl);
+      // Force a location update to trigger effects
+      setLocation(window.location.pathname + window.location.search);
+    } else {
+      setActiveSection(section);
+    }
+  };
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { user, isLoading } = useAuth();
+  const { trackNavigation, trackButtonClick } = useAnalytics();
+
   // Prefetch event requests data for faster navigation.
   // IMPORTANT: Keep cache keys aligned with EventRequestContext so we actually reuse warmed cache.
   React.useEffect(() => {
@@ -274,29 +297,6 @@ export default function Dashboard({
       });
     }
   }, [user?.role, user?.id]);
-
-  // Enhanced setActiveSection with debugging and query param support
-  const enhancedSetActiveSection = (section: string) => {
-    logger.log('📍 Dashboard setActiveSection called with:', section);
-
-    // Check if section includes query parameters
-    if (section.includes('?')) {
-      const [basePath, queryString] = section.split('?');
-      setActiveSection(basePath);
-      // Update URL with query parameters using window.history
-      const newUrl = `${window.location.pathname}?section=${basePath}&${queryString}`;
-      window.history.pushState({}, '', newUrl);
-      // Force a location update to trigger effects
-      setLocation(window.location.pathname + window.location.search);
-    } else {
-      setActiveSection(section);
-    }
-  };
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { user, isLoading } = useAuth();
-  const { trackNavigation, trackButtonClick } = useAnalytics();
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
