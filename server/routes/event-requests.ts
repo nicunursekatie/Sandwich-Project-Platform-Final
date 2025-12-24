@@ -3429,6 +3429,56 @@ router.get(
   }
 );
 
+// Find missing events - DRY RUN diagnostic (does not insert anything)
+router.get(
+  '/sync/find-missing',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_EDIT'),
+  async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(403).json({ message: 'Authentication required' });
+      }
+
+      const syncService = getEventRequestsGoogleSheetsService(storage as any);
+      if (!syncService) {
+        return res.status(500).json({
+          success: false,
+          message: 'Google Sheets service not configured',
+        });
+      }
+
+      logger.log('🔍 Running find-missing diagnostic (dry run - no insertions)...');
+      const result = await syncService.findMissingEvents();
+      
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_VIEW',
+        `Ran find-missing diagnostic: ${result.missingEvents.length} potentially missing events found`
+      );
+
+      res.json({
+        success: true,
+        message: 'Dry-run diagnostic complete - NO data was inserted',
+        sheetRowCount: result.sheetRowCount,
+        databaseCount: result.databaseCount,
+        missingCount: result.missingEvents.length,
+        missingEvents: result.missingEvents,
+        duplicatesInSheet: result.duplicatesInSheet,
+      });
+    } catch (error) {
+      logger.error('Error running find-missing diagnostic:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Find-missing diagnostic failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
 // Get organizations catalog - aggregated data from event requests
 router.get('/orgs-catalog-test', async (req, res) => {
   try {
