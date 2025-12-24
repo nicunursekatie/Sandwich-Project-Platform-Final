@@ -673,7 +673,7 @@ export default function DriverPlanningDashboard() {
       }
       return response.json();
     },
-    onSuccess: (data, eventId) => {
+    onSuccess: (_data, _eventId) => {
       toast({
         title: 'Event geocoded',
         description: 'The event location has been added to the map.',
