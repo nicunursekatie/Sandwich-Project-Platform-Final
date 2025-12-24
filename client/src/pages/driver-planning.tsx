@@ -1758,36 +1758,45 @@ export default function DriverPlanningDashboard() {
 
           {/* Route info box - shows when a route is displayed */}
           {drivingRoute && (
-            <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000] max-w-[200px]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-700">Driving Route</span>
+            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[220px]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-gray-800">Driving Route</span>
                 <button
                   onClick={() => {
                     setDrivingRoute(null);
                     setFocusedItem(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
                   title="Close route"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="space-y-1 text-xs">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{(drivingRoute.distance / 1609.34).toFixed(1)} miles</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
+                  <Truck className="w-5 h-5 text-blue-600" />
+                  <span className="text-base font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} miles</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{Math.round(drivingRoute.duration / 60)} min drive</span>
+                <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <span className="text-base font-medium text-gray-800">{Math.round(drivingRoute.duration / 60)} min drive</span>
                 </div>
               </div>
               {isLoadingRoute && (
-                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Loading route...
                 </div>
               )}
+              <button
+                onClick={() => {
+                  setDrivingRoute(null);
+                  setFocusedItem(null);
+                }}
+                className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Clear Route
+              </button>
             </div>
           )}
 
