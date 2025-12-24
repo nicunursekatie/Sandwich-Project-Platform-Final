@@ -634,8 +634,8 @@ export class EventRequestsGoogleSheetsService {
         ].join('|');
         
         // Generate BOTH hash formats to check for existing records
-        // Old format: base64 substring (broken - only captured email, but existing records have this)
-        const oldStyleHash = `auto-${Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
+        // Old format: base64 of EMAIL ONLY (broken but existing records have this hash format)
+        const oldStyleHash = `auto-${Buffer.from(normalizedEmail).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
         // New format: SHA256 (correct - all fields contribute to uniqueness)
         const newStyleHash = `auto-${createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16)}`;
         
@@ -676,28 +676,40 @@ export class EventRequestsGoogleSheetsService {
         try {
           // Check if record exists by EITHER hash format (old base64 or new SHA256)
           // This ensures we detect existing records regardless of which hash format was used
-          const existingByHash = await db
+          // IMPORTANT: Fetch ALL matches, then prioritize new-style hash matches over old-style
+          const existingByHashAll = await db
             .select({ 
               id: eventRequests.id, 
               status: eventRequests.status,
               externalId: eventRequests.externalId,
-              organizationName: eventRequests.organizationName
+              organizationName: eventRequests.organizationName,
+              message: eventRequests.message  // Include message for backfill check
             })
             .from(eventRequests)
             .where(
               sql`${eventRequests.externalId} IN (${externalIdTrimmed}, ${oldStyleHash}, ${newStyleHash})`
-            )
-            .limit(1);
+            );
+          
+          // Prioritize exact match (newStyleHash or externalIdTrimmed) over old-style hash match
+          // This ensures we backfill the CORRECT record when same email is used for multiple events
+          let existingByHash = existingByHashAll.filter(r => 
+            r.externalId === newStyleHash || r.externalId === externalIdTrimmed
+          );
+          
+          // If no new-style match, fall back to old-style match
+          if (existingByHash.length === 0 && existingByHashAll.length > 0) {
+            existingByHash = existingByHashAll;
+          }
 
           // ALSO check by org + date + contact name to catch duplicates when email changes in Google Sheet
           const desiredDate = (sanitizedData as any).desiredEventDate;
           const contactFirst = (sanitizedData as any).firstName?.trim().toLowerCase();
           const contactLast = (sanitizedData as any).lastName?.trim().toLowerCase();
           
-          let existingByOrgDateName: any[] = [];
+          let existingByOrgDateName: { id: number; externalId: string | null; message: string | null }[] = [];
           if (normalizedOrg && desiredDate && (contactFirst || contactLast)) {
             existingByOrgDateName = await db
-              .select({ id: eventRequests.id, externalId: eventRequests.externalId })
+              .select({ id: eventRequests.id, externalId: eventRequests.externalId, message: eventRequests.message })
               .from(eventRequests)
               .where(
                 and(
@@ -712,8 +724,29 @@ export class EventRequestsGoogleSheetsService {
           const recordExisted = (existingByHash && existingByHash.length > 0) ||
                                 (existingByOrgDateName && existingByOrgDateName.length > 0);
           
-          // Skip if already exists
+          // Skip if already exists, BUT check for message backfill opportunity
           if (recordExisted) {
+            // Determine which existing record to use for backfill - prioritize exact hash match
+            const existingRecord = existingByHash.length > 0 ? existingByHash[0] : existingByOrgDateName[0];
+            const sheetMessage = (sanitizedData as any).message?.trim();
+            const dbMessage = existingRecord.message?.trim();
+            
+            // Backfill message if: DB is empty/null but sheet has content
+            if ((!dbMessage || dbMessage === '') && sheetMessage && sheetMessage.length > 0) {
+              try {
+                await db
+                  .update(eventRequests)
+                  .set({ 
+                    message: sheetMessage,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(eventRequests.id, existingRecord.id));
+                logger.info(`📝 Backfilled message for event ${existingRecord.id} (${existingRecord.organizationName}): "${sheetMessage.substring(0, 50)}..."`);
+              } catch (backfillError) {
+                logger.warn(`Failed to backfill message for event ${existingRecord.id}: ${backfillError}`);
+              }
+            }
+            
             updatedCount++;
             continue;
           }
@@ -1012,7 +1045,7 @@ export class EventRequestsGoogleSheetsService {
       eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location', 'where will the event take place?', 'event address']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
-      previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
+      previouslyHosted: getColumnIndex(['has your organization done an event with us before', 'has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
       message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
       status: getColumnIndex(['status', 'current status', 'state', 'event status']),
     };
@@ -1024,6 +1057,8 @@ export class EventRequestsGoogleSheetsService {
       eventLocation: columnMapping.eventLocation >= 0 ? `Found at column ${columnMapping.eventLocation}` : 'NOT FOUND',
       email: columnMapping.email >= 0 ? `Found at column ${columnMapping.email}` : 'NOT FOUND',
       name: columnMapping.name >= 0 ? `Found at column ${columnMapping.name}` : 'NOT FOUND',
+      message: columnMapping.message >= 0 ? `Found at column ${columnMapping.message}` : 'NOT FOUND',
+      previouslyHosted: columnMapping.previouslyHosted >= 0 ? `Found at column ${columnMapping.previouslyHosted}` : 'NOT FOUND',
       department: columnMapping.department >= 0 ? `Found at column ${columnMapping.department}` : 'NOT FOUND',
     });
 
