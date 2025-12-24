@@ -1281,6 +1281,7 @@ router.get(
         statusChangedAt: event.statusChangedAt,
         assignedTo: event.assignedTo,
         nextAction: event.nextAction,
+        message: event.message,
 
         // Location (for map/display)
         eventAddress: event.eventAddress,
