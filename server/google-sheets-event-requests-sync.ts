@@ -689,7 +689,28 @@ export class EventRequestsGoogleSheetsService {
             )
             .limit(1);
 
-          const recordExisted = existingByHash && existingByHash.length > 0;
+          // ALSO check by org + date + contact name to catch duplicates when email changes in Google Sheet
+          const desiredDate = (sanitizedData as any).desiredEventDate;
+          const contactFirst = (sanitizedData as any).firstName?.trim().toLowerCase();
+          const contactLast = (sanitizedData as any).lastName?.trim().toLowerCase();
+          
+          let existingByOrgDateName: any[] = [];
+          if (normalizedOrg && desiredDate && (contactFirst || contactLast)) {
+            existingByOrgDateName = await db
+              .select({ id: eventRequests.id, externalId: eventRequests.externalId })
+              .from(eventRequests)
+              .where(
+                and(
+                  sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrg.toLowerCase()}`,
+                  eq(eventRequests.desiredEventDate, desiredDate),
+                  sql`(LOWER(TRIM(${eventRequests.firstName})) = ${contactFirst || ''} OR LOWER(TRIM(${eventRequests.lastName})) = ${contactLast || ''})`
+                )
+              )
+              .limit(1);
+          }
+
+          const recordExisted = (existingByHash && existingByHash.length > 0) ||
+                                (existingByOrgDateName && existingByOrgDateName.length > 0);
           
           // Skip if already exists
           if (recordExisted) {
