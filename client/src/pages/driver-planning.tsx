@@ -1603,28 +1603,32 @@ export default function DriverPlanningDashboard() {
           {/* Map legend */}
           <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]" data-testid="driver-planning-legend">
             <div className="text-xs font-semibold mb-2">Legend</div>
-            <div className="space-y-1 text-xs">
+            <div className="space-y-1.5 text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                </svg>
                 <span>Event</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                </svg>
                 <span>Selected Event</span>
               </div>
               {selectedEvent && (
                 <>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span>Nearby Host</span>
+                    <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                    <span>Host (circle)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500" />
-                    <span>Nearby Recipient</span>
+                    <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                    <span>Recipient (diamond)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-orange-500" />
-                    <span>Focused Item</span>
+                  <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                    <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                    <span>Selected = orange</span>
                   </div>
                 </>
               )}
@@ -2408,18 +2412,30 @@ export default function DriverPlanningDashboard() {
             <div className="text-[10px] font-semibold mb-1">Legend</div>
             <div className="space-y-0.5 text-[10px]">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span>Event</span>
+                <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                </svg>
+                <span>Event (pin)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                </svg>
+                <span>Selected Event</span>
               </div>
               {selectedEvent && (
                 <>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span>Host</span>
+                    <div className="w-2 h-2 rounded-full bg-green-500 border border-white" />
+                    <span>Host (circle)</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-purple-500" />
-                    <span>Recipient</span>
+                    <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
+                    <span>Recipient (diamond)</span>
+                  </div>
+                  <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
+                    <span>Selected = orange</span>
                   </div>
                 </>
               )}
