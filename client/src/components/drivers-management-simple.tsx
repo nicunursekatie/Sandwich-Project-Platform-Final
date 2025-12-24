@@ -40,6 +40,8 @@ import {
   Clock,
   MapPin,
   Loader2,
+  ExternalLink,
+  Copy,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,6 +50,52 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Driver, Host } from '@shared/schema';
 import { logger } from '@/lib/logger';
+
+function getDriverLocationValue(driver: Driver): string {
+  // Prefer the most specific address fields if present.
+  // (Some datasets may still use legacy `homeAddress`)
+  const anyDriver = driver as any;
+  return (
+    driver.hostLocation ||
+    driver.area ||
+    anyDriver.homeAddress ||
+    driver.address ||
+    ''
+  ).trim();
+}
+
+function abbreviateLocation(value: string): { short: string; isFullAddress: boolean } {
+  const s = (value || '').trim();
+  if (!s) return { short: '', isFullAddress: false };
+
+  // Most common shape: "street..., City, ST 12345"
+  const parts = s
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    const city = parts[parts.length - 2];
+    const stateZip = parts[parts.length - 1];
+    return { short: `${city}, ${stateZip}`, isFullAddress: parts.length >= 3 };
+  }
+
+  // Fallback: attempt to extract "City, ST ZIP" from tail
+  const m = s.match(/([A-Za-z .'-]+),\s*([A-Z]{2})(?:\s+(\d{5}(?:-\d{4})?))?$/);
+  if (m) {
+    const city = m[1].trim();
+    const state = m[2].trim();
+    const zip = m[3]?.trim();
+    return { short: `${city}, ${state}${zip ? ` ${zip}` : ''}`, isFullAddress: s !== m[0] };
+  }
+
+  // If we can't confidently abbreviate, return as-is
+  return { short: s, isFullAddress: false };
+}
+
+function googleMapsSearchUrl(query: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
 
 export default function DriversManagement() {
   const { toast } = useToast();
@@ -59,6 +107,7 @@ export default function DriversManagement() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [addressDialogDriver, setAddressDialogDriver] = useState<Driver | null>(null);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -908,6 +957,62 @@ export default function DriversManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Address viewer dialog */}
+      <Dialog
+        open={!!addressDialogDriver}
+        onOpenChange={(open) => {
+          if (!open) setAddressDialogDriver(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Driver Address</DialogTitle>
+          </DialogHeader>
+          {addressDialogDriver && (() => {
+            const fullLocation = getDriverLocationValue(addressDialogDriver);
+            const mapsUrl = googleMapsSearchUrl(fullLocation);
+
+            return (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-gray-900">{addressDialogDriver.name}</div>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                    {fullLocation || 'No address on file.'}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(fullLocation);
+                        toast({ title: 'Address copied' });
+                      } catch (e) {
+                        toast({ title: 'Failed to copy address', variant: 'destructive' });
+                      }
+                    }}
+                    disabled={!fullLocation}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
+
+                  <Button type="button" variant="default" size="sm" asChild disabled={!fullLocation}>
+                    <a href={mapsUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Open in Google Maps
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Drivers List */}
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -992,20 +1097,50 @@ export default function DriversManagement() {
                             </div>
                           </div>
 
-                          {/* Location - Highlighted */}
-                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
-                            <div className="bg-gradient-to-r from-brand-primary-lighter to-brand-primary-lighter/50 border-l-4 border-brand-primary rounded-md px-4 py-3 shadow-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl">📍</span>
-                                <div>
-                                  <div className="text-xs font-medium text-brand-primary-dark uppercase tracking-wide">Area</div>
-                                  <div className="text-lg font-bold text-brand-primary-darker">
-                                    {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
+                          {/* Location (abbreviated by default) */}
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (() => {
+                            const fullLocation = getDriverLocationValue(driver);
+                            const { short, isFullAddress } = abbreviateLocation(fullLocation);
+                            const mapsUrl = googleMapsSearchUrl(fullLocation);
+
+                            return (
+                              <div className="bg-gradient-to-r from-brand-primary-lighter to-brand-primary-lighter/50 border-l-4 border-brand-primary rounded-md px-4 py-3 shadow-sm">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-5 h-5 text-brand-primary mt-0.5 flex-shrink-0" />
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-medium text-brand-primary-dark uppercase tracking-wide">
+                                      Location
+                                    </div>
+                                    <div className="text-sm font-normal text-gray-900 break-words">
+                                      {short}
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1.5">
+                                      <a
+                                        href={mapsUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs font-medium text-brand-primary-dark hover:underline inline-flex items-center gap-1"
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        Maps
+                                      </a>
+                                      {isFullAddress && (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => setAddressDialogDriver(driver)}
+                                        >
+                                          View full address
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
 
                           {/* Contact Info - Styled Cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1138,20 +1273,50 @@ export default function DriversManagement() {
                             </div>
                           </div>
 
-                          {/* Location - Highlighted */}
-                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
-                            <div className="bg-gray-100 border-l-4 border-gray-400 rounded-md px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl grayscale">📍</span>
-                                <div>
-                                  <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Area</div>
-                                  <div className="text-lg font-bold text-gray-700">
-                                    {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
+                          {/* Location (abbreviated by default) */}
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (() => {
+                            const fullLocation = getDriverLocationValue(driver);
+                            const { short, isFullAddress } = abbreviateLocation(fullLocation);
+                            const mapsUrl = googleMapsSearchUrl(fullLocation);
+
+                            return (
+                              <div className="bg-gray-100 border-l-4 border-gray-400 rounded-md px-4 py-3">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                                      Location
+                                    </div>
+                                    <div className="text-sm font-normal text-gray-700 break-words">
+                                      {short}
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1.5">
+                                      <a
+                                        href={mapsUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs font-medium text-gray-700 hover:underline inline-flex items-center gap-1"
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        Maps
+                                      </a>
+                                      {isFullAddress && (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => setAddressDialogDriver(driver)}
+                                        >
+                                          View full address
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
 
                           {/* Contact Info - Styled Cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
