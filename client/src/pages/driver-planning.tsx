@@ -2290,6 +2290,8 @@ export default function DriverPlanningDashboard() {
                   onClick={() => {
                     setSelectedDriver(null);
                     setSelectedDestination(null);
+                    setDrivingRoute(null);
+                    setFocusedItem(null);
                   }}
                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
                   title="Clear selection"
@@ -2358,12 +2360,48 @@ export default function DriverPlanningDashboard() {
                 </div>
               )}
 
+              {/* Route preview info - show when previewing a potential destination */}
+              {drivingRoute && focusedItem && (
+                <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 text-xs text-blue-700 mb-1">
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span className="font-medium">Route to {focusedItem.name}</span>
+                  </div>
+                  <div className="flex gap-2 text-sm">
+                    <span className="font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} mi</span>
+                    <span className="text-gray-400">·</span>
+                    <span className="font-medium text-gray-800">~{Math.round(drivingRoute.duration / 60)} min</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Select this previewed item as the destination
+                      if ((focusedItem.type === 'host' || focusedItem.type === 'recipient') && focusedItem.name) {
+                        setSelectedDestination({
+                          type: focusedItem.type,
+                          id: typeof focusedItem.id === 'number' ? focusedItem.id : parseInt(String(focusedItem.id), 10),
+                          name: focusedItem.name,
+                          latitude: focusedItem.latitude,
+                          longitude: focusedItem.longitude,
+                        });
+                        setDrivingRoute(null);
+                        setFocusedItem(null);
+                      }
+                    }}
+                    className="mt-2 w-full px-2 py-1.5 text-xs font-medium text-white bg-[#007E8C] hover:bg-[#006b77] rounded transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    Select as Destination
+                  </button>
+                </div>
+              )}
+
               {/* Prompt for missing selection */}
               <div className="border-t pt-3 mt-1">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Loader2 className="w-3.5 h-3.5 text-[#007E8C]" />
-                  {!selectedDriver && <span>Now select a <strong>driver</strong> from the sidebar to complete the trip</span>}
-                  {!selectedDestination && <span>Now select a <strong>destination</strong> (host or recipient) from the sidebar to complete the trip</span>}
+                  {!selectedDriver && <span>Select a <strong>driver</strong> from the sidebar to complete the trip</span>}
+                  {!selectedDestination && !drivingRoute && <span>Click a <strong>host or recipient</strong> from the sidebar to preview, then select</span>}
+                  {!selectedDestination && drivingRoute && <span>Click <strong>Select as Destination</strong> above, or preview another option</span>}
                 </div>
               </div>
 
@@ -2371,6 +2409,8 @@ export default function DriverPlanningDashboard() {
                 onClick={() => {
                   setSelectedDriver(null);
                   setSelectedDestination(null);
+                  setDrivingRoute(null);
+                  setFocusedItem(null);
                 }}
                 className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
@@ -2932,15 +2972,18 @@ export default function DriverPlanningDashboard() {
                       >
                         <div className="flex items-start gap-2 mb-2">
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               setDrivingRoute(null);
                               setFocusedItem(null);
-                              if (selectedDriver?.id === driver.id) {
+                              const isCurrentlySelected = selectedDriver && String(selectedDriver.id) === String(driver.id);
+                              if (isCurrentlySelected) {
                                 setSelectedDriver(null);
                               } else {
                                 setSelectedDriver({
-                                  id: driver.id,
+                                  id: String(driver.id),
                                   name: driver.name,
                                   latitude: driver.latitude,
                                   longitude: driver.longitude,
@@ -2948,13 +2991,13 @@ export default function DriverPlanningDashboard() {
                               }
                             }}
                             className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
-                              selectedDriver?.id === driver.id
+                              selectedDriver && String(selectedDriver.id) === String(driver.id)
                                 ? 'bg-[#007E8C] text-white'
                                 : 'bg-green-600 text-white hover:bg-[#007E8C]'
                             }`}
-                            title={selectedDriver?.id === driver.id ? 'Unselect driver' : 'Select driver for trip'}
+                            title={selectedDriver && String(selectedDriver.id) === String(driver.id) ? 'Unselect driver' : 'Select driver for trip'}
                           >
-                            {selectedDriver?.id === driver.id ? (
+                            {selectedDriver && String(selectedDriver.id) === String(driver.id) ? (
                               <>
                                 <X className="w-3 h-3" />
                                 Selected
@@ -3020,16 +3063,20 @@ export default function DriverPlanningDashboard() {
                         {/* Select button for driver */}
                         <div className="flex items-start gap-2 mb-2">
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               // Clear preview route when making a selection
                               setDrivingRoute(null);
                               setFocusedItem(null);
-                              if (selectedDriver?.id === driver.id) {
+                              // Use String() for consistent comparison
+                              const isCurrentlySelected = selectedDriver && String(selectedDriver.id) === String(driver.id);
+                              if (isCurrentlySelected) {
                                 setSelectedDriver(null);
                               } else {
                                 setSelectedDriver({
-                                  id: driver.id,
+                                  id: String(driver.id),
                                   name: driver.name,
                                   latitude: driver.latitude,
                                   longitude: driver.longitude,
@@ -3037,13 +3084,13 @@ export default function DriverPlanningDashboard() {
                               }
                             }}
                             className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
-                              selectedDriver?.id === driver.id
+                              selectedDriver && String(selectedDriver.id) === String(driver.id)
                                 ? 'bg-[#007E8C] text-white'
                                 : 'bg-yellow-100 text-yellow-800 hover:bg-[#007E8C] hover:text-white'
                             }`}
-                            title={selectedDriver?.id === driver.id ? 'Unselect driver' : 'Select driver for trip'}
+                            title={selectedDriver && String(selectedDriver.id) === String(driver.id) ? 'Unselect driver' : 'Select driver for trip'}
                           >
-                            {selectedDriver?.id === driver.id ? (
+                            {selectedDriver && String(selectedDriver.id) === String(driver.id) ? (
                               <>
                                 <X className="w-3 h-3" />
                                 Selected
