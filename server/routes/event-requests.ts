@@ -4513,10 +4513,14 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       updates.tspContactAssignedDate = null;
     }
 
-    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+    await storage.updateEventRequest(id, updates);
+
+    // Fetch the updated record to ensure we get the latest data from the database
+    // This avoids issues with .returning() on Neon serverless sometimes returning undefined
+    const updatedEventRequest = await storage.getEventRequestById(id);
 
     if (!updatedEventRequest) {
-      return res.status(404).json({ error: 'Event request not found' });
+      return res.status(404).json({ error: 'Event request not found after update' });
     }
 
     // Send email and SMS notifications if:
