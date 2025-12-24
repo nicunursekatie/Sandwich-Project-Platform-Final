@@ -8,7 +8,7 @@ import {
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink,
-  Lock, Unlock, Navigation, Home, Target
+  Navigation, Home, Target
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -405,15 +405,17 @@ interface DrivingRoute {
   toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver'; id: number | string };
 }
 
-// Type for locked driver/destination selections
-interface LockedDriver {
+// Type for selected driver/destination for trip planning
+// "Selected" = confirmed for the trip (not just previewed)
+// User flow: Preview (click to see distance) -> Select (confirm for trip) -> Unselect (remove from trip)
+interface SelectedDriver {
   id: string;
   name: string;
   latitude: string;
   longitude: string;
 }
 
-interface LockedDestination {
+interface SelectedDestination {
   type: 'host' | 'recipient';
   id: number;
   name: string;
@@ -646,9 +648,9 @@ export default function DriverPlanningDashboard() {
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const routeAbortControllerRef = useRef<AbortController | null>(null);
 
-  // Lock-in state for trip planning
-  const [lockedDriver, setLockedDriver] = useState<LockedDriver | null>(null);
-  const [lockedDestination, setLockedDestination] = useState<LockedDestination | null>(null);
+  // Trip planning selections (driver + destination)
+  const [selectedDriver, setSelectedDriver] = useState<SelectedDriver | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<SelectedDestination | null>(null);
   const [fullTripRoute, setFullTripRoute] = useState<FullTripRoute | null>(null);
   const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
   const [showAllHosts, setShowAllHosts] = useState(false);
@@ -752,15 +754,15 @@ export default function DriverPlanningDashboard() {
     setDrivingRoute(null);
     setFocusedItem(null);
     setIsLoadingRoute(false);
-    // Also clear locked selections when event changes
-    setLockedDriver(null);
-    setLockedDestination(null);
+    // Also clear trip selections when event changes
+    setSelectedDriver(null);
+    setSelectedDestination(null);
     setFullTripRoute(null);
   }, [selectedEvent?.id]);
 
-  // Fetch full trip route when both driver and destination are locked
+  // Fetch full trip route when both driver and destination are selected
   useEffect(() => {
-    if (!lockedDriver || !lockedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+    if (!selectedDriver || !selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
       setFullTripRoute(null);
       return;
     }
@@ -774,8 +776,8 @@ export default function DriverPlanningDashboard() {
 
         // Fetch leg 1: Driver home -> Event
         const leg1 = await fetchDrivingRoute(
-          parseFloat(lockedDriver.latitude),
-          parseFloat(lockedDriver.longitude),
+          parseFloat(selectedDriver.latitude),
+          parseFloat(selectedDriver.longitude),
           eventLat,
           eventLng
         );
@@ -784,8 +786,8 @@ export default function DriverPlanningDashboard() {
         const leg2 = await fetchDrivingRoute(
           eventLat,
           eventLng,
-          parseFloat(lockedDestination.latitude),
-          parseFloat(lockedDestination.longitude)
+          parseFloat(selectedDestination.latitude),
+          parseFloat(selectedDestination.longitude)
         );
 
         if (leg1 && leg2) {
@@ -801,16 +803,16 @@ export default function DriverPlanningDashboard() {
               duration: leg2.duration,
             },
             driverLocation: {
-              lat: parseFloat(lockedDriver.latitude),
-              lng: parseFloat(lockedDriver.longitude),
+              lat: parseFloat(selectedDriver.latitude),
+              lng: parseFloat(selectedDriver.longitude),
             },
             eventLocation: {
               lat: eventLat,
               lng: eventLng,
             },
             destinationLocation: {
-              lat: parseFloat(lockedDestination.latitude),
-              lng: parseFloat(lockedDestination.longitude),
+              lat: parseFloat(selectedDestination.latitude),
+              lng: parseFloat(selectedDestination.longitude),
             },
           });
           // Clear single route when full trip is shown
@@ -824,7 +826,7 @@ export default function DriverPlanningDashboard() {
     };
 
     fetchFullTrip();
-  }, [lockedDriver, lockedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -1891,7 +1893,7 @@ export default function DriverPlanningDashboard() {
               />
             )}
 
-            {/* Full trip route polylines (when both driver and destination are locked) */}
+            {/* Full trip route polylines (when both driver and destination are selected) */}
             {fullTripRoute && (
               <>
                 {/* Leg 1: Driver home -> Event (dashed yellow/orange) */}
@@ -1917,15 +1919,15 @@ export default function DriverPlanningDashboard() {
             )}
           </MapContainer>
 
-          {/* Full trip info box - shows when both driver and destination are locked */}
-          {fullTripRoute && lockedDriver && lockedDestination && (
+          {/* Full trip info box - shows when both driver and destination are selected */}
+          {fullTripRoute && selectedDriver && selectedDestination && (
             <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[280px]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
                 <button
                   onClick={() => {
-                    setLockedDriver(null);
-                    setLockedDestination(null);
+                    setSelectedDriver(null);
+                    setSelectedDestination(null);
                     setFullTripRoute(null);
                   }}
                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
@@ -1939,7 +1941,7 @@ export default function DriverPlanningDashboard() {
               <div className="mb-3">
                 <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
                   <Home className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="font-medium">{lockedDriver.name}</span>
+                  <span className="font-medium">{selectedDriver.name}</span>
                   <Navigation className="w-3 h-3 text-gray-400" />
                   <span>Event</span>
                 </div>
@@ -1962,7 +1964,7 @@ export default function DriverPlanningDashboard() {
                   <MapPin className="w-3.5 h-3.5 text-purple-600" />
                   <span>Event</span>
                   <Navigation className="w-3 h-3 text-gray-400" />
-                  <span className="font-medium">{lockedDestination.name}</span>
+                  <span className="font-medium">{selectedDestination.name}</span>
                 </div>
                 <div className="flex gap-2">
                   <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
@@ -1995,8 +1997,8 @@ export default function DriverPlanningDashboard() {
 
               <button
                 onClick={() => {
-                  setLockedDriver(null);
-                  setLockedDestination(null);
+                  setSelectedDriver(null);
+                  setSelectedDestination(null);
                   setFullTripRoute(null);
                 }}
                 className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -2039,19 +2041,19 @@ export default function DriverPlanningDashboard() {
                 </div>
               )}
 
-              {/* Lock-in button for previewed item */}
+              {/* Select button for previewed item */}
               {focusedItem && (
                 <button
                   onClick={() => {
                     if (focusedItem.type === 'driver') {
-                      setLockedDriver({
+                      setSelectedDriver({
                         id: String(focusedItem.id),
                         name: focusedItem.name || 'Driver',
                         latitude: focusedItem.latitude,
                         longitude: focusedItem.longitude,
                       });
                     } else {
-                      setLockedDestination({
+                      setSelectedDestination({
                         type: focusedItem.type,
                         id: focusedItem.id as number,
                         name: focusedItem.name || (focusedItem.type === 'host' ? 'Host' : 'Recipient'),
@@ -2064,8 +2066,8 @@ export default function DriverPlanningDashboard() {
                   }}
                   className="w-full mt-3 px-3 py-2 text-sm font-medium text-white bg-[#007E8C] hover:bg-[#006670] rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  <Lock className="w-4 h-4" />
-                  Lock in {focusedItem.type === 'driver' ? 'Driver' : 'Destination'}
+                  <Check className="w-4 h-4" />
+                  Select {focusedItem.type === 'driver' ? 'Driver' : 'Destination'}
                 </button>
               )}
 
@@ -2076,7 +2078,7 @@ export default function DriverPlanningDashboard() {
                 }}
                 className="w-full mt-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                Clear Route
+                Close Preview
               </button>
             </div>
           )}
@@ -2157,15 +2159,15 @@ export default function DriverPlanningDashboard() {
               </div>
             ) : (
               <div className="p-3 space-y-4">
-                {/* Locked Selections Panel - Shows when items are locked */}
-                {(lockedDriver || lockedDestination) && (
+                {/* Trip Planning Panel - Shows when driver or destination is selected */}
+                {(selectedDriver || selectedDestination) && (
                   <div className="bg-gradient-to-r from-[#007E8C]/10 to-[#007E8C]/5 rounded-lg p-3 border border-[#007E8C]/20">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-semibold text-[#007E8C] uppercase tracking-wide flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" />
-                        Locked Selections
+                        <Target className="w-3.5 h-3.5" />
+                        Trip Planning
                       </h3>
-                      {(lockedDriver && lockedDestination) && (
+                      {(selectedDriver && selectedDestination) && (
                         <span className="text-[10px] text-[#007E8C] font-medium bg-[#007E8C]/10 px-2 py-0.5 rounded-full">
                           Full trip shown
                         </span>
@@ -2173,59 +2175,59 @@ export default function DriverPlanningDashboard() {
                     </div>
 
                     <div className="space-y-2">
-                      {/* Locked Driver */}
-                      {lockedDriver ? (
+                      {/* Selected Driver */}
+                      {selectedDriver ? (
                         <div className="flex items-center justify-between bg-white rounded-md px-2.5 py-2 shadow-sm">
                           <div className="flex items-center gap-2">
                             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
                             <div>
                               <span className="text-[10px] text-gray-500 uppercase">Driver</span>
-                              <p className="text-sm font-medium text-gray-800 -mt-0.5">{lockedDriver.name}</p>
+                              <p className="text-sm font-medium text-gray-800 -mt-0.5">{selectedDriver.name}</p>
                             </div>
                           </div>
                           <button
-                            onClick={() => setLockedDriver(null)}
+                            onClick={() => setSelectedDriver(null)}
                             className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                            title="Unlock driver"
+                            title="Unselect driver"
                           >
-                            <Unlock className="w-3.5 h-3.5" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 bg-white/50 rounded-md px-2.5 py-2 border border-dashed border-gray-300">
                           <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-gray-300" />
-                          <span className="text-xs text-gray-400 italic">No driver locked - click a driver and lock in</span>
+                          <span className="text-xs text-gray-400 italic">No driver selected - preview then select one</span>
                         </div>
                       )}
 
-                      {/* Locked Destination */}
-                      {lockedDestination ? (
+                      {/* Selected Destination */}
+                      {selectedDestination ? (
                         <div className="flex items-center justify-between bg-white rounded-md px-2.5 py-2 shadow-sm">
                           <div className="flex items-center gap-2">
-                            {lockedDestination.type === 'host' ? (
+                            {selectedDestination.type === 'host' ? (
                               <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
                             ) : (
                               <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
                             )}
                             <div>
                               <span className="text-[10px] text-gray-500 uppercase">
-                                {lockedDestination.type === 'host' ? 'Host' : 'Recipient'}
+                                {selectedDestination.type === 'host' ? 'Host' : 'Recipient'}
                               </span>
-                              <p className="text-sm font-medium text-gray-800 -mt-0.5">{lockedDestination.name}</p>
+                              <p className="text-sm font-medium text-gray-800 -mt-0.5">{selectedDestination.name}</p>
                             </div>
                           </div>
                           <button
-                            onClick={() => setLockedDestination(null)}
+                            onClick={() => setSelectedDestination(null)}
                             className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                            title="Unlock destination"
+                            title="Unselect destination"
                           >
-                            <Unlock className="w-3.5 h-3.5" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 bg-white/50 rounded-md px-2.5 py-2 border border-dashed border-gray-300">
                           <div className="w-3 h-3 bg-gray-300 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                          <span className="text-xs text-gray-400 italic">No destination locked - click a host or recipient</span>
+                          <span className="text-xs text-gray-400 italic">No destination selected - preview then select one</span>
                         </div>
                       )}
                     </div>
@@ -2248,33 +2250,68 @@ export default function DriverPlanningDashboard() {
                   {nearbyHosts.length > 0 ? (
                     <div className="space-y-2">
                       {(showAllHosts ? nearbyHosts : nearbyHosts.slice(0, 3)).map((host) => (
-                        <button
+                        <div
                           key={host.id}
-                          onClick={() => handleItemClick({
-                            type: 'host',
-                            id: host.id,
-                            latitude: host.latitude,
-                            longitude: host.longitude,
-                            name: host.contactName || host.hostLocationName
-                          })}
-                          className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-green-100 ${
-                            focusedItem?.type === 'host' && focusedItem?.id === host.id
-                              ? 'bg-green-100 border-green-400'
-                              : 'bg-green-50 border-green-200'
+                          className={`flex items-stretch text-xs border rounded transition-colors ${
+                            selectedDestination?.type === 'host' && selectedDestination?.id === host.id
+                              ? 'bg-[#007E8C]/10 border-[#007E8C] ring-2 ring-[#007E8C]/30'
+                              : focusedItem?.type === 'host' && focusedItem?.id === host.id
+                                ? 'bg-green-100 border-green-400'
+                                : 'bg-green-50 border-green-200 hover:bg-green-100'
                           }`}
-                          data-testid={`host-locate-${host.id}`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3.5 h-3.5 text-green-600" />
-                              <span className="font-medium">{host.contactName}</span>
+                          <button
+                            onClick={() => handleItemClick({
+                              type: 'host',
+                              id: host.id,
+                              latitude: host.latitude,
+                              longitude: host.longitude,
+                              name: host.contactName || host.hostLocationName
+                            })}
+                            className="flex-1 text-left p-2"
+                            data-testid={`host-locate-${host.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-green-600" />
+                                <span className="font-medium">{host.contactName}</span>
+                              </div>
+                              <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
                             </div>
-                            <span className="text-green-700">{host.distance.toFixed(1)} mi</span>
-                          </div>
-                          <div className="text-gray-500 pl-5 mt-0.5 text-[10px]">
-                            {host.hostLocationName}
-                          </div>
-                        </button>
+                            <div className="text-gray-500 pl-5 mt-0.5 text-[10px]">
+                              {host.hostLocationName}
+                            </div>
+                          </button>
+                          {/* Select button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedDestination?.type === 'host' && selectedDestination?.id === host.id) {
+                                setSelectedDestination(null);
+                              } else {
+                                setSelectedDestination({
+                                  type: 'host',
+                                  id: host.id,
+                                  name: host.contactName || host.hostLocationName,
+                                  latitude: host.latitude,
+                                  longitude: host.longitude,
+                                });
+                              }
+                            }}
+                            className={`px-2 flex items-center justify-center border-l transition-colors ${
+                              selectedDestination?.type === 'host' && selectedDestination?.id === host.id
+                                ? 'bg-[#007E8C] text-white border-[#007E8C]'
+                                : 'bg-green-100 text-green-700 border-green-200 hover:bg-[#007E8C] hover:text-white hover:border-[#007E8C]'
+                            }`}
+                            title={selectedDestination?.type === 'host' && selectedDestination?.id === host.id ? 'Unselect destination' : 'Select as destination'}
+                          >
+                            {selectedDestination?.type === 'host' && selectedDestination?.id === host.id ? (
+                              <X className="w-3.5 h-3.5" />
+                            ) : (
+                              <Check className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       ))}
                       {nearbyHosts.length > 3 && (
                         <button
@@ -2305,34 +2342,69 @@ export default function DriverPlanningDashboard() {
                       <div className="text-[11px] font-semibold text-gray-700 mb-1">Designated recipient</div>
                       <div className="space-y-1">
                         {designatedRecipients.map((recipient) => (
-                          <button
+                          <div
                             key={`designated-recipient-sidebar-${recipient.id}`}
-                            onClick={() => handleItemClick({
-                              type: 'recipient',
-                              id: recipient.id,
-                              latitude: recipient.latitude,
-                              longitude: recipient.longitude,
-                              name: recipient.name
-                            })}
-                            className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-purple-100 ${
-                              focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
-                                ? 'bg-purple-100 border-purple-400'
-                                : 'bg-purple-50 border-purple-200'
+                            className={`flex items-stretch text-xs border rounded transition-colors ${
+                              selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id
+                                ? 'bg-[#007E8C]/10 border-[#007E8C] ring-2 ring-[#007E8C]/30'
+                                : focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                                  ? 'bg-purple-100 border-purple-400'
+                                  : 'bg-purple-50 border-purple-200 hover:bg-purple-100'
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                                <span className="font-medium">{recipient.name}</span>
+                            <button
+                              onClick={() => handleItemClick({
+                                type: 'recipient',
+                                id: recipient.id,
+                                latitude: recipient.latitude,
+                                longitude: recipient.longitude,
+                                name: recipient.name
+                              })}
+                              className="flex-1 text-left p-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                                  <span className="font-medium">{recipient.name}</span>
+                                </div>
+                                <span className="text-purple-700">Designated</span>
                               </div>
-                              <span className="text-purple-700">Designated</span>
-                            </div>
-                            {recipient.address && (
-                              <div className="text-gray-500 pl-5 mt-0.5 text-[10px] line-clamp-1">
-                                {recipient.address}
-                              </div>
-                            )}
-                          </button>
+                              {recipient.address && (
+                                <div className="text-gray-500 pl-5 mt-0.5 text-[10px] line-clamp-1">
+                                  {recipient.address}
+                                </div>
+                              )}
+                            </button>
+                            {/* Select button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id) {
+                                  setSelectedDestination(null);
+                                } else {
+                                  setSelectedDestination({
+                                    type: 'recipient',
+                                    id: recipient.id,
+                                    name: recipient.name,
+                                    latitude: recipient.latitude,
+                                    longitude: recipient.longitude,
+                                  });
+                                }
+                              }}
+                              className={`px-2 flex items-center justify-center border-l transition-colors ${
+                                selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id
+                                  ? 'bg-[#007E8C] text-white border-[#007E8C]'
+                                  : 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-[#007E8C] hover:text-white hover:border-[#007E8C]'
+                              }`}
+                              title={selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id ? 'Unselect destination' : 'Select as destination'}
+                            >
+                              {selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id ? (
+                                <X className="w-3.5 h-3.5" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -2340,40 +2412,75 @@ export default function DriverPlanningDashboard() {
                   {nearbyRecipients.length > 0 ? (
                     <div className="space-y-2">
                       {(showAllRecipients ? nonDesignatedNearbyRecipients : nonDesignatedNearbyRecipients.slice(0, 3)).map((recipient) => (
-                        <button
+                        <div
                           key={recipient.id}
-                          onClick={() => handleItemClick({
-                            type: 'recipient',
-                            id: recipient.id,
-                            latitude: recipient.latitude,
-                            longitude: recipient.longitude,
-                            name: recipient.name
-                          })}
-                          className={`w-full text-left text-xs p-2 border rounded transition-colors hover:bg-purple-100 ${
-                            focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
-                              ? 'bg-purple-100 border-purple-400'
-                              : 'bg-purple-50 border-purple-200'
+                          className={`flex items-stretch text-xs border rounded transition-colors ${
+                            selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id
+                              ? 'bg-[#007E8C]/10 border-[#007E8C] ring-2 ring-[#007E8C]/30'
+                              : focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                                ? 'bg-purple-100 border-purple-400'
+                                : 'bg-purple-50 border-purple-200 hover:bg-purple-100'
                           }`}
-                          data-testid={`recipient-locate-${recipient.id}`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                              <span className="font-medium">{recipient.name}</span>
+                          <button
+                            onClick={() => handleItemClick({
+                              type: 'recipient',
+                              id: recipient.id,
+                              latitude: recipient.latitude,
+                              longitude: recipient.longitude,
+                              name: recipient.name
+                            })}
+                            className="flex-1 text-left p-2"
+                            data-testid={`recipient-locate-${recipient.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                                <span className="font-medium">{recipient.name}</span>
+                              </div>
+                              <span className="text-purple-700">{recipient.distance.toFixed(1)} mi</span>
                             </div>
-                            <span className="text-purple-700">{recipient.distance.toFixed(1)} mi</span>
-                          </div>
-                          {recipient.estimatedSandwiches && (
-                            <div className="mt-1 text-gray-600 pl-5">
-                              Needs ~{recipient.estimatedSandwiches} sandwiches
-                            </div>
-                          )}
-                          {recipient.region && (
-                            <div className="mt-0.5 text-gray-500 pl-5 text-[10px]">
-                              {recipient.region}
-                            </div>
-                          )}
-                        </button>
+                            {recipient.estimatedSandwiches && (
+                              <div className="mt-1 text-gray-600 pl-5">
+                                Needs ~{recipient.estimatedSandwiches} sandwiches
+                              </div>
+                            )}
+                            {recipient.region && (
+                              <div className="mt-0.5 text-gray-500 pl-5 text-[10px]">
+                                {recipient.region}
+                              </div>
+                            )}
+                          </button>
+                          {/* Select button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id) {
+                                setSelectedDestination(null);
+                              } else {
+                                setSelectedDestination({
+                                  type: 'recipient',
+                                  id: recipient.id,
+                                  name: recipient.name,
+                                  latitude: recipient.latitude,
+                                  longitude: recipient.longitude,
+                                });
+                              }
+                            }}
+                            className={`px-2 flex items-center justify-center border-l transition-colors ${
+                              selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id
+                                ? 'bg-[#007E8C] text-white border-[#007E8C]'
+                                : 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-[#007E8C] hover:text-white hover:border-[#007E8C]'
+                            }`}
+                            title={selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id ? 'Unselect destination' : 'Select as destination'}
+                          >
+                            {selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id ? (
+                              <X className="w-3.5 h-3.5" />
+                            ) : (
+                              <Check className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       ))}
                       {nonDesignatedNearbyRecipients.length > 3 && (
                         <button
@@ -2407,11 +2514,49 @@ export default function DriverPlanningDashboard() {
                       <Card
                         key={driver.id}
                         className={`p-3 transition-colors ${
-                          focusedItem?.type === 'driver' && focusedItem?.id === driver.id
-                            ? 'ring-2 ring-orange-400 bg-orange-50'
-                            : 'hover:bg-gray-50 cursor-pointer'
+                          selectedDriver?.id === driver.id
+                            ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/10'
+                            : focusedItem?.type === 'driver' && focusedItem?.id === driver.id
+                              ? 'ring-2 ring-orange-400 bg-orange-50'
+                              : 'hover:bg-gray-50 cursor-pointer'
                         }`}
                       >
+                        {/* Select button for driver */}
+                        <div className="flex items-start gap-2 mb-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedDriver?.id === driver.id) {
+                                setSelectedDriver(null);
+                              } else {
+                                setSelectedDriver({
+                                  id: driver.id,
+                                  name: driver.name,
+                                  latitude: driver.latitude,
+                                  longitude: driver.longitude,
+                                });
+                              }
+                            }}
+                            className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
+                              selectedDriver?.id === driver.id
+                                ? 'bg-[#007E8C] text-white'
+                                : 'bg-yellow-100 text-yellow-800 hover:bg-[#007E8C] hover:text-white'
+                            }`}
+                            title={selectedDriver?.id === driver.id ? 'Unselect driver' : 'Select driver for trip'}
+                          >
+                            {selectedDriver?.id === driver.id ? (
+                              <>
+                                <X className="w-3 h-3" />
+                                Selected
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3 h-3" />
+                                Select Driver
+                              </>
+                            )}
+                          </button>
+                        </div>
                         <button
                           className="w-full text-left"
                           onClick={() => handleItemClick({
