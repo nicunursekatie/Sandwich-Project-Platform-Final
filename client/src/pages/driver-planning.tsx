@@ -670,7 +670,7 @@ export default function DriverPlanningDashboard() {
     eventStartTime: '',
     eventEndTime: '',
     pickupTimeWindow: '',
-    tspContactAssigned: '',
+    tspContact: '',
     customTspContact: '',
   });
 
@@ -922,7 +922,7 @@ export default function DriverPlanningDashboard() {
       eventStartTime: selectedEvent.eventStartTime || '',
       eventEndTime: selectedEvent.eventEndTime || '',
       pickupTimeWindow: selectedEvent.pickupTimeWindow || '',
-      tspContactAssigned: selectedEvent.tspContactAssigned || '',
+      tspContact: selectedEvent.tspContact || selectedEvent.tspContactAssigned || '',
       customTspContact: selectedEvent.customTspContact || '',
     });
     setEditDialogOpen(true);
@@ -939,9 +939,15 @@ export default function DriverPlanningDashboard() {
     if (editForm.pickupTimeWindow) updates.pickupTimeWindow = editForm.pickupTimeWindow;
 
     // TSP Contact - allow setting, changing, or clearing
-    // Use special value 'custom' to indicate custom contact, empty string to clear
-    if (editForm.tspContactAssigned !== selectedEvent.tspContactAssigned) {
-      updates.tspContactAssigned = editForm.tspContactAssigned || null;
+    // Use 'tspContact' field (the main field the backend handles)
+    const currentTspContact = selectedEvent.tspContact || selectedEvent.tspContactAssigned || '';
+    if (editForm.tspContact !== currentTspContact) {
+      // If 'custom' is selected, we store the custom value instead
+      if (editForm.tspContact === 'custom') {
+        updates.tspContact = null; // Clear the user ID, custom name goes in customTspContact
+      } else {
+        updates.tspContact = editForm.tspContact || null;
+      }
     }
     if (editForm.customTspContact !== (selectedEvent.customTspContact || '')) {
       updates.customTspContact = editForm.customTspContact || null;
@@ -1933,7 +1939,7 @@ export default function DriverPlanningDashboard() {
                                   eventStartTime: event.eventStartTime || '',
                                   eventEndTime: event.eventEndTime || '',
                                   pickupTimeWindow: event.pickupTimeWindow || '',
-                                  tspContactAssigned: event.tspContactAssigned || '',
+                                  tspContact: event.tspContact || event.tspContactAssigned || '',
                                   customTspContact: event.customTspContact || '',
                                 });
                                 setEditDialogOpen(true);
@@ -4476,13 +4482,13 @@ export default function DriverPlanningDashboard() {
               <h4 className="text-sm font-medium text-gray-700 mb-3">TSP Contact</h4>
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="tspContactAssigned" className="text-sm">Assign TSP Contact</Label>
+                  <Label htmlFor="tspContact" className="text-sm">Assign TSP Contact</Label>
                   <Select
-                    value={editForm.tspContactAssigned}
+                    value={editForm.tspContact}
                     onValueChange={(value) => {
                       setEditForm({
                         ...editForm,
-                        tspContactAssigned: value,
+                        tspContact: value,
                         // Clear custom contact if selecting a user
                         customTspContact: value && value !== 'custom' ? '' : editForm.customTspContact,
                       });
@@ -4510,7 +4516,7 @@ export default function DriverPlanningDashboard() {
                   </Select>
                 </div>
 
-                {editForm.tspContactAssigned === 'custom' && (
+                {editForm.tspContact === 'custom' && (
                   <div className="space-y-2">
                     <Label htmlFor="customTspContact" className="text-sm">Custom TSP Contact Name</Label>
                     <Input
@@ -4522,13 +4528,13 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
 
-                {editForm.tspContactAssigned && editForm.tspContactAssigned !== 'custom' && (
+                {editForm.tspContact && editForm.tspContact !== 'custom' && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 h-auto py-1 px-2"
-                    onClick={() => setEditForm({ ...editForm, tspContactAssigned: '', customTspContact: '' })}
+                    onClick={() => setEditForm({ ...editForm, tspContact: '', customTspContact: '' })}
                   >
                     <X className="w-3 h-3 mr-1" />
                     Remove TSP Contact
