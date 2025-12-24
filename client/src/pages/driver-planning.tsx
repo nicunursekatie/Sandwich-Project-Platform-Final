@@ -386,10 +386,10 @@ const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): 
   return driverLocations.some(loc => locationMatchesCity(loc, eventCity));
 };
 
-// Type for focused map item (host or recipient)
+// Type for focused map item (host, recipient, or driver)
 interface FocusedMapItem {
-  type: 'host' | 'recipient';
-  id: number;
+  type: 'host' | 'recipient' | 'driver';
+  id: number | string;
   latitude: string;
   longitude: string;
 }
@@ -400,7 +400,7 @@ interface DrivingRoute {
   distance: number; // in meters
   duration: number; // in seconds
   fromEvent: { lat: number; lng: number };
-  toItem: { lat: number; lng: number; type: 'host' | 'recipient'; id: number };
+  toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver'; id: number | string };
 }
 
 // Fetch driving route from OSRM (free, no API key needed)
@@ -1826,6 +1826,10 @@ export default function DriverPlanningDashboard() {
                     <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
                     <span>Recipient (diamond)</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                    <span>Driver (triangle)</span>
+                  </div>
                   <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
                     <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
                     <span>Selected = orange</span>
@@ -2034,37 +2038,54 @@ export default function DriverPlanningDashboard() {
                       Closest drivers
                     </h3>
                     {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
-                      <Card key={driver.id} className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium text-sm">{driver.name}</h4>
-                            <p className="text-xs text-gray-500">
-                              {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
-                            </p>
-                            <p className="text-[11px] text-gray-400 mt-1">{distance.toFixed(1)} miles away</p>
+                      <Card
+                        key={driver.id}
+                        className={`p-3 transition-colors ${
+                          focusedItem?.type === 'driver' && focusedItem?.id === driver.id
+                            ? 'ring-2 ring-orange-400 bg-orange-50'
+                            : 'hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        <button
+                          className="w-full text-left"
+                          onClick={() => handleItemClick({
+                            type: 'driver',
+                            id: driver.id,
+                            latitude: driver.latitude,
+                            longitude: driver.longitude
+                          })}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-medium text-sm">{driver.name}</h4>
+                              <p className="text-xs text-gray-500">
+                                {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-1">{distance.toFixed(1)} miles away</p>
+                            </div>
+                            <Badge
+                              variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {driver.availability || 'Unknown'}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant={driver.availability === 'available' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {driver.availability || 'Unknown'}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
-                          {driver.phone && (
-                            <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
-                              <Phone className="w-3 h-3" />
-                              {driver.phone}
-                            </a>
-                          )}
-                          {driver.vehicleType && (
-                            <span className="flex items-center gap-1">
-                              <Truck className="w-3 h-3" />
-                              {driver.vehicleType}
-                              {driver.vanApproved && ' (Van OK)'}
-                            </span>
-                          )}
-                        </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                            {driver.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {driver.phone}
+                              </span>
+                            )}
+                            {driver.vehicleType && (
+                              <span className="flex items-center gap-1">
+                                <Truck className="w-3 h-3" />
+                                {driver.vehicleType}
+                                {driver.vanApproved && ' (Van OK)'}
+                              </span>
+                            )}
+                          </div>
+                        </button>
                         {selectedEvent && (
                           <div className="flex gap-1 mt-3">
                             {/* Tentative assignment button */}
@@ -2073,7 +2094,8 @@ export default function DriverPlanningDashboard() {
                               variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
                               className="flex-1 text-xs"
                               disabled={assigningDriverId === driver.id}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (!selectedEvent) return;
                                 setAssigningDriverId(driver.id);
                                 assignDriverMutation.mutate({
@@ -2097,7 +2119,8 @@ export default function DriverPlanningDashboard() {
                               size="sm"
                               className="flex-1 text-xs"
                               disabled={assigningDriverId === driver.id}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (!selectedEvent) return;
                                 setAssigningDriverId(driver.id);
                                 assignDriverMutation.mutate({
@@ -2635,6 +2658,10 @@ export default function DriverPlanningDashboard() {
                     <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
                     <span>Recipient (diamond)</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
+                    <span>Driver (triangle)</span>
+                  </div>
                   <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
                     <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
                     <span>Selected = orange</span>
@@ -2643,7 +2670,7 @@ export default function DriverPlanningDashboard() {
               )}
             </div>
           </div>
-          
+
           {/* Selected Event Quick Info - Bottom of map in fullscreen mode */}
           {mobileFullscreenMap && selectedEvent && (
             <div className="absolute bottom-4 left-3 right-3 bg-white rounded-lg shadow-lg p-3 z-[1000]">
@@ -3060,109 +3087,134 @@ export default function DriverPlanningDashboard() {
                   {nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
                       {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
-                        <Card key={driver.id} className="p-3">
-                          <div className="space-y-2">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm truncate">{driver.name}</h4>
-                                <p className="text-xs text-gray-500 truncate">
-                                  {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
-                                </p>
-                                <p className="text-[11px] text-[#007E8C] font-medium mt-1">
-                                  {distance.toFixed(1)} miles away
-                                </p>
+                        <Card
+                          key={driver.id}
+                          className={`p-3 transition-colors ${
+                            focusedItem?.type === 'driver' && focusedItem?.id === driver.id
+                              ? 'ring-2 ring-orange-400 bg-orange-50'
+                              : ''
+                          }`}
+                        >
+                          <button
+                            className="w-full text-left"
+                            onClick={() => {
+                              handleItemClick({
+                                type: 'driver',
+                                id: driver.id,
+                                latitude: driver.latitude,
+                                longitude: driver.longitude
+                              });
+                              setMobilePanel(null);
+                            }}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm truncate">{driver.name}</h4>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                                  </p>
+                                  <p className="text-[11px] text-[#007E8C] font-medium mt-1">
+                                    {distance.toFixed(1)} miles away
+                                  </p>
+                                </div>
+                                <Badge
+                                  variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                                  className="text-xs flex-shrink-0"
+                                >
+                                  {driver.availability || 'Unknown'}
+                                </Badge>
                               </div>
-                              <Badge
-                                variant={driver.availability === 'available' ? 'default' : 'secondary'}
-                                className="text-xs flex-shrink-0"
-                              >
-                                {driver.availability || 'Unknown'}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
-                              {driver.phone && (
-                                <a href={`tel:${driver.phone}`} className="flex items-center gap-1 hover:text-[#007E8C]">
-                                  <Phone className="w-3 h-3" />
-                                  {driver.phone}
-                                </a>
-                              )}
-                              {driver.vehicleType && (
-                                <span className="flex items-center gap-1">
-                                  <Truck className="w-3 h-3" />
-                                  {driver.vehicleType}
-                                  {driver.vanApproved && ' (Van OK)'}
-                                </span>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-8"
-                                onClick={() => copyDriverSMS(driver)}
-                              >
-                                {copiedDriverId === driver.id ? (
-                                  <>
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3 h-3 mr-1" />
-                                    SMS
-                                  </>
+                              <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
+                                {driver.phone && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="w-3 h-3" />
+                                    {driver.phone}
+                                  </span>
                                 )}
-                              </Button>
-                              {/* Tentative assignment button */}
-                              <Button
-                                size="sm"
-                                variant={selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
-                                className="text-xs h-8"
-                                disabled={assigningDriverId === driver.id}
-                                onClick={() => {
-                                  if (!selectedEvent) return;
-                                  setAssigningDriverId(driver.id);
-                                  assignDriverMutation.mutate({
-                                    eventId: selectedEvent.id,
-                                    driverId: String(driver.id),
-                                    currentAssigned: selectedEvent.assignedDriverIds || [],
-                                    currentTentative: selectedEvent.tentativeDriverIds || [],
-                                    tentative: true,
-                                  });
-                                }}
-                              >
-                                {assigningDriverId === driver.id ? (
-                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                ) : (
-                                  <span className="mr-1 font-bold">?</span>
+                                {driver.vehicleType && (
+                                  <span className="flex items-center gap-1">
+                                    <Truck className="w-3 h-3" />
+                                    {driver.vehicleType}
+                                    {driver.vanApproved && ' (Van OK)'}
+                                  </span>
                                 )}
-                                {selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
-                              </Button>
-                              {/* Confirmed assignment button */}
-                              <Button
-                                size="sm"
-                                className="text-xs h-8"
-                                disabled={assigningDriverId === driver.id}
-                                onClick={() => {
-                                  if (!selectedEvent) return;
-                                  setAssigningDriverId(driver.id);
-                                  assignDriverMutation.mutate({
-                                    eventId: selectedEvent.id,
-                                    driverId: String(driver.id),
-                                    currentAssigned: selectedEvent.assignedDriverIds || [],
-                                    currentTentative: selectedEvent.tentativeDriverIds || [],
-                                    tentative: false,
-                                  });
-                                }}
-                              >
-                                {assigningDriverId === driver.id ? (
-                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                ) : (
+                              </div>
+                            </div>
+                          </button>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyDriverSMS(driver);
+                              }}
+                            >
+                              {copiedDriverId === driver.id ? (
+                                <>
                                   <Check className="w-3 h-3 mr-1" />
-                                )}
-                                {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
-                              </Button>
-                            </div>
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  SMS
+                                </>
+                              )}
+                            </Button>
+                            {/* Tentative assignment button */}
+                            <Button
+                              size="sm"
+                              variant={selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                              className="text-xs h-8"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: true,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <span className="mr-1 font-bold">?</span>
+                              )}
+                              {selectedEvent?.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                            </Button>
+                            {/* Confirmed assignment button */}
+                            <Button
+                              size="sm"
+                              className="text-xs h-8"
+                              disabled={assigningDriverId === driver.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!selectedEvent) return;
+                                setAssigningDriverId(driver.id);
+                                assignDriverMutation.mutate({
+                                  eventId: selectedEvent.id,
+                                  driverId: String(driver.id),
+                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentTentative: selectedEvent.tentativeDriverIds || [],
+                                  tentative: false,
+                                });
+                              }}
+                            >
+                              {assigningDriverId === driver.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3 mr-1" />
+                              )}
+                              {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                            </Button>
                           </div>
                         </Card>
                       ))}
