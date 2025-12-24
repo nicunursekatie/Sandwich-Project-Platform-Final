@@ -184,15 +184,26 @@ interface RecipientMapData {
 }
 
 // Custom marker icons with different shapes
-// Events: Teardrop/pin shape (default)
+// Events: Teardrop/pin shape using divIcon for consistent rendering
 const createEventIcon = (color: string) => {
-  return new L.Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  const html = `
+    <div style="
+      position: relative;
+      width: 25px;
+      height: 41px;
+    ">
+      <svg viewBox="0 0 25 41" width="25" height="41" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <circle cx="12.5" cy="12.5" r="5" fill="white"/>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker event-marker',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+    popupAnchor: [1, -34]
   });
 };
 
