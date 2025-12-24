@@ -46,7 +46,7 @@ export function PageBreadcrumbs({ segments, className = '' }: PageBreadcrumbsPro
                   <BreadcrumbPage>{segment.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={segment.href} className="hover:text-primary transition-colors">
+                    <Link href={segment.href} className="hover:text-primary transition-colors cursor-pointer underline-offset-2 hover:underline">
                       {segment.label}
                     </Link>
                   </BreadcrumbLink>
