@@ -620,29 +620,29 @@ export class EventRequestsGoogleSheetsService {
       let rowsWithoutExternalId = 0;
 
       for (const row of sheetRows) {
-        // UPDATED: External ID is now optional - generate one if missing
+        // Normalize values for hash generation
+        const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
+        const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
+        const normalizedOrg = (row.organizationName || 'no-org').trim();
+        const normalizedName = (row.contactName || 'no-name').trim();
+        
+        const uniqueParts = [
+          normalizedEmail,
+          normalizedSubmittedOn,
+          normalizedOrg,
+          normalizedName
+        ].join('|');
+        
+        // Generate BOTH hash formats to check for existing records
+        // Old format: base64 substring (broken - only captured email, but existing records have this)
+        const oldStyleHash = `auto-${Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
+        // New format: SHA256 (correct - all fields contribute to uniqueness)
+        const newStyleHash = `auto-${createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16)}`;
+        
+        // Use new-style hash for new records, but check for both when detecting duplicates
         if (!row.externalId || !row.externalId.trim()) {
           rowsWithoutExternalId++;
-          // Generate a STABLE identifier based on email + submittedOn + organization
-          // NOTE: No timestamp - must be deterministic so the same row always gets the same ID
-          // Normalize values to ensure consistency (trim, lowercase email)
-          const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
-          const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
-          const normalizedOrg = (row.organizationName || 'no-org').trim();
-          const normalizedName = (row.contactName || 'no-name').trim();
-          
-          const uniqueParts = [
-            normalizedEmail,
-            normalizedSubmittedOn,
-            normalizedOrg,
-            normalizedName
-          ].join('|');
-          
-          // Create a stable hash using SHA256 - ensures ALL input contributes to uniqueness
-          // Previous bug: base64 substring only captured email, causing collisions for returning orgs
-          const hash = createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16);
-          row.externalId = `auto-${hash}`;
-          
+          row.externalId = newStyleHash;
           logger.debug(`Generated externalId for row ${row.rowIndex}: ${row.externalId} (org: ${normalizedOrg})`);
         } else {
           rowsWithExternalId++;
@@ -674,8 +674,9 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // Check if record exists by external_id
-          const existingByExternalId = await db
+          // Check if record exists by EITHER hash format (old base64 or new SHA256)
+          // This ensures we detect existing records regardless of which hash format was used
+          const existingByHash = await db
             .select({ 
               id: eventRequests.id, 
               status: eventRequests.status,
@@ -683,34 +684,14 @@ export class EventRequestsGoogleSheetsService {
               organizationName: eventRequests.organizationName
             })
             .from(eventRequests)
-            .where(eq(eventRequests.externalId, externalIdTrimmed))
+            .where(
+              sql`${eventRequests.externalId} IN (${externalIdTrimmed}, ${oldStyleHash}, ${newStyleHash})`
+            )
             .limit(1);
 
-          // ALSO check by org + email + date to catch records with old hash format
-          // This prevents duplicates when the hash algorithm changes
-          const normalizedOrgForCheck = (sanitizedData as any).organizationName?.trim().toLowerCase();
-          const normalizedEmailForCheck = (sanitizedData as any).email?.trim().toLowerCase();
-          const desiredDate = (sanitizedData as any).desiredEventDate;
+          const recordExisted = existingByHash && existingByHash.length > 0;
           
-          let existingByOrgEmailDate: any[] = [];
-          if (normalizedOrgForCheck && normalizedEmailForCheck && desiredDate) {
-            existingByOrgEmailDate = await db
-              .select({ id: eventRequests.id, externalId: eventRequests.externalId })
-              .from(eventRequests)
-              .where(
-                and(
-                  sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgForCheck}`,
-                  sql`LOWER(TRIM(${eventRequests.email})) = ${normalizedEmailForCheck}`,
-                  eq(eventRequests.desiredEventDate, desiredDate)
-                )
-              )
-              .limit(1);
-          }
-
-          const recordExisted = (existingByExternalId && existingByExternalId.length > 0) || 
-                                (existingByOrgEmailDate && existingByOrgEmailDate.length > 0);
-          
-          // Skip if already exists by either method
+          // Skip if already exists
           if (recordExisted) {
             updatedCount++;
             continue;
