@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import { useLocation } from 'wouter';
 
 import {
@@ -394,6 +394,53 @@ interface FocusedMapItem {
   longitude: string;
 }
 
+// Type for driving route between event and focused item
+interface DrivingRoute {
+  coordinates: [number, number][];
+  distance: number; // in meters
+  duration: number; // in seconds
+  fromEvent: { lat: number; lng: number };
+  toItem: { lat: number; lng: number; type: 'host' | 'recipient'; id: number };
+}
+
+// Fetch driving route from OSRM (free, no API key needed)
+async function fetchDrivingRoute(
+  fromLat: number,
+  fromLng: number,
+  toLat: number,
+  toLng: number,
+  signal?: AbortSignal
+): Promise<{ coordinates: [number, number][]; distance: number; duration: number } | null> {
+  try {
+    // OSRM demo server - for production, consider self-hosting or using a paid service
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const response = await fetch(url, { signal });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.code !== 'Ok' || !data.routes?.[0]) return null;
+
+    const route = data.routes[0];
+    // OSRM returns coordinates as [lng, lat], we need [lat, lng] for Leaflet
+    const coordinates: [number, number][] = route.geometry.coordinates.map(
+      (coord: [number, number]) => [coord[1], coord[0]]
+    );
+
+    return {
+      coordinates,
+      distance: route.distance,
+      duration: route.duration,
+    };
+  } catch (error) {
+    // Don't log abort errors - they're expected when cancelling requests
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null;
+    }
+    console.error('Failed to fetch driving route:', error);
+    return null;
+  }
+}
+
 // Component to center map on selected event or focused item
 function MapController({
   selectedEvent,
@@ -402,6 +449,7 @@ function MapController({
   nearbyHosts,
   nearbyRecipients,
   designatedRecipients,
+  drivingRoute,
 }: {
   selectedEvent: EventMapData | null;
   events: EventMapData[];
@@ -409,19 +457,29 @@ function MapController({
   nearbyHosts: { latitude: string; longitude: string }[];
   nearbyRecipients: { latitude: string; longitude: string }[];
   designatedRecipients: { latitude: string; longitude: string }[];
+  drivingRoute: DrivingRoute | null;
 }) {
   const map = useMap();
 
-  // Handle focused item (host or recipient click from sidebar)
+  // Handle driving route - fit bounds to show both endpoints
   useEffect(() => {
-    if (focusedItem?.latitude && focusedItem?.longitude) {
+    if (drivingRoute && drivingRoute.coordinates.length > 0) {
+      const bounds = L.latLngBounds(drivingRoute.coordinates);
+      map.fitBounds(bounds, { padding: [50, 50], animate: true });
+    }
+  }, [drivingRoute, map]);
+
+  // Handle focused item when no route (fallback behavior)
+  useEffect(() => {
+    // Only pan to focused item if there's no driving route being shown
+    if (!drivingRoute && focusedItem?.latitude && focusedItem?.longitude) {
       map.setView(
         [parseFloat(focusedItem.latitude), parseFloat(focusedItem.longitude)],
         15,
         { animate: true }
       );
     }
-  }, [focusedItem, map]);
+  }, [focusedItem, drivingRoute, map]);
 
   // Center on selected event with bounds that include at least one host and one recipient
   const selectedEventId = selectedEvent?.id;
@@ -530,6 +588,9 @@ export default function DriverPlanningDashboard() {
   const [weeksAhead, setWeeksAhead] = useState<string>('4');
   const [copiedDriverId, setCopiedDriverId] = useState<string | number | null>(null);
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
+  const [drivingRoute, setDrivingRoute] = useState<DrivingRoute | null>(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const routeAbortControllerRef = useRef<AbortController | null>(null);
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
@@ -551,6 +612,87 @@ export default function DriverPlanningDashboard() {
 
   // Check if user has edit permission
   const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
+
+  // Handle clicking on a host/recipient to show driving route from selected event
+  const handleItemClick = async (item: FocusedMapItem) => {
+    setFocusedItem(item);
+
+    // Only fetch route if we have a selected event with coordinates
+    if (!selectedEvent?.latitude || !selectedEvent?.longitude) {
+      setDrivingRoute(null);
+      return;
+    }
+
+    // Cancel any in-flight route request
+    if (routeAbortControllerRef.current) {
+      routeAbortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    routeAbortControllerRef.current = abortController;
+
+    setIsLoadingRoute(true);
+    try {
+      const routeData = await fetchDrivingRoute(
+        parseFloat(selectedEvent.latitude),
+        parseFloat(selectedEvent.longitude),
+        parseFloat(item.latitude),
+        parseFloat(item.longitude),
+        abortController.signal
+      );
+
+      // Check if this request was aborted (another request took over)
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      if (routeData) {
+        setDrivingRoute({
+          coordinates: routeData.coordinates,
+          distance: routeData.distance,
+          duration: routeData.duration,
+          fromEvent: {
+            lat: parseFloat(selectedEvent.latitude),
+            lng: parseFloat(selectedEvent.longitude),
+          },
+          toItem: {
+            lat: parseFloat(item.latitude),
+            lng: parseFloat(item.longitude),
+            type: item.type,
+            id: item.id,
+          },
+        });
+      } else {
+        // Fallback: clear route if fetch failed
+        setDrivingRoute(null);
+      }
+    } catch (error) {
+      // Don't update state if request was aborted
+      if (abortController.signal.aborted) {
+        return;
+      }
+      console.error('Error fetching route:', error);
+      setDrivingRoute(null);
+    } finally {
+      // Only clear loading if this is still the active request
+      if (!abortController.signal.aborted) {
+        setIsLoadingRoute(false);
+      }
+    }
+  };
+
+  // Clear route when event selection changes
+  useEffect(() => {
+    // Cancel any in-flight route request
+    if (routeAbortControllerRef.current) {
+      routeAbortControllerRef.current.abort();
+      routeAbortControllerRef.current = null;
+    }
+    setDrivingRoute(null);
+    setFocusedItem(null);
+    setIsLoadingRoute(false);
+  }, [selectedEvent?.id]);
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -1493,6 +1635,7 @@ export default function DriverPlanningDashboard() {
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
               designatedRecipients={designatedRecipients}
+              drivingRoute={drivingRoute}
             />
 
             {/* Event markers */}
@@ -1524,7 +1667,7 @@ export default function DriverPlanningDashboard() {
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
                 icon={focusedItem?.type === 'host' && focusedItem?.id === host.id ? hostFocusedIcon : hostIcon}
                 eventHandlers={{
-                  click: () => setFocusedItem({
+                  click: () => handleItemClick({
                     type: 'host',
                     id: host.id,
                     latitude: host.latitude,
@@ -1549,7 +1692,7 @@ export default function DriverPlanningDashboard() {
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
                 icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
                 eventHandlers={{
-                  click: () => setFocusedItem({
+                  click: () => handleItemClick({
                     type: 'recipient',
                     id: recipient.id,
                     latitude: recipient.latitude,
@@ -1576,7 +1719,7 @@ export default function DriverPlanningDashboard() {
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
                 icon={focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id ? recipientFocusedIcon : recipientIcon}
                 eventHandlers={{
-                  click: () => setFocusedItem({
+                  click: () => handleItemClick({
                     type: 'recipient',
                     id: recipient.id,
                     latitude: recipient.latitude,
@@ -1598,7 +1741,55 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Driving route polyline */}
+            {drivingRoute && drivingRoute.coordinates.length > 0 && (
+              <Polyline
+                positions={drivingRoute.coordinates}
+                pathOptions={{
+                  color: '#2563eb',
+                  weight: 4,
+                  opacity: 0.8,
+                  dashArray: '10, 10',
+                }}
+              />
+            )}
           </MapContainer>
+
+          {/* Route info box - shows when a route is displayed */}
+          {drivingRoute && (
+            <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000] max-w-[200px]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-700">Driving Route</span>
+                <button
+                  onClick={() => {
+                    setDrivingRoute(null);
+                    setFocusedItem(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                  title="Close route"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{(drivingRoute.distance / 1609.34).toFixed(1)} miles</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{Math.round(drivingRoute.duration / 60)} min drive</span>
+                </div>
+              </div>
+              {isLoadingRoute && (
+                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading route...
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Map legend */}
           <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]" data-testid="driver-planning-legend">
@@ -1683,7 +1874,7 @@ export default function DriverPlanningDashboard() {
                       {(showAllHosts ? nearbyHosts : nearbyHosts.slice(0, 3)).map((host) => (
                         <button
                           key={host.id}
-                          onClick={() => setFocusedItem({
+                          onClick={() => handleItemClick({
                             type: 'host',
                             id: host.id,
                             latitude: host.latitude,
@@ -1739,7 +1930,7 @@ export default function DriverPlanningDashboard() {
                         {designatedRecipients.map((recipient) => (
                           <button
                             key={`designated-recipient-sidebar-${recipient.id}`}
-                            onClick={() => setFocusedItem({
+                            onClick={() => handleItemClick({
                               type: 'recipient',
                               id: recipient.id,
                               latitude: recipient.latitude,
@@ -1773,7 +1964,7 @@ export default function DriverPlanningDashboard() {
                       {(showAllRecipients ? nonDesignatedNearbyRecipients : nonDesignatedNearbyRecipients.slice(0, 3)).map((recipient) => (
                         <button
                           key={recipient.id}
-                          onClick={() => setFocusedItem({
+                          onClick={() => handleItemClick({
                             type: 'recipient',
                             id: recipient.id,
                             latitude: recipient.latitude,
@@ -2096,6 +2287,7 @@ export default function DriverPlanningDashboard() {
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
               designatedRecipients={designatedRecipients}
+              drivingRoute={drivingRoute}
             />
             {upcomingEventsWithCoords.map((event) => (
               <Marker
@@ -2302,6 +2494,7 @@ export default function DriverPlanningDashboard() {
               nearbyHosts={nearbyHosts}
               nearbyRecipients={nearbyRecipients}
               designatedRecipients={designatedRecipients}
+              drivingRoute={drivingRoute}
             />
             {upcomingEventsWithCoords.map((event) => (
               <Marker
@@ -2763,7 +2956,7 @@ export default function DriverPlanningDashboard() {
                         <button
                           key={host.id}
                           onClick={() => {
-                            setFocusedItem({
+                            handleItemClick({
                               type: 'host',
                               id: host.id,
                               latitude: host.latitude,
@@ -2810,7 +3003,7 @@ export default function DriverPlanningDashboard() {
                         <button
                           key={recipient.id}
                           onClick={() => {
-                            setFocusedItem({
+                            handleItemClick({
                               type: 'recipient',
                               id: recipient.id,
                               latitude: recipient.latitude,
