@@ -754,10 +754,66 @@ export default function DriverPlanningDashboard() {
     setDrivingRoute(null);
     setFocusedItem(null);
     setIsLoadingRoute(false);
-    // Also clear trip selections when event changes
+    // Clear trip selections when event changes - they'll be repopulated by the next effect
     setSelectedDriver(null);
     setSelectedDestination(null);
     setFullTripRoute(null);
+  }, [selectedEvent?.id]);
+
+  // Track whether we've auto-populated for the current event
+  const lastAutoPopulatedEventId = useRef<number | null>(null);
+
+  // Refs to access current memo values inside timeout without adding them to dependencies
+  const assignedDriversRef = useRef(assignedDrivers);
+  const designatedRecipientsRef = useRef(designatedRecipients);
+  assignedDriversRef.current = assignedDrivers;
+  designatedRecipientsRef.current = designatedRecipients;
+
+  // Auto-populate trip planning with pre-assigned driver/recipient when event is selected
+  // Only depends on selectedEvent.id to avoid timeout cancellation when memos recompute
+  useEffect(() => {
+    if (!selectedEvent) {
+      lastAutoPopulatedEventId.current = null;
+      return;
+    }
+
+    // Only auto-populate once per event selection
+    if (lastAutoPopulatedEventId.current === selectedEvent.id) {
+      return;
+    }
+    lastAutoPopulatedEventId.current = selectedEvent.id;
+
+    // Wait for memos to settle, then populate using refs for current values
+    const timeout = setTimeout(() => {
+      const currentAssignedDrivers = assignedDriversRef.current;
+      const currentDesignatedRecipients = designatedRecipientsRef.current;
+
+      // Auto-populate driver if there's exactly one assigned driver with coordinates
+      // (If multiple, let user pick which one to preview)
+      if (currentAssignedDrivers.length === 1) {
+        const driver = currentAssignedDrivers[0];
+        setSelectedDriver({
+          id: driver.id,
+          name: driver.name,
+          latitude: driver.latitude,
+          longitude: driver.longitude,
+        });
+      }
+
+      // Auto-populate destination if there's exactly one designated recipient with coordinates
+      if (currentDesignatedRecipients.length === 1) {
+        const recipient = currentDesignatedRecipients[0];
+        setSelectedDestination({
+          type: 'recipient',
+          id: recipient.id,
+          name: recipient.name || 'Recipient',
+          latitude: recipient.latitude!,
+          longitude: recipient.longitude!,
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timeout);
   }, [selectedEvent?.id]);
 
   // Fetch full trip route when both driver and destination are selected
@@ -1321,6 +1377,80 @@ export default function DriverPlanningDashboard() {
     return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
   }, [selectedEvent, designatedRecipients, nearbyRecipients]);
 
+  // Assigned driver(s) explicitly assigned on the event (if any)
+  // Returns full DriverCandidate objects for drivers with valid coordinates
+  const assignedDrivers = useMemo(() => {
+    const assignedIds = parsePostgresArrayLike(selectedEvent?.assignedDriverIds);
+    if (!selectedEvent || assignedIds.length === 0) return [];
+
+    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
+    const driverByNumericId = new Map(activeDrivers.map((d) => [String(d.id), d]));
+
+    const matches: DriverCandidate[] = [];
+    for (const raw of assignedIds) {
+      const id = String(raw).trim();
+      if (!id) continue;
+
+      // Try to find the driver candidate
+      // 1) driver candidate IDs (driver-12 / host-3 / volunteer-9)
+      let candidate = candidateById.get(id);
+
+      // 2) numeric IDs (plain "12") -> try driver-{id}
+      if (!candidate && /^\d+$/.test(id)) {
+        candidate = candidateById.get(`driver-${id}`);
+        // Also try looking up in activeDrivers and constructing a candidate
+        if (!candidate) {
+          const driver = driverByNumericId.get(id);
+          if (driver && driver.latitude && driver.longitude) {
+            candidate = {
+              id: `driver-${driver.id}`,
+              source: 'driver',
+              name: driver.name,
+              email: driver.email,
+              phone: driver.phone,
+              latitude: driver.latitude,
+              longitude: driver.longitude,
+              area: driver.area,
+              vanApproved: driver.vanApproved,
+              vehicleType: driver.vehicleType,
+              hostLocation: driver.hostLocation,
+            };
+          }
+        }
+      }
+
+      // 3) prefixed numeric IDs -> extract tail and lookup
+      if (!candidate && id.includes('-')) {
+        const tail = id.split('-').pop();
+        if (tail && /^\d+$/.test(tail)) {
+          const driver = driverByNumericId.get(tail);
+          if (driver && driver.latitude && driver.longitude) {
+            candidate = {
+              id: `driver-${driver.id}`,
+              source: 'driver',
+              name: driver.name,
+              email: driver.email,
+              phone: driver.phone,
+              latitude: driver.latitude,
+              longitude: driver.longitude,
+              area: driver.area,
+              vanApproved: driver.vanApproved,
+              vehicleType: driver.vehicleType,
+              hostLocation: driver.hostLocation,
+            };
+          }
+        }
+      }
+
+      // Only include if we found a valid candidate with coordinates
+      if (candidate && candidate.latitude && candidate.longitude) {
+        matches.push(candidate);
+      }
+    }
+
+    return matches;
+  }, [selectedEvent, driverCandidates, activeDrivers]);
+
   const getAssignedStaffLabel = (event: EventMapData): string | null => {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
       .map((v) => (v || '').trim())
@@ -1841,7 +1971,7 @@ export default function DriverPlanningDashboard() {
               >
                 <Popup>
                   <div className="p-2 min-w-[180px]">
-                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Assigned Recipient</div>
                     <h3 className="font-semibold text-purple-700">{recipient.name}</h3>
                     {recipient.address && (
                       <p className="text-xs text-gray-600">{recipient.address}</p>
@@ -2183,7 +2313,14 @@ export default function DriverPlanningDashboard() {
                           <div className="flex items-center gap-2">
                             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
                             <div>
-                              <span className="text-[10px] text-gray-500 uppercase">Driver</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-gray-500 uppercase">Driver</span>
+                                {assignedDrivers.some(d => d.id === selectedDriver.id) && (
+                                  <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    Assigned
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm font-medium text-gray-800 -mt-0.5">{selectedDriver.name}</p>
                             </div>
                           </div>
@@ -2198,7 +2335,11 @@ export default function DriverPlanningDashboard() {
                       ) : (
                         <div className="flex items-center gap-2 bg-white/50 rounded-md px-2.5 py-2 border border-dashed border-gray-300">
                           <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-gray-300" />
-                          <span className="text-xs text-gray-400 italic">No driver selected - preview then select one</span>
+                          <span className="text-xs text-gray-400 italic">
+                            {assignedDrivers.length > 0
+                              ? `${assignedDrivers.length} driver${assignedDrivers.length > 1 ? 's' : ''} assigned - select one to preview`
+                              : 'No driver selected - preview then select one'}
+                          </span>
                         </div>
                       )}
 
@@ -2212,9 +2353,16 @@ export default function DriverPlanningDashboard() {
                               <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
                             )}
                             <div>
-                              <span className="text-[10px] text-gray-500 uppercase">
-                                {selectedDestination.type === 'host' ? 'Host' : 'Recipient'}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-gray-500 uppercase">
+                                  {selectedDestination.type === 'host' ? 'Host' : 'Recipient'}
+                                </span>
+                                {selectedDestination.type === 'recipient' && designatedRecipients.some(r => r.id === selectedDestination.id) && (
+                                  <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    Assigned
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm font-medium text-gray-800 -mt-0.5">{selectedDestination.name}</p>
                             </div>
                           </div>
@@ -2229,7 +2377,11 @@ export default function DriverPlanningDashboard() {
                       ) : (
                         <div className="flex items-center gap-2 bg-white/50 rounded-md px-2.5 py-2 border border-dashed border-gray-300">
                           <div className="w-3 h-3 bg-gray-300 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                          <span className="text-xs text-gray-400 italic">No destination selected - preview then select one</span>
+                          <span className="text-xs text-gray-400 italic">
+                            {designatedRecipients.length > 0
+                              ? `${designatedRecipients.length} recipient${designatedRecipients.length > 1 ? 's' : ''} assigned - select one to preview`
+                              : 'No destination selected - preview then select one'}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -2288,6 +2440,9 @@ export default function DriverPlanningDashboard() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // Clear preview route when making a selection
+                              setDrivingRoute(null);
+                              setFocusedItem(null);
                               if (selectedDestination?.type === 'host' && selectedDestination?.id === host.id) {
                                 setSelectedDestination(null);
                               } else {
@@ -2341,7 +2496,7 @@ export default function DriverPlanningDashboard() {
                   </h3>
                   {designatedRecipients.length > 0 && (
                     <div className="mb-3">
-                      <div className="text-[11px] font-semibold text-gray-700 mb-1">Designated recipient</div>
+                      <div className="text-[11px] font-semibold text-gray-700 mb-1">Assigned recipient</div>
                       <div className="space-y-1">
                         {designatedRecipients.map((recipient) => (
                           <div
@@ -2369,7 +2524,7 @@ export default function DriverPlanningDashboard() {
                                   <MapPin className="w-3.5 h-3.5 text-purple-600" />
                                   <span className="font-medium">{recipient.name}</span>
                                 </div>
-                                <span className="text-purple-700">Designated</span>
+                                <span className="text-purple-700">Assigned</span>
                               </div>
                               {recipient.address && (
                                 <div className="text-gray-500 pl-5 mt-0.5 text-[10px] line-clamp-1">
@@ -2381,6 +2536,9 @@ export default function DriverPlanningDashboard() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                // Clear preview route when making a selection
+                                setDrivingRoute(null);
+                                setFocusedItem(null);
                                 if (selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id) {
                                   setSelectedDestination(null);
                                 } else {
@@ -2457,6 +2615,9 @@ export default function DriverPlanningDashboard() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // Clear preview route when making a selection
+                              setDrivingRoute(null);
+                              setFocusedItem(null);
                               if (selectedDestination?.type === 'recipient' && selectedDestination?.id === recipient.id) {
                                 setSelectedDestination(null);
                               } else {
@@ -2528,6 +2689,9 @@ export default function DriverPlanningDashboard() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // Clear preview route when making a selection
+                              setDrivingRoute(null);
+                              setFocusedItem(null);
                               if (selectedDriver?.id === driver.id) {
                                 setSelectedDriver(null);
                               } else {
@@ -2571,7 +2735,14 @@ export default function DriverPlanningDashboard() {
                         >
                           <div className="flex items-start justify-between">
                             <div>
-                              <h4 className="font-medium text-sm">{driver.name}</h4>
+                              <h4 className="font-medium text-sm flex items-center gap-1.5">
+                                {driver.name}
+                                {assignedDrivers.some(d => d.id === driver.id) && (
+                                  <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    Assigned
+                                  </span>
+                                )}
+                              </h4>
                               <p className="text-xs text-gray-500">
                                 {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
                               </p>
@@ -2875,7 +3046,7 @@ export default function DriverPlanningDashboard() {
               >
                 <Popup>
                   <div className="p-2">
-                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Assigned Recipient</div>
                     <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
                   </div>
                 </Popup>
@@ -3086,7 +3257,7 @@ export default function DriverPlanningDashboard() {
               >
                 <Popup>
                   <div className="p-2">
-                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Designated Recipient</div>
+                    <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Assigned Recipient</div>
                     <h3 className="font-semibold text-purple-700 text-sm">{recipient.name}</h3>
                   </div>
                 </Popup>
