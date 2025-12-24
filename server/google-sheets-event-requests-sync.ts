@@ -1219,6 +1219,150 @@ export class EventRequestsGoogleSheetsService {
       throw error;
     }
   }
+
+  /**
+   * DRY-RUN DIAGNOSTIC: Find missing events from Google Sheet that are NOT in database
+   * This does NOT insert anything - it only reports what's missing
+   */
+  async findMissingEvents(): Promise<{
+    success: boolean;
+    sheetRowCount: number;
+    databaseCount: number;
+    missingEvents: Array<{
+      rowIndex: number;
+      organizationName: string;
+      contactName: string;
+      email: string;
+      desiredEventDate: string;
+      submittedOn: string;
+      oldHash: string;
+      newHash: string;
+      reason: string;
+    }>;
+    duplicatesInSheet: Array<{
+      organizationName: string;
+      desiredEventDate: string;
+      count: number;
+    }>;
+  }> {
+    try {
+      await this.ensureInitialized();
+
+      // Read all rows from Google Sheet
+      const sheetRows = await this.readEventRequestsSheet();
+      
+      // Get count of database records
+      const dbCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(eventRequests);
+      const databaseCount = Number(dbCountResult[0]?.count || 0);
+
+      const missingEvents: Array<{
+        rowIndex: number;
+        organizationName: string;
+        contactName: string;
+        email: string;
+        desiredEventDate: string;
+        submittedOn: string;
+        oldHash: string;
+        newHash: string;
+        reason: string;
+      }> = [];
+
+      // Track duplicates in sheet
+      const sheetOrgDateCounts = new Map<string, number>();
+
+      for (const row of sheetRows) {
+        const normalizedEmail = (row.email || 'no-email').trim().toLowerCase();
+        const normalizedSubmittedOn = (row.submittedOn || 'no-date').trim();
+        const normalizedOrg = (row.organizationName || 'no-org').trim();
+        const normalizedName = (row.contactName || 'no-name').trim();
+        
+        const uniqueParts = [
+          normalizedEmail,
+          normalizedSubmittedOn,
+          normalizedOrg,
+          normalizedName
+        ].join('|');
+        
+        // Generate both hash formats
+        const oldStyleHash = `auto-${Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
+        const newStyleHash = `auto-${createHash('sha256').update(uniqueParts).digest('hex').substring(0, 16)}`;
+        
+        const externalIdTrimmed = (row.externalId || '').trim();
+
+        // Track org+date combinations in sheet
+        const orgDateKey = `${normalizedOrg.toLowerCase()}|${row.desiredEventDate || 'no-date'}`;
+        sheetOrgDateCounts.set(orgDateKey, (sheetOrgDateCounts.get(orgDateKey) || 0) + 1);
+
+        // Check if exists by EITHER hash format
+        const existingByHash = await db
+          .select({ id: eventRequests.id, externalId: eventRequests.externalId })
+          .from(eventRequests)
+          .where(
+            sql`${eventRequests.externalId} IN (${externalIdTrimmed || 'NONE'}, ${oldStyleHash}, ${newStyleHash})`
+          )
+          .limit(1);
+
+        // Also check by org + date + contact name (fallback)
+        const eventRequestData = this.sheetRowToEventRequest(row);
+        const desiredDate = eventRequestData.desiredEventDate;
+        const contactFirst = (eventRequestData.firstName || '').trim().toLowerCase();
+        const contactLast = (eventRequestData.lastName || '').trim().toLowerCase();
+        
+        let existingByOrgDate: any[] = [];
+        if (normalizedOrg && desiredDate && (contactFirst || contactLast)) {
+          existingByOrgDate = await db
+            .select({ id: eventRequests.id })
+            .from(eventRequests)
+            .where(
+              and(
+                sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrg.toLowerCase()}`,
+                eq(eventRequests.desiredEventDate, desiredDate),
+                sql`(LOWER(TRIM(${eventRequests.firstName})) = ${contactFirst || ''} OR LOWER(TRIM(${eventRequests.lastName})) = ${contactLast || ''})`
+              )
+            )
+            .limit(1);
+        }
+
+        const foundByHash = existingByHash && existingByHash.length > 0;
+        const foundByOrgDate = existingByOrgDate && existingByOrgDate.length > 0;
+
+        if (!foundByHash && !foundByOrgDate) {
+          missingEvents.push({
+            rowIndex: row.rowIndex || 0,
+            organizationName: normalizedOrg,
+            contactName: normalizedName,
+            email: normalizedEmail,
+            desiredEventDate: row.desiredEventDate || 'no-date',
+            submittedOn: normalizedSubmittedOn,
+            oldHash: oldStyleHash,
+            newHash: newStyleHash,
+            reason: 'Not found by hash or org+date+contact matching'
+          });
+        }
+      }
+
+      // Find duplicates in sheet
+      const duplicatesInSheet = Array.from(sheetOrgDateCounts.entries())
+        .filter(([_, count]) => count > 1)
+        .map(([key, count]) => {
+          const [org, date] = key.split('|');
+          return { organizationName: org, desiredEventDate: date, count };
+        });
+
+      return {
+        success: true,
+        sheetRowCount: sheetRows.length,
+        databaseCount,
+        missingEvents,
+        duplicatesInSheet,
+      };
+    } catch (error) {
+      logger.error('Error finding missing events:', error);
+      throw error;
+    }
+  }
 }
 
 /**
