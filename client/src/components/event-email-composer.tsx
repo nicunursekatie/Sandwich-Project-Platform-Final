@@ -74,6 +74,17 @@ interface EmailTemplate {
   defaultAttachments: string[];
 }
 
+interface EmailTemplateSection {
+  id: number;
+  templateType: string;
+  sectionKey: string;
+  sectionLabel: string;
+  defaultContent: string;
+  currentContent: string | null;
+  description: string | null;
+  placeholderHints: string | null;
+}
+
 // Quick start options for subject line
 const SUBJECT_SUGGESTIONS = [
   'Your Sandwich-Making Event Toolkit + Next Steps',
@@ -134,6 +145,27 @@ export function EventEmailComposer({
     enabled: isOpen, // Only fetch when dialog is open
   });
 
+  // Fetch customizable email template sections
+  const { data: templateSections } = useQuery<EmailTemplateSection[]>({
+    queryKey: ['/api/email-templates/sections', 'follow_up_email'],
+    enabled: isOpen,
+  });
+
+  // Helper to get section content (uses currentContent if set, otherwise defaultContent)
+  const getSectionContent = (sectionKey: string, fallback: string = ''): string => {
+    if (!templateSections) return fallback;
+    const section = templateSections.find(s => s.sectionKey === sectionKey);
+    if (!section) return fallback;
+    return section.currentContent ?? section.defaultContent;
+  };
+
+  // Helper to substitute placeholders in template text
+  const substitutePlaceholders = (text: string, eventReq: EventRequest): string => {
+    return text
+      .replace(/\{\{firstName\}\}/g, eventReq.firstName || '')
+      .replace(/\{\{organizationName\}\}/g, eventReq.organizationName || '');
+  };
+
   // Check if current content has been manually edited
   const isContentManuallyEdited = () => {
     // If we don't have a last generated content, assume it's manual
@@ -190,22 +222,37 @@ export function EventEmailComposer({
 
     // Generate plain text email if user selected plaintext format
     if (activeEmailFormat === 'plaintext') {
-      let plainTextContent = `Hi ${eventRequest.firstName},
+      // Get customizable sections for plain text with fallbacks
+      const plainGreeting = substitutePlaceholders(
+        getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+        eventRequest
+      );
+      const plainIntro = substitutePlaceholders(
+        getSectionContent('intro', "Thank you for your interest in hosting a sandwich-making event with The Sandwich Project!"),
+        eventRequest
+      );
+      const plainCta = substitutePlaceholders(
+        getSectionContent('cta_subtitle', "To get started, please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days."),
+        eventRequest
+      );
 
-Thank you for your interest in hosting a sandwich-making event with The Sandwich Project!
+      let plainTextContent = `${plainGreeting}
+
+${plainIntro}
 
 `;
 
-      if (includeScheduling) {
-        plainTextContent += `To get started, please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days.
-
-`;
-      } else if (requestPhone) {
-        plainTextContent += `I'd love to discuss your event further. Please let me know a good time for a phone call, and I'll give you a ring.
+      if (includeScheduling || requestPhone) {
+        plainTextContent += `${plainCta}
 
 `;
       } else {
-        plainTextContent += `I'd love to discuss your event and answer any questions you may have.
+        // Non-scheduling, non-phone path - use a general interest message
+        const generalCta = substitutePlaceholders(
+          getSectionContent('cta_subtitle', "I'd love to discuss your event and answer any questions you may have."),
+          eventRequest
+        );
+        plainTextContent += `${generalCta}
 
 `;
       }
@@ -265,11 +312,23 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     }
 
     // Plain text template for phone request (only when emailFormat is plaintext)
-    const schedulingCallText = `Once you have reviewed everything, we would love to connect! Please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days.`;
+    // Get customizable sections for plain text with fallbacks
+    const plainGreeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const plainIntro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with an inventory calculator and food safety tips."),
+      eventRequest
+    );
+    const schedulingCallText = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Once you have reviewed everything, we would love to connect! Please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days."),
+      eventRequest
+    );
 
-    const template = `Hi ${eventRequest.firstName},
+    const template = `${plainGreeting}
 
-Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with an inventory calculator and food safety tips.
+${plainIntro}
 
 
 **Event Scheduling**
@@ -322,6 +381,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out! We're excited to help you plan a sandwich-making event."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -344,8 +421,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 20px 0;">Thank you for reaching out! We're excited to help you plan a sandwich-making event.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 20px 0;">${intro}</p>
 
                             <!-- TL;DR Quick Start Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 30px 0;">
@@ -365,8 +442,8 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
-                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
-                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!</p>
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">${ctaText}</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">${ctaSubtitle}</p>
                                         <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
@@ -478,6 +555,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out! We're excited to help you plan a sandwich-making event."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -500,8 +595,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 20px 0;">Thank you for reaching out! We're excited to help you plan a sandwich-making event.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 20px 0;">${intro}</p>
 
                             <!-- TL;DR Quick Start Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 30px 0;">
@@ -521,8 +616,8 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
-                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
-                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!</p>
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">${ctaText}</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">${ctaSubtitle}</p>
                                         <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We look forward to scheduling your planning call soon.</p>
                                     </td>
                                 </tr>
@@ -633,6 +728,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -655,8 +768,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">${intro}</p>
 
                             <!-- CTA Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -727,8 +840,8 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
-                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
-                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!</p>
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">${ctaText}</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">${ctaSubtitle}</p>
                                         <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
@@ -763,6 +876,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -785,8 +916,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">${intro}</p>
 
                             <!-- CTA Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -882,6 +1013,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out! We're excited to help you plan a sandwich-making event."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -904,8 +1053,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 20px 0;">Thank you for reaching out! We're excited to help you plan a sandwich-making event.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 20px 0;">${intro}</p>
 
                             <!-- TL;DR Quick Start Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 30px 0;">
@@ -925,8 +1074,8 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
-                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📞 Next Step: Share Your Phone Number</p>
-                                        <p style="margin: 0 0 15px 0; font-size: 16px;">Reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!</p>
+                                        <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">${ctaText}</p>
+                                        <p style="margin: 0 0 15px 0; font-size: 16px;">${ctaSubtitle}</p>
                                         <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We'll reach out within 1-2 business days.</p>
                                     </td>
                                 </tr>
@@ -1037,6 +1186,24 @@ ${userEmail}`;
     userEmail: string,
     userPhone: string
   ) => {
+    // Get customizable section content with fallbacks
+    const greeting = substitutePlaceholders(
+      getSectionContent('greeting', `Hi ${eventRequest.firstName},`),
+      eventRequest
+    );
+    const intro = substitutePlaceholders(
+      getSectionContent('intro', "Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources."),
+      eventRequest
+    );
+    const ctaText = substitutePlaceholders(
+      getSectionContent('call_to_action', '📞 Next Step: Share Your Phone Number'),
+      eventRequest
+    );
+    const ctaSubtitle = substitutePlaceholders(
+      getSectionContent('cta_subtitle', "Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      eventRequest
+    );
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1059,8 +1226,8 @@ ${userEmail}`;
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
-                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">${greeting}</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">${intro}</p>
 
                             <!-- CTA Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
