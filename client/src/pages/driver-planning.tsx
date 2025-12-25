@@ -400,7 +400,8 @@ interface FocusedMapItem {
 interface DrivingRoute {
   coordinates: [number, number][];
   distance: number; // in meters
-  duration: number; // in seconds
+  duration: number; // in seconds (without traffic)
+  durationInTraffic: number | null; // in seconds (with traffic, if available)
   fromEvent: { lat: number; lng: number };
   toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver'; id: number | string };
 }
@@ -430,12 +431,14 @@ interface FullTripRoute {
     coordinates: [number, number][];
     distance: number;
     duration: number;
+    durationInTraffic: number | null;
   };
   // Leg 2: Event to destination
   leg2: {
     coordinates: [number, number][];
     distance: number;
     duration: number;
+    durationInTraffic: number | null;
   };
   // For map display
   driverLocation: { lat: number; lng: number };
@@ -443,33 +446,38 @@ interface FullTripRoute {
   destinationLocation: { lat: number; lng: number };
 }
 
-// Fetch driving route from OSRM (free, no API key needed)
+// Fetch driving route with traffic data from server API (uses Google Maps Directions API)
 async function fetchDrivingRoute(
   fromLat: number,
   fromLng: number,
   toLat: number,
   toLng: number,
   signal?: AbortSignal
-): Promise<{ coordinates: [number, number][]; distance: number; duration: number } | null> {
+): Promise<{ coordinates: [number, number][]; distance: number; duration: number; durationInTraffic: number | null } | null> {
   try {
-    // OSRM demo server - for production, consider self-hosting or using a paid service
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
-    const response = await fetch(url, { signal });
+    // Call our server-side API which uses Google Maps Directions API (with traffic)
+    // Falls back to OSRM if Google API key is not configured
+    const response = await fetch('/api/directions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: { lat: fromLat, lng: fromLng },
+        destination: { lat: toLat, lng: toLng },
+        departureTime: 'now', // Use real-time traffic
+      }),
+      signal,
+    });
+
     if (!response.ok) return null;
 
     const data = await response.json();
-    if (data.code !== 'Ok' || !data.routes?.[0]) return null;
-
-    const route = data.routes[0];
-    // OSRM returns coordinates as [lng, lat], we need [lat, lng] for Leaflet
-    const coordinates: [number, number][] = route.geometry.coordinates.map(
-      (coord: [number, number]) => [coord[1], coord[0]]
-    );
+    if (!data.coordinates || data.coordinates.length === 0) return null;
 
     return {
-      coordinates,
-      distance: route.distance,
-      duration: route.duration,
+      coordinates: data.coordinates,
+      distance: data.distance,
+      duration: data.duration,
+      durationInTraffic: data.durationInTraffic,
     };
   } catch (error) {
     // Don't log abort errors - they're expected when cancelling requests
@@ -479,6 +487,27 @@ async function fetchDrivingRoute(
     console.error('Failed to fetch driving route:', error);
     return null;
   }
+}
+
+// Helper to format duration with traffic info
+function formatDuration(duration: number, durationInTraffic: number | null): { text: string; hasTraffic: boolean; trafficDelay: number | null } {
+  const baseMinutes = Math.round(duration / 60);
+
+  if (durationInTraffic !== null && durationInTraffic > duration) {
+    const trafficMinutes = Math.round(durationInTraffic / 60);
+    const delayMinutes = trafficMinutes - baseMinutes;
+    return {
+      text: `${trafficMinutes}`,
+      hasTraffic: true,
+      trafficDelay: delayMinutes,
+    };
+  }
+
+  return {
+    text: `${baseMinutes}`,
+    hasTraffic: false,
+    trafficDelay: null,
+  };
 }
 
 // Component to center map on selected event or focused item
@@ -716,6 +745,7 @@ export default function DriverPlanningDashboard() {
           coordinates: routeData.coordinates,
           distance: routeData.distance,
           duration: routeData.duration,
+          durationInTraffic: routeData.durationInTraffic,
           fromEvent: {
             lat: parseFloat(selectedEvent.latitude),
             lng: parseFloat(selectedEvent.longitude),
@@ -798,11 +828,13 @@ export default function DriverPlanningDashboard() {
               coordinates: leg1.coordinates,
               distance: leg1.distance,
               duration: leg1.duration,
+              durationInTraffic: leg1.durationInTraffic,
             },
             leg2: {
               coordinates: leg2.coordinates,
               distance: leg2.distance,
               duration: leg2.duration,
+              durationInTraffic: leg2.durationInTraffic,
             },
             driverLocation: {
               lat: parseFloat(selectedDriver.latitude),
@@ -2239,10 +2271,22 @@ export default function DriverPlanningDashboard() {
                   </div>
                   <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
                     <Clock className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-gray-700">~{Math.round(fullTripRoute.leg1.duration / 60)} min</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {(() => {
+                        const dur = formatDuration(fullTripRoute.leg1.duration, fullTripRoute.leg1.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="flex items-center gap-1">
+                            {dur.text} min
+                            <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                   </div>
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1 italic">Estimate from driver's home</div>
+                <div className="text-[10px] text-gray-400 mt-1 italic">
+                  {fullTripRoute.leg1.durationInTraffic ? 'Live traffic estimate from driver\'s home' : 'Estimate from driver\'s home'}
+                </div>
               </div>
 
               {/* Leg 2: Event to Destination */}
@@ -2260,7 +2304,17 @@ export default function DriverPlanningDashboard() {
                   </div>
                   <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
                     <Clock className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">~{Math.round(fullTripRoute.leg2.duration / 60)} min</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {(() => {
+                        const dur = formatDuration(fullTripRoute.leg2.duration, fullTripRoute.leg2.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="flex items-center gap-1">
+                            {dur.text} min
+                            <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2270,9 +2324,22 @@ export default function DriverPlanningDashboard() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Total trip:</span>
                   <span className="font-semibold text-gray-800">
-                    {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi, ~{Math.round((fullTripRoute.leg1.duration + fullTripRoute.leg2.duration) / 60)} min
+                    {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi,{' '}
+                    {(() => {
+                      const totalDuration = fullTripRoute.leg1.duration + fullTripRoute.leg2.duration;
+                      const totalTrafficDuration = (fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg1.duration) +
+                                                   (fullTripRoute.leg2.durationInTraffic || fullTripRoute.leg2.duration);
+                      const hasTraffic = fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic;
+                      if (hasTraffic && totalTrafficDuration > totalDuration) {
+                        return `${Math.round(totalTrafficDuration / 60)} min`;
+                      }
+                      return `~${Math.round(totalDuration / 60)} min`;
+                    })()}
                   </span>
                 </div>
+                {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
+                  <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes live traffic</div>
+                )}
               </div>
 
               {isLoadingFullTrip && (
@@ -2392,11 +2459,26 @@ export default function DriverPlanningDashboard() {
                   <div className="flex items-center gap-2 text-xs text-blue-700 mb-1">
                     <Navigation className="w-3.5 h-3.5" />
                     <span className="font-medium">Route to {focusedItem.name}</span>
+                    {drivingRoute.durationInTraffic && (
+                      <span className="text-[9px] text-green-600 ml-auto">✓ Live traffic</span>
+                    )}
                   </div>
                   <div className="flex gap-2 text-sm">
                     <span className="font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} mi</span>
                     <span className="text-gray-400">·</span>
-                    <span className="font-medium text-gray-800">~{Math.round(drivingRoute.duration / 60)} min</span>
+                    <span className="font-medium text-gray-800">
+                      {(() => {
+                        const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="flex items-center gap-1">
+                            {dur.text} min
+                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                              <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                            )}
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                   </div>
                   <button
                     onClick={() => {
@@ -2474,8 +2556,23 @@ export default function DriverPlanningDashboard() {
                 </div>
                 <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
                   <Clock className="w-5 h-5 text-blue-600" />
-                  <span className="text-base font-medium text-gray-800">{Math.round(drivingRoute.duration / 60)} min drive</span>
+                  <span className="text-base font-medium text-gray-800">
+                    {(() => {
+                      const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                      return dur.hasTraffic ? (
+                        <span className="flex items-center gap-1">
+                          {dur.text} min drive
+                          {dur.trafficDelay && dur.trafficDelay > 0 && (
+                            <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
+                          )}
+                        </span>
+                      ) : `${dur.text} min drive`;
+                    })()}
+                  </span>
                 </div>
+                {drivingRoute.durationInTraffic && (
+                  <div className="text-xs text-green-600 text-center">✓ Includes live traffic data</div>
+                )}
               </div>
               {isLoadingRoute && (
                 <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">

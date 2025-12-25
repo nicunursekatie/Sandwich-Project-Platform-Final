@@ -16,6 +16,7 @@ import eventRequestsRouter from './event-requests';
 import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
 import eventMapRouter from './event-map';
+import directionsRouter from './directions';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
@@ -514,6 +515,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventMapRouter
   );
   router.use('/api/event-map', createErrorHandler('event-map'));
+
+  // Directions routes - Google Maps Directions API with traffic data
+  router.use(
+    '/api/directions',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    directionsRouter
+  );
+  router.use('/api/directions', createErrorHandler('directions'));
 
   // Expenses routes - expense and receipt tracking
   router.use(
