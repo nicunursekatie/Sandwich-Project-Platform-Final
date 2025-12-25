@@ -4235,3 +4235,40 @@ export const updateOrganizationEngagementScoreSchema = createInsertSchema(organi
 export type OrganizationEngagementScore = typeof organizationEngagementScores.$inferSelect;
 export type InsertOrganizationEngagementScore = z.infer<typeof insertOrganizationEngagementScoreSchema>;
 export type UpdateOrganizationEngagementScore = z.infer<typeof updateOrganizationEngagementScoreSchema>;
+
+// Email Template Sections - Customizable text sections for HTML email templates
+// Allows users to personalize key text areas while keeping HTML structure intact
+export const emailTemplateSections = pgTable('email_template_sections', {
+  id: serial('id').primaryKey(),
+  templateType: varchar('template_type').notNull(), // 'follow_up_email', 'toolkit_email', 'event_reminder', etc.
+  sectionKey: varchar('section_key').notNull(), // 'greeting', 'intro', 'contact_instructions', 'closing', etc.
+  sectionLabel: varchar('section_label').notNull(), // Human-readable label for the UI
+  defaultContent: text('default_content').notNull(), // Default text content
+  currentContent: text('current_content'), // User-customized content (null = use default)
+  description: text('description'), // Help text explaining what this section is for
+  placeholderHints: text('placeholder_hints'), // Example: "Available placeholders: {{firstName}}, {{organizationName}}"
+  lastUpdatedBy: varchar('last_updated_by'),
+  lastUpdatedAt: timestamp('last_updated_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_email_template_type').on(table.templateType),
+  uniqueIndex('idx_email_template_section_unique').on(table.templateType, table.sectionKey),
+]);
+
+export const insertEmailTemplateSectionSchema = createInsertSchema(emailTemplateSections).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateEmailTemplateSectionSchema = createInsertSchema(emailTemplateSections)
+  .omit({
+    id: true,
+    templateType: true,
+    sectionKey: true,
+    createdAt: true,
+  })
+  .partial();
+
+export type EmailTemplateSection = typeof emailTemplateSections.$inferSelect;
+export type InsertEmailTemplateSection = z.infer<typeof insertEmailTemplateSectionSchema>;
+export type UpdateEmailTemplateSection = z.infer<typeof updateEmailTemplateSectionSchema>;
