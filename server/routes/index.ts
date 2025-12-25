@@ -81,6 +81,7 @@ import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
 import photoScannerRouter from './photo-scanner';
+import { createEmailTemplatesRouter } from './email-templates';
 
 // Import centralized middleware
 import {
@@ -560,6 +561,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     aiChatRouter
   );
   router.use('/api/ai-chat', createErrorHandler('ai-chat'));
+
+  // Email Templates routes - customizable email template sections
+  const emailTemplatesRouter = createEmailTemplatesRouter();
+  router.use(
+    '/api/email-templates',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    emailTemplatesRouter
+  );
+  router.use('/api/email-templates', createErrorHandler('email-templates'));
 
   // Group Engagement routes - AI-powered organization engagement insights
   const groupEngagementRouter = createGroupEngagementRoutes({

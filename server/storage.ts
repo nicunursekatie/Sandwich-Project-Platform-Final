@@ -124,6 +124,9 @@ import {
   type CompiledAgenda,
   type UserActivityLog,
   type InsertUserActivityLog,
+  type EmailTemplateSection,
+  type InsertEmailTemplateSection,
+  type UpdateEmailTemplateSection,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -749,6 +752,14 @@ export interface IStorage {
   // Search Analytics (SmartSearch usage tracking for ML improvements)
   logSearchAnalytics(data: InsertSearchAnalytics): Promise<void>;
   getSearchAnalytics(options?: { limit?: number; userId?: string }): Promise<SearchAnalytics[]>;
+
+  // Email Template Sections
+  getEmailTemplateSections(templateType?: string): Promise<EmailTemplateSection[]>;
+  getEmailTemplateSection(templateType: string, sectionKey: string): Promise<EmailTemplateSection | undefined>;
+  getEmailTemplateSectionById(id: number): Promise<EmailTemplateSection | undefined>;
+  createEmailTemplateSection(data: InsertEmailTemplateSection): Promise<EmailTemplateSection>;
+  updateEmailTemplateSection(id: number, data: UpdateEmailTemplateSection): Promise<EmailTemplateSection | undefined>;
+  resetEmailTemplateSectionToDefault(id: number): Promise<EmailTemplateSection | undefined>;
 }
 
 export class MemStorage implements IStorage {

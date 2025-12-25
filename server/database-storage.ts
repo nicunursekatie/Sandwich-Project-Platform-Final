@@ -53,6 +53,7 @@ import {
   availabilitySlots,
   dashboardDocuments,
   searchAnalytics,
+  emailTemplateSections,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -146,6 +147,9 @@ import {
   type InsertEventFieldLock,
   type EventEditRevision,
   type InsertEventEditRevision,
+  type EmailTemplateSection,
+  type InsertEmailTemplateSection,
+  type UpdateEmailTemplateSection,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -5001,5 +5005,74 @@ export class DatabaseStorage implements IStorage {
   ): Promise<boolean> {
     // Placeholder implementation
     return true;
+  }
+
+  // ==================== Email Template Sections ====================
+
+  async getEmailTemplateSections(templateType?: string): Promise<EmailTemplateSection[]> {
+    if (templateType) {
+      return await db
+        .select()
+        .from(emailTemplateSections)
+        .where(eq(emailTemplateSections.templateType, templateType))
+        .orderBy(asc(emailTemplateSections.sectionKey));
+    }
+    return await db
+      .select()
+      .from(emailTemplateSections)
+      .orderBy(asc(emailTemplateSections.templateType), asc(emailTemplateSections.sectionKey));
+  }
+
+  async getEmailTemplateSection(templateType: string, sectionKey: string): Promise<EmailTemplateSection | undefined> {
+    const [section] = await db
+      .select()
+      .from(emailTemplateSections)
+      .where(
+        and(
+          eq(emailTemplateSections.templateType, templateType),
+          eq(emailTemplateSections.sectionKey, sectionKey)
+        )
+      );
+    return section || undefined;
+  }
+
+  async getEmailTemplateSectionById(id: number): Promise<EmailTemplateSection | undefined> {
+    const [section] = await db
+      .select()
+      .from(emailTemplateSections)
+      .where(eq(emailTemplateSections.id, id));
+    return section || undefined;
+  }
+
+  async createEmailTemplateSection(data: InsertEmailTemplateSection): Promise<EmailTemplateSection> {
+    const [section] = await db
+      .insert(emailTemplateSections)
+      .values(data)
+      .returning();
+    return section;
+  }
+
+  async updateEmailTemplateSection(id: number, data: UpdateEmailTemplateSection): Promise<EmailTemplateSection | undefined> {
+    await db
+      .update(emailTemplateSections)
+      .set({
+        ...data,
+        lastUpdatedAt: new Date(),
+      })
+      .where(eq(emailTemplateSections.id, id));
+    // Neon serverless pattern: explicit fetch after update
+    return await this.getEmailTemplateSectionById(id);
+  }
+
+  async resetEmailTemplateSectionToDefault(id: number): Promise<EmailTemplateSection | undefined> {
+    await db
+      .update(emailTemplateSections)
+      .set({
+        currentContent: null,
+        lastUpdatedAt: new Date(),
+      })
+      .where(eq(emailTemplateSections.id, id));
+    // Neon serverless pattern: explicit fetch after update
+    return await this.getEmailTemplateSectionById(id);
   }
 }
