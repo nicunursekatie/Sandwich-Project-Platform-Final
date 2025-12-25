@@ -447,11 +447,13 @@ interface FullTripRoute {
 }
 
 // Fetch driving route with traffic data from server API (uses Google Maps Directions API)
+// departureTime can be 'now', an ISO timestamp, or undefined (defaults to 'now')
 async function fetchDrivingRoute(
   fromLat: number,
   fromLng: number,
   toLat: number,
   toLng: number,
+  departureTime?: string,
   signal?: AbortSignal
 ): Promise<{ coordinates: [number, number][]; distance: number; duration: number; durationInTraffic: number | null } | null> {
   try {
@@ -463,7 +465,7 @@ async function fetchDrivingRoute(
       body: JSON.stringify({
         origin: { lat: fromLat, lng: fromLng },
         destination: { lat: toLat, lng: toLng },
-        departureTime: 'now', // Use real-time traffic
+        departureTime: departureTime || 'now', // Use predictive traffic for future events
       }),
       signal,
     });
@@ -486,6 +488,45 @@ async function fetchDrivingRoute(
     }
     console.error('Failed to fetch driving route:', error);
     return null;
+  }
+}
+
+// Helper to calculate the driver's departure time from event date and pickup time
+// This is used for predictive traffic based on when the driver would actually leave
+function getEventDepartureTime(event: EventMapData | null): string {
+  if (!event) return 'now';
+
+  // Use scheduled date, falling back to desired date
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  if (!eventDate) return 'now';
+
+  // Use pickup time if available, otherwise use event start time
+  const timeStr = event.pickupTime || event.eventStartTime;
+
+  try {
+    // Parse the date (YYYY-MM-DD format)
+    const [year, month, day] = eventDate.split('-').map(Number);
+
+    // If we have a time, use it; otherwise default to 8am (typical pickup time)
+    let hours = 8;
+    let minutes = 0;
+    if (timeStr) {
+      const timeParts = timeStr.split(':');
+      hours = parseInt(timeParts[0], 10) || 8;
+      minutes = parseInt(timeParts[1], 10) || 0;
+    }
+
+    // Create the departure date/time
+    const departureDate = new Date(year, month - 1, day, hours, minutes);
+
+    // If the date is in the past, use 'now' for current traffic
+    if (departureDate < new Date()) {
+      return 'now';
+    }
+
+    return departureDate.toISOString();
+  } catch {
+    return 'now';
   }
 }
 
@@ -727,11 +768,13 @@ export default function DriverPlanningDashboard() {
 
     setIsLoadingRoute(true);
     try {
+      const departureTime = getEventDepartureTime(selectedEvent);
       const routeData = await fetchDrivingRoute(
         parseFloat(selectedEvent.latitude),
         parseFloat(selectedEvent.longitude),
         parseFloat(item.latitude),
         parseFloat(item.longitude),
+        departureTime,
         abortController.signal
       );
 
@@ -792,6 +835,57 @@ export default function DriverPlanningDashboard() {
     setFullTripRoute(null);
   }, [selectedEvent?.id]);
 
+  // Fetch driver-to-event route when only driver is selected (no destination yet)
+  // This shows the route from driver's home to the event location
+  useEffect(() => {
+    if (!selectedDriver || selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+      // Don't fetch if: no driver, or destination is set (full trip will handle it), or no event coords
+      return;
+    }
+
+    const fetchDriverToEventRoute = async () => {
+      setIsLoadingRoute(true);
+      try {
+        const eventLat = parseFloat(selectedEvent.latitude!);
+        const eventLng = parseFloat(selectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(selectedEvent);
+
+        const routeData = await fetchDrivingRoute(
+          parseFloat(selectedDriver.latitude),
+          parseFloat(selectedDriver.longitude),
+          eventLat,
+          eventLng,
+          departureTime
+        );
+
+        if (routeData) {
+          setDrivingRoute({
+            coordinates: routeData.coordinates,
+            distance: routeData.distance,
+            duration: routeData.duration,
+            durationInTraffic: routeData.durationInTraffic,
+            fromEvent: {
+              lat: parseFloat(selectedDriver.latitude),
+              lng: parseFloat(selectedDriver.longitude),
+            },
+            toItem: {
+              lat: eventLat,
+              lng: eventLng,
+              type: 'driver',
+              id: selectedDriver.id,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch driver-to-event route:', error);
+      } finally {
+        setIsLoadingRoute(false);
+      }
+    };
+
+    fetchDriverToEventRoute();
+  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+
   // Fetch full trip route when both driver and destination are selected
   useEffect(() => {
     if (!selectedDriver || !selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
@@ -805,21 +899,25 @@ export default function DriverPlanningDashboard() {
         // We already checked these exist in the condition above
         const eventLat = parseFloat(selectedEvent.latitude!);
         const eventLng = parseFloat(selectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(selectedEvent);
 
-        // Fetch leg 1: Driver home -> Event
+        // Fetch leg 1: Driver home -> Event (using predictive traffic for event time)
         const leg1 = await fetchDrivingRoute(
           parseFloat(selectedDriver.latitude),
           parseFloat(selectedDriver.longitude),
           eventLat,
-          eventLng
+          eventLng,
+          departureTime
         );
 
-        // Fetch leg 2: Event -> Destination
+        // Fetch leg 2: Event -> Destination (after the event, so add ~1 hour to departure time)
+        // For simplicity, we use the same departure time - traffic patterns are similar
         const leg2 = await fetchDrivingRoute(
           eventLat,
           eventLng,
           parseFloat(selectedDestination.latitude),
-          parseFloat(selectedDestination.longitude)
+          parseFloat(selectedDestination.longitude),
+          departureTime
         );
 
         if (leg1 && leg2) {
@@ -2285,7 +2383,7 @@ export default function DriverPlanningDashboard() {
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-400 mt-1 italic">
-                  {fullTripRoute.leg1.durationInTraffic ? 'Live traffic estimate from driver\'s home' : 'Estimate from driver\'s home'}
+                  {fullTripRoute.leg1.durationInTraffic ? 'Traffic estimate for event time' : 'Estimate from driver\'s home'}
                 </div>
               </div>
 
@@ -2338,7 +2436,7 @@ export default function DriverPlanningDashboard() {
                   </span>
                 </div>
                 {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
-                  <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes live traffic</div>
+                  <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes traffic estimate</div>
                 )}
               </div>
 
@@ -2460,7 +2558,7 @@ export default function DriverPlanningDashboard() {
                     <Navigation className="w-3.5 h-3.5" />
                     <span className="font-medium">Route to {focusedItem.name}</span>
                     {drivingRoute.durationInTraffic && (
-                      <span className="text-[9px] text-green-600 ml-auto">✓ Live traffic</span>
+                      <span className="text-[9px] text-green-600 ml-auto">✓ Traffic</span>
                     )}
                   </div>
                   <div className="flex gap-2 text-sm">
@@ -2571,7 +2669,7 @@ export default function DriverPlanningDashboard() {
                   </span>
                 </div>
                 {drivingRoute.durationInTraffic && (
-                  <div className="text-xs text-green-600 text-center">✓ Includes live traffic data</div>
+                  <div className="text-xs text-green-600 text-center">✓ Includes traffic estimate</div>
                 )}
               </div>
               {isLoadingRoute && (

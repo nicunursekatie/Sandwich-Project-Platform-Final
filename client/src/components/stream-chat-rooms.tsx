@@ -257,6 +257,26 @@ export default function StreamChatRooms() {
   const [unreadCounts, setUnreadCounts] = useState<{ rooms: number; dms: number; groups: number }>({ rooms: 0, dms: 0, groups: 0 });
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Members dialog (for group chats / channels where preview truncates member list)
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [membersDialogTitle, setMembersDialogTitle] = useState<string>('Chat Members');
+  const [membersDialogUsers, setMembersDialogUsers] = useState<Array<{ id: string; name: string }>>([]);
+
+  const openMembersDialog = (channel: ChannelType) => {
+    const members = Object.values(channel.state?.members || {})
+      .map((m: any) => {
+        const id = String(m.user?.id || m.user_id || '');
+        const name = String(m.user?.name || m.user_id || m.user?.id || 'Unknown');
+        return { id, name };
+      })
+      .filter((m) => m.id && m.id !== streamUserId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    setMembersDialogUsers(members);
+    setMembersDialogTitle(String((channel.data as any)?.name || 'Chat Members'));
+    setShowMembersDialog(true);
+  };
+
   // Fetch all users for DM/group creation
   const { data: allUsers = [] } = useQuery({
     queryKey: ['/api/users'],
@@ -909,7 +929,38 @@ export default function StreamChatRooms() {
                               {(channel.data as any)?.name || `Group (${memberCount})`}
                             </span>
                             <span className="text-xs text-gray-500 truncate block" title={memberDisplay}>
-                              {memberDisplay || `${memberCount} members`}
+                              {memberNames.length > 0 ? (
+                                <>
+                                  {memberNames.join(', ')}
+                                  {additionalCount > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        openMembersDialog(channel);
+                                      }}
+                                      className="ml-1 text-[#007E8C] hover:underline font-medium"
+                                      aria-label={`View all ${memberCount} members`}
+                                    >
+                                      +{additionalCount} more
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    openMembersDialog(channel);
+                                  }}
+                                  className="text-[#007E8C] hover:underline font-medium"
+                                  aria-label={`View all ${memberCount} members`}
+                                >
+                                  {memberCount} members
+                                </button>
+                              )}
                             </span>
                           </div>
                           {unreadCount > 0 && (
@@ -933,6 +984,22 @@ export default function StreamChatRooms() {
             <Channel channel={activeChannel}>
               <Window>
                 <ChannelHeader />
+                {/* Members affordance: lets users see the full member list even when previews are truncated */}
+                <div className="px-4 py-2 border-b bg-white flex items-center justify-between">
+                  <div className="text-xs text-gray-600 truncate">
+                    Members hidden in preview? View the full list here.
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => openMembersDialog(activeChannel)}
+                  >
+                    <Users className="w-3.5 h-3.5 mr-1" />
+                    Members
+                  </Button>
+                </div>
                 <MessageList Message={CustomMessage} />
                 <MessageInput />
               </Window>
@@ -951,6 +1018,45 @@ export default function StreamChatRooms() {
         </div>
       </Chat>
     </div>
+
+    {/* Members Dialog */}
+    <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{membersDialogTitle}</DialogTitle>
+          <DialogDescription>
+            {membersDialogUsers.length} member{membersDialogUsers.length === 1 ? '' : 's'}
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[320px] pr-3">
+          <div className="space-y-2">
+            {membersDialogUsers.map((m) => {
+              const initials = m.name
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((p) => p[0])
+                .join('')
+                .toUpperCase();
+
+              return (
+                <div key={m.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C] text-xs">
+                      {initials || 'TM'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">{m.name}</div>
+                    <div className="text-xs text-gray-500 truncate">{m.id}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
 
     {/* New Direct Message Dialog */}
     <Dialog open={showNewMessageDialog} onOpenChange={setShowNewMessageDialog}>
