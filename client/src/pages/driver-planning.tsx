@@ -8,7 +8,7 @@ import {
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink,
-  Navigation, Home, Target
+  Navigation, Home, Target, User
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
