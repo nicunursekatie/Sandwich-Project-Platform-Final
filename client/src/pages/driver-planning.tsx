@@ -1463,10 +1463,18 @@ export default function DriverPlanningDashboard() {
   }, [selectedEvent, driverCandidates, activeDrivers, hostContacts]);
 
   // Filtered nearbyDrivers excluding already-assigned drivers (to avoid duplication in the UI)
+  // Also filter to only van-approved drivers when vanDriverNeeded is true
   const nearbyDrivers = useMemo(() => {
     const assignedIds = new Set(assignedDrivers.map(d => d.id));
-    return nearbyDriversAll.filter(({ driver }) => !assignedIds.has(driver.id));
-  }, [nearbyDriversAll, assignedDrivers]);
+    const vanNeeded = selectedEvent?.vanDriverNeeded;
+    return nearbyDriversAll.filter(({ driver }) => {
+      // Exclude already-assigned drivers
+      if (assignedIds.has(driver.id)) return false;
+      // If van driver needed, only show van-approved drivers
+      if (vanNeeded && !driver.vanApproved) return false;
+      return true;
+    });
+  }, [nearbyDriversAll, assignedDrivers, selectedEvent?.vanDriverNeeded]);
 
   // Track whether we've auto-populated for the current event
   const lastAutoPopulatedEventId = useRef<number | null>(null);
@@ -3070,8 +3078,11 @@ export default function DriverPlanningDashboard() {
                 {/* Suggested Drivers - Other nearby options */}
                 {nearbyDrivers.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
                       {assignedDrivers.length > 0 ? 'Other nearby drivers' : 'Closest drivers'}
+                      {selectedEvent?.vanDriverNeeded && (
+                        <span className="text-[10px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Van Approved Only</span>
+                      )}
                     </h3>
                     {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
                       <Card
@@ -4316,9 +4327,12 @@ export default function DriverPlanningDashboard() {
 
                 {/* Nearby Drivers with Distance */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 flex-wrap">
                     <Truck className="w-4 h-4 text-[#007E8C]" />
                     {assignedDrivers.length > 0 ? 'Other Nearby Drivers' : 'Closest Drivers'} ({nearbyDrivers.length})
+                    {selectedEvent?.vanDriverNeeded && (
+                      <span className="text-[10px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Van Approved Only</span>
+                    )}
                   </h3>
                   {nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
@@ -4555,13 +4569,13 @@ export default function DriverPlanningDashboard() {
                 <div className="space-y-2">
                   <Label htmlFor="tspContact" className="text-sm">Assign TSP Contact</Label>
                   <Select
-                    value={editForm.tspContact}
+                    value={editForm.tspContact || 'none'}
                     onValueChange={(value) => {
                       setEditForm({
                         ...editForm,
-                        tspContact: value,
+                        tspContact: value === 'none' ? '' : value,
                         // Clear custom contact if selecting a user
-                        customTspContact: value && value !== 'custom' ? '' : editForm.customTspContact,
+                        customTspContact: value && value !== 'custom' && value !== 'none' ? '' : editForm.customTspContact,
                       });
                     }}
                   >
@@ -4569,7 +4583,7 @@ export default function DriverPlanningDashboard() {
                       <SelectValue placeholder="Select a team member..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value="none">
                         <span className="text-gray-500">No TSP contact assigned</span>
                       </SelectItem>
                       {usersBasic.map((u) => {
