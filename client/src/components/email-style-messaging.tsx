@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,10 @@ import {
   Calendar,
   Paperclip,
   X,
+  FileText,
+  Image,
+  File,
+  Loader2,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
@@ -51,7 +55,27 @@ interface EmailMessage {
   }[];
 }
 
-// Real-time messages from API
+// Attachment interface for uploads
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Helper to get icon for file type
+function getFileIcon(type: string) {
+  if (type.startsWith('image/')) return Image;
+  if (type === 'application/pdf') return FileText;
+  return File;
+}
 
 // Memoized utility functions
 const getInitials = (name: string) => {
@@ -244,6 +268,71 @@ export default function EmailStyleMessaging() {
   });
   const [replyData, setReplyData] = useState<EmailMessage | null>(null);
 
+  // Attachment state
+  const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file upload
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Check total attachments limit
+    if (attachments.length + files.length > 5) {
+      toast({
+        title: 'Too many attachments',
+        description: 'Maximum 5 attachments allowed per message',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        formData.append('files', file);
+      }
+
+      const response = await fetch('/api/messaging/attachments/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload files');
+      }
+
+      const result = await response.json();
+      setAttachments(prev => [...prev, ...result.attachments]);
+
+      toast({
+        description: `${result.attachments.length} file(s) uploaded`,
+      });
+    } catch (error) {
+      logger.error('Failed to upload attachments:', error);
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [attachments.length, toast]);
+
+  // Remove an attachment
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   // Get messages from API with error handling
   const {
@@ -285,11 +374,16 @@ export default function EmailStyleMessaging() {
       }
 
       // Format for messaging service API which handles internal storage + SendGrid gracefully
-      const messagingData = {
+      const messagingData: any = {
         recipientIds: [recipientUser.id],
         content: `Subject: ${messageData.subject}\n\n${messageData.content}`,
         contextType: 'direct', // This triggers email notifications
       };
+
+      // Include attachments if any
+      if (messageData.attachments && messageData.attachments.length > 0) {
+        messagingData.attachments = messageData.attachments;
+      }
 
       const response = await apiRequest(
         'POST',
@@ -310,6 +404,7 @@ export default function EmailStyleMessaging() {
       setIsComposing(false);
       setReplyData(null);
       setComposeData({ to: '', subject: '', content: '' });
+      setAttachments([]); // Clear attachments after sending
     },
     onError: (error) => {
       logger.error('Send message error:', error);
@@ -404,7 +499,10 @@ export default function EmailStyleMessaging() {
       return;
     }
 
-    sendMessageMutation.mutate(composeData);
+    sendMessageMutation.mutate({
+      ...composeData,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    });
   };
 
   const handleReply = (message: EmailMessage) => {
@@ -627,11 +725,66 @@ export default function EmailStyleMessaging() {
                 />
               </div>
 
+              {/* Attached files display */}
+              {attachments.length > 0 && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" />
+                    Attachments ({attachments.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {attachments.map((attachment, index) => {
+                      const FileIcon = getFileIcon(attachment.type);
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 bg-white rounded border"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-sm truncate">{attachment.name}</span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              ({formatFileSize(attachment.size)})
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 flex-shrink-0"
+                            onClick={() => removeAttachment(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    Attach
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || attachments.length >= 5}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Paperclip className="h-4 w-4 mr-2" />
+                    )}
+                    {isUploading ? 'Uploading...' : 'Attach'}
                   </Button>
                   <Button variant="outline" size="sm">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -646,6 +799,7 @@ export default function EmailStyleMessaging() {
                       setIsComposing(false);
                       setReplyData(null);
                       setComposeData({ to: '', subject: '', content: '' });
+                      setAttachments([]); // Clear attachments on cancel
                     }}
                   >
                     Cancel

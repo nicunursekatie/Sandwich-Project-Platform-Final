@@ -109,6 +109,10 @@ interface EventMapData {
   assignedDriverIds: string[] | null;
   assignedRecipientIds: string[] | null;
   tentativeDriverIds: string[] | null;
+  speakersNeeded?: number | null;
+  assignedSpeakerIds?: string[] | null;
+  volunteersNeeded?: number | null;
+  assignedVolunteerIds?: string[] | null;
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
@@ -1732,6 +1736,62 @@ export default function DriverPlanningDashboard() {
     return deduped.length > 0 ? deduped.join(', ') : null;
   };
 
+  const getAssignedSpeakersLabel = (event: EventMapData): string | null => {
+    const ids = parsePostgresArrayLike(event.assignedSpeakerIds as any);
+    if (ids.length === 0) return null;
+
+    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
+
+    const labels = ids
+      .map((raw) => {
+        const id = String(raw).trim();
+        if (!id) return '';
+
+        const custom = extractCustomName(id);
+        if (custom) return custom;
+
+        const userName = usersById.get(id);
+        if (userName) return userName;
+
+        const candidate = candidateById.get(id);
+        if (candidate) return candidate.name;
+
+        return id;
+      })
+      .filter(Boolean);
+
+    const deduped = Array.from(new Set(labels));
+    return deduped.length > 0 ? deduped.join(', ') : null;
+  };
+
+  const getAssignedVolunteersLabel = (event: EventMapData): string | null => {
+    const ids = parsePostgresArrayLike(event.assignedVolunteerIds as any);
+    if (ids.length === 0) return null;
+
+    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
+
+    const labels = ids
+      .map((raw) => {
+        const id = String(raw).trim();
+        if (!id) return '';
+
+        const custom = extractCustomName(id);
+        if (custom) return custom;
+
+        const userName = usersById.get(id);
+        if (userName) return userName;
+
+        const candidate = candidateById.get(id);
+        if (candidate) return candidate.name;
+
+        return id;
+      })
+      .filter(Boolean);
+
+    const deduped = Array.from(new Set(labels));
+    return deduped.length > 0 ? deduped.join(', ') : null;
+  };
+
   const getDesignatedRecipientLabel = (event: EventMapData): string | null => {
     const assigned = event.assignedRecipientIds || [];
     if (assigned.length === 0) return null;
@@ -1915,6 +1975,10 @@ export default function DriverPlanningDashboard() {
                 const regularDriversAssigned = event.assignedDriverIds?.length || 0;
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
+                const speakersNeeded = event.speakersNeeded || 0;
+                const speakersAssigned = event.assignedSpeakerIds?.length || 0;
+                const volunteersNeeded = event.volunteersNeeded || 0;
+                const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
                 // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
                 const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || regularDriversAssigned > 0 || !!event.assignedVanDriverId;
 
@@ -2015,6 +2079,24 @@ export default function DriverPlanningDashboard() {
                             No driver requirement
                           </Badge>
                         )}
+                        {/* Speakers */}
+                        <Badge
+                          variant={speakersNeeded > 0 && speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                          title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
+                        >
+                          <Users className="w-3 h-3 mr-1" />
+                          {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded} spk` : (speakersAssigned > 0 ? `${speakersAssigned} spk` : '0 spk')}
+                        </Badge>
+                        {/* Volunteers */}
+                        <Badge
+                          variant={volunteersNeeded > 0 && volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                          title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
+                        >
+                          <User className="w-3 h-3 mr-1" />
+                          {volunteersNeeded > 0 ? `${volunteersAssigned}/${volunteersNeeded} vol` : (volunteersAssigned > 0 ? `${volunteersAssigned} vol` : '0 vol')}
+                        </Badge>
                         {(!event.latitude || !event.longitude) && (
                           <Badge 
                             variant="outline" 
@@ -2037,6 +2119,18 @@ export default function DriverPlanningDashboard() {
                     {/* Expanded details on selected card */}
                     {isSelected && (
                       <div className="pt-2 border-t border-gray-100 space-y-1">
+                        <div className="text-[11px] text-gray-700">
+                          <span className="font-semibold">Staffing:</span>{' '}
+                          <span className="text-gray-600">
+                            Drivers {totalDriversAssigned}/{driversNeeded || 0}
+                            {event.vanDriverNeeded && !event.isDhlVan && ` • Van ${event.assignedVanDriverId ? 'assigned' : 'needed'}`}
+                            {event.isDhlVan && ' • DHL van'}
+                            {' • '}
+                            Speakers {speakersAssigned}/{speakersNeeded}
+                            {' • '}
+                            Volunteers {volunteersAssigned}/{volunteersNeeded}
+                          </span>
+                        </div>
                         {getTspContactLabel(event) && (
                           <div className="text-[11px] text-gray-700">
                             <span className="font-semibold">TSP Contact:</span>{' '}
@@ -2049,13 +2143,31 @@ export default function DriverPlanningDashboard() {
                             <span className="text-gray-600">{getAssignedDriversLabel(event)}</span>
                           </div>
                         )}
+                        {event.assignedVanDriverId && !event.isDhlVan && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Van driver:</span>{' '}
+                            <span className="text-gray-600">{getAssignedDriversLabel({ ...event, assignedDriverIds: [event.assignedVanDriverId] } as any)}</span>
+                          </div>
+                        )}
+                        {getAssignedSpeakersLabel(event) && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Speakers:</span>{' '}
+                            <span className="text-gray-600">{getAssignedSpeakersLabel(event)}</span>
+                          </div>
+                        )}
+                        {getAssignedVolunteersLabel(event) && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Volunteers:</span>{' '}
+                            <span className="text-gray-600">{getAssignedVolunteersLabel(event)}</span>
+                          </div>
+                        )}
                         {getDesignatedRecipientLabel(event) && (
                           <div className="text-[11px] text-gray-700">
                             <span className="font-semibold">Recipient:</span>{' '}
                             <span className="text-gray-600">{getDesignatedRecipientLabel(event)}</span>
                           </div>
                         )}
-                        {!getTspContactLabel(event) && !getAssignedDriversLabel(event) && !getDesignatedRecipientLabel(event) && (
+                        {!getTspContactLabel(event) && !getAssignedDriversLabel(event) && !getAssignedSpeakersLabel(event) && !getAssignedVolunteersLabel(event) && !getDesignatedRecipientLabel(event) && (
                           <div className="text-[11px] text-gray-500">
                             No assignments yet.
                           </div>
@@ -4185,6 +4297,10 @@ export default function DriverPlanningDashboard() {
                     const driversAssigned = event.assignedDriverIds?.length || 0;
                     const driversTentative = event.tentativeDriverIds?.length || 0;
                     const driversNeeded = event.driversNeeded || 0;
+                    const speakersNeeded = event.speakersNeeded || 0;
+                    const speakersAssigned = event.assignedSpeakerIds?.length || 0;
+                    const volunteersNeeded = event.volunteersNeeded || 0;
+                    const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
                     // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
                     const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
 
@@ -4249,6 +4365,22 @@ export default function DriverPlanningDashboard() {
                                 No driver requirement
                               </Badge>
                             )}
+                            <Badge
+                              variant={speakersNeeded > 0 && speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                              className="text-xs px-2 py-0.5"
+                              title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
+                            >
+                              <Users className="w-3.5 h-3.5 mr-1" />
+                              {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded} spk` : (speakersAssigned > 0 ? `${speakersAssigned} spk` : '0 spk')}
+                            </Badge>
+                            <Badge
+                              variant={volunteersNeeded > 0 && volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                              className="text-xs px-2 py-0.5"
+                              title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
+                            >
+                              <User className="w-3.5 h-3.5 mr-1" />
+                              {volunteersNeeded > 0 ? `${volunteersAssigned}/${volunteersNeeded} vol` : (volunteersAssigned > 0 ? `${volunteersAssigned} vol` : '0 vol')}
+                            </Badge>
                             {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                               <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                                 ~{event.estimatedSandwichCount} sandwiches
@@ -4343,6 +4475,14 @@ export default function DriverPlanningDashboard() {
                 {/* Assignments */}
                 <div className="bg-white rounded-lg border p-3 space-y-2">
                   <div className="text-sm font-semibold text-gray-700">Assignments</div>
+                  <div className="text-xs text-gray-600">
+                    <span className="font-medium">Staffing:</span>{' '}
+                    Drivers {(selectedEvent.assignedDriverIds?.length || 0) + (selectedEvent.assignedVanDriverId ? 1 : 0) + (selectedEvent.isDhlVan ? 1 : 0)}/{selectedEvent.driversNeeded || 0}
+                    {' • '}
+                    Speakers {selectedEvent.assignedSpeakerIds?.length || 0}/{selectedEvent.speakersNeeded || 0}
+                    {' • '}
+                    Volunteers {selectedEvent.assignedVolunteerIds?.length || 0}/{selectedEvent.volunteersNeeded || 0}
+                  </div>
                   {getTspContactLabel(selectedEvent) && (
                     <div className="text-sm text-gray-700">
                       <span className="font-medium">TSP Contact:</span>{' '}
@@ -4355,13 +4495,35 @@ export default function DriverPlanningDashboard() {
                       {getAssignedDriversLabel(selectedEvent)}
                     </div>
                   )}
+                  {selectedEvent.assignedVanDriverId && !selectedEvent.isDhlVan && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Van driver:</span>{' '}
+                      {getAssignedDriversLabel({ ...selectedEvent, assignedDriverIds: [selectedEvent.assignedVanDriverId] } as any)}
+                    </div>
+                  )}
+                  {getAssignedSpeakersLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Speakers:</span>{' '}
+                      {getAssignedSpeakersLabel(selectedEvent)}
+                    </div>
+                  )}
+                  {getAssignedVolunteersLabel(selectedEvent) && (
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Volunteers:</span>{' '}
+                      {getAssignedVolunteersLabel(selectedEvent)}
+                    </div>
+                  )}
                   {getDesignatedRecipientLabel(selectedEvent) && (
                     <div className="text-sm text-gray-700">
                       <span className="font-medium">Recipient:</span>{' '}
                       {getDesignatedRecipientLabel(selectedEvent)}
                     </div>
                   )}
-                  {!getTspContactLabel(selectedEvent) && !getAssignedDriversLabel(selectedEvent) && !getDesignatedRecipientLabel(selectedEvent) && (
+                  {!getTspContactLabel(selectedEvent) &&
+                    !getAssignedDriversLabel(selectedEvent) &&
+                    !getAssignedSpeakersLabel(selectedEvent) &&
+                    !getAssignedVolunteersLabel(selectedEvent) &&
+                    !getDesignatedRecipientLabel(selectedEvent) && (
                     <div className="text-sm text-gray-500">No assignments yet.</div>
                   )}
                 </div>
