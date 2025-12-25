@@ -131,6 +131,7 @@ function Router() {
   const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
   const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
+  const EmailTemplatesAdmin = lazy(() => import('./pages/admin/email-templates'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -452,6 +453,11 @@ function Router() {
         <Route path="/generate-service-hours">
           <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
             <GenerateServiceHours />
+          </Suspense>
+        </Route>
+        <Route path="/admin/email-templates">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <EmailTemplatesAdmin />
           </Suspense>
         </Route>
         <Route path="/historical-import">
