@@ -247,9 +247,9 @@ ${plainIntro}
 
 `;
       } else {
-        // Non-scheduling, non-phone path - use a general interest message
+        // Non-scheduling, non-phone path - use a distinct general CTA section
         const generalCta = substitutePlaceholders(
-          getSectionContent('cta_subtitle', "I'd love to discuss your event and answer any questions you may have."),
+          getSectionContent('cta_subtitle_general', "I'd love to discuss your event and answer any questions you may have."),
           eventRequest
         );
         plainTextContent += `${generalCta}
@@ -569,7 +569,7 @@ ${userEmail}`;
       eventRequest
     );
     const ctaSubtitle = substitutePlaceholders(
-      getSectionContent('cta_subtitle', "Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!"),
+      getSectionContent('cta_subtitle_general', "I'd love to discuss your event and answer any questions you may have."),
       eventRequest
     );
 
@@ -890,7 +890,7 @@ ${userEmail}`;
       eventRequest
     );
     const ctaSubtitle = substitutePlaceholders(
-      getSectionContent('cta_subtitle', "Please reply to this email with your phone number and a few times that work for you this week, and we'll give you a call!"),
+      getSectionContent('cta_subtitle_general', "I'd love to discuss your event and answer any questions you may have."),
       eventRequest
     );
 

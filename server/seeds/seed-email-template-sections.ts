@@ -40,6 +40,14 @@ export async function seedEmailTemplateSections() {
     },
     {
       templateType: 'follow_up_email',
+      sectionKey: 'cta_subtitle_general',
+      sectionLabel: 'CTA Body Text (General)',
+      defaultContent: "I'd love to discuss your event and answer any questions you may have.",
+      description: 'The CTA body text for general follow-up emails (non-scheduling, no phone request)',
+      placeholderHints: '{{firstName}} - Contact\'s first name, {{organizationName}} - Organization name'
+    },
+    {
+      templateType: 'follow_up_email',
       sectionKey: 'closing',
       sectionLabel: 'Email Closing',
       defaultContent: 'We look forward to working with you!\n\nWarmly,',
