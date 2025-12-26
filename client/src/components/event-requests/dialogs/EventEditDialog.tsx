@@ -378,6 +378,9 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const handleSave = () => {
     const updates: any = {};
+    console.log('[EventEditDialog] handleSave called');
+    console.log('[EventEditDialog] Current state - tspContact:', tspContact, ', customTspContact:', customTspContact);
+    console.log('[EventEditDialog] Original event - tspContact:', event?.tspContact, ', customTspContact:', event?.customTspContact);
 
     // Logistics
     if (driversNeeded !== (event?.driversNeeded?.toString() || '')) {
@@ -407,15 +410,37 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
     // TSP Contact
     const currentTspContact = event?.tspContact || '';
-    if (tspContact !== currentTspContact) {
+    const currentCustomTspContact = event?.customTspContact || '';
+    console.log('[EventEditDialog] TSP comparison - tspContact:', JSON.stringify(tspContact), 'currentTspContact:', JSON.stringify(currentTspContact), 'areEqual:', tspContact === currentTspContact);
+
+    const tspContactChanged = tspContact !== currentTspContact;
+    const customTspContactChanged = customTspContact !== currentCustomTspContact;
+
+    if (tspContactChanged) {
       if (tspContact === 'custom') {
         updates.tspContact = null;
+        console.log('[EventEditDialog] Setting updates.tspContact to null (custom mode)');
       } else {
         updates.tspContact = tspContact || null;
+        console.log('[EventEditDialog] Setting updates.tspContact to:', JSON.stringify(updates.tspContact));
       }
     }
-    if (customTspContact !== (event?.customTspContact || '')) {
+    if (customTspContactChanged) {
       updates.customTspContact = customTspContact || null;
+      console.log('[EventEditDialog] Setting updates.customTspContact to:', JSON.stringify(updates.customTspContact));
+    }
+
+    // Set tspContactAssignedDate when TSP contact is being assigned/changed
+    if (tspContactChanged || customTspContactChanged) {
+      const hasNewTspContact = (tspContact && tspContact !== 'custom' && tspContact !== 'none') || customTspContact;
+      if (hasNewTspContact) {
+        updates.tspContactAssignedDate = new Date().toISOString();
+        console.log('[EventEditDialog] Setting tspContactAssignedDate:', updates.tspContactAssignedDate);
+      } else {
+        // Clearing TSP contact - also clear the date
+        updates.tspContactAssignedDate = null;
+        console.log('[EventEditDialog] Clearing tspContactAssignedDate');
+      }
     }
 
     // Staffing assignments
@@ -445,6 +470,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     }
 
     if (Object.keys(updates).length === 0) {
+      console.log('[EventEditDialog] No changes detected, closing dialog');
       toast({
         description: 'No changes to save.',
       });
@@ -452,6 +478,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       return;
     }
 
+    console.log('[EventEditDialog] Final updates object:', JSON.stringify(updates, null, 2));
     updateMutation.mutate(updates);
   };
 

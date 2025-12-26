@@ -1420,7 +1420,8 @@ router.get(
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
         lastContactAttempt: event.lastContactAttempt, // NewRequestCard
-        hasHostedBefore: event.hasHostedBefore, // NewRequestCard
+        hasHostedBefore: event.previouslyHosted === 'yes', // Computed from previouslyHosted column (NewRequestCard)
+        previouslyHosted: event.previouslyHosted, // Raw value: 'yes', 'no', or 'i_dont_know'
 
         // ========== NOTES (ScheduledCard, ScheduledCardEnhanced) ==========
         planningNotes: event.planningNotes,

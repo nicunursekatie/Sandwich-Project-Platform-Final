@@ -2146,6 +2146,7 @@ export const eventRequests = pgTable(
     assignedSpeakerIds: text('assigned_speaker_ids').array(), // Array of assigned speaker IDs/names
     assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
+    volunteerDetails: jsonb('volunteer_details'), // Additional volunteer assignment details (mirrors driverDetails/speakerDetails)
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
     recipientAllocations: jsonb('recipient_allocations').$type<Array<{
       recipientId: string;
@@ -2576,6 +2577,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     selfTransport: z.boolean().nullable().optional(), // Organization transporting sandwiches themselves
     driverDetails: z.any().nullable().optional(), // JSONB field
     speakerDetails: z.any().nullable().optional(), // JSONB field
+    volunteerDetails: z.any().nullable().optional(), // JSONB field
     // Follow-up tracking fields
     scheduledCallDate: z
       .union([
