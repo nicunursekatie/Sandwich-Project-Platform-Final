@@ -22,6 +22,18 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 
 **Technical Implementations & Feature Specifications:**
 - **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement.
+  
+  **DEVELOPMENT vs PRODUCTION ENVIRONMENT SETUP:**
+  - The `APP_ENV` environment variable controls authentication mode:
+    - `APP_ENV=development`: Auth bypass enabled - auto-authenticates as dev admin user with full permissions
+    - `APP_ENV=production`: Full authentication required - no bypasses
+  - **Safety mechanism**: Production deployments (`REPLIT_DEPLOYMENT=1`) ALWAYS require full auth, even if `APP_ENV=development` is accidentally set
+  - **Additional safety**: `NODE_ENV=production` also forces full auth (catches non-Replit prod deployments)
+  - **How it works in Replit**:
+    - Workspace (dev): `APP_ENV=development` in development environment → auth bypass active
+    - Deployed app: `APP_ENV=production` in production environment + `REPLIT_DEPLOYMENT=1` → full auth required
+  - **Key files**: `server/middleware/auth.ts` (isDevMode function, DEV_ADMIN_USER, conditional middleware)
+  - **Startup log**: Server logs auth mode at startup: "DEV MODE ACTIVE" or "PRODUCTION MODE"
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
 - **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.

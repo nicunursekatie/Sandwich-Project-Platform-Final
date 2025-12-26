@@ -272,9 +272,11 @@ async function bootstrap() {
       
       // Log authentication mode for clarity
       const appEnv = process.env.APP_ENV || 'production';
+      const nodeEnv = process.env.NODE_ENV;
       const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
-      const authBypass = appEnv === 'development' && !isDeployment;
-      serverLogger.info(`🔐 Auth Mode: APP_ENV=${appEnv}, Deployment=${isDeployment ? 'YES' : 'NO'}`);
+      // Dev mode requires: APP_ENV=development AND NOT production NODE_ENV AND NOT in deployment
+      const authBypass = appEnv === 'development' && nodeEnv !== 'production' && !isDeployment;
+      serverLogger.info(`🔐 Auth Mode: APP_ENV=${appEnv}, NODE_ENV=${nodeEnv}, Deployment=${isDeployment ? 'YES' : 'NO'}`);
       if (authBypass) {
         serverLogger.info(`🔧 DEV MODE ACTIVE: Authentication bypass enabled (auto-login as dev admin)`);
       } else {

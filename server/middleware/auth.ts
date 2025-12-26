@@ -7,19 +7,26 @@ import { logger } from '../utils/production-safe-logger';
 /**
  * Environment detection for development vs production mode
  * 
- * Development mode is enabled when:
+ * Development mode is enabled when ALL of these are true:
  * - APP_ENV is explicitly set to 'development'
- * - AND we're NOT in a Replit deployment (REPLIT_DEPLOYMENT !== '1')
+ * - NODE_ENV is NOT 'production' (additional safety for non-Replit deployments)
+ * - NOT in a Replit deployment (REPLIT_DEPLOYMENT !== '1')
  * 
  * This ensures production deployments ALWAYS require full authentication,
  * even if someone accidentally sets APP_ENV=development in production.
  */
 export const isDevMode = (): boolean => {
   const appEnv = process.env.APP_ENV;
+  const nodeEnv = process.env.NODE_ENV;
   const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
   
   // NEVER allow dev mode in a Replit deployment
   if (isDeployment) {
+    return false;
+  }
+  
+  // NEVER allow dev mode if NODE_ENV is 'production' (catches non-Replit prod deployments)
+  if (nodeEnv === 'production') {
     return false;
   }
   
@@ -29,16 +36,28 @@ export const isDevMode = (): boolean => {
 /**
  * Development admin user for testing
  * This user has full admin permissions and is only used in development mode
+ * Includes all fields that routes might expect to avoid undefined errors
  */
 const DEV_ADMIN_USER = {
   id: 'dev-admin-user-id',
   email: 'dev@thesandwichproject.org',
   firstName: 'Dev',
   lastName: 'Admin',
+  displayName: 'Dev Admin',
   profileImageUrl: null,
   role: 'admin' as const,
   permissions: getDefaultPermissionsForRole('admin'),
   isActive: true,
+  // Additional fields that some routes may expect
+  metadata: {
+    status: 'active',
+  },
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date(),
+  lastLoginAt: new Date(),
+  phone: null,
+  canReceiveSms: false,
+  smsVerifiedAt: null,
 };
 
 /**
@@ -54,8 +73,12 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
     // Check if user is already authenticated (allow testing real auth flow)
     const existingUser = req.user || req.session?.user;
     if (!existingUser) {
-      // Auto-authenticate as dev admin
+      // Auto-authenticate as dev admin - set BOTH req.user AND req.session.user
+      // to ensure compatibility with all downstream code paths
       req.user = DEV_ADMIN_USER;
+      if (req.session) {
+        req.session.user = DEV_ADMIN_USER;
+      }
       logger.log('🔧 DEV MODE: Auto-authenticated as dev admin');
     } else {
       // User already authenticated, keep their session
@@ -139,9 +162,12 @@ export const requirePermission = (permission: string): RequestHandler => {
     try {
       // DEVELOPMENT MODE: Auto-grant all permissions
       if (isDevMode()) {
-        // Ensure dev admin user is set on request
+        // Ensure dev admin user is set on BOTH req.user and req.session.user
         if (!req.user) {
           req.user = DEV_ADMIN_USER;
+          if (req.session) {
+            req.session.user = DEV_ADMIN_USER;
+          }
         }
         logger.log(`🔧 DEV MODE: Auto-granted permission ${permission}`);
         return next();
@@ -248,9 +274,12 @@ export const requireOwnershipPermission = (
     try {
       // DEVELOPMENT MODE: Auto-grant all permissions
       if (isDevMode()) {
-        // Ensure dev admin user is set on request
+        // Ensure dev admin user is set on BOTH req.user and req.session.user
         if (!req.user) {
           req.user = DEV_ADMIN_USER;
+          if (req.session) {
+            req.session.user = DEV_ADMIN_USER;
+          }
         }
         logger.log(`🔧 DEV MODE: Auto-granted ownership permission ${allPermission}/${ownPermission}`);
         return next();
