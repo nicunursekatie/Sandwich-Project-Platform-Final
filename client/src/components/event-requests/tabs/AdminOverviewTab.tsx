@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, MapPin, ArrowUp, ArrowDown } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { formatDateShort } from '@/lib/date-utils';
 import { useEventRequestContext } from '../context/EventRequestContext';
 
 interface TspContactStats {
@@ -447,18 +447,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   {eventDate && (
                                     <div className="flex items-center gap-1 font-semibold text-base mb-1" style={{ color: '#236383' }}>
                                       <Calendar className="w-4 h-4" />
-                                      {(() => {
-                                        try {
-                                          // Handle both date strings and timestamps
-                                          const dateStr = typeof eventDate === 'string' && !eventDate.includes('T')
-                                            ? eventDate + 'T00:00:00'
-                                            : eventDate;
-                                          const date = new Date(dateStr);
-                                          return isNaN(date.getTime()) ? 'Invalid date' : format(date, 'MMM d, yyyy');
-                                        } catch (e) {
-                                          return 'Invalid date';
-                                        }
-                                      })()}
+                                      {formatDateShort(eventDate)}
                                     </div>
                                   )}
                                   <div className="font-medium text-base text-slate-900 truncate">
