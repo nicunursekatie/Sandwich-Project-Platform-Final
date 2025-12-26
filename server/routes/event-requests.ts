@@ -3792,6 +3792,17 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
           : assignedDriverIds && assignedDriverIds.length > 0,
     };
 
+    // Sync driverDetails JSONB with assignedDriverIds array (driverDetails is source of truth)
+    if (assignedDriverIds !== undefined) {
+      const existingDriverDetails = (existingEvent.driverDetails || {}) as Record<string, any>;
+      const newDriverDetails: Record<string, any> = {};
+      (assignedDriverIds || []).forEach((driverId: string) => {
+        // Preserve existing details for this driver, or create empty object
+        newDriverDetails[driverId] = existingDriverDetails[driverId] || {};
+      });
+      updateData.driverDetails = newDriverDetails;
+    }
+
     // Only include tentativeDriverIds if it was actually provided in the request
     if (tentativeDriverIds === undefined) {
       delete updateData.tentativeDriverIds;
