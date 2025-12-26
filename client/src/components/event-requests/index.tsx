@@ -234,6 +234,35 @@ const EventRequestsManagementContent: React.FC = () => {
     },
   });
 
+  // Postpone event mutation
+  const postponeEventMutation = useMutation({
+    mutationFn: async ({ eventId, data }: {
+      eventId: number;
+      data: {
+        postponementReason: string;
+        tentativeNewDate?: string;
+        postponementNotes?: string;
+      };
+    }) => {
+      return apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Event postponed',
+        description: 'The event has been marked as postponed.',
+      });
+      invalidateEventRequestQueries(queryClient);
+    },
+    onError: (error: any) => {
+      logger.error('Error postponing event:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to postpone event',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const { users, drivers, hostsWithContacts } = useEventQueries();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -392,34 +421,14 @@ const EventRequestsManagementContent: React.FC = () => {
     });
   };
 
-  // Handle postponement
-  const handlePostpone = async (eventId: number, data: {
+  // Handle postponement using standardized mutation pattern
+  const handlePostpone = (eventId: number, data: {
     postponementReason: string;
     tentativeNewDate?: string;
     postponementNotes?: string;
   }) => {
-    try {
-      trackButtonClick('postpone_event', 'event_requests');
-      
-      // Use apiRequest for proper mutation pattern
-      await apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
-      
-      // Invalidate query cache to refresh data
-      invalidateEventRequestQueries(queryClient);
-
-      toast({
-        title: 'Event postponed',
-        description: 'The event has been marked as postponed.',
-      });
-    } catch (error) {
-      logger.error('Error postponing event:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to postpone event',
-        variant: 'destructive',
-      });
-      throw error;
-    }
+    trackButtonClick('postpone_event', 'event_requests');
+    postponeEventMutation.mutate({ eventId, data });
   };
 
   // Handle floating button click to switch to scheduled + spreadsheet view

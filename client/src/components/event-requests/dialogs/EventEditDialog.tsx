@@ -43,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+import { getDriverIds, getSpeakerIds, getVolunteerIds } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface EventEditDialogProps {
@@ -342,9 +343,9 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       setTspContact(event.tspContact || '');
       setCustomTspContact(event.customTspContact || '');
       setVanDriverNeeded(event.vanDriverNeeded || false);
-      setAssignedDriverIds(parsePostgresArray(event.assignedDriverIds));
-      setAssignedSpeakerIds(Object.keys(event.speakerDetails || {}));
-      setAssignedVolunteerIds(parsePostgresArray(event.assignedVolunteerIds));
+      setAssignedDriverIds(getDriverIds(event));
+      setAssignedSpeakerIds(getSpeakerIds(event));
+      setAssignedVolunteerIds(getVolunteerIds(event));
       setAssignedVanDriverId(event.assignedVanDriverId || null);
     }
   }, [event]);
@@ -444,13 +445,20 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     }
 
     // Staffing assignments
-    const originalDriverIds = parsePostgresArray(event?.assignedDriverIds);
+    const originalDriverIds = event ? getDriverIds(event) : [];
     if (JSON.stringify(assignedDriverIds.sort()) !== JSON.stringify(originalDriverIds.sort())) {
       updates.assignedDriverIds = assignedDriverIds;
+      // Also update driverDetails JSONB to keep it in sync (source of truth)
+      const driverDetailsObj = (event?.driverDetails || {}) as Record<string, { name?: string }>;
+      const newDriverDetails: Record<string, { name?: string }> = {};
+      assignedDriverIds.forEach(id => {
+        newDriverDetails[id] = driverDetailsObj[id] || {};
+      });
+      updates.driverDetails = newDriverDetails;
     }
 
     const speakerDetailsObj = (event?.speakerDetails || {}) as Record<string, { name?: string }>;
-    const originalSpeakerIds = Object.keys(speakerDetailsObj);
+    const originalSpeakerIds = event ? getSpeakerIds(event) : [];
     if (JSON.stringify(assignedSpeakerIds.sort()) !== JSON.stringify(originalSpeakerIds.sort())) {
       // Build speakerDetails object
       const newSpeakerDetails: Record<string, { name?: string }> = {};
@@ -460,9 +468,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       updates.speakerDetails = newSpeakerDetails;
     }
 
-    const originalVolunteerIds = parsePostgresArray(event?.assignedVolunteerIds);
+    const originalVolunteerIds = event ? getVolunteerIds(event) : [];
     if (JSON.stringify(assignedVolunteerIds.sort()) !== JSON.stringify(originalVolunteerIds.sort())) {
       updates.assignedVolunteerIds = assignedVolunteerIds;
+      // Also update volunteerDetails JSONB to keep it in sync (source of truth)
+      const volunteerDetailsObj = (event?.volunteerDetails || {}) as Record<string, { name?: string }>;
+      const newVolunteerDetails: Record<string, { name?: string }> = {};
+      assignedVolunteerIds.forEach(id => {
+        newVolunteerDetails[id] = volunteerDetailsObj[id] || {};
+      });
+      updates.volunteerDetails = newVolunteerDetails;
     }
 
     if (assignedVanDriverId !== (event?.assignedVanDriverId || null)) {
