@@ -1203,6 +1203,23 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       </div>
                     )}
                   </div>
+                  {canEditTspContact && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={onEditTspContact}
+                          className="h-8 w-8 p-0 text-[#D68319] hover:bg-[#FBAD3F]/20"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit TSP contact assignment</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </div>
             )}
@@ -1371,8 +1388,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </Tooltip>
             )}
 
-            {/* TSP Contact Assignment - only show if not already assigned */}
-            {!(request.tspContact || request.customTspContact) && (
+            {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

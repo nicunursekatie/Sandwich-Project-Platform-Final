@@ -2778,8 +2778,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            {/* TSP Contact Assignment - only show if not already assigned */}
-            {!(request.tspContact || request.customTspContact) && (
+            {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

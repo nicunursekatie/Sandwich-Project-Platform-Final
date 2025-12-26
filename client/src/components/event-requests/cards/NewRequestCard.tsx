@@ -910,8 +910,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* Action Buttons */}
         <TooltipProvider>
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
-            {/* TSP Contact Assignment - only show if not already assigned */}
-            {!(request.tspContact || request.customTspContact) && (
+            {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

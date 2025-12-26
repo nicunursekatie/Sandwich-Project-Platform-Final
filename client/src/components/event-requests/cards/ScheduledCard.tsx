@@ -2401,7 +2401,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            {!(request.tspContact || request.customTspContact) && (
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
