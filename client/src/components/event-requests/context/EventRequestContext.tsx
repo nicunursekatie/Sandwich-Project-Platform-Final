@@ -145,12 +145,18 @@ interface EventRequestContextType {
   setEditingValue: (value: string) => void;
 
   // Inline sandwich editing states
-  inlineSandwichMode: 'total' | 'types';
-  setInlineSandwichMode: (mode: 'total' | 'types') => void;
+  inlineSandwichMode: 'total' | 'types' | 'range';
+  setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
   inlineTotalCount: number;
   setInlineTotalCount: (count: number) => void;
   inlineSandwichTypes: Array<{type: string, quantity: number}>;
   setInlineSandwichTypes: (types: Array<{type: string, quantity: number}>) => void;
+  inlineRangeMin: number;
+  setInlineRangeMin: (value: number) => void;
+  inlineRangeMax: number;
+  setInlineRangeMax: (value: number) => void;
+  inlineRangeType: string;
+  setInlineRangeType: (value: string) => void;
 
   // Modal sandwich editing states
   modalSandwichMode: 'total' | 'types';
@@ -630,7 +636,9 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     }
   }, [initialTab, initialEventId, eventRequests, hasHandledInitialEvent]);
 
-  const value: EventRequestContextType = {
+  // Memoize context value to prevent unnecessary re-renders of consumers.
+  // Setter functions from useState are guaranteed stable and excluded from dependencies.
+  const value: EventRequestContextType = useMemo(() => ({
     // Data
     eventRequests,
     isLoading,
@@ -799,7 +807,46 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     // Custom person
     customPersonData,
     setCustomPersonData,
-  };
+  }), [
+    // Query results
+    eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
+    // Computed values
+    requestsByStatus, statusCounts,
+    // View state
+    quickFilter, viewMode, activeTab, searchQuery, debouncedSearchQuery,
+    statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
+    // Pagination
+    currentPage, itemsPerPage,
+    // Selected/editing
+    selectedEventRequest, isEditing,
+    // Dialog visibility (19 booleans)
+    showEventDetails, showSchedulingDialog, showToolkitSentDialog, showScheduleCallDialog,
+    showOneDayFollowUpDialog, showOneMonthFollowUpDialog, showContactOrganizerDialog,
+    showCollectionLog, showAssignmentDialog, showTspContactAssignmentDialog,
+    showSandwichPlanningModal, showStaffingPlanningModal, showLogContactDialog,
+    showEditContactDialog, showAiDateSuggestionDialog, showAiIntakeAssistantDialog,
+    showPostponementDialog, showIntakeCallDialog, showNextActionDialog,
+    // Event references (13)
+    schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
+    contactEventRequest, tspContactEventRequest, logContactEventRequest,
+    editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
+    aiIntakeAssistantEventRequest, postponementEventRequest, intakeCallEventRequest,
+    nextActionEventRequest, nextActionMode,
+    // Assignment state (5)
+    assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId,
+    // Schedule call & follow-up (3)
+    scheduleCallDate, scheduleCallTime, followUpNotes,
+    // Inline editing (3)
+    editingScheduledId, editingField, editingValue,
+    // Sandwich editing (11)
+    inlineSandwichMode, inlineTotalCount, inlineSandwichTypes, inlineRangeMin,
+    inlineRangeMax, inlineRangeType, modalSandwichMode, modalTotalCount, modalSandwichTypes,
+    // Completed editing (2)
+    editingCompletedId, completedEdit,
+    // Custom person (1)
+    customPersonData,
+    // Note: All set* functions are excluded - useState setters are guaranteed stable
+  ]);
 
   return (
     <EventRequestContext.Provider value={value}>
