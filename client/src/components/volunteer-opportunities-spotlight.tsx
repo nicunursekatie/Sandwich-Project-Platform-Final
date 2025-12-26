@@ -3,6 +3,7 @@ import { Users, Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateShort } from '@/lib/date-utils';
+import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface VolunteerOpportunitiesSpotlightProps {
@@ -20,17 +21,17 @@ interface UnfilledNeeds {
 
 const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
   const speakersNeededCount = request.speakersNeeded ?? 0;
-  const speakersAssignedCount = Object.keys(request.speakerDetails || {}).length;
+  const speakersAssignedCount = getSpeakerCount(request);
   const needsSpeaker = speakersNeededCount > speakersAssignedCount;
   const speakersNeeded = Math.max(0, speakersNeededCount - speakersAssignedCount);
 
   const volunteersNeededCount = request.volunteersNeeded ?? 0;
-  const volunteersAssignedCount = request.assignedVolunteerIds?.length || 0;
+  const volunteersAssignedCount = getVolunteerCount(request);
   const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
   const volunteersNeeded = Math.max(0, volunteersNeededCount - volunteersAssignedCount);
 
   const driversNeededCount = request.driversNeeded ?? 0;
-  const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
+  const driversAssignedCount = getTotalDriverCount(request);
   const needsDriver = driversNeededCount > driversAssignedCount;
   const driversNeeded = Math.max(0, driversNeededCount - driversAssignedCount);
 
