@@ -8,7 +8,7 @@ import {
   ChevronRight, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink,
-  Navigation, Home, Target, User
+  Navigation, Home, Target, User, Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -2079,24 +2079,28 @@ export default function DriverPlanningDashboard() {
                             No driver requirement
                           </Badge>
                         )}
-                        {/* Speakers */}
-                        <Badge
-                          variant={speakersNeeded > 0 && speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
-                          className="text-xs"
-                          title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                        >
-                          <Users className="w-3 h-3 mr-1" />
-                          {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded} spk` : (speakersAssigned > 0 ? `${speakersAssigned} spk` : '0 spk')}
-                        </Badge>
-                        {/* Volunteers */}
-                        <Badge
-                          variant={volunteersNeeded > 0 && volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
-                          className="text-xs"
-                          title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
-                        >
-                          <User className="w-3 h-3 mr-1" />
-                          {volunteersNeeded > 0 ? `${volunteersAssigned}/${volunteersNeeded} vol` : (volunteersAssigned > 0 ? `${volunteersAssigned} vol` : '0 vol')}
-                        </Badge>
+                        {/* Speakers - only show if needed > 0 */}
+                        {speakersNeeded > 0 && (
+                          <Badge
+                            variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                            title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
+                          >
+                            <Megaphone className="w-3 h-3 mr-1" />
+                            {`${speakersAssigned}/${speakersNeeded} spk`}
+                          </Badge>
+                        )}
+                        {/* Volunteers - only show if needed > 0 */}
+                        {volunteersNeeded > 0 && (
+                          <Badge
+                            variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                            title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
+                          >
+                            <Users className="w-3 h-3 mr-1" />
+                            {`${volunteersAssigned}/${volunteersNeeded} vol`}
+                          </Badge>
+                        )}
                         {(!event.latitude || !event.longitude) && (
                           <Badge 
                             variant="outline" 
@@ -2125,10 +2129,8 @@ export default function DriverPlanningDashboard() {
                             Drivers {totalDriversAssigned}/{driversNeeded || 0}
                             {event.vanDriverNeeded && !event.isDhlVan && ` • Van ${event.assignedVanDriverId ? 'assigned' : 'needed'}`}
                             {event.isDhlVan && ' • DHL van'}
-                            {' • '}
-                            Speakers {speakersAssigned}/{speakersNeeded}
-                            {' • '}
-                            Volunteers {volunteersAssigned}/{volunteersNeeded}
+                            {speakersNeeded > 0 && ` • Speakers ${speakersAssigned}/${speakersNeeded}`}
+                            {volunteersNeeded > 0 && ` • Volunteers ${volunteersAssigned}/${volunteersNeeded}`}
                           </span>
                         </div>
                         {getTspContactLabel(event) && (
@@ -4365,22 +4367,28 @@ export default function DriverPlanningDashboard() {
                                 No driver requirement
                               </Badge>
                             )}
-                            <Badge
-                              variant={speakersNeeded > 0 && speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
-                              className="text-xs px-2 py-0.5"
-                              title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                            >
-                              <Users className="w-3.5 h-3.5 mr-1" />
-                              {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded} spk` : (speakersAssigned > 0 ? `${speakersAssigned} spk` : '0 spk')}
-                            </Badge>
-                            <Badge
-                              variant={volunteersNeeded > 0 && volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
-                              className="text-xs px-2 py-0.5"
-                              title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
-                            >
-                              <User className="w-3.5 h-3.5 mr-1" />
-                              {volunteersNeeded > 0 ? `${volunteersAssigned}/${volunteersNeeded} vol` : (volunteersAssigned > 0 ? `${volunteersAssigned} vol` : '0 vol')}
-                            </Badge>
+                            {/* Speakers - only show if needed > 0 */}
+                            {speakersNeeded > 0 && (
+                              <Badge
+                                variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                                className="text-xs px-2 py-0.5"
+                                title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
+                              >
+                                <Megaphone className="w-3.5 h-3.5 mr-1" />
+                                {`${speakersAssigned}/${speakersNeeded} spk`}
+                              </Badge>
+                            )}
+                            {/* Volunteers - only show if needed > 0 */}
+                            {volunteersNeeded > 0 && (
+                              <Badge
+                                variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                                className="text-xs px-2 py-0.5"
+                                title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
+                              >
+                                <Users className="w-3.5 h-3.5 mr-1" />
+                                {`${volunteersAssigned}/${volunteersNeeded} vol`}
+                              </Badge>
+                            )}
                             {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                               <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                                 ~{event.estimatedSandwichCount} sandwiches
@@ -4478,10 +4486,8 @@ export default function DriverPlanningDashboard() {
                   <div className="text-xs text-gray-600">
                     <span className="font-medium">Staffing:</span>{' '}
                     Drivers {(selectedEvent.assignedDriverIds?.length || 0) + (selectedEvent.assignedVanDriverId ? 1 : 0) + (selectedEvent.isDhlVan ? 1 : 0)}/{selectedEvent.driversNeeded || 0}
-                    {' • '}
-                    Speakers {selectedEvent.assignedSpeakerIds?.length || 0}/{selectedEvent.speakersNeeded || 0}
-                    {' • '}
-                    Volunteers {selectedEvent.assignedVolunteerIds?.length || 0}/{selectedEvent.volunteersNeeded || 0}
+                    {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${selectedEvent.assignedSpeakerIds?.length || 0}/${selectedEvent.speakersNeeded || 0}`}
+                    {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${selectedEvent.assignedVolunteerIds?.length || 0}/${selectedEvent.volunteersNeeded || 0}`}
                   </div>
                   {getTspContactLabel(selectedEvent) && (
                     <div className="text-sm text-gray-700">
