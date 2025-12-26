@@ -132,6 +132,81 @@ export const useEventFilters = () => {
       }
     }
 
+    // Check speakerDetails JSONB field (primary storage for speaker assignments)
+    if (request.speakerDetails) {
+      try {
+        const speakerDetails = typeof request.speakerDetails === 'string'
+          ? JSON.parse(request.speakerDetails)
+          : request.speakerDetails;
+        if (speakerDetails && typeof speakerDetails === 'object' && !Array.isArray(speakerDetails)) {
+          for (const [speakerId, speakerData] of Object.entries(speakerDetails)) {
+            // Check the name stored in the details
+            const data = speakerData as any;
+            if (data?.name && data.name.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+            // Also check if the ID matches a user
+            const speakerName = getTspContactName(speakerId);
+            if (speakerName.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check driverDetails JSONB field (primary storage for driver assignments)
+    if (request.driverDetails) {
+      try {
+        const driverDetails = typeof request.driverDetails === 'string'
+          ? JSON.parse(request.driverDetails)
+          : request.driverDetails;
+        if (driverDetails && typeof driverDetails === 'object' && !Array.isArray(driverDetails)) {
+          for (const [driverId, driverData] of Object.entries(driverDetails)) {
+            // Check the name stored in the details
+            const data = driverData as any;
+            if (data?.name && data.name.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+            // Also check if the ID matches a user
+            const driverName = getTspContactName(driverId);
+            if (driverName.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check volunteerDetails JSONB field (primary storage for volunteer assignments)
+    if (request.volunteerDetails) {
+      try {
+        const volunteerDetails = typeof request.volunteerDetails === 'string'
+          ? JSON.parse(request.volunteerDetails)
+          : request.volunteerDetails;
+        if (volunteerDetails && typeof volunteerDetails === 'object' && !Array.isArray(volunteerDetails)) {
+          for (const [volunteerId, volunteerData] of Object.entries(volunteerDetails)) {
+            // Check the name stored in the details
+            const data = volunteerData as any;
+            if (data?.name && data.name.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+            // Also check if the ID matches a user
+            const volunteerName = getTspContactName(volunteerId);
+            if (volunteerName.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
     // Also check legacy assignedSpeakerIds array
     if (request.assignedSpeakerIds && Array.isArray(request.assignedSpeakerIds)) {
       for (const speakerId of request.assignedSpeakerIds) {
