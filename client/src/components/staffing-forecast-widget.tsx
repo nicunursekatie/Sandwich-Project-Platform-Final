@@ -22,6 +22,7 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
+import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -246,9 +247,9 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               const volunteersNeeded = request.volunteersNeeded || 0;
               const vanDriversNeeded = request.vanDriverNeeded ? 1 : 0;
 
-              const driversAssigned = request.assignedDriverIds?.length || 0;
-              const speakersAssigned = request.assignedSpeakerIds?.length || 0;
-              const volunteersAssigned = request.assignedVolunteerIds?.length || 0;
+              const driversAssigned = getDriverCount(request);
+              const speakersAssigned = getSpeakerCount(request);
+              const volunteersAssigned = getVolunteerCount(request);
               const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
 
               week.totalDriversNeeded += driversNeeded;
@@ -317,9 +318,9 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
         const volunteersNeeded = request.volunteersNeeded || 0;
         const vanDriversNeeded = request.vanDriverNeeded ? 1 : 0;
 
-        const driversAssigned = request.assignedDriverIds?.length || 0;
-        const speakersAssigned = request.assignedSpeakerIds?.length || 0;
-        const volunteersAssigned = request.assignedVolunteerIds?.length || 0;
+        const driversAssigned = getDriverCount(request);
+        const speakersAssigned = getSpeakerCount(request);
+        const volunteersAssigned = getVolunteerCount(request);
         const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
 
         week.totalDriversNeeded += driversNeeded;

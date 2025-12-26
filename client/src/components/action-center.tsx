@@ -37,6 +37,7 @@ import {
 import { logger } from '@/lib/logger';
 import { REGULAR_THURSDAY_CAPACITY, SPECIAL_PLACEMENT_HIGH_THRESHOLD } from '@/lib/sandwich-utils';
 import { calculatePlacementTotals } from '@/lib/week-planning-utils';
+import { getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
 import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
@@ -264,9 +265,7 @@ export default function ActionCenter() {
       if (eventDate < today || eventDate > twoWeeksFromNow) return false;
 
       // Check if drivers are assigned - include van driver and DHL van in total
-      const totalDriversAssigned = (event.assignedDriverIds?.length || 0) +
-                                   (event.assignedVanDriverId ? 1 : 0) +
-                                   (event.isDhlVan ? 1 : 0);
+      const totalDriversAssigned = getTotalDriverCount(event);
       const driversNeeded = event.driversNeeded || 0;
 
       return totalDriversAssigned < driversNeeded;
@@ -274,10 +273,7 @@ export default function ActionCenter() {
 
     if (upcomingEventsMissingDrivers.length > 0) {
       const totalDriversNeeded = upcomingEventsMissingDrivers.reduce((sum, e) => {
-        // Include van driver and DHL van in assigned count
-        const assigned = (e.assignedDriverIds?.length || 0) +
-                        (e.assignedVanDriverId ? 1 : 0) +
-                        (e.isDhlVan ? 1 : 0);
+        const assigned = getTotalDriverCount(e);
         const needed = e.driversNeeded || 0;
         return sum + (needed - assigned);
       }, 0);
@@ -305,15 +301,15 @@ export default function ActionCenter() {
       const eventDate = new Date(event.desiredEventDate);
       if (eventDate < today || eventDate > twoWeeksFromNow) return false;
 
-      const assignedSpeakers = event.assignedSpeakerIds || [];
+      const assignedSpeakersCount = getSpeakerCount(event);
       const speakersNeeded = event.speakersNeeded || 0;
 
-      return assignedSpeakers.length < speakersNeeded;
+      return assignedSpeakersCount < speakersNeeded;
     });
 
     if (upcomingEventsMissingSpeakers.length > 0) {
       const totalSpeakersNeeded = upcomingEventsMissingSpeakers.reduce((sum, e) => {
-        const assigned = (e.assignedSpeakerIds || []).length;
+        const assigned = getSpeakerCount(e);
         const needed = e.speakersNeeded || 0;
         return sum + (needed - assigned);
       }, 0);
