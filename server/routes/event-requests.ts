@@ -1311,7 +1311,10 @@ router.get(
         tentativeDriverIds: event.tentativeDriverIds,
 
         // TSP contact for display
+        tspContact: event.tspContact,
         tspContactAssigned: event.tspContactAssigned,
+        tspContactAssignedDate: event.tspContactAssignedDate,
+        customTspContact: event.customTspContact,
 
         // Toolkit status
         toolkitSent: event.toolkitSent,
