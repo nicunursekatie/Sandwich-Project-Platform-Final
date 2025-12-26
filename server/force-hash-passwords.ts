@@ -4,13 +4,15 @@
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
 import { logger } from './utils/production-safe-logger';
+import { requireDatabaseUrl } from './config/database';
 
 const SALT_ROUNDS = 10;
 
 async function forceHashPasswords() {
   // Direct PostgreSQL connection - no ORM
+  // Use centralized database configuration
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: requireDatabaseUrl(),
   });
   
   try {

@@ -5,11 +5,10 @@ import { parse } from 'csv-parse/sync';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { sql } from 'drizzle-orm';
+import { requireDatabaseUrl } from '../config/database';
 
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
+// Use centralized database configuration
+const DATABASE_URL = requireDatabaseUrl();
 
 const connection = neon(DATABASE_URL);
 const db = drizzle(connection, { schema });

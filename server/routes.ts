@@ -8,6 +8,7 @@ import createMainRoutes from './routes/index';
 import { requirePermission, blockInactiveUsers } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 import { logger } from './utils/production-safe-logger';
+import { databaseUrl } from './config/database';
 
 /**
  * Route Registration
@@ -28,10 +29,7 @@ export async function registerRoutes(app: Express): Promise<any> {
   }
 
   // Use database-backed session store for deployment persistence
-  const databaseUrl = process.env.PRODUCTION_DATABASE_URL ||
-                      process.env.DEV_DATABASE_URL ||
-                      process.env.DATABASE_URL;
-
+  // Database URL comes from centralized config (imported at top of file)
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: databaseUrl,

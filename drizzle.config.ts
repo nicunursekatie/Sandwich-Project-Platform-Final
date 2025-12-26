@@ -1,8 +1,8 @@
 import { defineConfig } from 'drizzle-kit';
+import { getDatabaseUrlForDrizzleConfig } from './server/config/database';
 
-// Use DATABASE_URL or PRODUCTION_DATABASE_URL if available
-// For migration generation only, we don't strictly need DB connection
-const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://placeholder';
+// Use centralized database configuration
+const databaseUrl = getDatabaseUrlForDrizzleConfig();
 
 export default defineConfig({
   out: './migrations',

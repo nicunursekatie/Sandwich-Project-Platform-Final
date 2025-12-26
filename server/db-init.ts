@@ -17,19 +17,20 @@ import { ensureSessionsTable } from './session-migrate';
 import { runMigrationsAutomatically } from './migrate';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
+import { databaseUrl } from './config/database';
 
 const dbLogger = createServiceLogger('database');
 
 export async function initializeDatabase() {
   try {
     dbLogger.info('Checking database initialization...');
-    const dbUrl = process.env.DEV_DATABASE_URL || process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL;
+    // Use centralized database configuration
     dbLogger.debug('DATABASE_URL exists', {
-      exists: !!dbUrl,
+      exists: !!databaseUrl,
     });
     dbLogger.debug('DATABASE_URL preview', {
-      preview: dbUrl
-        ? dbUrl.substring(0, 20) + '...'
+      preview: databaseUrl
+        ? databaseUrl.substring(0, 20) + '...'
         : 'not set',
     });
 

@@ -4,14 +4,13 @@ import { fileURLToPath } from 'url';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool } from '@neondatabase/serverless';
 import { eventRequests } from '../shared/schema.ts';
+import { databaseUrl } from './config/database.ts';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database connection
-// Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
-const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+// Database connection - use centralized configuration
 const pool = new Pool({ connectionString: databaseUrl });
 const db = drizzle(pool);
 

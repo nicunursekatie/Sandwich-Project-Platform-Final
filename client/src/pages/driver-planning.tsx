@@ -14,14 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -48,6 +41,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { EventEditDialog } from '@/components/event-requests/dialogs/EventEditDialog';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -738,15 +732,6 @@ export default function DriverPlanningDashboard() {
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({
-    driversNeeded: '',
-    pickupTime: '',
-    eventStartTime: '',
-    eventEndTime: '',
-    pickupTimeWindow: '',
-    tspContact: '',
-    customTspContact: '',
-  });
 
   // Check if user has edit permission
   const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
@@ -1047,47 +1032,10 @@ export default function DriverPlanningDashboard() {
     },
   });
 
-  // Open edit dialog and populate form
+  // Open edit dialog
   const openEditDialog = () => {
     if (!selectedEvent) return;
-    setEditForm({
-      driversNeeded: selectedEvent.driversNeeded?.toString() || '',
-      pickupTime: selectedEvent.pickupTime || '',
-      eventStartTime: selectedEvent.eventStartTime || '',
-      eventEndTime: selectedEvent.eventEndTime || '',
-      pickupTimeWindow: selectedEvent.pickupTimeWindow || '',
-      tspContact: selectedEvent.tspContact || selectedEvent.tspContactAssigned || '',
-      customTspContact: selectedEvent.customTspContact || '',
-    });
     setEditDialogOpen(true);
-  };
-
-  // Save edit form
-  const saveEditForm = () => {
-    if (!selectedEvent) return;
-    const updates: Record<string, any> = {};
-    if (editForm.driversNeeded) updates.driversNeeded = editForm.driversNeeded;
-    if (editForm.pickupTime) updates.pickupTime = editForm.pickupTime;
-    if (editForm.eventStartTime) updates.eventStartTime = editForm.eventStartTime;
-    if (editForm.eventEndTime) updates.eventEndTime = editForm.eventEndTime;
-    if (editForm.pickupTimeWindow) updates.pickupTimeWindow = editForm.pickupTimeWindow;
-
-    // TSP Contact - allow setting, changing, or clearing
-    // Use 'tspContact' field (the main field the backend handles)
-    const currentTspContact = selectedEvent.tspContact || selectedEvent.tspContactAssigned || '';
-    if (editForm.tspContact !== currentTspContact) {
-      // If 'custom' is selected, we store the custom value instead
-      if (editForm.tspContact === 'custom') {
-        updates.tspContact = null; // Clear the user ID, custom name goes in customTspContact
-      } else {
-        updates.tspContact = editForm.tspContact || null;
-      }
-    }
-    if (editForm.customTspContact !== (selectedEvent.customTspContact || '')) {
-      updates.customTspContact = editForm.customTspContact || null;
-    }
-
-    updateEventMutation.mutate({ id: selectedEvent.id, updates });
   };
 
   // Geocode event mutation
@@ -2185,15 +2133,6 @@ export default function DriverPlanningDashboard() {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 // Open edit dialog for this event (it's already selected since this only shows when isSelected)
-                                setEditForm({
-                                  driversNeeded: event.driversNeeded?.toString() || '',
-                                  pickupTime: event.pickupTime || '',
-                                  eventStartTime: event.eventStartTime || '',
-                                  eventEndTime: event.eventEndTime || '',
-                                  pickupTimeWindow: event.pickupTimeWindow || '',
-                                  tspContact: event.tspContact || event.tspContactAssigned || '',
-                                  customTspContact: event.customTspContact || '',
-                                });
                                 setEditDialogOpen(true);
                               }}
                             >
@@ -4869,151 +4808,15 @@ export default function DriverPlanningDashboard() {
       </Sheet>
 
       {/* Edit Event Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Edit Event Details</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="driversNeeded" className="text-sm">Drivers Needed</Label>
-              <Input
-                id="driversNeeded"
-                type="number"
-                min="1"
-                value={editForm.driversNeeded}
-                onChange={(e) => setEditForm({ ...editForm, driversNeeded: e.target.value })}
-                placeholder="e.g. 2"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pickupTime" className="text-sm">Pickup Time</Label>
-              <Input
-                id="pickupTime"
-                type="time"
-                value={editForm.pickupTime}
-                onChange={(e) => setEditForm({ ...editForm, pickupTime: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="eventStartTime" className="text-sm">Event Start</Label>
-                <Input
-                  id="eventStartTime"
-                  type="time"
-                  value={editForm.eventStartTime}
-                  onChange={(e) => setEditForm({ ...editForm, eventStartTime: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventEndTime" className="text-sm">Event End</Label>
-                <Input
-                  id="eventEndTime"
-                  type="time"
-                  value={editForm.eventEndTime}
-                  onChange={(e) => setEditForm({ ...editForm, eventEndTime: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pickupTimeWindow" className="text-sm">Pickup Time Window</Label>
-              <Input
-                id="pickupTimeWindow"
-                value={editForm.pickupTimeWindow}
-                onChange={(e) => setEditForm({ ...editForm, pickupTimeWindow: e.target.value })}
-                placeholder="e.g. 30 minutes"
-              />
-            </div>
-
-            {/* TSP Contact Section */}
-            <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">TSP Contact</h4>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="tspContact" className="text-sm">Assign TSP Contact</Label>
-                  <Select
-                    value={editForm.tspContact || 'none'}
-                    onValueChange={(value) => {
-                      setEditForm({
-                        ...editForm,
-                        tspContact: value === 'none' ? '' : value,
-                        // Clear custom contact if selecting a user
-                        customTspContact: value && value !== 'custom' && value !== 'none' ? '' : editForm.customTspContact,
-                      });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a team member..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-gray-500">No TSP contact assigned</span>
-                      </SelectItem>
-                      {usersBasic.map((u) => {
-                        const name = u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.id;
-                        return (
-                          <SelectItem key={u.id} value={u.id}>
-                            {name}
-                          </SelectItem>
-                        );
-                      })}
-                      <SelectItem value="custom">
-                        <span className="italic">Enter custom contact...</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {editForm.tspContact === 'custom' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="customTspContact" className="text-sm">Custom TSP Contact Name</Label>
-                    <Input
-                      id="customTspContact"
-                      value={editForm.customTspContact}
-                      onChange={(e) => setEditForm({ ...editForm, customTspContact: e.target.value })}
-                      placeholder="Enter contact name"
-                    />
-                  </div>
-                )}
-
-                {editForm.tspContact && editForm.tspContact !== 'custom' && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 h-auto py-1 px-2"
-                    onClick={() => setEditForm({ ...editForm, tspContact: '', customTspContact: '' })}
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Remove TSP Contact
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={saveEditForm}
-              disabled={updateEventMutation.isPending}
-            >
-              {updateEventMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EventEditDialog
+        isOpen={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        event={selectedEvent as any}
+        onSaved={() => {
+          // Refresh event map data
+          queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+        }}
+      />
     </div>
   );
 }

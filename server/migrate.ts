@@ -3,18 +3,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './utils/production-safe-logger';
+import { databaseUrl } from './config/database';
 
 // Get current directory in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function runMigrationsAutomatically() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const DATABASE_URL = isProduction
-    ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
-    : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
-
-  if (!DATABASE_URL) {
+  if (!databaseUrl) {
     logger.log('⚠️  No database URL set, skipping migrations');
     return;
   }
@@ -22,7 +18,7 @@ export async function runMigrationsAutomatically() {
   logger.log('🔄 Checking for pending database migrations...');
 
   // Connect to database using Neon HTTP
-  const sql = neon(DATABASE_URL);
+  const sql = neon(databaseUrl);
 
   try {
     // Create migrations tracking table if it doesn't exist
