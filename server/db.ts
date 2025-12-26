@@ -16,7 +16,7 @@ const databaseUrl = getDatabaseUrl();
 const dbBranch = getDatabaseBranch();
 
 if (!databaseUrl) {
-  throw new Error('Database URL not configured. Please set DATABASE_URL_DEV for development or DATABASE_URL for production in Replit Secrets.');
+  throw new Error('Database URL not configured. Please set DEV_DATABASE_URL for development or DATABASE_URL for production in Replit Secrets.');
 }
 
 // Fix TypeScript union type issue by using a single concrete type
