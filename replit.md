@@ -34,6 +34,16 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
     - Deployed app: `APP_ENV=production` in production environment + `REPLIT_DEPLOYMENT=1` → full auth required
   - **Key files**: `server/middleware/auth.ts` (isDevMode function, DEV_ADMIN_USER, conditional middleware)
   - **Startup log**: Server logs auth mode at startup: "DEV MODE ACTIVE" or "PRODUCTION MODE"
+  
+  **DATABASE ENVIRONMENT CONFIGURATION:**
+  - Centralized in `server/db-url.ts` - SINGLE source of truth for database URL selection
+  - Environment-based selection:
+    - `NODE_ENV=development` (or unset): Uses `DEV_DATABASE_URL` (dev Neon branch)
+    - `NODE_ENV=production`: Uses `DATABASE_URL` (production Neon branch)
+  - Fallback behavior: If primary URL not set, falls back to the other environment's URL
+  - **Startup log**: Shows environment AND database branch: "Running in DEVELOPMENT mode, connected to dev database"
+  - **Key files**: `server/db-url.ts` (centralized URL resolution), `server/db.ts` (Drizzle connection)
+  - **All database-touching files import from `db-url.ts`**: migrations, routes, storage, scripts
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
 - **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.

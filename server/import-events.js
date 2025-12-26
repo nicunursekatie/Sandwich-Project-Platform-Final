@@ -10,19 +10,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Database connection using centralized configuration
-// Development: DATABASE_URL_DEV → DATABASE_URL (fallback)
-// Production: DATABASE_URL → DATABASE_URL_DEV (fallback)
+// Development: DEV_DATABASE_URL → DATABASE_URL (fallback)
+// Production: DATABASE_URL → DEV_DATABASE_URL (fallback)
 const isProduction = process.env.NODE_ENV === 'production';
 const databaseUrl = isProduction 
-  ? (process.env.DATABASE_URL || process.env.DATABASE_URL_DEV)
-  : (process.env.DATABASE_URL_DEV || process.env.DATABASE_URL);
+  ? (process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL)
+  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
 if (!databaseUrl) {
-  console.error('ERROR: Database URL not configured. Set DATABASE_URL_DEV for development or DATABASE_URL for production.');
+  console.error('ERROR: Database URL not configured. Set DEV_DATABASE_URL for development or DATABASE_URL for production.');
   process.exit(1);
 }
 
-console.log(`🗄️ Connecting to ${databaseUrl === process.env.DATABASE_URL_DEV ? 'dev' : 'production'} database`);
+console.log(`🗄️ Connecting to ${databaseUrl === process.env.DEV_DATABASE_URL ? 'dev' : 'production'} database`);
 const pool = new Pool({ connectionString: databaseUrl });
 const db = drizzle(pool);
 
