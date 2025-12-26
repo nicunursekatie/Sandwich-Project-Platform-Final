@@ -4,26 +4,21 @@ import { fileURLToPath } from 'url';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool } from '@neondatabase/serverless';
 import { eventRequests } from '../shared/schema.ts';
-import { databaseUrl } from './config/database.ts';
+import { getDatabaseUrl, getDatabaseBranch, isProduction } from './db-url.ts';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database connection using centralized configuration
-// Development: DEV_DATABASE_URL → DATABASE_URL (fallback)
-// Production: DATABASE_URL → DEV_DATABASE_URL (fallback)
-const isProduction = process.env.NODE_ENV === 'production';
-const databaseUrl = isProduction 
-  ? (process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL)
-  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+// Database connection using centralized configuration from db-url.ts
+const databaseUrl = getDatabaseUrl();
 
 if (!databaseUrl) {
   console.error('ERROR: Database URL not configured. Set DEV_DATABASE_URL for development or DATABASE_URL for production.');
   process.exit(1);
 }
 
-console.log(`🗄️ Connecting to ${databaseUrl === process.env.DEV_DATABASE_URL ? 'dev' : 'production'} database`);
+console.log(`🗄️ Connecting to ${getDatabaseBranch()} database (${isProduction ? 'production' : 'development'} mode)`);
 const pool = new Pool({ connectionString: databaseUrl });
 const db = drizzle(pool);
 

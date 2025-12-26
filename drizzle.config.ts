@@ -1,8 +1,9 @@
 import { defineConfig } from 'drizzle-kit';
-import { getDatabaseUrlForDrizzleConfig } from './server/config/database';
+import { getDatabaseUrl } from './server/db-url';
 
 // Use centralized database configuration
-const databaseUrl = getDatabaseUrlForDrizzleConfig();
+// For migration generation, we use a placeholder if no URL is configured
+const databaseUrl = getDatabaseUrl() || 'postgresql://placeholder';
 
 export default defineConfig({
   out: './migrations',

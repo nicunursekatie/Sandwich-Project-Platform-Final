@@ -17,7 +17,7 @@ import { ensureSessionsTable } from './session-migrate';
 import { runMigrationsAutomatically } from './migrate';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
-import { databaseUrl } from './config/database';
+import { getDatabaseUrl, getDatabaseBranch, isProduction } from './db-url';
 
 const dbLogger = createServiceLogger('database');
 
@@ -25,16 +25,15 @@ export async function initializeDatabase() {
   try {
     dbLogger.info('Checking database initialization...');
     // Use centralized database URL configuration
-    const { getDatabaseUrl, getDatabaseBranch, isProduction } = await import('./db-url');
     const dbUrl = getDatabaseUrl();
     const branch = getDatabaseBranch();
-    
+
     dbLogger.debug('DATABASE_URL exists', {
-      exists: !!databaseUrl,
+      exists: !!dbUrl,
     });
     dbLogger.debug('DATABASE_URL preview', {
-      preview: databaseUrl
-        ? databaseUrl.substring(0, 20) + '...'
+      preview: dbUrl
+        ? dbUrl.substring(0, 20) + '...'
         : 'not set',
     });
     dbLogger.info(`Database branch: ${branch} (${isProduction ? 'production' : 'development'} mode)`);
