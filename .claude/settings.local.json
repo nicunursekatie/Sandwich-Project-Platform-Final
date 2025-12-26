@@ -50,7 +50,8 @@
       "Bash(npx jest:*)",
       "Bash(tasklist:*)",
       "Bash(npm ls:*)",
-      "Bash(timeout 10 npm run dev)"
+      "Bash(timeout 10 npm run dev)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

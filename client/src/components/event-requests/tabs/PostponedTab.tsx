@@ -18,6 +18,7 @@ export const PostponedTab: React.FC = () => {
   const { handleStatusChange, resolveUserName } = useEventAssignments();
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -79,7 +80,7 @@ export const PostponedTab: React.FC = () => {
       {/* Header with count and export button */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {postponedRequests.length} postponed event{postponedRequests.length !== 1 ? 's' : ''}
+          {isLoading ? 'Loading...' : `${postponedRequests.length} postponed event${postponedRequests.length !== 1 ? 's' : ''}`}
         </div>
         <Button
           variant="outline"
@@ -94,7 +95,11 @@ export const PostponedTab: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {postponedRequests.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">
+            Loading event requests...
+          </div>
+        ) : postponedRequests.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No postponed events
           </div>

@@ -86,6 +86,7 @@ export const ScheduledTab: React.FC = () => {
 
   const {
     eventRequests,
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -459,7 +460,7 @@ export const ScheduledTab: React.FC = () => {
       {/* View Toggle - Always visible on scheduled tab */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {scheduledRequests.length} scheduled event{scheduledRequests.length !== 1 ? 's' : ''}
+          {isLoading ? 'Loading...' : `${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''}`}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -524,6 +525,10 @@ export const ScheduledTab: React.FC = () => {
           }}
           openAssignmentDialog={openAssignmentDialog}
         />
+      ) : isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          Loading event requests...
+        </div>
       ) : scheduledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No scheduled events

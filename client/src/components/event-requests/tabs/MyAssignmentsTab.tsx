@@ -40,6 +40,7 @@ export const MyAssignmentsTab: React.FC = () => {
   } = useEventAssignments();
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -427,7 +428,9 @@ export const MyAssignmentsTab: React.FC = () => {
       {/* Filter Dropdown */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-gray-600">
-          {myAssignments.length === 0 ? (
+          {isLoading ? (
+            'Loading...'
+          ) : myAssignments.length === 0 ? (
             'No assignments found with selected filters'
           ) : (
             <>Showing {myAssignments.length} assignment{myAssignments.length !== 1 ? 's' : ''}</>
@@ -508,7 +511,11 @@ export const MyAssignmentsTab: React.FC = () => {
         </DropdownMenu>
       </div>
 
-      {myAssignments.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          Loading your assignments...
+        </div>
+      ) : myAssignments.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <div className="mb-2">No assignments found</div>
           <div className="text-sm">

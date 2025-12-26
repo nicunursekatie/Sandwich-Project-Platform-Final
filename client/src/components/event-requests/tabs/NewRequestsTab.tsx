@@ -26,6 +26,7 @@ export const NewRequestsTab: React.FC = () => {
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -238,7 +239,7 @@ export const NewRequestsTab: React.FC = () => {
       {/* Header with count and export button */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {newRequests.length} new request{newRequests.length !== 1 ? 's' : ''}
+          {isLoading ? 'Loading...' : `${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''}`}
         </div>
         <Button
           variant="outline"
@@ -252,7 +253,11 @@ export const NewRequestsTab: React.FC = () => {
         </Button>
       </div>
 
-      {newRequests.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          Loading event requests...
+        </div>
+      ) : newRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No new event requests
         </div>

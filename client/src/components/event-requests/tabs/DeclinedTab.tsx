@@ -18,6 +18,7 @@ export const DeclinedTab: React.FC = () => {
   const { handleStatusChange, resolveUserName } = useEventAssignments();
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -81,7 +82,7 @@ export const DeclinedTab: React.FC = () => {
       {/* Header with count and export button */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {allDeclinedOrCancelled.length} declined/cancelled event{allDeclinedOrCancelled.length !== 1 ? 's' : ''}
+          {isLoading ? 'Loading...' : `${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''}`}
         </div>
         <Button
           variant="outline"
@@ -96,7 +97,11 @@ export const DeclinedTab: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        {declinedRequests.length === 0 && cancelledRequests.length === 0 ? (
+        {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          Loading event requests...
+        </div>
+      ) : declinedRequests.length === 0 && cancelledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No declined or cancelled events
         </div>

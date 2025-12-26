@@ -30,6 +30,7 @@ export const InProcessTab: React.FC = () => {
   const [hidePastDateEvents, setHidePastDateEvents] = useState(false);
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -302,7 +303,7 @@ export const InProcessTab: React.FC = () => {
       {/* Header with count and export button */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {inProcessRequests.length} event{inProcessRequests.length !== 1 ? 's' : ''} in process
+          {isLoading ? 'Loading...' : `${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process`}
         </div>
         <Button
           variant="outline"
@@ -354,7 +355,11 @@ export const InProcessTab: React.FC = () => {
         </div>
       )}
 
-      {filteredRequests.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          Loading event requests...
+        </div>
+      ) : filteredRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {inProcessRequests.length === 0
             ? 'No events in process'

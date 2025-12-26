@@ -25,6 +25,7 @@ export const CompletedTab: React.FC = () => {
   } = useEventAssignments();
 
   const {
+    isLoading,
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -71,7 +72,7 @@ export const CompletedTab: React.FC = () => {
       {/* Header with count and export button */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
-          {completedRequests.length} completed event{completedRequests.length !== 1 ? 's' : ''}
+          {isLoading ? 'Loading...' : `${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''}`}
         </div>
         <Button
           variant="outline"
@@ -86,7 +87,11 @@ export const CompletedTab: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {completedRequests.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">
+            Loading event requests...
+          </div>
+        ) : completedRequests.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No completed events
           </div>
