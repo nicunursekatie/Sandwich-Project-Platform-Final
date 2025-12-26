@@ -55,13 +55,15 @@ export function buildEventRequestsListFilterParams(
   if (activeTab === 'in_process') return { status: 'in_process' };
   if (activeTab === 'scheduled') return { status: 'scheduled' };
 
-  // Other status tabs (no date restrictions)
+  // Other status tabs (no date restrictions) - lazy load these on demand
   if (['completed', 'declined', 'postponed'].includes(activeTab)) {
     return { status: activeTab };
   }
 
-  // For "all", "my_assignments", admin_overview, planning, etc: fetch unfiltered list
-  return {};
+  // For "all", "my_assignments", admin_overview, planning, etc:
+  // Only load active events (new, in_process, scheduled) by default.
+  // Completed/declined/postponed events are lazy-loaded when those tabs are clicked.
+  return { status: 'new,in_process,scheduled' };
 }
 
 export function buildEventRequestsListQuery(activeTab: string, quickFilter: EventRequestsQuickFilter) {

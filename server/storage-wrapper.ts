@@ -1516,6 +1516,13 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  async getEventRequestsByStatuses(statuses: string[]) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventRequestsByStatuses(statuses),
+      () => this.fallbackStorage.getEventRequestsByStatuses(statuses)
+    );
+  }
+
   async getEventRequest(id: number) {
     return this.executeWithFallback(
       () => this.primaryStorage.getEventRequest(id),

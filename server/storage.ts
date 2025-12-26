@@ -633,6 +633,7 @@ export interface IStorage {
 
   // Event Requests (Event Planning)
   getAllEventRequests(): Promise<EventRequest[]>;
+  getEventRequestsByStatuses(statuses: string[]): Promise<EventRequest[]>;
   getEventRequest(id: number): Promise<EventRequest | undefined>;
   createEventRequest(
     insertEventRequest: InsertEventRequest
@@ -3092,6 +3093,15 @@ export class MemStorage implements IStorage {
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+  }
+
+  async getEventRequestsByStatuses(statuses: string[]): Promise<EventRequest[]> {
+    return Array.from(this.eventRequests.values())
+      .filter((request) => statuses.includes(request.status))
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
   }
 
   async getEventRequest(id: number): Promise<EventRequest | undefined> {

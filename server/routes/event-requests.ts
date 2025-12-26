@@ -1226,9 +1226,20 @@ router.get(
       const needsActionParam = req.query.needsAction as string | undefined;
       const needsDriverParam = req.query.needsDriver as string | undefined;
 
-      let eventRequests = await storage.getAllEventRequests();
+      // Use database-level filtering when status is specified (much faster than loading all rows)
+      let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = await storage.getEventRequestsByStatuses(statuses);
+        } else {
+          eventRequests = await storage.getAllEventRequests();
+        }
+      } else {
+        eventRequests = await storage.getAllEventRequests();
+      }
 
-      // Apply same filters as main endpoint
+      // Apply date filter in memory (complex date logic is harder to do in SQL)
       if (daysParam) {
         const days = parseInt(daysParam, 10);
         if (!isNaN(days) && days > 0) {
@@ -1247,12 +1258,7 @@ router.get(
         }
       }
 
-      if (statusParam && statusParam !== 'all') {
-        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
-        if (statuses.length > 0) {
-          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
-        }
-      }
+      // Note: Status filtering is now done at database level above
 
       if (needsActionParam === 'true') {
         const today = new Date();

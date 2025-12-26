@@ -4105,6 +4105,25 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
+  async getEventRequestsByStatuses(statuses: string[]): Promise<EventRequest[]> {
+    if (statuses.length === 0) {
+      return [];
+    }
+    const results = await db
+      .select()
+      .from(eventRequests)
+      .where(
+        and(
+          isNull(eventRequests.deletedAt),
+          inArray(eventRequests.status, statuses)
+        )
+      )
+      .orderBy(desc(eventRequests.createdAt));
+
+    logger.log(`🔍 getEventRequestsByStatuses(${statuses.join(',')}): Database returned ${results.length} rows`);
+    return results;
+  }
+
   async getEventRequest(id: number): Promise<EventRequest | undefined> {
     logger.log(`🔍 getEventRequest called with id: ${id}, type: ${typeof id}`);
     const [result] = await db
