@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
 import { logger } from '@/lib/logger';
 import { useToast } from './use-toast';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 
 /**
  * Hook that listens for real-time event request updates via Socket.IO
@@ -19,7 +20,7 @@ export function useEventRequestSocket() {
       logger.log('[EventRequestSocket] New event request created:', eventRequest.id);
 
       // Invalidate all event request queries to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
 
       // Show toast notification
       toast({
@@ -30,12 +31,12 @@ export function useEventRequestSocket() {
 
     const handleEventUpdated = (eventRequest: any) => {
       logger.log('[EventRequestSocket] Event request updated:', eventRequest.id);
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     };
 
     const handleEventDeleted = (data: { id: number }) => {
       logger.log('[EventRequestSocket] Event request deleted:', data.id);
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     };
 
     // Subscribe to events

@@ -50,6 +50,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 import {
   Tooltip,
   TooltipContent,
@@ -594,7 +595,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setShowConfirmToggle(false);
     },
   });

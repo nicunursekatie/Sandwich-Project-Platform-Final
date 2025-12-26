@@ -70,7 +70,7 @@ import { PostponementDialog } from './dialogs/PostponementDialog';
 import IntakeCallDialog from './IntakeCallDialog';
 import NextActionDialog from './NextActionDialog';
 import { logger } from '@/lib/logger';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 
@@ -223,8 +223,7 @@ const EventRequestsManagementContent: React.FC = () => {
         description: result.message || `Synced: ${result.created || 0} created, ${result.updated || 0} skipped`,
       });
       // Refresh event requests
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      invalidateEventRequestQueries(queryClient);
     },
     onError: (error: any) => {
       toast({
@@ -406,7 +405,7 @@ const EventRequestsManagementContent: React.FC = () => {
       await apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
       
       // Invalidate query cache to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
 
       toast({
         title: 'Event postponed',
@@ -1004,8 +1003,7 @@ const EventRequestsManagementContent: React.FC = () => {
             mode={nextActionMode}
             onActionSaved={() => {
               // Refresh event requests after action is saved
-              queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-              queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+              invalidateEventRequestQueries(queryClient);
             }}
           />
         )}

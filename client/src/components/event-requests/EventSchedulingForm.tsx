@@ -37,7 +37,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
@@ -418,8 +418,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         title: isEditMode ? 'Event updated successfully' : 'Event scheduled successfully',
         description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
@@ -458,8 +458,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         title: 'Event created successfully',
         description: 'The new event request has been created.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
       setPendingMlkDayDecision(null);
@@ -481,8 +481,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         title: 'Event deleted successfully',
         description: 'The event request has been deleted.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
@@ -500,7 +500,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     mutationFn: ({ id, isMlkDayEvent }: { id: number; isMlkDayEvent: boolean }) =>
       apiRequest('PATCH', `/api/event-requests/${id}/mlk-day`, { isMlkDayEvent }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     },
   });
 

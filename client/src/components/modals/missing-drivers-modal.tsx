@@ -13,6 +13,7 @@ import type { EventRequest } from '@shared/schema';
 import { AssignmentDialog } from '@/components/event-requests/dialogs/AssignmentDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 
 interface MissingDriversModalProps {
   open: boolean;
@@ -44,7 +45,7 @@ export default function MissingDriversModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Success',
         description: 'Drivers assigned successfully',

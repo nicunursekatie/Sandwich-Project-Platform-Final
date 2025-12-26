@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { logger } from '@/lib/logger';
 
@@ -38,8 +38,7 @@ export const useEventMutations = () => {
             onClick={async () => {
               try {
                 await apiRequest('POST', `/api/event-requests/${deletedId}/restore`);
-                queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-                queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+                invalidateEventRequestQueries(queryClient);
                 dismiss();
                 toast({
                   title: 'Event request restored',
@@ -59,9 +58,7 @@ export const useEventMutations = () => {
           </button>
         ),
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      invalidateEventRequestQueries(queryClient);
       setShowEventDetails(false);
       setSelectedEventRequest(null);
     },
@@ -91,16 +88,8 @@ export const useEventMutations = () => {
         description: 'The event request has been successfully updated.',
       });
 
-      // Use refetchQueries to force immediate data refresh
-      // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
-      // NOTE: Do NOT await this - it blocks dialog close and causes poor UX
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      // Invalidate event map if address or coordinates might have changed
-      queryClient.invalidateQueries({
-        queryKey: ['/api/event-map'],
-        refetchType: 'active'
-      });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       setShowEventDetails(false);
       setSelectedEventRequest(null);
@@ -142,19 +131,8 @@ export const useEventMutations = () => {
         description: 'The new event request has been successfully created.',
       });
 
-      // Invalidate and refetch event requests - refetchType: 'all' handles the refetch
-      await queryClient.invalidateQueries({
-        queryKey: ['/api/event-requests'],
-        refetchType: 'all'
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['/api/event-requests', 'v2'],
-        refetchType: 'all'
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['/api/event-map'],
-        refetchType: 'all'
-      });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       setShowEventDetails(false);
       setSelectedEventRequest(null);
@@ -189,8 +167,7 @@ export const useEventMutations = () => {
         title: 'Toolkit marked as sent',
         description: 'Event status updated to "In Process".',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -229,10 +206,9 @@ export const useEventMutations = () => {
         title: 'Call scheduled',
         description: 'Call has been scheduled successfully.',
       });
-      
-      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         apiRequest('GET', `/api/event-requests/${variables.id}`)
@@ -292,12 +268,9 @@ export const useEventMutations = () => {
         title: 'Field updated',
         description: 'Event field has been updated successfully.',
       });
-      
-      // Use refetchQueries instead of invalidateQueries to force immediate data refresh
-      // This is necessary because staleTime is set to 5 minutes which can prevent immediate refetch
-      // NOTE: Don't await - it blocks UI updates
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         apiRequest('GET', `/api/event-requests/${variables.id}`)
@@ -324,8 +297,7 @@ export const useEventMutations = () => {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -341,10 +313,9 @@ export const useEventMutations = () => {
         title: '1-day follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
-      
-      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         apiRequest('GET', `/api/event-requests/${variables.id}`)
@@ -376,10 +347,9 @@ export const useEventMutations = () => {
         title: '1-month follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
-      
-      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         apiRequest('GET', `/api/event-requests/${variables.id}`)
@@ -409,9 +379,8 @@ export const useEventMutations = () => {
         title: 'Event rescheduled',
         description: 'The event date has been updated successfully.',
       });
-      // Use refetchQueries for immediate data refresh (don't await - it blocks UI updates)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
     },
     onError: () => {
       toast({
@@ -450,9 +419,8 @@ export const useEventMutations = () => {
         description: 'Recipients have been successfully assigned to this event.',
       });
 
-      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
@@ -495,9 +463,8 @@ export const useEventMutations = () => {
         description,
       });
 
-      // Use refetchQueries for immediate data refresh (don't await - it blocks dialog close)
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
 
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {

@@ -13,6 +13,7 @@ import { CheckCircle, Calendar, MapPin, Users, Phone, Mail } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { EventRequest } from '@shared/schema';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 
 interface FollowUpEventsModalProps {
   open: boolean;
@@ -44,7 +45,7 @@ export default function FollowUpEventsModal({
     },
     onSuccess: (_, variables) => {
       setCompletedFollowUps(prev => new Set(prev).add(variables.eventId));
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Follow-up marked complete',
         description: `${followUpType === '1day' ? '1-day' : '30-day'} follow-up has been completed.`,

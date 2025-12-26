@@ -58,7 +58,7 @@ import { CommentThread, CompactPresenceBadge } from '@/components/collaboration'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -922,7 +922,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
         title: 'Social media tracking updated',
         description: 'Social media tracking information has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       // Reset states
       setShowRequestedDate(false);
       setShowPostedDate(false);
@@ -935,7 +935,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
         description: 'Failed to update social media tracking.',
         variant: 'destructive',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -1476,7 +1476,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         title: 'Social media tracking updated',
         description: 'Social media tracking information has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setShowInstagramDialog(false);
     },
     onError: () => {
@@ -1485,7 +1485,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         description: 'Failed to update social media tracking.',
         variant: 'destructive',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -1498,7 +1498,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         title: 'Event details updated',
         description: 'Event information has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setIsEditingField(false);
       setEditingField('');
       setEditingValue('');
@@ -1524,7 +1524,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         title: 'Sandwich count updated',
         description: 'The actual sandwich count has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setIsEditingSandwichCount(false);
       setEditingSandwichCount('');
       setEditingTypes({});
@@ -1550,7 +1550,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         title: 'TSP Contact updated',
         description: 'The TSP contact has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setIsEditingTspContact(false);
       setEditingTspContactId(null);
       setEditingCustomTspContact('');

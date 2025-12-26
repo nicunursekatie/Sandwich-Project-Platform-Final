@@ -27,6 +27,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 
 interface ImportResult {
   success: boolean;
@@ -154,7 +155,7 @@ export default function HistoricalImport() {
       setResult(data.result);
 
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
 

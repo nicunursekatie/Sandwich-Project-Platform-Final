@@ -13,7 +13,7 @@ import {
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface NextActionDialogProps {
@@ -70,8 +70,7 @@ const NextActionDialog: React.FC<NextActionDialogProps> = ({
       return apiRequest('PUT', `/api/event-requests/${eventRequest.id}`, updateData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: mode === 'complete' ? 'Action marked complete' : 'Next action saved',
         description: mode === 'complete' 

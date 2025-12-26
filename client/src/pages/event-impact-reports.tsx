@@ -43,7 +43,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { format, parseISO } from 'date-fns';
 import {
   Calendar,
@@ -489,7 +489,7 @@ export default function EventImpactReports() {
     },
     onSuccess: (data) => {
       setImportResults(data);
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Import Complete',
         description: `Updated ${data.updated} events. ${data.notFound} not found, ${data.errors} errors.`,
@@ -580,7 +580,7 @@ export default function EventImpactReports() {
         description: data.message,
       });
       setBackfillStep('complete');
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     },
     onError: (error: Error) => {
       toast({
@@ -613,7 +613,7 @@ export default function EventImpactReports() {
       });
       setShowLocationTool(false);
       setLocationEntries(new Map());
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
     },
     onError: (error: Error) => {
       toast({
@@ -1626,7 +1626,7 @@ export default function EventImpactReports() {
                       });
 
                       // Refresh data
-                      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+                      invalidateEventRequestQueries(queryClient);
                     } catch (error) {
                       setCategorizationProgress((prev) =>
                         prev ? { ...prev, running: false, errors: prev.errors + 1 } : null

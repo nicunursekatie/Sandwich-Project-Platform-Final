@@ -41,7 +41,7 @@ import {
   Package,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 import type { EventRequest } from '@shared/schema';
 
@@ -357,8 +357,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Event updated',
         description: 'Your changes have been saved.',

@@ -76,6 +76,7 @@ import { CommentThread } from '@/components/collaboration';
 import { useToast } from '@/hooks/use-toast';
 import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
+import { invalidateEventRequestQueries } from '@/lib/queryClient';
 import {
   Tooltip,
   TooltipContent,
@@ -249,7 +250,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       setAddingAllTimes(false);
       setTempStartTime('');
       setTempEndTime('');

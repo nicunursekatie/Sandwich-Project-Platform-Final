@@ -21,7 +21,7 @@ import {
 import { Plus, Trash2, Building, Search, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { SANDWICH_TYPES } from './constants';
 
 // Type for recipient allocation
@@ -99,8 +99,7 @@ export function RecipientAllocationEditor({
         title: 'Allocations saved',
         description: 'Recipient allocations have been updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.refetchQueries({ queryKey: ['/api/event-requests', 'v2'], type: 'active' });
+      invalidateEventRequestQueries(queryClient);
       onOpenChange(false);
     },
     onError: () => {

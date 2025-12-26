@@ -38,7 +38,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { EventRequest } from '@shared/schema';
@@ -125,7 +125,7 @@ export function AiIntakeAssistantDialog({
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Updated',
         description: 'Event information updated successfully',
