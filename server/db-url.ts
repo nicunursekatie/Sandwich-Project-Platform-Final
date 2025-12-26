@@ -19,11 +19,19 @@ import { logger } from './utils/production-safe-logger';
 export const isProduction = process.env.NODE_ENV === 'production';
 
 export function getDatabaseUrl(): string | undefined {
-  // Development: DEV_DATABASE_URL → DATABASE_URL (fallback)
-  // Production: DATABASE_URL/PRODUCTION_DATABASE_URL → DEV_DATABASE_URL (fallback)
-  return isProduction 
-    ? (process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL)
-    : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+  if (isProduction) {
+    // Production: DATABASE_URL or PRODUCTION_DATABASE_URL required - NO fallback to dev
+    const prodUrl = process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL;
+    if (!prodUrl) {
+      // SAFETY: Fail loudly in production if no production database configured
+      logger.error('🚨 CRITICAL: Production mode requires DATABASE_URL or PRODUCTION_DATABASE_URL to be set!');
+      logger.error('🚨 Refusing to fall back to DEV_DATABASE_URL in production.');
+      throw new Error('Production database URL not configured. Set DATABASE_URL in production secrets.');
+    }
+    return prodUrl;
+  }
+  // Development: DEV_DATABASE_URL → DATABASE_URL (fallback for convenience)
+  return process.env.DEV_DATABASE_URL || process.env.DATABASE_URL;
 }
 
 export function getDatabaseBranch(): 'dev' | 'production' {
