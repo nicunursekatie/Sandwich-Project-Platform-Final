@@ -62,6 +62,11 @@ import {
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
+import {
+  getDriverIds, getDriverCount, getTotalDriverCount,
+  getSpeakerIds, getSpeakerCount,
+  getVolunteerIds, getVolunteerCount
+} from '@/lib/assignment-utils';
 import { SANDWICH_TYPES } from '../constants';
 
 interface Column {
@@ -1429,8 +1434,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         }
 
         // Drivers
-        if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
-          const driverNames = event.assignedDriverIds
+        const driverIds = getDriverIds(event);
+        if (driverIds.length > 0) {
+          const driverNames = driverIds
             .map(id => resolveUserName(id))
             .filter(name => name && name !== 'Not assigned');
           if (driverNames.length > 0) {
@@ -1439,8 +1445,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         }
 
         // Speakers
-        if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
-          const speakerNames = event.assignedSpeakerIds
+        const speakerIds = getSpeakerIds(event);
+        if (speakerIds.length > 0) {
+          const speakerNames = speakerIds
             .map(id => resolveUserName(id))
             .filter(name => name && name !== 'Not assigned');
           if (speakerNames.length > 0) {
@@ -1449,8 +1456,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         }
 
         // Volunteers
-        if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
-          const volunteerNames = event.assignedVolunteerIds
+        const volunteerIds = getVolunteerIds(event);
+        if (volunteerIds.length > 0) {
+          const volunteerNames = volunteerIds
             .map(id => resolveUserName(id))
             .filter(name => name && name !== 'Not assigned');
           if (volunteerNames.length > 0) {
@@ -2337,9 +2345,9 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     // Special handling for assignedStaff column - combined: shows needed counts with +/- buttons AND assigned names
     if (column.id === 'assignedStaff') {
       // Calculate current assignments
-      const driversAssigned = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
-      const speakersAssigned = event.assignedSpeakerIds?.length || 0;
-      const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+      const driversAssigned = getTotalDriverCount(event);
+      const speakersAssigned = getSpeakerCount(event);
+      const volunteersAssigned = getVolunteerCount(event);
 
       // Calculate needs
       const driversNeeded = event.driversNeeded || 0;
@@ -2571,7 +2579,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 </Tooltip>
               )}
               {/* Regular Drivers */}
-              {event.assignedDriverIds && event.assignedDriverIds.length > 0 && (
+              {getDriverCount(event) > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -2583,7 +2591,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     >
                       <span>🚗</span>
                       <span className="truncate">
-                        {event.assignedDriverIds
+                        {getDriverIds(event)
                           .map(id => resolveUserName(id))
                           .filter(name => name && name !== 'Not assigned')
                           .join(', ')}
@@ -2596,7 +2604,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 </Tooltip>
               )}
               {/* Speakers */}
-              {event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0 && (
+              {getSpeakerCount(event) > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -2608,7 +2616,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     >
                       <span>🎤</span>
                       <span className="truncate">
-                        {event.assignedSpeakerIds
+                        {getSpeakerIds(event)
                           .map(id => resolveUserName(id))
                           .filter(name => name && name !== 'Not assigned')
                           .join(', ')}
@@ -2621,7 +2629,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 </Tooltip>
               )}
               {/* Volunteers */}
-              {event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0 && (
+              {getVolunteerCount(event) > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -2633,7 +2641,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     >
                       <span>👥</span>
                       <span className="truncate">
-                        {event.assignedVolunteerIds
+                        {getVolunteerIds(event)
                           .map(id => resolveUserName(id))
                           .filter(name => name && name !== 'Not assigned')
                           .join(', ')}
@@ -2897,10 +2905,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                   {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded) && (
                     <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-[#47B3CB]/20">
                       {event.driversNeeded > 0 && (() => {
-                        // Include van driver and DHL van in total assigned count
-                        const totalDriversAssigned = (event.assignedDriverIds?.length || 0) +
-                                                     (event.assignedVanDriverId ? 1 : 0) +
-                                                     (event.isDhlVan ? 1 : 0);
+                        const totalDriversAssigned = getTotalDriverCount(event);
                         return (
                           <Badge
                             variant="outline"
@@ -2916,29 +2921,29 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                         );
                       })()}
                       {event.speakersNeeded > 0 && (
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`text-xs ${
-                            (event.assignedSpeakerIds?.length || 0) >= event.speakersNeeded
+                            getSpeakerCount(event) >= event.speakersNeeded
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                               : 'bg-amber-50 text-amber-700 border-amber-300'
                           }`}
                         >
                           <Megaphone className="h-3 w-3 mr-1" />
-                          {(event.assignedSpeakerIds?.length || 0)}/{event.speakersNeeded}
+                          {getSpeakerCount(event)}/{event.speakersNeeded}
                         </Badge>
                       )}
                       {event.volunteersNeeded > 0 && (
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`text-xs ${
-                            (event.assignedVolunteerIds?.length || 0) >= event.volunteersNeeded
+                            getVolunteerCount(event) >= event.volunteersNeeded
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                               : 'bg-amber-50 text-amber-700 border-amber-300'
                           }`}
                         >
                           <Users className="h-3 w-3 mr-1" />
-                          {(event.assignedVolunteerIds?.length || 0)}/{event.volunteersNeeded}
+                          {getVolunteerCount(event)}/{event.volunteersNeeded}
                         </Badge>
                       )}
                     </div>

@@ -2258,7 +2258,6 @@ export const eventRequests = pgTable(
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
     speakerAudienceType: text('speaker_audience_type'), // Type of audience for speaker (e.g., "Elementary School", "Adults", "Mixed")
     speakerDuration: text('speaker_duration'), // Duration of speaker session (e.g., "30 minutes", "1 hour")
-    volunteerDetails: jsonb('volunteer_details'), // Additional volunteer assignment details
     deliveryTimeWindow: text('delivery_time_window'), // Time window for next-day delivery after overnight storage
     deliveryParkingAccess: text('delivery_parking_access'), // Parking/access details for delivery location
 

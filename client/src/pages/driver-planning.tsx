@@ -21,6 +21,11 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format, addWeeks, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import {
+  getDriverIds, getDriverCount, getTotalDriverCount, hasDriver,
+  getSpeakerIds, getSpeakerCount,
+  getVolunteerIds, getVolunteerCount
+} from '@/lib/assignment-utils';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -107,6 +112,10 @@ interface EventMapData {
   assignedSpeakerIds?: string[] | null;
   volunteersNeeded?: number | null;
   assignedVolunteerIds?: string[] | null;
+  // JSONB detail fields (source of truth for assignments)
+  driverDetails?: Record<string, any> | null;
+  speakerDetails?: Record<string, any> | null;
+  volunteerDetails?: Record<string, any> | null;
   sandwichTypes: { type: string; quantity: number }[] | null;
   pickupTime: string | null;
   pickupTimeWindow: string | null;
@@ -1260,10 +1269,7 @@ export default function DriverPlanningDashboard() {
       if (driversNeeded === 0) return false;
 
       // Count ALL assigned drivers including van drivers
-      // Van driver and DHL van both count toward the total driver requirement
-      const driversAssigned = (event.assignedDriverIds?.length || 0) +
-                              (event.assignedVanDriverId ? 1 : 0) +
-                              (event.isDhlVan ? 1 : 0);
+      const driversAssigned = getTotalDriverCount(event);
 
       return driversAssigned < driversNeeded;
     });
@@ -1281,10 +1287,7 @@ export default function DriverPlanningDashboard() {
       if (driversNeeded === 0) return false;
 
       // Count ALL assigned drivers including van drivers
-      // Van driver and DHL van both count toward the total driver requirement
-      const driversAssigned = (event.assignedDriverIds?.length || 0) +
-                              (event.assignedVanDriverId ? 1 : 0) +
-                              (event.isDhlVan ? 1 : 0);
+      const driversAssigned = getTotalDriverCount(event);
 
       return driversAssigned < driversNeeded;
     }).length;
@@ -1452,7 +1455,7 @@ export default function DriverPlanningDashboard() {
   // Assigned driver(s) explicitly assigned on the event (if any)
   // Returns full DriverCandidate objects for drivers with valid coordinates
   const assignedDrivers = useMemo(() => {
-    const assignedIds = parsePostgresArrayLike(selectedEvent?.assignedDriverIds);
+    const assignedIds = selectedEvent ? getDriverIds(selectedEvent) : [];
     if (!selectedEvent || assignedIds.length === 0) return [];
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
@@ -1646,7 +1649,7 @@ export default function DriverPlanningDashboard() {
   };
 
   const getAssignedDriversLabel = (event: EventMapData): string | null => {
-    const ids = parsePostgresArrayLike(event.assignedDriverIds);
+    const ids = getDriverIds(event);
     if (ids.length === 0) return null;
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
@@ -1706,7 +1709,7 @@ export default function DriverPlanningDashboard() {
   };
 
   const getAssignedSpeakersLabel = (event: EventMapData): string | null => {
-    const ids = parsePostgresArrayLike(event.assignedSpeakerIds as any);
+    const ids = getSpeakerIds(event);
     if (ids.length === 0) return null;
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
@@ -1734,7 +1737,7 @@ export default function DriverPlanningDashboard() {
   };
 
   const getAssignedVolunteersLabel = (event: EventMapData): string | null => {
-    const ids = parsePostgresArrayLike(event.assignedVolunteerIds as any);
+    const ids = getVolunteerIds(event);
     if (ids.length === 0) return null;
 
     const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
@@ -1941,21 +1944,18 @@ export default function DriverPlanningDashboard() {
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const regularDriversAssigned = event.assignedDriverIds?.length || 0;
+                const regularDriversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
                 const speakersNeeded = event.speakersNeeded || 0;
-                const speakersAssigned = event.assignedSpeakerIds?.length || 0;
+                const speakersAssigned = getSpeakerCount(event);
                 const volunteersNeeded = event.volunteersNeeded || 0;
-                const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+                const volunteersAssigned = getVolunteerCount(event);
                 // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
                 const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || regularDriversAssigned > 0 || !!event.assignedVanDriverId;
 
                 // Count ALL assigned drivers including van drivers for status calculation
-                // Van driver and DHL van both count toward the total driver requirement
-                const totalDriversAssigned = regularDriversAssigned +
-                                             (event.assignedVanDriverId ? 1 : 0) +
-                                             (event.isDhlVan ? 1 : 0);
+                const totalDriversAssigned = getTotalDriverCount(event);
                 // Check if all driver needs are fulfilled (both regular drivers AND van driver if needed)
                 const driversFulfilled = totalDriversAssigned >= driversNeeded &&
                                         (!event.vanDriverNeeded || !!event.assignedVanDriverId || !!event.isDhlVan);
@@ -3470,7 +3470,7 @@ export default function DriverPlanningDashboard() {
                                 assignDriverMutation.mutate({
                                   eventId: selectedEvent.id,
                                   driverId: String(driver.id),
-                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentAssigned: getDriverIds(selectedEvent),
                                   currentTentative: selectedEvent.tentativeDriverIds || [],
                                   tentative: true,
                                 });
@@ -3495,7 +3495,7 @@ export default function DriverPlanningDashboard() {
                                 assignDriverMutation.mutate({
                                   eventId: selectedEvent.id,
                                   driverId: String(driver.id),
-                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentAssigned: getDriverIds(selectedEvent),
                                   currentTentative: selectedEvent.tentativeDriverIds || [],
                                   tentative: false,
                                 });
@@ -3506,7 +3506,7 @@ export default function DriverPlanningDashboard() {
                               ) : (
                                 <Check className="w-3 h-3 mr-1" />
                               )}
-                              {selectedEvent.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                              {hasDriver(selectedEvent, String(driver.id)) ? 'Confirmed' : 'Confirm'}
                             </Button>
                           </div>
                         )}
@@ -3579,13 +3579,13 @@ export default function DriverPlanningDashboard() {
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
                 const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                const driversAssigned = event.assignedDriverIds?.length || 0;
+                const driversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
                 // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
                 const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
                 const driversFulfilled =
-                  driversAssigned >= driversNeeded &&
+                  getTotalDriverCount(event) >= driversNeeded &&
                   (!event.vanDriverNeeded || !!event.assignedVanDriverId || !!event.isDhlVan);
 
                 return (
@@ -4140,9 +4140,7 @@ export default function DriverPlanningDashboard() {
                         : 'No date'}
                     </span>
                     {(() => {
-                      const totalDrivers = (selectedEvent.assignedDriverIds?.length || 0) +
-                                          (selectedEvent.assignedVanDriverId ? 1 : 0) +
-                                          (selectedEvent.isDhlVan ? 1 : 0);
+                      const totalDrivers = getTotalDriverCount(selectedEvent);
                       const needed = selectedEvent.driversNeeded || 0;
                       const fulfilled = totalDrivers >= needed;
                       const tentative = selectedEvent.tentativeDriverIds?.length || 0;
@@ -4256,13 +4254,13 @@ export default function DriverPlanningDashboard() {
                   {events.map((event) => {
                     const isSelected = selectedEvent?.id === event.id;
                     const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                    const driversAssigned = event.assignedDriverIds?.length || 0;
+                    const driversAssigned = getDriverCount(event);
                     const driversTentative = event.tentativeDriverIds?.length || 0;
                     const driversNeeded = event.driversNeeded || 0;
                     const speakersNeeded = event.speakersNeeded || 0;
-                    const speakersAssigned = event.assignedSpeakerIds?.length || 0;
+                    const speakersAssigned = getSpeakerCount(event);
                     const volunteersNeeded = event.volunteersNeeded || 0;
-                    const volunteersAssigned = event.assignedVolunteerIds?.length || 0;
+                    const volunteersAssigned = getVolunteerCount(event);
                     // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
                     const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
 
@@ -4445,9 +4443,9 @@ export default function DriverPlanningDashboard() {
                   <div className="text-sm font-semibold text-gray-700">Assignments</div>
                   <div className="text-xs text-gray-600">
                     <span className="font-medium">Staffing:</span>{' '}
-                    Drivers {(selectedEvent.assignedDriverIds?.length || 0) + (selectedEvent.assignedVanDriverId ? 1 : 0) + (selectedEvent.isDhlVan ? 1 : 0)}/{selectedEvent.driversNeeded || 0}
-                    {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${selectedEvent.assignedSpeakerIds?.length || 0}/${selectedEvent.speakersNeeded || 0}`}
-                    {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${selectedEvent.assignedVolunteerIds?.length || 0}/${selectedEvent.volunteersNeeded || 0}`}
+                    Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
+                    {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
+                    {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
                   </div>
                   {getTspContactLabel(selectedEvent) && (
                     <div className="text-sm text-gray-700">
@@ -4751,7 +4749,7 @@ export default function DriverPlanningDashboard() {
                                 assignDriverMutation.mutate({
                                   eventId: selectedEvent.id,
                                   driverId: String(driver.id),
-                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentAssigned: getDriverIds(selectedEvent),
                                   currentTentative: selectedEvent.tentativeDriverIds || [],
                                   tentative: true,
                                 });
@@ -4776,7 +4774,7 @@ export default function DriverPlanningDashboard() {
                                 assignDriverMutation.mutate({
                                   eventId: selectedEvent.id,
                                   driverId: String(driver.id),
-                                  currentAssigned: selectedEvent.assignedDriverIds || [],
+                                  currentAssigned: getDriverIds(selectedEvent),
                                   currentTentative: selectedEvent.tentativeDriverIds || [],
                                   tentative: false,
                                 });
@@ -4787,7 +4785,7 @@ export default function DriverPlanningDashboard() {
                               ) : (
                                 <Check className="w-3 h-3 mr-1" />
                               )}
-                              {selectedEvent?.assignedDriverIds?.includes(String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                              {selectedEvent && hasDriver(selectedEvent, String(driver.id)) ? 'Confirmed' : 'Confirm'}
                             </Button>
                           </div>
                         </Card>
