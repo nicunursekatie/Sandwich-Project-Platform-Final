@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Flag, Info, X, Clock, CheckCircle, Plus } from 'lucide-react';
+import { AlertTriangle, Flag, Info, Clock, CheckCircle, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,14 +8,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { usePreEventFlagMutations } from '@/components/event-requests/hooks/usePreEventFlagMutations';
 
 interface PreEventFlag {
   id: string;
@@ -35,6 +33,10 @@ interface PreEventFlagsProps {
   eventId: number;
   eventName: string;
   compact?: boolean; // Compact mode for small cards
+  /**
+   * @deprecated No longer needed - mutations now automatically invalidate queries.
+   * Kept for backwards compatibility but can be safely removed.
+   */
   onUpdate?: () => void;
 }
 
@@ -59,10 +61,9 @@ const flagTypeConfig = {
   },
 };
 
-export function PreEventFlagsBanner({ flags, eventId, eventName, compact = false, onUpdate }: PreEventFlagsProps) {
+export function PreEventFlagsBanner({ flags, eventId, eventName, compact = false }: PreEventFlagsProps) {
   const [showDialog, setShowDialog] = useState(false);
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { resolveFlagMutation } = usePreEventFlagMutations();
 
   // Get active (unresolved) flags
   const activeFlags = flags.filter(f => !f.resolvedAt);
@@ -77,35 +78,8 @@ export function PreEventFlagsBanner({ flags, eventId, eventName, compact = false
   const config = flagTypeConfig[priorityFlag.type];
   const Icon = config.icon;
 
-  const resolveFlag = async (flagId: string) => {
-    try {
-      const response = await fetch(`/api/event-requests/${eventId}/flags/${flagId}/resolve`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          resolvedBy: user?.id,
-          resolvedByName: user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user?.email,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to resolve flag');
-
-      toast({
-        title: 'Flag resolved',
-        description: 'The pre-event flag has been marked as resolved.',
-      });
-
-      onUpdate?.();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to resolve flag. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const handleResolveFlag = (flagId: string) => {
+    resolveFlagMutation.mutate({ eventId, flagId });
   };
 
   if (compact) {
@@ -162,7 +136,8 @@ export function PreEventFlagsBanner({ flags, eventId, eventName, compact = false
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => resolveFlag(priorityFlag.id)}
+            onClick={() => handleResolveFlag(priorityFlag.id)}
+            disabled={resolveFlagMutation.isPending}
             className="h-7 w-7 p-0"
             title="Mark as resolved"
           >
@@ -178,7 +153,6 @@ export function PreEventFlagsBanner({ flags, eventId, eventName, compact = false
         eventName={eventName}
         isOpen={showDialog}
         onClose={() => setShowDialog(false)}
-        onUpdate={onUpdate}
       />
     </>
   );
@@ -190,88 +164,38 @@ interface PreEventFlagsDialogProps {
   eventName: string;
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * @deprecated No longer needed - mutations now automatically invalidate queries.
+   * Kept for backwards compatibility but can be safely removed.
+   */
   onUpdate?: () => void;
 }
 
-export function PreEventFlagsDialog({ flags, eventId, eventName, isOpen, onClose, onUpdate }: PreEventFlagsDialogProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
+export function PreEventFlagsDialog({ flags, eventId, eventName, isOpen, onClose }: PreEventFlagsDialogProps) {
   const [newFlagMessage, setNewFlagMessage] = useState('');
   const [newFlagType, setNewFlagType] = useState<'critical' | 'important' | 'attention'>('important');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { addFlagMutation, resolveFlagMutation } = usePreEventFlagMutations();
 
   const activeFlags = flags.filter(f => !f.resolvedAt);
   const resolvedFlags = flags.filter(f => f.resolvedAt);
 
-  const addFlag = async () => {
+  const handleAddFlag = () => {
     if (!newFlagMessage.trim()) return;
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/event-requests/${eventId}/flags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          type: newFlagType,
-          message: newFlagMessage.trim(),
-          createdBy: user?.id,
-          createdByName: user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user?.email || 'Unknown',
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to add flag');
-
-      toast({
-        title: 'Flag added',
-        description: 'Pre-event flag has been added to this event.',
-      });
-
-      setNewFlagMessage('');
-      setNewFlagType('important');
-      onUpdate?.();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to add flag. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    addFlagMutation.mutate(
+      { eventId, type: newFlagType, message: newFlagMessage.trim() },
+      {
+        onSuccess: () => {
+          setNewFlagMessage('');
+          setNewFlagType('important');
+        },
+      }
+    );
   };
 
-  const resolveFlag = async (flagId: string) => {
-    try {
-      const response = await fetch(`/api/event-requests/${eventId}/flags/${flagId}/resolve`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          resolvedBy: user?.id,
-          resolvedByName: user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user?.email,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to resolve flag');
-
-      toast({
-        title: 'Flag resolved',
-        description: 'The pre-event flag has been marked as resolved.',
-      });
-
-      onUpdate?.();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to resolve flag. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const handleResolveFlag = (flagId: string) => {
+    resolveFlagMutation.mutate({ eventId, flagId });
   };
 
   return (
@@ -312,9 +236,14 @@ export function PreEventFlagsDialog({ flags, eventId, eventName, isOpen, onClose
                   className="h-20"
                 />
               </div>
-              <Button onClick={addFlag} disabled={isSubmitting || !newFlagMessage.trim()} size="sm" className="w-full">
+              <Button
+                onClick={handleAddFlag}
+                disabled={addFlagMutation.isPending || !newFlagMessage.trim()}
+                size="sm"
+                className="w-full"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Flag
+                {addFlagMutation.isPending ? 'Adding...' : 'Add Flag'}
               </Button>
             </div>
           </div>
@@ -345,11 +274,12 @@ export function PreEventFlagsDialog({ flags, eventId, eventName, isOpen, onClose
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => resolveFlag(flag.id)}
+                          onClick={() => handleResolveFlag(flag.id)}
+                          disabled={resolveFlagMutation.isPending}
                           className="h-7 px-2 text-xs"
                         >
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Resolve
+                          {resolveFlagMutation.isPending ? '...' : 'Resolve'}
                         </Button>
                       </div>
                     </div>
