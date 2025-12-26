@@ -1578,13 +1578,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               return (
                                 <>
                                   <span>{timeStr}</span>
-                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold whitespace-nowrap shrink-0 px-2 py-0.5">
                                     Next Day {nextDayDate ? `(${nextDayDate})` : ''}
                                   </Badge>
                                 </>
                               );
                             }
-                            
+
                             // Use pickupDateTime if set
                             if (request.pickupDateTime) {
                               const pickupDate = new Date(request.pickupDateTime);
@@ -1619,7 +1619,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 return (
                                   <>
                                     <span>{timeStr}</span>
-                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold">
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold whitespace-nowrap shrink-0 px-2 py-0.5">
                                       Next Day ({nextDayDateStr})
                                     </Badge>
                                   </>
