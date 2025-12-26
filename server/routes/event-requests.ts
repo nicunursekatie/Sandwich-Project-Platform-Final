@@ -592,6 +592,17 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       assignedVolunteerIds: assignedVolunteerIds.length > 0 ? assignedVolunteerIds : null,
       customVanDriverName: staffing.customVanDriverName,
 
+      // Initialize JSONB fields for assignments (source of truth)
+      driverDetails: assignedDriverIds.length > 0 
+        ? Object.fromEntries(assignedDriverIds.map(id => [id, {}])) 
+        : null,
+      speakerDetails: assignedSpeakerIds.length > 0 
+        ? Object.fromEntries(assignedSpeakerIds.map(id => [id, {}])) 
+        : null,
+      volunteerDetails: assignedVolunteerIds.length > 0 
+        ? Object.fromEntries(assignedVolunteerIds.map(id => [id, {}])) 
+        : null,
+
       // TSP Contact
       tspContact: tspContactUserId || data['TSP Contact'] || null,
 
