@@ -4,13 +4,22 @@
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
 import { logger } from './utils/production-safe-logger';
+import { getDatabaseUrl, getDatabaseBranch, isProduction } from './db-url';
 
 const SALT_ROUNDS = 10;
 
 async function forceHashPasswords() {
+  const dbUrl = getDatabaseUrl();
+  if (!dbUrl) {
+    logger.error('ERROR: Database URL not configured');
+    process.exit(1);
+  }
+  
+  logger.log(`🗄️ Connecting to ${getDatabaseBranch()} database (${isProduction ? 'production' : 'development'} mode)`);
+  
   // Direct PostgreSQL connection - no ORM
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
   });
   
   try {

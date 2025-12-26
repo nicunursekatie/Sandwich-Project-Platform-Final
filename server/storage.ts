@@ -3593,7 +3593,8 @@ let storageInstance: IStorage;
 
 try {
   // Priority 1: Use database storage if available (for persistence across deployments)
-  const hasDbConfig = process.env.DEV_DATABASE_URL || process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL;
+  // Check for database configuration using the centralized variable names
+  const hasDbConfig = process.env.DATABASE_URL_DEV || process.env.DATABASE_URL;
   if (hasDbConfig) {
     logger.log('Using database storage for data persistence...');
     storageInstance = new DatabaseStorage();

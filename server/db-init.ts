@@ -23,7 +23,11 @@ const dbLogger = createServiceLogger('database');
 export async function initializeDatabase() {
   try {
     dbLogger.info('Checking database initialization...');
-    const dbUrl = process.env.DEV_DATABASE_URL || process.env.DATABASE_URL || process.env.PRODUCTION_DATABASE_URL;
+    // Use centralized database URL configuration
+    const { getDatabaseUrl, getDatabaseBranch, isProduction } = await import('./db-url');
+    const dbUrl = getDatabaseUrl();
+    const branch = getDatabaseBranch();
+    
     dbLogger.debug('DATABASE_URL exists', {
       exists: !!dbUrl,
     });
@@ -32,6 +36,7 @@ export async function initializeDatabase() {
         ? dbUrl.substring(0, 20) + '...'
         : 'not set',
     });
+    dbLogger.info(`Database branch: ${branch} (${isProduction ? 'production' : 'development'} mode)`);
 
     // Run any pending database migrations
     await runMigrationsAutomatically();

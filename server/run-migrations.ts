@@ -3,21 +3,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './utils/production-safe-logger';
+import { getDatabaseUrl, getDatabaseBranch, isProduction } from './db-url';
 
 // Get current directory in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Get database URL from environment (environment-based selection)
-const isProduction = process.env.NODE_ENV === 'production';
-const DATABASE_URL = isProduction
-  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
-  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+// Get database URL from centralized configuration
+const DATABASE_URL = getDatabaseUrl();
 
 if (!DATABASE_URL) {
-  logger.error('ERROR: Database URL not configured. Set DEV_DATABASE_URL or PRODUCTION_DATABASE_URL.');
+  logger.error('ERROR: Database URL not configured. Set DATABASE_URL_DEV for development or DATABASE_URL for production.');
   process.exit(1);
 }
+
+logger.log(`🗄️ Running migrations on ${getDatabaseBranch()} database (${isProduction ? 'production' : 'development'} mode)`);
 
 async function runAllMigrations() {
   logger.log('🔄 Running database migrations...');

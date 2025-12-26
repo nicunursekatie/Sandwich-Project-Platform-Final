@@ -3,25 +3,31 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { logger } from './utils/production-safe-logger';
+import { getDatabaseUrl, getDatabaseBranch, isProduction, databaseInfo } from './db-url';
 
-// Environment-based database selection:
-// - Production (NODE_ENV=production): Use PRODUCTION_DATABASE_URL
-// - Development (NODE_ENV=development): Use PRODUCTION_DATABASE_URL temporarily (dev database not yet set up with schema)
-// TODO: Switch back to DEV_DATABASE_URL once dev database has schema pushed
-const isProduction = process.env.NODE_ENV === 'production';
-const databaseUrl = isProduction 
-  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
-  : (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+/**
+ * DATABASE CONNECTION
+ * 
+ * Uses centralized database URL configuration from server/db-url.ts.
+ * All database URL selection logic is in one place.
+ */
+
+const databaseUrl = getDatabaseUrl();
+const dbBranch = getDatabaseBranch();
 
 if (!databaseUrl) {
-  throw new Error('Database URL not configured. Please set DEV_DATABASE_URL for development or PRODUCTION_DATABASE_URL for production.');
+  throw new Error('Database URL not configured. Please set DATABASE_URL_DEV for development or DATABASE_URL for production in Replit Secrets.');
 }
 
 // Fix TypeScript union type issue by using a single concrete type
 // This prevents "expression is not callable" errors when using db.select/insert/update/delete
 type DB = NeonHttpDatabase<typeof schema>;
 
-logger.log(`🗄️ Using ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
+// Clear startup log showing environment AND database branch
+logger.log(`🗄️ Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode, connected to ${dbBranch} database`);
+
+// Re-export databaseInfo for backward compatibility
+export { databaseInfo };
 
 // Use HTTP connection instead of WebSocket for better stability
 const sqlClient = neon(databaseUrl);

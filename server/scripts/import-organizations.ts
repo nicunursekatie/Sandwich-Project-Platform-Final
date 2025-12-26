@@ -5,11 +5,14 @@ import { parse } from 'csv-parse/sync';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { sql } from 'drizzle-orm';
+import { getDatabaseUrl, getDatabaseBranch, isProduction } from '../db-url';
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = getDatabaseUrl();
 if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
+  throw new Error('Database URL not configured. Set DATABASE_URL_DEV for development or DATABASE_URL for production.');
 }
+
+console.log(`🗄️ Connecting to ${getDatabaseBranch()} database (${isProduction ? 'production' : 'development'} mode)`);
 
 const connection = neon(DATABASE_URL);
 const db = drizzle(connection, { schema });

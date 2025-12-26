@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/production-safe-logger';
+import { getDatabaseUrl, getDatabaseBranch } from '../db-url';
 
 const router = Router();
 
@@ -15,14 +16,13 @@ const __dirname = path.dirname(__filename);
 // Run sandwich range fields migration
 router.post('/sandwich-range-fields', requirePermission('ADMIN_ACCESS'), async (req: any, res: any) => {
   try {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const DATABASE_URL = isProduction
-      ? (process.env.PRODUCTION_DATABASE_URL || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL)
-      : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+    const DATABASE_URL = getDatabaseUrl();
 
     if (!DATABASE_URL) {
       return res.status(500).json({ error: 'Database URL not configured' });
     }
+
+    logger.log(`🗄️ Running migration on ${getDatabaseBranch()} database`);
 
     logger.log('🔄 Running sandwich range fields migration...');
 
