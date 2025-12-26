@@ -337,6 +337,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
+  const canEditTspContact = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
@@ -1228,7 +1229,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <span className="text-base text-[#236383] font-semibold">
                   {request.customTspContact || resolveUserName((request.tspContactAssigned || request.tspContact || ''))}
                 </span>
-                {canEdit && (
+                {canEditTspContact && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

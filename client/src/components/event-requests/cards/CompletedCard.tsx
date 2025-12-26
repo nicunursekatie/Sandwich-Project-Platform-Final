@@ -68,6 +68,7 @@ import {
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import {
   RecipientAllocationEditor,
   RecipientAllocationDisplay,
@@ -473,17 +474,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                           (assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()})
                         </span>
                       )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={startEditingTspContact}
-                        className="ml-2 h-6 w-6 p-0 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                        title="Edit TSP contact"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
+                      {canEditTspContact && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={startEditingTspContact}
+                          className="ml-2 h-6 w-6 p-0 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                          title="Edit TSP contact"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </>
-                  ) : (
+                  ) : canEditTspContact ? (
                     <Button
                       size="sm"
                       variant="outline"
@@ -492,6 +495,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     >
                       Assign TSP Contact
                     </Button>
+                  ) : (
+                    <span className="text-gray-400">Not assigned</span>
                   )}
                 </>
               )}
@@ -1456,6 +1461,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
     user?.role === 'super_admin' ||
     user?.role === 'admin';
+
+  // Check if user can edit TSP contact assignments
+  const canEditTspContact = hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
 
   // Debug: log permission check
   logger.log('CompletedCard org details edit permission:', {

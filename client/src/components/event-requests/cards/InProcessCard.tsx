@@ -59,6 +59,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
 import {
   Tooltip,
   TooltipContent,
@@ -649,6 +650,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showContactAttempts, setShowContactAttempts] = useState(false);
   const { user } = useAuth();
+  const canEditTspContact = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
