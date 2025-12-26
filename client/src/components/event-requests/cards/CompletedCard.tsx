@@ -33,8 +33,8 @@ import {
   MessageSquare,
   Phone,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
+import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -1905,28 +1905,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     staffingGaps.push(`Needed ${volunteersNeeded} volunteer${volunteersNeeded > 1 ? 's' : ''} (had ${volunteers.length})`);
   }
 
-  // Fetch recipients and hosts for name lookup
-  const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
-    queryKey: ['/api/recipients'],
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: hosts = [] } = useQuery<{ id: number; name: string }[]>({
-    queryKey: ['/api/hosts'],
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Fetch host contacts for name lookup (individual host people)
-  const { data: hostContacts = [] } = useQuery<{ id: number; name: string; hostLocation: string }[]>({
-    queryKey: ['/api/host-contacts'],
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Fetch users for TSP contact assignment
-  const { data: users = [] } = useQuery<{ id: number; name: string; email: string }[]>({
-    queryKey: ['/api/users/basic'],
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use shared reference data from useEventQueries (eliminates duplicate API calls)
+  const {
+    recipients,
+    hosts,
+    hostContacts,
+    users,
+  } = useEventQueries();
 
   // Helper to get display information from IDs (supports new prefixed format)
   const getRecipientDisplayInfo = (recipientIds: unknown): Array<{ name: string; type: string; icon: React.ReactNode }> => {
@@ -2000,7 +1985,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         const hostContact = hostContacts.find(hc => hc.id === hostId);
         if (hostContact) {
           return {
-            name: `${hostContact.name} (${hostContact.hostLocation})`,
+            name: `${hostContact.name} (${hostContact.hostLocationName})`,
             type: 'host',
             icon: <Home className="w-3 h-3 mr-1" />
           };
@@ -2049,7 +2034,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         const fallbackHostContact = hostContacts.find(hc => hc.id === recipientId);
         if (fallbackHostContact) {
           return {
-            name: `${fallbackHostContact.name} (${fallbackHostContact.hostLocation})`,
+            name: `${fallbackHostContact.name} (${fallbackHostContact.hostLocationName})`,
             type: 'host',
             icon: <Home className="w-3 h-3 mr-1" />
           };

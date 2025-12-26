@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEventQueries } from '../hooks/useEventQueries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -267,34 +268,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     updateFieldsMutation.mutate(payload);
   };
 
-  // Fetch data for recipient resolution
-  const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
-    id: number;
-    displayName: string;
-    name: string;
-    hostLocationName: string;
-    email?: string;
-    phone?: string;
-  }>>({
-    queryKey: ['/api/host-contacts'],
-    staleTime: 1 * 60 * 1000,
-    queryFn: async () => {
-      const response = await fetch('/api/host-contacts');
-      if (!response.ok) throw new Error('Failed to fetch host contacts');
-      return response.json();
-    },
-  });
-
-
-  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
-    queryKey: ['/api/recipients'],
-    staleTime: 1 * 60 * 1000,
-  });
-
-  const { data: hostLocations = [] } = useQuery<Array<{ id: number; name: string }>>({
-    queryKey: ['/api/hosts'],
-    staleTime: 1 * 60 * 1000,
-  });
+  // Use shared reference data from useEventQueries (eliminates duplicate API calls)
+  const {
+    hostContacts,
+    hostContactsLoading: isLoadingHostContacts,
+    recipients,
+    hosts: hostLocations,
+  } = useEventQueries();
 
   const resolveLocalRecipientName = (recipientId: string): string => {
     // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEventQueries } from '../hooks/useEventQueries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -605,11 +606,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
     setShowConfirmToggle(true);
   };
 
-  // Fetch users data for TSP contact name lookup
-  const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/users/basic'],
-    enabled: !!request.tspContact, // Only fetch if there's a TSP contact assigned
-  });
+  // Use shared reference data from useEventQueries (eliminates duplicate API calls)
+  const { users } = useEventQueries();
 
   // Helper function to get user display name from user ID
   const getUserDisplayName = (userId: string): string => {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEventQueries } from '../hooks/useEventQueries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -348,26 +348,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     request.id
   );
 
-  // Fetch host contacts and recipients for recipient display names
-  const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
-    id: number;
-    displayName: string;
-    name: string;
-    hostLocationName: string;
-  }>>({
-    queryKey: ['/api/host-contacts'],
-    staleTime: 1 * 60 * 1000,
-  });
-
-  const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Array<{ id: number; name: string }>>({
-    queryKey: ['/api/recipients'],
-    staleTime: 1 * 60 * 1000,
-  });
-
-  const { data: hostLocations = [], isLoading: hostLocationsLoading } = useQuery<Array<{ id: number; name: string }>>({
-    queryKey: ['/api/hosts'],
-    staleTime: 1 * 60 * 1000,
-  });
+  // Use shared reference data from useEventQueries (eliminates duplicate API calls)
+  const {
+    hostContacts,
+    hostContactsLoading,
+    recipients,
+    recipientsLoading,
+    hosts: hostLocations,
+    hostsLoading: hostLocationsLoading,
+  } = useEventQueries();
 
   // Helper to resolve recipient display name from ID
   const resolveRecipientName = (recipientId: string): { name: string; type: string } => {
