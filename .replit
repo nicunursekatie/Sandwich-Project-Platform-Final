@@ -71,3 +71,11 @@ defaultBucketID = "replit-objstore-a7721532-5ea7-447a-83e7-dc6cdbc3d787"
 
 [agent]
 integrations = ["javascript_sendgrid:1.0.0", "javascript_database:1.0.0", "twilio:1.0.0", "javascript_openai_ai_integrations:1.0.0"]
+
+[userenv]
+
+[userenv.development]
+APP_ENV = "development"
+
+[userenv.production]
+APP_ENV = "production"

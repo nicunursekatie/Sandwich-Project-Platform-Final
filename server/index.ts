@@ -269,6 +269,17 @@ async function bootstrap() {
       serverLogger.info(`✅ Server listening on http://${host}:${port}`);
       serverLogger.info(`✅ Port ${port} is now open for health checks`);
       serverLogger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      // Log authentication mode for clarity
+      const appEnv = process.env.APP_ENV || 'production';
+      const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+      const authBypass = appEnv === 'development' && !isDeployment;
+      serverLogger.info(`🔐 Auth Mode: APP_ENV=${appEnv}, Deployment=${isDeployment ? 'YES' : 'NO'}`);
+      if (authBypass) {
+        serverLogger.info(`🔧 DEV MODE ACTIVE: Authentication bypass enabled (auto-login as dev admin)`);
+      } else {
+        serverLogger.info(`🔒 PRODUCTION MODE: Full authentication required`);
+      }
 
       // Do ALL heavy initialization in background after server is listening
       setImmediate(async () => {

@@ -1,14 +1,72 @@
 import type { RequestHandler } from 'express';
 import { storage } from '../storage-wrapper';
-import { PERMISSIONS } from '../../shared/auth-utils';
+import { PERMISSIONS, getDefaultPermissionsForRole } from '../../shared/auth-utils';
 import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 
 /**
+ * Environment detection for development vs production mode
+ * 
+ * Development mode is enabled when:
+ * - APP_ENV is explicitly set to 'development'
+ * - AND we're NOT in a Replit deployment (REPLIT_DEPLOYMENT !== '1')
+ * 
+ * This ensures production deployments ALWAYS require full authentication,
+ * even if someone accidentally sets APP_ENV=development in production.
+ */
+export const isDevMode = (): boolean => {
+  const appEnv = process.env.APP_ENV;
+  const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  
+  // NEVER allow dev mode in a Replit deployment
+  if (isDeployment) {
+    return false;
+  }
+  
+  return appEnv === 'development';
+};
+
+/**
+ * Development admin user for testing
+ * This user has full admin permissions and is only used in development mode
+ */
+const DEV_ADMIN_USER = {
+  id: 'dev-admin-user-id',
+  email: 'dev@thesandwichproject.org',
+  firstName: 'Dev',
+  lastName: 'Admin',
+  profileImageUrl: null,
+  role: 'admin' as const,
+  permissions: getDefaultPermissionsForRole('admin'),
+  isActive: true,
+};
+
+/**
  * Basic authentication check middleware
  * Ensures user is logged in (has session)
+ * 
+ * In development mode (APP_ENV=development), auto-authenticates as dev admin
+ * In production mode, requires real authentication
  */
 export const isAuthenticated: RequestHandler = (req, res, next) => {
+  // DEVELOPMENT MODE: Auto-authenticate as dev admin
+  if (isDevMode()) {
+    // Check if user is already authenticated (allow testing real auth flow)
+    const existingUser = req.user || req.session?.user;
+    if (!existingUser) {
+      // Auto-authenticate as dev admin
+      req.user = DEV_ADMIN_USER;
+      logger.log('🔧 DEV MODE: Auto-authenticated as dev admin');
+    } else {
+      // User already authenticated, keep their session
+      if (!req.user && req.session?.user) {
+        req.user = req.session?.user;
+      }
+    }
+    return next();
+  }
+
+  // PRODUCTION MODE: Require real authentication
   const user = req.user || req.session?.user;
 
   if (!user) {
@@ -26,6 +84,11 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
 // Global middleware to block inactive (pending approval) users
 export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
   try {
+    // In dev mode, skip inactive user blocking
+    if (isDevMode()) {
+      return next();
+    }
+
     // Allow unauthenticated requests to proceed (they'll be caught by other auth checks)
     if (!req.user && !req.session?.user) {
       return next();
@@ -74,6 +137,16 @@ export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
 export const requirePermission = (permission: string): RequestHandler => {
   return async (req: any, res, next) => {
     try {
+      // DEVELOPMENT MODE: Auto-grant all permissions
+      if (isDevMode()) {
+        // Ensure dev admin user is set on request
+        if (!req.user) {
+          req.user = DEV_ADMIN_USER;
+        }
+        logger.log(`🔧 DEV MODE: Auto-granted permission ${permission}`);
+        return next();
+      }
+
       // STEP 1: Ensure user is authenticated - DENY if not
       const user = req.user || req.session?.user;
       if (!user) {
@@ -173,6 +246,16 @@ export const requireOwnershipPermission = (
 ): RequestHandler => {
   return async (req: any, res, next) => {
     try {
+      // DEVELOPMENT MODE: Auto-grant all permissions
+      if (isDevMode()) {
+        // Ensure dev admin user is set on request
+        if (!req.user) {
+          req.user = DEV_ADMIN_USER;
+        }
+        logger.log(`🔧 DEV MODE: Auto-granted ownership permission ${allPermission}/${ownPermission}`);
+        return next();
+      }
+
       // STEP 1: Ensure user is authenticated
       const user = req.user || req.session?.user;
       if (!user) {
