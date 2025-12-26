@@ -206,6 +206,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
+  const canEditTspContact = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
@@ -1899,7 +1900,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {tspContactDisplay}
                   </div>
                 </div>
-                {canEdit && (
+                {canEditTspContact && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -2415,14 +2416,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <div className="flex items-center gap-2 pt-2 border-t border-white/30">
                     <UserPlus className="w-4 h-4 shrink-0" />
                     <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
-                    {canEdit && (
+                    {canEditTspContact && (
                       <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors" aria-label="Edit TSP contact">
                         <Edit2 className="w-3 h-3" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
                 )}
-                {!request.tspContact && !request.customTspContact && (
+                {!request.tspContact && !request.customTspContact && canEditTspContact && (
                   <Button
                     size="sm"
                     onClick={onAssignTspContact}
@@ -2726,7 +2727,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             Follow Up
           </Button>
 
-          {!(request.tspContact || request.customTspContact) && (
+          {!(request.tspContact || request.customTspContact) && canEditTspContact && (
             <Button
               size="sm"
               variant="outline"

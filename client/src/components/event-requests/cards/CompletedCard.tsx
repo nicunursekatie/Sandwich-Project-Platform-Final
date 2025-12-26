@@ -68,7 +68,8 @@ import {
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
-import { PERMISSIONS, hasPermission } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import {
   RecipientAllocationEditor,
   RecipientAllocationDisplay,
