@@ -1060,15 +1060,26 @@ router.get(
         'EVENT_REQUESTS_VIEW',
         'Retrieved event requests'
       );
-      
-      let eventRequests = await storage.getAllEventRequests();
-      
+
       // Parse query parameters for filtering
       const daysParam = req.query.days as string | undefined;
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
-      
-      // Filter by days (next N days from today)
+
+      // Use database-level filtering when status is specified (much faster than loading all rows)
+      let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
+      if (statusParam && statusParam !== 'all') {
+        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length > 0) {
+          eventRequests = await storage.getEventRequestsByStatuses(statuses);
+        } else {
+          eventRequests = await storage.getAllEventRequests();
+        }
+      } else {
+        eventRequests = await storage.getAllEventRequests();
+      }
+
+      // Filter by days (next N days from today) - done in memory since date logic is complex
       if (daysParam) {
         const days = parseInt(daysParam, 10);
         if (!isNaN(days) && days > 0) {
@@ -1076,27 +1087,21 @@ router.get(
           today.setHours(0, 0, 0, 0);
           const futureDate = new Date(today);
           futureDate.setDate(futureDate.getDate() + days);
-          
+
           eventRequests = eventRequests.filter(event => {
             // Check both scheduledEventDate and desiredEventDate
             const eventDate = event.scheduledEventDate || event.desiredEventDate;
             if (!eventDate) return false;
-            
+
             const eventDateObj = new Date(eventDate);
             eventDateObj.setHours(0, 0, 0, 0);
-            
+
             return eventDateObj >= today && eventDateObj <= futureDate;
           });
         }
       }
-      
-      // Filter by status (comma-separated list)
-      if (statusParam && statusParam !== 'all') {
-        const statuses = statusParam.split(',').map(s => s.trim()).filter(Boolean);
-        if (statuses.length > 0) {
-          eventRequests = eventRequests.filter(event => statuses.includes(event.status));
-        }
-      }
+
+      // Note: Status filtering is now done at database level above
       
       // Filter by "needs action" - events that need attention
       if (needsActionParam === 'true') {
