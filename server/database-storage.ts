@@ -4133,24 +4133,36 @@ export class DatabaseStorage implements IStorage {
     updates: Partial<EventRequest> & { expectedVersion?: Date }
   ): Promise<EventRequest | undefined> {
     const { expectedVersion, ...updateData } = updates;
-    
+
+    // DEBUG: Log incoming updates for speaker assignment debugging
+    logger.info(`[DB updateEventRequest] Event ${id} - Received update keys: ${Object.keys(updateData).join(', ')}`);
+    if (updateData.speakerDetails !== undefined) {
+      logger.info(`[DB updateEventRequest] Event ${id} - speakerDetails value: ${JSON.stringify(updateData.speakerDetails)}`);
+    }
+
     if (expectedVersion) {
       const current = await this.getEventRequest(id);
       if (!current) {
         throw new Error(`Event request ${id} not found`);
       }
-      
+
       if (current.updatedAt && new Date(current.updatedAt).getTime() !== new Date(expectedVersion).getTime()) {
         throw new Error('Conflict: Event request has been modified by another user. Please refresh and try again.');
       }
     }
-    
+
     // Filter out undefined values to prevent Drizzle from writing NULL
     // This preserves existing database values when a field is not explicitly updated
     const filteredData = Object.fromEntries(
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
-    
+
+    // DEBUG: Log filtered data
+    logger.info(`[DB updateEventRequest] Event ${id} - Filtered data keys: ${Object.keys(filteredData).join(', ')}`);
+    if (filteredData.speakerDetails !== undefined) {
+      logger.info(`[DB updateEventRequest] Event ${id} - Filtered speakerDetails: ${JSON.stringify(filteredData.speakerDetails)}`);
+    }
+
     // CRITICAL: Neon serverless .returning() is unreliable on UPDATE operations
     // It may return undefined/empty even when the UPDATE succeeds
     // Use explicit fetch pattern instead for reliable data retrieval
@@ -4161,9 +4173,16 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(eventRequests.id, id));
-    
+
     // Explicit fetch to get the updated data reliably
-    return await this.getEventRequest(id);
+    const result = await this.getEventRequest(id);
+
+    // DEBUG: Log result after save
+    if (result) {
+      logger.info(`[DB updateEventRequest] Event ${id} - After save, speakerDetails: ${JSON.stringify(result.speakerDetails)}`);
+    }
+
+    return result;
   }
 
   async deleteEventRequest(id: number, userId?: string): Promise<boolean> {
