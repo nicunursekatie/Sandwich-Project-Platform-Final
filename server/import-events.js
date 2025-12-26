@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool } from '@neondatabase/serverless';
 import { eventRequests } from '../shared/schema.ts';
+import { databaseUrl } from './config/database.ts';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);

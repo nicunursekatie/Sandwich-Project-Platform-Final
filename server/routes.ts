@@ -8,6 +8,7 @@ import createMainRoutes from './routes/index';
 import { requirePermission, blockInactiveUsers } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 import { logger } from './utils/production-safe-logger';
+import { databaseUrl } from './config/database';
 
 /**
  * Route Registration

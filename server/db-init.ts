@@ -17,6 +17,7 @@ import { ensureSessionsTable } from './session-migrate';
 import { runMigrationsAutomatically } from './migrate';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
+import { databaseUrl } from './config/database';
 
 const dbLogger = createServiceLogger('database');
 
@@ -29,11 +30,11 @@ export async function initializeDatabase() {
     const branch = getDatabaseBranch();
     
     dbLogger.debug('DATABASE_URL exists', {
-      exists: !!dbUrl,
+      exists: !!databaseUrl,
     });
     dbLogger.debug('DATABASE_URL preview', {
-      preview: dbUrl
-        ? dbUrl.substring(0, 20) + '...'
+      preview: databaseUrl
+        ? databaseUrl.substring(0, 20) + '...'
         : 'not set',
     });
     dbLogger.info(`Database branch: ${branch} (${isProduction ? 'production' : 'development'} mode)`);

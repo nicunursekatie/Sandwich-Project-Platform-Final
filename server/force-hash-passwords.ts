@@ -18,6 +18,7 @@ async function forceHashPasswords() {
   logger.log(`🗄️ Connecting to ${getDatabaseBranch()} database (${isProduction ? 'production' : 'development'} mode)`);
   
   // Direct PostgreSQL connection - no ORM
+  // Use centralized database configuration
   const pool = new Pool({
     connectionString: dbUrl,
   });
