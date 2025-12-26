@@ -46,6 +46,16 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
   - These helpers add `T12:00:00` (noon) to date-only strings before parsing, avoiding timezone boundary issues.
   - NEVER use `format(new Date(date), ...)` from date-fns on date-only strings - this causes the day-early bug.
 - **Storage Wrapper**: Includes a `StorageWrapper` with fallback mechanisms for database operations.
+  
+  **CRITICAL NEON SERVERLESS PATTERN - NEVER USE `.returning()` ON UPDATE OPERATIONS:**
+  - The bug: Neon serverless `.returning()` on UPDATE operations is unreliable - may return undefined/empty array even when the UPDATE succeeds.
+  - The fix: ALWAYS use explicit fetch after update pattern:
+    ```typescript
+    // BAD: const [result] = await db.update(...).returning();
+    // GOOD: await db.update(...); const result = await db.select().where(...);
+    ```
+  - This pattern is already applied to: `updateEventRequest`, `updateTspContactForEventRequest`
+  - When adding new update methods, follow this pattern to avoid stale data issues.
 - **Event Impact Report Data Source**: ONLY counts sandwiches from actual `sandwichCollections` records; does NOT fall back to estimated/planned counts from `eventRequests`.
 - **User Registration & Approval System**: New users sign up with `isActive: false` and require admin approval before accessing the application, enforced at login and through middleware.
 - **Google Sheets Sync Monitoring & Alerts**: Background sync service includes comprehensive monitoring and email alerts for no sync, stale sync, failures, and service stoppage. Advisory locks replaced with in-memory locking due to Neon serverless limitations.

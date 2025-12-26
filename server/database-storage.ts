@@ -4151,15 +4151,19 @@ export class DatabaseStorage implements IStorage {
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
     
-    const [result] = await db
+    // CRITICAL: Neon serverless .returning() is unreliable on UPDATE operations
+    // It may return undefined/empty even when the UPDATE succeeds
+    // Use explicit fetch pattern instead for reliable data retrieval
+    await db
       .update(eventRequests)
       .set({
         ...filteredData,
         updatedAt: new Date(),
       })
-      .where(eq(eventRequests.id, id))
-      .returning();
-    return result || undefined;
+      .where(eq(eventRequests.id, id));
+    
+    // Explicit fetch to get the updated data reliably
+    return await this.getEventRequest(id);
   }
 
   async deleteEventRequest(id: number, userId?: string): Promise<boolean> {
