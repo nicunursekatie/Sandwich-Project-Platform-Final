@@ -2575,7 +2575,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     driversArranged: z.boolean().nullable().optional(),
     selfTransport: z.boolean().nullable().optional(), // Organization transporting sandwiches themselves
     driverDetails: z.any().nullable().optional(), // JSONB field
-    speakerDetails: z.string().nullable().optional(),
+    speakerDetails: z.any().nullable().optional(), // JSONB field
     // Follow-up tracking fields
     scheduledCallDate: z
       .union([
