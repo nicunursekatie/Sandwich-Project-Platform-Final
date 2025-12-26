@@ -20,7 +20,7 @@ export async function runMigrationsAutomatically() {
   logger.log('🔄 Checking for pending database migrations...');
 
   // Connect to database using Neon HTTP
-  const sql = neon(databaseUrl);
+  const sql = neon(DATABASE_URL);
 
   try {
     // Create migrations tracking table if it doesn't exist
