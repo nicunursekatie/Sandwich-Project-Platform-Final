@@ -1224,6 +1224,27 @@ export default function DriverPlanningDashboard() {
     });
   }, [upcomingEvents]);
 
+  // When an event is selected, only show events on the same date on the map
+  const eventsToShowOnMap = useMemo(() => {
+    if (!selectedEvent) {
+      // No event selected - show all events
+      return upcomingEventsWithCoords;
+    }
+
+    // Get the selected event's date
+    const selectedDate = selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate;
+    if (!selectedDate) {
+      // If selected event has no date, just show that event
+      return upcomingEventsWithCoords.filter(e => e.id === selectedEvent.id);
+    }
+
+    // Filter to only events on the same date as the selected event
+    return upcomingEventsWithCoords.filter(event => {
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      return eventDate === selectedDate;
+    });
+  }, [upcomingEventsWithCoords, selectedEvent]);
+
   // Filter events based on staffing needs toggle
   const events = useMemo(() => {
     if (!showOnlyUnmetStaffing) return upcomingEvents;
@@ -2197,8 +2218,8 @@ export default function DriverPlanningDashboard() {
               fullTripRoute={fullTripRoute}
             />
 
-            {/* Event markers */}
-            {upcomingEventsWithCoords.map((event) => {
+            {/* Event markers - when an event is selected, only show events on the same date */}
+            {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               return (
@@ -3670,7 +3691,7 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
-            {upcomingEventsWithCoords.map((event) => {
+            {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               return (
@@ -3924,7 +3945,7 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
-            {upcomingEventsWithCoords.map((event) => {
+            {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               return (
