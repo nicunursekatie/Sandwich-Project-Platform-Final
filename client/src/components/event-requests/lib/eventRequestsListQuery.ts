@@ -4,6 +4,7 @@ export type EventRequestsListFilterParams = {
   days?: number;
   status?: string;
   needsAction?: string;
+  needsDriver?: string;
 };
 
 function buildQueryString(filterParams: EventRequestsListFilterParams): string {
@@ -11,6 +12,7 @@ function buildQueryString(filterParams: EventRequestsListFilterParams): string {
   if (filterParams.days) queryParams.set('days', filterParams.days.toString());
   if (filterParams.status) queryParams.set('status', filterParams.status);
   if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
+  if (filterParams.needsDriver) queryParams.set('needsDriver', filterParams.needsDriver);
   return queryParams.toString();
 }
 
@@ -44,7 +46,8 @@ export function buildEventRequestsListFilterParams(
   }
 
   if (quickFilter === 'needsDriver') {
-    return { days: 14, status: 'scheduled', needsAction: 'true' };
+    // Show ALL scheduled events that need drivers (no date restriction)
+    return { status: 'scheduled', needsDriver: 'true' };
   }
 
   // Status-based tabs (no date restrictions)

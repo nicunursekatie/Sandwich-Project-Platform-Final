@@ -1172,8 +1172,48 @@ router.get(
   }
 );
 
-// Lightweight list endpoint - returns only fields needed for list/card view
-// This reduces payload by 60-80% compared to full event data
+/*
+ * ============================================================================
+ * LIGHTWEIGHT ENDPOINT FIELD CONTRACT
+ * ============================================================================
+ * This endpoint serves these UI components:
+ *   - NewRequestCard.tsx
+ *   - ScheduledCard.tsx
+ *   - ScheduledCardEnhanced.tsx
+ *   - CompletedCard.tsx
+ *   - InProcessCard.tsx
+ *   - DeclinedCard.tsx
+ *   - PostponedCard.tsx
+ *   - EventEditDialog.tsx
+ *   - AssignmentDialog.tsx
+ *   - ScheduledSpreadsheetView.tsx
+ *   - IntakeCallDialog.tsx
+ *
+ * RULES:
+ *   1. If you modify ANY of those components to use a new field, you MUST add it here.
+ *   2. If you add a field here, document which component needs it in the comments below.
+ *   3. Do NOT remove fields without checking all consuming components.
+ *
+ * FIELD REQUIREMENTS BY COMPONENT:
+ *   - ALL CARDS: id, organizationName, department, status, scheduledEventDate,
+ *                desiredEventDate, firstName, lastName, email, phone, partnerOrganizations
+ *   - NewRequestCard: backupDates, sandwichTypes, backupContact*, message, nextAction,
+ *                     contactAttempts, lastContactAttempt, hasHostedBefore
+ *   - ScheduledCard/Enhanced: eventStartTime, eventEndTime, pickupTime, pickupDateTime,
+ *                             eventAddress, estimatedSandwichCount, sandwichTypes,
+ *                             driversNeeded, speakersNeeded, volunteersNeeded,
+ *                             assignedDriverIds, assignedVanDriverId, assignedVolunteerIds,
+ *                             speakerDetails, driverDetails, volunteerDetails, isDhlVan,
+ *                             vanDriverNeeded, selfTransport, overnightHoldingLocation,
+ *                             externalId, tspContact, customTspContact, tspContactAssignedDate,
+ *                             addedToOfficialSheet, isConfirmed, planningNotes, schedulingNotes,
+ *                             recipientAllocations, isMlkDayEvent, customVanDriverName,
+ *                             assignedRecipientIds, contactAttemptsLog, various notes fields
+ *   - CompletedCard: sandwichTypes, backupContact*, speakerDetails
+ *   - PostponedCard: tentativeNewDate, postponementReason
+ *   - EventEditDialog: pickupTimeWindow, tspContact, customTspContact
+ * ============================================================================
+ */
 router.get(
   '/list',
   isAuthenticated,
@@ -1184,6 +1224,7 @@ router.get(
       const daysParam = req.query.days as string | undefined;
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
+      const needsDriverParam = req.query.needsDriver as string | undefined;
 
       let eventRequests = await storage.getAllEventRequests();
 
@@ -1255,80 +1296,145 @@ router.get(
         });
       }
 
-      // Map to lightweight format - only fields needed for list/card display
+      // Filter for events specifically needing drivers (includes van drivers)
+      if (needsDriverParam === 'true') {
+        eventRequests = eventRequests.filter(event => {
+          // Regular drivers needed
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = event.assignedDriverIds
+            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+            : 0;
+          const needsRegularDriver = driversNeeded > assignedDrivers;
+
+          // Van driver needed
+          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
+
+          return needsRegularDriver || needsVanDriver;
+        });
+      }
+
+      // Map to lightweight format - see FIELD CONTRACT comment above
       const lightweightEvents = eventRequests.map(event => ({
-        // Identity
+        // ========== IDENTITY ==========
         id: event.id,
 
-        // Organization basics
+        // ========== ORGANIZATION (All cards) ==========
         organizationName: event.organizationName,
         organizationCategory: event.organizationCategory,
         department: event.department,
+        partnerOrganizations: event.partnerOrganizations, // All cards
 
-        // Contact (minimal)
+        // ========== CONTACT (All cards, IntakeCallDialog) ==========
         firstName: event.firstName,
         lastName: event.lastName,
         email: event.email,
         phone: event.phone,
+        // Backup contact (NewRequestCard, CompletedCard)
+        backupContactFirstName: (event as any).backupContactFirstName,
+        backupContactLastName: (event as any).backupContactLastName,
+        backupContactEmail: (event as any).backupContactEmail,
+        backupContactPhone: (event as any).backupContactPhone,
+        backupContactRole: (event as any).backupContactRole,
 
-        // Dates
+        // ========== DATES (All cards) ==========
         desiredEventDate: event.desiredEventDate,
         scheduledEventDate: event.scheduledEventDate,
         isConfirmed: event.isConfirmed,
+        backupDates: event.backupDates, // NewRequestCard
 
-        // Status & workflow
+        // ========== STATUS & WORKFLOW ==========
         status: event.status,
         statusChangedAt: event.statusChangedAt,
         assignedTo: event.assignedTo,
-        nextAction: event.nextAction,
-        message: event.message,
+        nextAction: event.nextAction, // NewRequestCard
+        message: event.message, // NewRequestCard
 
-        // Location (for map/display)
+        // ========== LOCATION (ScheduledCard, NewRequestCard) ==========
         eventAddress: event.eventAddress,
         latitude: event.latitude,
         longitude: event.longitude,
 
-        // Counts for badges
+        // ========== SANDWICH COUNTS & TYPES ==========
         estimatedSandwichCount: event.estimatedSandwichCount,
+        estimatedSandwichCountMin: event.estimatedSandwichCountMin, // ScheduledCard
+        estimatedSandwichCountMax: event.estimatedSandwichCountMax, // ScheduledCard
+        estimatedSandwichRangeType: event.estimatedSandwichRangeType, // ScheduledCard
         actualSandwichCount: event.actualSandwichCount,
+        sandwichTypes: event.sandwichTypes, // NewRequestCard, ScheduledCard, CompletedCard
         volunteerCount: event.volunteerCount,
         actualAttendance: event.actualAttendance,
 
-        // Staffing status (for "needs" indicators)
+        // ========== DRIVER STAFFING ==========
         driversNeeded: event.driversNeeded,
         assignedDriverIds: event.assignedDriverIds,
         driverDetails: event.driverDetails,
         selfTransport: event.selfTransport,
+        tentativeDriverIds: event.tentativeDriverIds,
+
+        // ========== SPEAKER STAFFING ==========
         speakersNeeded: event.speakersNeeded,
         assignedSpeakerIds: event.assignedSpeakerIds,
         speakerDetails: event.speakerDetails,
+
+        // ========== VOLUNTEER STAFFING ==========
         volunteersNeeded: event.volunteersNeeded,
         assignedVolunteerIds: event.assignedVolunteerIds,
         volunteerDetails: event.volunteerDetails,
+
+        // ========== VAN DRIVER ==========
         vanDriverNeeded: event.vanDriverNeeded,
         assignedVanDriverId: event.assignedVanDriverId,
         isDhlVan: event.isDhlVan,
-        tentativeDriverIds: event.tentativeDriverIds,
+        customVanDriverName: event.customVanDriverName, // ScheduledCardEnhanced
 
-        // TSP contact for display
-        tspContactAssigned: event.tspContactAssigned,
+        // ========== TSP CONTACT (All cards) ==========
+        tspContact: event.tspContact, // Actual user ID
+        tspContactAssigned: event.tspContactAssigned, // Display name
+        customTspContact: event.customTspContact,
+        tspContactAssignedDate: event.tspContactAssignedDate,
 
-        // Toolkit status
+        // ========== TOOLKIT STATUS ==========
         toolkitSent: event.toolkitSent,
         toolkitStatus: event.toolkitStatus,
 
-        // Times for display
+        // ========== TIMES (ScheduledCard, EventEditDialog) ==========
         eventStartTime: event.eventStartTime,
         eventEndTime: event.eventEndTime,
         pickupTime: event.pickupTime,
         pickupDateTime: event.pickupDateTime,
+        pickupTimeWindow: event.pickupTimeWindow, // EventEditDialog
 
-        // Tracking flags
+        // ========== TRACKING FLAGS ==========
         addedToOfficialSheet: event.addedToOfficialSheet,
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
+        lastContactAttempt: event.lastContactAttempt, // NewRequestCard
+        hasHostedBefore: event.hasHostedBefore, // NewRequestCard
 
-        // Timestamps
+        // ========== NOTES (ScheduledCard, ScheduledCardEnhanced) ==========
+        planningNotes: event.planningNotes,
+        schedulingNotes: event.schedulingNotes,
+        contactAttemptsLog: event.contactAttemptsLog,
+        unresponsiveNotes: event.unresponsiveNotes,
+        followUpNotes: event.followUpNotes,
+        distributionNotes: event.distributionNotes,
+        duplicateNotes: event.duplicateNotes,
+        socialMediaPostNotes: event.socialMediaPostNotes,
+
+        // ========== RECIPIENT ALLOCATION (ScheduledCard, SpreadsheetView) ==========
+        assignedRecipientIds: event.assignedRecipientIds,
+        recipientAllocations: event.recipientAllocations, // ScheduledCardEnhanced
+
+        // ========== SPECIAL FLAGS ==========
+        isMlkDayEvent: event.isMlkDayEvent, // ScheduledCardEnhanced
+        externalId: event.externalId, // ScheduledCard
+        overnightHoldingLocation: event.overnightHoldingLocation, // ScheduledCard
+
+        // ========== POSTPONEMENT (PostponedCard) ==========
+        tentativeNewDate: event.tentativeNewDate,
+        postponementReason: event.postponementReason,
+
+        // ========== TIMESTAMPS ==========
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       }));
