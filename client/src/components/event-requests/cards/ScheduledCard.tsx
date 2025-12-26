@@ -1100,7 +1100,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Contact Information Section */}
-        {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
+        {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.tspContactAssigned || request.customTspContact)) && (
           <div className="bg-white rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] shadow-md">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
               <Tooltip>
@@ -1223,7 +1223,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             )}
 
-            {(request.tspContact || request.customTspContact) && (
+            {(request.tspContact || request.tspContactAssigned || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1237,7 +1237,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </Tooltip>
                 <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">TSP Contact:</span>
                 <span className="text-base text-[#236383] font-semibold">
-                  {request.customTspContact || resolveUserName(request.tspContact || '')}
+                  {request.customTspContact || resolveUserName((request.tspContactAssigned || request.tspContact || ''))}
                 </span>
                 {canEdit && (
                   <Tooltip>

@@ -495,6 +495,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return totalFromTypes > 0 ? `${totalFromTypes}` : 'TBD';
   })();
 
+  // TSP Contact display (was lost in redesign; show under Event Details / Sandwiches)
+  const tspContactDisplay = useMemo(() => {
+    const custom = (request.customTspContact || '').trim();
+    if (custom) return custom;
+    if (request.tspContactAssigned) return resolveUserName(request.tspContactAssigned);
+    if (request.tspContact) return resolveUserName(request.tspContact);
+    return null;
+  }, [request.customTspContact, request.tspContactAssigned, request.tspContact, resolveUserName]);
+
   const missingInfo = getMissingIntakeInfo(request);
 
   const formatDateForInput = (dateStr: string) => {
@@ -1899,6 +1908,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
+
+            {/* TSP Contact - show below sandwiches (matches internal terminology + layout) */}
+            {tspContactDisplay && (
+              <div className="flex items-center gap-2 pt-3">
+                <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
+                    {tspContactDisplay}
+                  </div>
+                </div>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onEditTspContact}
+                    className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10"
+                    aria-label="Edit TSP contact"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
               </div>
             </div>
           </div>
