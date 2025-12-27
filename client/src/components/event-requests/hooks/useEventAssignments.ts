@@ -109,7 +109,10 @@ export const useEventAssignments = () => {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
         }
         // If user not found in users array, return a more readable format
-        logger.warn(`TSP Contact user not found: ${userIdOrName}`);
+        // Only warn if we actually have users loaded (avoids spam during loading)
+        if (allUsers.length > 0) {
+          logger.warn(`TSP Contact user not found: ${userIdOrName}`);
+        }
         return `User (${userIdOrName.slice(-8)})`;
       }
 
@@ -152,7 +155,10 @@ export const useEventAssignments = () => {
         }
         
         // If not found, return a generic placeholder
-        logger.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+        // Only warn if we actually have data loaded (avoids spam during loading)
+        if (allUsers.length > 0 || drivers.length > 0 || volunteers.length > 0) {
+          logger.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+        }
         return `Person #${userIdOrName}`;
       }
 
