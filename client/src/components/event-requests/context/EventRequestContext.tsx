@@ -537,18 +537,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Use server-side status counts for accurate tab badges
   // IMPORTANT: Always prefer serverStatusCounts over fallback since eventRequests is filtered by active tab
-  // When loading, counts remain undefined so formatCount can properly show '...' loading indicator
-  const statusCounts = statusCountsLoading ? {
-    all: undefined as number | undefined,
-    new: undefined as number | undefined,
-    in_process: undefined as number | undefined,
-    scheduled: undefined as number | undefined,
-    completed: undefined as number | undefined,
-    declined: undefined as number | undefined,
-    postponed: undefined as number | undefined,
-    cancelled: undefined as number | undefined,
-    my_assignments: undefined as number | undefined,
-  } : {
+  // The statusCountsLoading flag is passed to RequestFilters so formatCount can show '...' while loading
+  const statusCounts = {
     all: serverStatusCounts?.all ?? 0,
     new: serverStatusCounts?.new ?? 0,
     in_process: serverStatusCounts?.in_process ?? 0,
