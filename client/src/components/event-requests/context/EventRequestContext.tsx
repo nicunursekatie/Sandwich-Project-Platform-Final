@@ -537,7 +537,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Use server-side status counts for accurate tab badges
   // IMPORTANT: Always prefer serverStatusCounts over fallback since eventRequests is filtered by active tab
-  // The fallback values (0) are shown briefly while serverStatusCounts loads
+  // The statusCountsLoading flag is passed to RequestFilters so formatCount can show '...' while loading
   const statusCounts = {
     all: serverStatusCounts?.all ?? 0,
     new: serverStatusCounts?.new ?? 0,

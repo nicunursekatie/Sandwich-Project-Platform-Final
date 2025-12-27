@@ -34,8 +34,8 @@ const EXPECTED_HOST_LOCATIONS = [
 const LOCATION_CONTACT_EMAILS: Record<string, string> = {
   'Alpharetta': 'atlantamillers@comcast.net', // Nancy Miller
   'East Cobb/Roswell': 'vickib@aol.com', // Vicki Tropauer
-  'Intown/Druid Hills': 'lzauderer@yahoo.com', // Laura Baldwin
-  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead': 'lzauderer@yahoo.com', // Laura Baldwin
+  'Intown/Druid Hills': 'jordan@thesandwichproject.org', // Jordan
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead': 'jordan@thesandwichproject.org', // Jordan
   'Flowery Branch': 'kristinamday@yahoo.com', // Kristina McCarthney
   'Sandy Springs': 'jenmcohen@gmail.com', // Jen Cohen
   'Sandy Springs/Chastain': 'jenmcohen@gmail.com', // Jen Cohen
