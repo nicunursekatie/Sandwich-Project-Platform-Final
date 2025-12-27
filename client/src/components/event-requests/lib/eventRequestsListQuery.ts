@@ -1,10 +1,11 @@
-export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | null;
+export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | 'needsVan' | null;
 
 export type EventRequestsListFilterParams = {
   days?: number;
   status?: string;
   needsAction?: string;
   needsDriver?: string;
+  needsVan?: string;
 };
 
 function buildQueryString(filterParams: EventRequestsListFilterParams): string {
@@ -13,6 +14,7 @@ function buildQueryString(filterParams: EventRequestsListFilterParams): string {
   if (filterParams.status) queryParams.set('status', filterParams.status);
   if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
   if (filterParams.needsDriver) queryParams.set('needsDriver', filterParams.needsDriver);
+  if (filterParams.needsVan) queryParams.set('needsVan', filterParams.needsVan);
   return queryParams.toString();
 }
 
@@ -48,6 +50,11 @@ export function buildEventRequestsListFilterParams(
   if (quickFilter === 'needsDriver') {
     // Show ALL scheduled events that need drivers (no date restriction)
     return { status: 'scheduled', needsDriver: 'true' };
+  }
+
+  if (quickFilter === 'needsVan') {
+    // Show ALL scheduled events that need a van (no date restriction)
+    return { status: 'scheduled', needsVan: 'true' };
   }
 
   // Status-based tabs (no date restrictions)

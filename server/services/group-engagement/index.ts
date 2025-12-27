@@ -257,53 +257,69 @@ function determineEngagementLevel(
 }
 
 /**
- * Detect high-value partners who were recently active and have now gone quiet
+ * Check if organization was a regular contributor (had consistent activity)
  */
-function hasSignificantDropOff(metrics: EngagementMetrics): boolean {
-  if (!metrics.eventDates.length) return false;
+function wasRegularContributor(metrics: EngagementMetrics): boolean {
+  // Need at least 2 events to be considered a "regular" contributor
+  if (metrics.totalEvents < 2) return false;
 
-  const now = new Date();
-  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-  const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-
-  // Activity windows
-  const recentEvents = metrics.eventDates.filter(d => d >= sixMonthsAgo).length;
-  const previousWindowEvents = metrics.eventDates.filter(d =>
-    d >= oneYearAgo && d < sixMonthsAgo
-  ).length;
-
-  const hadMeaningfulVolume = metrics.totalSandwiches >= 500;
-  const hadRegularActivity = previousWindowEvents >= 2;
-
-  // No activity in the last 6 months, but regular/high-volume activity in the 6-12 months prior
-  return hadMeaningfulVolume && hadRegularActivity && recentEvents === 0;
+  // Either had meaningful volume OR multiple completed events
+  return metrics.totalSandwiches >= 300 || metrics.completedEvents >= 2;
 }
 
 /**
- * Determine outreach priority based on engagement level and potential
+ * Determine outreach priority based on engagement patterns
+ *
+ * Priority logic:
+ * - URGENT: Regular contributor who stopped 1-3 months ago (catch before they go cold)
+ * - HIGH: Regular contributor who stopped 3-6 months ago (still recoverable)
+ * - NORMAL: Dormant 6-12 months with meaningful history (worth re-engaging but not urgent)
+ * - LOW: Never engaged, highly engaged (no outreach needed), or dormant 12+ months
  */
 function determineOutreachPriority(
   engagementLevel: OrganizationEngagement['engagementLevel'],
   metrics: EngagementMetrics,
   scores: EngagementScores
 ): OrganizationEngagement['outreachPriority'] {
-  const significantDropOff = hasSignificantDropOff(metrics);
-
-  if (significantDropOff) {
-    // Recently went dark after being active and high-volume
-    return metrics.daysSinceLastEvent !== null && metrics.daysSinceLastEvent > 365
-      ? 'urgent'
-      : 'high';
-  }
-
   // Never-engaged organizations are low priority - they're prospects, not at-risk partners
   if (metrics.totalEvents === 0) {
     return 'low';
   }
 
   // Highly engaged partners don't need outreach
-  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') return 'low';
+  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') {
+    return 'low';
+  }
 
+  const daysSinceLastEvent = metrics.daysSinceLastEvent;
+  if (daysSinceLastEvent === null) {
+    return 'low';
+  }
+
+  const wasRegular = wasRegularContributor(metrics);
+
+  // Recently disengaged regular contributors are the highest priority
+  if (wasRegular) {
+    // Stopped 1-3 months ago - urgent, catch them before they go cold
+    if (daysSinceLastEvent >= 30 && daysSinceLastEvent <= 90) {
+      return 'urgent';
+    }
+    // Stopped 3-6 months ago - high priority, still recoverable
+    if (daysSinceLastEvent > 90 && daysSinceLastEvent <= 180) {
+      return 'high';
+    }
+    // Stopped 6-12 months ago - normal priority, worth re-engaging
+    if (daysSinceLastEvent > 180 && daysSinceLastEvent <= 365) {
+      return 'normal';
+    }
+  }
+
+  // Long dormant (12+ months) or sporadic contributors - low priority
+  if (daysSinceLastEvent > 365) {
+    return 'low';
+  }
+
+  // Default for other cases
   return 'normal';
 }
 
@@ -316,34 +332,45 @@ function generateInsights(
   engagementLevel: OrganizationEngagement['engagementLevel']
 ): EngagementInsight[] {
   const insights: EngagementInsight[] = [];
-  const significantDropOff = hasSignificantDropOff(metrics);
+  const wasRegular = wasRegularContributor(metrics);
+  const daysSinceLastEvent = metrics.daysSinceLastEvent;
 
-  if (significantDropOff) {
-    insights.push({
-      type: 'warning',
-      title: 'Significant Drop-Off',
-      description: 'Previously a regular high-volume partner but no activity in the last 6 months. Prioritize re-engagement.',
-      priority: 1
-    });
+  // Recent drop-off insights for regular contributors
+  if (wasRegular && daysSinceLastEvent !== null) {
+    if (daysSinceLastEvent >= 30 && daysSinceLastEvent <= 90) {
+      insights.push({
+        type: 'warning',
+        title: 'Recent Disengagement',
+        description: 'Regular contributor who stopped 1-3 months ago. Reach out now before they go cold.',
+        priority: 1
+      });
+    } else if (daysSinceLastEvent > 90 && daysSinceLastEvent <= 180) {
+      insights.push({
+        type: 'warning',
+        title: 'Engagement Declining',
+        description: 'Regular contributor with no activity in 3-6 months. Schedule a check-in soon.',
+        priority: 2
+      });
+    }
   }
 
   // Recency insights
-  if (metrics.daysSinceLastEvent !== null) {
-    if (metrics.daysSinceLastEvent > 365) {
+  if (daysSinceLastEvent !== null) {
+    if (daysSinceLastEvent > 365) {
       insights.push({
-        type: 'warning',
-        title: 'Dormant Organization',
-        description: `No activity in ${Math.floor(metrics.daysSinceLastEvent / 30)} months. Consider re-engagement outreach.`,
-        priority: 1
+        type: 'info',
+        title: 'Long Dormant',
+        description: `No activity in ${Math.floor(daysSinceLastEvent / 30)} months. May be worth a re-engagement effort if they had meaningful history.`,
+        priority: 4
       });
-    } else if (metrics.daysSinceLastEvent > 180) {
+    } else if (daysSinceLastEvent > 180 && !wasRegular) {
       insights.push({
-        type: 'warning',
-        title: 'Extended Inactivity',
-        description: `Last event was ${Math.floor(metrics.daysSinceLastEvent / 30)} months ago. Schedule a check-in.`,
-        priority: 2
+        type: 'info',
+        title: 'Inactive',
+        description: `Last event was ${Math.floor(daysSinceLastEvent / 30)} months ago.`,
+        priority: 4
       });
-    } else if (metrics.daysSinceLastEvent <= 30 && metrics.completedEvents > 0) {
+    } else if (daysSinceLastEvent <= 30 && metrics.completedEvents > 0) {
       insights.push({
         type: 'positive',
         title: 'Recently Active',

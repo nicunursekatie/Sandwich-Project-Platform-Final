@@ -1335,6 +1335,12 @@ router.get(
         });
       }
 
+      // Filter for events that need a van (vanDriverNeeded is true)
+      const needsVanParam = req.query.needsVan as string | undefined;
+      if (needsVanParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.vanDriverNeeded === true);
+      }
+
       // Map to lightweight format - see FIELD CONTRACT comment above
       const lightweightEvents = eventRequests.map(event => ({
         // ========== IDENTITY ==========

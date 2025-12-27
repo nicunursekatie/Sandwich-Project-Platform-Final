@@ -19,7 +19,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -674,6 +674,23 @@ const EventRequestsManagementContent: React.FC = () => {
               >
                 <Car className="w-4 h-4 mr-1.5" />
                 Needs Driver
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveTab('scheduled');
+                  setSearchQuery('');
+                  setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan');
+                }}
+                className={`${
+                  quickFilter === 'needsVan'
+                    ? 'bg-[#D68319] text-white border-[#D68319] hover:bg-[#D68319]/90'
+                    : ''
+                }`}
+              >
+                <Truck className="w-4 h-4 mr-1.5" />
+                Needs Van
               </Button>
               <Button
                 variant="outline"

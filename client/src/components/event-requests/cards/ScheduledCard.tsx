@@ -1834,7 +1834,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </>
                       ) : (
                         <>
-                          <UserPlus className="w-3 h-3 mr-1" />
+                          <Car className="w-3 h-3 mr-1" />
                           Assign Driver
                         </>
                       )}
@@ -1913,7 +1913,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       variant="outline"
                       onClick={() => openAssignmentDialog('speaker')}
                     >
-                      <UserPlus className="w-3 h-3 mr-1" />
+                      <Megaphone className="w-3 h-3 mr-1" />
                       Assign Speaker
                     </Button>
                   )}
@@ -1972,7 +1972,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       variant="outline"
                       onClick={() => openAssignmentDialog('volunteer')}
                     >
-                      <UserPlus className="w-3 h-3 mr-1" />
+                      <Users className="w-3 h-3 mr-1" />
                       Assign Volunteer
                     </Button>
                   )}
