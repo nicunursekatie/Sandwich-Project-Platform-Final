@@ -232,6 +232,12 @@ function determineEngagementLevel(
   score: number,
   metrics: EngagementMetrics
 ): OrganizationEngagement['engagementLevel'] {
+  // Check for organizations that have NEVER had an event with us
+  // These aren't "at risk" - they were never engaged to begin with
+  if (metrics.totalEvents === 0) {
+    return 'new';  // Treat as new/prospect - not "at risk"
+  }
+
   // Check for new organizations (less than 90 days since first event)
   if (metrics.daysSinceFirstEvent !== null && metrics.daysSinceFirstEvent < 90) {
     return 'new';
@@ -290,8 +296,14 @@ function determineOutreachPriority(
       : 'high';
   }
 
-  // Otherwise, deprioritize long-gone or sporadic partners
+  // Never-engaged organizations are low priority - they're prospects, not at-risk partners
+  if (metrics.totalEvents === 0) {
+    return 'low';
+  }
+
+  // Highly engaged partners don't need outreach
   if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') return 'low';
+
   return 'normal';
 }
 
