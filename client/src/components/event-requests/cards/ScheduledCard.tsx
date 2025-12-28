@@ -2220,7 +2220,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </p>
                 </div>
               )}
-              {request.duplicateNotes && (
+              {request.duplicateNotes && request.duplicateNotes.toLowerCase().trim() !== 'no' && (
                 <div>
                   <p className="text-base font-medium mb-1">Duplicate Check Notes:</p>
                   <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
