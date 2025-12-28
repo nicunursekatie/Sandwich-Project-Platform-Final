@@ -296,9 +296,8 @@ export default function DriversManagement() {
   // Fetch vehicles when editing a driver
   const fetchDriverVehicles = async (driverId: number) => {
     try {
-      const response = await apiRequest('GET', `/api/drivers/${driverId}/vehicles`);
-      const vehicles = await response.json();
-      setEditingDriverVehicles(vehicles);
+      const vehicles = await apiRequest('GET', `/api/drivers/${driverId}/vehicles`);
+      setEditingDriverVehicles(Array.isArray(vehicles) ? vehicles : []);
     } catch (error) {
       logger.error('Failed to fetch driver vehicles', error);
       setEditingDriverVehicles([]);
@@ -315,8 +314,8 @@ export default function DriversManagement() {
   // Add vehicle mutation
   const addVehicleMutation = useMutation({
     mutationFn: async ({ driverId, vehicle }: { driverId: number; vehicle: { make: string; model: string; coolerCapacity: number | null } }) => {
-      const response = await apiRequest('POST', `/api/drivers/${driverId}/vehicles`, vehicle);
-      return response.json();
+      const newVehicle = await apiRequest('POST', `/api/drivers/${driverId}/vehicles`, vehicle);
+      return newVehicle;
     },
     onSuccess: (newVehicle) => {
       setEditingDriverVehicles(prev => [...prev, newVehicle]);
