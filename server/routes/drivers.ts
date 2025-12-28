@@ -320,12 +320,23 @@ export function createDriversRouter(deps: RouterDependencies) {
 
       // Convert date strings to Date objects for timestamp fields
       const updateData = { ...req.body };
-      if (updateData.unavailableUntil && typeof updateData.unavailableUntil === 'string') {
-        updateData.unavailableUntil = new Date(updateData.unavailableUntil);
-      }
-      if (updateData.unavailableUntil === '') {
-        updateData.unavailableUntil = null;
-      }
+
+      // Remove read-only fields that shouldn't be updated
+      delete updateData.id;
+      delete updateData.createdAt;
+      delete updateData.updatedAt;
+      delete updateData.geocodedAt;
+
+      // Handle timestamp fields that can be updated
+      const timestampFields = ['unavailableUntil'];
+      timestampFields.forEach(field => {
+        if (updateData[field] && typeof updateData[field] === 'string') {
+          updateData[field] = new Date(updateData[field]);
+        }
+        if (updateData[field] === '') {
+          updateData[field] = null;
+        }
+      });
 
       const driver = await storage.updateDriver(id, updateData);
       if (!driver) {
@@ -366,12 +377,23 @@ export function createDriversRouter(deps: RouterDependencies) {
 
       // Convert date strings to Date objects for timestamp fields
       const updateData = { ...req.body };
-      if (updateData.unavailableUntil && typeof updateData.unavailableUntil === 'string') {
-        updateData.unavailableUntil = new Date(updateData.unavailableUntil);
-      }
-      if (updateData.unavailableUntil === '') {
-        updateData.unavailableUntil = null;
-      }
+
+      // Remove read-only fields that shouldn't be updated
+      delete updateData.id;
+      delete updateData.createdAt;
+      delete updateData.updatedAt;
+      delete updateData.geocodedAt;
+
+      // Handle timestamp fields that can be updated
+      const timestampFields = ['unavailableUntil'];
+      timestampFields.forEach(field => {
+        if (updateData[field] && typeof updateData[field] === 'string') {
+          updateData[field] = new Date(updateData[field]);
+        }
+        if (updateData[field] === '') {
+          updateData[field] = null;
+        }
+      });
 
       const driver = await storage.updateDriver(id, updateData);
       if (!driver) {
