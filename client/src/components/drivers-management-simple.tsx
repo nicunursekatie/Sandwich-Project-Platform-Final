@@ -137,8 +137,7 @@ export default function DriversManagement() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [agreementFilter, setAgreementFilter] = useState<string>('all');
   const [vanFilter, setVanFilter] = useState<string>('all');
-  const [weeklyDriverFilter, setWeeklyDriverFilter] = useState<string>('all');
-  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all');
+  const [driverTypeFilter, setDriverTypeFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -202,49 +201,42 @@ export default function DriversManagement() {
       );
     }
 
-    // Apply status filter
+    // Apply status filter (active, inactive, or temporarily unavailable)
     if (statusFilter === 'active') {
-      filtered = filtered.filter((driver) => driver.isActive === true);
+      filtered = filtered.filter((driver) => driver.isActive === true && !driver.temporarilyUnavailable);
     } else if (statusFilter === 'inactive') {
       filtered = filtered.filter((driver) => driver.isActive === false);
+    } else if (statusFilter === 'temp_unavailable') {
+      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true);
     }
 
-    // Apply agreement filter
-    if (agreementFilter === 'sent') {
-      filtered = filtered.filter(
-        (driver) => driver.emailAgreementSent === true
-      );
-    } else if (agreementFilter === 'missing') {
+    // Apply agreement filter (signed, signed + located, no agreement)
+    if (agreementFilter === 'signed') {
+      filtered = filtered.filter((driver) => driver.emailAgreementSent === true);
+    } else if (agreementFilter === 'signed_and_located') {
+      filtered = filtered.filter((driver) => driver.emailAgreementSent === true && driver.agreementInDatabase === true);
+    } else if (agreementFilter === 'no_agreement') {
       filtered = filtered.filter((driver) => !driver.emailAgreementSent);
     }
 
-    // Apply van filter
+    // Apply van filter (approved, approved + willing, interested)
     if (vanFilter === 'approved') {
       filtered = filtered.filter((driver) => driver.vanApproved === true);
-    } else if (vanFilter === 'not_approved') {
-      filtered = filtered.filter((driver) => !driver.vanApproved);
+    } else if (vanFilter === 'approved_and_willing') {
+      filtered = filtered.filter((driver) => driver.vanApproved === true && driver.interestedInVanDriving === true);
+    } else if (vanFilter === 'interested') {
+      filtered = filtered.filter((driver) => driver.interestedInVanDriving === true);
     }
 
-    // Apply weekly driver filter
-    if (weeklyDriverFilter === 'weekly') {
+    // Apply driver type filter (weekly or event)
+    if (driverTypeFilter === 'weekly') {
       filtered = filtered.filter((driver) => driver.isWeeklyDriver === true);
-    } else if (weeklyDriverFilter === 'not_weekly') {
-      filtered = filtered.filter((driver) => !driver.isWeeklyDriver);
-    }
-
-    // Apply availability filter (temporarily unavailable vs available)
-    if (availabilityFilter === 'temp_unavailable') {
-      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true);
-    } else if (availabilityFilter === 'check_back') {
-      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true && driver.unavailableFollowUp === 'check_back');
-    } else if (availabilityFilter === 'will_reach_out') {
-      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true && driver.unavailableFollowUp === 'will_reach_out');
-    } else if (availabilityFilter === 'available') {
-      filtered = filtered.filter((driver) => !driver.temporarilyUnavailable);
+    } else if (driverTypeFilter === 'event') {
+      filtered = filtered.filter((driver) => driver.isEventDriver === true);
     }
 
     return filtered;
-  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, weeklyDriverFilter, availabilityFilter]);
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, driverTypeFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -962,13 +954,15 @@ export default function DriversManagement() {
               Filters
               {(statusFilter !== 'all' ||
                 agreementFilter !== 'all' ||
-                vanFilter !== 'all') && (
+                vanFilter !== 'all' ||
+                driverTypeFilter !== 'all') && (
                 <Badge variant="secondary" className="ml-1">
                   {
                     [
                       statusFilter !== 'all' && 'Status',
                       agreementFilter !== 'all' && 'Agreement',
                       vanFilter !== 'all' && 'Van',
+                      driverTypeFilter !== 'all' && 'Type',
                     ].filter(Boolean).length
                   }
                 </Badge>
@@ -984,13 +978,14 @@ export default function DriversManagement() {
                   Status
                 </Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active Only</SelectItem>
-                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="temp_unavailable">Temporarily Unavailable</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1003,13 +998,14 @@ export default function DriversManagement() {
                   value={agreementFilter}
                   onValueChange={setAgreementFilter}
                 >
-                  <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Agreements</SelectItem>
-                    <SelectItem value="sent">Agreement Signed</SelectItem>
-                    <SelectItem value="missing">Missing Agreement</SelectItem>
+                    <SelectItem value="signed">Agreement Signed</SelectItem>
+                    <SelectItem value="signed_and_located">Signed + Located</SelectItem>
+                    <SelectItem value="no_agreement">No Agreement Signed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1019,47 +1015,30 @@ export default function DriversManagement() {
                   Van Status
                 </Label>
                 <Select value={vanFilter} onValueChange={setVanFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Van Status</SelectItem>
                     <SelectItem value="approved">Van Approved</SelectItem>
-                    <SelectItem value="not_approved">
-                      Not Van Approved
-                    </SelectItem>
+                    <SelectItem value="approved_and_willing">Approved + Willing to Drive</SelectItem>
+                    <SelectItem value="interested">Interested in Driving Van</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="weeklyFilter">Weekly Driver</Label>
-                <Select value={weeklyDriverFilter} onValueChange={setWeeklyDriverFilter}>
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">
+                  Driver Type
+                </Label>
+                <Select value={driverTypeFilter} onValueChange={setDriverTypeFilter}>
                   <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Drivers</SelectItem>
-                    <SelectItem value="weekly">Weekly Only</SelectItem>
-                    <SelectItem value="not_weekly">
-                      Non-Weekly Only
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="availabilityFilter">Availability</Label>
-                <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Availability</SelectItem>
-                    <SelectItem value="available">Currently Available</SelectItem>
-                    <SelectItem value="temp_unavailable">Temporarily Unavailable</SelectItem>
-                    <SelectItem value="check_back">Check Back Later</SelectItem>
-                    <SelectItem value="will_reach_out">Will Reach Out</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="weekly">Weekly Driver</SelectItem>
+                    <SelectItem value="event">Event Driver</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1073,8 +1052,7 @@ export default function DriversManagement() {
                     setStatusFilter('all');
                     setAgreementFilter('all');
                     setVanFilter('all');
-                    setWeeklyDriverFilter('all');
-                    setAvailabilityFilter('all');
+                    setDriverTypeFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -1089,10 +1067,10 @@ export default function DriversManagement() {
           <div className="text-sm text-slate-600">
             Showing {filteredDrivers.length} of {drivers.length} drivers
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
-            {statusFilter !== 'all' && <span> • {statusFilter}</span>}
-            {agreementFilter !== 'all' && <span> • {agreementFilter}</span>}
-            {vanFilter !== 'all' && <span> • {vanFilter}</span>}
-            {availabilityFilter !== 'all' && <span> • {availabilityFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : availabilityFilter === 'check_back' ? 'Check Back Later' : availabilityFilter === 'will_reach_out' ? 'Will Reach Out' : 'Available'}</span>}
+            {statusFilter !== 'all' && <span> • {statusFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : statusFilter === 'active' ? 'Active' : 'Inactive'}</span>}
+            {agreementFilter !== 'all' && <span> • {agreementFilter === 'signed' ? 'Agreement Signed' : agreementFilter === 'signed_and_located' ? 'Signed + Located' : 'No Agreement'}</span>}
+            {vanFilter !== 'all' && <span> • {vanFilter === 'approved' ? 'Van Approved' : vanFilter === 'approved_and_willing' ? 'Approved + Willing' : 'Van Interest'}</span>}
+            {driverTypeFilter !== 'all' && <span> • {driverTypeFilter === 'weekly' ? 'Weekly Driver' : 'Event Driver'}</span>}
           </div>
         </div>
       </div>
