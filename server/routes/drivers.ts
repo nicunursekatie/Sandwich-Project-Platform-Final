@@ -274,7 +274,16 @@ export function createDriversRouter(deps: RouterDependencies) {
   // Create new driver
   router.post('/', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const validatedData = insertDriverSchema.parse(req.body);
+      // Convert date strings to Date objects for timestamp fields
+      const createData = { ...req.body };
+      if (createData.unavailableUntil && typeof createData.unavailableUntil === 'string') {
+        createData.unavailableUntil = new Date(createData.unavailableUntil);
+      }
+      if (createData.unavailableUntil === '') {
+        createData.unavailableUntil = null;
+      }
+
+      const validatedData = insertDriverSchema.parse(createData);
       const driver = await storage.createDriver(validatedData);
 
       // Audit log
@@ -309,7 +318,16 @@ export function createDriversRouter(deps: RouterDependencies) {
         return res.status(404).json({ message: 'Driver not found' });
       }
 
-      const driver = await storage.updateDriver(id, req.body);
+      // Convert date strings to Date objects for timestamp fields
+      const updateData = { ...req.body };
+      if (updateData.unavailableUntil && typeof updateData.unavailableUntil === 'string') {
+        updateData.unavailableUntil = new Date(updateData.unavailableUntil);
+      }
+      if (updateData.unavailableUntil === '') {
+        updateData.unavailableUntil = null;
+      }
+
+      const driver = await storage.updateDriver(id, updateData);
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
       }
@@ -346,7 +364,16 @@ export function createDriversRouter(deps: RouterDependencies) {
         return res.status(404).json({ message: 'Driver not found' });
       }
 
-      const driver = await storage.updateDriver(id, req.body);
+      // Convert date strings to Date objects for timestamp fields
+      const updateData = { ...req.body };
+      if (updateData.unavailableUntil && typeof updateData.unavailableUntil === 'string') {
+        updateData.unavailableUntil = new Date(updateData.unavailableUntil);
+      }
+      if (updateData.unavailableUntil === '') {
+        updateData.unavailableUntil = null;
+      }
+
+      const driver = await storage.updateDriver(id, updateData);
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
       }
