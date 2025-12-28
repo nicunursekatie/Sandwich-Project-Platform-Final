@@ -147,11 +147,14 @@ export default function DriversManagement() {
     temporarilyUnavailable: false,
     unavailableNote: '',
     unavailableUntil: '',
-    holdsTSPCoolers: false,
-    willPurchaseCoolers: false,
+    coolerStatus: '',
     agreementInDatabase: false,
     notes: '',
   });
+
+  // State for vehicle management in edit mode
+  const [editingDriverVehicles, setEditingDriverVehicles] = useState<DriverVehicle[]>([]);
+  const [newVehicle, setNewVehicle] = useState({ make: '', model: '', coolerCapacity: '' });
 
   // Fetch drivers
   const { data: drivers = [], isLoading } = useQuery<Driver[]>({
@@ -284,10 +287,74 @@ export default function DriversManagement() {
       temporarilyUnavailable: false,
       unavailableNote: '',
       unavailableUntil: '',
-      holdsTSPCoolers: false,
-      willPurchaseCoolers: false,
+      coolerStatus: '',
       agreementInDatabase: false,
       notes: '',
+    });
+  };
+
+  // Fetch vehicles when editing a driver
+  const fetchDriverVehicles = async (driverId: number) => {
+    try {
+      const response = await apiRequest('GET', `/api/drivers/${driverId}/vehicles`);
+      const vehicles = await response.json();
+      setEditingDriverVehicles(vehicles);
+    } catch (error) {
+      logger.error('Failed to fetch driver vehicles', error);
+      setEditingDriverVehicles([]);
+    }
+  };
+
+  // Handle opening edit dialog - also fetch vehicles
+  const handleEditDriver = (driver: Driver) => {
+    setEditingDriver(driver);
+    fetchDriverVehicles(driver.id);
+    setNewVehicle({ make: '', model: '', coolerCapacity: '' });
+  };
+
+  // Add vehicle mutation
+  const addVehicleMutation = useMutation({
+    mutationFn: async ({ driverId, vehicle }: { driverId: number; vehicle: { make: string; model: string; coolerCapacity: number | null } }) => {
+      const response = await apiRequest('POST', `/api/drivers/${driverId}/vehicles`, vehicle);
+      return response.json();
+    },
+    onSuccess: (newVehicle) => {
+      setEditingDriverVehicles(prev => [...prev, newVehicle]);
+      setNewVehicle({ make: '', model: '', coolerCapacity: '' });
+      toast({ title: 'Vehicle added successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to add vehicle', variant: 'destructive' });
+    },
+  });
+
+  // Delete vehicle mutation
+  const deleteVehicleMutation = useMutation({
+    mutationFn: async (vehicleId: number) => {
+      await apiRequest('DELETE', `/api/drivers/vehicles/${vehicleId}`);
+      return vehicleId;
+    },
+    onSuccess: (vehicleId) => {
+      setEditingDriverVehicles(prev => prev.filter(v => v.id !== vehicleId));
+      toast({ title: 'Vehicle removed' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to remove vehicle', variant: 'destructive' });
+    },
+  });
+
+  const handleAddVehicle = () => {
+    if (!editingDriver || !newVehicle.make || !newVehicle.model) {
+      toast({ title: 'Please enter make and model', variant: 'destructive' });
+      return;
+    }
+    addVehicleMutation.mutate({
+      driverId: editingDriver.id,
+      vehicle: {
+        make: newVehicle.make,
+        model: newVehicle.model,
+        coolerCapacity: newVehicle.coolerCapacity ? parseInt(newVehicle.coolerCapacity) : null,
+      },
     });
   };
 
@@ -640,35 +707,25 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="wantsTextAlerts">Wants Text Alerts</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="holdsTSPCoolers"
-                        checked={newDriver.holdsTSPCoolers}
-                        onChange={(e) =>
-                          setNewDriver({
-                            ...newDriver,
-                            holdsTSPCoolers: e.target.checked,
-                          })
+                    <div>
+                      <Label htmlFor="coolerStatus">Cooler Status</Label>
+                      <Select
+                        value={newDriver.coolerStatus}
+                        onValueChange={(value) =>
+                          setNewDriver({ ...newDriver, coolerStatus: value })
                         }
-                        className="rounded border-gray-300"
-                      />
-                      <Label htmlFor="holdsTSPCoolers">Holds TSP Coolers at Home</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="willPurchaseCoolers"
-                        checked={newDriver.willPurchaseCoolers}
-                        onChange={(e) =>
-                          setNewDriver({
-                            ...newDriver,
-                            willPurchaseCoolers: e.target.checked,
-                          })
-                        }
-                        className="rounded border-gray-300"
-                      />
-                      <Label htmlFor="willPurchaseCoolers">Will Purchase Coolers (Tax Receipt)</Label>
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select cooler status..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="has_tsp_coolers">Has TSP Coolers</SelectItem>
+                          <SelectItem value="would_hold_tsp_coolers">Would Hold TSP Coolers at Home</SelectItem>
+                          <SelectItem value="would_buy_coolers">Would Buy Coolers (Tax Receipt)</SelectItem>
+                          <SelectItem value="has_own_coolers">Has Own Coolers for Review</SelectItem>
+                          <SelectItem value="cannot_hold_coolers">Cannot Hold Coolers at Home</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -683,7 +740,7 @@ export default function DriversManagement() {
                         }
                         className="rounded border-gray-300"
                       />
-                      <Label htmlFor="agreementInDatabase">Agreement in Database</Label>
+                      <Label htmlFor="agreementInDatabase">Agreement Located in Database</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -1150,35 +1207,25 @@ export default function DriversManagement() {
                 />
                 <Label htmlFor="edit-wantsTextAlerts">Wants Text Alerts</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-holdsTSPCoolers"
-                  checked={editingDriver.holdsTSPCoolers || false}
-                  onChange={(e) =>
-                    setEditingDriver({
-                      ...editingDriver,
-                      holdsTSPCoolers: e.target.checked,
-                    })
+              <div>
+                <Label htmlFor="edit-coolerStatus">Cooler Status</Label>
+                <Select
+                  value={editingDriver.coolerStatus || ''}
+                  onValueChange={(value) =>
+                    setEditingDriver({ ...editingDriver, coolerStatus: value })
                   }
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="edit-holdsTSPCoolers">Holds TSP Coolers at Home</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-willPurchaseCoolers"
-                  checked={editingDriver.willPurchaseCoolers || false}
-                  onChange={(e) =>
-                    setEditingDriver({
-                      ...editingDriver,
-                      willPurchaseCoolers: e.target.checked,
-                    })
-                  }
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="edit-willPurchaseCoolers">Will Purchase Coolers (Tax Receipt)</Label>
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select cooler status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="has_tsp_coolers">Has TSP Coolers</SelectItem>
+                    <SelectItem value="would_hold_tsp_coolers">Would Hold TSP Coolers at Home</SelectItem>
+                    <SelectItem value="would_buy_coolers">Would Buy Coolers (Tax Receipt)</SelectItem>
+                    <SelectItem value="has_own_coolers">Has Own Coolers for Review</SelectItem>
+                    <SelectItem value="cannot_hold_coolers">Cannot Hold Coolers at Home</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -1193,7 +1240,7 @@ export default function DriversManagement() {
                   }
                   className="rounded border-gray-300"
                 />
-                <Label htmlFor="edit-agreementInDatabase">Agreement in Database</Label>
+                <Label htmlFor="edit-agreementInDatabase">Agreement Located in Database</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -1258,6 +1305,68 @@ export default function DriversManagement() {
                   rows={3}
                 />
               </div>
+
+              {/* Vehicles Section */}
+              <div className="border-t pt-4 mt-4">
+                <Label className="text-base font-semibold">Vehicles</Label>
+                <p className="text-sm text-muted-foreground mb-3">Add vehicles with cooler capacity</p>
+
+                {/* Existing vehicles */}
+                {editingDriverVehicles.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {editingDriverVehicles.map((vehicle) => (
+                      <div key={vehicle.id} className="flex items-center justify-between bg-muted p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4" />
+                          <span className="font-medium">{vehicle.make} {vehicle.model}</span>
+                          {vehicle.coolerCapacity && (
+                            <Badge variant="outline">{vehicle.coolerCapacity} coolers</Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteVehicleMutation.mutate(vehicle.id)}
+                          disabled={deleteVehicleMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new vehicle form */}
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Make"
+                    value={newVehicle.make}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, make: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Model"
+                    value={newVehicle.model}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Coolers"
+                    value={newVehicle.coolerCapacity}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, coolerCapacity: e.target.value })}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleAddVehicle}
+                  disabled={addVehicleMutation.isPending || !newVehicle.make || !newVehicle.model}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Vehicle
+                </Button>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -1529,7 +1638,7 @@ export default function DriversManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingDriver(driver)}
+                          onClick={() => handleEditDriver(driver)}
                           disabled={!canEdit}
                           className="h-8 w-8 p-0"
                         >
@@ -1705,7 +1814,7 @@ export default function DriversManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingDriver(driver)}
+                          onClick={() => handleEditDriver(driver)}
                           disabled={!canEdit}
                           className="h-8 w-8 p-0"
                         >

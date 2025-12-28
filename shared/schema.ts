@@ -885,8 +885,8 @@ export const drivers = pgTable('drivers', {
   temporarilyUnavailable: boolean('temporarily_unavailable').notNull().default(false),
   unavailableNote: text('unavailable_note'),
   unavailableUntil: timestamp('unavailable_until'),
-  holdsTSPCoolers: boolean('holds_tsp_coolers').notNull().default(false),
-  willPurchaseCoolers: boolean('will_purchase_coolers').notNull().default(false),
+  // Cooler status: 'has_tsp_coolers', 'would_hold_tsp_coolers', 'would_buy_coolers', 'has_own_coolers', 'cannot_hold_coolers', or null
+  coolerStatus: text('cooler_status'),
   agreementInDatabase: boolean('agreement_in_database').notNull().default(false),
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
