@@ -106,6 +106,18 @@ function googleMapsSearchUrl(query: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
+function getCoolerStatusDisplay(status: string | null | undefined): { label: string; color: string } | null {
+  if (!status) return null;
+  const statusMap: Record<string, { label: string; color: string }> = {
+    'has_tsp_coolers': { label: 'Has TSP Coolers', color: 'bg-green-100 text-green-800 border-green-200' },
+    'would_hold_tsp_coolers': { label: 'Would Hold TSP Coolers', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+    'would_buy_coolers': { label: 'Would Buy Coolers', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+    'has_own_coolers': { label: 'Has Own Coolers', color: 'bg-teal-100 text-teal-800 border-teal-200' },
+    'cannot_hold_coolers': { label: 'Cannot Hold Coolers', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+  };
+  return statusMap[status] || null;
+}
+
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1510,10 +1522,22 @@ export default function DriversManagement() {
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Active
                               </Badge>
+                              {driver.temporarilyUnavailable && (
+                                <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+                                  <PauseCircle className="w-3 h-3 mr-1" />
+                                  Temporarily Unavailable
+                                </Badge>
+                              )}
                               {driver.isWeeklyDriver && (
                                 <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
-                                  <Car className="w-3 h-3 mr-1" />
+                                  <Calendar className="w-3 h-3 mr-1" />
                                   Weekly Driver
+                                </Badge>
+                              )}
+                              {driver.isEventDriver && (
+                                <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-xs">
+                                  <Truck className="w-3 h-3 mr-1" />
+                                  Event Driver
                                 </Badge>
                               )}
                               {driver.emailAgreementSent ? (
@@ -1527,6 +1551,12 @@ export default function DriversManagement() {
                                   Missing Agreement
                                 </Badge>
                               )}
+                              {driver.agreementInDatabase && (
+                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
+                                  <Database className="w-3 h-3 mr-1" />
+                                  Agreement in DB
+                                </Badge>
+                              )}
                               {driver.vanApproved && (
                                 <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary text-xs">
                                   <CheckCircle className="w-3 h-3 mr-1" />
@@ -1537,6 +1567,24 @@ export default function DriversManagement() {
                                 <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-xs" data-testid={`badge-dl-on-file-${driver.id}`}>
                                   <FileCheck className="w-3 h-3 mr-1" />
                                   DL# on file
+                                </Badge>
+                              )}
+                              {driver.wantsTextAlerts && (
+                                <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50 text-xs">
+                                  <Smartphone className="w-3 h-3 mr-1" />
+                                  Text Alerts
+                                </Badge>
+                              )}
+                              {driver.wantsAppWalkthrough && (
+                                <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 text-xs">
+                                  <MessageSquare className="w-3 h-3 mr-1" />
+                                  Needs Walkthrough
+                                </Badge>
+                              )}
+                              {getCoolerStatusDisplay(driver.coolerStatus) && (
+                                <Badge className={`${getCoolerStatusDisplay(driver.coolerStatus)!.color} text-xs`}>
+                                  <Package className="w-3 h-3 mr-1" />
+                                  {getCoolerStatusDisplay(driver.coolerStatus)!.label}
                                 </Badge>
                               )}
                             </div>
@@ -1629,6 +1677,26 @@ export default function DriversManagement() {
                               </div>
                             </div>
                           )}
+
+                          {/* Temporarily Unavailable Details */}
+                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote) && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                              <div className="flex items-start gap-2">
+                                <PauseCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <div className="text-xs font-medium text-red-800">Temporarily Unavailable</div>
+                                  {driver.unavailableUntil && (
+                                    <div className="text-sm text-red-900">
+                                      Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
+                                    </div>
+                                  )}
+                                  {driver.unavailableNote && (
+                                    <div className="text-sm text-red-800 mt-1">{driver.unavailableNote}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1698,6 +1766,24 @@ export default function DriversManagement() {
                                 <XCircle className="w-3 h-3 mr-1" />
                                 Inactive
                               </Badge>
+                              {driver.temporarilyUnavailable && (
+                                <Badge variant="outline" className="border-red-200 text-red-600 bg-red-50 text-xs">
+                                  <PauseCircle className="w-3 h-3 mr-1" />
+                                  Temporarily Unavailable
+                                </Badge>
+                              )}
+                              {driver.isWeeklyDriver && (
+                                <Badge variant="outline" className="border-purple-200 text-purple-600 bg-purple-50 text-xs">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  Weekly Driver
+                                </Badge>
+                              )}
+                              {driver.isEventDriver && (
+                                <Badge variant="outline" className="border-indigo-200 text-indigo-600 bg-indigo-50 text-xs">
+                                  <Truck className="w-3 h-3 mr-1" />
+                                  Event Driver
+                                </Badge>
+                              )}
                               {driver.emailAgreementSent ? (
                                 <Badge variant="outline" className="border-green-200 text-green-600 bg-green-50 text-xs">
                                   <FileCheck className="w-3 h-3 mr-1" />
@@ -1709,10 +1795,34 @@ export default function DriversManagement() {
                                   Missing Agreement
                                 </Badge>
                               )}
+                              {driver.agreementInDatabase && (
+                                <Badge variant="outline" className="border-emerald-200 text-emerald-600 bg-emerald-50 text-xs">
+                                  <Database className="w-3 h-3 mr-1" />
+                                  Agreement in DB
+                                </Badge>
+                              )}
                               {driver.licenseNumber && driver.licenseNumber.trim().length > 0 && (
                                 <Badge variant="outline" className="border-slate-200 text-slate-600 bg-slate-50 text-xs" data-testid={`badge-dl-on-file-${driver.id}`}>
                                   <FileCheck className="w-3 h-3 mr-1" />
                                   DL# on file
+                                </Badge>
+                              )}
+                              {driver.wantsTextAlerts && (
+                                <Badge variant="outline" className="border-cyan-200 text-cyan-600 bg-cyan-50 text-xs">
+                                  <Smartphone className="w-3 h-3 mr-1" />
+                                  Text Alerts
+                                </Badge>
+                              )}
+                              {driver.wantsAppWalkthrough && (
+                                <Badge variant="outline" className="border-amber-200 text-amber-600 bg-amber-50 text-xs">
+                                  <MessageSquare className="w-3 h-3 mr-1" />
+                                  Needs Walkthrough
+                                </Badge>
+                              )}
+                              {getCoolerStatusDisplay(driver.coolerStatus) && (
+                                <Badge variant="outline" className="border-gray-200 text-gray-600 bg-gray-50 text-xs">
+                                  <Package className="w-3 h-3 mr-1" />
+                                  {getCoolerStatusDisplay(driver.coolerStatus)!.label}
                                 </Badge>
                               )}
                             </div>
@@ -1801,6 +1911,26 @@ export default function DriversManagement() {
                                 <div>
                                   <div className="text-xs font-medium text-[#A31C41]">Availability</div>
                                   <div className="text-sm text-gray-900">{driver.availability}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Temporarily Unavailable Details */}
+                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote) && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                              <div className="flex items-start gap-2">
+                                <PauseCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <div className="text-xs font-medium text-red-700">Temporarily Unavailable</div>
+                                  {driver.unavailableUntil && (
+                                    <div className="text-sm text-red-800">
+                                      Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
+                                    </div>
+                                  )}
+                                  {driver.unavailableNote && (
+                                    <div className="text-sm text-red-700 mt-1">{driver.unavailableNote}</div>
+                                  )}
                                 </div>
                               </div>
                             </div>
