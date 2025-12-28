@@ -138,6 +138,7 @@ export default function DriversManagement() {
   const [agreementFilter, setAgreementFilter] = useState<string>('all');
   const [vanFilter, setVanFilter] = useState<string>('all');
   const [weeklyDriverFilter, setWeeklyDriverFilter] = useState<string>('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -161,10 +162,12 @@ export default function DriversManagement() {
     temporarilyUnavailable: false,
     unavailableNote: '',
     unavailableUntil: '',
+    unavailableFollowUp: '',
     coolerStatus: '',
     agreementInDatabase: false,
     neverFullyOnboarded: false,
     wantsToRestart: false,
+    interestedInVanDriving: false,
     notes: '',
   });
 
@@ -229,8 +232,19 @@ export default function DriversManagement() {
       filtered = filtered.filter((driver) => !driver.isWeeklyDriver);
     }
 
+    // Apply availability filter (temporarily unavailable vs available)
+    if (availabilityFilter === 'temp_unavailable') {
+      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true);
+    } else if (availabilityFilter === 'check_back') {
+      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true && driver.unavailableFollowUp === 'check_back');
+    } else if (availabilityFilter === 'will_reach_out') {
+      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true && driver.unavailableFollowUp === 'will_reach_out');
+    } else if (availabilityFilter === 'available') {
+      filtered = filtered.filter((driver) => !driver.temporarilyUnavailable);
+    }
+
     return filtered;
-  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, weeklyDriverFilter]);
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, weeklyDriverFilter, availabilityFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -303,10 +317,12 @@ export default function DriversManagement() {
       temporarilyUnavailable: false,
       unavailableNote: '',
       unavailableUntil: '',
+      unavailableFollowUp: '',
       coolerStatus: '',
       agreementInDatabase: false,
       neverFullyOnboarded: false,
       wantsToRestart: false,
+      interestedInVanDriving: false,
       notes: '',
     });
   };
@@ -787,7 +803,22 @@ export default function DriversManagement() {
                         }
                         className="rounded border-gray-300"
                       />
-                      <Label htmlFor="wantsToRestart">Wants to Restart Onboarding</Label>
+                      <Label htmlFor="wantsToRestart">Wants to Restart Active Driving</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="interestedInVanDriving"
+                        checked={newDriver.interestedInVanDriving}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            interestedInVanDriving: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="interestedInVanDriving">Interested in Driving the Van</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -806,6 +837,23 @@ export default function DriversManagement() {
                     </div>
                     {newDriver.temporarilyUnavailable && (
                       <>
+                        <div>
+                          <Label htmlFor="unavailableFollowUp">Follow-up Preference</Label>
+                          <Select
+                            value={newDriver.unavailableFollowUp}
+                            onValueChange={(value) =>
+                              setNewDriver({ ...newDriver, unavailableFollowUp: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="How should we follow up?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="will_reach_out">I'll reach out when I'm ready</SelectItem>
+                              <SelectItem value="check_back">Check back in with me in a few months</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <div>
                           <Label htmlFor="unavailableUntil">Available Again On</Label>
                           <Input
@@ -1000,6 +1048,22 @@ export default function DriversManagement() {
                 </Select>
               </div>
 
+              <div>
+                <Label htmlFor="availabilityFilter">Availability</Label>
+                <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Availability</SelectItem>
+                    <SelectItem value="available">Currently Available</SelectItem>
+                    <SelectItem value="temp_unavailable">Temporarily Unavailable</SelectItem>
+                    <SelectItem value="check_back">Check Back Later</SelectItem>
+                    <SelectItem value="will_reach_out">Will Reach Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button
                   variant="ghost"
@@ -1010,6 +1074,7 @@ export default function DriversManagement() {
                     setAgreementFilter('all');
                     setVanFilter('all');
                     setWeeklyDriverFilter('all');
+                    setAvailabilityFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -1027,6 +1092,7 @@ export default function DriversManagement() {
             {statusFilter !== 'all' && <span> • {statusFilter}</span>}
             {agreementFilter !== 'all' && <span> • {agreementFilter}</span>}
             {vanFilter !== 'all' && <span> • {vanFilter}</span>}
+            {availabilityFilter !== 'all' && <span> • {availabilityFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : availabilityFilter === 'check_back' ? 'Check Back Later' : availabilityFilter === 'will_reach_out' ? 'Will Reach Out' : 'Available'}</span>}
           </div>
         </div>
       </div>
@@ -1317,7 +1383,22 @@ export default function DriversManagement() {
                   }
                   className="rounded border-gray-300"
                 />
-                <Label htmlFor="edit-wantsToRestart">Wants to Restart Onboarding</Label>
+                <Label htmlFor="edit-wantsToRestart">Wants to Restart Active Driving</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-interestedInVanDriving"
+                  checked={editingDriver.interestedInVanDriving || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      interestedInVanDriving: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-interestedInVanDriving">Interested in Driving the Van</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -1336,6 +1417,23 @@ export default function DriversManagement() {
               </div>
               {editingDriver.temporarilyUnavailable && (
                 <>
+                  <div>
+                    <Label htmlFor="edit-unavailableFollowUp">Follow-up Preference</Label>
+                    <Select
+                      value={editingDriver.unavailableFollowUp || ''}
+                      onValueChange={(value) =>
+                        setEditingDriver({ ...editingDriver, unavailableFollowUp: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="How should we follow up?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="will_reach_out">I'll reach out when I'm ready</SelectItem>
+                        <SelectItem value="check_back">Check back in with me in a few months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label htmlFor="edit-unavailableUntil">Available Again On</Label>
                     <Input
@@ -1662,7 +1760,13 @@ export default function DriversManagement() {
                               {driver.wantsToRestart && (
                                 <Badge className="bg-sky-100 text-sky-800 border-sky-200 text-xs">
                                   <RefreshCw className="w-3 h-3 mr-1" />
-                                  Wants to Restart
+                                  Wants to Restart Driving
+                                </Badge>
+                              )}
+                              {driver.interestedInVanDriving && (
+                                <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+                                  <Truck className="w-3 h-3 mr-1" />
+                                  Van Interest
                                 </Badge>
                               )}
                             </div>
@@ -1757,12 +1861,19 @@ export default function DriversManagement() {
                           )}
 
                           {/* Temporarily Unavailable Details */}
-                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote) && (
+                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote || driver.unavailableFollowUp) && (
                             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                               <div className="flex items-start gap-2">
                                 <PauseCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="text-xs font-medium text-red-800">Temporarily Unavailable</div>
+                                  {driver.unavailableFollowUp && (
+                                    <div className="text-sm text-red-900 font-medium">
+                                      {driver.unavailableFollowUp === 'will_reach_out'
+                                        ? "Will reach out when ready"
+                                        : "Check back in a few months"}
+                                    </div>
+                                  )}
                                   {driver.unavailableUntil && (
                                     <div className="text-sm text-red-900">
                                       Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
@@ -1912,7 +2023,13 @@ export default function DriversManagement() {
                               {driver.wantsToRestart && (
                                 <Badge variant="outline" className="border-sky-200 text-sky-600 bg-sky-50 text-xs">
                                   <RefreshCw className="w-3 h-3 mr-1" />
-                                  Wants to Restart
+                                  Wants to Restart Driving
+                                </Badge>
+                              )}
+                              {driver.interestedInVanDriving && (
+                                <Badge variant="outline" className="border-orange-200 text-orange-600 bg-orange-50 text-xs">
+                                  <Truck className="w-3 h-3 mr-1" />
+                                  Van Interest
                                 </Badge>
                               )}
                             </div>
@@ -2007,12 +2124,19 @@ export default function DriversManagement() {
                           )}
 
                           {/* Temporarily Unavailable Details */}
-                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote) && (
+                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote || driver.unavailableFollowUp) && (
                             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                               <div className="flex items-start gap-2">
                                 <PauseCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="text-xs font-medium text-red-700">Temporarily Unavailable</div>
+                                  {driver.unavailableFollowUp && (
+                                    <div className="text-sm text-red-800 font-medium">
+                                      {driver.unavailableFollowUp === 'will_reach_out'
+                                        ? "Will reach out when ready"
+                                        : "Check back in a few months"}
+                                    </div>
+                                  )}
                                   {driver.unavailableUntil && (
                                     <div className="text-sm text-red-800">
                                       Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}

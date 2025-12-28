@@ -885,12 +885,16 @@ export const drivers = pgTable('drivers', {
   temporarilyUnavailable: boolean('temporarily_unavailable').notNull().default(false),
   unavailableNote: text('unavailable_note'),
   unavailableUntil: timestamp('unavailable_until'),
+  // Follow-up preference when unavailable: 'will_reach_out' or 'check_back'
+  unavailableFollowUp: text('unavailable_follow_up'),
   // Cooler status: 'has_tsp_coolers', 'would_hold_tsp_coolers', 'would_buy_coolers', 'has_own_coolers', 'cannot_hold_coolers', or null
   coolerStatus: text('cooler_status'),
   agreementInDatabase: boolean('agreement_in_database').notNull().default(false),
   // Onboarding status fields
   neverFullyOnboarded: boolean('never_fully_onboarded').notNull().default(false),
   wantsToRestart: boolean('wants_to_restart').notNull().default(false),
+  // Van driving interest - requires insurance setup process
+  interestedInVanDriving: boolean('interested_in_van_driving').notNull().default(false),
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
   geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
