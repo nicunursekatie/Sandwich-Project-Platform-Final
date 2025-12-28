@@ -497,6 +497,118 @@ export function createDriversRouter(deps: RouterDependencies) {
     }
   });
 
+  // === Driver Vehicles Routes ===
+
+  // Get all vehicles for a driver
+  router.get('/:driverId/vehicles', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      const vehicles = await storage.getDriverVehicles(driverId);
+      res.json(vehicles);
+    } catch (error) {
+      logger.error('Failed to get driver vehicles', error);
+      res.status(500).json({ message: 'Failed to get driver vehicles' });
+    }
+  });
+
+  // Create a new vehicle for a driver
+  router.post('/:driverId/vehicles', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      const vehicleData = { ...req.body, driverId };
+      const vehicle = await storage.createDriverVehicle(vehicleData);
+
+      // Audit log
+      await AuditLogger.logCreate(
+        'driver_vehicles',
+        String(vehicle.id),
+        vehicle,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
+      res.status(201).json(vehicle);
+    } catch (error) {
+      logger.error('Failed to create driver vehicle', error);
+      res.status(500).json({ message: 'Failed to create driver vehicle' });
+    }
+  });
+
+  // Update a vehicle
+  router.put('/vehicles/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const oldVehicle = await storage.getDriverVehicle(id);
+      if (!oldVehicle) {
+        return res.status(404).json({ message: 'Vehicle not found' });
+      }
+
+      const vehicle = await storage.updateDriverVehicle(id, req.body);
+      if (!vehicle) {
+        return res.status(404).json({ message: 'Vehicle not found' });
+      }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'driver_vehicles',
+        String(id),
+        oldVehicle,
+        vehicle,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
+      res.json(vehicle);
+    } catch (error) {
+      logger.error('Failed to update driver vehicle', error);
+      res.status(500).json({ message: 'Failed to update driver vehicle' });
+    }
+  });
+
+  // Delete a vehicle
+  router.delete('/vehicles/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const oldVehicle = await storage.getDriverVehicle(id);
+      if (!oldVehicle) {
+        return res.status(404).json({ message: 'Vehicle not found' });
+      }
+
+      const deleted = await storage.deleteDriverVehicle(id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Vehicle not found' });
+      }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'driver_vehicles',
+        String(id),
+        oldVehicle,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Failed to delete driver vehicle', error);
+      res.status(500).json({ message: 'Failed to delete driver vehicle' });
+    }
+  });
+
   return router;
 }
 

@@ -1106,6 +1106,46 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // Driver Vehicle methods
+  async getDriverVehicles(driverId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDriverVehicles(driverId),
+      () => this.fallbackStorage.getDriverVehicles(driverId)
+    );
+  }
+
+  async getDriverVehicle(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDriverVehicle(id),
+      () => this.fallbackStorage.getDriverVehicle(id)
+    );
+  }
+
+  async createDriverVehicle(vehicle: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createDriverVehicle(vehicle),
+      () => {
+        throw new Error('Driver vehicle operations not available in fallback storage');
+      }
+    );
+  }
+
+  async updateDriverVehicle(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateDriverVehicle(id, updates),
+      () => {
+        throw new Error('Driver vehicle operations not available in fallback storage');
+      }
+    );
+  }
+
+  async deleteDriverVehicle(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteDriverVehicle(id),
+      () => this.fallbackStorage.deleteDriverVehicle(id)
+    );
+  }
+
   // Committee management methods
   async getAllCommittees() {
     return this.executeWithFallback(

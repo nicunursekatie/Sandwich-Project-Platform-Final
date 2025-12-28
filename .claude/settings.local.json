@@ -51,7 +51,9 @@
       "Bash(tasklist:*)",
       "Bash(npm ls:*)",
       "Bash(timeout 10 npm run dev)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(more:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

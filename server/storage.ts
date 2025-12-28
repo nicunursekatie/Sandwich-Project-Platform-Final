@@ -14,6 +14,7 @@ import {
   meetings,
   driverAgreements,
   drivers,
+  driverVehicles,
   volunteers,
   hosts,
   hostContacts,
@@ -67,6 +68,8 @@ import {
   type InsertDriverAgreement,
   type Driver,
   type InsertDriver,
+  type DriverVehicle,
+  type InsertDriverVehicle,
   type Volunteer,
   type InsertVolunteer,
   type Host,
@@ -400,6 +403,16 @@ export interface IStorage {
     updates: Partial<Driver>
   ): Promise<Driver | undefined>;
   deleteDriver(id: number): Promise<boolean>;
+
+  // Driver Vehicles
+  getDriverVehicles(driverId: number): Promise<DriverVehicle[]>;
+  getDriverVehicle(id: number): Promise<DriverVehicle | undefined>;
+  createDriverVehicle(vehicle: InsertDriverVehicle): Promise<DriverVehicle>;
+  updateDriverVehicle(
+    id: number,
+    updates: Partial<DriverVehicle>
+  ): Promise<DriverVehicle | undefined>;
+  deleteDriverVehicle(id: number): Promise<boolean>;
 
   // Volunteers
   getAllVolunteers(): Promise<Volunteer[]>;
@@ -2011,6 +2024,60 @@ export class MemStorage implements IStorage {
 
   async deleteDriver(id: number): Promise<boolean> {
     return this.drivers.delete(id);
+  }
+
+  // Driver vehicle methods (in-memory implementation)
+  private driverVehiclesMap = new Map<number, DriverVehicle>();
+  private currentDriverVehicleId = 1;
+
+  async getDriverVehicles(driverId: number): Promise<DriverVehicle[]> {
+    return Array.from(this.driverVehiclesMap.values()).filter(
+      (v) => v.driverId === driverId
+    );
+  }
+
+  async getDriverVehicle(id: number): Promise<DriverVehicle | undefined> {
+    return this.driverVehiclesMap.get(id);
+  }
+
+  async createDriverVehicle(
+    vehicle: InsertDriverVehicle
+  ): Promise<DriverVehicle> {
+    const id = this.currentDriverVehicleId++;
+    const now = new Date();
+    const newVehicle: DriverVehicle = {
+      id,
+      ...vehicle,
+      year: vehicle.year ?? null,
+      color: vehicle.color ?? null,
+      coolerCapacity: vehicle.coolerCapacity ?? null,
+      isPrimary: vehicle.isPrimary ?? false,
+      notes: vehicle.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.driverVehiclesMap.set(id, newVehicle);
+    return newVehicle;
+  }
+
+  async updateDriverVehicle(
+    id: number,
+    updates: Partial<DriverVehicle>
+  ): Promise<DriverVehicle | undefined> {
+    const vehicle = this.driverVehiclesMap.get(id);
+    if (!vehicle) return undefined;
+
+    const updatedVehicle: DriverVehicle = {
+      ...vehicle,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.driverVehiclesMap.set(id, updatedVehicle);
+    return updatedVehicle;
+  }
+
+  async deleteDriverVehicle(id: number): Promise<boolean> {
+    return this.driverVehiclesMap.delete(id);
   }
 
   // Volunteer methods

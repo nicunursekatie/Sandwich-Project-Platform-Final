@@ -878,9 +878,34 @@ export const drivers = pgTable('drivers', {
   inactiveReason: text('inactive_reason'),
   isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
   willingToSpeak: boolean('willing_to_speak').notNull().default(false),
+  // New driver fields
+  isEventDriver: boolean('is_event_driver').notNull().default(false),
+  wantsAppWalkthrough: boolean('wants_app_walkthrough').notNull().default(false),
+  wantsTextAlerts: boolean('wants_text_alerts').notNull().default(false),
+  temporarilyUnavailable: boolean('temporarily_unavailable').notNull().default(false),
+  unavailableNote: text('unavailable_note'),
+  unavailableUntil: timestamp('unavailable_until'),
+  holdsTSPCoolers: boolean('holds_tsp_coolers').notNull().default(false),
+  willPurchaseCoolers: boolean('will_purchase_coolers').notNull().default(false),
+  agreementInDatabase: boolean('agreement_in_database').notNull().default(false),
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
   geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Driver vehicles table for multiple vehicles per driver with cooler capacity
+export const driverVehicles = pgTable('driver_vehicles', {
+  id: serial('id').primaryKey(),
+  driverId: integer('driver_id').notNull(),
+  make: text('make').notNull(),
+  model: text('model').notNull(),
+  year: integer('year'),
+  color: text('color'),
+  coolerCapacity: integer('cooler_capacity'), // Number of coolers this vehicle can hold
+  isPrimary: boolean('is_primary').notNull().default(false),
+  notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -1390,6 +1415,11 @@ export const insertDriverSchema = createInsertSchema(drivers).omit({
   createdAt: true,
   updatedAt: true,
 });
+export const insertDriverVehicleSchema = createInsertSchema(driverVehicles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertVolunteerSchema = createInsertSchema(volunteers).omit({
   id: true,
   createdAt: true,
@@ -1639,6 +1669,8 @@ export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 // Driver and Volunteer types
 export type Driver = typeof drivers.$inferSelect;
 export type InsertDriver = z.infer<typeof insertDriverSchema>;
+export type DriverVehicle = typeof driverVehicles.$inferSelect;
+export type InsertDriverVehicle = z.infer<typeof insertDriverVehicleSchema>;
 export type Volunteer = typeof volunteers.$inferSelect;
 export type InsertVolunteer = z.infer<typeof insertVolunteerSchema>;
 

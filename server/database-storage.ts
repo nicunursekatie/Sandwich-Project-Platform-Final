@@ -21,6 +21,7 @@ import {
   agendaSections,
   driverAgreements,
   drivers,
+  driverVehicles,
   volunteers,
   hosts,
   hostContacts,
@@ -87,6 +88,8 @@ import {
   type InsertDriverAgreement,
   type Driver,
   type InsertDriver,
+  type DriverVehicle,
+  type InsertDriverVehicle,
   type Volunteer,
   type InsertVolunteer,
   type Host,
@@ -1711,6 +1714,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDriver(id: number): Promise<boolean> {
     const result = await db.delete(drivers).where(eq(drivers.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Driver Vehicles
+  async getDriverVehicles(driverId: number): Promise<DriverVehicle[]> {
+    return await db
+      .select()
+      .from(driverVehicles)
+      .where(eq(driverVehicles.driverId, driverId))
+      .orderBy(driverVehicles.isPrimary);
+  }
+
+  async getDriverVehicle(id: number): Promise<DriverVehicle | undefined> {
+    const [vehicle] = await db
+      .select()
+      .from(driverVehicles)
+      .where(eq(driverVehicles.id, id));
+    return vehicle || undefined;
+  }
+
+  async createDriverVehicle(
+    vehicle: InsertDriverVehicle
+  ): Promise<DriverVehicle> {
+    const [newVehicle] = await db
+      .insert(driverVehicles)
+      .values(vehicle)
+      .returning();
+    return newVehicle;
+  }
+
+  async updateDriverVehicle(
+    id: number,
+    updates: Partial<DriverVehicle>
+  ): Promise<DriverVehicle | undefined> {
+    const [vehicle] = await db
+      .update(driverVehicles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(driverVehicles.id, id))
+      .returning();
+    return vehicle || undefined;
+  }
+
+  async deleteDriverVehicle(id: number): Promise<boolean> {
+    const result = await db
+      .delete(driverVehicles)
+      .where(eq(driverVehicles.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 

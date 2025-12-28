@@ -42,13 +42,22 @@ import {
   Loader2,
   ExternalLink,
   Copy,
+  Calendar,
+  MessageSquare,
+  Smartphone,
+  PauseCircle,
+  Package,
+  Database,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
-import type { Driver, Host } from '@shared/schema';
+import type { Driver, Host, DriverVehicle } from '@shared/schema';
+import { Textarea } from '@/components/ui/textarea';
 import { logger } from '@/lib/logger';
 
 function getDriverLocationValue(driver: Driver): string {
@@ -131,6 +140,17 @@ export default function DriversManagement() {
     isWeeklyDriver: false,
     willingToSpeak: false,
     isActive: true,
+    // New fields
+    isEventDriver: false,
+    wantsAppWalkthrough: false,
+    wantsTextAlerts: false,
+    temporarilyUnavailable: false,
+    unavailableNote: '',
+    unavailableUntil: '',
+    holdsTSPCoolers: false,
+    willPurchaseCoolers: false,
+    agreementInDatabase: false,
+    notes: '',
   });
 
   // Fetch drivers
@@ -256,7 +276,18 @@ export default function DriversManagement() {
       emailAgreementSent: false,
       vanApproved: false,
       isWeeklyDriver: false,
+      willingToSpeak: false,
       isActive: true,
+      isEventDriver: false,
+      wantsAppWalkthrough: false,
+      wantsTextAlerts: false,
+      temporarilyUnavailable: false,
+      unavailableNote: '',
+      unavailableUntil: '',
+      holdsTSPCoolers: false,
+      willPurchaseCoolers: false,
+      agreementInDatabase: false,
+      notes: '',
     });
   };
 
@@ -397,7 +428,7 @@ export default function DriversManagement() {
                     <span className="sm:hidden">Add</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add New Driver</DialogTitle>
                   </DialogHeader>
@@ -563,6 +594,159 @@ export default function DriversManagement() {
                         className="rounded border-gray-300"
                       />
                       <Label htmlFor="vanApproved">Van Approved</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isEventDriver"
+                        checked={newDriver.isEventDriver}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            isEventDriver: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="isEventDriver">Event Driver</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="wantsAppWalkthrough"
+                        checked={newDriver.wantsAppWalkthrough}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            wantsAppWalkthrough: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="wantsAppWalkthrough">Wants App Walkthrough</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="wantsTextAlerts"
+                        checked={newDriver.wantsTextAlerts}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            wantsTextAlerts: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="wantsTextAlerts">Wants Text Alerts</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="holdsTSPCoolers"
+                        checked={newDriver.holdsTSPCoolers}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            holdsTSPCoolers: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="holdsTSPCoolers">Holds TSP Coolers at Home</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="willPurchaseCoolers"
+                        checked={newDriver.willPurchaseCoolers}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            willPurchaseCoolers: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="willPurchaseCoolers">Will Purchase Coolers (Tax Receipt)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="agreementInDatabase"
+                        checked={newDriver.agreementInDatabase}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            agreementInDatabase: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="agreementInDatabase">Agreement in Database</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="temporarilyUnavailable"
+                        checked={newDriver.temporarilyUnavailable}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            temporarilyUnavailable: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="temporarilyUnavailable">Temporarily Unavailable</Label>
+                    </div>
+                    {newDriver.temporarilyUnavailable && (
+                      <>
+                        <div>
+                          <Label htmlFor="unavailableUntil">Available Again On</Label>
+                          <Input
+                            id="unavailableUntil"
+                            type="date"
+                            value={newDriver.unavailableUntil}
+                            onChange={(e) =>
+                              setNewDriver({
+                                ...newDriver,
+                                unavailableUntil: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="unavailableNote">Unavailability Note</Label>
+                          <Textarea
+                            id="unavailableNote"
+                            value={newDriver.unavailableNote}
+                            onChange={(e) =>
+                              setNewDriver({
+                                ...newDriver,
+                                unavailableNote: e.target.value,
+                              })
+                            }
+                            placeholder="Reason for temporary unavailability"
+                            rows={2}
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        value={newDriver.notes}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            notes: e.target.value,
+                          })
+                        }
+                        placeholder="General notes about this driver"
+                        rows={3}
+                      />
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -748,7 +932,7 @@ export default function DriversManagement() {
         open={!!editingDriver}
         onOpenChange={() => setEditingDriver(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Driver</DialogTitle>
           </DialogHeader>
@@ -920,6 +1104,159 @@ export default function DriversManagement() {
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="edit-vanApproved">Van Approved</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-isEventDriver"
+                  checked={editingDriver.isEventDriver || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      isEventDriver: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-isEventDriver">Event Driver</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-wantsAppWalkthrough"
+                  checked={editingDriver.wantsAppWalkthrough || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      wantsAppWalkthrough: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-wantsAppWalkthrough">Wants App Walkthrough</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-wantsTextAlerts"
+                  checked={editingDriver.wantsTextAlerts || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      wantsTextAlerts: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-wantsTextAlerts">Wants Text Alerts</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-holdsTSPCoolers"
+                  checked={editingDriver.holdsTSPCoolers || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      holdsTSPCoolers: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-holdsTSPCoolers">Holds TSP Coolers at Home</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-willPurchaseCoolers"
+                  checked={editingDriver.willPurchaseCoolers || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      willPurchaseCoolers: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-willPurchaseCoolers">Will Purchase Coolers (Tax Receipt)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-agreementInDatabase"
+                  checked={editingDriver.agreementInDatabase || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      agreementInDatabase: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-agreementInDatabase">Agreement in Database</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-temporarilyUnavailable"
+                  checked={editingDriver.temporarilyUnavailable || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      temporarilyUnavailable: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-temporarilyUnavailable">Temporarily Unavailable</Label>
+              </div>
+              {editingDriver.temporarilyUnavailable && (
+                <>
+                  <div>
+                    <Label htmlFor="edit-unavailableUntil">Available Again On</Label>
+                    <Input
+                      id="edit-unavailableUntil"
+                      type="date"
+                      value={editingDriver.unavailableUntil ? new Date(editingDriver.unavailableUntil).toISOString().split('T')[0] : ''}
+                      onChange={(e) =>
+                        setEditingDriver({
+                          ...editingDriver,
+                          unavailableUntil: e.target.value ? new Date(e.target.value) : null,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-unavailableNote">Unavailability Note</Label>
+                    <Textarea
+                      id="edit-unavailableNote"
+                      value={editingDriver.unavailableNote || ''}
+                      onChange={(e) =>
+                        setEditingDriver({
+                          ...editingDriver,
+                          unavailableNote: e.target.value,
+                        })
+                      }
+                      placeholder="Reason for temporary unavailability"
+                      rows={2}
+                    />
+                  </div>
+                </>
+              )}
+              <div>
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={editingDriver.notes || ''}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      notes: e.target.value,
+                    })
+                  }
+                  placeholder="General notes about this driver"
+                  rows={3}
+                />
               </div>
               <div className="flex items-center space-x-2">
                 <input
