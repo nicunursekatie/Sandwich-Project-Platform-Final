@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
   Car,
@@ -467,8 +466,11 @@ export default function DriversManagement() {
     return <div className="p-6">Loading drivers...</div>;
   }
 
-  const activeDrivers = filteredDrivers.filter((driver) => driver.isActive);
-  const inactiveDrivers = filteredDrivers.filter((driver) => !driver.isActive);
+  // Sort drivers: active first, then inactive
+  const sortedDrivers = [...filteredDrivers].sort((a, b) => {
+    if (a.isActive === b.isActive) return 0;
+    return a.isActive ? -1 : 1;
+  });
 
   return (
     <div className="space-y-6">
@@ -1613,552 +1615,287 @@ export default function DriversManagement() {
       </Dialog>
 
       {/* Drivers List */}
-      <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active">
-            Active Drivers ({activeDrivers.length})
-          </TabsTrigger>
-          <TabsTrigger value="inactive">
-            Inactive Drivers ({inactiveDrivers.length})
-          </TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        {sortedDrivers.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No drivers found
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm || statusFilter !== 'all' || agreementFilter !== 'all' || vanFilter !== 'all' || driverTypeFilter !== 'all'
+                  ? 'Try adjusting your search or filters.'
+                  : 'Add your first driver to get started.'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {sortedDrivers.map((driver) => (
+              <Card key={driver.id} className={`overflow-hidden ${!driver.isActive ? 'opacity-75' : ''}`}>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      {/* Vehicle Icon */}
+                      <div className={`flex-shrink-0 rounded-lg p-3 ${driver.isActive ? 'bg-[#47B3CB]/20' : 'bg-slate-200'}`}>
+                        {driver.vehicleType?.toLowerCase().includes('van') ? (
+                          <Truck className={`w-8 h-8 ${driver.isActive ? 'text-[#007E8C]' : 'text-slate-500'}`} />
+                        ) : (
+                          <Car className={`w-8 h-8 ${driver.isActive ? 'text-[#007E8C]' : 'text-slate-500'}`} />
+                        )}
+                      </div>
 
-        <TabsContent value="active" className="space-y-4">
-          {activeDrivers.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No active drivers
-                </h3>
-                <p className="text-gray-500">
-                  Add your first driver to get started.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {activeDrivers.map((driver) => (
-                <Card key={driver.id} className="overflow-hidden">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        {/* Vehicle Icon */}
-                        <div className="flex-shrink-0 bg-[#47B3CB]/20 rounded-lg p-3">
-                          {driver.vehicleType?.toLowerCase().includes('van') ? (
-                            <Truck className="w-8 h-8 text-[#007E8C]" />
-                          ) : (
-                            <Car className="w-8 h-8 text-[#007E8C]" />
-                          )}
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="flex-1 min-w-0 space-y-3">
-                          {/* Name and Status Badges */}
-                          <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">
-                              {driver.name}
-                            </h3>
-                            <div className="flex items-center gap-2 flex-wrap">
+                      {/* Main Content */}
+                      <div className="flex-1 min-w-0 space-y-3">
+                        {/* Name and Status Badges */}
+                        <div className="space-y-2">
+                          <h3 className={`text-xl font-bold ${driver.isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+                            {driver.name}
+                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {driver.isActive ? (
                               <Badge variant="secondary" className="text-xs">
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Active
                               </Badge>
-                              {driver.temporarilyUnavailable && (
-                                <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
-                                  <PauseCircle className="w-3 h-3 mr-1" />
-                                  Temporarily Unavailable
-                                </Badge>
-                              )}
-                              {driver.isWeeklyDriver && (
-                                <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
-                                  <Calendar className="w-3 h-3 mr-1" />
-                                  Weekly Driver
-                                </Badge>
-                              )}
-                              {driver.isEventDriver && (
-                                <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-xs">
-                                  <Truck className="w-3 h-3 mr-1" />
-                                  Event Driver
-                                </Badge>
-                              )}
-                              {driver.emailAgreementSent ? (
-                                <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
-                                  <FileCheck className="w-3 h-3 mr-1" />
-                                  Agreement Signed
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50 text-xs">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  Missing Agreement
-                                </Badge>
-                              )}
-                              {driver.agreementInDatabase && (
-                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
-                                  <Database className="w-3 h-3 mr-1" />
-                                  Agreement in DB
-                                </Badge>
-                              )}
-                              {driver.vanApproved && (
-                                <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary text-xs">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Van Approved
-                                </Badge>
-                              )}
-                              {driver.licenseNumber && driver.licenseNumber.trim().length > 0 && (
-                                <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-xs" data-testid={`badge-dl-on-file-${driver.id}`}>
-                                  <FileCheck className="w-3 h-3 mr-1" />
-                                  DL# on file
-                                </Badge>
-                              )}
-                              {driver.wantsTextAlerts && (
-                                <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50 text-xs">
-                                  <Smartphone className="w-3 h-3 mr-1" />
-                                  Text Alerts
-                                </Badge>
-                              )}
-                              {driver.wantsAppWalkthrough && (
-                                <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 text-xs">
-                                  <MessageSquare className="w-3 h-3 mr-1" />
-                                  Needs Walkthrough
-                                </Badge>
-                              )}
-                              {getCoolerStatusDisplay(driver.coolerStatus) && (
-                                <Badge className={`${getCoolerStatusDisplay(driver.coolerStatus)!.color} text-xs`}>
-                                  <Package className="w-3 h-3 mr-1" />
-                                  {getCoolerStatusDisplay(driver.coolerStatus)!.label}
-                                </Badge>
-                              )}
-                              {driver.neverFullyOnboarded && (
-                                <Badge className="bg-rose-100 text-rose-800 border-rose-200 text-xs">
-                                  <UserX className="w-3 h-3 mr-1" />
-                                  Never Onboarded
-                                </Badge>
-                              )}
-                              {driver.wantsToRestart && (
-                                <Badge className="bg-sky-100 text-sky-800 border-sky-200 text-xs">
-                                  <RefreshCw className="w-3 h-3 mr-1" />
-                                  Wants to Restart Driving
-                                </Badge>
-                              )}
-                              {driver.interestedInVanDriving && (
-                                <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
-                                  <Truck className="w-3 h-3 mr-1" />
-                                  Van Interest
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Location (abbreviated by default) */}
-                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (() => {
-                            const fullLocation = getDriverLocationValue(driver);
-                            const { short, isFullAddress } = abbreviateLocation(fullLocation);
-                            const mapsUrl = googleMapsSearchUrl(fullLocation);
-
-                            return (
-                              <div className="bg-gradient-to-r from-brand-primary-lighter to-brand-primary-lighter/50 border-l-4 border-brand-primary rounded-md px-4 py-3 shadow-sm">
-                                <div className="flex items-start gap-2">
-                                  <MapPin className="w-5 h-5 text-brand-primary mt-0.5 flex-shrink-0" />
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-medium text-brand-primary-dark uppercase tracking-wide">
-                                      Location
-                                    </div>
-                                    <div className="text-sm font-normal text-gray-900 break-words">
-                                      {short}
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-1.5">
-                                      <a
-                                        href={mapsUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-xs font-medium text-brand-primary-dark hover:underline inline-flex items-center gap-1"
-                                      >
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                        Maps
-                                      </a>
-                                      {isFullAddress && (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 px-2 text-xs"
-                                          onClick={() => setAddressDialogDriver(driver)}
-                                        >
-                                          View full address
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Contact Info - Styled Cards */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {driver.phone && (
-                              <div className="bg-[#47B3CB]/10 rounded-lg px-3 py-2.5 border border-[#47B3CB]/30">
-                                <div className="flex items-center gap-2">
-                                  <Phone className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
-                                  <div className="min-w-0">
-                                    <div className="text-xs text-[#236383] font-medium">Phone</div>
-                                    <a href={`tel:${driver.phone}`} className="text-sm font-semibold text-gray-900 hover:text-[#007E8C]">
-                                      {driver.phone}
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            {driver.email && (
-                              <div className="bg-[#47B3CB]/10 rounded-lg px-3 py-2.5 border border-[#47B3CB]/30">
-                                <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
-                                  <div className="min-w-0 overflow-hidden">
-                                    <div className="text-xs text-[#236383] font-medium">Email</div>
-                                    <a href={`mailto:${driver.email}`} className="text-sm font-semibold text-gray-900 hover:text-[#007E8C] truncate block">
-                                      {driver.email}
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Availability */}
-                          {driver.availability && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                              <div className="flex items-start gap-2">
-                                <Clock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <div className="text-xs font-medium text-amber-800">Availability</div>
-                                  <div className="text-sm text-amber-900">{driver.availability}</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Temporarily Unavailable Details */}
-                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote || driver.unavailableFollowUp) && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                              <div className="flex items-start gap-2">
-                                <PauseCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <div className="text-xs font-medium text-red-800">Temporarily Unavailable</div>
-                                  {driver.unavailableFollowUp && (
-                                    <div className="text-sm text-red-900 font-medium">
-                                      {driver.unavailableFollowUp === 'will_reach_out'
-                                        ? "Will reach out when ready"
-                                        : "Check back in a few months"}
-                                    </div>
-                                  )}
-                                  {driver.unavailableUntil && (
-                                    <div className="text-sm text-red-900">
-                                      Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                  {driver.unavailableNote && (
-                                    <div className="text-sm text-red-800 mt-1">{driver.unavailableNote}</div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-col gap-1 flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditDriver(driver)}
-                          disabled={!canEdit}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteDriver(driver)}
-                          disabled={!canEdit || deleteDriverMutation.isPending}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="inactive" className="space-y-4">
-          {inactiveDrivers.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No inactive drivers
-                </h3>
-                <p className="text-gray-500">
-                  All drivers are currently active.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {inactiveDrivers.map((driver) => (
-                <Card key={driver.id} className="opacity-75 overflow-hidden">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        {/* Vehicle Icon */}
-                        <div className="flex-shrink-0 bg-slate-200 rounded-lg p-3">
-                          <Car className="w-8 h-8 text-slate-500" />
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="flex-1 min-w-0 space-y-3">
-                          {/* Name and Status Badges */}
-                          <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-500">
-                              {driver.name}
-                            </h3>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            ) : (
                               <Badge variant="outline" className="text-xs">
                                 <XCircle className="w-3 h-3 mr-1" />
                                 Inactive
                               </Badge>
-                              {driver.temporarilyUnavailable && (
-                                <Badge variant="outline" className="border-red-200 text-red-600 bg-red-50 text-xs">
-                                  <PauseCircle className="w-3 h-3 mr-1" />
-                                  Temporarily Unavailable
-                                </Badge>
-                              )}
-                              {driver.isWeeklyDriver && (
-                                <Badge variant="outline" className="border-purple-200 text-purple-600 bg-purple-50 text-xs">
-                                  <Calendar className="w-3 h-3 mr-1" />
-                                  Weekly Driver
-                                </Badge>
-                              )}
-                              {driver.isEventDriver && (
-                                <Badge variant="outline" className="border-indigo-200 text-indigo-600 bg-indigo-50 text-xs">
-                                  <Truck className="w-3 h-3 mr-1" />
-                                  Event Driver
-                                </Badge>
-                              )}
-                              {driver.emailAgreementSent ? (
-                                <Badge variant="outline" className="border-green-200 text-green-600 bg-green-50 text-xs">
-                                  <FileCheck className="w-3 h-3 mr-1" />
-                                  Agreement Signed
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="border-orange-200 text-orange-600 bg-orange-50 text-xs">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  Missing Agreement
-                                </Badge>
-                              )}
-                              {driver.agreementInDatabase && (
-                                <Badge variant="outline" className="border-emerald-200 text-emerald-600 bg-emerald-50 text-xs">
-                                  <Database className="w-3 h-3 mr-1" />
-                                  Agreement in DB
-                                </Badge>
-                              )}
-                              {driver.licenseNumber && driver.licenseNumber.trim().length > 0 && (
-                                <Badge variant="outline" className="border-slate-200 text-slate-600 bg-slate-50 text-xs" data-testid={`badge-dl-on-file-${driver.id}`}>
-                                  <FileCheck className="w-3 h-3 mr-1" />
-                                  DL# on file
-                                </Badge>
-                              )}
-                              {driver.wantsTextAlerts && (
-                                <Badge variant="outline" className="border-cyan-200 text-cyan-600 bg-cyan-50 text-xs">
-                                  <Smartphone className="w-3 h-3 mr-1" />
-                                  Text Alerts
-                                </Badge>
-                              )}
-                              {driver.wantsAppWalkthrough && (
-                                <Badge variant="outline" className="border-amber-200 text-amber-600 bg-amber-50 text-xs">
-                                  <MessageSquare className="w-3 h-3 mr-1" />
-                                  Needs Walkthrough
-                                </Badge>
-                              )}
-                              {getCoolerStatusDisplay(driver.coolerStatus) && (
-                                <Badge variant="outline" className="border-gray-200 text-gray-600 bg-gray-50 text-xs">
-                                  <Package className="w-3 h-3 mr-1" />
-                                  {getCoolerStatusDisplay(driver.coolerStatus)!.label}
-                                </Badge>
-                              )}
-                              {driver.neverFullyOnboarded && (
-                                <Badge variant="outline" className="border-rose-200 text-rose-600 bg-rose-50 text-xs">
-                                  <UserX className="w-3 h-3 mr-1" />
-                                  Never Onboarded
-                                </Badge>
-                              )}
-                              {driver.wantsToRestart && (
-                                <Badge variant="outline" className="border-sky-200 text-sky-600 bg-sky-50 text-xs">
-                                  <RefreshCw className="w-3 h-3 mr-1" />
-                                  Wants to Restart Driving
-                                </Badge>
-                              )}
-                              {driver.interestedInVanDriving && (
-                                <Badge variant="outline" className="border-orange-200 text-orange-600 bg-orange-50 text-xs">
-                                  <Truck className="w-3 h-3 mr-1" />
-                                  Van Interest
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Location (abbreviated by default) */}
-                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (() => {
-                            const fullLocation = getDriverLocationValue(driver);
-                            const { short, isFullAddress } = abbreviateLocation(fullLocation);
-                            const mapsUrl = googleMapsSearchUrl(fullLocation);
-
-                            return (
-                              <div className="bg-gray-100 border-l-4 border-gray-400 rounded-md px-4 py-3">
-                                <div className="flex items-start gap-2">
-                                  <MapPin className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                                      Location
-                                    </div>
-                                    <div className="text-sm font-normal text-gray-700 break-words">
-                                      {short}
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-1.5">
-                                      <a
-                                        href={mapsUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-xs font-medium text-gray-700 hover:underline inline-flex items-center gap-1"
-                                      >
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                        Maps
-                                      </a>
-                                      {isFullAddress && (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 px-2 text-xs"
-                                          onClick={() => setAddressDialogDriver(driver)}
-                                        >
-                                          View full address
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Contact Info - Styled Cards */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {driver.phone && (
-                              <div className="bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-300">
-                                <div className="flex items-center gap-2">
-                                  <Phone className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                                  <div className="min-w-0">
-                                    <div className="text-xs text-slate-600 font-medium">Phone</div>
-                                    <a href={`tel:${driver.phone}`} className="text-sm font-semibold text-slate-700 hover:text-gray-900">
-                                      {driver.phone}
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
                             )}
-                            {driver.email && (
-                              <div className="bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-300">
-                                <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                                  <div className="min-w-0 overflow-hidden">
-                                    <div className="text-xs text-slate-600 font-medium">Email</div>
-                                    <a href={`mailto:${driver.email}`} className="text-sm font-semibold text-slate-700 hover:text-gray-900 truncate block">
-                                      {driver.email}
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
+                            {driver.temporarilyUnavailable && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-red-100 text-red-800 border-red-200' : 'border-red-200 text-red-600 bg-red-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <PauseCircle className="w-3 h-3 mr-1" />
+                                Temporarily Unavailable
+                              </Badge>
+                            )}
+                            {driver.isWeeklyDriver && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-purple-100 text-purple-800 border-purple-200' : 'border-purple-200 text-purple-600 bg-purple-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Weekly Driver
+                              </Badge>
+                            )}
+                            {driver.isEventDriver && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'border-indigo-200 text-indigo-600 bg-indigo-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <Truck className="w-3 h-3 mr-1" />
+                                Event Driver
+                              </Badge>
+                            )}
+                            {driver.emailAgreementSent ? (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'border-green-200 text-green-600 bg-green-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <FileCheck className="w-3 h-3 mr-1" />
+                                Agreement Signed
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className={`text-xs ${driver.isActive ? 'border-orange-300 text-orange-700 bg-orange-50' : 'border-orange-200 text-orange-600 bg-orange-50'}`}>
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                Missing Agreement
+                              </Badge>
+                            )}
+                            {driver.agreementInDatabase && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'border-emerald-200 text-emerald-600 bg-emerald-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <Database className="w-3 h-3 mr-1" />
+                                Agreement in DB
+                              </Badge>
+                            )}
+                            {driver.vanApproved && driver.isActive && (
+                              <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary text-xs">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Van Approved
+                              </Badge>
+                            )}
+                            {driver.licenseNumber && driver.licenseNumber.trim().length > 0 && (
+                              <Badge variant={driver.isActive ? 'secondary' : 'outline'} className={`text-xs ${driver.isActive ? 'bg-slate-100 text-slate-700' : 'border-slate-200 text-slate-600 bg-slate-50'}`} data-testid={`badge-dl-on-file-${driver.id}`}>
+                                <FileCheck className="w-3 h-3 mr-1" />
+                                DL# on file
+                              </Badge>
+                            )}
+                            {driver.wantsTextAlerts && (
+                              <Badge variant="outline" className={`text-xs ${driver.isActive ? 'border-cyan-300 text-cyan-700 bg-cyan-50' : 'border-cyan-200 text-cyan-600 bg-cyan-50'}`}>
+                                <Smartphone className="w-3 h-3 mr-1" />
+                                Text Alerts
+                              </Badge>
+                            )}
+                            {driver.wantsAppWalkthrough && (
+                              <Badge variant="outline" className={`text-xs ${driver.isActive ? 'border-amber-300 text-amber-700 bg-amber-50' : 'border-amber-200 text-amber-600 bg-amber-50'}`}>
+                                <MessageSquare className="w-3 h-3 mr-1" />
+                                Needs Walkthrough
+                              </Badge>
+                            )}
+                            {getCoolerStatusDisplay(driver.coolerStatus) && (
+                              <Badge className={`text-xs ${driver.isActive ? getCoolerStatusDisplay(driver.coolerStatus)!.color : 'border-gray-200 text-gray-600 bg-gray-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <Package className="w-3 h-3 mr-1" />
+                                {getCoolerStatusDisplay(driver.coolerStatus)!.label}
+                              </Badge>
+                            )}
+                            {driver.neverFullyOnboarded && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-rose-100 text-rose-800 border-rose-200' : 'border-rose-200 text-rose-600 bg-rose-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <UserX className="w-3 h-3 mr-1" />
+                                Never Onboarded
+                              </Badge>
+                            )}
+                            {driver.wantsToRestart && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-sky-100 text-sky-800 border-sky-200' : 'border-sky-200 text-sky-600 bg-sky-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Wants to Restart Driving
+                              </Badge>
+                            )}
+                            {driver.interestedInVanDriving && (
+                              <Badge className={`text-xs ${driver.isActive ? 'bg-orange-100 text-orange-800 border-orange-200' : 'border-orange-200 text-orange-600 bg-orange-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
+                                <Truck className="w-3 h-3 mr-1" />
+                                Van Interest
+                              </Badge>
                             )}
                           </div>
+                        </div>
 
-                          {/* Availability */}
-                          {driver.availability && (
-                            <div className="bg-[#A31C41]/10 border border-[#A31C41]/30 rounded-lg px-3 py-2">
+                        {/* Location (abbreviated by default) */}
+                        {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (() => {
+                          const fullLocation = getDriverLocationValue(driver);
+                          const { short, isFullAddress } = abbreviateLocation(fullLocation);
+                          const mapsUrl = googleMapsSearchUrl(fullLocation);
+
+                          return (
+                            <div className={`border-l-4 rounded-md px-4 py-3 ${driver.isActive ? 'bg-gradient-to-r from-brand-primary-lighter to-brand-primary-lighter/50 border-brand-primary shadow-sm' : 'bg-gray-100 border-gray-400'}`}>
                               <div className="flex items-start gap-2">
-                                <Clock className="w-4 h-4 text-[#A31C41] mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <div className="text-xs font-medium text-[#A31C41]">Availability</div>
-                                  <div className="text-sm text-gray-900">{driver.availability}</div>
+                                <MapPin className={`w-5 h-5 mt-0.5 flex-shrink-0 ${driver.isActive ? 'text-brand-primary' : 'text-gray-600'}`} />
+                                <div className="min-w-0">
+                                  <div className={`text-xs font-medium uppercase tracking-wide ${driver.isActive ? 'text-brand-primary-dark' : 'text-gray-600'}`}>
+                                    Location
+                                  </div>
+                                  <div className={`text-sm font-normal break-words ${driver.isActive ? 'text-gray-900' : 'text-gray-700'}`}>
+                                    {short}
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1.5">
+                                    <a
+                                      href={mapsUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className={`text-xs font-medium hover:underline inline-flex items-center gap-1 ${driver.isActive ? 'text-brand-primary-dark' : 'text-gray-700'}`}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Maps
+                                    </a>
+                                    {isFullAddress && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs"
+                                        onClick={() => setAddressDialogDriver(driver)}
+                                      >
+                                        View full address
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Contact Info - Styled Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {driver.phone && (
+                            <div className={`rounded-lg px-3 py-2.5 border ${driver.isActive ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' : 'bg-slate-100 border-slate-300'}`}>
+                              <div className="flex items-center gap-2">
+                                <Phone className={`w-4 h-4 flex-shrink-0 ${driver.isActive ? 'text-[#007E8C]' : 'text-slate-600'}`} />
+                                <div className="min-w-0">
+                                  <div className={`text-xs font-medium ${driver.isActive ? 'text-[#236383]' : 'text-slate-600'}`}>Phone</div>
+                                  <a href={`tel:${driver.phone}`} className={`text-sm font-semibold ${driver.isActive ? 'text-gray-900 hover:text-[#007E8C]' : 'text-slate-700 hover:text-gray-900'}`}>
+                                    {driver.phone}
+                                  </a>
                                 </div>
                               </div>
                             </div>
                           )}
-
-                          {/* Temporarily Unavailable Details */}
-                          {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote || driver.unavailableFollowUp) && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                              <div className="flex items-start gap-2">
-                                <PauseCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <div className="text-xs font-medium text-red-700">Temporarily Unavailable</div>
-                                  {driver.unavailableFollowUp && (
-                                    <div className="text-sm text-red-800 font-medium">
-                                      {driver.unavailableFollowUp === 'will_reach_out'
-                                        ? "Will reach out when ready"
-                                        : "Check back in a few months"}
-                                    </div>
-                                  )}
-                                  {driver.unavailableUntil && (
-                                    <div className="text-sm text-red-800">
-                                      Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                  {driver.unavailableNote && (
-                                    <div className="text-sm text-red-700 mt-1">{driver.unavailableNote}</div>
-                                  )}
+                          {driver.email && (
+                            <div className={`rounded-lg px-3 py-2.5 border ${driver.isActive ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' : 'bg-slate-100 border-slate-300'}`}>
+                              <div className="flex items-center gap-2">
+                                <Mail className={`w-4 h-4 flex-shrink-0 ${driver.isActive ? 'text-[#007E8C]' : 'text-slate-600'}`} />
+                                <div className="min-w-0 overflow-hidden">
+                                  <div className={`text-xs font-medium ${driver.isActive ? 'text-[#236383]' : 'text-slate-600'}`}>Email</div>
+                                  <a href={`mailto:${driver.email}`} className={`text-sm font-semibold truncate block ${driver.isActive ? 'text-gray-900 hover:text-[#007E8C]' : 'text-slate-700 hover:text-gray-900'}`}>
+                                    {driver.email}
+                                  </a>
                                 </div>
                               </div>
                             </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-col gap-1 flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditDriver(driver)}
-                          disabled={!canEdit}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteDriver(driver)}
-                          disabled={!canEdit || deleteDriverMutation.isPending}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {/* Availability */}
+                        {driver.availability && (
+                          <div className={`border rounded-lg px-3 py-2 ${driver.isActive ? 'bg-amber-50 border-amber-200' : 'bg-[#A31C41]/10 border-[#A31C41]/30'}`}>
+                            <div className="flex items-start gap-2">
+                              <Clock className={`w-4 h-4 mt-0.5 flex-shrink-0 ${driver.isActive ? 'text-amber-600' : 'text-[#A31C41]'}`} />
+                              <div>
+                                <div className={`text-xs font-medium ${driver.isActive ? 'text-amber-800' : 'text-[#A31C41]'}`}>Availability</div>
+                                <div className={`text-sm ${driver.isActive ? 'text-amber-900' : 'text-gray-900'}`}>{driver.availability}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Temporarily Unavailable Details */}
+                        {driver.temporarilyUnavailable && (driver.unavailableUntil || driver.unavailableNote || driver.unavailableFollowUp) && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                            <div className="flex items-start gap-2">
+                              <PauseCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${driver.isActive ? 'text-red-600' : 'text-red-500'}`} />
+                              <div>
+                                <div className={`text-xs font-medium ${driver.isActive ? 'text-red-800' : 'text-red-700'}`}>Temporarily Unavailable</div>
+                                {driver.unavailableFollowUp && (
+                                  <div className={`text-sm font-medium ${driver.isActive ? 'text-red-900' : 'text-red-800'}`}>
+                                    {driver.unavailableFollowUp === 'will_reach_out'
+                                      ? "Will reach out when ready"
+                                      : "Check back in a few months"}
+                                  </div>
+                                )}
+                                {driver.unavailableUntil && (
+                                  <div className={`text-sm ${driver.isActive ? 'text-red-900' : 'text-red-800'}`}>
+                                    Available again: {new Date(driver.unavailableUntil).toLocaleDateString()}
+                                  </div>
+                                )}
+                                {driver.unavailableNote && (
+                                  <div className={`text-sm mt-1 ${driver.isActive ? 'text-red-800' : 'text-red-700'}`}>{driver.unavailableNote}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditDriver(driver)}
+                        disabled={!canEdit}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteDriver(driver)}
+                        disabled={!canEdit || deleteDriverMutation.isPending}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
