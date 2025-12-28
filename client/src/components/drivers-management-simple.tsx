@@ -50,6 +50,8 @@ import {
   Database,
   ChevronDown,
   ChevronUp,
+  UserX,
+  RefreshCw,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -161,6 +163,8 @@ export default function DriversManagement() {
     unavailableUntil: '',
     coolerStatus: '',
     agreementInDatabase: false,
+    neverFullyOnboarded: false,
+    wantsToRestart: false,
     notes: '',
   });
 
@@ -301,6 +305,8 @@ export default function DriversManagement() {
       unavailableUntil: '',
       coolerStatus: '',
       agreementInDatabase: false,
+      neverFullyOnboarded: false,
+      wantsToRestart: false,
       notes: '',
     });
   };
@@ -752,6 +758,36 @@ export default function DriversManagement() {
                         className="rounded border-gray-300"
                       />
                       <Label htmlFor="agreementInDatabase">Agreement Located in Database</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="neverFullyOnboarded"
+                        checked={newDriver.neverFullyOnboarded}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            neverFullyOnboarded: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="neverFullyOnboarded">Never Fully Onboarded</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="wantsToRestart"
+                        checked={newDriver.wantsToRestart}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            wantsToRestart: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="wantsToRestart">Wants to Restart Onboarding</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -1256,6 +1292,36 @@ export default function DriversManagement() {
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  id="edit-neverFullyOnboarded"
+                  checked={editingDriver.neverFullyOnboarded || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      neverFullyOnboarded: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-neverFullyOnboarded">Never Fully Onboarded</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-wantsToRestart"
+                  checked={editingDriver.wantsToRestart || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      wantsToRestart: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-wantsToRestart">Wants to Restart Onboarding</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
                   id="edit-temporarilyUnavailable"
                   checked={editingDriver.temporarilyUnavailable || false}
                   onChange={(e) =>
@@ -1587,6 +1653,18 @@ export default function DriversManagement() {
                                   {getCoolerStatusDisplay(driver.coolerStatus)!.label}
                                 </Badge>
                               )}
+                              {driver.neverFullyOnboarded && (
+                                <Badge className="bg-rose-100 text-rose-800 border-rose-200 text-xs">
+                                  <UserX className="w-3 h-3 mr-1" />
+                                  Never Onboarded
+                                </Badge>
+                              )}
+                              {driver.wantsToRestart && (
+                                <Badge className="bg-sky-100 text-sky-800 border-sky-200 text-xs">
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Wants to Restart
+                                </Badge>
+                              )}
                             </div>
                           </div>
 
@@ -1823,6 +1901,18 @@ export default function DriversManagement() {
                                 <Badge variant="outline" className="border-gray-200 text-gray-600 bg-gray-50 text-xs">
                                   <Package className="w-3 h-3 mr-1" />
                                   {getCoolerStatusDisplay(driver.coolerStatus)!.label}
+                                </Badge>
+                              )}
+                              {driver.neverFullyOnboarded && (
+                                <Badge variant="outline" className="border-rose-200 text-rose-600 bg-rose-50 text-xs">
+                                  <UserX className="w-3 h-3 mr-1" />
+                                  Never Onboarded
+                                </Badge>
+                              )}
+                              {driver.wantsToRestart && (
+                                <Badge variant="outline" className="border-sky-200 text-sky-600 bg-sky-50 text-xs">
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Wants to Restart
                                 </Badge>
                               )}
                             </div>
