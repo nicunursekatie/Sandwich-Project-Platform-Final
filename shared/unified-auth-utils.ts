@@ -58,16 +58,13 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 2: Super admin check
-  // Super admins only get automatic full access if they have NO explicit permissions stored
-  // If explicit permissions are set, those are respected (allows restricting super admins)
+  // Step 2: Super admin check - super admins ALWAYS have all permissions
   const isSuperAdmin = user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN;
-  const hasExplicitPermissions = Array.isArray(user.permissions);
 
-  if (isSuperAdmin && !hasExplicitPermissions) {
+  if (isSuperAdmin) {
     return {
       granted: true,
-      reason: 'Super admin access (no explicit permissions set)',
+      reason: 'Super admin access',
       userRole: user.role,
       userPermissions: ['*ALL*']
     };
