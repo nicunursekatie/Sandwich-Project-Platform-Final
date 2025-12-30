@@ -95,12 +95,23 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: 'text-red-600',
 };
 
+// Parse date string safely to avoid timezone boundary issues
+// Adding T12:00:00 prevents UTC midnight from shifting the date back a day in local time
+function parseDateSafe(dateStr: string): Date {
+  // If already has time component, parse directly
+  if (dateStr.includes('T')) {
+    return new Date(dateStr);
+  }
+  // Add noon time to avoid UTC midnight timezone shift
+  return new Date(`${dateStr}T12:00:00`);
+}
+
 // Helper to check if a date range overlaps a month
 function dateRangeOverlapsMonth(startDate: string, endDate: string, year: number, month: number): boolean {
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 0); // Last day of month
-  const rangeStart = new Date(startDate);
-  const rangeEnd = new Date(endDate);
+  const rangeStart = parseDateSafe(startDate);
+  const rangeEnd = parseDateSafe(endDate);
 
   // Date range overlaps month if: rangeStart <= monthEnd AND rangeEnd >= monthStart
   return rangeStart <= monthEnd && rangeEnd >= monthStart;
@@ -108,8 +119,8 @@ function dateRangeOverlapsMonth(startDate: string, endDate: string, year: number
 
 // Format date range for display
 function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = parseDateSafe(startDate);
+  const end = parseDateSafe(endDate);
   const startMonth = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const endMonth = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -579,7 +590,7 @@ export default function YearlyCalendar() {
 
                       return (
                         <Collapsible
-                          key={`tracked-${category}`}
+                          key={`tracked-${monthNumber}-${category}`}
                           open={!isCollapsed}
                           onOpenChange={() => toggleCategory(`${monthNumber}-${category}`)}
                         >
