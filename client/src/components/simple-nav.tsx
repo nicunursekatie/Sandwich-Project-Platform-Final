@@ -118,7 +118,9 @@ export default function SimpleNav({
       setExpandedParents(newExpanded);
     };
 
-    const isActive = (href: string) => {
+    const isActive = (href: string | undefined) => {
+      // Guard against undefined href
+      if (!href) return false;
       // Extract base section from href (remove query params)
       const baseHref = href.split('?')[0];
       
@@ -208,6 +210,12 @@ export default function SimpleNav({
 
           const item = groupItem;
           const badgeCount = getBadgeCount(item.id);
+
+          // Debug: log if we encounter an item without href
+          if (!item.href) {
+            logger.warn('Navigation item missing href:', { id: item.id, label: item.label, type: item.type });
+          }
+
           const active = isActive(item.href);
 
           // Hide items in collapsed sections (unless item is dashboard)
@@ -266,6 +274,12 @@ export default function SimpleNav({
                 }
 
                 // Handle navigation for items WITHOUT children, or items with navigateAndExpand
+                // Guard against missing href
+                if (!item.href) {
+                  logger.warn('Attempted to navigate to item without href:', item.id);
+                  return;
+                }
+
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

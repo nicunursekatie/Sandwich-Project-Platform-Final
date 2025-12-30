@@ -53,7 +53,8 @@
       "Bash(timeout 10 npm run dev)",
       "Bash(ls:*)",
       "Bash(more:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(source:*)"
     ],
     "deny": [],
     "ask": []
