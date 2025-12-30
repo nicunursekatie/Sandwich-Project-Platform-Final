@@ -252,7 +252,8 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
     }
 
     // Hash and update user's password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // IMPORTANT: Trim password to match login behavior (auth.service.ts trims before comparing)
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
     await storage.updateUser(user.id!, {
       password: hashedPassword,
     });
