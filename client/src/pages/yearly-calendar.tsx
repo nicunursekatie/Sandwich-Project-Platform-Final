@@ -17,6 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Upload,
+  Filter,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -25,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface YearlyCalendarItem {
   id: number;
@@ -46,6 +51,24 @@ interface YearlyCalendarItem {
   updatedAt: Date | string;
 }
 
+interface TrackedCalendarItem {
+  id: number;
+  externalId: string | null;
+  category: string;
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  notes: string | null;
+  metadata: {
+    type?: string;
+    districts?: string[];
+    academicYear?: string | null;
+    originalId?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
@@ -58,6 +81,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   board: 'bg-purple-100 text-purple-800 border-purple-300',
   seasonal: 'bg-green-100 text-green-800 border-green-300',
   other: 'bg-gray-100 text-gray-800 border-gray-300',
+  // Tracked calendar categories
+  school_breaks: 'bg-amber-100 text-amber-800 border-amber-300',
+};
+
+const TRACKED_CATEGORY_LABELS: Record<string, string> = {
+  school_breaks: 'School Breaks',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -66,6 +95,30 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: 'text-red-600',
 };
 
+// Helper to check if a date range overlaps a month
+function dateRangeOverlapsMonth(startDate: string, endDate: string, year: number, month: number): boolean {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0); // Last day of month
+  const rangeStart = new Date(startDate);
+  const rangeEnd = new Date(endDate);
+
+  // Date range overlaps month if: rangeStart <= monthEnd AND rangeEnd >= monthStart
+  return rangeStart <= monthEnd && rangeEnd >= monthStart;
+}
+
+// Format date range for display
+function formatDateRange(startDate: string, endDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    return `${start.getDate()}-${end.getDate()} ${start.toLocaleDateString('en-US', { month: 'short' })}`;
+  }
+  return `${startMonth} - ${endMonth}`;
+}
+
 export default function YearlyCalendar() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -73,7 +126,11 @@ export default function YearlyCalendar() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<YearlyCalendarItem | null>(null);
-  
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  const [showTrackedItems, setShowTrackedItems] = useState(true);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+
   // Form state
   const [formMonth, setFormMonth] = useState<number>(new Date().getMonth() + 1);
   const [formTitle, setFormTitle] = useState('');
@@ -96,6 +153,16 @@ export default function YearlyCalendar() {
     },
     enabled: canView,
   });
+
+  // Fetch tracked calendar items (school breaks, etc.)
+  const { data: trackedItemsResponse, isLoading: isLoadingTracked } = useQuery<{ items: TrackedCalendarItem[] }>({
+    queryKey: ['/api/tracked-calendar', selectedYear],
+    queryFn: async () => {
+      return await apiRequest('GET', `/api/tracked-calendar?year=${selectedYear}`);
+    },
+    enabled: canView,
+  });
+  const trackedItems = trackedItemsResponse?.items || [];
 
   // Group items by month and sort them
   const itemsByMonth = useMemo(() => {
@@ -128,6 +195,47 @@ export default function YearlyCalendar() {
     });
     return grouped;
   }, [items]);
+
+  // Group tracked items by month using date range overlap
+  const trackedItemsByMonth = useMemo(() => {
+    const grouped: Record<number, Record<string, TrackedCalendarItem[]>> = {};
+    for (let i = 1; i <= 12; i++) {
+      grouped[i] = {};
+    }
+
+    if (!showTrackedItems) return grouped;
+
+    trackedItems.forEach(item => {
+      for (let month = 1; month <= 12; month++) {
+        if (dateRangeOverlapsMonth(item.startDate, item.endDate, selectedYear, month)) {
+          if (!grouped[month][item.category]) {
+            grouped[month][item.category] = [];
+          }
+          grouped[month][item.category].push(item);
+        }
+      }
+    });
+
+    // Sort items within each category by start date
+    Object.keys(grouped).forEach(month => {
+      const monthNum = parseInt(month);
+      Object.keys(grouped[monthNum]).forEach(category => {
+        grouped[monthNum][category].sort((a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
+      });
+    });
+
+    return grouped;
+  }, [trackedItems, selectedYear, showTrackedItems]);
+
+  // Toggle category collapse
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
 
   // Create item mutation
   const createItemMutation = useMutation({
@@ -229,6 +337,50 @@ export default function YearlyCalendar() {
     },
   });
 
+  // Import school breaks mutation
+  const importSchoolBreaksMutation = useMutation({
+    mutationFn: async (data: any[]) => {
+      return await apiRequest('POST', '/api/tracked-calendar/import-school-breaks', data);
+    },
+    onSuccess: (result: { created: number; updated: number; errors: string[] }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      setIsImportDialogOpen(false);
+      setImportJsonText('');
+      toast({
+        title: 'School breaks imported',
+        description: `Created: ${result.created}, Updated: ${result.updated}${result.errors.length > 0 ? `, Errors: ${result.errors.length}` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Import failed',
+        description: error?.message || 'Failed to import school breaks',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleImportSchoolBreaks = () => {
+    try {
+      const data = JSON.parse(importJsonText);
+      if (!Array.isArray(data)) {
+        toast({
+          title: 'Invalid format',
+          description: 'JSON must be an array of school break objects',
+          variant: 'destructive',
+        });
+        return;
+      }
+      importSchoolBreaksMutation.mutate(data);
+    } catch (e) {
+      toast({
+        title: 'Invalid JSON',
+        description: 'Please check your JSON format',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleCreate = () => {
     if (!formTitle.trim()) {
       toast({
@@ -305,7 +457,7 @@ export default function YearlyCalendar() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <PageBreadcrumbs items={[{ label: 'TSP Yearly Calendar' }]} />
+      <PageBreadcrumbs segments={[{ label: 'TSP Yearly Calendar' }]} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -338,6 +490,24 @@ export default function YearlyCalendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          <Button
+            variant={showTrackedItems ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowTrackedItems(!showTrackedItems)}
+            className={showTrackedItems ? 'bg-amber-500 hover:bg-amber-600' : ''}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            {showTrackedItems ? 'Hide' : 'Show'} School Breaks
+          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              onClick={() => setIsImportDialogOpen(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import School Breaks
+            </Button>
+          )}
           {canSubmit && (
             <Button
               onClick={() => {
@@ -354,7 +524,7 @@ export default function YearlyCalendar() {
       </div>
 
       {/* Calendar Grid */}
-      {isLoading ? (
+      {isLoading || isLoadingTracked ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#236383]" />
         </div>
@@ -363,8 +533,11 @@ export default function YearlyCalendar() {
           {MONTH_NAMES.map((monthName, index) => {
             const monthNumber = index + 1;
             const monthItems = itemsByMonth[monthNumber] || [];
+            const monthTrackedItems = trackedItemsByMonth[monthNumber] || {};
+            const trackedCategories = Object.keys(monthTrackedItems);
+            const totalTrackedCount = trackedCategories.reduce((sum, cat) => sum + monthTrackedItems[cat].length, 0);
             const isCurrentMonth = new Date().getMonth() + 1 === monthNumber && new Date().getFullYear() === selectedYear;
-            const isPastMonth = selectedYear < new Date().getFullYear() || 
+            const isPastMonth = selectedYear < new Date().getFullYear() ||
               (selectedYear === new Date().getFullYear() && monthNumber < new Date().getMonth() + 1);
 
             return (
@@ -377,20 +550,80 @@ export default function YearlyCalendar() {
                 <CardHeader className="pb-3 flex-shrink-0">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span>{monthName}</span>
-                    {monthItems.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {monthItems.length}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {monthItems.length > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {monthItems.length}
+                        </Badge>
+                      )}
+                      {totalTrackedCount > 0 && (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                          {totalTrackedCount}
+                        </Badge>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 flex-1 overflow-y-auto max-h-[500px] min-h-[100px]">
-                  {monthItems.length === 0 ? (
+                  {monthItems.length === 0 && totalTrackedCount === 0 ? (
                     <p className="text-sm text-gray-400 italic text-center py-4">
                       No items planned
                     </p>
                   ) : (
-                    monthItems.map((item) => (
+                    <>
+                    {/* Tracked Items (School Breaks, etc.) - Collapsible by category */}
+                    {trackedCategories.map(category => {
+                      const categoryItems = monthTrackedItems[category];
+                      const categoryLabel = TRACKED_CATEGORY_LABELS[category] || category;
+                      const isCollapsed = collapsedCategories[`${monthNumber}-${category}`];
+
+                      return (
+                        <Collapsible
+                          key={`tracked-${category}`}
+                          open={!isCollapsed}
+                          onOpenChange={() => toggleCategory(`${monthNumber}-${category}`)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <div className={`p-2 rounded-lg border cursor-pointer hover:bg-opacity-80 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">{categoryLabel}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {categoryItems.length}
+                                  </Badge>
+                                </div>
+                                {isCollapsed ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronUp className="h-4 w-4" />
+                                )}
+                              </div>
+                            </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="space-y-1 mt-1">
+                            {categoryItems.map(item => (
+                              <div
+                                key={`tracked-${item.id}`}
+                                className={`p-2 pl-4 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
+                              >
+                                <h4 className="text-sm font-medium">{item.title}</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {formatDateRange(item.startDate, item.endDate)}
+                                </p>
+                                {item.notes && (
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
+                                    {item.notes}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    })}
+
+                    {/* Regular Calendar Items */}
+                    {monthItems.map((item) => (
                       <div
                         key={item.id}
                         className={`p-3 rounded-lg border ${
@@ -471,7 +704,8 @@ export default function YearlyCalendar() {
                           </div>
                         )}
                       </div>
-                    ))
+                    ))}
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -682,6 +916,60 @@ export default function YearlyCalendar() {
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Updating...</>
               ) : (
                 <>Update</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import School Breaks Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Import School Breaks</DialogTitle>
+            <DialogDescription>
+              Paste JSON data to import school breaks. Each item should have: id, type, label, startDate, endDate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-json">JSON Data</Label>
+              <Textarea
+                id="import-json"
+                value={importJsonText}
+                onChange={(e) => setImportJsonText(e.target.value)}
+                placeholder={`[
+  {
+    "id": "winter-break-2025",
+    "type": "school_break",
+    "label": "Winter Break",
+    "startDate": "2025-12-22",
+    "endDate": "2026-01-05",
+    "districts": ["All"],
+    "academicYear": "2025-2026"
+  }
+]`}
+                rows={12}
+                className="font-mono text-sm"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Items with matching IDs will be updated. New items will be created.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImportSchoolBreaks}
+              disabled={importSchoolBreaksMutation.isPending || !importJsonText.trim()}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              {importSchoolBreaksMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
+              ) : (
+                <><Upload className="h-4 w-4 mr-2" /> Import</>
               )}
             </Button>
           </DialogFooter>

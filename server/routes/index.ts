@@ -44,6 +44,7 @@ import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
 import yearlyCalendarRouter from './yearly-calendar';
+import trackedCalendarRouter from './tracked-calendar';
 import holdingZoneCategoriesRouter from './holding-zone-categories';
 import { createHoldingZoneCollaborationRouter } from './holding-zone-collaboration';
 import { promotionGraphicsRouter } from './promotion-graphics';
@@ -677,6 +678,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     yearlyCalendarRouter
   );
   router.use('/api/yearly-calendar', createErrorHandler('yearly-calendar'));
+
+  // Tracked Calendar routes (date-range based items like school breaks)
+  router.use(
+    '/api/tracked-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    trackedCalendarRouter
+  );
+  router.use('/api/tracked-calendar', createErrorHandler('tracked-calendar'));
 
   // Holding zone categories routes
   router.use(

@@ -13,6 +13,7 @@ import {
   unique,
   primaryKey,
   time,
+  date,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -1947,6 +1948,36 @@ export const insertYearlyCalendarItemSchema = createInsertSchema(
 
 export type YearlyCalendarItem = typeof yearlyCalendarItems.$inferSelect;
 export type InsertYearlyCalendarItem = z.infer<typeof insertYearlyCalendarItemSchema>;
+
+// Tracked Calendar Items - Date-range based items (e.g., school breaks, holidays)
+// Month is derived from dates, not stored separately
+export const trackedCalendarItems = pgTable('tracked_calendar_items', {
+  id: serial('id').primaryKey(),
+  externalId: varchar('external_id').unique(), // For upsert by external source ID
+  category: varchar('category').notNull(), // 'school_breaks', 'holidays', 'events', etc.
+  title: text('title').notNull(),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  notes: text('notes'),
+  metadata: jsonb('metadata').default('{}'), // Store category-specific data (districts, academicYear, etc.)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  categoryIndex: index('idx_tracked_calendar_category').on(table.category),
+  dateRangeIndex: index('idx_tracked_calendar_dates').on(table.startDate, table.endDate),
+  externalIdIndex: index('idx_tracked_calendar_external_id').on(table.externalId),
+}));
+
+export const insertTrackedCalendarItemSchema = createInsertSchema(
+  trackedCalendarItems
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type TrackedCalendarItem = typeof trackedCalendarItems.$inferSelect;
+export type InsertTrackedCalendarItem = z.infer<typeof insertTrackedCalendarItemSchema>;
 
 // Team Board Comments - allow discussion on team board items
 export const teamBoardComments = pgTable('team_board_comments', {
