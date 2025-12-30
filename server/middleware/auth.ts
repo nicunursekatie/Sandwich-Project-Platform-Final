@@ -130,6 +130,16 @@ export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
       { method: 'GET', path: '/healthz' },            // Health check
       { method: 'GET', path: '/api/login' },          // Login page
       { method: 'GET', path: '/api/logout' },         // Logout page
+      // Password reset routes (public - users need these to recover access)
+      { method: 'POST', path: '/api/forgot-password' },           // Request password reset
+      { method: 'POST', path: '/api/reset-password' },            // Execute password reset
+      { method: 'POST', path: '/api/auth/request-initial-password' }, // Request initial password setup
+    ];
+    
+    // Path prefixes that should be allowed (for routes with parameters)
+    const allowedPathPrefixes = [
+      { method: 'GET', prefix: '/api/verify-reset-token/' },           // Verify reset token
+      { method: 'GET', prefix: '/api/auth/verify-initial-password-token/' }, // Verify initial password token
     ];
 
     // Check if the request method+path combination is allowed for inactive users
@@ -137,8 +147,13 @@ export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
       route => route.method === req.method && req.path === route.path
     );
     
+    // Check if the request matches an allowed prefix pattern
+    const isAllowedPrefix = allowedPathPrefixes.some(
+      route => route.method === req.method && req.path.startsWith(route.prefix)
+    );
+    
     // If user is inactive and trying to access a protected route, block them
-    if (user && !user.isActive && !isAllowedRoute) {
+    if (user && !user.isActive && !isAllowedRoute && !isAllowedPrefix) {
       logger.log(`❌ INACTIVE USER BLOCKED: ${user.email} attempted to access ${req.path}`);
       return res.status(403).json({
         message: 'Account pending approval',
