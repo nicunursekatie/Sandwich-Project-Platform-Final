@@ -1,6 +1,14 @@
 ### Overview
 This full-stack application for The Sandwich Project nonprofit streamlines sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger. The organizational annual goal is to collect 500,000 sandwiches.
 
+### Debugging Checklist (ALWAYS FOLLOW)
+When debugging any issue that involves data flow (auth, forms, API, database):
+1. **Grep for the core operation** - Find ALL places in the codebase where the key function is called (e.g., `bcrypt.hash`, `db.update`, date parsing, validation)
+2. **Verify consistent transformation** - Check that every entry point applies the same processing (trimming, formatting, validation)
+3. **Trace the full lifecycle** - Follow: input → processing → storage → retrieval → comparison/display
+4. **Check for centralized helpers** - If a service/utility exists for an operation, verify all code paths use it (not direct calls)
+5. **Don't stop at "route works"** - Surface-level access doesn't mean the data layer is consistent
+
 ### User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
