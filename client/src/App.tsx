@@ -31,6 +31,7 @@ import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
 import PendingApproval from '@/pages/pending-approval';
 import HoldingZone from '@/pages/HoldingZone';
+import YearlyCalendar from '@/pages/yearly-calendar';
 import { logger } from '@/lib/logger';
 
 // Mobile app lazy-loaded components
@@ -416,6 +417,9 @@ function Router() {
         </Route>
         <Route path="/team-board">
           <HoldingZone />
+        </Route>
+        <Route path="/yearly-calendar">
+          <YearlyCalendar />
         </Route>
         <Route path="/quick-sms-links">
           {() => <Dashboard initialSection="quick-sms-links" />}
