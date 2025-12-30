@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { storage } from '../storage';
-import { logger } from '../lib/logger';
+import { logger } from '../utils/production-safe-logger';
+import { checkOwnershipPermission } from '../../shared/unified-auth-utils';
 
 // Extend Express Request to include session with user
 interface AuthenticatedRequest extends Request {
@@ -271,3 +272,92 @@ export function requireRole(...roles: string[]) {
     next();
   };
 }
+
+/**
+ * Alias for requireAuth - maintains backward compatibility
+ */
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  return requireAuth(req as AuthenticatedRequest, res, next);
+};
+
+/**
+ * Ownership-based permission middleware factory
+ * Checks if user owns the resource OR has the "all" permission
+ */
+export const requireOwnershipPermission = (
+  ownPermission: string,
+  allPermission: string,
+  getResourceUserId: (req: any) => Promise<string | null>
+): RequestHandler => {
+  return async (req: any, res, next) => {
+    // Skip in development mode
+    if (process.env.APP_ENV === 'development') {
+      return next();
+    }
+
+    try {
+      // STEP 1: Ensure user is authenticated
+      const user = req.user || req.session?.user;
+      if (!user) {
+        logger.log(`❌ AUTH: No user context for ownership check - DENIED`);
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // STEP 2: Fetch fresh user data
+      let currentUser = user;
+      if (user.id) {
+        try {
+          const freshUser = await storage.getUser(user.id);
+          if (freshUser && freshUser.isActive) {
+            currentUser = freshUser;
+            req.user = freshUser;
+          } else {
+            return res
+              .status(401)
+              .json({ message: 'User account not found or inactive' });
+          }
+        } catch (dbError) {
+          logger.error('Database error in ownership check:', dbError);
+          return res
+            .status(500)
+            .json({ message: 'Unable to verify user permissions' });
+        }
+      }
+
+      // STEP 3: Get resource owner ID for ownership check
+      const resourceUserId = await getResourceUserId(req);
+
+      // STEP 4: Use unified ownership permission checking
+      const permissionResult = checkOwnershipPermission(
+        currentUser,
+        ownPermission,
+        allPermission,
+        resourceUserId || undefined
+      );
+
+      if (permissionResult.granted) {
+        logger.log(
+          `✅ AUTH: ${permissionResult.reason} for ${allPermission}/${ownPermission} to ${currentUser.email}`
+        );
+        return next();
+      }
+
+      // DEFAULT: DENY ACCESS
+      logger.log(
+        `❌ AUTH: Ownership permission DENIED for ${currentUser.email}`
+      );
+      logger.log(`   Reason: ${permissionResult.reason}`);
+
+      return res.status(403).json({
+        message: 'Insufficient permissions',
+        required: `${allPermission} OR ${ownPermission}`,
+        reason: permissionResult.reason,
+        userRole: permissionResult.userRole,
+        userPermissions: permissionResult.userPermissions || [],
+      });
+    } catch (error) {
+      logger.error('❌ AUTH: Ownership check failed:', error);
+      return res.status(500).json({ message: 'Permission check failed' });
+    }
+  };
+};

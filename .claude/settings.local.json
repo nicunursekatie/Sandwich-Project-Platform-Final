@@ -54,7 +54,8 @@
       "Bash(ls:*)",
       "Bash(more:*)",
       "Bash(findstr:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

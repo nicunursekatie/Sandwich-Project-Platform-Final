@@ -3,7 +3,7 @@ import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
-import bcrypt from 'bcrypt';
+import { authService } from '../services/auth.service';
 import { logger } from '../utils/production-safe-logger';
 import { passwordResetRateLimiter } from '../middleware/rate-limiter';
 
@@ -251,9 +251,8 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
       });
     }
 
-    // Hash and update user's password
-    // IMPORTANT: Trim password to match login behavior (auth.service.ts trims before comparing)
-    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+    // Hash password using centralized auth service (handles trimming and consistent salt rounds)
+    const hashedPassword = await authService.hashPassword(newPassword);
     await storage.updateUser(user.id!, {
       password: hashedPassword,
     });
