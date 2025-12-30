@@ -22,6 +22,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 
 **Technical Implementations & Feature Specifications:**
 - **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement. `APP_ENV` and `NODE_ENV` environment variables control authentication mode for development vs. production, with `REPLIT_DEPLOYMENT=1` forcing full authentication in deployed environments. Inactive users are blocked from protected routes via middleware, with an allowlist for public authentication-related routes.
+  
+  **CRITICAL PASSWORD HANDLING RULE:**
+  - **NEVER** call `bcrypt.hash()` or `bcrypt.compare()` directly in route handlers
+  - **ALWAYS** use `authService.hashPassword()` and `authService.verifyPassword()` from `server/services/auth.service.ts`
+  - **Why**: The auth service trims passwords before hashing/comparing. Direct bcrypt calls skip trimming, causing hash mismatches when users copy/paste passwords with whitespace
+  - **Key files**: `server/services/auth.service.ts` (centralized methods), `server/routes/password-reset.ts` (must use authService)
 - **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
