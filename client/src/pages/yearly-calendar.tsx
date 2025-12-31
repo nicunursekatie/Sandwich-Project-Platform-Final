@@ -287,7 +287,7 @@ export default function YearlyCalendar() {
       });
     });
     return grouped;
-  }, [items]);
+  }, [deduplicatedItems]);
 
   // Group tracked items by month using date range overlap
   const trackedItemsByMonth = useMemo(() => {

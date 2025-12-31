@@ -276,18 +276,26 @@ export function MonthlyCalendarGrid({
 
     // Process yearly items that have dates
     yearlyItems.forEach(item => {
-      // Debug: Log items to see their date fields
       if (item.startDate) {
-        const endDate = item.endDate || item.startDate;
-        const range = getDateRangeInMonth(item.startDate, endDate, year, month);
+        let startDate = item.startDate;
+        let endDate = item.endDate || item.startDate;
+
+        // Fix: If endDate is before startDate, swap them
+        if (endDate < startDate) {
+          console.warn('Yearly item has endDate before startDate, swapping:', item.title, startDate, endDate);
+          [startDate, endDate] = [endDate, startDate];
+        }
+
+        const range = getDateRangeInMonth(startDate, endDate, year, month);
         console.log('Processing yearly item for grid:', {
           id: item.id,
           title: item.title,
-          startDate: item.startDate,
-          endDate: item.endDate,
+          startDate,
+          endDate,
           month,
           year,
           hasRange: !!range,
+          range,
         });
         if (range) {
           const categoryColors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
@@ -295,7 +303,7 @@ export function MonthlyCalendarGrid({
             id: `yearly-${item.id}`,
             type: 'yearly',
             title: item.title,
-            startDate: item.startDate,
+            startDate: startDate,
             endDate: endDate,
             category: item.category,
             colors: categoryColors,
