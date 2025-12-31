@@ -192,7 +192,25 @@ function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; bo
   return CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
 }
 
-// Get display label for an item (district name + context)
+// Get abbreviated break type from title
+function getBreakType(title: string): string {
+  const lowerTitle = title.toLowerCase();
+  if (lowerTitle.includes('winter')) return 'Winter';
+  if (lowerTitle.includes('spring')) return 'Spring';
+  if (lowerTitle.includes('fall')) return 'Fall';
+  if (lowerTitle.includes('summer')) return 'Summer';
+  if (lowerTitle.includes('thanksgiving')) return 'Thanksgiving';
+  if (lowerTitle.includes('christmas')) return 'Christmas';
+  if (lowerTitle.includes('mlk') || lowerTitle.includes('martin luther')) return 'MLK';
+  if (lowerTitle.includes('president')) return 'Presidents';
+  if (lowerTitle.includes('memorial')) return 'Memorial';
+  if (lowerTitle.includes('labor')) return 'Labor';
+  if (lowerTitle.includes('columbus')) return 'Columbus';
+  if (lowerTitle.includes('veteran')) return 'Veterans';
+  return 'Break'; // Generic fallback
+}
+
+// Get display label for an item (district name + break type)
 function getItemLabel(item: TrackedCalendarItem): string {
   const districts = item.metadata?.districts || [];
   const isBreak = item.category === 'school_breaks' || item.title.toLowerCase().includes('break');
@@ -217,12 +235,54 @@ function getItemLabel(item: TrackedCalendarItem): string {
     districtLabel = `${districts.length} Dist`;
   }
 
-  // Add context for what type of item this is
+  // Add break type context
   if (isBreak) {
-    return `${districtLabel} Break`;
+    const breakType = getBreakType(item.title);
+    return `${districtLabel} ${breakType}`;
   }
 
   return districtLabel;
+}
+
+// Calculate district overlap for a specific day
+function getDistrictsOnBreak(
+  trackedItems: TrackedCalendarItem[],
+  year: number,
+  month: number,
+  day: number
+): { count: number; districts: string[] } {
+  const targetDate = new Date(year, month - 1, day);
+  const districtsOnBreak = new Set<string>();
+
+  trackedItems.forEach(item => {
+    if (item.category !== 'school_breaks') return;
+
+    const startDate = parseDateSafe(item.startDate);
+    const endDate = parseDateSafe(item.endDate);
+
+    // Check if this day falls within the break
+    if (targetDate >= startDate && targetDate <= endDate) {
+      const districts = item.metadata?.districts || [];
+      districts.forEach(d => districtsOnBreak.add(d));
+    }
+  });
+
+  return {
+    count: districtsOnBreak.size,
+    districts: Array.from(districtsOnBreak).sort(),
+  };
+}
+
+// Get severity level based on district count
+function getBreakSeverity(districtCount: number): {
+  level: 'none' | 'light' | 'moderate' | 'critical';
+  color: string;
+  bgColor: string;
+} {
+  if (districtCount === 0) return { level: 'none', color: '', bgColor: '' };
+  if (districtCount <= 2) return { level: 'light', color: '#b8860b', bgColor: '#fef6e8' };
+  if (districtCount <= 3) return { level: 'moderate', color: '#c2410c', bgColor: '#fff7ed' };
+  return { level: 'critical', color: '#a31c41', bgColor: '#fef2f2' };
 }
 
 // Unified calendar item for display (combines tracked and yearly items)
@@ -558,27 +618,72 @@ export function MonthlyCalendarGrid({
                   const dayNumber = cellIndex - firstDayOfWeek + 1;
                   const isValidDay = dayNumber >= 1 && dayNumber <= daysInMonth;
 
+                  // Calculate district overlap for this day
+                  const breakInfo = isValidDay
+                    ? getDistrictsOnBreak(trackedItems, year, month, dayNumber)
+                    : { count: 0, districts: [] };
+                  const severity = getBreakSeverity(breakInfo.count);
+
                   return (
                     <div
                       key={dayIndex}
                       style={{
                         height: `${rowHeight}px`,
-                        backgroundColor: isValidDay && isToday(dayNumber) ? '#e8f4f8' : !isValidDay ? '#f9fafb' : undefined,
+                        backgroundColor: isValidDay && isToday(dayNumber)
+                          ? '#e8f4f8'
+                          : isValidDay && severity.level !== 'none'
+                            ? severity.bgColor
+                            : !isValidDay
+                              ? '#f9fafb'
+                              : undefined,
                       }}
                       className={cn(
                         'p-1 border-r border-b last:border-r-0 relative'
                       )}
                     >
                       {isValidDay && (
-                        <span
-                          className={cn(
-                            'text-sm font-medium',
-                            isToday(dayNumber) && 'text-white rounded-full w-6 h-6 flex items-center justify-center'
+                        <div className="flex items-start justify-between">
+                          <span
+                            className={cn(
+                              'text-sm font-medium',
+                              isToday(dayNumber) && 'text-white rounded-full w-6 h-6 flex items-center justify-center'
+                            )}
+                            style={isToday(dayNumber) ? { backgroundColor: '#236383' } : undefined}
+                          >
+                            {dayNumber}
+                          </span>
+                          {/* Severity indicator for multiple districts on break */}
+                          {severity.level !== 'none' && breakInfo.count >= 3 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className="text-xs font-bold px-1 rounded"
+                                    style={{
+                                      backgroundColor: severity.color,
+                                      color: 'white',
+                                    }}
+                                  >
+                                    {breakInfo.count}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <div className="space-y-1">
+                                    <p className="font-semibold" style={{ color: severity.color }}>
+                                      ⚠️ {breakInfo.count} Districts on Break
+                                    </p>
+                                    <p className="text-xs text-gray-600">
+                                      {breakInfo.districts.join(', ')}
+                                    </p>
+                                    <p className="text-xs text-amber-700 mt-1">
+                                      Expect reduced volunteer availability. Consider extra outreach or group events.
+                                    </p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
-                          style={isToday(dayNumber) ? { backgroundColor: '#236383' } : undefined}
-                        >
-                          {dayNumber}
-                        </span>
+                        </div>
                       )}
                     </div>
                   );
