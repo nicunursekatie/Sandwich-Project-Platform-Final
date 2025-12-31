@@ -110,6 +110,27 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   logger.log('Session ID:', req.sessionID);
   logger.log('User email in session:', req.session?.user?.email);
 
+  // In development mode, inject a dev admin user if no session exists
+  if (process.env.APP_ENV === 'development' && (!req.session || !req.session.user)) {
+    logger.log('🔧 DEV MODE: Injecting dev admin user');
+    const devUser = {
+      id: 1,
+      email: 'dev@thesandwichproject.org',
+      firstName: 'Dev',
+      lastName: 'Admin',
+      displayName: 'Dev Admin',
+      role: 'super_admin',
+      isActive: true,
+      permissions: ['*'],
+      profileImageUrl: null,
+    };
+    req.user = devUser;
+    if (req.session) {
+      req.session.user = devUser;
+    }
+    return next();
+  }
+
   // AUTHENTICATION REQUIRED - no auto-login
   if (!req.session || !req.session.user) {
     logger.log('❌ No session user found - authentication required');
