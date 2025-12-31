@@ -83,10 +83,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: 'bg-gray-100 text-gray-800 border-gray-300',
   // Tracked calendar categories
   school_breaks: 'bg-amber-100 text-amber-800 border-amber-300',
+  school_markers: 'bg-emerald-100 text-emerald-800 border-emerald-300',
 };
 
 const TRACKED_CATEGORY_LABELS: Record<string, string> = {
   school_breaks: 'School Breaks',
+  school_markers: 'School Dates',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
