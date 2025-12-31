@@ -36,6 +36,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
   - **ALWAYS** use `authService.hashPassword()` and `authService.verifyPassword()` from `server/services/auth.service.ts`
   - **Why**: The auth service trims passwords before hashing/comparing. Direct bcrypt calls skip trimming, causing hash mismatches when users copy/paste passwords with whitespace
   - **Key files**: `server/services/auth.service.ts` (centralized methods), `server/routes/password-reset.ts` (must use authService)
+  
+  **SUPER ADMIN BYPASS FIX (Dec 2024):**
+  - **Issue**: Super admin users weren't getting all permissions because `role` was stripped when `/api/auth/user` fetched fresh user data from storage
+  - **Root cause**: Storage layer didn't always return `role`, so `checkPermission` received `role: undefined` and the super_admin bypass at line 62-71 in `unified-auth-utils.ts` failed
+  - **Fix**: `/api/auth/user` now explicitly includes `role: userRole` using fallback `freshUser.role ?? req.user.role`
+  - **Key file**: `server/routes/auth/index.ts` (lines 228-241)
 - **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.

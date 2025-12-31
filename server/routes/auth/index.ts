@@ -222,14 +222,19 @@ export function createAuthRouter() {
         return res.status(401).json({ message: 'User not found' });
       }
 
+      // Ensure role is always present - fallback to session user's role if storage doesn't return it
+      // This fixes the super_admin bypass not working when role is stripped by storage layer
+      const userRole = freshUser.role ?? req.user.role;
+
       // Get permissions (prefer stored permissions, fall back to role defaults)
       const basePermissions = Array.isArray(freshUser.permissions)
         ? freshUser.permissions
-        : getDefaultPermissionsForRole(freshUser.role);
+        : getDefaultPermissionsForRole(userRole);
       const permissions = applyPermissionDependencies(basePermissions);
 
       return res.json({
         ...freshUser,
+        role: userRole, // Explicitly include role to ensure super_admin bypass works
         permissions,
       });
     } catch (error) {
