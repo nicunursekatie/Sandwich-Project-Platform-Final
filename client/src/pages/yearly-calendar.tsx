@@ -21,6 +21,8 @@ import {
   ChevronUp,
   Upload,
   Filter,
+  CalendarDays,
+  X,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -30,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { MonthlyCalendarGrid } from '@/components/monthly-calendar-grid';
 
 interface YearlyCalendarItem {
   id: number;
@@ -191,6 +194,7 @@ export default function YearlyCalendar() {
   const [importJsonText, setImportJsonText] = useState('');
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
 
   // Form state
   const [formMonth, setFormMonth] = useState<number>(new Date().getMonth() + 1);
@@ -584,6 +588,24 @@ export default function YearlyCalendar() {
         </div>
       </div>
 
+      {/* Expanded Monthly View */}
+      {expandedMonth !== null && (
+        <div className="mb-6">
+          <MonthlyCalendarGrid
+            year={selectedYear}
+            month={expandedMonth}
+            trackedItems={trackedItems}
+            onMonthChange={(year, month) => {
+              if (year !== selectedYear) {
+                setSelectedYear(year);
+              }
+              setExpandedMonth(month);
+            }}
+            onClose={() => setExpandedMonth(null)}
+          />
+        </div>
+      )}
+
       {/* Calendar Grid */}
       {isLoading || isLoadingTracked ? (
         <div className="flex justify-center items-center py-12">
@@ -600,13 +622,14 @@ export default function YearlyCalendar() {
             const isCurrentMonth = new Date().getMonth() + 1 === monthNumber && new Date().getFullYear() === selectedYear;
             const isPastMonth = selectedYear < new Date().getFullYear() ||
               (selectedYear === new Date().getFullYear() && monthNumber < new Date().getMonth() + 1);
+            const isExpanded = expandedMonth === monthNumber;
 
             return (
               <Card
                 key={monthNumber}
                 className={`transition-all hover:shadow-md flex flex-col ${
                   isCurrentMonth ? 'ring-2 ring-[#236383]' : ''
-                } ${isPastMonth ? 'opacity-75' : ''}`}
+                } ${isPastMonth ? 'opacity-75' : ''} ${isExpanded ? 'ring-2 ring-amber-400' : ''}`}
               >
                 <CardHeader className="pb-3 flex-shrink-0">
                   <CardTitle className="text-lg flex items-center justify-between">
@@ -618,9 +641,18 @@ export default function YearlyCalendar() {
                         </Badge>
                       )}
                       {totalTrackedCount > 0 && (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
-                          {totalTrackedCount}
-                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 hover:bg-amber-100"
+                          onClick={() => setExpandedMonth(isExpanded ? null : monthNumber)}
+                          title={isExpanded ? 'Collapse monthly view' : 'Expand to see school breaks on calendar'}
+                        >
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 mr-1">
+                            {totalTrackedCount}
+                          </Badge>
+                          <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
+                        </Button>
                       )}
                     </div>
                   </CardTitle>
