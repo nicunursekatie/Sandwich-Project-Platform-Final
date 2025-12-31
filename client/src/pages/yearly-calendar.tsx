@@ -119,17 +119,65 @@ function dateRangeOverlapsMonth(startDate: string, endDate: string, year: number
   return rangeStart <= monthEnd && rangeEnd >= monthStart;
 }
 
-// Format date range for display
+// Format date range for display (compact format)
 function formatDateRange(startDate: string, endDate: string): string {
   const start = parseDateSafe(startDate);
   const end = parseDateSafe(endDate);
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
+  const month = start.toLocaleDateString('en-US', { month: 'short' });
+  
   if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
-    return `${start.getDate()}-${end.getDate()} ${start.toLocaleDateString('en-US', { month: 'short' })}`;
+    if (start.getDate() === end.getDate()) {
+      // Single day
+      return `${month} ${start.getDate()}`;
+    }
+    return `${month} ${start.getDate()}-${end.getDate()}`;
   }
-  return `${startMonth} - ${endMonth}`;
+  // Cross-month range
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
+  return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}`;
+}
+
+// Group similar tracked items together (same title, dates within same month or close)
+function groupSimilarItems(items: TrackedCalendarItem[]): TrackedCalendarItem[][] {
+  const groups: TrackedCalendarItem[][] = [];
+  const processed = new Set<number>();
+  
+  items.forEach(item => {
+    if (processed.has(item.id)) return;
+    
+    const group = [item];
+    processed.add(item.id);
+    
+    // Find similar items (same title, dates within 3 weeks - captures overlapping breaks)
+    items.forEach(other => {
+      if (processed.has(other.id) || other.id === item.id) return;
+      if (other.title !== item.title) return;
+      
+      const itemStart = parseDateSafe(item.startDate);
+      const itemEnd = parseDateSafe(item.endDate);
+      const otherStart = parseDateSafe(other.startDate);
+      const otherEnd = parseDateSafe(other.endDate);
+      
+      // Check if dates overlap or are within 3 weeks of each other
+      const daysDiff = Math.abs((itemStart.getTime() - otherStart.getTime()) / (1000 * 60 * 60 * 24));
+      const overlaps = (itemStart <= otherEnd && itemEnd >= otherStart);
+      
+      if (overlaps || daysDiff <= 21) {
+        group.push(other);
+        processed.add(other.id);
+      }
+    });
+    
+    // Sort group by start date
+    group.sort((a, b) => 
+      parseDateSafe(a.startDate).getTime() - parseDateSafe(b.startDate).getTime()
+    );
+    
+    groups.push(group);
+  });
+  
+  return groups;
 }
 
 export default function YearlyCalendar() {
@@ -589,6 +637,14 @@ export default function YearlyCalendar() {
                       const categoryItems = monthTrackedItems[category];
                       const categoryLabel = TRACKED_CATEGORY_LABELS[category] || category;
                       const isCollapsed = collapsedCategories[`${monthNumber}-${category}`];
+                      
+                      // Group similar items together
+                      const groupedItems = groupSimilarItems(categoryItems);
+                      
+                      // Create summary for collapsed state
+                      const summaryText = groupedItems.length === 1 
+                        ? `${categoryItems.length} ${categoryItems[0].title.toLowerCase()}`
+                        : `${categoryItems.length} items across ${groupedItems.length} periods`;
 
                       return (
                         <Collapsible
@@ -597,39 +653,126 @@ export default function YearlyCalendar() {
                           onOpenChange={() => toggleCategory(`${monthNumber}-${category}`)}
                         >
                           <CollapsibleTrigger asChild>
-                            <div className={`p-2 rounded-lg border cursor-pointer hover:bg-opacity-80 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}>
+                            <div className={`p-2 rounded-lg border cursor-pointer hover:bg-opacity-80 transition-colors ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}>
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <span className="font-medium text-sm">{categoryLabel}</span>
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
                                     {categoryItems.length}
                                   </Badge>
+                                  {isCollapsed && (
+                                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate ml-1">
+                                      {summaryText}
+                                    </span>
+                                  )}
                                 </div>
                                 {isCollapsed ? (
-                                  <ChevronDown className="h-4 w-4" />
+                                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                 ) : (
-                                  <ChevronUp className="h-4 w-4" />
+                                  <ChevronUp className="h-4 w-4 flex-shrink-0" />
                                 )}
                               </div>
                             </div>
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="space-y-1 mt-1">
-                            {categoryItems.map(item => (
-                              <div
-                                key={`tracked-${item.id}`}
-                                className={`p-2 pl-4 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
-                              >
-                                <h4 className="text-sm font-medium">{item.title}</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {formatDateRange(item.startDate, item.endDate)}
-                                </p>
-                                {item.notes && (
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
-                                    {item.notes}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
+                          <CollapsibleContent className="space-y-2 mt-1">
+                            {groupedItems.map((group, groupIdx) => {
+                              // If group has multiple items, show them grouped
+                              if (group.length > 1) {
+                                const allDistricts = new Set<string>();
+                                group.forEach(item => {
+                                  if (item.metadata?.districts) {
+                                    item.metadata.districts.forEach((d: string) => allDistricts.add(d));
+                                  }
+                                });
+                                const sortedDistricts = Array.from(allDistricts).sort();
+                                
+                                return (
+                                  <div
+                                    key={`group-${groupIdx}`}
+                                    className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                                      <h4 className="text-sm font-semibold flex-1">{group[0].title}</h4>
+                                      <div className="flex flex-wrap gap-1 flex-shrink-0">
+                                        {sortedDistricts.map(district => (
+                                          <Badge 
+                                            key={district} 
+                                            variant="outline" 
+                                            className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
+                                          >
+                                            {district}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {group.map(item => (
+                                        <div key={`tracked-${item.id}`} className="text-xs">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                                              {formatDateRange(item.startDate, item.endDate)}
+                                            </span>
+                                            {item.metadata?.districts && item.metadata.districts.length <= 3 && (
+                                              <span className="text-gray-500">
+                                                ({item.metadata.districts.join(', ')})
+                                              </span>
+                                            )}
+                                          </div>
+                                          {item.notes && (
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 italic">
+                                              {item.notes}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
+                              // Single item - show compactly
+                              const item = group[0];
+                              const districts = item.metadata?.districts || [];
+                              
+                              return (
+                                <div
+                                  key={`tracked-${item.id}`}
+                                  className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
+                                >
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold">{item.title}</h4>
+                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
+                                        {formatDateRange(item.startDate, item.endDate)}
+                                      </p>
+                                    </div>
+                                    {districts.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 flex-shrink-0">
+                                        {districts.slice(0, 4).map(district => (
+                                          <Badge 
+                                            key={district} 
+                                            variant="outline" 
+                                            className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
+                                          >
+                                            {district}
+                                          </Badge>
+                                        ))}
+                                        {districts.length > 4 && (
+                                          <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                            +{districts.length - 4}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {item.notes && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                                      {item.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </CollapsibleContent>
                         </Collapsible>
                       );

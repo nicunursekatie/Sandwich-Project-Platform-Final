@@ -3,7 +3,8 @@
 
 INSERT INTO yearly_calendar_items (
   month, year, title, description, category, priority,
-  created_by, is_recurring, is_completed, created_at, updated_at
+  created_by, created_by_name, assigned_to, assigned_to_names,
+  is_recurring, is_completed, created_at, updated_at
 )
 SELECT
   month,
@@ -13,6 +14,9 @@ SELECT
   category,
   priority,
   created_by,
+  created_by_name,
+  assigned_to,
+  assigned_to_names,
   is_recurring,
   false as is_completed,  -- Reset completion status for new year
   NOW() as created_at,
