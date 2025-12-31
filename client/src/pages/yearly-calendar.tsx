@@ -233,13 +233,37 @@ export default function YearlyCalendar() {
   });
   const trackedItems = trackedItemsResponse?.items || [];
 
+  // Deduplicate items - handles both duplicate IDs and duplicate content
+  const deduplicatedItems = useMemo(() => {
+    const seenIds = new Set<number>();
+    const seenContent = new Set<string>();
+
+    return items.filter(item => {
+      // First, filter by ID
+      if (seenIds.has(item.id)) {
+        return false;
+      }
+      seenIds.add(item.id);
+
+      // Then, filter by content (keep only the first occurrence of matching title+month+year)
+      const contentKey = `${item.month}-${item.year}-${item.title.toLowerCase().trim()}`;
+      if (seenContent.has(contentKey)) {
+        console.warn('Duplicate yearly calendar item detected:', item.title, 'in month', item.month);
+        return false;
+      }
+      seenContent.add(contentKey);
+
+      return true;
+    });
+  }, [items]);
+
   // Group items by month and sort them
   const itemsByMonth = useMemo(() => {
     const grouped: Record<number, YearlyCalendarItem[]> = {};
     for (let i = 1; i <= 12; i++) {
       grouped[i] = [];
     }
-    items.forEach(item => {
+    deduplicatedItems.forEach(item => {
       if (!grouped[item.month]) {
         grouped[item.month] = [];
       }
@@ -609,7 +633,7 @@ export default function YearlyCalendar() {
             year={selectedYear}
             month={expandedMonth}
             trackedItems={trackedItems}
-            yearlyItems={items}
+            yearlyItems={deduplicatedItems}
             onMonthChange={(year, month) => {
               if (year !== selectedYear) {
                 setSelectedYear(year);

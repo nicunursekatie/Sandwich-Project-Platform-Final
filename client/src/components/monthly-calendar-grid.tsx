@@ -276,9 +276,19 @@ export function MonthlyCalendarGrid({
 
     // Process yearly items that have dates
     yearlyItems.forEach(item => {
+      // Debug: Log items to see their date fields
       if (item.startDate) {
         const endDate = item.endDate || item.startDate;
         const range = getDateRangeInMonth(item.startDate, endDate, year, month);
+        console.log('Processing yearly item for grid:', {
+          id: item.id,
+          title: item.title,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          month,
+          year,
+          hasRange: !!range,
+        });
         if (range) {
           const categoryColors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
           items.push({
@@ -297,6 +307,8 @@ export function MonthlyCalendarGrid({
         }
       }
     });
+
+    console.log('Total items for calendar grid:', items.length, 'yearlyItems with dates:', yearlyItems.filter(i => i.startDate).length);
 
     return items;
   }, [trackedItems, yearlyItems, year, month]);
@@ -350,7 +362,7 @@ export function MonthlyCalendarGrid({
     });
 
     // Assign lanes to prevent overlap within each week
-    const weekLanes: Map<string, { endCol: number; lane: number }[]>[] = [];
+    const weekLanes: Map<string, { endCol: number; lane: number }>[] = [];
     for (let w = 0; w < weeksNeeded; w++) {
       weekLanes.push(new Map());
     }
