@@ -24,7 +24,7 @@ const createItemSchema = insertYearlyCalendarItemSchema
     month: z.number().int().min(1).max(12),
     year: z.number().int().min(2000).max(2100),
     description: z.string().max(2000, 'Description too long').optional().nullable(),
-    category: z.enum(['preparation', 'event-rush', 'event', 'staffing', 'board', 'seasonal', 'other']).optional(),
+    category: z.enum(['preparation', 'event-rush', 'event', 'staffing', 'board', 'seasonal', 'planning', 'other']).optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
     startDate: dateStringSchema,
     endDate: dateStringSchema,

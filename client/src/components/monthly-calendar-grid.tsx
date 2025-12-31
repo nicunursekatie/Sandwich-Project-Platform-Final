@@ -101,7 +101,8 @@ const CATEGORY_COLORS: Record<string, ColorStyle> = {
   preparation: { bg: '#e8f4f8', text: '#236383', border: '#236383' },     // Primary blue
   'event-rush': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },    // Burgundy (urgent)
   event: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },           // Golden (events)
-  staffing: { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },        // Light blue
+  planning: { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },        // Light blue
+  staffing: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },        // Teal
   board: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },           // Teal
   seasonal: { bg: '#e8f4f8', text: '#236383', border: '#236383' },        // Primary blue
   other: { bg: '#f3f4f6', text: '#374151', border: '#9ca3af' },           // Gray
@@ -191,30 +192,37 @@ function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; bo
   return CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
 }
 
-// Get display label for an item (district name or abbreviated)
+// Get display label for an item (district name + context)
 function getItemLabel(item: TrackedCalendarItem): string {
   const districts = item.metadata?.districts || [];
+  const isBreak = item.category === 'school_breaks' || item.title.toLowerCase().includes('break');
 
   if (districts.length === 0) {
     return item.title;
   }
 
+  // Get abbreviated district name
+  let districtLabel: string;
   if (districts.length === 1) {
-    // Abbreviate long district names
     const district = districts[0];
-    if (district === 'Columbus City' || district === 'CCS') return 'CCS';
-    if (district === 'Upper Arlington') return 'UA';
-    if (district === 'South-Western') return 'SW';
-    if (district === 'Canal Winchester') return 'CW';
-    if (district === 'New Albany') return 'NA';
-    return district;
+    if (district === 'Columbus City' || district === 'CCS') districtLabel = 'CCS';
+    else if (district === 'Upper Arlington') districtLabel = 'UA';
+    else if (district === 'South-Western') districtLabel = 'SW';
+    else if (district === 'Canal Winchester') districtLabel = 'CW';
+    else if (district === 'New Albany') districtLabel = 'NA';
+    else districtLabel = district;
+  } else if (districts.includes('All')) {
+    districtLabel = 'All';
+  } else {
+    districtLabel = `${districts.length} Dist`;
   }
 
-  if (districts.includes('All')) {
-    return 'All Districts';
+  // Add context for what type of item this is
+  if (isBreak) {
+    return `${districtLabel} Break`;
   }
 
-  return `${districts.length} Districts`;
+  return districtLabel;
 }
 
 // Unified calendar item for display (combines tracked and yearly items)
@@ -470,6 +478,7 @@ export function MonthlyCalendarGrid({
     preparation: 'Preparation',
     'event-rush': 'Event Rush',
     event: 'Event',
+    planning: 'Planning',
     staffing: 'Staffing',
     board: 'Board',
     seasonal: 'Seasonal',
@@ -639,6 +648,15 @@ export function MonthlyCalendarGrid({
                                         </Badge>
                                       );
                                     })}
+                                  </div>
+                                )}
+                                {/* School break impact note */}
+                                {item.type === 'tracked' && item.category === 'school_breaks' && (
+                                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                                    <p className="font-medium text-amber-800">⚠️ Volunteer Impact</p>
+                                    <p className="text-amber-700 mt-1">
+                                      School breaks often mean lower volunteer availability. Consider scheduling extra group events or targeted outreach to maintain collection numbers.
+                                    </p>
                                   </div>
                                 )}
                                 {item.notes && (

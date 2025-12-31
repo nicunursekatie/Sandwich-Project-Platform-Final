@@ -1011,6 +1011,7 @@ export default function YearlyCalendar() {
                     <SelectItem value="preparation">Preparation</SelectItem>
                     <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
+                    <SelectItem value="planning">Planning</SelectItem>
                     <SelectItem value="staffing">Staffing</SelectItem>
                     <SelectItem value="board">Board/Governance</SelectItem>
                     <SelectItem value="seasonal">Seasonal Planning</SelectItem>
@@ -1138,6 +1139,7 @@ export default function YearlyCalendar() {
                     <SelectItem value="preparation">Preparation</SelectItem>
                     <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
+                    <SelectItem value="planning">Planning</SelectItem>
                     <SelectItem value="staffing">Staffing</SelectItem>
                     <SelectItem value="board">Board/Governance</SelectItem>
                     <SelectItem value="seasonal">Seasonal Planning</SelectItem>
