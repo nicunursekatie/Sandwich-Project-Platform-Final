@@ -723,7 +723,7 @@ export function MonthlyCalendarGrid({
                                 }}
                               >
                                 <span className="truncate">
-                                  {segment.isStart ? item.label : ''}
+                                  {item.label}
                                 </span>
                               </div>
                             </TooltipTrigger>
