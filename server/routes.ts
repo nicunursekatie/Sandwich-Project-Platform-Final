@@ -20,16 +20,35 @@ import { getDatabaseUrl } from './db-url';
  */
 
 export async function registerRoutes(app: Express): Promise<any> {
+  // ==========================================================================
+  // SESSION & COOKIE CONFIGURATION
+  // ==========================================================================
+  // If login causes a page refresh instead of succeeding, check:
+  // 1. trust proxy is set (required behind reverse proxy like Replit)
+  // 2. REPLIT_DEPLOYMENT=1 is set in Secrets (for production deployments)
+  // 3. SESSION_SECRET is set in Secrets
+  // 4. CORS is not setting Access-Control-Allow-Origin to 'null'
+  // ==========================================================================
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  const isOnReplit = !!process.env.REPL_ID;
+
   // Validate SESSION_SECRET in production to prevent security vulnerabilities
-  if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  if (isProduction && !process.env.SESSION_SECRET) {
     throw new Error(
       'CRITICAL: SESSION_SECRET environment variable must be set in production. ' +
       'Without this, session tokens can be forged, leading to authentication bypass.'
     );
   }
 
+  // Warn if REPLIT_DEPLOYMENT is not set correctly
+  if (isProduction && isOnReplit && !isReplitDeployment) {
+    logger.warn('⚠️ [Session] REPLIT_DEPLOYMENT is not set to "1" in Secrets!');
+    logger.warn('⚠️ [Session] This may cause login to fail. Add REPLIT_DEPLOYMENT=1 to your Secrets.');
+  }
+
   // Use database-backed session store for deployment persistence
-  // Use centralized database URL configuration from db-url.ts
   const databaseUrl = getDatabaseUrl();
 
   const PgSession = connectPg(session);
@@ -42,27 +61,37 @@ export async function registerRoutes(app: Express): Promise<any> {
 
   // CRITICAL: Trust Replit's HTTPS proxy so Express sets secure cookies correctly
   // Without this, Express thinks the connection is insecure and won't set secure cookies
+  // SYMPTOM if missing: Login causes page refresh, cookies rejected silently
   app.set('trust proxy', 1);
+  logger.info('🔒 [Proxy] trust proxy enabled for secure cookies behind reverse proxy');
 
   // Add secure CORS middleware before session middleware
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
 
-  // Determine if we're in production (deployed) or development environment
-  const isProduction = process.env.NODE_ENV === 'production';
-  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
   // Use secure cookies in production OR in Replit deployments (which use HTTPS)
   const useSecureCookies = isProduction || isReplitDeployment;
 
-  logger.info('[Session Config]', {
+  // Log complete session configuration for debugging login issues
+  logger.info('🔐 [Session Config]', {
     isProduction,
     isReplitDeployment,
+    isOnReplit,
+    trustProxy: true,
     useSecureCookies,
     cookieSettings: {
       secure: useSecureCookies,
+      httpOnly: true,
       sameSite: useSecureCookies ? 'none' : 'lax',
     },
   });
+
+  // Extra validation: warn if configuration looks wrong
+  if (useSecureCookies) {
+    logger.info('🔐 [Session] Secure cookies ENABLED - requires HTTPS');
+  } else {
+    logger.info('🔓 [Session] Secure cookies DISABLED - development mode');
+  }
 
   // Add session middleware with enhanced security and mobile compatibility
   app.use(
