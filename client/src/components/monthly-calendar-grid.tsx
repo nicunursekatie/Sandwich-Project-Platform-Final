@@ -56,41 +56,55 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// District-specific colors for visual differentiation
-const DISTRICT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'CCS': { bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-400' },
-  'Columbus City': { bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-400' },
-  'Westerville': { bg: 'bg-purple-200', text: 'text-purple-900', border: 'border-purple-400' },
-  'Worthington': { bg: 'bg-green-200', text: 'text-green-900', border: 'border-green-400' },
-  'Dublin': { bg: 'bg-orange-200', text: 'text-orange-900', border: 'border-orange-400' },
-  'Hilliard': { bg: 'bg-pink-200', text: 'text-pink-900', border: 'border-pink-400' },
-  'Upper Arlington': { bg: 'bg-cyan-200', text: 'text-cyan-900', border: 'border-cyan-400' },
-  'Grandview': { bg: 'bg-teal-200', text: 'text-teal-900', border: 'border-teal-400' },
-  'Bexley': { bg: 'bg-indigo-200', text: 'text-indigo-900', border: 'border-indigo-400' },
-  'Gahanna': { bg: 'bg-rose-200', text: 'text-rose-900', border: 'border-rose-400' },
-  'New Albany': { bg: 'bg-lime-200', text: 'text-lime-900', border: 'border-lime-400' },
-  'South-Western': { bg: 'bg-amber-300', text: 'text-amber-900', border: 'border-amber-500' },
-  'Groveport': { bg: 'bg-fuchsia-200', text: 'text-fuchsia-900', border: 'border-fuchsia-400' },
-  'Canal Winchester': { bg: 'bg-sky-200', text: 'text-sky-900', border: 'border-sky-400' },
-  'Reynoldsburg': { bg: 'bg-violet-200', text: 'text-violet-900', border: 'border-violet-400' },
-  'All': { bg: 'bg-amber-200', text: 'text-amber-900', border: 'border-amber-400' },
-  'default': { bg: 'bg-gray-200', text: 'text-gray-900', border: 'border-gray-400' },
+// TSP Brand Colors
+// #236383 (dark blue) - Primary
+// #fbad3f (golden/amber) - Secondary
+// #007e8c (teal) - Accent
+// #47b3cb (light blue/cyan) - Accent
+// #a31c41 (burgundy/maroon) - Accent
+
+// Color definitions using brand palette (with lighter backgrounds)
+interface ColorStyle {
+  bg: string;      // background hex
+  text: string;    // text hex
+  border: string;  // border hex
+}
+
+// District colors using brand palette rotation
+const DISTRICT_COLORS: Record<string, ColorStyle> = {
+  'CCS': { bg: '#e8f4f8', text: '#236383', border: '#236383' },           // Primary blue
+  'Columbus City': { bg: '#e8f4f8', text: '#236383', border: '#236383' }, // Primary blue
+  'Westerville': { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },   // Teal
+  'Worthington': { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },   // Light blue
+  'Dublin': { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },        // Golden
+  'Hilliard': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },      // Burgundy
+  'Upper Arlington': { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' }, // Teal
+  'Grandview': { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },     // Light blue
+  'Bexley': { bg: '#e8f4f8', text: '#236383', border: '#236383' },        // Primary blue
+  'Gahanna': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },       // Burgundy
+  'New Albany': { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },    // Teal
+  'South-Western': { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' }, // Golden
+  'Groveport': { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },     // Light blue
+  'Canal Winchester': { bg: '#e8f4f8', text: '#236383', border: '#236383' }, // Primary blue
+  'Reynoldsburg': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },  // Burgundy
+  'All': { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },           // Golden (shared)
+  'default': { bg: '#f3f4f6', text: '#374151', border: '#9ca3af' },       // Gray fallback
 };
 
-// Category colors for tracked items and TSP calendar items
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+// Category colors using brand palette
+const CATEGORY_COLORS: Record<string, ColorStyle> = {
   // Tracked calendar categories
-  school_breaks: { bg: 'bg-amber-200', text: 'text-amber-900', border: 'border-amber-400' },
-  school_markers: { bg: 'bg-emerald-200', text: 'text-emerald-900', border: 'border-emerald-400' },
-  holiday: { bg: 'bg-red-200', text: 'text-red-900', border: 'border-red-400' },
+  school_breaks: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },   // Golden/amber
+  school_markers: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },  // Teal
+  holiday: { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },         // Burgundy
   // TSP calendar item categories
-  preparation: { bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-400' },
-  'event-rush': { bg: 'bg-red-200', text: 'text-red-900', border: 'border-red-400' },
-  staffing: { bg: 'bg-orange-200', text: 'text-orange-900', border: 'border-orange-400' },
-  board: { bg: 'bg-purple-200', text: 'text-purple-900', border: 'border-purple-400' },
-  seasonal: { bg: 'bg-green-200', text: 'text-green-900', border: 'border-green-400' },
-  other: { bg: 'bg-gray-200', text: 'text-gray-900', border: 'border-gray-400' },
-  default: { bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-400' },
+  preparation: { bg: '#e8f4f8', text: '#236383', border: '#236383' },     // Primary blue
+  'event-rush': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },    // Burgundy (urgent)
+  staffing: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },        // Golden
+  board: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },           // Teal
+  seasonal: { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },        // Light blue
+  other: { bg: '#f3f4f6', text: '#374151', border: '#9ca3af' },           // Gray
+  default: { bg: '#e8f4f8', text: '#236383', border: '#236383' },         // Primary blue
 };
 
 // Safe date parsing (avoid timezone issues)
@@ -441,26 +455,44 @@ export function MonthlyCalendarGrid({
   };
 
   return (
-    <div className="bg-white rounded-lg border shadow-sm">
+    <div className="bg-white rounded-lg border shadow-sm" style={{ borderColor: '#47b3cb' }}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#47b3cb' }}>
         <div className="flex items-center gap-2">
           {onMonthChange && (
-            <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={goToPrevMonth}
+              className="hover:bg-[#e8f4f8]"
+              style={{ color: '#236383' }}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-lg font-semibold" style={{ color: '#236383' }}>
             {MONTH_NAMES[month - 1]} {year}
           </h3>
           {onMonthChange && (
-            <Button variant="ghost" size="icon" onClick={goToNextMonth}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={goToNextMonth}
+              className="hover:bg-[#e8f4f8]"
+              style={{ color: '#236383' }}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
         </div>
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="hover:bg-[#e8f4f8]"
+            style={{ color: '#236383' }}
+          >
             Back to Year View
           </Button>
         )}
@@ -498,19 +530,21 @@ export function MonthlyCalendarGrid({
                   return (
                     <div
                       key={dayIndex}
-                      style={{ height: `${rowHeight}px` }}
+                      style={{
+                        height: `${rowHeight}px`,
+                        backgroundColor: isValidDay && isToday(dayNumber) ? '#e8f4f8' : !isValidDay ? '#f9fafb' : undefined,
+                      }}
                       className={cn(
-                        'p-1 border-r border-b last:border-r-0 relative',
-                        !isValidDay && 'bg-gray-50',
-                        isValidDay && isToday(dayNumber) && 'bg-blue-50'
+                        'p-1 border-r border-b last:border-r-0 relative'
                       )}
                     >
                       {isValidDay && (
                         <span
                           className={cn(
                             'text-sm font-medium',
-                            isToday(dayNumber) && 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                            isToday(dayNumber) && 'text-white rounded-full w-6 h-6 flex items-center justify-center'
                           )}
+                          style={isToday(dayNumber) ? { backgroundColor: '#236383' } : undefined}
                         >
                           {dayNumber}
                         </span>
@@ -539,9 +573,6 @@ export function MonthlyCalendarGrid({
                                 className={cn(
                                   'absolute h-5 flex items-center px-1.5 text-xs font-medium pointer-events-auto cursor-pointer',
                                   'border shadow-sm',
-                                  item.colors.bg,
-                                  item.colors.text,
-                                  item.colors.border,
                                   segment.isStart ? 'rounded-l-md' : 'border-l-0',
                                   segment.isEnd ? 'rounded-r-md' : 'border-r-0',
                                   item.isCompleted && 'opacity-50 line-through'
@@ -550,6 +581,9 @@ export function MonthlyCalendarGrid({
                                   left: `${leftPercent}%`,
                                   width: `${widthPercent}%`,
                                   top: `${topOffset}px`,
+                                  backgroundColor: item.colors.bg,
+                                  color: item.colors.text,
+                                  borderColor: item.colors.border,
                                 }}
                               >
                                 <span className="truncate">
@@ -566,20 +600,23 @@ export function MonthlyCalendarGrid({
                                 {/* Tracked item: show districts */}
                                 {item.type === 'tracked' && item.districts && item.districts.length > 0 && (
                                   <div className="flex flex-wrap gap-1">
-                                    {item.districts.map(district => (
-                                      <Badge
-                                        key={district}
-                                        variant="outline"
-                                        className={cn(
-                                          'text-xs',
-                                          DISTRICT_COLORS[district]?.bg || 'bg-gray-100',
-                                          DISTRICT_COLORS[district]?.text || 'text-gray-800',
-                                          DISTRICT_COLORS[district]?.border || 'border-gray-300'
-                                        )}
-                                      >
-                                        {district}
-                                      </Badge>
-                                    ))}
+                                    {item.districts.map(district => {
+                                      const districtColors = DISTRICT_COLORS[district] || DISTRICT_COLORS['default'];
+                                      return (
+                                        <Badge
+                                          key={district}
+                                          variant="outline"
+                                          className="text-xs"
+                                          style={{
+                                            backgroundColor: districtColors.bg,
+                                            color: districtColors.text,
+                                            borderColor: districtColors.border,
+                                          }}
+                                        >
+                                          {district}
+                                        </Badge>
+                                      );
+                                    })}
                                   </div>
                                 )}
                                 {item.notes && (
@@ -590,12 +627,10 @@ export function MonthlyCalendarGrid({
                                   <div className="flex items-center gap-2 text-xs">
                                     <span className="text-gray-500 capitalize">{item.category?.replace('-', ' ')}</span>
                                     {item.priority && (
-                                      <span className={cn(
-                                        'capitalize',
-                                        item.priority === 'high' && 'text-red-600',
-                                        item.priority === 'medium' && 'text-blue-600',
-                                        item.priority === 'low' && 'text-gray-600'
-                                      )}>
+                                      <span style={{
+                                        color: item.priority === 'high' ? '#a31c41' :
+                                               item.priority === 'medium' ? '#236383' : '#6b7280'
+                                      }}>
                                         {item.priority} priority
                                       </span>
                                     )}
@@ -633,7 +668,12 @@ export function MonthlyCalendarGrid({
                     <Badge
                       key={district}
                       variant="outline"
-                      className={cn(colors.bg, colors.text, colors.border, 'text-xs')}
+                      className="text-xs"
+                      style={{
+                        backgroundColor: colors.bg,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      }}
                     >
                       {district}
                     </Badge>
@@ -652,7 +692,12 @@ export function MonthlyCalendarGrid({
                     <Badge
                       key={category}
                       variant="outline"
-                      className={cn(colors.bg, colors.text, colors.border, 'text-xs')}
+                      className="text-xs"
+                      style={{
+                        backgroundColor: colors.bg,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      }}
                     >
                       {CATEGORY_LABELS[category] || category}
                     </Badge>
