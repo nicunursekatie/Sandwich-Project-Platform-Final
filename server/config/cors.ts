@@ -150,11 +150,11 @@ export function createCorsMiddleware() {
     // Handle CORS for allowed origins
     if (isOriginAllowed(origin)) {
       if (origin) {
+        // Cross-origin request - set the specific origin
         res.header('Access-Control-Allow-Origin', origin);
-      } else {
-        // Same-origin request
-        res.header('Access-Control-Allow-Origin', 'null');
       }
+      // For same-origin requests (no origin header), don't set Access-Control-Allow-Origin
+      // Setting it to 'null' breaks cookie handling with sameSite: 'none'
     } else if (origin) {
       console.warn(`🚫 Express CORS: Blocked origin: ${origin}`);
       // Don't set any CORS headers for blocked origins
