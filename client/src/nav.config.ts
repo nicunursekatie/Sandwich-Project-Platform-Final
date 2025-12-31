@@ -499,6 +499,15 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
   {
+    id: 'quick-tools',
+    label: 'Quick Tools',
+    icon: Link,
+    href: 'important-links',
+    permission: PERMISSIONS.NAV_IMPORTANT_LINKS,
+    group: 'admin',
+    highlighted: true,
+  },
+  {
     id: 'documents',
     label: 'Documents',
     icon: FileText,
