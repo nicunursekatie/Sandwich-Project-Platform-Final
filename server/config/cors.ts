@@ -152,8 +152,9 @@ export function createCorsMiddleware() {
       if (origin) {
         res.header('Access-Control-Allow-Origin', origin);
       } else {
-        // Same-origin request
-        res.header('Access-Control-Allow-Origin', 'null');
+        // Same-origin request - don't set Access-Control-Allow-Origin header
+        // Setting it to 'null' causes cookie rejection with sameSite: 'none'
+        // For same-origin requests, the header isn't needed
       }
     } else if (origin) {
       console.warn(`🚫 Express CORS: Blocked origin: ${origin}`);
