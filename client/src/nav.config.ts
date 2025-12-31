@@ -123,7 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'inbox-consolidated',
-    label: 'Threads (Project-Centered Messaging)',
+    label: 'Project Threads',
     icon: Inbox,
     href: 'gmail-inbox',
     permission: PERMISSIONS.NAV_INBOX,
