@@ -46,12 +46,13 @@ export async function registerRoutes(app: Express): Promise<any> {
 
   // Determine if we're in production (deployed) or development environment
   const isProduction = process.env.NODE_ENV === 'production';
-  const isReplitDev = !!(process.env.REPL_ID || process.env.REPLIT_DB_URL);
-  const useSecureCookies = isProduction && !isReplitDev;
+  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  // Use secure cookies in production OR in Replit deployments (which use HTTPS)
+  const useSecureCookies = isProduction || isReplitDeployment;
 
   logger.log('[Session Config]', {
     isProduction,
-    isReplitDev,
+    isReplitDeployment,
     useSecureCookies,
     cookieSettings: {
       secure: useSecureCookies,
