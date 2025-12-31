@@ -110,25 +110,28 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   logger.log('Session ID:', req.sessionID);
   logger.log('User email in session:', req.session?.user?.email);
 
-  // In development mode, inject a dev admin user if no session exists
-  if (process.env.APP_ENV === 'development' && (!req.session || !req.session.user)) {
-    logger.log('🔧 DEV MODE: Injecting dev admin user');
-    const devUser = {
-      id: 1,
-      email: 'dev@thesandwichproject.org',
-      firstName: 'Dev',
-      lastName: 'Admin',
-      displayName: 'Dev Admin',
-      role: 'super_admin',
-      isActive: true,
-      permissions: ['*'],
-      profileImageUrl: null,
-    };
-    req.user = devUser;
-    if (req.session) {
-      req.session.user = devUser;
+  // In development mode, inject a dev admin user if no session exists OR if dev user is already in session
+  if (process.env.APP_ENV === 'development') {
+    const isDevUser = req.session?.user?.email === 'dev@thesandwichproject.org';
+    if (!req.session || !req.session.user || isDevUser) {
+      logger.log('🔧 DEV MODE: Using dev admin user');
+      const devUser = {
+        id: 1,
+        email: 'dev@thesandwichproject.org',
+        firstName: 'Dev',
+        lastName: 'Admin',
+        displayName: 'Dev Admin',
+        role: 'super_admin',
+        isActive: true,
+        permissions: ['*'],
+        profileImageUrl: null,
+      };
+      req.user = devUser;
+      if (req.session) {
+        req.session.user = devUser;
+      }
+      return next();
     }
-    return next();
   }
 
   // AUTHENTICATION REQUIRED - no auto-login
