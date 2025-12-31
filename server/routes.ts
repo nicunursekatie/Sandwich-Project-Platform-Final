@@ -40,6 +40,10 @@ export async function registerRoutes(app: Express): Promise<any> {
     tableName: 'sessions',
   });
 
+  // CRITICAL: Trust Replit's HTTPS proxy so Express sets secure cookies correctly
+  // Without this, Express thinks the connection is insecure and won't set secure cookies
+  app.set('trust proxy', 1);
+
   // Add secure CORS middleware before session middleware
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
