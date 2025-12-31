@@ -691,40 +691,59 @@ export default function YearlyCalendar() {
                                     key={`group-${groupIdx}`}
                                     className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
                                   >
-                                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                                      <h4 className="text-sm font-semibold flex-1">{group[0].title}</h4>
-                                      <div className="flex flex-wrap gap-1 flex-shrink-0">
-                                        {sortedDistricts.map(district => (
-                                          <Badge 
-                                            key={district} 
-                                            variant="outline" 
-                                            className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
-                                          >
-                                            {district}
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      {group.map(item => (
-                                        <div key={`tracked-${item.id}`} className="text-xs">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-medium text-gray-700 dark:text-gray-300">
-                                              {formatDateRange(item.startDate, item.endDate)}
-                                            </span>
-                                            {item.metadata?.districts && item.metadata.districts.length <= 3 && (
-                                              <span className="text-gray-500">
-                                                ({item.metadata.districts.join(', ')})
-                                              </span>
-                                            )}
-                                          </div>
-                                          {item.notes && (
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 italic">
-                                              {item.notes}
-                                            </p>
-                                          )}
+                                    <div className="mb-2">
+                                      <h4 className="text-sm font-semibold mb-1.5">{group[0].title}</h4>
+                                      {sortedDistricts.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {sortedDistricts.map(district => (
+                                            <Badge 
+                                              key={district} 
+                                              variant="outline" 
+                                              className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
+                                            >
+                                              {district}
+                                            </Badge>
+                                          ))}
                                         </div>
-                                      ))}
+                                      )}
+                                    </div>
+                                    <div className="space-y-2">
+                                      {group.map(item => {
+                                        const itemDistricts = item.metadata?.districts || [];
+                                        return (
+                                          <div 
+                                            key={`tracked-${item.id}`} 
+                                            className="flex items-start gap-2 p-1.5 rounded bg-gray-50 dark:bg-gray-800/50"
+                                          >
+                                            <Badge 
+                                              variant="outline" 
+                                              className="text-xs font-semibold px-2 py-0.5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 flex-shrink-0"
+                                            >
+                                              {formatDateRange(item.startDate, item.endDate)}
+                                            </Badge>
+                                            <div className="flex-1 min-w-0">
+                                              {itemDistricts.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-1">
+                                                  {itemDistricts.map(district => (
+                                                    <Badge 
+                                                      key={district} 
+                                                      variant="outline" 
+                                                      className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
+                                                    >
+                                                      {district}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              {item.notes && (
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                                                  {item.notes}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 );
@@ -739,34 +758,32 @@ export default function YearlyCalendar() {
                                   key={`tracked-${item.id}`}
                                   className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
                                 >
-                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                  <div className="flex items-start gap-2 mb-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 flex-shrink-0"
+                                    >
+                                      {formatDateRange(item.startDate, item.endDate)}
+                                    </Badge>
                                     <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-semibold">{item.title}</h4>
-                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
-                                        {formatDateRange(item.startDate, item.endDate)}
-                                      </p>
+                                      <h4 className="text-sm font-semibold mb-1">{item.title}</h4>
+                                      {districts.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {districts.map(district => (
+                                            <Badge 
+                                              key={district} 
+                                              variant="outline" 
+                                              className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
+                                            >
+                                              {district}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
-                                    {districts.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 flex-shrink-0">
-                                        {districts.slice(0, 4).map(district => (
-                                          <Badge 
-                                            key={district} 
-                                            variant="outline" 
-                                            className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
-                                          >
-                                            {district}
-                                          </Badge>
-                                        ))}
-                                        {districts.length > 4 && (
-                                          <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                            +{districts.length - 4}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    )}
                                   </div>
                                   {item.notes && (
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 italic border-t border-gray-200 dark:border-gray-700 pt-1.5 mt-1.5">
                                       {item.notes}
                                     </p>
                                   )}
