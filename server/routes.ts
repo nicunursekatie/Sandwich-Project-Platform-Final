@@ -50,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<any> {
   // Use secure cookies in production OR in Replit deployments (which use HTTPS)
   const useSecureCookies = isProduction || isReplitDeployment;
 
-  logger.log('[Session Config]', {
+  logger.info('[Session Config]', {
     isProduction,
     isReplitDeployment,
     useSecureCookies,

@@ -131,7 +131,7 @@ export function createAuthRouter() {
         throw error;
       }
 
-      logger.log(`✅ Successful login: ${email} (${user.role})`);
+      logger.info(`✅ Successful login: ${email} (${user.role})`);
 
       return res.json({
         success: true,

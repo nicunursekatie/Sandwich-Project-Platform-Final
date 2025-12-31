@@ -1,6 +1,6 @@
 /**
  * Centralized CORS Configuration
- * 
+ *
  * Provides secure, environment-aware CORS configuration for both Express routes
  * and Socket.IO connections. Replaces scattered CORS configs with a single
  * source of truth that prevents security vulnerabilities.
@@ -19,21 +19,21 @@ export interface CorsConfig {
  */
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
-  
+
   // Always allow the current Replit domain if available
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     const replitDomain = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
     origins.push(replitDomain);
-    
+
     // Also allow the .replit.dev variant
     const replitDevDomain = `https://${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.repl.co`;
     origins.push(replitDevDomain);
-    
+
     // CRITICAL: Also allow the .replit.app production domain format
     const replitAppDomain = `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.app`;
     origins.push(replitAppDomain);
   }
-  
+
   // Development specific origins
   if (process.env.NODE_ENV === 'development') {
     origins.push(
@@ -43,20 +43,22 @@ function getAllowedOrigins(): string[] {
       'https://127.0.0.1:5000'
     );
   }
-  
+
   // Add any additional production origins from environment variable
   if (process.env.ALLOWED_ORIGINS) {
     const additionalOrigins = process.env.ALLOWED_ORIGINS.split(',')
-      .map(origin => origin.trim())
-      .filter(origin => origin.length > 0);
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
     origins.push(...additionalOrigins);
   }
-  
+
   // CRITICAL: Ensure the exact production URL is always allowed
   if (process.env.NODE_ENV === 'production') {
-    origins.push('https://sandwich-project-platform-final-katielong2316.replit.app');
+    origins.push(
+      'https://sandwich-project-platform-final-katielong2316.replit.app'
+    );
   }
-  
+
   return [...new Set(origins)]; // Remove duplicates
 }
 
@@ -68,14 +70,14 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     // Allow same-origin requests (no origin header)
     return true;
   }
-  
+
   const allowedOrigins = getAllowedOrigins();
-  
+
   // Exact match
   if (allowedOrigins.includes(origin)) {
     return true;
   }
-  
+
   // In development, allow any localhost or 127.0.0.1 variants
   if (process.env.NODE_ENV === 'development') {
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
@@ -102,14 +104,14 @@ export function getExpressCorsConfig(): CorsConfig {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
-      'X-Requested-With', 
+      'X-Requested-With',
       'Content-Type',
       'Accept',
       'Authorization',
       'Cache-Control',
-      'Pragma'
+      'Pragma',
     ],
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
   };
 }
 
@@ -118,14 +120,17 @@ export function getExpressCorsConfig(): CorsConfig {
  */
 export function getSocketCorsConfig() {
   const allowedOrigins = getAllowedOrigins();
-  
+
   return {
-    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
       // Socket.IO passes undefined for same-origin requests
       if (!origin) {
         return callback(null, true);
       }
-      
+
       if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
@@ -135,7 +140,7 @@ export function getSocketCorsConfig() {
     },
     methods: ['GET', 'POST'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
   };
 }
 
@@ -146,27 +151,30 @@ export function createCorsMiddleware() {
   return (req: any, res: any, next: any) => {
     const origin = req.headers.origin;
     const config = getExpressCorsConfig();
-    
+
     // Handle CORS for allowed origins
     if (isOriginAllowed(origin)) {
       if (origin) {
+        // Cross-origin request - set the specific origin
         res.header('Access-Control-Allow-Origin', origin);
       } else {
         // Same-origin request - don't set Access-Control-Allow-Origin header
         // Setting it to 'null' causes cookie rejection with sameSite: 'none'
         // For same-origin requests, the header isn't needed
       }
+      // For same-origin requests (no origin header), don't set Access-Control-Allow-Origin
+      // Setting it to 'null' breaks cookie handling with sameSite: 'none'
     } else if (origin) {
       console.warn(`🚫 Express CORS: Blocked origin: ${origin}`);
       // Don't set any CORS headers for blocked origins
       return res.status(403).json({ error: 'Origin not allowed' });
     }
-    
+
     // Set other CORS headers
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', config.methods.join(','));
     res.header('Access-Control-Allow-Headers', config.allowedHeaders.join(','));
-    
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
       res.status(config.optionsSuccessStatus).end();
