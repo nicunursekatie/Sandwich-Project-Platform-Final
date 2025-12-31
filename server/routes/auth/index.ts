@@ -215,6 +215,30 @@ export function createAuthRouter() {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
+      // In development mode, if user is a dev admin, return the injected user directly
+      if (process.env.APP_ENV === 'development' && req.user.email?.includes('dev@') || req.user.email?.includes('thesandwichproject.org')) {
+        // Try database lookup first, but fall back to injected user
+        const freshUser = await storage.getUserByEmail(req.user.email);
+        if (freshUser) {
+          const userRole = freshUser.role ?? req.user.role;
+          const basePermissions = Array.isArray(freshUser.permissions)
+            ? freshUser.permissions
+            : getDefaultPermissionsForRole(userRole);
+          const permissions = applyPermissionDependencies(basePermissions);
+          return res.json({
+            ...freshUser,
+            role: userRole,
+            permissions,
+          });
+        }
+        // Return injected dev user if not in database
+        const permissions = applyPermissionDependencies(getDefaultPermissionsForRole('super_admin'));
+        return res.json({
+          ...req.user,
+          permissions,
+        });
+      }
+
       // Fetch fresh user data from database
       const freshUser = await storage.getUserByEmail(req.user.email);
 

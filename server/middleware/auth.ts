@@ -36,8 +36,39 @@ export async function requireAuth(
   res: Response,
   next: NextFunction
 ) {
-  // Skip auth in development mode
+  // In development mode, inject a dev admin user
   if (process.env.APP_ENV === 'development') {
+    // Try to get a real super_admin user from the database, or create a fake one
+    try {
+      const devUser = await storage.getUserByEmail('katie@thesandwichproject.org');
+      if (devUser) {
+        req.user = devUser;
+      } else {
+        // Fallback to fake dev admin if no real user exists
+        req.user = {
+          id: 1,
+          email: 'dev@thesandwichproject.org',
+          firstName: 'Dev',
+          lastName: 'Admin',
+          displayName: 'Dev Admin',
+          role: 'super_admin',
+          isActive: true,
+          permissions: ['*'],
+        };
+      }
+    } catch (error) {
+      // If database lookup fails, use fake user
+      req.user = {
+        id: 1,
+        email: 'dev@thesandwichproject.org',
+        firstName: 'Dev',
+        lastName: 'Admin',
+        displayName: 'Dev Admin',
+        role: 'super_admin',
+        isActive: true,
+        permissions: ['*'],
+      };
+    }
     return next();
   }
 
