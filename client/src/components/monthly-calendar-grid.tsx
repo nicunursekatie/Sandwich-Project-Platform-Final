@@ -100,9 +100,10 @@ const CATEGORY_COLORS: Record<string, ColorStyle> = {
   // TSP calendar item categories
   preparation: { bg: '#e8f4f8', text: '#236383', border: '#236383' },     // Primary blue
   'event-rush': { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },    // Burgundy (urgent)
-  staffing: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },        // Golden
+  event: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },           // Golden (events)
+  staffing: { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },        // Light blue
   board: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },           // Teal
-  seasonal: { bg: '#ecf9fc', text: '#47b3cb', border: '#47b3cb' },        // Light blue
+  seasonal: { bg: '#e8f4f8', text: '#236383', border: '#236383' },        // Primary blue
   other: { bg: '#f3f4f6', text: '#374151', border: '#9ca3af' },           // Gray
   default: { bg: '#e8f4f8', text: '#236383', border: '#236383' },         // Primary blue
 };
@@ -448,6 +449,7 @@ export function MonthlyCalendarGrid({
   const CATEGORY_LABELS: Record<string, string> = {
     preparation: 'Preparation',
     'event-rush': 'Event Rush',
+    event: 'Event',
     staffing: 'Staffing',
     board: 'Board',
     seasonal: 'Seasonal',
